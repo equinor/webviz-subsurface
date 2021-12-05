@@ -1,8 +1,8 @@
-from typing import Dict, List
-from enum import Enum
 import warnings
+from enum import Enum
+from typing import Dict, List
 
-from .deckgl_map import LayerTypes
+from .types.deckgl_props import LayerTypes
 
 
 class DeckGLMapLayersModel:
@@ -11,7 +11,7 @@ class DeckGLMapLayersModel:
     def __init__(self, layers: List[Dict]) -> None:
         self._layers = layers
 
-    def _update_layer_by_type(self, layer_type: Enum, layer_data: Dict):
+    def _update_layer_by_type(self, layer_type: Enum, layer_data: Dict) -> None:
         """Update a layer specification by the layer type. If multiple layers are found,
         no update is performed."""
         layers = list(filter(lambda x: x["@@type"] == layer_type, self._layers))
@@ -25,7 +25,7 @@ class DeckGLMapLayersModel:
             layer_idx = self._layers.index(layers[0])
             self._layers[layer_idx].update(layer_data)
 
-    def update_layer_by_id(self, layer_id: str, layer_data: Dict):
+    def update_layer_by_id(self, layer_id: str, layer_data: Dict) -> None:
         """Update a layer specification by the layer id."""
         layers = list(filter(lambda x: x["id"] == layer_id, self._layers))
         if not layers:
@@ -43,7 +43,7 @@ class DeckGLMapLayersModel:
         image_url: str,
         bounds: List[float],
         value_range: List[float],
-    ):
+    ) -> None:
         """Set the property map image url, bounds and value range in the
         Colormap and Hillshading layer"""
         self._update_layer_by_type(
@@ -63,7 +63,7 @@ class DeckGLMapLayersModel:
             },
         )
 
-    def set_colormap_image(self, colormap: str):
+    def set_colormap_image(self, colormap: str) -> None:
         """Set the colormap image url in the ColormapLayer"""
         self._update_layer_by_type(
             layer_type=LayerTypes.COLORMAP,
@@ -72,7 +72,7 @@ class DeckGLMapLayersModel:
             },
         )
 
-    def set_colormap_range(self, colormap_range: List[float]):
+    def set_colormap_range(self, colormap_range: List[float]) -> None:
         """Set the colormap range in the ColormapLayer"""
         self._update_layer_by_type(
             layer_type=LayerTypes.COLORMAP,
@@ -81,7 +81,7 @@ class DeckGLMapLayersModel:
             },
         )
 
-    def set_well_data(self, well_data: List[Dict]):
+    def set_well_data(self, well_data: List[Dict]) -> None:
         """Set the well data json url in the WellsLayer"""
         self._update_layer_by_type(
             layer_type=LayerTypes.WELL,
@@ -91,6 +91,6 @@ class DeckGLMapLayersModel:
         )
 
     @property
-    def layers(self) -> Dict:
+    def layers(self) -> List[Dict]:
         """Returns the full layers specification"""
         return self._layers

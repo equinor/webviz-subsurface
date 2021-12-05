@@ -1,35 +1,18 @@
-from typing import Callable, List, Tuple
-from pathlib import Path
 import json
+from pathlib import Path
+from typing import Callable, List, Tuple
 
-from dash import Dash, dcc, html
-import pydeck as pdk
+from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
-import webviz_core_components as wcc
 
+from webviz_subsurface._datainput.fmu_input import find_surfaces
 from webviz_subsurface._models.well_set_model import WellSetModel
 from webviz_subsurface._utils.webvizstore_functions import find_files
-from webviz_subsurface._datainput.fmu_input import find_surfaces
-from webviz_subsurface._components import DeckGLMapAIO
-from webviz_subsurface._components.deckgl_map.data_loaders import (
-    XtgeoWellsJson,
-    XtgeoLogsJson,
-)
-from webviz_subsurface._components.deckgl_map.deckgl_map import (
-    WellsLayer,
-    ColormapLayer,
-    Hillshading2DLayer,
-    DrawingLayer,
-    CustomLayer,
-)
-from .callbacks.deckgl_map_aio_callbacks import (
-    deckgl_map_aio_callbacks,
-)
 
+from .callbacks import plugin_callbacks
+from .layout import main_layout
 from .models import SurfaceSetModel
-from .layout import selector_view, settings_view, well_selector_view
-from .routes import deckgl_map_routes
-from .callbacks import surface_selector_callbacks
+from .routes import deckgl_map_routes  # type: ignore
 from .webviz_store import webviz_store_functions
 
 
@@ -47,8 +30,8 @@ class MapViewerFMU(WebvizPluginABC):
     ):
 
         super().__init__()
-        with open("/tmp/drogon_well_picks.json", "r") as f:
-            self.jsondata = json.load(f)
+        # with open("/tmp/drogon_well_picks.json", "r") as f:
+        #     self.jsondata = json.load(f)
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
@@ -88,103 +71,22 @@ class MapViewerFMU(WebvizPluginABC):
 
     @property
     def layout(self) -> html.Div:
-        selector_views = [
-            selector_view(
-                get_uuid=self.uuid,
-                surface_set_models=self._surface_ensemble_set_models,
-            ),
-        ]
-        if self._well_set_model is not None:
-            selector_views.append(
-                well_selector_view(
-                    get_uuid=self.uuid, well_set_model=self._well_set_model
-                )
-            )
 
-        return html.Div(
-            id=self.uuid("layout"),
-            children=[
-                wcc.FlexBox(
-                    children=[
-                        wcc.Frame(
-                            style={"flex": 3, "height": "90vh"},
-                            children=selector_views,
-                        ),
-                        wcc.Frame(
-                            style={
-                                "flex": 5,
-                            },
-                            children=[
-                                DeckGLMapAIO(
-                                    aio_id=self.uuid("mapview"),
-                                    layers=[
-                                        ColormapLayer(),
-                                        Hillshading2DLayer(),
-                                        WellsLayer(),
-                                        DrawingLayer(),
-                                        CustomLayer(
-                                            type="GeoJsonLayer",
-                                            name="Well picks",
-                                            id="well-picks-layer",
-                                            data=self.jsondata,
-                                            visible=True,
-                                            pickable=True,
-                                            lineWidthMinPixels=10,
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        wcc.Frame(
-                            style={
-                                "flex": 5,
-                            },
-                            children=[
-                                DeckGLMapAIO(
-                                    aio_id=self.uuid("mapview2"),
-                                    layers=[
-                                        ColormapLayer(),
-                                        Hillshading2DLayer(),
-                                        WellsLayer(),
-                                        DrawingLayer(),
-                                        CustomLayer(
-                                            type="GeoJsonLayer",
-                                            name="Well picks",
-                                            id="well-picks-layer",
-                                            data=self.jsondata,
-                                            visible=True,
-                                            pickable=True,
-                                            lineWidthMinPixels=10,
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        wcc.Frame(
-                            style={"flex": 1},
-                            children=settings_view(
-                                get_uuid=self.uuid,
-                            ),
-                        ),
-                        dcc.Store(
-                            id=self.uuid("surface-geometry"),
-                        ),
-                    ],
-                ),
-            ],
-        )
-
-    def set_callbacks(self) -> None:
-        surface_selector_callbacks(
-            get_uuid=self.uuid, surface_set_models=self._surface_ensemble_set_models
-        )
-        deckgl_map_aio_callbacks(
+        return main_layout(
             get_uuid=self.uuid,
             surface_set_models=self._surface_ensemble_set_models,
             well_set_model=self._well_set_model,
         )
 
-    def set_routes(self, app) -> None:
+    def set_callbacks(self) -> None:
+
+        plugin_callbacks(
+            get_uuid=self.uuid,
+            surface_set_models=self._surface_ensemble_set_models,
+            well_set_model=self._well_set_model,
+        )
+
+    def set_routes(self, app: Dash) -> None:
         deckgl_map_routes(
             app=app,
             surface_set_models=self._surface_ensemble_set_models,

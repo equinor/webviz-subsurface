@@ -1,24 +1,14 @@
-from typing import List
+# pylint: disable=all
+# type: ignore
 from enum import Enum
-
-from dash import (
-    html,
-    dcc,
-    callback,
-    Input,
-    Output,
-    State,
-    MATCH,
-)
+from typing import List
 
 import pydeck as pdk
-from .deckgl_map_layers_model import (
-    DeckGLMapLayersModel,
-)
-from .deckgl_map import (
-    DeckGLMap,
-    DeckGLMapDefaultProps,
-)
+from dash import MATCH, Input, Output, State, callback, dcc, html
+
+from .deckgl_map import DeckGLMap
+from .deckgl_map_layers_model import DeckGLMapLayersModel
+from .types.deckgl_props import DeckGLMapProps
 
 
 class DeckGLMapAIOIds(str, Enum):
@@ -66,7 +56,7 @@ class DeckGLMapAIO(html.Div):
             },
         )
 
-    def __init__(self, aio_id, layers: List[pdk.Layer]):
+    def __init__(self, aio_id, layers: List[pdk.Layer]) -> None:
         """
         The DeckGLMapAIO component should be initialized in the layout of a webviz plugin.
         Args:
@@ -78,15 +68,15 @@ class DeckGLMapAIO(html.Div):
                 dcc.Store(data=[], id=self.ids.colormap_image(aio_id)),
                 dcc.Store(data=[], id=self.ids.colormap_range(aio_id)),
                 dcc.Store(
-                    data=DeckGLMapDefaultProps.image,
+                    data=DeckGLMapProps.image,
                     id=self.ids.propertymap_image(aio_id),
                 ),
                 dcc.Store(
-                    data=DeckGLMapDefaultProps.value_range,
+                    data=DeckGLMapProps.value_range,
                     id=self.ids.propertymap_range(aio_id),
                 ),
                 dcc.Store(
-                    data=DeckGLMapDefaultProps.bounds,
+                    data=DeckGLMapProps.bounds,
                     id=self.ids.propertymap_bounds(aio_id),
                 ),
                 dcc.Store(data=[], id=self.ids.selected_well(aio_id)),
