@@ -8,9 +8,9 @@ import plotly.graph_objects as go
 from dash import ALL, Dash, Input, Output, State, callback_context, dcc, no_update
 from dash.exceptions import PreventUpdate
 
+from ...._utils.colors import find_intermediate_color, hex_to_rgba, rgba_to_hex
 from ..figures.correlation_figure import CorrelationFigure
 from ..models import ParametersModel, SimulationTimeSeriesModel
-from ..utils.colors import find_intermediate_color, hex_to_rgb, rgb_to_hex
 
 
 # pylint: disable=too-many-statements,
@@ -193,7 +193,7 @@ def parameter_response_controller(
         if color_clickdata is not None:
             color = color_clickdata["points"][0]["marker.color"]
             if "rgb" in color:
-                color = rgb_to_hex(color)
+                color = rgba_to_hex(color)
 
         return dict(
             show_dateline="DateLine" in checkbox_options,
@@ -543,8 +543,8 @@ def update_scatter_graph(
         .update_traces(
             marker={
                 "size": 15,
-                "color": hex_to_rgb(color, 0.7),
-                "line": {"width": 1.2, "color": hex_to_rgb(color, 1)},
+                "color": hex_to_rgba(color, 0.7),
+                "line": {"width": 1.2, "color": hex_to_rgba(color, 1)},
             }
         )
     )
@@ -554,8 +554,8 @@ def scatter_fig_color_update(figure: dict, color: str, opacity: float):
     """Update color for scatter plot"""
     for trace in figure["data"]:
         if trace["mode"] == "markers":
-            trace["marker"].update(color=hex_to_rgb(color, opacity))
-            trace["marker"]["line"].update(color=hex_to_rgb(color, 1))
+            trace["marker"].update(color=hex_to_rgba(color, opacity))
+            trace["marker"]["line"].update(color=hex_to_rgba(color, 1))
     return figure
 
 
@@ -591,9 +591,9 @@ def color_corr_bars(
     """
     figure["data"][0]["marker"] = {
         "color": [
-            hex_to_rgb(color, opacity)
+            hex_to_rgba(color, opacity)
             if _bar != selected_bar
-            else hex_to_rgb(color_selected, 0.8)
+            else hex_to_rgba(color_selected, 0.8)
             for _bar in figure["data"][0]["y"]
         ],
         "line": {
