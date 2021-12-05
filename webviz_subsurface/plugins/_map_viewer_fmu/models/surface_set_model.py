@@ -1,17 +1,18 @@
 import io
 import json
 import warnings
+from dataclasses import asdict, dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
-from enum import Enum
-from dataclasses import dataclass, asdict
-
 
 import numpy as np
 import pandas as pd
 import xtgeo
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
+
+from ..types import SurfaceContext
 
 
 class FMU(str, Enum):
@@ -33,16 +34,6 @@ class SurfaceMode(str, Enum):
     P90 = "P90"
     MEAN = "Mean"
     STDDEV = "StdDev"
-
-
-@dataclass
-class SurfaceContext:
-    ensemble: str
-    realizations: List[int]
-    attribute: str
-    name: str
-    date: Optional[str]
-    mode: str
 
 
 class SurfaceSetModel:
@@ -72,7 +63,7 @@ class SurfaceSetModel:
             )
         )
 
-    def dates_in_attribute(self, attribute: str) -> list:
+    def dates_in_attribute(self, attribute: str) -> Optional[list]:
         """Returns surface dates for a given attribute"""
         dates = sorted(
             list(
@@ -82,7 +73,7 @@ class SurfaceSetModel:
             )
         )
         if len(dates) == 1 and dates[0] is None:
-            dates = None
+            return None
         return dates
 
     def get_surface(self, surface: SurfaceContext) -> xtgeo.RegularSurface:
@@ -235,7 +226,7 @@ def save_statistical_surface_no_store(
             warnings.filterwarnings("ignore", "All-NaN slice encountered")
             warnings.filterwarnings("ignore", "Mean of empty slice")
             warnings.filterwarnings("ignore", "Degrees of freedom <= 0 for slice")
-            surface = get_statistical_surface(surfaces, calculation)
+            surface = get_statistical_surface(surfaces, SurfaceMode(calculation))
     else:
         surface = xtgeo.RegularSurface(
             ncol=1, nrow=1, xinc=1, yinc=1
@@ -259,7 +250,7 @@ def save_statistical_surface(fns: List[str], calculation: str) -> io.BytesIO:
             warnings.filterwarnings("ignore", "All-NaN slice encountered")
             warnings.filterwarnings("ignore", "Mean of empty slice")
             warnings.filterwarnings("ignore", "Degrees of freedom <= 0 for slice")
-            surface = get_statistical_surface(surfaces, calculation)
+            surface = get_statistical_surface(surfaces, SurfaceMode(calculation))
     else:
         surface = xtgeo.RegularSurface(
             ncol=1, nrow=1, xinc=1, yinc=1

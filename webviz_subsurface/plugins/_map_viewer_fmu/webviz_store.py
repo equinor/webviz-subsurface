@@ -1,9 +1,9 @@
-from typing import List, Tuple, Callable, Dict
+from typing import Callable, Dict, List, Tuple
 
 from webviz_subsurface._datainput.fmu_input import find_surfaces
 
-from .models.surface_set_model import SurfaceSetModel, SurfaceContext, SurfaceMode
-
+from .models.surface_set_model import SurfaceMode, SurfaceSetModel
+from .types import SurfaceContext
 
 # def get_surface_contexts(
 #     surface_set_models: List[SurfaceSetModel],
@@ -14,7 +14,7 @@ from .models.surface_set_model import SurfaceSetModel, SurfaceContext, SurfaceMo
 
 
 def webviz_store_functions(
-    surface_set_models: List[SurfaceSetModel], ensemble_paths: Dict[str, str]
+    surface_set_models: Dict[str, SurfaceSetModel], ensemble_paths: Dict[str, str]
 ) -> List[Tuple[Callable, list]]:
     store_functions: List[Tuple[Callable, list]] = [
         (

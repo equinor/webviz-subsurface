@@ -1,19 +1,10 @@
-from typing import Dict, Optional, Any
 from dataclasses import dataclass
+from typing import Any, Dict, Optional, List
 
 from xtgeo import Well
 
 
-@dataclass
-class DeckGLLogsContext:
-    """Contains the log name for a given well and logrun"""
-
-    well: str
-    log: str
-    logrun: str
-
-
-class XtgeoLogsJson:
+class WellLogToJson:
     """Converts a log for a given well, logrun and log to geojson"""
 
     def __init__(
@@ -30,7 +21,7 @@ class XtgeoLogsJson:
             well.geometrics()
 
     @property
-    def _log_names(self):
+    def _log_names(self) -> List[str]:
         return (
             [
                 logname
@@ -41,7 +32,7 @@ class XtgeoLogsJson:
             else [self._initial_log]
         )
 
-    def _generate_curves(self):
+    def _generate_curves(self) -> List[Dict]:
         curves = []
 
         # Add MD and TVD curves
@@ -53,7 +44,7 @@ class XtgeoLogsJson:
             curves.append(self._generate_curve(log_name=logname))
         return curves
 
-    def _generate_data(self):
+    def _generate_data(self) -> List[float]:
         # Filter dataframe to only include relevant logs
         curve_names = [self._well.mdlogname, "Z_TVDSS"] + self._log_names
 
@@ -98,7 +89,7 @@ class XtgeoLogsJson:
         }
 
     @property
-    def data(self):
+    def data(self) -> Dict:
         return {
             "header": self._generate_header(),
             "curves": self._generate_curves(),

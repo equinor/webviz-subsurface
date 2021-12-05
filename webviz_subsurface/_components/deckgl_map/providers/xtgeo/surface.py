@@ -1,22 +1,37 @@
 import io
+from typing import List
 
 import numpy as np
 import xtgeo
 from PIL import Image
 
 
-def surface_to_deckgl_spec(surface: xtgeo.RegularSurface) -> dict:
-    """Returns bounds, view target(x,y,z position at middle of view port) and value range"""
+def get_surface_bounds(surface: xtgeo.RegularSurface) -> List[float]:
+    """Returns bounds for a given surface, used to set the bounds when used in a
+    DeckGLMap component"""
+
+    return [surface.xmin, surface.ymin, surface.xmax, surface.ymax]
+
+
+def get_surface_target(
+    surface: xtgeo.RegularSurface, elevation: float = 0
+) -> List[float]:
+    """Returns target for a given surface, used to set the target when used in a
+    DeckGLMap component"""
     width = surface.xmax - surface.xmin
     height = surface.ymax - surface.ymin
-    view_target = [surface.xmin + width / 2, surface.ymin + height / 2, 0]
-    bounds = [surface.xmin, surface.ymin, surface.xmax, surface.ymax]
-    value_range = [np.nanmin(surface.values), np.nanmax(surface.values)]
-    return {"mapBounds": bounds, "mapTarget": view_target, "mapRange": value_range}
+    return [surface.xmin + width / 2, surface.ymin + height / 2, elevation]
+
+
+def get_surface_range(surface: xtgeo.RegularSurface) -> List[float]:
+    """Returns valuerange for a given surface, used to set the valuerange when used in a
+    DeckGLMap component"""
+    return [np.nanmin(surface.values), np.nanmax(surface.values)]
 
 
 def surface_to_rgba(surface: xtgeo.RegularSurface) -> io.BytesIO:
-    """Converts a xtgeo Surface to RGBA array"""
+    """Converts a xtgeo Surface to RGBA array. Used to set the image when used in a
+    DeckGLMap component"""
     surface.unrotate()
     surface.fill(np.nan)
     values = surface.values
