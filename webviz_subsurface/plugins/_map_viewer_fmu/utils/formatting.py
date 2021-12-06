@@ -1,4 +1,5 @@
 from datetime import datetime
+import collections.abc
 
 
 def format_date(date_string: str) -> str:
@@ -21,3 +22,12 @@ def format_date(date_string: str) -> str:
         return f"({begin.strftime('%b %Y')})-({end.strftime('%b %Y')})"
 
     return date_string
+
+
+# def update_nested_dict(d, u):
+#     for k, v in u.items():
+#         if isinstance(v, collections.abc.Mapping):
+#             d[k] = update_nested_dict(d.get(k, {}), v)
+#         else:
+#             d[k] = v
+#     return d

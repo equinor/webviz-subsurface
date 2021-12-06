@@ -1,4 +1,5 @@
 import io
+import glob
 import json
 import warnings
 from dataclasses import asdict, dataclass
@@ -12,6 +13,8 @@ import xtgeo
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
+
+from webviz_subsurface._datainput.fmu_input import get_realizations
 from ..types import SurfaceContext
 
 
@@ -24,16 +27,96 @@ class FMUSurface(str, Enum):
     ATTRIBUTE = "attribute"
     NAME = "name"
     DATE = "date"
+    TYPE = "type"
+
+
+class SurfaceType(str, Enum):
+    OBSERVED = "observed"
+    SIMULATED = "simulated"
 
 
 class SurfaceMode(str, Enum):
+    MEAN = "Mean"
     REALIZATION = "Single realization"
+    OBSERVED = "Observed"
+    STDDEV = "StdDev"
     MINIMUM = "Minimum"
     MAXIMUM = "Maximum"
     P10 = "P10"
     P90 = "P90"
-    MEAN = "Mean"
-    STDDEV = "StdDev"
+
+
+@webvizstore
+def scrape_scratch_disk_for_surfaces(
+    ensemble_paths: dict,
+    surface_folder: str = "share/results/maps",
+    observed_surface_folder: str = "share/observations/maps",
+    surface_files: Optional[List] = None,
+    suffix: str = "*.gri",
+    delimiter: str = "--",
+) -> pd.DataFrame:
+    """Reads surface file names stored in standard FMU format, and returns a dictionary
+    on the following format:
+    surface_property:
+        names:
+            - some_surface_name
+            - another_surface_name
+        dates:
+            - some_date
+            - another_date
+    """
+    # Create list of all files in all realizations in all ensembles
+    files = []
+    for _, ensdf in get_realizations(ensemble_paths=ensemble_paths).groupby("ENSEMBLE"):
+        ens_files = []
+        for _real_no, realdf in ensdf.groupby("REAL"):
+            runpath = realdf.iloc[0]["RUNPATH"]
+            for realpath in glob.glob(str(Path(runpath) / surface_folder / suffix)):
+                filename = Path(realpath)
+                if surface_files and filename.name not in surface_files:
+                    continue
+                stem = filename.stem.split(delimiter)
+                if len(stem) >= 2:
+                    ens_files.append(
+                        {
+                            "path": realpath,
+                            "type": SurfaceType.SIMULATED,
+                            "name": stem[0],
+                            "attribute": stem[1],
+                            "date": stem[2] if len(stem) >= 3 else None,
+                            **realdf.iloc[0],
+                        }
+                    )
+        enspath = ensdf.iloc[0]["RUNPATH"].split("realization")[0]
+        for obspath in glob.glob(str(Path(enspath) / observed_surface_folder / suffix)):
+            filename = Path(obspath)
+            if surface_files and filename.name not in surface_files:
+                continue
+            stem = filename.stem.split(delimiter)
+            if len(stem) >= 2:
+                ens_files.append(
+                    {
+                        "path": obspath,
+                        "type": SurfaceType.OBSERVED,
+                        "name": stem[0],
+                        "attribute": stem[1],
+                        "date": stem[2] if len(stem) >= 3 else None,
+                        **ensdf.iloc[0],
+                    }
+                )
+        if not ens_files:
+            warnings.warn(f"No surfaces found for ensemble located at {runpath}.")
+        else:
+            files.extend(ens_files)
+
+    # Store surface name, attribute and date as Pandas dataframe
+    if not files:
+        raise ValueError(
+            "No surfaces found! Ensure that surfaces file are stored "
+            "at share/results/maps in each ensemble and is following "
+            "the FMU naming standard (name--attribute[--date].gri)"
+        )
+    return pd.DataFrame(files)
 
 
 class SurfaceSetModel:
@@ -80,13 +163,32 @@ class SurfaceSetModel:
         surface.mode = SurfaceMode(surface.mode)
         if surface.mode == SurfaceMode.REALIZATION:
             return self.get_realization_surface(surface)
-        else:
-            return self.calculate_statistical_surface(surface)
+        if surface.mode == SurfaceMode.OBSERVED:
+            return self.get_observed_surface(surface)
+        return self.calculate_statistical_surface(surface)
 
     def get_realization_surface(
         self, surface_context: SurfaceContext
     ) -> xtgeo.RegularSurface:
         """Returns a Xtgeo surface instance of a single realization surface"""
+
+        df = self._filter_surface_table(surface_context=surface_context)
+        if len(df.index) == 0:
+            warnings.warn(f"No surface found for {surface_context}")
+            return xtgeo.RegularSurface(
+                ncol=1, nrow=1, xinc=1, yinc=1
+            )  # 1's as input is required
+        if len(df.index) > 1:
+            warnings.warn(
+                f"Multiple surfaces found for: {surface_context}"
+                "Returning first surface."
+            )
+        return xtgeo.surface_from_file(get_stored_surface_path(df.iloc[0]["path"]))
+
+    def get_observed_surface(
+        self, surface_context: SurfaceContext
+    ) -> xtgeo.RegularSurface:
+        """Returns a Xtgeo surface instance of an observed surface"""
 
         df = self._filter_surface_table(surface_context=surface_context)
         if len(df.index) == 0:
@@ -111,7 +213,14 @@ class SurfaceSetModel:
         if surface_context.realizations is not None:
             columns.append(FMU.REALIZATION)
             column_values.append(surface_context.realizations)
-        df = self._surface_table.copy()
+        if surface_context.mode == SurfaceMode.OBSERVED:
+            df = self._surface_table.loc[
+                self._surface_table[FMUSurface.TYPE] == SurfaceType.OBSERVED
+            ]
+        else:
+            df = self._surface_table.loc[
+                self._surface_table[FMUSurface.TYPE] != SurfaceType.OBSERVED
+            ]
         for filt, col in zip(column_values, columns):
             if isinstance(filt, list):
                 df = df.loc[df[col].isin(filt)]

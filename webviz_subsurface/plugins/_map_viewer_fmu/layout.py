@@ -1,7 +1,7 @@
 from enum import Enum, auto, unique
 from typing import Callable, List, Dict, Any, Optional
 
-
+import pandas as pd
 import webviz_core_components as wcc
 from dash import dcc, html
 
@@ -12,6 +12,8 @@ from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     Hillshading2DLayer,
     WellsLayer,
 )
+from pydeck import Layer
+from pydeck.types import String
 from webviz_subsurface._models import WellSetModel
 
 from .models.surface_set_model import SurfaceMode, SurfaceSetModel
@@ -52,6 +54,7 @@ class LayoutElements(str, Enum):
     COLORMAP_RESET_RANGE = auto()
     LINK_COLORMAP_RANGE = auto()
     LINK_COLORMAP_SELECT = auto()
+    # STORED_COLOR_SETTINGS = auto()
 
 
 class LayoutLabels(str, Enum):
@@ -61,7 +64,7 @@ class LayoutLabels(str, Enum):
     NAME = "Surface name / zone"
     DATE = "Surface time interval"
     ENSEMBLE = "Ensemble"
-    MODE = "Aggregation"
+    MODE = "Aggregation/Simulation/Observation"
     REALIZATIONS = "Realization(s)"
     WELLS = "Wells"
     LOG = "Log"
@@ -77,8 +80,11 @@ class LayoutStyle:
     """CSS styling"""
 
     SIDEBAR = {"flex": 3, "height": "90vh"}
-    LEFT_MAP = {"flex": 5, "height": "90vh"}
-    RIGHT_MAP = {"flex": 5}
+    LEFT_MAP = {"flex": 5, "height": "40vh", "padding": "-16px"}
+    RIGHT_MAP = {"flex": 5, "height": "40vh", "padding": "-16px"}
+    LEFT_MAP_WRAPPER = {"flex": 5}
+    RIGHT_MAP_WRAPPER = {"flex": 5}
+
     SIDE_BY_SIDE = {
         "display": "grid",
         "grid-template-columns": " 1fr 1fr",
@@ -88,7 +94,7 @@ class LayoutStyle:
 
 class FullScreen(wcc.WebvizPluginPlaceholder):
     def __init__(self, id: str, children: List[Any]) -> None:
-        super().__init__(id=id, buttons=["expand", "screenshot"], children=children)
+        super().__init__(id=id, buttons=["expand"], children=children)
 
 
 def main_layout(
@@ -132,7 +138,7 @@ def main_layout(
                 ),
             ),
             html.Div(
-                style={"flex": 5, "height": "90vh"},
+                style=LayoutStyle.LEFT_MAP_WRAPPER,
                 children=FullScreen(
                     id=get_uuid(LayoutElements.DECKGLMAP_LEFT_WRAPPER),
                     children=[
@@ -143,31 +149,92 @@ def main_layout(
                             children=[
                                 DeckGLMapAIO(
                                     aio_id=get_uuid(LayoutElements.DECKGLMAP_LEFT),
-                                    layers=[
-                                        ColormapLayer(),
-                                        Hillshading2DLayer(),
-                                        WellsLayer(),
-                                        DrawingLayer(),
-                                    ],
+                                    layers=list(
+                                        filter(
+                                            None,
+                                            [
+                                                ColormapLayer(),
+                                                Hillshading2DLayer(),
+                                                well_set_model and WellsLayer(),
+                                                Layer(
+                                                    "TextLayer",
+                                                    pd.DataFrame(
+                                                        [
+                                                            {
+                                                                "name": "Lafayette (LAFY)",
+                                                                "code": "LF",
+                                                                "address": "3601 Deer Hill Road, Lafayette CA 94549",
+                                                                "entries": "3481",
+                                                                "exits": "3616",
+                                                                "coordinates": [
+                                                                    460412,
+                                                                    5931000,
+                                                                ],
+                                                            },
+                                                            {
+                                                                "name": "12th St. Oakland City Center (12TH)",
+                                                                "code": "12",
+                                                                "address": "1245 Broadway, Oakland CA 94612",
+                                                                "entries": "13418",
+                                                                "exits": "13547",
+                                                                "coordinates": [
+                                                                    461412,
+                                                                    5932000,
+                                                                ],
+                                                            },
+                                                        ]
+                                                    ),
+                                                    pickable=True,
+                                                    visible=False,
+                                                    get_position="coordinates",
+                                                    get_text="name",
+                                                    get_size=16,
+                                                    get_color=[0, 0, 0],
+                                                    get_angle=0,
+                                                    # Note that string constants in pydeck are explicitly passed as strings
+                                                    # This distinguishes them from columns in a data set
+                                                    get_text_anchor=String("middle"),
+                                                    get_alignment_baseline=String(
+                                                        "center"
+                                                    ),
+                                                ),
+                                            ],
+                                        )
+                                    ),
                                 ),
                             ],
                         )
                     ],
                 ),
             ),
-            wcc.Frame(
-                style=LayoutStyle.RIGHT_MAP,
-                children=[
-                    DeckGLMapAIO(
-                        aio_id=get_uuid(LayoutElements.DECKGLMAP_RIGHT),
-                        layers=[
-                            ColormapLayer(),
-                            Hillshading2DLayer(),
-                            WellsLayer(),
-                            DrawingLayer(),
-                        ],
-                    ),
-                ],
+            html.Div(
+                style=LayoutStyle.RIGHT_MAP_WRAPPER,
+                children=FullScreen(
+                    id=get_uuid(LayoutElements.DECKGLMAP_RIGHT_WRAPPER),
+                    children=[
+                        wcc.Frame(
+                            color="white",
+                            highlight=False,
+                            style=LayoutStyle.RIGHT_MAP,
+                            children=[
+                                DeckGLMapAIO(
+                                    aio_id=get_uuid(LayoutElements.DECKGLMAP_RIGHT),
+                                    layers=list(
+                                        filter(
+                                            None,
+                                            [
+                                                ColormapLayer(),
+                                                Hillshading2DLayer(),
+                                                well_set_model and WellsLayer(),
+                                                DrawingLayer(),
+                                            ],
+                                        )
+                                    ),
+                                ),
+                            ],
+                        )
+                    ],
+                ),
             ),
         ],
     )
@@ -189,6 +256,9 @@ class DataStores(html.Div):
                         "id": get_uuid(LayoutElements.SELECTED_DATA),
                     }
                 ),
+                # dcc.Store(
+                #     id=get_uuid(LayoutElements.STORED_COLOR_SETTINGS),
+                # ),
             ]
         )
 
@@ -213,7 +283,7 @@ class SideBySideSelector(html.Div):
 
 class EnsembleSelector(wcc.Selectors):
     def __init__(self, get_uuid: Callable, ensembles: List[str]):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.ENSEMBLE,
             children=[
                 LinkCheckBox(get_uuid(LayoutElements.LINK_ENSEMBLE)),
@@ -251,7 +321,7 @@ class EnsembleSelector(wcc.Selectors):
 
 class AttributeSelector(wcc.Selectors):
     def __init__(self, get_uuid: Callable, attributes: List[str]):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.ATTRIBUTE,
             children=[
                 LinkCheckBox(get_uuid(LayoutElements.LINK_ATTRIBUTE)),
@@ -291,7 +361,7 @@ class AttributeSelector(wcc.Selectors):
 
 class NameSelector(wcc.Selectors):
     def __init__(self, get_uuid: Callable, names: List[str]):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.NAME,
             children=[
                 LinkCheckBox(get_uuid(LayoutElements.LINK_NAME)),
@@ -325,7 +395,7 @@ class NameSelector(wcc.Selectors):
 
 class DateSelector(wcc.Selectors):
     def __init__(self, get_uuid: Callable, dates: List[str]):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.DATE,
             children=[
                 LinkCheckBox(get_uuid(LayoutElements.LINK_DATE)),
@@ -365,7 +435,7 @@ class DateSelector(wcc.Selectors):
 
 class ModeSelector(wcc.Selectors):
     def __init__(self, get_uuid: Callable):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.MODE,
             children=[
                 LinkCheckBox(get_uuid(LayoutElements.LINK_MODE)),
@@ -401,7 +471,7 @@ class ModeSelector(wcc.Selectors):
 
 class RealizationSelector(wcc.Selectors):
     def __init__(self, get_uuid: Callable, realizations: List[str]):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.REALIZATIONS,
             open_details=False,
             children=[
@@ -444,7 +514,7 @@ class RealizationSelector(wcc.Selectors):
 
 class WellsSelector(wcc.Selectors):
     def __init__(self, get_uuid: Callable, wells: List[str]):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.WELLS,
             open_details=False,
             children=[
@@ -481,7 +551,7 @@ class SurfaceColorSelector(wcc.Selectors):
     def __init__(
         self, get_uuid: Callable, colormaps: List[str] = ["viridis_r", "seismic"]
     ):
-        return super().__init__(
+        super().__init__(
             label=LayoutLabels.COLORMAP_WRAPPER,
             open_details=False,
             children=[
