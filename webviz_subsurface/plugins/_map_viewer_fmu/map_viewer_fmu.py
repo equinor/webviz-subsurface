@@ -7,7 +7,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 
 from webviz_subsurface._models.well_set_model import WellSetModel
-from webviz_subsurface._utils.webvizstore_functions import find_files
+from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
 from .callbacks import plugin_callbacks
 from .layout import main_layout
@@ -95,7 +95,15 @@ class MapViewerFMU(WebvizPluginABC):
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
 
-        return webviz_store_functions(
+        store_functions = webviz_store_functions(
             surface_set_models=self._surface_ensemble_set_models,
             ensemble_paths=self.ens_paths,
         )
+        if self._wellfolder is not None:
+            store_functions.append(
+                (find_files, [{"folder": self._wellfolder, "suffix": self._wellsuffix}])
+            )
+            store_functions.extend(
+                [(get_path, [{"path": fn}]) for fn in self._wellfiles]
+            )
+        return store_functions
