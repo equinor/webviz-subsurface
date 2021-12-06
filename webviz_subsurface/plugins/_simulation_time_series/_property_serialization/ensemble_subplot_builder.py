@@ -73,7 +73,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             )
         self._set_keep_uirevision()
 
-        # Internal status added vector legens and history legend
+        # Internal status added vector legends and history legend
         self._vector_legends_added: Set[str] = set()
         self._history_legend_added = False
 
@@ -87,7 +87,6 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
-        add_legend: bool = True,
     ) -> None:
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
@@ -97,13 +96,8 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
 
         for vector in vectors:
             # Add legend if not already added
-            show_legend = add_legend and vector not in self._vector_legends_added
-            legendrank: Optional[int] = None
-
-            # Update storage of added legends and set legendrank according to selection order
-            if show_legend:
-                self._vector_legends_added.add(vector)
-                legendrank = self._selected_vectors.index(vector) + 1
+            show_legend = self._get_show_legend_and_update_status(vector)
+            legendrank: Optional[int] = self._get_legendrank(vector, show_legend)
 
             vector_df = vectors_df[["DATE", "REAL", vector]]
             color = self._vector_colors.get(vector, "black")
@@ -127,7 +121,6 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         statistics_options: List[StatisticsOptions],
-        add_legend: bool = True,
     ) -> None:
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
@@ -137,13 +130,8 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
 
         for vector in vectors:
             # Add legend if not already added
-            show_legend = add_legend and vector not in self._vector_legends_added
-            legendrank: Optional[int] = None
-
-            # Update storage of added legends and set legendrank according to selection order
-            if show_legend:
-                self._vector_legends_added.add(vector)
-                legendrank = self._selected_vectors.index(vector) + 1
+            show_legend = self._get_show_legend_and_update_status(vector)
+            legendrank: Optional[int] = self._get_legendrank(vector, show_legend)
 
             # Retrieve DATE and statistics columns for specific vector
             vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
@@ -170,7 +158,6 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         fanchart_options: List[FanchartOptions],
-        add_legend: bool = True,
     ) -> None:
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
@@ -180,13 +167,8 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
 
         for vector in vectors:
             # Add legend if not already added
-            show_legend = add_legend and vector not in self._vector_legends_added
-            legendrank: Optional[int] = None
-
-            # Update storage of added legends and set legendrank according to selection order
-            if show_legend:
-                self._vector_legends_added.add(vector)
-                legendrank = self._selected_vectors.index(vector) + 1
+            show_legend = self._get_show_legend_and_update_status(vector)
+            legendrank: Optional[int] = self._get_legendrank(vector, show_legend)
 
             # Retrieve DATE and statistics columns for specific vector
             vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
@@ -212,7 +194,6 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
-        add_legend: bool = True,
     ) -> None:
         if "DATE" not in vectors_df.columns and "REAL" not in vectors_df.columns:
             raise ValueError('vectors_df is missing required columns ["DATE","REAL"]')
@@ -228,7 +209,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
 
         for vector in vectors:
             # Set show legend on first history vector trace
-            show_legend = add_legend and not self._history_legend_added
+            show_legend = not self._history_legend_added
 
             # Update state
             if show_legend:
@@ -299,3 +280,23 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             if subplot_index is None:
                 continue
             self._figure.add_traces(vector_traces, rows=subplot_index, cols=1)
+
+    def _get_show_legend_and_update_status(self, vector: str) -> bool:
+        """Get show legend flag and update legends added status"""
+        show_legend = vector not in self._vector_legends_added
+        if show_legend:
+            self._vector_legends_added.add(vector)
+        return show_legend
+
+    def _get_legendrank(self, vector: str, show_legend: bool) -> Optional[int]:
+        """Get legendrank for vector based show legend status
+
+        `Return:`
+        Legend rank based on order in selected vectors. None is returned is show_legend
+        is false or if vector is not among selected vectors - i.e. index() raises ValueError.
+
+        """
+        try:
+            return self._selected_vectors.index(vector) + 1 if show_legend else None
+        except ValueError:
+            return None

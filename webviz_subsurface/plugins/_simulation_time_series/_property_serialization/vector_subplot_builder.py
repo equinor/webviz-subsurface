@@ -73,8 +73,9 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
 
         self._set_keep_uirevision()
 
-        # Internal status added ensemble legens
+        # Internal status added ensemble legends and history legend
         self._ensemble_legends_added: Set[str] = set()
+        self._history_legend_added = False
 
     #############################################################################
     #
@@ -86,7 +87,6 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
-        add_legend: bool = True,
     ) -> None:
         color = self._ensemble_colors.get(ensemble)
         if not color:
@@ -100,7 +100,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
 
         for vector in vectors:
             # Add legend if not already added
-            show_legend = add_legend and ensemble not in self._ensemble_legends_added
+            show_legend = ensemble not in self._ensemble_legends_added
 
             # Update storage of added legends
             if show_legend:
@@ -125,7 +125,6 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         statistics_options: List[StatisticsOptions],
-        add_legend: bool = True,
     ) -> None:
         color = self._ensemble_colors.get(ensemble)
         if not color:
@@ -139,7 +138,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
 
         for vector in vectors:
             # Add legend if not already added
-            show_legend = add_legend and ensemble not in self._ensemble_legends_added
+            show_legend = ensemble not in self._ensemble_legends_added
 
             # Update storage of added legends
             if show_legend:
@@ -168,7 +167,6 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         fanchart_options: List[FanchartOptions],
-        add_legend: bool = True,
     ) -> None:
         color = self._ensemble_colors.get(ensemble)
         if not color:
@@ -182,7 +180,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
 
         for vector in vectors:
             # Add legend if not already added
-            show_legend = add_legend and ensemble not in self._ensemble_legends_added
+            show_legend = ensemble not in self._ensemble_legends_added
 
             # Update storage of added legends
             if show_legend:
@@ -210,7 +208,6 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         self,
         vectors_df: pd.DataFrame,
         __ensemble: Optional[str] = None,
-        add_legend: bool = True,
     ) -> None:
         # NOTE: Not using ensemble argument for this implementation!
 
@@ -223,9 +220,13 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         samples = vectors_df["DATE"].tolist()
 
         vector_trace_set: Dict[str, dict] = {}
-        for index, vector in enumerate(vectors):
+        for vector in vectors:
             # Set show legend on first history vector trace
-            show_legend = add_legend and index == 0
+            show_legend = not self._history_legend_added
+
+            # Update state
+            if show_legend:
+                self._history_legend_added = True
 
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_trace_set[vector] = create_history_vector_trace(

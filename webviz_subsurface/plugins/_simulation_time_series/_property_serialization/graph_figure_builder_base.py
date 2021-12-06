@@ -42,7 +42,6 @@ class GraphFigureBuilderBase(abc.ABC):
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
-        add_legend: bool = True,
     ) -> None:
         """Add realization traces to figure
 
@@ -51,7 +50,6 @@ class GraphFigureBuilderBase(abc.ABC):
             ["DATE", "REAL", vector1, ..., vectorN]
 
         * ensemble: str - Name of ensemble providing the input vector data
-        * add_legend: bool - State for adding legend or not
         """
         ...
 
@@ -61,7 +59,6 @@ class GraphFigureBuilderBase(abc.ABC):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         statistics_options: List[StatisticsOptions],
-        add_legend: bool = True,
     ) -> None:
         """Add statistics traces to figure
 
@@ -72,7 +69,6 @@ class GraphFigureBuilderBase(abc.ABC):
 
         * ensemble: str - Name of ensemble providing the input vector data
         * statistics_options: List[StatisticsOptions] - List of statistics options traces to include
-        * add_legend: bool - State for adding legend or not
         """
         ...
 
@@ -82,7 +78,6 @@ class GraphFigureBuilderBase(abc.ABC):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         fanchart_options: List[FanchartOptions],
-        add_legend: bool = True,
     ) -> None:
         """
         Add fanchart traces for vectors in provided vectors statistics dataframe
@@ -94,7 +89,6 @@ class GraphFigureBuilderBase(abc.ABC):
 
         * ensemble: str - Name of ensemble providing the input vector data
         * fanchart_options: List[StatisticsOptions] - List of fanchart options traces to include
-        * add_legend: bool - State for adding legend or not
         """
         ...
 
@@ -103,7 +97,6 @@ class GraphFigureBuilderBase(abc.ABC):
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
-        add_legend: bool = True,
     ) -> None:
         """Add traces for historical vectors in dataframe columns
 
@@ -113,7 +106,6 @@ class GraphFigureBuilderBase(abc.ABC):
             ["DATE", "REAL", vector1, ..., vectorN]
 
         * ensemble: str - Name of ensemble providing the input vector data
-        * add_legend: bool - State for adding legend or not
         """
         ...
 
