@@ -2,7 +2,6 @@ import json
 from typing import Any, Dict, List, Union
 
 import pydeck
-from typing_extensions import Literal
 from webviz_subsurface_components import DeckGLMap as DeckGLMapBase
 
 from .types.deckgl_props import DeckGLMapProps

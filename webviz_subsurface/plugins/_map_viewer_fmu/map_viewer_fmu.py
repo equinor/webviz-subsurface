@@ -5,13 +5,13 @@ from typing import Callable, List, Tuple
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._datainput.fmu_input import find_surfaces
+
 from webviz_subsurface._models.well_set_model import WellSetModel
 from webviz_subsurface._utils.webvizstore_functions import find_files
 
 from .callbacks import plugin_callbacks
 from .layout import main_layout
-from .models import SurfaceSetModel
+from .models.surface_set_model import SurfaceSetModel, scrape_scratch_disk_for_surfaces
 from .routes import deckgl_map_routes  # type: ignore
 from .webviz_store import webviz_store_functions
 
@@ -44,7 +44,7 @@ class MapViewerFMU(WebvizPluginABC):
             else None
         )
         # Find surfaces
-        self._surface_table = find_surfaces(self.ens_paths)
+        self._surface_table = scrape_scratch_disk_for_surfaces(self.ens_paths)
 
         if attributes is not None:
             self._surface_table = self._surface_table[

@@ -16,7 +16,7 @@ from webviz_subsurface._models.well_set_model import WellSetModel
 from .layout import LayoutElements
 from .models.surface_set_model import SurfaceMode, SurfaceSetModel
 from .types import SurfaceContext, WellsContext
-from .utils.formatting import format_date
+from .utils.formatting import format_date  # , update_nested_dict
 
 
 def plugin_callbacks(
@@ -352,9 +352,13 @@ def plugin_callbacks(
     ) -> dict:
 
         surface_spec = SurfaceContext(
-            attribute=attribute if not linked_attribute else view1_attribute,
-            name=name if not linked_name else view1_name,
-            date=date if not linked_date else view1_date,
+            attribute=attribute[0] if not linked_attribute else view1_attribute[0],
+            name=name[0] if not linked_name else view1_name[0],
+            date=date[0]
+            if not linked_date and date
+            else view1_date[0]
+            if view1_date and linked_date
+            else None,
             ensemble=ensemble if not linked_ensemble else view1_ensemble,
             realizations=realizations
             if not linked_realizations
@@ -540,7 +544,7 @@ def plugin_callbacks(
     def _update_colormap_range_slider_right(
         value_range: List[float],
         keep: str,
-        reset: int,
+        _reset: int,
         link: bool,
         view1_min: float,
         view1_max: float,
@@ -614,3 +618,57 @@ def plugin_callbacks(
     )
     def _update_colormap_range_right(colormap_range: List[float]) -> List[float]:
         return colormap_range
+
+    # @callback(
+    #     Output(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
+    #     Input(left_view(LayoutElements.COLORMAP_SELECT), "value"),
+    #     Input(left_view(LayoutElements.COLORMAP_RANGE), "value"),
+    #     Input(right_view(LayoutElements.COLORMAP_SELECT), "value"),
+    #     Input(right_view(LayoutElements.COLORMAP_RANGE), "value"),
+    #     State(left_view(LayoutElements.SELECTED_DATA), "data"),
+    #     State(right_view(LayoutElements.SELECTED_DATA), "data"),
+    #     State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
+    # )
+    # def _store_colors(
+    #     view1_colormap,
+    #     view1_range,
+    #     view2_colormap,
+    #     view2_range,
+    #     view1_surface_context,
+    #     view2_surface_context,
+    #     stored_color_settings: Optional[Dict],
+    # ):
+    #     color_settings = stored_color_settings if stored_color_settings else {}
+    #     for colormap, range, context in zip(
+    #         [view1_colormap, view2_colormap],
+    #         [view1_range, view2_range],
+    #         [view1_surface_context, view2_surface_context],
+    #     ):
+
+    #         surface_context = SurfaceContext(**context)
+    #         if surface_context.date is not None:
+    #             color_settings = update_nested_dict(
+    #                 color_settings,
+    #                 {
+    #                     surface_context.attribute: {
+    #                         "name": surface_context.name,
+    #                         "date": surface_context.date,
+    #                         "colormap": colormap,
+    #                         "range": range,
+    #                     }
+    #                 },
+    #             )
+    #         else:
+    #             color_settings = update_nested_dict(
+    #                 color_settings,
+    #                 {
+    #                     surface_context.attribute: {
+    #                         "name": surface_context.name,
+    #                         "date": surface_context.date,
+    #                         "colormap": colormap,
+    #                         "range": range,
+    #                     }
+    #                 },
+    #             )
+    #     print(color_settings)
+    #     return color_settings
