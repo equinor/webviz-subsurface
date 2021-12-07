@@ -2,14 +2,11 @@ from typing import Dict, List, Optional, Set
 
 import pandas as pd
 from plotly.subplots import make_subplots
-
 from webviz_config._theme_class import WebvizConfigTheme
+
 from webviz_subsurface._providers import Frequency
 
-from .graph_figure_builder_base import GraphFigureBuilderBase
-
 from ..types import FanchartOptions, StatisticsOptions
-
 from ..utils.create_vector_traces_utils import (
     create_history_vector_trace,
     create_vector_fanchart_traces,
@@ -18,6 +15,7 @@ from ..utils.create_vector_traces_utils import (
     create_vector_statistics_traces,
     render_hovertemplate,
 )
+from .graph_figure_builder_base import GraphFigureBuilderBase
 
 
 class EnsembleSubplotBuilder(GraphFigureBuilderBase):

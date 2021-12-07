@@ -1,5 +1,5 @@
-from typing import Dict, ItemsView, List, Optional
 from pathlib import Path
+from typing import Dict, ItemsView, List, Optional
 
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
@@ -7,6 +7,7 @@ from webviz_subsurface._providers import (
     Frequency,
     VectorMetadata,
 )
+
 
 # TODO: Consider if "ensemble" should be a part of names in class (Both class name,
 # function names and attribute names).

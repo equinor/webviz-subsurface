@@ -3,6 +3,7 @@ from typing import Optional, Sequence
 
 import pandas as pd
 
+
 # TODO: Rename?
 # "Possessor"
 # "Accessor"

@@ -9,15 +9,12 @@ from webviz_subsurface._utils.vector_calculator import (
     get_selected_expressions,
 )
 
-from .derived_ensemble_vectors_accessor import (
-    DerivedEnsembleVectorsAccessor,
-)
-
 from ..utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
     get_cumulative_vector_name,
     is_interval_or_average_vector,
 )
+from .derived_ensemble_vectors_accessor import DerivedEnsembleVectorsAccessor
 
 
 class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):

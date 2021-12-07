@@ -5,16 +5,16 @@ import pandas as pd
 
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.fanchart_plotting import (
-    get_fanchart_traces,
     FanchartData,
     FreeLineData,
     LowHighData,
     MinMaxData,
+    get_fanchart_traces,
 )
 from webviz_subsurface._utils.statistics_plotting import (
-    create_statistics_traces,
-    StatisticsData,
     LineData,
+    StatisticsData,
+    create_statistics_traces,
 )
 
 from ..types import FanchartOptions, StatisticsOptions

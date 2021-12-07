@@ -1,21 +1,22 @@
 import copy
 import warnings
-from typing import Callable, Dict, List, Optional, Tuple
 from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple
 
 import dash
+import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
-import webviz_core_components as wcc
 
 import webviz_subsurface
 from webviz_subsurface._abbreviations.reservoir_simulation import (
     historical_vector,
     simulation_vector_description,
 )
+from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.simulation_timeseries import (
-    set_simulation_line_shape_fallback,
     check_and_format_observations,
+    set_simulation_line_shape_fallback,
 )
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
@@ -24,7 +25,6 @@ from webviz_subsurface._utils.vector_calculator import (
 )
 from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
 from webviz_subsurface._utils.webvizstore_functions import get_path
-from webviz_subsurface._providers import Frequency
 
 from ._callbacks import plugin_callbacks
 from ._layout import main_layout

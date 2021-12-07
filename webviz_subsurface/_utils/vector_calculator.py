@@ -13,8 +13,8 @@ from webviz_subsurface_components import (
     VariableVectorMapInfo,
     VectorCalculator,
 )
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 
+from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 
 from .vector_selector import (
     add_vector_to_vector_selector_data,

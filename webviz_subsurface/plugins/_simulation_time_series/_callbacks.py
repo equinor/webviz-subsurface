@@ -1,57 +1,50 @@
+import copy
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
-import copy
 import dash
-from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State
 import pandas as pd
-
 import webviz_subsurface_components as wsc
-from webviz_subsurface_components import ExpressionInfo, ExternalParseData
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
+from webviz_subsurface_components import ExpressionInfo, ExternalParseData
+
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.unique_theming import unique_colors
-
-
-from ._layout import LayoutElements
-
-from ._property_serialization import (
-    GraphFigureBuilderBase,
-    EnsembleSubplotBuilder,
-    VectorSubplotBuilder,
-)
-
-from .types import (
-    DerivedEnsembleVectorsAccessor,
-    DeltaEnsemble,
-    FanchartOptions,
-    StatisticsOptions,
-    SubplotGroupByOptions,
-    ProviderSet,
-    TraceOptions,
-    VisualizationOptions,
-)
-
-from .utils.derived_ensemble_vectors_accessor_utils import (
-    create_derived_ensemble_vectors_accessor_dict,
-)
-from .utils.delta_ensemble_utils import (
-    create_delta_ensemble_names,
-)
-from .utils.trace_line_shape import get_simulation_line_shape
-from .utils.provider_set_utils import (
-    create_vector_plot_titles_from_provider_set,
-)
-from .utils.vector_statistics import create_vectors_statistics_df
-from .utils.history_vectors import create_history_vectors_df
-
-from ..._utils.vector_calculator import (
+from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
     get_custom_vector_definitions_from_expressions,
     get_selected_expressions,
 )
-from ..._utils.vector_selector import is_vector_name_in_vector_selector_data
+from webviz_subsurface._utils.vector_selector import (
+    is_vector_name_in_vector_selector_data,
+)
+
+from ._layout import LayoutElements
+from ._property_serialization import (
+    EnsembleSubplotBuilder,
+    GraphFigureBuilderBase,
+    VectorSubplotBuilder,
+)
+from .types import (
+    DeltaEnsemble,
+    DerivedEnsembleVectorsAccessor,
+    FanchartOptions,
+    ProviderSet,
+    StatisticsOptions,
+    SubplotGroupByOptions,
+    TraceOptions,
+    VisualizationOptions,
+)
+from .utils.delta_ensemble_utils import create_delta_ensemble_names
+from .utils.derived_ensemble_vectors_accessor_utils import (
+    create_derived_ensemble_vectors_accessor_dict,
+)
+from .utils.history_vectors import create_history_vectors_df
+from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
+from .utils.trace_line_shape import get_simulation_line_shape
+from .utils.vector_statistics import create_vectors_statistics_df
 
 
 # pylint: disable = too-many-arguments, too-many-branches, too-many-locals, too-many-statements

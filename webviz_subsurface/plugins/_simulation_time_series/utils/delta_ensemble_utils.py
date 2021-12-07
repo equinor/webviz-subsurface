@@ -1,6 +1,5 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
-from typing import Tuple
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
 from ..types import DeltaEnsemble, ProviderSet

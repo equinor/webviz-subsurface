@@ -1,6 +1,7 @@
 from typing import Optional
 
 from webviz_subsurface._providers import VectorMetadata
+
 from .from_timeseries_cumulatives import is_interval_or_average_vector
 
 

@@ -1,12 +1,9 @@
 from typing import Dict, List, Optional
 
-
 from webviz_subsurface._abbreviations.reservoir_simulation import (
-    simulation_vector_description,
     simulation_unit_reformat,
+    simulation_vector_description,
 )
-
-
 from webviz_subsurface._utils.vector_calculator import (
     ExpressionInfo,
     VectorCalculator,
