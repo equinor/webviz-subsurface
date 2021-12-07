@@ -133,6 +133,10 @@ class RftPlotterDataModel:
         df = self.ertdatadf.loc[self.ertdatadf["WELL"] == well]
         return [str(d) for d in list(df["DATE"].unique())]
 
+    def well_dates_and_zones(self, well: str) -> Tuple[List[str], List[str]]:
+        df = self.ertdatadf.loc[self.ertdatadf["WELL"] == well]
+        return [str(d) for d in list(df["DATE"].unique())], list(df["ZONE"].unique())
+
     @property
     def ensembles(self) -> List[str]:
         return list(self.ertdatadf["ENSEMBLE"].unique())
