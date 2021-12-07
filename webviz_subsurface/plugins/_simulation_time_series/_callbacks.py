@@ -137,8 +137,14 @@ def plugin_callbacks(
         """Callback to update all graphs based on selections
 
         * De-serialize from JSON serializable format to strongly typed and filtered format
-        * Business logic with SelectedProviderSet, ProviderVectorDataHandler and utility functions
-        with "strongly typed" and filtered input format
+        * Business logic:
+            * Functionality with "strongly typed" and filtered input format - functions and
+            classes
+            * ProviderSet for EnsembleSummaryProviders, i.e. input_provider_set
+            * DerivedEnsembleVectorsAccessor to access derived vector data from ensembles
+            with single providers or delta ensemble with two providers
+            * GraphFigureBuilder to create graph with subplots per vector or subplots per
+            ensemble, using VectorSubplotBuilder and EnsembleSubplotBuilder, respectively
         * Create/build prop serialization in FigureBuilder by use of business logic data
 
         NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
@@ -180,13 +186,6 @@ def plugin_callbacks(
             resampling_frequency=resampling_frequency,
         )
 
-        # Titles for subplots
-        vector_titles = create_vector_plot_titles_from_provider_set(
-            vectors, selected_expressions, input_provider_set
-        )
-
-        # Create unique colors based on all ensemble names to preserve consistent colors
-
         # TODO: How to handle vector metadata the best way?
         # TODO: How to get metadata for calculated vector?
         vector_line_shapes: Dict[str, str] = {
@@ -200,7 +199,11 @@ def plugin_callbacks(
 
         figure_builder: GraphFigureBuilderBase
         if subplot_owner is SubplotGroupByOptions.VECTOR:
+            # Create unique colors based on all ensemble names to preserve consistent colors
             ensemble_colors = unique_colors(all_ensemble_names, theme)
+            vector_titles = create_vector_plot_titles_from_provider_set(
+                vectors, selected_expressions, input_provider_set
+            )
             figure_builder = VectorSubplotBuilder(
                 vectors,
                 vector_titles,
@@ -222,7 +225,7 @@ def plugin_callbacks(
         else:
             raise PreventUpdate
 
-        # Plotting per ensemble
+        # Plotting per derived ensemble vectors accessor
         for ensemble, accessor in derived_ensemble_vectors_accessors.items():
             # TODO: Consider to remove list and use pd.concat to obtain one single
             # dataframe with vector columns. NB: Assumes equal sampling rate
@@ -260,7 +263,7 @@ def plugin_callbacks(
                         fanchart_options,
                     )
 
-        # Retrieve selected input provider
+        # Retrieve selected input providers
         selected_input_providers = ProviderSet(
             {
                 name: provider
