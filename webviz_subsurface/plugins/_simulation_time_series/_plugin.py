@@ -9,7 +9,20 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 import webviz_core_components as wcc
 
 import webviz_subsurface
-from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
+from webviz_subsurface._abbreviations.reservoir_simulation import (
+    historical_vector,
+    simulation_vector_description,
+)
+from webviz_subsurface._utils.simulation_timeseries import (
+    set_simulation_line_shape_fallback,
+    check_and_format_observations,
+)
+from webviz_subsurface._utils.vector_calculator import (
+    add_expressions_to_vector_selector_data,
+    expressions_from_config,
+    validate_predefined_expression,
+)
+from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
 from webviz_subsurface._utils.webvizstore_functions import get_path
 from webviz_subsurface._providers import Frequency
 
@@ -21,18 +34,6 @@ from .types.provider_set import (
     create_presampled_provider_set_from_paths,
 )
 from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
-
-from ..._abbreviations.reservoir_simulation import simulation_vector_description
-from ..._utils.vector_calculator import (
-    add_expressions_to_vector_selector_data,
-    expressions_from_config,
-    validate_predefined_expression,
-)
-from ..._utils.vector_selector import add_vector_to_vector_selector_data
-from ..._utils.simulation_timeseries import (
-    set_simulation_line_shape_fallback,
-    check_and_format_observations,
-)
 
 
 class SimulationTimeSeries(WebvizPluginABC):

@@ -4,22 +4,21 @@ import numpy as np
 import pandas as pd
 
 from webviz_subsurface._providers import Frequency
-
-from ..types import FanchartOptions, StatisticsOptions
-from ..utils.from_timeseries_cumulatives import is_interval_or_average_vector
-
-from ...._utils.fanchart_plotting import (
+from webviz_subsurface._utils.fanchart_plotting import (
     get_fanchart_traces,
     FanchartData,
     FreeLineData,
     LowHighData,
     MinMaxData,
 )
-from ...._utils.statistics_plotting import (
+from webviz_subsurface._utils.statistics_plotting import (
     create_statistics_traces,
     StatisticsData,
     LineData,
 )
+
+from ..types import FanchartOptions, StatisticsOptions
+from ..utils.from_timeseries_cumulatives import is_interval_or_average_vector
 
 
 def create_vector_observation_traces(

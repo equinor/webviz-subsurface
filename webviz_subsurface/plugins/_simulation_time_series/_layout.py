@@ -1,5 +1,4 @@
 from typing import Callable, List, Optional
-
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
@@ -7,6 +6,10 @@ import dash_table
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_subsurface_components import ExpressionInfo
+from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.vector_calculator import (
+    get_custom_vector_definitions_from_expressions,
+)
 
 from .types import (
     FanchartOptions,
@@ -15,10 +18,6 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
-
-from ..._providers import Frequency
-from ..._utils.vector_calculator import get_custom_vector_definitions_from_expressions
-
 
 # pylint: disable=too-few-public-methods
 class LayoutElements:
