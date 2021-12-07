@@ -77,7 +77,9 @@ def comparison_controllers(
                 raise PreventUpdate
 
         return comparison_callback(
-            compare_on="ENSEMBLE",
+            compare_on="SENSNAME_CASE"
+            if selections["compare_on"] == "Sensitivity"
+            else "ENSEMBLE",
             volumemodel=volumemodel,
             selections=selections,
             display_option=display_option,
@@ -91,7 +93,7 @@ def comparison_callback(
     display_option: str,
 ) -> html.Div:
     if selections["value1"] == selections["value2"]:
-        return html.Div("Comparison between equal sources")
+        return html.Div("Comparison between equal data")
 
     # Handle None in highlight criteria input
     for key in ["Accept value", "Ignore <"]:
@@ -186,8 +188,15 @@ def comparison_callback(
         )
 
     if display_option == "plots":
-        resp1 = f"{selections['Response']} {selections['value1']}"
-        resp2 = f"{selections['Response']} {selections['value2']}"
+        if "|" in selections["value1"]:
+            ens1, sens1 = selections["value1"].split("|")
+            ens2, sens2 = selections["value2"].split("|")
+            value1, value2 = (sens1, sens2) if ens1 == ens2 else (ens1, ens2)
+        else:
+            value1, value2 = selections["value1"], selections["value2"]
+
+        resp1 = f"{selections['Response']} {value1}"
+        resp2 = f"{selections['Response']} {value2}"
 
         scatter_corr = create_scatterfig(
             df=df, x=resp1, y=resp2, selections=selections, groupby=groupby
@@ -242,12 +251,28 @@ def create_comparison_df(
     rename_diff_col: bool = False,
 ) -> pd.DataFrame:
 
-    value1, value2 = selections["value1"], selections["value2"]
     resp = selections["Response"]
-    selections["filters"][compare_on] = [value1, value2]
-
-    groups = groups + ["SOURCE", "ENSEMBLE"]
+    adiitional_groups = [
+        x for x in ["SOURCE", "ENSEMBLE", "SENSNAME_CASE"] if x in volumemodel.selectors
+    ]
+    groups = groups + adiitional_groups
     df = volumemodel.get_df(selections["filters"], groups=groups)
+
+    # filter dataframe and set values to compare against
+    if not "|" in selections["value1"]:
+        value1, value2 = selections["value1"], selections["value2"]
+        df = df[df[compare_on].isin([value1, value2])]
+    else:
+        ens1, sens1 = selections["value1"].split("|")
+        ens2, sens2 = selections["value2"].split("|")
+        if ens1 == ens2:
+            compare_on = "SENSNAME_CASE"
+        value1, value2 = (sens1, sens2) if ens1 == ens2 else (ens1, ens2)
+
+        df = df[
+            ((df["ENSEMBLE"] == ens1) & (df["SENSNAME_CASE"] == sens1))
+            | ((df["ENSEMBLE"] == ens2) & (df["SENSNAME_CASE"] == sens2))
+        ]
 
     # if no data left, or one of the selected SOURCE/ENSEMBLE is not present
     # in the dataframe after filtering, return empty dataframe
@@ -255,7 +280,8 @@ def create_comparison_df(
         return pd.DataFrame()
 
     df = df.loc[:, groups + responses].pivot_table(
-        columns=compare_on, index=[x for x in groups if x != compare_on]
+        columns=compare_on,
+        index=[x for x in groups if x not in [compare_on, "SENSNAME_CASE"]],
     )
     responses = [x for x in responses if x in df]
     for col in responses:
@@ -274,9 +300,10 @@ def create_comparison_df(
     df.columns = df.columns.map(" ".join).str.strip(" ")
 
     # remove columns where all values are nan and drop SOURCE/ENSMEBLE column
-    df = df.dropna(how="all", axis=1).drop(
-        columns=["SOURCE", "ENSEMBLE"], errors="ignore"
-    )
+    dropcols = [
+        x for x in df.columns[df.isna().all()] if "diff" not in x
+    ] + adiitional_groups
+    df = df[[x for x in df.columns if x not in dropcols]]
 
     if rename_diff_col:
         df = df.rename(columns={f"{resp} diff": "diff", f"{resp} diff (%)": "diff (%)"})

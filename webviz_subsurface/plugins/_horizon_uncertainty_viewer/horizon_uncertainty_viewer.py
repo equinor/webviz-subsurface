@@ -107,9 +107,11 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         # Wellfiles and planned wells
         self.planned_wells = {}
         if planned_wells_dir is not None:
-            self.planned_wells = {wf: xtgeo.Well(wf) for wf in self.planned_wellfiles}
+            self.planned_wells = {
+                wf: xtgeo.well_from_file(wfile=wf) for wf in self.planned_wellfiles
+            }
 
-        self.wells = {wf: xtgeo.Well(wf) for wf in self.wellfiles}
+        self.wells = {wf: xtgeo.well_from_file(wfile=wf) for wf in self.wellfiles}
 
         # Store current layers
         self.state = {"switch": False}

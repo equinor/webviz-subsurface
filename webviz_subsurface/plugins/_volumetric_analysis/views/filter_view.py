@@ -37,7 +37,9 @@ def filter_dropdowns(
 ) -> html.Div:
     """Makes dropdowns for each selector"""
     dropdowns_layout: List[html.Div] = []
-    hide_selectors = hide_selectors if hide_selectors is not None else []
+    hide_selectors = ["SENSNAME", "SENSTYPE", "SENSCASE"] + (
+        hide_selectors if hide_selectors is not None else []
+    )
     selectors = [
         x
         for x in volumemodel.selectors

@@ -22,6 +22,7 @@ class InplaceVolumesModel:
         "REGION",
         "FACIES",
         "LICENSE",
+        "SENSNAME_CASE",
         "SENSNAME",
         "SENSCASE",
         "SENSTYPE",
@@ -100,6 +101,9 @@ class InplaceVolumesModel:
 
         self._dataframe.sort_values(by=["ENSEMBLE", "REAL"], inplace=True)
 
+        # ensure ensemble column consists of strings
+        self._dataframe["ENSEMBLE"] = self._dataframe["ENSEMBLE"].astype(str)
+
         # compute and set property columns
         self._set_initial_property_columns()
         self._dataframe = self.compute_property_columns(self._dataframe)
@@ -135,6 +139,21 @@ class InplaceVolumesModel:
     @property
     def ensembles(self) -> List[str]:
         return list(self._dataframe["ENSEMBLE"].unique())
+
+    @property
+    def ensemble_sensitivities(self) -> Dict[str, list]:
+        return {
+            ens: (
+                list(
+                    self._dataframe.loc[
+                        self._dataframe["ENSEMBLE"] == ens, "SENSNAME_CASE"
+                    ].unique()
+                )
+                if "SENSNAME_CASE" in self._dataframe
+                else []
+            )
+            for ens in self.ensembles
+        }
 
     @property
     def property_columns(self) -> List[str]:

@@ -1,5 +1,6 @@
 from typing import Dict, List, Union
 
+import numpy as np
 import pandas as pd
 
 
@@ -23,7 +24,7 @@ class TornadoData:
         if cutbyref:
             self._cut_sensitivities_by_ref()
         self._sort_sensitivities_by_max()
-        self._real_df = dframe[["REAL", "VALUE"]]
+        self._real_df = self._create_real_df(dframe)
 
     def _validate_input(self, dframe: pd.DataFrame) -> None:
         for col in self.REQUIRED_COLUMNS:
@@ -42,6 +43,29 @@ class TornadoData:
                 )
         if dframe.loc[dframe["SENSNAME"].isin([self._reference])].empty:
             raise ValueError(f"Reference SENSNAME {self._reference} not in input data")
+
+    def _create_real_df(self, dframe: pd.DataFrame) -> pd.DataFrame:
+        """Make dataframe with value and case info per realization"""
+        realdf = dframe[self.REQUIRED_COLUMNS].rename(
+            columns={"SENSNAME": "sensname", "SENSCASE": "senscase"}
+        )
+
+        sensitivities = self._tornadotable["sensname"].unique()
+        realdf = realdf.loc[realdf["sensname"].isin(sensitivities)]
+
+        for val in self.low_high_realizations_list.values():
+            for case in ["high", "low"]:
+                casemask = realdf["REAL"].isin(val[f"real_{case}"])
+                realdf.loc[casemask, "case"] = case
+
+        mc_mask = realdf["SENSTYPE"] == "mc"
+        realdf["casetype"] = np.where(mc_mask, "mc", realdf["case"])
+        realdf["sensname_case"] = np.where(
+            mc_mask,
+            realdf["sensname"],
+            realdf[["sensname", "senscase"]].agg("--".join, axis=1),
+        )
+        return realdf
 
     @property
     def real_df(self) -> pd.DataFrame:

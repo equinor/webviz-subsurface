@@ -112,9 +112,7 @@ def load_well(
     wfile: Union[str, Path],
     zonelogname: Optional[str] = None,
     mdlogname: Optional[str] = None,
-    lognames: Optional[List[str]] = None,
 ) -> xtgeo.Well:
-    lognames = [] if not lognames else lognames
-    well = xtgeo.Well(wfile=wfile, zonelogname=zonelogname, mdlogname=mdlogname)
-
-    return well
+    return xtgeo.well_from_file(
+        wfile=wfile, zonelogname=zonelogname, mdlogname=mdlogname
+    )

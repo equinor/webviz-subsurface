@@ -1,11 +1,16 @@
 import datetime
 import os
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
-from webviz_subsurface._providers import EnsembleSummaryProviderFactory, Frequency
+from webviz_subsurface._providers import (
+    EnsembleSummaryProviderFactory,
+    Frequency,
+    VectorMetadata,
+)
 
 
 # Helper function for generating per-realization CSV files based on aggregated CSV file
@@ -65,8 +70,8 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
     dates = provider.dates(Frequency.MONTHLY)
     assert len(dates) == 31
     assert isinstance(dates[0], datetime.datetime)
-    assert dates[0] == datetime.datetime.fromisoformat("2018-01-01")
-    assert dates[-1] == datetime.datetime.fromisoformat("2020-07-01")
+    assert dates[0] == datetime.datetime(2018, 1, 1)
+    assert dates[-1] == datetime.datetime(2020, 7, 1)
 
     realizations = provider.realizations()
     assert len(realizations) == 100
@@ -97,7 +102,7 @@ def test_arrow_unsmry_lazy_vector_metadata(
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
 
-    meta = provider.vector_metadata("FOPR")
+    meta: Optional[VectorMetadata] = provider.vector_metadata("FOPR")
     assert meta is not None
     assert meta.unit == "SM3/DAY"
     assert meta.is_total is False
@@ -149,8 +154,8 @@ def test_create_from_arrow_unsmry_presampled_monthly(
     dates = provider.dates(None)
     assert len(dates) == 31
     assert isinstance(dates[0], datetime.datetime)
-    assert dates[0] == datetime.datetime.fromisoformat("2018-01-01")
-    assert dates[-1] == datetime.datetime.fromisoformat("2020-07-01")
+    assert dates[0] == datetime.datetime(2018, 1, 1)
+    assert dates[-1] == datetime.datetime(2020, 7, 1)
 
     realizations = provider.realizations()
     assert len(realizations) == 100
@@ -222,8 +227,8 @@ def test_create_from_ensemble_csv(testdata_folder: Path, tmp_path: Path) -> None
     dates = provider.dates(None)
     assert len(dates) == 38
     assert isinstance(dates[0], datetime.datetime)
-    assert dates[0] == datetime.datetime.fromisoformat("2000-01-01")
-    assert dates[-1] == datetime.datetime.fromisoformat("2003-02-01")
+    assert dates[0] == datetime.datetime(2000, 1, 1)
+    assert dates[-1] == datetime.datetime(2003, 2, 1)
 
     vecdf = provider.get_vectors_df(["FOPR"], None)
     assert vecdf.shape == (380, 3)

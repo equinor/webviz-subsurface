@@ -18,7 +18,7 @@ def test_volumetrics_no_sens(dash_duo, app, shared_settings) -> None:
             warnings.warn(log.get("message"))
         else:
             logs.append(log)
-    assert logs == []
+    assert not logs
 
 
 def test_volumetrics_sens(dash_duo, app, shared_settings) -> None:
@@ -35,4 +35,4 @@ def test_volumetrics_sens(dash_duo, app, shared_settings) -> None:
             warnings.warn(log.get("message"))
         else:
             logs.append(log)
-    assert logs == []
+    assert not logs

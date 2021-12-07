@@ -174,10 +174,10 @@ def test_get_dates_with_daily_resampling(tmp_path: Path) -> None:
     all_dates = provider.dates(resampling_frequency=Frequency.DAILY)
     assert len(all_dates) == 6
     assert isinstance(all_dates[0], datetime)
-    assert all_dates[0] == datetime.fromisoformat("2020-01-01")
-    assert all_dates[1] == datetime.fromisoformat("2020-01-02")
-    assert all_dates[4] == datetime.fromisoformat("2020-01-05")
-    assert all_dates[5] == datetime.fromisoformat("2020-01-06")
+    assert all_dates[0] == datetime(2020, 1, 1)
+    assert all_dates[1] == datetime(2020, 1, 2)
+    assert all_dates[4] == datetime(2020, 1, 5)
+    assert all_dates[5] == datetime(2020, 1, 6)
 
     r0_dates = provider.dates(resampling_frequency=Frequency.DAILY, realizations=[0])
     assert len(r0_dates) == 4
@@ -328,7 +328,7 @@ def test_get_vectors_for_date_with_resampling(tmp_path: Path) -> None:
     # fmt:on
     provider = _create_provider_obj_with_data(input_data, tmp_path)
 
-    date_to_get = datetime.fromisoformat("2020-01-03")
+    date_to_get = datetime(2020, 1, 3)
 
     df = provider.get_vectors_for_date_df(date_to_get, ["TOT_t", "RATE_r"])
     assert df.shape == (1, 3)

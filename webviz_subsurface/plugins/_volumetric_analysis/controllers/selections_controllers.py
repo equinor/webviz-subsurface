@@ -180,11 +180,11 @@ def selections_controllers(
             settings[selector] = {"disable": disable, "value": value}
 
         # update dropdown options based on plot type
-        if selections["Plot type"] == "scatter":
+        if settings["Plot type"]["value"] == "scatter":
             y_elm = x_elm = (
                 volumemodel.responses + volumemodel.selectors + volumemodel.parameters
             )
-        elif selections["Plot type"] in ["box", "bar"]:
+        elif settings["Plot type"]["value"] in ["box", "bar"]:
             y_elm = x_elm = volumemodel.responses + volumemodel.selectors
             if selections.get("Y Response") is None:
                 settings["Y Response"]["value"] = selected_color_by
@@ -203,6 +203,12 @@ def selections_controllers(
         settings["X Response"]["options"] = [
             {"label": elm, "value": elm} for elm in x_elm
         ]
+        if (
+            settings["X Response"]["value"] is not None
+            and settings["X Response"]["value"] not in x_elm
+        ):
+            settings["X Response"]["value"] = x_elm[0]
+
         settings["Color by"]["options"] = [
             {"label": elm, "value": elm} for elm in colorby_elm
         ]
@@ -279,10 +285,18 @@ def selections_controllers(
         if selected_tab == "table" and page_selections["Group by"] is not None:
             selected_data = page_selections["Group by"]
         if selected_tab == "tornado":
-            selected_data = ["SENSNAME", page_selections["Subplots"]]
+            selected_data = ["SENSNAME_CASE", page_selections["Subplots"]]
+        if selected_tab == "ens-comp":
+            selected_data = ["SENSNAME_CASE", "ENSEMBLE"]
+        if selected_tab == "src-comp":
+            selected_data = ["SOURCE"]
+
+        # set "SENSNAME_CASE" multi also if "SENSNAME" OR "SENSCASE" is selected
+        if any(senscol in selected_data for senscol in ("SENSNAME", "SENSCASE")):
+            selected_data.append("SENSNAME_CASE")
 
         output = {}
-        for selector in ["SOURCE", "ENSEMBLE", "SENSNAME"]:
+        for selector in ["SOURCE", "ENSEMBLE", "SENSNAME_CASE"]:
             if selector not in page_filter_settings:
                 continue
             options = [x["value"] for x in page_filter_settings[selector]["options"]]
@@ -291,7 +305,7 @@ def selections_controllers(
             if not multi and selector_is_multi:
                 values = [
                     "rms_seed"
-                    if selector == "SENSNAME" and "rms_seed" in options
+                    if selector == "SENSNAME_CASE" and "rms_seed" in options
                     else options[0]
                 ]
             elif multi and not selector_is_multi:

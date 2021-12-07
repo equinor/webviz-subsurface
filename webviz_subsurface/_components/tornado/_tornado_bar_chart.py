@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -18,7 +18,7 @@ class TornadoBarChart:
         plotly_theme: Dict[str, Any],
         figure_height: Optional[int] = None,
         label_options: str = "detailed",
-        locked_si_prefix: Optional[int] = None,
+        locked_si_prefix: Optional[Union[int, str]] = None,
         number_format: str = "",
         unit: str = "",
         spaced: bool = True,
@@ -29,14 +29,14 @@ class TornadoBarChart:
         sensitivity_color_map: dict = None,
     ) -> None:
         self._tornadotable = tornado_data.tornadotable
-        self._realtable = self.make_points(tornado_data.real_df)
+        self._realtable = tornado_data.real_df
         self._reference_average = tornado_data.reference_average
         self._plotly_theme = plotly_theme
         self._number_format = number_format
         self._unit = unit
         self._spaced = spaced
         self._locked_si_prefix = locked_si_prefix
-        self._locked_si_prefix_relative: Optional[int]
+        self._locked_si_prefix_relative: Optional[Union[str, int]]
         self._scale = tornado_data.scale
         self._use_true_base = use_true_base
         self._show_reference = show_reference
@@ -57,26 +57,6 @@ class TornadoBarChart:
             [self._sens_color_map.get(sensname, "grey") for sensname in sensitivities]
             if self._sens_color_map is not None
             else self._plotly_theme["layout"]["colorway"]
-        )
-
-    def make_points(self, realdf: pd.DataFrame) -> pd.DataFrame:
-        dfs = []
-        for sensname in self._tornadotable["sensname"].unique():
-            for case in ["high", "low"]:
-                df = realdf.loc[
-                    realdf["REAL"].isin(
-                        self._tornadotable[self._tornadotable["sensname"] == sensname][
-                            f"{case}_reals"
-                        ].iloc[0]
-                    )
-                ].copy()
-                df["sensname"] = sensname
-                df["case"] = case
-                dfs.append(df)
-        return (
-            pd.concat(dfs)
-            if dfs
-            else pd.DataFrame(columns=["REAL", "sensname", "case"])
         )
 
     @property

@@ -18,7 +18,7 @@ def test_ensemble_set_init(testdata_folder):
         / "iter-0",
     )
     assert emodel.ens_folder == {"iter-0": f"{testdata_folder}/01_drogon_ahm/"}
-    assert emodel.webviz_store == []
+    assert not emodel.webviz_store
 
 
 @pytest.mark.usefixtures("app")
@@ -44,7 +44,7 @@ def test_smry_load(testdata_folder):
     )
     smry = emodel.load_smry()
     assert len(smry.columns) == 933
-    assert len(smry["DATE"].unique()) == 2368
+    assert len(smry["DATE"].unique()) == 2369
 
 
 @pytest.mark.usefixtures("app")
