@@ -327,6 +327,9 @@ def plugin_callbacks(
                                 name,
                             )
 
+        # Create legends when all data is added to figure
+        figure_builder.create_graph_legends()
+
         return figure_builder.get_serialized_figure()
 
     # TODO: Implement callback

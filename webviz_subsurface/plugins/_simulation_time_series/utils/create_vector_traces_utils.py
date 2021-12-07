@@ -69,7 +69,7 @@ def create_vector_realization_traces(
     legend_group: str,
     line_shape: str,
     hovertemplate: str,
-    show_legend: bool = True,
+    show_legend: bool = False,
     legendrank: Optional[int] = None,
 ) -> List[dict]:
     """Renders line trace for each realization, includes history line if present
@@ -144,7 +144,7 @@ def create_vector_statistics_traces(
     legend_group: str,
     line_shape: str,
     hovertemplate: str = "(%{x}, %{y})<br>",
-    show_legend: bool = True,
+    show_legend: bool = False,
     legendrank: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """Get statistical lines for provided vector statistics DataFrame.
@@ -235,7 +235,7 @@ def create_vector_fanchart_traces(
     legend_group: str,
     line_shape: str,
     hovertemplate: str = "(%{x}, %{y})<br>",
-    show_legend: bool = True,
+    show_legend: bool = False,
     legendrank: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """Get statistical fanchart traces for provided vector statistics DataFrame.
@@ -304,8 +304,10 @@ def create_history_vector_trace(
     samples: list,
     history_data: np.ndarray,
     line_shape: str,
+    color: str = "black",
     vector_name: Optional[str] = None,
     show_legend: bool = False,
+    legendrank: Optional[int] = None,
 ) -> dict:
     """Returns the history data as trace line
 
@@ -313,6 +315,7 @@ def create_history_vector_trace(
     * samples: list - list of samples
     * history_data: np.ndarray - 1D np.array of history data
     * line_shape: str - specified line shape
+    * color: str - line color
     * vector_name: Optional[str] - Name of vector, appended to hovertext if provided
     * show_legend: bool - show legend when true, otherwise do not show
 
@@ -332,9 +335,10 @@ def create_history_vector_trace(
         "hovertext": hovertext,
         "hoverinfo": "y+x+text",
         "name": "History",
-        "marker": {"color": "black"},
+        "marker": {"color": color},
         "showlegend": show_legend,
         "legendgroup": "History",
+        "legendrank": legendrank,
     }
 
 

@@ -38,6 +38,11 @@ class GraphFigureBuilderBase(abc.ABC):
         return self._figure.to_dict()
 
     @abc.abstractmethod
+    def create_graph_legends(self) -> None:
+        """Create legends for graphs after trace data is added"""
+        ...
+
+    @abc.abstractmethod
     def add_realizations_traces(
         self,
         vectors_df: pd.DataFrame,

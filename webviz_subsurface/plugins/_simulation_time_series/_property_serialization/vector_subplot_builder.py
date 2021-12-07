@@ -57,6 +57,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         self._sampling_frequency = sampling_frequency
         self._vector_line_shapes = vector_line_shapes
         self._line_shape_fallback = line_shape_fallback
+        self._history_vector_color = "black"
 
         # Overwrite graph figure widget
         self._figure = make_subplots(
@@ -73,15 +74,56 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
 
         self._set_keep_uirevision()
 
-        # Internal status added ensemble legends and history legend
-        self._ensemble_legends_added: Set[str] = set()
-        self._history_legend_added = False
+        # Set for storing added ensembles
+        self._added_ensemble_traces: List[str] = []
+
+        # Status for added history vectors
+        self._added_history_trace = False
 
     #############################################################################
     #
     # Public methods
     #
     #############################################################################
+
+    def create_graph_legends(self) -> None:
+        # Add legends for added ensembles
+        for index, ensemble in enumerate(self._added_ensemble_traces, start=1):
+            ensemble_legend_trace = {
+                "name": ensemble,
+                "x": [None],
+                "y": [None],
+                "legendgroup": ensemble,
+                "showlegend": True,
+                "visible": True,
+                "mode": "lines",
+                "line": {
+                    "color": self._ensemble_colors.get(ensemble, "black"),
+                },
+                "legendrank": index,
+            }
+            self._figure.add_trace(ensemble_legend_trace, row=1, col=1)
+
+        # Add legend for history trace with legendrank after vectors
+        if self._added_history_trace:
+            history_legend_trace = {
+                "name": "History",
+                "x": [None],
+                "y": [None],
+                "legendgroup": "History",
+                "showlegend": True,
+                "visible": True,
+                "mode": "lines",
+                "line": {
+                    "color": self._history_vector_color,
+                },
+                "legendrank": len(self._added_ensemble_traces) + 1,
+            }
+            self._figure.add_trace(
+                trace=history_legend_trace,
+                row=1,
+                col=1,
+            )
 
     def add_realizations_traces(
         self,
@@ -92,20 +134,14 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         if not color:
             raise ValueError(f'Ensemble "{ensemble}" is not present in colors dict!')
 
+        # Get vectors - order not important
+        vectors: Set[str] = set(vectors_df.columns) - set(["DATE", "REAL"])
+        self._validate_vectors_are_selected(vectors)
+
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
 
-        # Get vectors - order not important
-        vectors = set(vectors_df.columns) ^ set(["DATE", "REAL"])
-
         for vector in vectors:
-            # Add legend if not already added
-            show_legend = ensemble not in self._ensemble_legends_added
-
-            # Update storage of added legends
-            if show_legend:
-                self._ensemble_legends_added.add(ensemble)
-
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_traces_set[vector] = create_vector_realization_traces(
                 vector_df=vectors_df[["DATE", "REAL", vector]],
@@ -114,8 +150,11 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
                 color=color,
                 line_shape=line_shape,
                 hovertemplate=render_hovertemplate(vector, self._sampling_frequency),
-                show_legend=show_legend,
             )
+
+        # If vector data is added for ensemble
+        if vector_traces_set:
+            self._update_added_ensemble_traces_list(ensemble)
 
         # Add traces to figure
         self._add_vector_traces_set_to_figure(vector_traces_set)
@@ -134,16 +173,12 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         vector_traces_set: Dict[str, List[dict]] = {}
 
         # Get vectors - order not important
-        vectors = set(vectors_statistics_df.columns.get_level_values(0)) ^ set(["DATE"])
+        vectors: Set[str] = set(
+            vectors_statistics_df.columns.get_level_values(0)
+        ) - set(["DATE"])
+        self._validate_vectors_are_selected(vectors)
 
         for vector in vectors:
-            # Add legend if not already added
-            show_legend = ensemble not in self._ensemble_legends_added
-
-            # Update storage of added legends
-            if show_legend:
-                self._ensemble_legends_added.add(ensemble)
-
             # Retrieve DATE and statistics columns for specific vector
             vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
                 vectors_statistics_df[vector]
@@ -156,8 +191,11 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
                 line_shape=line_shape,
                 hovertemplate=render_hovertemplate(vector, self._sampling_frequency),
                 statistics_options=statistics_options,
-                show_legend=show_legend,
             )
+
+        # If vector data is added for ensemble
+        if vector_traces_set:
+            self._update_added_ensemble_traces_list(ensemble)
 
         # Add traces to figure
         self._add_vector_traces_set_to_figure(vector_traces_set)
@@ -176,16 +214,12 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         vector_traces_set: Dict[str, List[dict]] = {}
 
         # Get vectors - order not important
-        vectors = set(vectors_statistics_df.columns.get_level_values(0)) ^ set(["DATE"])
+        vectors: Set[str] = set(
+            vectors_statistics_df.columns.get_level_values(0)
+        ) - set(["DATE"])
+        self._validate_vectors_are_selected(vectors)
 
         for vector in vectors:
-            # Add legend if not already added
-            show_legend = ensemble not in self._ensemble_legends_added
-
-            # Update storage of added legends
-            if show_legend:
-                self._ensemble_legends_added.add(ensemble)
-
             # Retrieve DATE and statistics columns for specific vector
             vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
                 vectors_statistics_df[vector]
@@ -197,9 +231,12 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
                 legend_group=ensemble,
                 line_shape=line_shape,
                 fanchart_options=fanchart_options,
-                show_legend=show_legend,
                 hovertemplate=render_hovertemplate(vector, self._sampling_frequency),
             )
+
+        # If vector data is added for ensemble
+        if vector_traces_set:
+            self._update_added_ensemble_traces_list(ensemble)
 
         # Add traces to figure
         self._add_vector_traces_set_to_figure(vector_traces_set)
@@ -215,25 +252,21 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
             raise ValueError('vectors_df is missing required columns ["DATE","REAL"]')
 
         # Get vectors - order not important
-        vectors = set(vectors_df.columns) ^ set(["DATE", "REAL"])
+        vectors: Set[str] = set(vectors_df.columns) - set(["DATE", "REAL"])
+        self._validate_vectors_are_selected(vectors)
 
         samples = vectors_df["DATE"].tolist()
 
         vector_trace_set: Dict[str, dict] = {}
         for vector in vectors:
-            # Set show legend on first history vector trace
-            show_legend = not self._history_legend_added
-
-            # Update state
-            if show_legend:
-                self._history_legend_added = True
+            # Set status for added history trace
+            self._added_history_trace = True
 
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_trace_set[vector] = create_history_vector_trace(
                 samples,
                 vectors_df[vector].values,
                 line_shape=line_shape,
-                show_legend=show_legend,
             )
 
         self._add_vector_trace_set_to_figure(vector_trace_set)
@@ -285,3 +318,24 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
             if subplot_index is None:
                 continue
             self._figure.add_traces(traces, rows=subplot_index, cols=1)
+
+    def _update_added_ensemble_traces_list(self, ensemble: str) -> None:
+        """Update added ensemble traces list, to prevent duplicates in list"""
+        if ensemble not in self._added_ensemble_traces:
+            self._added_ensemble_traces.append(ensemble)
+
+    def _validate_vectors_are_selected(self, vectors: Set[str]) -> None:
+        """Validate set of vectors are among selected vectors
+
+        Check if vectors are among selected vectors for figure builder, raise
+        ValueError if not.
+
+        `Input:`
+        * vectors: Set[str] - set of vector names to verify
+        """
+        for vector in vectors:
+            if vector not in self._selected_vectors:
+                raise ValueError(
+                    f'Vector "{vector}" does not exist among selected vectors: '
+                    f"{self._selected_vectors}"
+                )
