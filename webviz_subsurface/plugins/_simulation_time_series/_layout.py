@@ -65,6 +65,13 @@ class LayoutElements:
 
     RESAMPLING_FREQUENCY_DROPDOWN = "resampling_frequency_dropdown"
 
+    TOUR_STEP_MAIN_LAYOUT = "tour_step_main_layout"
+    TOUR_STEP_SETTINGS_LAYOUT = "tour_step_settings_layout"
+    TOUR_STEP_GROUP_BY = "tour_step_group_by"
+    TOUR_STEP_DELTA_ENSEMBLE = "tour_step_delta_ensemble"
+    TOUR_STEP_VISUALIZATION = "tour_step_visualization"
+    TOUR_STEP_OPTIONS = "tour_step_options"
+
 
 # pylint: disable = too-many-arguments
 def main_layout(
@@ -79,9 +86,11 @@ def main_layout(
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return wcc.FlexBox(
+        id=get_uuid(LayoutElements.TOUR_STEP_MAIN_LAYOUT),
         children=[
             # Settings layout
             wcc.FlexColumn(
+                id=get_uuid(LayoutElements.TOUR_STEP_SETTINGS_LAYOUT),
                 children=wcc.Frame(
                     style={"height": "90vh"},
                     children=__settings_layout(
@@ -95,7 +104,7 @@ def main_layout(
                         selected_visualization=selected_visualization,
                         selected_vectors=selected_vectors,
                     ),
-                )
+                ),
             ),
             # Graph layout
             wcc.FlexColumn(
@@ -142,6 +151,7 @@ def __settings_layout(
         children=[
             wcc.Selectors(
                 label="Group By",
+                id=get_uuid(LayoutElements.TOUR_STEP_GROUP_BY),
                 children=[
                     wcc.RadioItems(
                         id=get_uuid(LayoutElements.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),
@@ -199,6 +209,7 @@ def __settings_layout(
                     ),
                     wcc.Selectors(
                         label="Delta Ensembles",
+                        id=get_uuid(LayoutElements.TOUR_STEP_DELTA_ENSEMBLE),
                         children=[
                             __delta_ensemble_creator_layout(
                                 get_uuid=get_uuid,
@@ -238,6 +249,7 @@ def __settings_layout(
             ),
             wcc.Selectors(
                 label="Visualization",
+                id=get_uuid(LayoutElements.TOUR_STEP_VISUALIZATION),
                 children=[
                     wcc.RadioItems(
                         id=get_uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
@@ -261,6 +273,7 @@ def __settings_layout(
             ),
             wcc.Selectors(
                 label="Options",
+                id=get_uuid(LayoutElements.TOUR_STEP_OPTIONS),
                 children=__plot_options_layout(
                     get_uuid=get_uuid,
                     selected_visualization=selected_visualization,

@@ -27,7 +27,7 @@ from webviz_subsurface._utils.vector_selector import add_vector_to_vector_select
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
 from ._callbacks import plugin_callbacks
-from ._layout import main_layout
+from ._layout import LayoutElements, main_layout
 from .types import VisualizationOptions
 from .types.provider_set import (
     create_lazy_provider_set_from_paths,
@@ -233,6 +233,96 @@ class SimulationTimeSeries(WebvizPluginABC):
             observations=self._observations,
             line_shape_fallback=self._line_shape_fallback,
         )
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.uuid(LayoutElements.TOUR_STEP_MAIN_LAYOUT),
+                "content": "Dashboard displaying reservoir simulation time series.",
+            },
+            {
+                "id": self.uuid(LayoutElements.GRAPH),
+                "content": (
+                    "Visualization of selected time series. "
+                    "Different options can be set in the menu to the left."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.TOUR_STEP_SETTINGS_LAYOUT),
+                "content": (
+                    "Settings to configure data and layout of the time series visualization."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.TOUR_STEP_GROUP_BY),
+                "content": (
+                    "Setting to group visualization data according to selection. "
+                    "Subplot per selected vector or per selected ensemble."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                "content": (
+                    "Select resampling frequency for the time series data. "
+                    "With presampled data, the dropdown is disabled and the presampling "
+                    "frequency shown."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.ENSEMBLES_DROPDOWN),
+                "content": (
+                    "Display time series from one or several ensembles. "
+                    "Ensembles will be overlain in subplot or represented as subplot, "
+                    'based on selection in "Group By".'
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.TOUR_STEP_DELTA_ENSEMBLE),
+                "content": (
+                    "Create delta ensembles (A-B). "
+                    "Define delta between two ensembles and make available among "
+                    "selectable ensembles."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.VECTOR_SELECTOR),
+                "content": (
+                    "Display up to three different time series. "
+                    "Each time series will be visualized in a separate plot. "
+                    "Vectors prefixed with AVG_ and INTVL_ are calculated in the fly "
+                    "from cumulative vectors, providing average rates and interval cumulatives "
+                    "over a time interval from the selected resampling frequency. Vectors "
+                    "categorized as calculated are created using the Vector Calculator below."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON),
+                "content": (
+                    "Create mathematical expressions with provided vector time series. "
+                    "Parsing of the mathematical expression is handled and will give feedback "
+                    "when entering invalid expressions. "
+                    "The expressions are calculated on the fly and can be selected among the time "
+                    "series to be shown in the visualization."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.TOUR_STEP_VISUALIZATION),
+                "content": (
+                    "Choose between different visualizations. 1. Show time series as "
+                    "individual lines per realization. 2. Show statistical lines per "
+                    "ensemble. 3. Show statistical fanchart per ensemble"
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.TOUR_STEP_OPTIONS),
+                "content": (
+                    "Various plot options: Whether to include history trace or vector observations "
+                    "and which statistics to show if statistical lines or fanchart is chosen as "
+                    "visualization."
+                ),
+            },
+        ]
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions: List[Tuple[Callable, list]] = []
