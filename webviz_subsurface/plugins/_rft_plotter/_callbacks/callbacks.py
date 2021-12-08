@@ -98,7 +98,7 @@ def plugin_callbacks(
         return [
             wcc.Graph(
                 style={"height": "84vh"},
-                figure={"data": figure.traces, "layout": figure.layout},
+                figure=figure.figure,
             )
         ]
 

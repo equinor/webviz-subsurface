@@ -1,13 +1,13 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from dash import Dash, Input, Output
-from dash.exceptions import PreventUpdate
 import webviz_core_components as wcc
+from dash import Dash, Input, Output, callback_context
+from dash.exceptions import PreventUpdate
 
 from ...._figures import BarChart, ScatterPlot
 from .._business_logic import RftPlotterDataModel, correlate, filter_frame
-from .._layout import LayoutElements
 from .._figures._formation_figure import FormationFigure
+from .._layout import LayoutElements
 
 
 def paramresp_callbacks(
@@ -27,7 +27,7 @@ def paramresp_callbacks(
         return corr_vector_clickdata.get("points", [{}])[0].get("y")
 
     @app.callback(
-        Output(get_uuid(LayoutElements.PARAMRESP_DATE), "optionsi"),
+        Output(get_uuid(LayoutElements.PARAMRESP_DATE), "options"),
         Output(get_uuid(LayoutElements.PARAMRESP_DATE), "value"),
         Output(get_uuid(LayoutElements.PARAMRESP_ZONE), "options"),
         Output(get_uuid(LayoutElements.PARAMRESP_ZONE), "value"),
@@ -66,6 +66,14 @@ def paramresp_callbacks(
         Main callback to update plots.
         """
         print("update paramresp graph triggered")
+        if (
+            callback_context.triggered is None
+            or callback_context.triggered[0]["prop_id"] == "."
+        ):
+            raise PreventUpdate
+        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
+        print(ctx)
+
         rft_df = filter_frame(
             datamodel.ertdatadf,
             {
@@ -116,30 +124,29 @@ def paramresp_callbacks(
 
         # Formations plot
         # trenger bare oppdateres ved ny broenn
-        # formations_figure = FormationFigure(
-        #     well=well,
-        #     ertdf=datamodel.ertdatadf,
-        #     enscolors=datamodel.enscolors,
-        #     depth_option="TVD",
-        #     date=date,
-        #     ensembles=[ensemble],
-        #     simdf=datamodel.simdf,
-        #     obsdf=datamodel.obsdatadf,
-        # )
+        formations_figure = FormationFigure(
+            well=well,
+            ertdf=datamodel.ertdatadf,
+            enscolors=datamodel.enscolors,
+            depth_option="TVD",
+            date=date,
+            ensembles=[ensemble],
+            simdf=datamodel.simdf,
+            obsdf=datamodel.obsdatadf,
+        )
 
-        # if datamodel.formations is not None:
-        #     formations_figure.add_formation(datamodel.formationdf)
+        if datamodel.formations is not None:
+            formations_figure.add_formation(datamodel.formationdf)
 
-        # formations_figure.add_simulated_lines("realization")
-        # formations_figure.add_additional_observations()
-        # formations_figure.add_ert_observed()
+        formations_figure.add_simulated_lines("realization")
+        formations_figure.add_additional_observations()
+        formations_figure.add_ert_observed()
 
         return [
             corrfig.figure,
             scatterplot.figure,
-            "not implemented"
-            # wcc.Graph(
-            #     style={"height": "77vh"},
-            #     figure={"data": formations_figure.traces, "layout": formations_figure.layout},
-            # ),
+            wcc.Graph(
+                style={"height": "87vh"},
+                figure=formations_figure.figure,
+            ),
         ]

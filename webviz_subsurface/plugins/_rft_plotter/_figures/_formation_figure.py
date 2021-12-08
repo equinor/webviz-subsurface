@@ -64,8 +64,8 @@ class FormationFigure:
         }
 
     @property
-    def layout(self) -> Dict[str, Any]:
-        return self._layout
+    def figure(self) -> Dict[str, Any]:
+        return {"data": self.traces, "layout": self._layout}
 
     @property
     def xaxis_extension(self) -> float:

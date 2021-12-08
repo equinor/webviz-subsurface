@@ -176,7 +176,7 @@ def parameter_response_selector_layout(
     params = datamodel.parameters if not datamodel.parameters is None else []
     return wcc.Frame(
         style={
-            "height": "80vh",
+            "height": "87vh",
             "overflowY": "auto",
             "font-size": "15px",
         },
@@ -241,24 +241,24 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
-                                    style={"height": "38.5vh"},
+                                    style={"height": "42vh"},
                                     color="white",
                                     highlight=False,
                                     children=wcc.Graph(
                                         config={"displayModeBar": False},
-                                        style={"height": "38vh"},
+                                        # style={"height": "43vh"},
                                         id=get_uuid(
                                             LayoutElements.PARAMRESP_CORR_BARCHART
                                         ),
                                     ),
                                 ),
                                 wcc.Frame(
-                                    style={"height": "38.5vh"},
+                                    style={"height": "42vh"},
                                     color="white",
                                     highlight=False,
                                     children=wcc.Graph(
                                         config={"displayModeBar": False},
-                                        style={"height": "38vh"},
+                                        # style={"height": "43vh"},
                                         id=get_uuid(
                                             LayoutElements.PARAMRESP_SCATTERPLOT
                                         ),
@@ -273,7 +273,7 @@ def parameter_response_layout(
                                     id=get_uuid(LayoutElements.PARAMRESP_FORMATIONS),
                                     color="white",
                                     highlight=False,
-                                    style={"height": "77vh"},
+                                    style={"height": "87vh"},
                                     children=[],
                                 )
                             ],
