@@ -8,15 +8,15 @@ from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfacePro
 from .types import SurfaceContext
 
 # def get_surface_contexts(
-#     surface_set_models: List[EnsembleSurfaceProvider],
+#     ensemble_surface_providers: List[EnsembleSurfaceProvider],
 # ) -> List[SurfaceContext]:
-#     for ens, surface_set in surface_set_models.items():
+#     for ens, surface_set in ensemble_surface_providers.items():
 #         for attr in surface_set.attributes:
 #             pass
 
 
 def webviz_store_functions(
-    surface_set_models: Dict[str, EnsembleSurfaceProvider],
+    ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     ensemble_paths: Dict[str, str],
 ) -> List[Tuple[Callable, list]]:
     store_functions: List[Tuple[Callable, list]] = [
@@ -31,7 +31,7 @@ def webviz_store_functions(
             ],
         )
     ]
-    for surf_set in surface_set_models.values():
+    for surf_set in ensemble_surface_providers.values():
         store_functions.append(surf_set.webviz_store_realization_surfaces())
         for statistic in [
             SurfaceMode.MEAN,
