@@ -1,7 +1,7 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import webviz_core_components as wcc
 from dash import Dash, Input, Output
+from dash.exceptions import PreventUpdate
 
 from ...._figures import BarChart, ScatterPlot
 from .._business_logic import RftPlotterDataModel, correlate, filter_frame
@@ -11,6 +11,19 @@ from .._layout import LayoutElements
 def paramresp_callbacks(
     app: Dash, get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> None:
+    @app.callback(
+        Output(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
+        Input(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART), "clickData"),
+    )
+    def _update_parameter_selected(
+        corr_vector_clickdata: Union[None, dict],
+    ) -> str:
+        """Update the selected parameter from clickdata"""
+        print("clickdata callback triggered")
+        if corr_vector_clickdata is None:
+            raise PreventUpdate
+        return corr_vector_clickdata.get("points", [{}])[0].get("y")
+
     @app.callback(
         Output(get_uuid(LayoutElements.PARAMRESP_DATE), "options"),
         Output(get_uuid(LayoutElements.PARAMRESP_DATE), "value"),
@@ -30,11 +43,9 @@ def paramresp_callbacks(
         )
 
     @app.callback(
-        Output(get_uuid(LayoutElements.PARAMRESP_RFT_VS_DEPTH_GRAPH), "children"),
-        Output(get_uuid(LayoutElements.PARAMRESP_RFT_VS_PARAM_GRAPH), "children"),
-        Output(get_uuid(LayoutElements.PARAMRESP_RFT_CORR_GRAPH), "children"),
-        Output(get_uuid(LayoutElements.PARAMRESP_PARAM_CORR_GRAPH), "children"),
-        Output(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
+        Output(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART), "figure"),
+        Output(get_uuid(LayoutElements.PARAMRESP_SCATTERPLOT), "figure"),
+        Output(get_uuid(LayoutElements.PARAMRESP_FORMATIONS), "children"),
         Input(get_uuid(LayoutElements.PARAMRESP_ENSEMBLE), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_WELL), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_DATE), "value"),
@@ -65,7 +76,7 @@ def paramresp_callbacks(
 
         if rft_df.empty:
             text = "No data matching the given filter criterias"
-            return [text, text, text, text, None]
+            return [text, text, text]
 
         param_df = filter_frame(
             datamodel.param_model.dataframe, {"ENSEMBLE": ensemble}
@@ -84,7 +95,6 @@ def paramresp_callbacks(
         )
 
         # print(corrseries)
-        print("1")
         corrfig = BarChart(
             corrseries, n_rows=15, title="Correlations with parameters", orientation="h"
         )
@@ -100,11 +110,8 @@ def paramresp_callbacks(
             merged_df[param].min(),
             merged_df[param].max(),
         )
-        print("2")
         return [
-            "not_implemented",
-            wcc.Graph(figure=scatterplot.figure),
-            "not_implemented",
-            wcc.Graph(figure=corrfig.figure),
-            param,
+            corrfig.figure,
+            scatterplot.figure,
+            "not implemented",
         ]

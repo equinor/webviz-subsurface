@@ -49,10 +49,9 @@ class LayoutElements:
     PARAMRESP_DATE = "param-response-date"
     PARAMRESP_ZONE = "param-response-zone"
     PARAMRESP_PARAM = "param-response-param"
-    PARAMRESP_RFT_VS_DEPTH_GRAPH = "paramresp-rft-vs-depth-graph"
-    PARAMRESP_RFT_VS_PARAM_GRAPH = "paramresp-rft-vs-param-graph"
-    PARAMRESP_PARAM_CORR_GRAPH = "paramresp-param-corr-graph"
-    PARAMRESP_RFT_CORR_GRAPH = "paramresp-rft-corr-graph"
+    PARAMRESP_CORR_BARCHART = "paramresp-corr-barchart"
+    PARAMRESP_SCATTERPLOT = "paramresp-scatterplot"
+    PARAMRESP_FORMATIONS = "paramresp-formations"
 
 
 def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
@@ -242,22 +241,28 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
-                                    id=get_uuid(
-                                        LayoutElements.PARAMRESP_RFT_VS_DEPTH_GRAPH
-                                    ),
                                     style={"height": "38.5vh"},
                                     color="white",
                                     highlight=False,
-                                    children=[],  # timeseries_view(get_uuid=get_uuid),
+                                    children=wcc.Graph(
+                                        config={"displayModeBar": False},
+                                        style={"height": "38vh"},
+                                        id=get_uuid(
+                                            LayoutElements.PARAMRESP_CORR_BARCHART
+                                        ),
+                                    ),
                                 ),
                                 wcc.Frame(
-                                    id=get_uuid(
-                                        LayoutElements.PARAMRESP_RFT_VS_PARAM_GRAPH
-                                    ),
                                     style={"height": "38.5vh"},
                                     color="white",
                                     highlight=False,
-                                    children=[],
+                                    children=wcc.Graph(
+                                        config={"displayModeBar": False},
+                                        style={"height": "38vh"},
+                                        id=get_uuid(
+                                            LayoutElements.PARAMRESP_SCATTERPLOT
+                                        ),
+                                    ),
                                 ),
                             ],
                         ),
@@ -265,23 +270,12 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
-                                    id=get_uuid(
-                                        LayoutElements.PARAMRESP_PARAM_CORR_GRAPH
-                                    ),
+                                    id=get_uuid(LayoutElements.PARAMRESP_FORMATIONS),
                                     color="white",
                                     highlight=False,
-                                    style={"height": "38.5vh"},
+                                    style={"height": "77vh"},
                                     children=[],
-                                ),
-                                wcc.Frame(
-                                    id=get_uuid(
-                                        LayoutElements.PARAMRESP_RFT_CORR_GRAPH
-                                    ),
-                                    color="white",
-                                    highlight=False,
-                                    style={"height": "38.5vh"},
-                                    children=[],
-                                ),
+                                )
                             ],
                         ),
                     ],
