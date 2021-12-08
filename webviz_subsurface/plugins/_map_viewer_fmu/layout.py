@@ -102,15 +102,15 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
 
 def main_layout(
     get_uuid: Callable,
-    surface_set_models: Dict[str, EnsembleSurfaceProvider],
+    ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     well_set_model: Optional[WellSetModel],
     show_fault_polygons: bool = True,
 ) -> None:
-    ensembles = list(surface_set_models.keys())
-    realizations = surface_set_models[ensembles[0]].realizations
-    attributes = surface_set_models[ensembles[0]].attributes
-    names = surface_set_models[ensembles[0]].names_in_attribute(attributes[0])
-    dates = surface_set_models[ensembles[0]].dates_in_attribute(attributes[0])
+    ensembles = list(ensemble_surface_providers.keys())
+    realizations = ensemble_surface_providers[ensembles[0]].realizations
+    attributes = ensemble_surface_providers[ensembles[0]].attributes
+    names = ensemble_surface_providers[ensembles[0]].names_in_attribute(attributes[0])
+    dates = ensemble_surface_providers[ensembles[0]].dates_in_attribute(attributes[0])
 
     return wcc.FlexBox(
         children=[
@@ -148,9 +148,7 @@ def main_layout(
                 children=FullScreen(
                     id=get_uuid(LayoutElements.DECKGLMAP_LEFT_WRAPPER),
                     children=[
-                        wcc.Frame(
-                            color="white",
-                            highlight=False,
+                        html.Div(
                             style=LayoutStyle.LEFT_MAP,
                             children=[
                                 DeckGLMapAIO(
@@ -162,48 +160,6 @@ def main_layout(
                                                 ColormapLayer(),
                                                 Hillshading2DLayer(),
                                                 well_set_model and WellsLayer(),
-                                                Layer(
-                                                    "TextLayer",
-                                                    pd.DataFrame(
-                                                        [
-                                                            {
-                                                                "name": "Lafayette (LAFY)",
-                                                                "code": "LF",
-                                                                "address": "3601 Deer Hill Road, Lafayette CA 94549",
-                                                                "entries": "3481",
-                                                                "exits": "3616",
-                                                                "coordinates": [
-                                                                    460412,
-                                                                    5931000,
-                                                                ],
-                                                            },
-                                                            {
-                                                                "name": "12th St. Oakland City Center (12TH)",
-                                                                "code": "12",
-                                                                "address": "1245 Broadway, Oakland CA 94612",
-                                                                "entries": "13418",
-                                                                "exits": "13547",
-                                                                "coordinates": [
-                                                                    461412,
-                                                                    5932000,
-                                                                ],
-                                                            },
-                                                        ]
-                                                    ),
-                                                    pickable=True,
-                                                    visible=False,
-                                                    get_position="coordinates",
-                                                    get_text="name",
-                                                    get_size=16,
-                                                    get_color=[0, 0, 0],
-                                                    get_angle=0,
-                                                    # Note that string constants in pydeck are explicitly passed as strings
-                                                    # This distinguishes them from columns in a data set
-                                                    get_text_anchor=String("middle"),
-                                                    get_alignment_baseline=String(
-                                                        "center"
-                                                    ),
-                                                ),
                                             ],
                                         )
                                     ),
@@ -218,9 +174,7 @@ def main_layout(
                 children=FullScreen(
                     id=get_uuid(LayoutElements.DECKGLMAP_RIGHT_WRAPPER),
                     children=[
-                        wcc.Frame(
-                            color="white",
-                            highlight=False,
+                        html.Div(
                             style=LayoutStyle.RIGHT_MAP,
                             children=[
                                 DeckGLMapAIO(
@@ -232,7 +186,6 @@ def main_layout(
                                                 ColormapLayer(),
                                                 Hillshading2DLayer(),
                                                 well_set_model and WellsLayer(),
-                                                DrawingLayer(),
                                             ],
                                         )
                                     ),

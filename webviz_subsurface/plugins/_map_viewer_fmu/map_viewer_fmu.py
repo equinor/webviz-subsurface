@@ -50,7 +50,7 @@ class MapViewerFMU(WebvizPluginABC):
             ]
             if self._surface_table.empty:
                 raise ValueError("No surfaces found with the given attributes")
-        self._surface_ensemble_set_models = {
+        self._ensemble_surface_providers = {
             ens: EnsembleSurfaceProvider(surf_ens_df)
             for ens, surf_ens_df in self._surface_table.groupby("ENSEMBLE")
         }
@@ -86,7 +86,7 @@ class MapViewerFMU(WebvizPluginABC):
 
         return main_layout(
             get_uuid=self.uuid,
-            surface_set_models=self._surface_ensemble_set_models,
+            ensemble_surface_providers=self._ensemble_surface_providers,
             well_set_model=self._well_set_model,
         )
 
@@ -94,21 +94,21 @@ class MapViewerFMU(WebvizPluginABC):
 
         plugin_callbacks(
             get_uuid=self.uuid,
-            surface_set_models=self._surface_ensemble_set_models,
+            ensemble_surface_providers=self._ensemble_surface_providers,
             well_set_model=self._well_set_model,
         )
 
     def set_routes(self, app: Dash) -> None:
         deckgl_map_routes(
             app=app,
-            surface_set_models=self._surface_ensemble_set_models,
+            ensemble_surface_providers=self._ensemble_surface_providers,
             well_set_model=self._well_set_model,
         )
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
 
         store_functions = webviz_store_functions(
-            surface_set_models=self._surface_ensemble_set_models,
+            ensemble_surface_providers=self._ensemble_surface_providers,
             ensemble_paths=self.ens_paths,
         )
         if self._wellfolder is not None:
