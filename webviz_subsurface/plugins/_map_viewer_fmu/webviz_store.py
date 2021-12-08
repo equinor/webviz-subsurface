@@ -1,14 +1,14 @@
 from typing import Callable, Dict, List, Tuple
 
-from webviz_subsurface.plugins._map_viewer_fmu.models.surface_set_model import (
+from webviz_subsurface.plugins._map_viewer_fmu.providers.ensemble_surface_provider import (
     scrape_scratch_disk_for_surfaces,
 )
 
-from .models.surface_set_model import SurfaceMode, SurfaceSetModel
+from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfaceProvider
 from .types import SurfaceContext
 
 # def get_surface_contexts(
-#     surface_set_models: List[SurfaceSetModel],
+#     surface_set_models: List[EnsembleSurfaceProvider],
 # ) -> List[SurfaceContext]:
 #     for ens, surface_set in surface_set_models.items():
 #         for attr in surface_set.attributes:
@@ -16,7 +16,8 @@ from .types import SurfaceContext
 
 
 def webviz_store_functions(
-    surface_set_models: Dict[str, SurfaceSetModel], ensemble_paths: Dict[str, str]
+    surface_set_models: Dict[str, EnsembleSurfaceProvider],
+    ensemble_paths: Dict[str, str],
 ) -> List[Tuple[Callable, list]]:
     store_functions: List[Tuple[Callable, list]] = [
         (

@@ -11,7 +11,10 @@ from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
 from .callbacks import plugin_callbacks
 from .layout import main_layout
-from .models.surface_set_model import SurfaceSetModel, scrape_scratch_disk_for_surfaces
+from .providers.ensemble_surface_provider import (
+    EnsembleSurfaceProvider,
+    scrape_scratch_disk_for_surfaces,
+)
 from .routes import deckgl_map_routes  # type: ignore
 from .webviz_store import webviz_store_functions
 
@@ -27,6 +30,7 @@ class MapViewerFMU(WebvizPluginABC):
         wellsuffix: str = ".w",
         well_downsample_interval: int = None,
         mdlog: str = None,
+        fault_polygon_attribute: str = None,
     ):
 
         super().__init__()
@@ -36,16 +40,10 @@ class MapViewerFMU(WebvizPluginABC):
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
-        self._wellfolder = wellfolder
-        self._wellsuffix = wellsuffix
-        self._wellfiles: List = (
-            json.load(find_files(folder=self._wellfolder, suffix=self._wellsuffix))
-            if self._wellfolder is not None
-            else None
-        )
         # Find surfaces
         self._surface_table = scrape_scratch_disk_for_surfaces(self.ens_paths)
 
+        # Initialize surface set
         if attributes is not None:
             self._surface_table = self._surface_table[
                 self._surface_table["attribute"].isin(attributes)
@@ -53,9 +51,23 @@ class MapViewerFMU(WebvizPluginABC):
             if self._surface_table.empty:
                 raise ValueError("No surfaces found with the given attributes")
         self._surface_ensemble_set_models = {
-            ens: SurfaceSetModel(surf_ens_df)
+            ens: EnsembleSurfaceProvider(surf_ens_df)
             for ens, surf_ens_df in self._surface_table.groupby("ENSEMBLE")
         }
+
+        # Find fault polygons
+        # self._fault_polygons_table = scrape_scratch_disk_for_fault_polygons
+
+        # Find wells
+        self._wellfolder = wellfolder
+        self._wellsuffix = wellsuffix
+        self._wellfiles: List = (
+            json.load(find_files(folder=self._wellfolder, suffix=self._wellsuffix))
+            if self._wellfolder is not None
+            else None
+        )
+
+        # Initialize well set
         self._well_set_model = (
             WellSetModel(
                 self._wellfiles,

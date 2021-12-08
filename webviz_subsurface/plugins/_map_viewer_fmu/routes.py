@@ -22,7 +22,7 @@ from webviz_subsurface._components.deckgl_map.providers.xtgeo import (
 )
 from webviz_subsurface._models.well_set_model import WellSetModel
 
-from .models.surface_set_model import SurfaceSetModel
+from .providers.ensemble_surface_provider import EnsembleSurfaceProvider
 from .types import LogContext, SurfaceContext, WellsContext
 
 
@@ -84,7 +84,7 @@ class LogsContextConverter(BaseConverter):
 #                 return "UNDEF"
 #             return quote_plus(json.dumps(asdict(surface_context)))
 
-#     def __init__(self, app, surface_set_models: List[SurfaceSetModel]):
+#     def __init__(self, app, surface_set_models: List[EnsembleSurfaceProvider]):
 #         self.surface_set_models = surface_set_models
 #         print(self.__class__.__name__)
 #         app.server.view_functions["test"] = self.endpoint
@@ -107,7 +107,7 @@ class LogsContextConverter(BaseConverter):
 
 def deckgl_map_routes(
     app: Dash,
-    surface_set_models: List[SurfaceSetModel],
+    surface_set_models: List[EnsembleSurfaceProvider],
     well_set_model: WellSetModel = None,
 ) -> None:
     """Functions that are executed when the flask endpoint is triggered"""

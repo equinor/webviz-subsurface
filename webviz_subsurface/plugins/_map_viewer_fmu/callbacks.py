@@ -14,14 +14,14 @@ from webviz_subsurface._components.deckgl_map.providers.xtgeo import (
 from webviz_subsurface._models.well_set_model import WellSetModel
 
 from .layout import LayoutElements
-from .models.surface_set_model import SurfaceMode, SurfaceSetModel
+from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfaceProvider
 from .types import SurfaceContext, WellsContext
 from .utils.formatting import format_date  # , update_nested_dict
 
 
 def plugin_callbacks(
     get_uuid: Callable,
-    surface_set_models: Dict[str, SurfaceSetModel],
+    surface_set_models: Dict[str, EnsembleSurfaceProvider],
     well_set_model: Optional[WellSetModel],
 ) -> None:
     disabled_style = {"opacity": 0.5, "pointerEvents": "none"}
