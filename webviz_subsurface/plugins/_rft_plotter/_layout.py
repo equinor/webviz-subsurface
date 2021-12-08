@@ -241,7 +241,7 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
-                                    style={"height": "42vh"},
+                                    style={"height": "38vh"},
                                     color="white",
                                     highlight=False,
                                     children=wcc.Graph(
@@ -253,7 +253,7 @@ def parameter_response_layout(
                                     ),
                                 ),
                                 wcc.Frame(
-                                    style={"height": "42vh"},
+                                    style={"height": "38vh"},
                                     color="white",
                                     highlight=False,
                                     children=wcc.Graph(
@@ -273,7 +273,7 @@ def parameter_response_layout(
                                     id=get_uuid(LayoutElements.PARAMRESP_FORMATIONS),
                                     color="white",
                                     highlight=False,
-                                    style={"height": "87vh"},
+                                    style={"height": "80vh"},
                                     children=[],
                                 )
                             ],

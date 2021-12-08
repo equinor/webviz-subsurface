@@ -136,11 +136,16 @@ def paramresp_callbacks(
         )
 
         if datamodel.formations is not None:
-            formations_figure.add_formation(datamodel.formationdf)
+            formations_figure.add_formation(datamodel.formationdf, fill_color=False)
 
         formations_figure.add_simulated_lines("realization")
         formations_figure.add_additional_observations()
         formations_figure.add_ert_observed()
+
+        df_value_norm = datamodel.get_param_real_and_value_df(
+            ensemble, parameter=param, normalize=True
+        )
+        formations_figure.color_by_param_value(df_value_norm, param)
 
         return [
             corrfig.figure,

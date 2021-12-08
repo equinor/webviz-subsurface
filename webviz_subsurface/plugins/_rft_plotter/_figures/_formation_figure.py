@@ -12,6 +12,7 @@ from ...._utils.fanchart_plotting import (
     get_fanchart_traces,
 )
 from .._business_logic import filter_frame, interpolate_depth
+from ...._utils.colors import find_intermediate_color
 
 
 class FormationFigure:
@@ -125,7 +126,7 @@ class FormationFigure:
             if self.obsdf is not None and "MD" in self.obsdf:
                 self.obsdf["DEPTH"] = self.obsdf["MD"]
 
-    def add_formation(self, df: pd.DataFrame) -> None:
+    def add_formation(self, df: pd.DataFrame, fill_color: bool = True) -> None:
         """Plot zonation"""
         formation_names = []
         formation_colors = [
@@ -157,7 +158,9 @@ class FormationFigure:
                     ],
                     "fillcolor": formation_colors[
                         list(df["ZONE"].unique()).index(row["ZONE"])
-                    ],
+                    ]
+                    if fill_color
+                    else None,
                     "type": "rect",
                     "layer": "below",
                 }
@@ -255,6 +258,7 @@ class FormationFigure:
                                 "name": ensemble,
                                 "showlegend": i == 0,
                                 "legendgroup": ensemble,
+                                "customdata": real,
                             }
                         )
             if linetype == "fanchart":
@@ -280,6 +284,44 @@ class FormationFigure:
                             ensemble,
                         )
                     )
+
+    def color_by_param_value(self, df_norm: pd.DataFrame, selected_param: str) -> None:
+
+        for trace in self.traces:
+            if "customdata" in trace:
+                trace["line"]["color"] = set_real_color(
+                    real_no=trace["customdata"], df_norm=df_norm
+                )
+                trace["hovertext"] = (
+                    f"Real: {str(trace['customdata'])}, {selected_param}: "
+                    f"{df_norm.loc[df_norm['REAL'] == trace['customdata']].iloc[0]['VALUE']}"
+                )
+
+        self._layout["title"] = {
+            "text": f"{self.well} colored by {selected_param}",
+        }
+
+
+def set_real_color(df_norm: pd.DataFrame, real_no: str) -> str:
+    """
+    Return color for trace based on normalized parameter value.
+    Midpoint for the colorscale is set on the average value
+
+    Same function as in Parameter Analysis. Shout be generalized
+    """
+    red = "rgba(255,18,67, 1)"
+    mid_color = "rgba(220,220,220,1)"
+    green = "rgba(62,208,62, 1)"
+
+    mean = df_norm["VALUE_NORM"].mean()
+
+    norm_value = df_norm.loc[df_norm["REAL"] == real_no].iloc[0]["VALUE_NORM"]
+    if norm_value <= mean:
+        intermed = norm_value / mean
+        return find_intermediate_color(red, mid_color, intermed, colortype="rgba")
+
+    intermed = (norm_value - mean) / (1 - mean)
+    return find_intermediate_color(mid_color, green, intermed, colortype="rgba")
 
 
 def _get_fanchart_traces(

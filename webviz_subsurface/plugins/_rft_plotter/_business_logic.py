@@ -171,6 +171,25 @@ class RftPlotterDataModel:
             }
         return marks
 
+    def get_param_real_and_value_df(
+        self, ensemble: str, parameter: str, normalize: bool = False
+    ) -> pd.DataFrame:
+        """
+        Return dataframe with ralization and values for selected parameter for an ensemble.
+        A column with normalized parameter values can be added.
+        """
+        df = self.param_model.dataframe.melt(
+            id_vars=["ENSEMBLE", "REAL"], var_name="PARAMETER", value_name="VALUE"
+        )
+        df = df[["VALUE", "REAL"]].loc[
+            (df["ENSEMBLE"] == ensemble) & (df["PARAMETER"] == parameter)
+        ]
+        if normalize:
+            df["VALUE_NORM"] = (df["VALUE"] - df["VALUE"].min()) / (
+                df["VALUE"].max() - df["VALUE"].min()
+            )
+        return df.reset_index(drop=True)
+
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
         functions: List[Tuple[Callable, List[Dict[str, Any]]]] = [
