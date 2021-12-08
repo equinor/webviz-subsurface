@@ -16,7 +16,7 @@ from pydeck import Layer
 from pydeck.types import String
 from webviz_subsurface._models import WellSetModel
 
-from .models.surface_set_model import SurfaceMode, SurfaceSetModel
+from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfaceProvider
 from .utils.formatting import format_date
 
 
@@ -55,6 +55,7 @@ class LayoutElements(str, Enum):
     LINK_COLORMAP_RANGE = auto()
     LINK_COLORMAP_SELECT = auto()
     # STORED_COLOR_SETTINGS = auto()
+    FAULTPOLYGONS = auto()
 
 
 class LayoutLabels(str, Enum):
@@ -74,6 +75,8 @@ class LayoutLabels(str, Enum):
     COLORMAP_RESET_RANGE = "Reset range"
     COLORMAP_KEEP_RANGE_OPTIONS = "Keep range"
     LINK = "🔗 Link"
+    FAULTPOLYGONS = "Fault polygons"
+    FAULTPOLYGONS_OPTIONS = "Show fault polygons"
 
 
 class LayoutStyle:
@@ -99,8 +102,9 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
 
 def main_layout(
     get_uuid: Callable,
-    surface_set_models: Dict[str, SurfaceSetModel],
+    surface_set_models: Dict[str, EnsembleSurfaceProvider],
     well_set_model: Optional[WellSetModel],
+    show_fault_polygons: bool = True,
 ) -> None:
     ensembles = list(surface_set_models.keys())
     realizations = surface_set_models[ensembles[0]].realizations
@@ -132,6 +136,8 @@ def main_layout(
                             and WellsSelector(
                                 get_uuid=get_uuid, wells=well_set_model.well_names
                             ),
+                            show_fault_polygons
+                            and FaultPolygonsSelector(get_uuid=get_uuid),
                             SurfaceColorSelector(get_uuid=get_uuid),
                         ],
                     )
@@ -543,6 +549,26 @@ class WellsSelector(wcc.Selectors):
                         ),
                     ]
                 ),
+            ],
+        )
+
+
+class FaultPolygonsSelector(wcc.Selectors):
+    def __init__(self, get_uuid: Callable):
+        super().__init__(
+            label=LayoutLabels.FAULTPOLYGONS,
+            open_details=False,
+            children=[
+                wcc.Checklist(
+                    id=get_uuid(LayoutElements.FAULTPOLYGONS),
+                    options=[
+                        {
+                            "label": LayoutLabels.FAULTPOLYGONS_OPTIONS,
+                            "value": LayoutLabels.FAULTPOLYGONS_OPTIONS,
+                        }
+                    ],
+                    value=LayoutLabels.FAULTPOLYGONS_OPTIONS,
+                )
             ],
         )
 

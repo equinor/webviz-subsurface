@@ -119,7 +119,7 @@ def scrape_scratch_disk_for_surfaces(
     return pd.DataFrame(files)
 
 
-class SurfaceSetModel:
+class EnsembleSurfaceProvider:
     """Class to load and calculate statistical surfaces from an FMU Ensemble"""
 
     def __init__(self, surface_table: pd.DataFrame):

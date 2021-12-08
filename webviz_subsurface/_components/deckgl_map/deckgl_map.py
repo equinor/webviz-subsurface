@@ -30,5 +30,6 @@ class DeckGLMap(DeckGLMapBase):
             bounds=bounds,
             editedData=edited_data,
             resources=resources,
+            zoom=-4,
             **kwargs,
         )
