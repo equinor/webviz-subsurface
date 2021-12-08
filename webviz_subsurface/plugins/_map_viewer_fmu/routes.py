@@ -5,7 +5,7 @@ import json
 from dataclasses import asdict
 from io import BytesIO
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 from urllib.parse import quote_plus, unquote_plus
 
 import xtgeo
@@ -84,8 +84,8 @@ class LogsContextConverter(BaseConverter):
 #                 return "UNDEF"
 #             return quote_plus(json.dumps(asdict(surface_context)))
 
-#     def __init__(self, app, surface_set_models: List[EnsembleSurfaceProvider]):
-#         self.surface_set_models = surface_set_models
+#     def __init__(self, app, ensemble_surface_providers: List[EnsembleSurfaceProvider]):
+#         self.ensemble_surface_providers = ensemble_surface_providers
 #         print(self.__class__.__name__)
 #         app.server.view_functions["test"] = self.endpoint
 #         app.server.url_map.converters["surface_context"] = RGBARouter.Converter
@@ -99,7 +99,7 @@ class LogsContextConverter(BaseConverter):
 #             surface = xtgeo.RegularSurface(ncol=1, nrow=1, xinc=1, yinc=1)
 #         else:
 #             ensemble = surface_context.ensemble
-#             surface = self.surface_set_models[ensemble].get_surface(surface_context)
+#             surface = self.ensemble_surface_providers[ensemble].get_surface(surface_context)
 
 #         img_stream = surface_to_rgba(surface).read()
 #         return send_file(BytesIO(img_stream), mimetype="image/png")
@@ -107,7 +107,7 @@ class LogsContextConverter(BaseConverter):
 
 def deckgl_map_routes(
     app: Dash,
-    surface_set_models: List[EnsembleSurfaceProvider],
+    ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     well_set_model: WellSetModel = None,
 ) -> None:
     """Functions that are executed when the flask endpoint is triggered"""
@@ -118,7 +118,7 @@ def deckgl_map_routes(
             surface = xtgeo.RegularSurface(ncol=1, nrow=1, xinc=1, yinc=1)
         else:
             ensemble = surface_context.ensemble
-            surface = surface_set_models[ensemble].get_surface(surface_context)
+            surface = ensemble_surface_providers[ensemble].get_surface(surface_context)
 
         img_stream = surface_to_rgba(surface).read()
         return send_file(BytesIO(img_stream), mimetype="image/png")

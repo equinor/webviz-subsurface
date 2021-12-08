@@ -21,7 +21,7 @@ from .utils.formatting import format_date  # , update_nested_dict
 
 def plugin_callbacks(
     get_uuid: Callable,
-    surface_set_models: Dict[str, EnsembleSurfaceProvider],
+    ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     well_set_model: Optional[WellSetModel],
 ) -> None:
     disabled_style = {"opacity": 0.5, "pointerEvents": "none"}
@@ -41,9 +41,9 @@ def plugin_callbacks(
     def _update_attribute(
         ensemble: str, current_attr: List[str]
     ) -> Tuple[List[Dict], List[Any]]:
-        if surface_set_models.get(ensemble) is None:
+        if ensemble_surface_providers.get(ensemble) is None:
             raise PreventUpdate
-        available_attrs = surface_set_models[ensemble].attributes
+        available_attrs = ensemble_surface_providers[ensemble].attributes
         attr = (
             current_attr if current_attr[0] in available_attrs else available_attrs[:1]
         )
@@ -63,9 +63,9 @@ def plugin_callbacks(
         mode: str,
         current_reals: List[int],
     ) -> Tuple[List[Dict], List[int], bool]:
-        if surface_set_models.get(ensemble) is None or current_reals is None:
+        if ensemble_surface_providers.get(ensemble) is None or current_reals is None:
             raise PreventUpdate
-        available_reals = surface_set_models[ensemble].realizations
+        available_reals = ensemble_surface_providers[ensemble].realizations
         if SurfaceMode(mode) == SurfaceMode.REALIZATION:
             reals = (
                 [current_reals[0]]
@@ -90,7 +90,9 @@ def plugin_callbacks(
         attribute: List[str], current_date: List[str], ensemble: str
     ) -> Tuple[Optional[List[Dict]], Optional[List]]:
 
-        available_dates = surface_set_models[ensemble].dates_in_attribute(attribute[0])
+        available_dates = ensemble_surface_providers[ensemble].dates_in_attribute(
+            attribute[0]
+        )
 
         if not available_dates:
             return None, None
@@ -113,7 +115,9 @@ def plugin_callbacks(
         attribute: List[str], current_name: List[str], ensemble: str
     ) -> Tuple[List[Dict], List]:
 
-        available_names = surface_set_models[ensemble].names_in_attribute(attribute[0])
+        available_names = ensemble_surface_providers[ensemble].names_in_attribute(
+            attribute[0]
+        )
         name = (
             current_name
             if current_name is not None and current_name[0] in available_names
@@ -170,9 +174,9 @@ def plugin_callbacks(
     ) -> Tuple[List[Dict], List[str], dict]:
         if link:
             return (view1_attribute_options, view1_attribute_value, disabled_style)
-        if surface_set_models.get(ensemble) is None:
+        if ensemble_surface_providers.get(ensemble) is None:
             raise PreventUpdate
-        available_attrs = surface_set_models[ensemble].attributes
+        available_attrs = ensemble_surface_providers[ensemble].attributes
         attr = (
             current_attr if current_attr[0] in available_attrs else available_attrs[:1]
         )
@@ -208,9 +212,9 @@ def plugin_callbacks(
                 view1_realizations_mode,
                 disabled_style,
             )
-        if surface_set_models.get(ensemble) is None or current_reals is None:
+        if ensemble_surface_providers.get(ensemble) is None or current_reals is None:
             raise PreventUpdate
-        available_reals = surface_set_models[ensemble].realizations
+        available_reals = ensemble_surface_providers[ensemble].realizations
         if SurfaceMode(mode) == SurfaceMode.REALIZATION:
             reals = (
                 current_reals[:1]
@@ -246,7 +250,9 @@ def plugin_callbacks(
         if link:
             return view1_date_options, view1_date_value, disabled_style
 
-        available_dates = surface_set_models[ensemble].dates_in_attribute(attribute[0])
+        available_dates = ensemble_surface_providers[ensemble].dates_in_attribute(
+            attribute[0]
+        )
         if not available_dates:
             return None, None, {}
         date = (
@@ -278,7 +284,9 @@ def plugin_callbacks(
     ) -> Tuple[List[Dict], List[str], dict]:
         if link:
             return view1_name_options, view1_name_value, disabled_style
-        available_names = surface_set_models[ensemble].names_in_attribute(attribute[0])
+        available_names = ensemble_surface_providers[ensemble].names_in_attribute(
+            attribute[0]
+        )
         name = (
             current_name
             if current_name is not None and current_name[0] in available_names
@@ -390,7 +398,7 @@ def plugin_callbacks(
     ) -> Tuple[str, List[float], List[float]]:
         selected_surface = SurfaceContext(**surface_selected_data)
         ensemble = selected_surface.ensemble
-        surface = surface_set_models[ensemble].get_surface(selected_surface)
+        surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
 
         return (
             url_for("_send_surface_as_png", surface_context=selected_surface),
@@ -511,7 +519,7 @@ def plugin_callbacks(
     ) -> Tuple[str, List[float], List[float]]:
         selected_surface = SurfaceContext(**surface_selected_data)
         ensemble = selected_surface.ensemble
-        surface = surface_set_models[ensemble].get_surface(selected_surface)
+        surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
         return (
             url_for("_send_surface_as_png", surface_context=selected_surface),
             get_surface_range(surface),
