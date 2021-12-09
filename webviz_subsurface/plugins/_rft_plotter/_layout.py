@@ -172,7 +172,6 @@ def parameter_response_selector_layout(
 ) -> wcc.Frame:
     ensembles = datamodel.ensembles
     well_names = datamodel.well_names
-    zone_names = datamodel.zone_names
     params = datamodel.parameters if not datamodel.parameters is None else []
     return wcc.Frame(
         style={
@@ -208,9 +207,9 @@ def parameter_response_selector_layout(
                     wcc.Dropdown(
                         label="Zone",
                         id=get_uuid(LayoutElements.PARAMRESP_ZONE),
-                        options=[{"label": zone, "value": zone} for zone in zone_names],
+                        options=None,
                         clearable=False,
-                        value=zone_names[0] if zone_names else "",
+                        value=None,
                     ),
                     wcc.Dropdown(
                         label="Parameter",
