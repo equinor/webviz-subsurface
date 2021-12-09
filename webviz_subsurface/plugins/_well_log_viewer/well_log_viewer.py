@@ -115,8 +115,7 @@ Format of the `initial_settings` argument:
         )
         self.colortable_file = colortables
         if self.colortable_file:
-            with open(get_path(self.colortable_file), "r") as stream:
-                self.colortables = json.load(stream)
+            self.colortables = json.loads(get_path(self.colortable_file).read_text())
         else:
             self.colortables = default_color_tables()
 
