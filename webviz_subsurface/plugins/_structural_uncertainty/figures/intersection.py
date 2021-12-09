@@ -70,34 +70,49 @@ def get_plotly_traces_uncertainty_envelope(
     """Returns a set of plotly traces representing an uncertainty envelope
     for a surface"""
     stat_surfaces = {}
+    fan_chart_traces = []
     for calculation in ["Min", "Max", "P10", "P90"]:
-        stat_surfaces[calculation] = surfaceset.calculate_statistical_surface(
+        values = surfaceset.calculate_statistical_surface(
             name=name,
             attribute=attribute,
             calculation=calculation,
             realizations=realizations,
         ).get_randomline(fence_spec, sampling=sampling)
 
-    data = FanchartData(
-        samples=stat_surfaces["Min"][:, 0],
-        low_high=LowHighData(
-            low_data=stat_surfaces["P10"][:, 1],
-            low_name="P10",
-            high_data=stat_surfaces["P90"][:, 1],
-            high_name="P90",
-        ),
-        minimum_maximum=MinMaxData(
-            minimum=stat_surfaces["Min"][:, 1], maximum=stat_surfaces["Max"][:, 1]
-        ),
-    )
-    return get_fanchart_traces(
-        data=data,
-        color=color,
-        legend_group=name,
-        legend_name=legendname,
-        show_legend=showlegend,
-        show_hoverinfo=False,
-    )
+        # Convert to masked array
+        stat_surfaces[calculation] = np.ma.masked_array(values, mask=np.isnan(values))
+
+    # Fanchart plotting requires continuous data series.
+    # 1. Create a slice for each non-masked section of y(depth) values.
+    #    As the mask is the same for all statistical surfaces,
+    #    the minimum surface is randomly used.
+    # 2. Make a set of fanchart traces for each slice.
+
+    for unmasked_slice in np.ma.clump_unmasked(stat_surfaces["Min"][:, 1]):
+        fan_chart_data = FanchartData(
+            samples=stat_surfaces["Min"][:, 0][unmasked_slice],
+            low_high=LowHighData(
+                low_data=stat_surfaces["P10"][:, 1][unmasked_slice],
+                low_name="P10",
+                high_data=stat_surfaces["P90"][:, 1][unmasked_slice],
+                high_name="P90",
+            ),
+            minimum_maximum=MinMaxData(
+                minimum=stat_surfaces["Min"][:, 1][unmasked_slice],
+                maximum=stat_surfaces["Max"][:, 1][unmasked_slice],
+            ),
+        )
+        fan_chart_traces.extend(
+            get_fanchart_traces(
+                data=fan_chart_data,
+                color=color,
+                legend_group=name,
+                legend_name=legendname,
+                show_legend=showlegend,
+                show_hoverinfo=False,
+            )
+        )
+    return fan_chart_traces
 
 
 # pylint: disable=too-many-arguments
