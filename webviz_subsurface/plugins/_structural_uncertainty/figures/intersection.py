@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Optional
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import xtgeo
 from webviz_config.common_cache import CACHE
