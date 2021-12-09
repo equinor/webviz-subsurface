@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Fixed
+- [#877](https://github.com/equinor/webviz-subsurface/pull/877) - Update `WellLogViewer` to work with the latest version of the component.
+
 - [#875](https://github.com/equinor/webviz-subsurface/pull/875) - Fixed an issue with the uncertainty envelope in `Structural Uncertainty` where the plot misbehaved for discontinuous surfaces. A side effect is that percentile calculations are now much faster.
 
 ### Added
