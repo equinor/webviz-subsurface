@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-
+from enum import Enum
 import numpy as np
 import xtgeo
 from webviz_config.common_cache import CACHE
@@ -13,6 +13,13 @@ from ...._utils.fanchart_plotting import (
     MinMaxData,
     get_fanchart_traces,
 )
+
+
+class FanChartStatistics(str, Enum):
+    MINIMUM = "Min"
+    MAXIMUM = "Max"
+    P10 = "P10"
+    P90 = "P90"
 
 
 # pylint: disable=too-many-arguments
@@ -69,18 +76,21 @@ def get_plotly_traces_uncertainty_envelope(
 ) -> List:
     """Returns a set of plotly traces representing an uncertainty envelope
     for a surface"""
-    stat_surfaces = {}
-    fan_chart_traces = []
-    for calculation in ["Min", "Max", "P10", "P90"]:
+    values_for_fanchart: Dict[str, np.ma.MaskedArray] = {}
+    fan_chart_traces: List = []
+    for calculation in FanChartStatistics:
         values = surfaceset.calculate_statistical_surface(
             name=name,
             attribute=attribute,
             calculation=calculation,
             realizations=realizations,
         ).get_randomline(fence_spec, sampling=sampling)
-
         # Convert to masked array
-        stat_surfaces[calculation] = np.ma.masked_array(values, mask=np.isnan(values))
+        values = np.ma.masked_array(values, mask=np.isnan(values))
+
+        if calculation == FanChartStatistics.MINIMUM:
+            values_for_fanchart["x"] = values[:, 0]
+        values_for_fanchart[FanChartStatistics(calculation)] = values[:, 1]
 
     # Fanchart plotting requires continuous data series.
     # 1. Create a slice for each non-masked section of y(depth) values.
@@ -88,18 +98,20 @@ def get_plotly_traces_uncertainty_envelope(
     #    the minimum surface is randomly used.
     # 2. Make a set of fanchart traces for each slice.
 
-    for unmasked_slice in np.ma.clump_unmasked(stat_surfaces["Min"][:, 1]):
+    for unmasked_slice in np.ma.clump_unmasked(
+        values_for_fanchart[FanChartStatistics.MINIMUM]
+    ):
         fan_chart_data = FanchartData(
-            samples=stat_surfaces["Min"][:, 0][unmasked_slice],
+            samples=values_for_fanchart["x"][unmasked_slice],
             low_high=LowHighData(
-                low_data=stat_surfaces["P10"][:, 1][unmasked_slice],
-                low_name="P10",
-                high_data=stat_surfaces["P90"][:, 1][unmasked_slice],
-                high_name="P90",
+                low_data=values_for_fanchart[FanChartStatistics.P10][unmasked_slice],
+                low_name=FanChartStatistics.P10,
+                high_data=values_for_fanchart[FanChartStatistics.P90][unmasked_slice],
+                high_name=FanChartStatistics.P90,
             ),
             minimum_maximum=MinMaxData(
-                minimum=stat_surfaces["Min"][:, 1][unmasked_slice],
-                maximum=stat_surfaces["Max"][:, 1][unmasked_slice],
+                minimum=values_for_fanchart[FanChartStatistics.MINIMUM][unmasked_slice],
+                maximum=values_for_fanchart[FanChartStatistics.MAXIMUM][unmasked_slice],
             ),
         )
         fan_chart_traces.extend(
