@@ -1,19 +1,27 @@
-from dataclasses import asdict
 from typing import Callable, Dict, List, Optional, Tuple, Any
 
-from dash import Input, Output, State, callback, callback_context, no_update
-from dash.exceptions import PreventUpdate
+from dash import Input, Output, State, callback, callback_context, no_update, ALL
 from flask import url_for
+import json
+
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
-from webviz_subsurface._components import DeckGLMapAIO
+from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
+    DeckGLMapLayersModel,
+)
 from webviz_subsurface._components.deckgl_map.providers.xtgeo import (
     get_surface_bounds,
     get_surface_range,
 )
+
 from webviz_subsurface._models.well_set_model import WellSetModel
 
-from .layout import LayoutElements
+from .layout import (
+    LayoutElements,
+    SideBySideSelectorFlex,
+    create_map_matrix,
+    create_map_list,
+)
 from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfaceProvider
 from .types import SurfaceContext, WellsContext
 from .utils.formatting import format_date  # , update_nested_dict
@@ -24,659 +32,326 @@ def plugin_callbacks(
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     well_set_model: Optional[WellSetModel],
 ) -> None:
-    disabled_style = {"opacity": 0.5, "pointerEvents": "none"}
+    def selections() -> Dict[str, str]:
+        return {
+            "view": ALL,
+            "id": get_uuid(LayoutElements.SELECTIONS),
+            "selector": ALL,
+        }
 
-    def left_view(element_id: str) -> Dict[str, str]:
-        return {"view": LayoutElements.LEFT_VIEW, "id": get_uuid(element_id)}
+    def selector_wrapper() -> Dict[str, str]:
+        return {"id": get_uuid(LayoutElements.WRAPPER), "selector": ALL}
 
-    def right_view(element_id: str) -> Dict[str, str]:
-        return {"view": LayoutElements.RIGHT_VIEW, "id": get_uuid(element_id)}
+    def links() -> Dict[str, str]:
+        return {"id": get_uuid(LayoutElements.LINK), "selector": ALL}
 
     @callback(
-        Output(left_view(LayoutElements.ATTRIBUTE), "options"),
-        Output(left_view(LayoutElements.ATTRIBUTE), "value"),
-        Input(left_view(LayoutElements.ENSEMBLE), "value"),
-        State(left_view(LayoutElements.ATTRIBUTE), "value"),
+        Output(get_uuid(LayoutElements.MAINVIEW), "children"),
+        Input(get_uuid(LayoutElements.VIEWS), "value"),
     )
-    def _update_attribute(
-        ensemble: str, current_attr: List[str]
+    def _update_number_of_maps(number_of_views) -> dict:
+        return create_map_matrix(
+            figures=create_map_list(
+                get_uuid,
+                views=number_of_views,
+                well_set_model=well_set_model,
+            )
+        )
+
+    @callback(
+        Output(get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "data"),
+        Input(
+            {"view": ALL, "id": get_uuid(LayoutElements.COLORMAP_RESET_RANGE)},
+            "n_clicks",
+        ),
+        prevent_initial_call=True,
+    )
+    def _colormap_reset_indictor(_buttom_click) -> dict:
+        ctx = callback_context.triggered[0]["prop_id"]
+        update_view = json.loads(ctx.split(".")[0])["view"]
+        return update_view if update_view is not None else no_update
+
+    @callback(
+        Output(get_uuid(LayoutElements.SELECTED_DATA), "data"),
+        Output(selector_wrapper(), "children"),
+        Output(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
+        Input(selections(), "value"),
+        Input(get_uuid(LayoutElements.WELLS), "value"),
+        Input(links(), "value"),
+        Input(get_uuid(LayoutElements.MAINVIEW), "children"),
+        State(get_uuid(LayoutElements.VIEWS), "value"),
+        Input(get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "data"),
+        State(selections(), "id"),
+        State(selector_wrapper(), "id"),
+        State(get_uuid(LayoutElements.SELECTED_DATA), "data"),
+        State(links(), "id"),
+        State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
+    )
+    def _update_seleced_data_store(
+        selector_values: list,
+        selected_wells,
+        link_values,
+        _number_of_views_updated,
+        number_of_views,
+        color_reset_view,
+        selector_ids,
+        wrapper_ids,
+        previous_selections,
+        link_ids,
+        stored_color_settings,
     ) -> Tuple[List[Dict], List[Any]]:
-        if ensemble_surface_providers.get(ensemble) is None:
-            raise PreventUpdate
-        available_attrs = ensemble_surface_providers[ensemble].attributes
-        attr = (
-            current_attr if current_attr[0] in available_attrs else available_attrs[:1]
-        )
-        options = [{"label": val, "value": val} for val in available_attrs]
-        return options, attr
-
-    @callback(
-        Output(left_view(LayoutElements.REALIZATIONS), "options"),
-        Output(left_view(LayoutElements.REALIZATIONS), "value"),
-        Output(left_view(LayoutElements.REALIZATIONS), "multi"),
-        Input(left_view(LayoutElements.ENSEMBLE), "value"),
-        Input(left_view(LayoutElements.MODE), "value"),
-        State(left_view(LayoutElements.REALIZATIONS), "value"),
-    )
-    def _update_real(
-        ensemble: str,
-        mode: str,
-        current_reals: List[int],
-    ) -> Tuple[List[Dict], List[int], bool]:
-        if ensemble_surface_providers.get(ensemble) is None or current_reals is None:
-            raise PreventUpdate
-        available_reals = ensemble_surface_providers[ensemble].realizations
-        if SurfaceMode(mode) == SurfaceMode.REALIZATION:
-            reals = (
-                [current_reals[0]]
-                if current_reals[0] in available_reals
-                else [available_reals[0]]
-            )
-            multi = False
-        else:
-            reals = available_reals
-            multi = True
-        options = [{"label": val, "value": val} for val in available_reals]
-        return options, reals, multi
-
-    @callback(
-        Output(left_view(LayoutElements.DATE), "options"),
-        Output(left_view(LayoutElements.DATE), "value"),
-        Input(left_view(LayoutElements.ATTRIBUTE), "value"),
-        State(left_view(LayoutElements.DATE), "value"),
-        State(left_view(LayoutElements.ENSEMBLE), "value"),
-    )
-    def _update_date(
-        attribute: List[str], current_date: List[str], ensemble: str
-    ) -> Tuple[Optional[List[Dict]], Optional[List]]:
-
-        available_dates = ensemble_surface_providers[ensemble].dates_in_attribute(
-            attribute[0]
-        )
-
-        if not available_dates:
-            return None, None
-        date = (
-            current_date
-            if current_date is not None and current_date[0] in available_dates
-            else available_dates[:1]
-        )
-        options = [{"label": format_date(val), "value": val} for val in available_dates]
-        return options, date
-
-    @callback(
-        Output(left_view(LayoutElements.NAME), "options"),
-        Output(left_view(LayoutElements.NAME), "value"),
-        Input(left_view(LayoutElements.ATTRIBUTE), "value"),
-        State(left_view(LayoutElements.NAME), "value"),
-        State(left_view(LayoutElements.ENSEMBLE), "value"),
-    )
-    def _update_name(
-        attribute: List[str], current_name: List[str], ensemble: str
-    ) -> Tuple[List[Dict], List]:
-
-        available_names = ensemble_surface_providers[ensemble].names_in_attribute(
-            attribute[0]
-        )
-        name = (
-            current_name
-            if current_name is not None and current_name[0] in available_names
-            else available_names[:1]
-        )
-        options = [{"label": val, "value": val} for val in available_names]
-        return options, name
-
-    @callback(
-        Output(left_view(LayoutElements.SELECTED_DATA), "data"),
-        Input(left_view(LayoutElements.ATTRIBUTE), "value"),
-        Input(left_view(LayoutElements.NAME), "value"),
-        Input(left_view(LayoutElements.DATE), "value"),
-        Input(left_view(LayoutElements.ENSEMBLE), "value"),
-        Input(left_view(LayoutElements.REALIZATIONS), "value"),
-        Input(left_view(LayoutElements.MODE), "value"),
-    )
-    def _update_stored_data(
-        attribute: List[str],
-        name: List[str],
-        date: Optional[List[str]],
-        ensemble: str,
-        realizations: List[int],
-        mode: str,
-    ) -> Dict:
-
-        surface_spec = SurfaceContext(
-            attribute=attribute[0],
-            name=name[0],
-            date=date[0] if date else None,
-            ensemble=ensemble,
-            realizations=realizations,
-            mode=SurfaceMode(mode),
-        )
-
-        return asdict(surface_spec)
-
-    @callback(
-        Output(right_view(LayoutElements.ATTRIBUTE), "options"),
-        Output(right_view(LayoutElements.ATTRIBUTE), "value"),
-        Output(right_view(LayoutElements.ATTRIBUTE), "style"),
-        Input(right_view(LayoutElements.ENSEMBLE), "value"),
-        Input(left_view(LayoutElements.ATTRIBUTE), "value"),
-        Input(get_uuid(LayoutElements.LINK_ATTRIBUTE), "value"),
-        State(right_view(LayoutElements.ATTRIBUTE), "value"),
-        State(left_view(LayoutElements.ATTRIBUTE), "options"),
-    )
-    def _update_attribute_right(
-        ensemble: str,
-        view1_attribute_value: List[str],
-        link: bool,
-        current_attr: List[str],
-        view1_attribute_options: List[Dict[str, str]],
-    ) -> Tuple[List[Dict], List[str], dict]:
-        if link:
-            return (view1_attribute_options, view1_attribute_value, disabled_style)
-        if ensemble_surface_providers.get(ensemble) is None:
-            raise PreventUpdate
-        available_attrs = ensemble_surface_providers[ensemble].attributes
-        attr = (
-            current_attr if current_attr[0] in available_attrs else available_attrs[:1]
-        )
-        options = [{"label": val, "value": val} for val in available_attrs]
-        return options, attr, {}
-
-    @callback(
-        Output(right_view(LayoutElements.REALIZATIONS), "options"),
-        Output(right_view(LayoutElements.REALIZATIONS), "value"),
-        Output(right_view(LayoutElements.REALIZATIONS), "multi"),
-        Output(right_view(LayoutElements.REALIZATIONS), "style"),
-        Input(right_view(LayoutElements.ENSEMBLE), "value"),
-        Input(right_view(LayoutElements.MODE), "value"),
-        Input(left_view(LayoutElements.REALIZATIONS), "value"),
-        Input(get_uuid(LayoutElements.LINK_REALIZATIONS), "value"),
-        State(right_view(LayoutElements.REALIZATIONS), "value"),
-        State(left_view(LayoutElements.REALIZATIONS), "options"),
-        State(left_view(LayoutElements.REALIZATIONS), "multi"),
-    )
-    def _update_real_right(
-        ensemble: str,
-        mode: str,
-        view1_realizations_value: List[int],
-        link: bool,
-        current_reals: List[int],
-        view1_realizations_options: List[Dict[str, int]],
-        view1_realizations_mode: bool,
-    ) -> Tuple[List[Dict], List[int], bool, dict]:
-        if link:
-            return (
-                view1_realizations_options,
-                view1_realizations_value,
-                view1_realizations_mode,
-                disabled_style,
-            )
-        if ensemble_surface_providers.get(ensemble) is None or current_reals is None:
-            raise PreventUpdate
-        available_reals = ensemble_surface_providers[ensemble].realizations
-        if SurfaceMode(mode) == SurfaceMode.REALIZATION:
-            reals = (
-                current_reals[:1]
-                if current_reals[0] in available_reals
-                else available_reals[:1]
-            )
-            multi = False
-        else:
-            reals = available_reals
-            multi = True
-        options = [{"label": val, "value": val} for val in available_reals]
-        return options, reals, multi, {}
-
-    @callback(
-        Output(right_view(LayoutElements.DATE), "options"),
-        Output(right_view(LayoutElements.DATE), "value"),
-        Output(right_view(LayoutElements.DATE), "style"),
-        Input(right_view(LayoutElements.ATTRIBUTE), "value"),
-        Input(left_view(LayoutElements.DATE), "value"),
-        Input(get_uuid(LayoutElements.LINK_DATE), "value"),
-        State(right_view(LayoutElements.DATE), "value"),
-        State(right_view(LayoutElements.ENSEMBLE), "value"),
-        State(left_view(LayoutElements.DATE), "options"),
-    )
-    def _update_date_right(
-        attribute: List[str],
-        view1_date_value: List[str],
-        link: bool,
-        current_date: List[str],
-        ensemble: str,
-        view1_date_options: Optional[List[Dict[str, str]]],
-    ) -> Tuple[Optional[List[Dict]], Optional[List[str]], dict]:
-        if link:
-            return view1_date_options, view1_date_value, disabled_style
-
-        available_dates = ensemble_surface_providers[ensemble].dates_in_attribute(
-            attribute[0]
-        )
-        if not available_dates:
-            return None, None, {}
-        date = (
-            current_date
-            if current_date is not None and current_date[0] in available_dates
-            else available_dates[:1]
-        )
-        options = [{"label": format_date(val), "value": val} for val in available_dates]
-        return options, date, {}
-
-    @callback(
-        Output(right_view(LayoutElements.NAME), "options"),
-        Output(right_view(LayoutElements.NAME), "value"),
-        Output(right_view(LayoutElements.NAME), "style"),
-        Input(right_view(LayoutElements.ATTRIBUTE), "value"),
-        Input(left_view(LayoutElements.NAME), "value"),
-        Input(get_uuid(LayoutElements.LINK_NAME), "value"),
-        State(right_view(LayoutElements.NAME), "value"),
-        State(right_view(LayoutElements.ENSEMBLE), "value"),
-        State(left_view(LayoutElements.NAME), "options"),
-    )
-    def _update_name_right(
-        attribute: List[str],
-        view1_name_value: List[str],
-        link: bool,
-        current_name: List[str],
-        ensemble: str,
-        view1_name_options: List[Dict[str, str]],
-    ) -> Tuple[List[Dict], List[str], dict]:
-        if link:
-            return view1_name_options, view1_name_value, disabled_style
-        available_names = ensemble_surface_providers[ensemble].names_in_attribute(
-            attribute[0]
-        )
-        name = (
-            current_name
-            if current_name is not None and current_name[0] in available_names
-            else available_names[:1]
-        )
-        options = [{"label": val, "value": val} for val in available_names]
-        return options, name, {}
-
-    @callback(
-        Output(right_view(LayoutElements.MODE), "value"),
-        Output(right_view(LayoutElements.MODE), "style"),
-        Input(left_view(LayoutElements.MODE), "value"),
-        Input(get_uuid(LayoutElements.LINK_MODE), "value"),
-    )
-    def _update_mode_right(view1_mode: str, link: bool) -> Tuple[str, dict]:
-        if link:
-            return view1_mode, disabled_style
-        return no_update, {}
-
-    @callback(
-        Output(right_view(LayoutElements.ENSEMBLE), "value"),
-        Output(right_view(LayoutElements.ENSEMBLE), "style"),
-        Input(left_view(LayoutElements.ENSEMBLE), "value"),
-        Input(get_uuid(LayoutElements.LINK_ENSEMBLE), "value"),
-    )
-    def _update_ensemble_right(view1_ensemble: str, link: bool) -> Tuple[str, dict]:
-        if link:
-            return view1_ensemble, disabled_style
-        return no_update, {}
-
-    @callback(
-        Output(right_view(LayoutElements.SELECTED_DATA), "data"),
-        Input(right_view(LayoutElements.ATTRIBUTE), "value"),
-        Input(right_view(LayoutElements.NAME), "value"),
-        Input(right_view(LayoutElements.DATE), "value"),
-        Input(right_view(LayoutElements.ENSEMBLE), "value"),
-        Input(right_view(LayoutElements.REALIZATIONS), "value"),
-        Input(right_view(LayoutElements.MODE), "value"),
-        State(get_uuid(LayoutElements.LINK_ATTRIBUTE), "value"),
-        State(get_uuid(LayoutElements.LINK_NAME), "value"),
-        State(get_uuid(LayoutElements.LINK_DATE), "value"),
-        State(get_uuid(LayoutElements.LINK_ENSEMBLE), "value"),
-        State(get_uuid(LayoutElements.LINK_REALIZATIONS), "value"),
-        State(get_uuid(LayoutElements.LINK_MODE), "value"),
-        State(left_view(LayoutElements.ATTRIBUTE), "value"),
-        State(left_view(LayoutElements.NAME), "value"),
-        State(left_view(LayoutElements.DATE), "value"),
-        State(left_view(LayoutElements.ENSEMBLE), "value"),
-        State(left_view(LayoutElements.REALIZATIONS), "value"),
-        State(left_view(LayoutElements.MODE), "value"),
-    )
-    def _update_stored_data_right(
-        attribute: str,
-        name: str,
-        date: str,
-        ensemble: str,
-        realizations: List[int],
-        mode: str,
-        linked_attribute: bool,
-        linked_name: bool,
-        linked_date: bool,
-        linked_ensemble: bool,
-        linked_realizations: bool,
-        linked_mode: bool,
-        view1_attribute: str,
-        view1_name: str,
-        view1_date: str,
-        view1_ensemble: str,
-        view1_realizations: List[int],
-        view1_mode: str,
-    ) -> dict:
-
-        surface_spec = SurfaceContext(
-            attribute=attribute[0] if not linked_attribute else view1_attribute[0],
-            name=name[0] if not linked_name else view1_name[0],
-            date=date[0]
-            if not linked_date and date
-            else view1_date[0]
-            if view1_date and linked_date
-            else None,
-            ensemble=ensemble if not linked_ensemble else view1_ensemble,
-            realizations=realizations
-            if not linked_realizations
-            else view1_realizations,
-            mode=SurfaceMode(mode) if not linked_mode else SurfaceMode(view1_mode),
-        )
-
-        return asdict(surface_spec)
-
-    @callback(
-        Output(
-            DeckGLMapAIO.ids.propertymap_image(get_uuid(LayoutElements.DECKGLMAP_LEFT)),
-            "data",
-        ),
-        Output(
-            DeckGLMapAIO.ids.propertymap_range(get_uuid(LayoutElements.DECKGLMAP_LEFT)),
-            "data",
-        ),
-        Output(
-            DeckGLMapAIO.ids.propertymap_bounds(
-                get_uuid(LayoutElements.DECKGLMAP_LEFT)
-            ),
-            "data",
-        ),
-        Input(left_view(LayoutElements.SELECTED_DATA), "data"),
-    )
-    def _update_property_map(
-        surface_selected_data: dict,
-    ) -> Tuple[str, List[float], List[float]]:
-        selected_surface = SurfaceContext(**surface_selected_data)
-        ensemble = selected_surface.ensemble
-        surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
-
-        return (
-            url_for("_send_surface_as_png", surface_context=selected_surface),
-            get_surface_range(surface),
-            get_surface_bounds(surface),
-        )
-
-    @callback(
-        Output(
-            DeckGLMapAIO.ids.colormap_image(get_uuid(LayoutElements.DECKGLMAP_LEFT)),
-            "data",
-        ),
-        Input(left_view(LayoutElements.COLORMAP_SELECT), "value"),
-    )
-    def _update_color_map(colormap: str) -> str:
-        return f"/colormaps/{colormap}.png"
-
-    if well_set_model is not None:
-
-        @callback(
-            Output(
-                DeckGLMapAIO.ids.well_data(get_uuid(LayoutElements.DECKGLMAP_LEFT)),
-                "data",
-            ),
-            Input(left_view(LayoutElements.WELLS), "value"),
-        )
-        def _update_well_data(wells: List[str]) -> str:
-            wells_context = WellsContext(well_names=wells)
-            return url_for("_send_well_data_as_json", wells_context=wells_context)
-
-        @callback(
-            Output(
-                DeckGLMapAIO.ids.well_data(get_uuid(LayoutElements.DECKGLMAP_RIGHT)),
-                "data",
-            ),
-            Input(right_view(LayoutElements.WELLS), "value"),
-        )
-        def _update_well_data_right(wells: List[str]) -> str:
-            wells_context = WellsContext(well_names=wells)
-            return url_for("_send_well_data_as_json", wells_context=wells_context)
-
-    @callback(
-        Output(
-            DeckGLMapAIO.ids.colormap_range(get_uuid(LayoutElements.DECKGLMAP_LEFT)),
-            "data",
-        ),
-        Input(left_view(LayoutElements.COLORMAP_RANGE), "value"),
-    )
-    def _update_colormap_range(colormap_range: List[float]) -> List[float]:
-        return colormap_range
-
-    @callback(
-        Output(left_view(LayoutElements.COLORMAP_RANGE), "min"),
-        Output(left_view(LayoutElements.COLORMAP_RANGE), "max"),
-        Output(left_view(LayoutElements.COLORMAP_RANGE), "step"),
-        Output(left_view(LayoutElements.COLORMAP_RANGE), "value"),
-        Output(left_view(LayoutElements.COLORMAP_RANGE), "marks"),
-        Input(
-            DeckGLMapAIO.ids.propertymap_range(get_uuid(LayoutElements.DECKGLMAP_LEFT)),
-            "data",
-        ),
-        Input(left_view(LayoutElements.COLORMAP_KEEP_RANGE), "value"),
-        Input(left_view(LayoutElements.COLORMAP_RESET_RANGE), "n_clicks"),
-        State(left_view(LayoutElements.COLORMAP_RANGE), "value"),
-    )
-    def _update_colormap_range_slider(
-        value_range: List[float], keep: str, reset: int, current_val: List[float]
-    ) -> Tuple[float, float, float, List[float], dict]:
         ctx = callback_context.triggered[0]["prop_id"]
-        min_val = value_range[0]
-        max_val = value_range[1]
-        if ctx == ".":
-            value = no_update
-        if (
-            LayoutElements.COLORMAP_RESET_RANGE in ctx
-            or not keep
-            or current_val is None
-        ):
-            value = [min_val, max_val]
-        else:
-            value = current_val
-        return (
-            min_val,
-            max_val,
-            calculate_slider_step(min_value=min_val, max_value=max_val, steps=100)
-            if min_val != max_val
-            else 0,
-            value,
-            {
-                str(min_val): {"label": f"{min_val:.2f}"},
-                str(max_val): {"label": f"{max_val:.2f}"},
-            },
-        )
 
-    @callback(
-        Output(
-            DeckGLMapAIO.ids.propertymap_image(
-                get_uuid(LayoutElements.DECKGLMAP_RIGHT)
-            ),
-            "data",
-        ),
-        Output(
-            DeckGLMapAIO.ids.propertymap_range(
-                get_uuid(LayoutElements.DECKGLMAP_RIGHT)
-            ),
-            "data",
-        ),
-        Output(
-            DeckGLMapAIO.ids.propertymap_bounds(
-                get_uuid(LayoutElements.DECKGLMAP_RIGHT)
-            ),
-            "data",
-        ),
-        Input(right_view(LayoutElements.SELECTED_DATA), "data"),
-    )
-    def _update_property_map_right(
-        surface_selected_data: dict,
-    ) -> Tuple[str, List[float], List[float]]:
-        selected_surface = SurfaceContext(**surface_selected_data)
-        ensemble = selected_surface.ensemble
-        surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
-        return (
-            url_for("_send_surface_as_png", surface_context=selected_surface),
-            get_surface_range(surface),
-            get_surface_bounds(surface),
-        )
+        links = {
+            id_values["selector"]: bool(value)
+            for value, id_values in zip(link_values, link_ids)
+        }
 
-    @callback(
-        Output(right_view(LayoutElements.COLORMAP_RANGE), "min"),
-        Output(right_view(LayoutElements.COLORMAP_RANGE), "max"),
-        Output(right_view(LayoutElements.COLORMAP_RANGE), "step"),
-        Output(right_view(LayoutElements.COLORMAP_RANGE), "value"),
-        Output(right_view(LayoutElements.COLORMAP_RANGE), "marks"),
-        Output(right_view(LayoutElements.COLORMAP_RANGE), "style"),
-        Input(
-            DeckGLMapAIO.ids.propertymap_range(
-                get_uuid(LayoutElements.DECKGLMAP_RIGHT)
-            ),
-            "data",
-        ),
-        Input(right_view(LayoutElements.COLORMAP_KEEP_RANGE), "value"),
-        Input(right_view(LayoutElements.COLORMAP_RESET_RANGE), "n_clicks"),
-        Input(get_uuid(LayoutElements.LINK_COLORMAP_RANGE), "value"),
-        Input(left_view(LayoutElements.COLORMAP_RANGE), "min"),
-        Input(left_view(LayoutElements.COLORMAP_RANGE), "max"),
-        Input(left_view(LayoutElements.COLORMAP_RANGE), "step"),
-        Input(left_view(LayoutElements.COLORMAP_RANGE), "value"),
-        Input(left_view(LayoutElements.COLORMAP_RANGE), "marks"),
-        State(right_view(LayoutElements.COLORMAP_RANGE), "value"),
-    )
-    def _update_colormap_range_slider_right(
-        value_range: List[float],
-        keep: str,
-        _reset: int,
-        link: bool,
-        view1_min: float,
-        view1_max: float,
-        view1_step: float,
-        view1_value: List[float],
-        view1_marks: Dict,
-        current_val: List[float],
-    ) -> Tuple[float, float, float, List[float], dict, dict]:
-        ctx = callback_context.triggered[0]["prop_id"]
-        min_val = value_range[0]
-        max_val = value_range[1]
-        if ctx == ".":
-            value = no_update
-        if link:
-            return (
-                view1_min,
-                view1_max,
-                view1_step,
-                view1_value,
-                view1_marks,
-                disabled_style,
+        selections = []
+        for idx in range(number_of_views):
+            view_selections = {
+                id_values["selector"]: {"value": values}
+                for values, id_values in zip(selector_values, selector_ids)
+                if id_values["view"] == idx
+            }
+            view_selections["wells"] = selected_wells
+            view_selections["reset_colors"] = (
+                get_uuid(LayoutElements.RESET_BUTTOM_CLICK) in ctx
+                and color_reset_view == idx
             )
-        if (
-            LayoutElements.COLORMAP_RESET_RANGE in ctx
-            or not keep
-            or current_val is None
-        ):
-            value = [min_val, max_val]
-        else:
-            value = current_val
+            view_selections["color_update"] = "color" in ctx
+            view_selections["update"] = (
+                previous_selections is None
+                or get_uuid(LayoutElements.MAINVIEW) in ctx
+                or get_uuid(LayoutElements.WELLS) in ctx
+                or view_selections["reset_colors"]
+                or f'"view":{idx}' in ctx
+                or any(links.values())
+            )
+            selections.append(view_selections)
+
+        for data in selections:
+            for selector in links:
+                if links[selector] and selector in data:
+                    data[selector]["value"] = selections[0][selector]["value"]
+
+        _update_ensemble_data(selections)
+        _update_attribute_data(selections)
+        _update_name_data(selections)
+        _update_date_data(selections)
+        _update_mode_data(selections)
+        _update_realization_data(selections)
+        stored_color_settings = _update_color_data(selections, stored_color_settings)
+
         return (
-            min_val,
-            max_val,
-            calculate_slider_step(min_value=min_val, max_value=max_val, steps=100)
-            if min_val != max_val
-            else 0,
-            value,
-            {
-                str(min_val): {"label": f"{min_val:.2f}"},
-                str(max_val): {"label": f"{max_val:.2f}"},
-            },
-            {},
+            selections,
+            [
+                SideBySideSelectorFlex(
+                    get_uuid,
+                    selector=id_val["selector"],
+                    view_data=[data[id_val["selector"]] for data in selections],
+                    link=links[id_val.get("selector", False)]
+                    or len(selections[0][id_val["selector"]].get("options", [])) == 1,
+                )
+                for id_val in wrapper_ids
+            ],
+            stored_color_settings,
         )
 
     @callback(
-        Output(right_view(LayoutElements.COLORMAP_KEEP_RANGE), "style"),
-        Output(right_view(LayoutElements.COLORMAP_RESET_RANGE), "style"),
-        Input(get_uuid(LayoutElements.LINK_COLORMAP_RANGE), "value"),
+        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "layers"),
+        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "bounds"),
+        Input(get_uuid(LayoutElements.SELECTED_DATA), "data"),
+        State({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "layers"),
+        State({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "id"),
     )
-    def _update_keep_range_style(link: bool) -> Tuple[dict, dict]:
-        if link:
-            return disabled_style, disabled_style
-        return {}, {}
+    def _update_maps(selections: dict, current_layers, map_ids):
 
-    @callback(
-        Output(
-            DeckGLMapAIO.ids.colormap_image(get_uuid(LayoutElements.DECKGLMAP_RIGHT)),
-            "data",
-        ),
-        Input(right_view(LayoutElements.COLORMAP_SELECT), "value"),
-    )
-    def _update_color_map_right(colormap: str) -> str:
-        return f"/colormaps/{colormap}.png"
+        layers = []
+        bounds = []
+        for idx, map_id in enumerate(map_ids):
+            data = selections[map_id["view"]]
+            if data["update"]:
+                selected_surface = get_surface_context_from_data(data)
+                ensemble = selected_surface.ensemble
+                surface = ensemble_surface_providers[ensemble].get_surface(
+                    selected_surface
+                )
 
-    @callback(
-        Output(
-            DeckGLMapAIO.ids.colormap_range(get_uuid(LayoutElements.DECKGLMAP_RIGHT)),
-            "data",
-        ),
-        Input(right_view(LayoutElements.COLORMAP_RANGE), "value"),
-    )
-    def _update_colormap_range_right(colormap_range: List[float]) -> List[float]:
-        return colormap_range
+                layer_model = DeckGLMapLayersModel(current_layers[idx])
 
-    # @callback(
-    #     Output(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-    #     Input(left_view(LayoutElements.COLORMAP_SELECT), "value"),
-    #     Input(left_view(LayoutElements.COLORMAP_RANGE), "value"),
-    #     Input(right_view(LayoutElements.COLORMAP_SELECT), "value"),
-    #     Input(right_view(LayoutElements.COLORMAP_RANGE), "value"),
-    #     State(left_view(LayoutElements.SELECTED_DATA), "data"),
-    #     State(right_view(LayoutElements.SELECTED_DATA), "data"),
-    #     State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-    # )
-    # def _store_colors(
-    #     view1_colormap,
-    #     view1_range,
-    #     view2_colormap,
-    #     view2_range,
-    #     view1_surface_context,
-    #     view2_surface_context,
-    #     stored_color_settings: Optional[Dict],
-    # ):
-    #     color_settings = stored_color_settings if stored_color_settings else {}
-    #     for colormap, range, context in zip(
-    #         [view1_colormap, view2_colormap],
-    #         [view1_range, view2_range],
-    #         [view1_surface_context, view2_surface_context],
-    #     ):
+                property_bounds = get_surface_bounds(surface)
+                surface_range = get_surface_range(surface)
+                layer_model.set_propertymap(
+                    image_url=url_for(
+                        "_send_surface_as_png", surface_context=selected_surface
+                    ),
+                    bounds=property_bounds,
+                    value_range=surface_range,
+                )
+                layer_model.set_colormap_image(
+                    f"/colormaps/{data['colormap']['value']}.png"
+                )
+                layer_model.set_colormap_range(data["color_range"]["value"])
+                if well_set_model is not None:
+                    layer_model.set_well_data(
+                        well_data=url_for(
+                            "_send_well_data_as_json",
+                            wells_context=WellsContext(well_names=data["wells"]),
+                        )
+                    )
+                layers.append(layer_model.layers)
+                bounds.append(property_bounds)
+            else:
+                layers.append(no_update)
+                bounds.append(no_update)
 
-    #         surface_context = SurfaceContext(**context)
-    #         if surface_context.date is not None:
-    #             color_settings = update_nested_dict(
-    #                 color_settings,
-    #                 {
-    #                     surface_context.attribute: {
-    #                         "name": surface_context.name,
-    #                         "date": surface_context.date,
-    #                         "colormap": colormap,
-    #                         "range": range,
-    #                     }
-    #                 },
-    #             )
-    #         else:
-    #             color_settings = update_nested_dict(
-    #                 color_settings,
-    #                 {
-    #                     surface_context.attribute: {
-    #                         "name": surface_context.name,
-    #                         "date": surface_context.date,
-    #                         "colormap": colormap,
-    #                         "range": range,
-    #                     }
-    #                 },
-    #             )
-    #     print(color_settings)
-    #     return color_settings
+        return layers, bounds
+
+    def _update_ensemble_data(selections) -> None:
+        for data in selections:
+            options = list(ensemble_surface_providers.keys())
+            value = data["ensemble"]["value"] if "ensemble" in data else options[0]
+            data["ensemble"] = {"value": value, "options": options}
+
+    def _update_attribute_data(selections) -> None:
+        for data in selections:
+            options = ensemble_surface_providers.get(
+                data["ensemble"]["value"]
+            ).attributes
+
+            value = (
+                data["attribute"]["value"]
+                if "attribute" in data and data["attribute"]["value"][0] in options
+                else options[:1]
+            )
+            data["attribute"] = {"value": value, "options": options}
+
+    def _update_name_data(selections) -> None:
+        for data in selections:
+            options = ensemble_surface_providers.get(
+                data["ensemble"]["value"]
+            ).names_in_attribute(data["attribute"]["value"][0])
+
+            value = (
+                data["name"]["value"]
+                if "name" in data and data["name"]["value"][0] in options
+                else options[:1]
+            )
+            data["name"] = {"value": value, "options": options}
+
+    def _update_date_data(selections) -> None:
+        for data in selections:
+            options = ensemble_surface_providers.get(
+                data["ensemble"]["value"]
+            ).dates_in_attribute(data["attribute"]["value"][0])
+
+            if not options:
+                data["date"] = {"value": [], "options": []}
+            else:
+                value = (
+                    data["date"]["value"]
+                    if "date" in data
+                    and data["date"]["value"]
+                    and data["date"]["value"][0] in options
+                    else options[:1]
+                )
+                data["date"] = {"value": value, "options": options}
+
+    def _update_mode_data(selections) -> None:
+        for data in selections:
+            options = [mode for mode in SurfaceMode]
+            value = data["mode"]["value"] if "mode" in data else SurfaceMode.REALIZATION
+            data["mode"] = {"value": value, "options": options}
+
+    def _update_realization_data(selections) -> None:
+        for data in selections:
+            options = ensemble_surface_providers[data["ensemble"]["value"]].realizations
+
+            if SurfaceMode(data["mode"]["value"]) == SurfaceMode.REALIZATION:
+                value = (
+                    [data["realizations"]["value"][0]]
+                    if "realizations" in data
+                    else [options[0]]
+                )
+                multi = False
+            else:
+                value = (
+                    data["realizations"]["value"]
+                    if "realizations" in data and len(data["realizations"]["value"]) > 1
+                    else options
+                )
+                multi = True
+
+            data["realizations"] = {"value": value, "options": options, "multi": multi}
+
+    def _update_color_data(selections, stored_color_settings) -> None:
+
+        stored_color_settings = (
+            stored_color_settings if stored_color_settings is not None else {}
+        )
+
+        colormaps = ["viridis_r", "seismic"]
+        for data in selections:
+            surfaceid = get_surface_id_from_data(data)
+
+            selected_surface = get_surface_context_from_data(data)
+            surface = ensemble_surface_providers[selected_surface.ensemble].get_surface(
+                selected_surface
+            )
+            value_range = get_surface_range(surface)
+
+            if (
+                surfaceid in stored_color_settings
+                and not data["reset_colors"]
+                and not data["color_update"]
+            ):
+                colormap_value = stored_color_settings[surfaceid]["colormap"]
+                color_range = stored_color_settings[surfaceid]["color_range"]
+            else:
+                colormap_value = (
+                    data["colormap"]["value"] if "colormap" in data else colormaps[0]
+                )
+                color_range = (
+                    value_range
+                    if data["reset_colors"]
+                    or (
+                        not data["color_update"]
+                        and not data.get("colormap_keep_range", {}).get("value")
+                    )
+                    else data["color_range"]["value"]
+                )
+
+            data["colormap"] = {"value": colormap_value, "options": colormaps}
+            data["color_range"] = {
+                "value": color_range,
+                "step": calculate_slider_step(
+                    min_value=value_range[0], max_value=value_range[1], steps=100
+                )
+                if value_range[0] != value_range[1]
+                else 0,
+                "range": value_range,
+            }
+
+            stored_color_settings[surfaceid] = {
+                "colormap": colormap_value,
+                "color_range": color_range,
+            }
+
+        return stored_color_settings
+
+    def get_surface_context_from_data(data):
+        return SurfaceContext(
+            attribute=data["attribute"]["value"][0],
+            name=data["name"]["value"][0],
+            date=data["date"]["value"][0] if data["date"]["value"] else None,
+            ensemble=data["ensemble"]["value"],
+            realizations=data["realizations"]["value"],
+            mode=data["mode"]["value"],
+        )
+
+    def get_surface_id_from_data(data):
+        surfaceid = data["attribute"]["value"][0] + data["name"]["value"][0]
+        if data["date"]["value"]:
+            surfaceid += data["date"]["value"][0]
+        return surfaceid
