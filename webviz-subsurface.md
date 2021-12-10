@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.8rc1` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.8` of `webviz-subsurface`.
 
 
 
@@ -3367,6 +3367,8 @@ be added in later releases.
 
 
 
+
+
 * **`wellfolder`:** Path to a folder with well files stored in RMS well format.
 * **`wellsuffix`:** File suffix of well files
 * **`logtemplates`:** List of yaml based log template configurations.     See the data section for description of the format.
@@ -3374,6 +3376,7 @@ be added in later releases.
 * **`well_tvdmin`:** Truncate well data values above this depth.
 * **`well_tvdmax`:** Truncate well data values below this depth.
 * **`well_downsample_interval`:** Sampling interval used for coarsening a well trajectory
+* **`colortables`:** Color tables on json format. See https://git.io/JDLyb     for an example file.
 * **`initial_settings`:** Configuration for initializing the plugin with various     properties set. All properties are optional.
     See the data section for available properties.
 
@@ -3385,6 +3388,7 @@ How to use in YAML config file:
     - WellLogViewer:
         wellfolder:  # Required, type str (corresponding to a path).
         logtemplates:  # Required, type List[str (corresponding to a path)].
+        colortables:  # Optional, type str (corresponding to a path).
         wellsuffix:  # Optional, type str.
         mdlog:  # Optional, type str.
         well_tvdmin:  # Optional, type Union[int, float].
