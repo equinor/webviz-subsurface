@@ -32,6 +32,7 @@ from .types import (
     DerivedEnsembleVectorsAccessor,
     FanchartOptions,
     ProviderSet,
+    StatisticsFromOptions,
     StatisticsOptions,
     SubplotGroupByOptions,
     TraceOptions,
@@ -96,6 +97,11 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
+            Input(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+            Input(
+                get_uuid(LayoutElements.STATISTICS_FROM_RADIO_ITEMS),
+                "value",
+            ),
             Input(
                 get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
                 "data",
@@ -122,6 +128,8 @@ def plugin_callbacks(
         trace_option_values: List[str],
         subplot_owner_options_value: str,
         resampling_frequency_value: str,
+        selected_realizations: List[int],
+        statistics_calculated_from_value: str,
         __graph_data_has_changed_trigger: int,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
@@ -138,7 +146,7 @@ def plugin_callbacks(
             with single providers or delta ensemble with two providers
             * GraphFigureBuilder to create graph with subplots per vector or subplots per
             ensemble, using VectorSubplotBuilder and EnsembleSubplotBuilder, respectively
-        * Create/build prop serialization in FigureBuilder by use of business logic data
+        * Create/build property serialization in FigureBuilder by use of business logic data
 
         NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
         graphs data has changed and re-render of graph is necessary. E.g. when a selected expression
@@ -163,6 +171,21 @@ def plugin_callbacks(
         subplot_owner = SubplotGroupByOptions(subplot_owner_options_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
+        statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
+
+        # Prevent update if realization filtering is not affecting pure statistics plot
+        ctx = dash.callback_context.triggered
+        trigger_id = ctx[0]["prop_id"].split(".")[0]
+        if (
+            trigger_id == get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR)
+            and statistics_from_option is StatisticsFromOptions.ALL_REALIZATIONS
+            and visualization
+            in [
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.FANCHART,
+            ]
+        ):
+            raise PreventUpdate
 
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
@@ -226,19 +249,48 @@ def plugin_callbacks(
 
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
+            realizations_filter_query: Optional[List[int]] = selected_realizations
+
+            # Retrieve all realizations only when statistics across all reals
+            # are needed - otherwise filter request
+            if (
+                statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+                and visualization
+                in [
+                    VisualizationOptions.FANCHART,
+                    VisualizationOptions.STATISTICS,
+                    VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                ]
+            ):
+                realizations_filter_query = None
+
             if accessor.has_provider_vectors():
-                vectors_df_list.append(accessor.get_provider_vectors_df())
+                vectors_df_list.append(
+                    accessor.get_provider_vectors_df(
+                        realizations=realizations_filter_query
+                    )
+                )
             if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df()
+                    accessor.create_interval_and_average_vectors_df(
+                        realizations=realizations_filter_query
+                    )
                 )
             if accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(accessor.create_calculated_vectors_df())
+                vectors_df_list.append(
+                    accessor.create_calculated_vectors_df(
+                        realizations=realizations_filter_query
+                    )
+                )
 
             for vectors_df in vectors_df_list:
                 if visualization == VisualizationOptions.REALIZATIONS:
+                    # Show selected realizations - only filter df if realizations filter
+                    # query is not performed
                     figure_builder.add_realizations_traces(
-                        vectors_df,
+                        vectors_df
+                        if realizations_filter_query
+                        else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
                         ensemble,
                     )
                 if visualization == VisualizationOptions.STATISTICS:
@@ -254,6 +306,25 @@ def plugin_callbacks(
                         vectors_statistics_df,
                         ensemble,
                         fanchart_options,
+                    )
+                if visualization == VisualizationOptions.STATISTICS_AND_REALIZATIONS:
+                    # Configure line width and color scaling to easier separate
+                    # statistics traces and realization traces
+                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+                    figure_builder.add_statistics_traces(
+                        vectors_statistics_df,
+                        ensemble,
+                        statistics_options,
+                        line_width=3,
+                    )
+                    # Show selected realizations on top - only filter df if realizations filter
+                    # query is not performed
+                    figure_builder.add_realizations_traces(
+                        vectors_df
+                        if realizations_filter_query
+                        else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
+                        ensemble,
+                        color_lightness_scale=150.0,
                     )
 
         # Retrieve selected input providers
@@ -490,21 +561,26 @@ def plugin_callbacks(
             )
         ],
     )
-    def _update_statistics_options_layout(visualization: str) -> List[dict]:
+    def _update_statistics_options_layout(selected_visualization: str) -> List[dict]:
         """Only show statistics checklist if in statistics mode"""
 
         # Convert to enum type
-        visualization = VisualizationOptions(visualization)
+        selected_visualization = VisualizationOptions(selected_visualization)
 
-        def get_style(visualization_type: VisualizationOptions) -> dict:
+        def get_style(visualization_options: List[VisualizationOptions]) -> dict:
             return (
                 {"display": "block"}
-                if visualization == visualization_type
+                if selected_visualization in visualization_options
                 else {"display": "none"}
             )
 
-        statistics_options_style = get_style(VisualizationOptions.STATISTICS)
-        fanchart_options_style = get_style(VisualizationOptions.FANCHART)
+        statistics_options_style = get_style(
+            [
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+        )
+        fanchart_options_style = get_style([VisualizationOptions.FANCHART])
 
         return [statistics_options_style, fanchart_options_style]
 
@@ -713,6 +789,16 @@ def plugin_callbacks(
             elm for elm in expressions if elm["isValid"]
         ]
         return new_expressions
+
+    @app.callback(
+        Output(get_uuid(LayoutElements.REALIZATIONS_FILTER_SPAN), "children"),
+        Input(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+    )
+    def _update_realization_range(realizations: List[int]) -> Optional[str]:
+        if not realizations:
+            raise PreventUpdate
+
+        return f"{min(realizations)}-{max(realizations)}"
 
 
 def _create_delta_ensemble_table_column_data(

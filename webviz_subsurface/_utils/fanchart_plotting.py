@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from .colors import hex_to_rgba
+from .colors import hex_to_rgba_str
 
 
 @dataclass
@@ -169,9 +169,9 @@ def get_fanchart_traces(
 
     validate_fanchart_data(data)
 
-    fill_color_light = hex_to_rgba(color, 0.3)
-    fill_color_dark = hex_to_rgba(color, 0.6)
-    line_color = hex_to_rgba(color, 1)
+    fill_color_light = hex_to_rgba_str(color, 0.3)
+    fill_color_dark = hex_to_rgba_str(color, 0.6)
+    line_color = hex_to_rgba_str(color, 1)
 
     def get_default_trace(statistics_name: str, values: np.ndarray) -> Dict[str, Any]:
         trace = {

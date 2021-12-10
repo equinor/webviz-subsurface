@@ -7,6 +7,7 @@ from .provider_set import ProviderSet
 from .types import (
     DeltaEnsemble,
     FanchartOptions,
+    StatisticsFromOptions,
     StatisticsOptions,
     SubplotGroupByOptions,
     TraceOptions,

@@ -22,13 +22,14 @@ from ..utils.from_timeseries_cumulatives import is_interval_or_average_vector
 
 
 def create_vector_observation_traces(
-    vector_observations: dict, vector_name: Optional[str] = None
+    vector_observations: dict, color: str = "black", legend_group: Optional[str] = None
 ) -> List[dict]:
     """Create list of observations traces from vector observations
 
     `Input:`
     * vector_observations: dict - Dictionary with observation data for a vector
-    * vector_name: Optional[str] - Name of vector, added as legend group and name if provided
+    * color: str - Color of observation traces for vector
+    * vector_name: Optional[str] - Name of legend group, added as legend group and name if provided
 
     `Return:`
     List of marker traces for each observation for vector
@@ -44,7 +45,7 @@ def create_vector_observation_traces(
             "name": "Observation",
             "x": [observation.get("date"), []],
             "y": [observation.get("value"), []],
-            "marker": {"color": "black"},
+            "marker": {"color": color},
             "hovertemplate": hovertemplate,
             "showlegend": False,
             "error_y": {
@@ -53,9 +54,9 @@ def create_vector_observation_traces(
                 "visible": True,
             },
         }
-        if vector_name:
-            trace["name"] = "Observation: " + vector_name
-            trace["legendgroup"] = vector_name
+        if legend_group:
+            trace["name"] = "Observation: " + legend_group
+            trace["legendgroup"] = legend_group
 
         observation_traces.append(trace)
     return observation_traces
@@ -94,7 +95,7 @@ def create_vector_realization_traces(
     vector_name = vector_names[0]
     return [
         {
-            "line": {"shape": line_shape},
+            "line": {"width": 1, "shape": line_shape},
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector_name]),
             "hovertemplate": f"{hovertemplate}Realization: {real}, Ensemble: {ensemble}",
@@ -142,6 +143,7 @@ def create_vector_statistics_traces(
     color: str,
     legend_group: str,
     line_shape: str,
+    line_width: int = 2,
     hovertemplate: str = "(%{x}, %{y})<br>",
     show_legend: bool = False,
     legendrank: Optional[int] = None,
@@ -156,7 +158,8 @@ def create_vector_statistics_traces(
     * statistics_options: List[StatisticsOptions] - List of statistic options to include
     * color: str - color for traces
     * legend_group: str - legend group owner
-    * line_shape: str - specified line shape for trace
+    * line_shape: str - specified line shape for traces
+    * line_width: str - specified line width for traces
     * hovertemplate: str - template for hovering of data points in trace lines
     * show_legend: bool - show legend when true, otherwise do not show
     * legendrank: int - rank value for legend in figure
@@ -221,6 +224,7 @@ def create_vector_statistics_traces(
         color=color,
         legend_group=legend_group,
         line_shape=line_shape,
+        line_width=line_width,
         show_legend=show_legend,
         hovertemplate=hovertemplate,
         legendrank=legendrank,

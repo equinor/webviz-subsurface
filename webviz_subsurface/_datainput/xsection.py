@@ -6,7 +6,7 @@ import xtgeo
 from numpy import ma
 from plotly.subplots import make_subplots
 
-from .._utils.colors import hex_to_rgba
+from .._utils.colors import hex_to_rgba_str
 
 
 class XSectionFigure:
@@ -472,8 +472,8 @@ class XSectionFigure:
             self._surfacenames.index(name) % len(self._surfacecolors)  # type: ignore[union-attr]
         ]
 
-        fill_color = hex_to_rgba(color, 0.3)
-        line_color = hex_to_rgba(color, 1)
+        fill_color = hex_to_rgba_str(color, 0.3)
+        line_color = hex_to_rgba_str(color, 1)
 
         # Extract surface values along well fence
         x_values = statistical_surfaces["mean"].get_randomline(self.fence).copy()[:, 0]
