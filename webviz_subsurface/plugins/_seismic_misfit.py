@@ -4,6 +4,7 @@ import glob
 import logging
 import math
 import re
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -2257,21 +2258,20 @@ def update_obsdata_map(
     # ----------------------------------------
     # add polygon to map if defined
     if not df_polygon.empty:
-        for _poly, polydf in df_polygon.groupby("POLY_ID"):
-            poly_id = "pol" + str(_poly)
-            fig.add_trace(
+        for poly_id, polydf in df_polygon.groupby("POLY_ID"):
+            fig.append_trace(
                 go.Scattergl(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
                     line_color="RoyalBlue",
-                    name=poly_id,
+                    name="pol" + str(poly_id),
                     showlegend=False,
                     hoverinfo="name",
                 ),
                 row="all",
                 col="all",
-                exclude_empty_subplots=True,
+                # exclude_empty_subplots=True,
             )
 
     fig.update_yaxes(scaleanchor="x")
@@ -2302,6 +2302,8 @@ def update_obs_sim_map_plot(
 ) -> Tuple[Optional[Any], Optional[Any]]:
     """Plot seismic obsdata, simdata and diffdata; side by side map view plots.
     Takes dataframe with obsdata, metadata and simdata as input"""
+
+    # start_time = time.time()
 
     logging.debug(f"Seismic obs vs sim map plot, updating {ens_name}")
 
@@ -2515,21 +2517,20 @@ def update_obs_sim_map_plot(
     # ----------------------------------------
     # add polygon to map if defined
     if not df_polygon.empty:
-        for _poly, polydf in df_polygon.groupby("POLY_ID"):
-            poly_id = "pol" + str(_poly)
-            fig.add_trace(
+        for poly_id, polydf in df_polygon.groupby("POLY_ID"):
+            fig.append_trace(
                 go.Scattergl(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
                     line_color="RoyalBlue",
-                    name=poly_id,
+                    name="pol" + str(poly_id),
                     showlegend=False,
                     hoverinfo="name",
                 ),
                 row="all",
                 col="all",
-                exclude_empty_subplots=True,
+                # exclude_empty_subplots=True,
             )
 
     fig.update_yaxes(scaleanchor="x")
@@ -2672,6 +2673,7 @@ def update_obs_sim_map_plot(
         )  # don't update user selected y-ranges during callbacks
 
         return fig, fig_slice_reals
+    # print("---", time.time() - start_time)
 
     return fig, None
 
