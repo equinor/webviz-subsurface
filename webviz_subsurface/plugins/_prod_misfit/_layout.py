@@ -29,6 +29,8 @@ class LayoutElements:
     PROD_MISFIT_DATES = "prod_misfit_dates"
     PROD_MISFIT_PHASES = "prod_misfit_phases"
     PROD_MISFIT_WELL_NAMES = "prod_misfit_well_names"
+    PROD_MISFIT_WELL_COLLECTIONS = "prod_misfit_well_collections"
+    PROD_MISFIT_COMBINE = "prod_misfit_combine"
     PROD_MISFIT_REALIZATIONS = "prod_misfit_realizations"
     PROD_MISFIT_COLORBY = "prod_misfit_colorby"
     PROD_MISFIT_SORTING = "prod_misfit_sorting"
@@ -38,32 +40,19 @@ class LayoutElements:
     # PROD_MISFIT_NORMALIZATION = "prod_misfit_normalization"
     PROD_MISFIT_GRAPH = "prod_misfit_graph"
 
-    VECTOR_SELECTOR = "vector_selector"
-
-    VECTOR_CALCULATOR = "vector_calculator"
-    VECTOR_CALCULATOR_MODAL = "vector_calculator_modal"
-    VECTOR_CALCULATOR_OPEN_BUTTON = "vector_calculator_open_button"
-    VECTOR_CALCULATOR_EXPRESSIONS = "vector_calculator_expressions"
-    VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL = (
-        "vector_calculator_expressions_open_modal"
-    )
-
-    DELTA_ENSEMBLE_A_DROPDOWN = "delta_ensemble_A_dropdown"
-    DELTA_ENSEMBLE_B_DROPDOWN = "delta_ensemble_B_dropdown"
-    DELTA_ENSEMBLE_CREATE_BUTTON = "delta_ensemble_create_button"
-    CREATED_DELTA_ENSEMBLES = "created_delta_ensemble_names"
-    CREATED_DELTA_ENSEMBLE_NAMES_TABLE = "created_delta_ensemble_names_table"
-    CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN = (
-        "created_delta_ensemble_names_table_column"
-    )
-
-    VISUALIZATION_RADIO_ITEMS = "visualization_radio_items"
-
-    PLOT_FANCHART_OPTIONS_CHECKLIST = "plot_fanchart_options_checklist"
-    PLOT_STATISTICS_OPTIONS_CHECKLIST = "plot_statistics_options_checklist"
-    PLOT_TRACE_OPTIONS_CHECKLIST = "plot_trace_options_checklist"
-
-    RESAMPLING_FREQUENCY_DROPDOWN = "resampling_frequency_dropdown"
+    WELL_COVERAGE_LAYOUT = "well_coverage_layout"
+    WELL_COVERAGE_ENSEMBLE_NAMES = "well_coverage_ensemble_names"
+    WELL_COVERAGE_DATES = "well_coverage_dates"
+    WELL_COVERAGE_PHASES = "well_coverage_phases"
+    WELL_COVERAGE_WELL_NAMES = "well_coverage_well_names"
+    WELL_COVERAGE_WELL_COLLECTIONS = "well_coverage_well_collections"
+    WELL_COVERAGE_COMBINE = "well_coverage_combine"
+    WELL_COVERAGE_REALIZATIONS = "well_coverage_realizations"
+    WELL_COVERAGE_COLORBY = "well_coverage_colorby"
+    WELL_COVERAGE_SORTING = "well_coverage_sorting"
+    WELL_COVERAGE_FIGHEIGHT = "well_coverage_figheight"
+    WELL_COVERAGE_PLOT_TYPE = "well_coverage_plot_type"
+    WELL_COVERAGE_GRAPH = "well_coverage_graph"
 
 
 # --- layout ---
@@ -74,6 +63,7 @@ def main_layout(
     phases: Dict[str, List[str]],
     wells: Dict[str, List[str]],
     realizations: Dict[str, List[int]],
+    well_collections: Dict[str, List[str]],
 ) -> wcc.Tabs:
 
     all_dates = []
@@ -89,6 +79,9 @@ def main_layout(
     all_phases = list(sorted(set(all_phases)))
     all_wells = list(sorted(set(all_wells)))
     all_realizations = list(sorted(set(all_realizations)))
+    all_well_collection_names = []
+    for collection_name in well_collections.keys():
+        all_well_collection_names.append(collection_name)
 
     tabs_styles = {"height": "60px", "width": "100%"}
 
@@ -119,15 +112,24 @@ def main_layout(
                     all_dates,
                     all_phases,
                     all_wells,
+                    all_well_collection_names,
                     all_realizations,
                 ),
             ),
-            # wcc.Tab(
-            #     label="Well production coverage",
-            #     style=tab_style,
-            #     selected_style=tab_selected_style,
-            #     children=_well_prod_coverage(),
-            # ),
+            wcc.Tab(
+                label="Well production coverage",
+                style=tab_style,
+                selected_style=tab_selected_style,
+                children=_well_prod_coverage(
+                    get_uuid,
+                    ensemble_names,
+                    all_dates,
+                    all_phases,
+                    all_wells,
+                    all_well_collection_names,
+                    all_realizations,
+                ),
+            ),
             # wcc.Tab(
             #     label="Group production coverage",
             #     style=tab_style,
@@ -151,6 +153,7 @@ def _misfit_per_real_layout(
     dates: List[str],
     phases: List[str],
     wells: List[str],
+    all_well_collection_names: List[str],
     realizations: List[int],
 ) -> list:
     children = [
@@ -193,11 +196,11 @@ def _misfit_per_real_layout(
                                     options=[
                                         {
                                             "label": _date.strftime("%Y-%m-%d"),
-                                            "value": _date.strftime("%Y-%m-%d"),
+                                            "value": str(_date),
                                         }
                                         for _date in dates
                                     ],
-                                    value=[dates[-1].strftime("%Y-%m-%d")],
+                                    value=[str(dates[-1])],
                                     size=min([len(dates), 5]),
                                 ),
                                 wcc.SelectWithLabel(
@@ -218,6 +221,30 @@ def _misfit_per_real_layout(
                                     ],
                                     value=wells,
                                     size=min([len(wells), 9]),
+                                ),
+                                wcc.RadioItems(
+                                    label="Combine wells and collections as",
+                                    id=get_uuid(LayoutElements.PROD_MISFIT_COMBINE),
+                                    options=[
+                                        {
+                                            "label": "Intersection",
+                                            "value": "intersection",
+                                        },
+                                        {"label": "Union", "value": "union"},
+                                    ],
+                                    value="intersection",
+                                ),
+                                wcc.SelectWithLabel(
+                                    label="Well collection selector",
+                                    id=get_uuid(
+                                        LayoutElements.PROD_MISFIT_WELL_COLLECTIONS
+                                    ),
+                                    options=[
+                                        {"label": collection, "value": collection}
+                                        for collection in all_well_collection_names
+                                    ],
+                                    value=all_well_collection_names,
+                                    size=min([len(wells), 5]),
                                 ),
                                 wcc.SelectWithLabel(
                                     label="Realization selector",
@@ -391,205 +418,23 @@ def _misfit_per_real_layout(
     return children
 
 
-def _well_prod_coverage() -> list:
+def _well_prod_coverage(
+    get_uuid: Callable,
+    ensemble_names: List[str],
+    dates: List[str],
+    phases: List[str],
+    wells: List[str],
+    all_well_collection_names: List[str],
+    realizations: List[int],
+) -> list:
     children = [
         wcc.FlexBox(
-            id=self.uuid("well_coverage-layout"),
+            id=get_uuid(LayoutElements.WELL_COVERAGE_LAYOUT),
             children=[
                 wcc.Frame(
                     style={
                         "flex": 1,
-                        "height": "55vh",
-                        "maxWidth": "200px",
-                    },
-                    children=[
-                        wcc.Dropdown(
-                            label="Ensemble selector",
-                            id=self.uuid("well_coverage-ensemble_names"),
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
-                            ],
-                            value=self.ensembles,
-                            multi=True,
-                            clearable=False,
-                            persistence=True,
-                            persistence_type="memory",
-                        ),
-                        wcc.SelectWithLabel(
-                            label="Date selector",
-                            id=self.uuid("well_coverage-dates"),
-                            options=[
-                                {"label": _date, "value": _date} for _date in self.dates
-                            ],
-                            value=[self.dates[-1]],
-                            size=min([len(self.dates), 5]),
-                        ),
-                        wcc.SelectWithLabel(
-                            label="Phase selector",
-                            id=self.uuid("well_coverage-phases"),
-                            options=[
-                                {"label": phase, "value": phase}
-                                for phase in self.phases
-                            ],
-                            value=self.phases,
-                            size=min([len(self.phases), 3]),
-                        ),
-                        wcc.SelectWithLabel(
-                            label="Well selector",
-                            id=self.uuid("well_coverage-well_names"),
-                            options=[
-                                {"label": well, "value": well} for well in self.wells
-                            ],
-                            value=self.wells,
-                            size=min([len(self.wells), 9]),
-                        ),
-                        wcc.Dropdown(
-                            label="Colorby",
-                            id=self.uuid("well_coverage-colorby"),
-                            options=[
-                                {
-                                    "label": "Ensemble",
-                                    "value": "ENSEMBLE",
-                                },
-                                {"label": "Well", "value": "WELL"},
-                                {"label": "Date", "value": "DATE"},
-                            ],
-                            value="ENSEMBLE",
-                            multi=False,
-                            clearable=False,
-                            persistence=True,
-                            persistence_type="memory",
-                        ),
-                        wcc.Dropdown(
-                            label="Plot type",
-                            id=self.uuid("well_coverage-plot_type"),
-                            options=[
-                                {"label": "Diff plot", "value": "diffplot"},
-                                {"label": "Cross plot", "value": "crossplot"},
-                                {"label": "Box plot", "value": "boxplot"},
-                            ],
-                            value="crossplot",
-                            multi=False,
-                            clearable=False,
-                            persistence=True,
-                            persistence_type="memory",
-                        ),
-                    ],
-                ),
-                wcc.Frame(
-                    style={"flex": 4, "minWidth": "500px"},
-                    children=[html.Div(id=self.uuid("well_coverage-graph"))],
-                ),
-            ],
-        ),
-    ]
-    return children
-
-
-def _group_prod_coverage() -> list:
-    children = [
-        wcc.FlexBox(
-            id=self.uuid("group_coverage-layout"),
-            children=[
-                wcc.Frame(
-                    style={
-                        "flex": 1,
-                        "height": "55vh",
-                        "maxWidth": "200px",
-                    },
-                    children=[
-                        wcc.Dropdown(
-                            label="Ensemble selector",
-                            id=self.uuid("group_coverage-ensemble_names"),
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
-                            ],
-                            value=self.ensembles,
-                            multi=True,
-                            clearable=False,
-                            persistence=True,
-                            persistence_type="memory",
-                        ),
-                        wcc.SelectWithLabel(
-                            label="Date selector",
-                            id=self.uuid("group_coverage-dates"),
-                            options=[
-                                {"label": _date, "value": _date} for _date in self.dates
-                            ],
-                            value=[self.dates[-1]],
-                            size=min([len(self.dates), 5]),
-                        ),
-                        wcc.SelectWithLabel(
-                            label="Phase selector",
-                            id=self.uuid("group_coverage-phases"),
-                            options=[
-                                {"label": phase, "value": phase}
-                                for phase in self.phases
-                            ],
-                            value=self.phases,
-                            size=min([len(self.phases), 3]),
-                        ),
-                        wcc.SelectWithLabel(
-                            label="Group selector",
-                            id=self.uuid("group_coverage-group_names"),
-                            options=[
-                                {"label": group, "value": group}
-                                for group in self.groups
-                            ],
-                            value=self.groups,
-                            size=min([len(self.groups), 9]),
-                        ),
-                        wcc.Dropdown(
-                            label="Colorby",
-                            id=self.uuid("group_coverage-colorby"),
-                            options=[
-                                {
-                                    "label": "Ensemble",
-                                    "value": "ENSEMBLE",
-                                },
-                                {"label": "Group", "value": "WELL"},
-                                {"label": "Date", "value": "DATE"},
-                            ],
-                            value="ENSEMBLE",
-                            multi=False,
-                            clearable=False,
-                            persistence=True,
-                            persistence_type="memory",
-                        ),
-                        wcc.Dropdown(
-                            label="Plot type",
-                            id=self.uuid("group_coverage-plot_type"),
-                            options=[
-                                {"label": "Diff plot", "value": "diffplot"},
-                                {"label": "Cross plot", "value": "crossplot"},
-                            ],
-                            value="crossplot",
-                            multi=False,
-                            clearable=False,
-                            persistence=True,
-                            persistence_type="memory",
-                        ),
-                    ],
-                ),
-                wcc.Frame(
-                    style={"flex": 4, "minWidth": "500px"},
-                    children=[html.Div(id=self.uuid("group_coverage-graph"))],
-                ),
-            ],
-        ),
-    ]
-    return children
-
-
-def _heatmap() -> list:
-    children = [
-        wcc.FlexBox(
-            id=self.uuid("heatmap-layout"),
-            children=[
-                wcc.Frame(
-                    style={
-                        "flex": 1,
-                        "height": "80vh",
+                        "height": "85vh",
                         "maxWidth": "200px",
                     },
                     children=[
@@ -598,12 +443,14 @@ def _heatmap() -> list:
                             children=[
                                 wcc.Dropdown(
                                     label="Ensemble selector",
-                                    id=self.uuid("heatmap-ensemble_names"),
+                                    id=get_uuid(
+                                        LayoutElements.WELL_COVERAGE_ENSEMBLE_NAMES
+                                    ),
                                     options=[
                                         {"label": ens, "value": ens}
-                                        for ens in self.ensembles
+                                        for ens in ensemble_names
                                     ],
-                                    value=self.ensembles,
+                                    value=ensemble_names[0:1],
                                     multi=True,
                                     clearable=False,
                                     persistence=True,
@@ -616,54 +463,73 @@ def _heatmap() -> list:
                             children=[
                                 wcc.SelectWithLabel(
                                     label="Date selector",
-                                    id=self.uuid("heatmap-dates"),
+                                    id=get_uuid(LayoutElements.WELL_COVERAGE_DATES),
                                     options=[
-                                        {"label": _date, "value": _date}
-                                        for _date in self.dates
+                                        {
+                                            "label": _date.strftime("%Y-%m-%d"),
+                                            "value": str(_date),
+                                        }
+                                        for _date in dates
                                     ],
-                                    value=self.dates,
-                                    size=min([len(self.dates), 5]),
+                                    value=[str(dates[-1])],
+                                    size=min([len(dates), 5]),
                                 ),
                                 wcc.SelectWithLabel(
                                     label="Phase selector",
-                                    id=self.uuid("heatmap-phases"),
+                                    id=get_uuid(LayoutElements.WELL_COVERAGE_PHASES),
                                     options=[
                                         {"label": phase, "value": phase}
-                                        for phase in self.phases
+                                        for phase in phases
                                     ],
-                                    value=self.phases,
-                                    size=min([len(self.phases), 3]),
+                                    value=phases,
+                                    size=min([len(phases), 3]),
                                 ),
                                 wcc.SelectWithLabel(
                                     label="Well selector",
-                                    id=self.uuid("heatmap-well_names"),
+                                    id=get_uuid(
+                                        LayoutElements.WELL_COVERAGE_WELL_NAMES
+                                    ),
                                     options=[
-                                        {"label": well, "value": well}
-                                        for well in self.wells
+                                        {"label": well, "value": well} for well in wells
                                     ],
-                                    value=self.wells,
-                                    size=min([len(self.wells), 9]),
+                                    value=wells,
+                                    size=min([len(wells), 9]),
                                 ),
-                                wcc.Dropdown(
-                                    label="Show wells with largest misfit",
-                                    id=self.uuid("heatmap-filter_largest"),
+                                wcc.RadioItems(
+                                    label="Combine wells and collections as",
+                                    id=get_uuid(LayoutElements.WELL_COVERAGE_COMBINE),
                                     options=[
-                                        {"label": "Show all", "value": 0},
-                                        {"label": "2", "value": 2},
-                                        {"label": "4", "value": 4},
-                                        {"label": "6", "value": 6},
-                                        {"label": "8", "value": 8},
-                                        {"label": "10", "value": 10},
-                                        {"label": "12", "value": 12},
-                                        {"label": "15", "value": 15},
-                                        {"label": "20", "value": 20},
-                                        {"label": "25", "value": 25},
+                                        {
+                                            "label": "Intersection",
+                                            "value": "intersection",
+                                        },
+                                        {"label": "Union", "value": "union"},
                                     ],
-                                    value=0,
-                                    multi=False,
-                                    clearable=False,
-                                    persistence=True,
-                                    persistence_type="memory",
+                                    value="intersection",
+                                ),
+                                wcc.SelectWithLabel(
+                                    label="Well collection selector",
+                                    id=get_uuid(
+                                        LayoutElements.WELL_COVERAGE_WELL_COLLECTIONS
+                                    ),
+                                    options=[
+                                        {"label": collection, "value": collection}
+                                        for collection in all_well_collection_names
+                                    ],
+                                    value=all_well_collection_names,
+                                    size=min([len(wells), 5]),
+                                ),
+                                wcc.SelectWithLabel(
+                                    label="Realization selector",
+                                    id=get_uuid(
+                                        LayoutElements.WELL_COVERAGE_REALIZATIONS
+                                    ),
+                                    options=[
+                                        {"label": real, "value": real}
+                                        for real in realizations
+                                    ],
+                                    value=realizations,
+                                    size=min([len(wells), 5]),
                                 ),
                             ],
                         ),
@@ -672,57 +538,32 @@ def _heatmap() -> list:
                             open_details=True,
                             children=[
                                 wcc.Dropdown(
-                                    label="Fig layout - height",
-                                    id=self.uuid("heatmap-figheight"),
+                                    label="Colorby",
+                                    id=get_uuid(LayoutElements.WELL_COVERAGE_COLORBY),
                                     options=[
                                         {
-                                            "label": "Very small",
-                                            "value": 250,
+                                            "label": "Ensemble",
+                                            "value": "ENSEMBLE",
                                         },
-                                        {
-                                            "label": "Small",
-                                            "value": 350,
-                                        },
-                                        {
-                                            "label": "Medium",
-                                            "value": 450,
-                                        },
-                                        {
-                                            "label": "Large",
-                                            "value": 700,
-                                        },
-                                        {
-                                            "label": "Very large",
-                                            "value": 1000,
-                                        },
+                                        {"label": "Well", "value": "WELL"},
+                                        {"label": "Date", "value": "DATE"},
                                     ],
-                                    value=450,
+                                    value="ENSEMBLE",
+                                    multi=False,
                                     clearable=False,
                                     persistence=True,
                                     persistence_type="memory",
                                 ),
                                 wcc.Dropdown(
-                                    label="Color range scaling (relative to max)",
-                                    id=self.uuid("heatmap-scale_col_range"),
+                                    label="Plot type",
+                                    id=get_uuid(LayoutElements.WELL_COVERAGE_PLOT_TYPE),
                                     options=[
-                                        {"label": f"{x:.0%}", "value": x}
-                                        for x in [
-                                            0.1,
-                                            0.2,
-                                            0.3,
-                                            0.4,
-                                            0.5,
-                                            0.6,
-                                            0.7,
-                                            0.8,
-                                            0.9,
-                                            1.0,
-                                            1.5,
-                                            2.0,
-                                        ]
+                                        {"label": "Diff plot", "value": "diffplot"},
+                                        {"label": "Cross plot", "value": "crossplot"},
+                                        {"label": "Box plot", "value": "boxplot"},
                                     ],
-                                    style={"display": "block"},
-                                    value=1.0,
+                                    value="crossplot",
+                                    multi=False,
                                     clearable=False,
                                     persistence=True,
                                     persistence_type="memory",
@@ -733,9 +574,261 @@ def _heatmap() -> list:
                 ),
                 wcc.Frame(
                     style={"flex": 4, "minWidth": "500px"},
-                    children=[html.Div(id=self.uuid("heatmap-graph"))],
+                    children=[
+                        html.Div(id=get_uuid(LayoutElements.WELL_COVERAGE_GRAPH))
+                    ],
                 ),
             ],
         ),
     ]
     return children
+
+
+# def _group_prod_coverage() -> list:
+#     children = [
+#         wcc.FlexBox(
+#             id=get_uuid(LayoutElements.group_coverage-layout),
+#             children=[
+#                 wcc.Frame(
+#                     style={
+#                         "flex": 1,
+#                         "height": "55vh",
+#                         "maxWidth": "200px",
+#                     },
+#                     children=[
+#                         wcc.Dropdown(
+#                             label="Ensemble selector",
+#                             id=get_uuid(LayoutElements.group_coverage-ensemble_names),
+#                             options=[{"label": ens, "value": ens} for ens in ensembles],
+#                             value=ensembles,
+#                             multi=True,
+#                             clearable=False,
+#                             persistence=True,
+#                             persistence_type="memory",
+#                         ),
+#                         wcc.SelectWithLabel(
+#                             label="Date selector",
+#                             id=get_uuid(LayoutElements.group_coverage-dates),
+#                             options=[
+#                                 {"label": _date, "value": _date} for _date in dates
+#                             ],
+#                             value=[dates[-1]],
+#                             size=min([len(dates), 5]),
+#                         ),
+#                         wcc.SelectWithLabel(
+#                             label="Phase selector",
+#                             id=get_uuid(LayoutElements.group_coverage-phases),
+#                             options=[
+#                                 {"label": phase, "value": phase} for phase in phases
+#                             ],
+#                             value=phases,
+#                             size=min([len(phases), 3]),
+#                         ),
+#                         wcc.SelectWithLabel(
+#                             label="Group selector",
+#                             id=get_uuid(LayoutElements.group_coverage-group_names),
+#                             options=[
+#                                 {"label": group, "value": group} for group in groups
+#                             ],
+#                             value=groups,
+#                             size=min([len(groups), 9]),
+#                         ),
+#                         wcc.Dropdown(
+#                             label="Colorby",
+#                             id=get_uuid(LayoutElements.group_coverage-colorby),
+#                             options=[
+#                                 {
+#                                     "label": "Ensemble",
+#                                     "value": "ENSEMBLE",
+#                                 },
+#                                 {"label": "Group", "value": "WELL"},
+#                                 {"label": "Date", "value": "DATE"},
+#                             ],
+#                             value="ENSEMBLE",
+#                             multi=False,
+#                             clearable=False,
+#                             persistence=True,
+#                             persistence_type="memory",
+#                         ),
+#                         wcc.Dropdown(
+#                             label="Plot type",
+#                             id=get_uuid(LayoutElements.group_coverage-plot_type),
+#                             options=[
+#                                 {"label": "Diff plot", "value": "diffplot"},
+#                                 {"label": "Cross plot", "value": "crossplot"},
+#                             ],
+#                             value="crossplot",
+#                             multi=False,
+#                             clearable=False,
+#                             persistence=True,
+#                             persistence_type="memory",
+#                         ),
+#                     ],
+#                 ),
+#                 wcc.Frame(
+#                     style={"flex": 4, "minWidth": "500px"},
+#                     children=[html.Div(id=get_uuid(LayoutElements.group_coverage-graph))],
+#                 ),
+#             ],
+#         ),
+#     ]
+#     return children
+
+
+# def _heatmap() -> list:
+#     children = [
+#         wcc.FlexBox(
+#             id=get_uuid(LayoutElements.heatmap-layout),
+#             children=[
+#                 wcc.Frame(
+#                     style={
+#                         "flex": 1,
+#                         "height": "80vh",
+#                         "maxWidth": "200px",
+#                     },
+#                     children=[
+#                         wcc.Selectors(
+#                             label="Case settings",
+#                             children=[
+#                                 wcc.Dropdown(
+#                                     label="Ensemble selector",
+#                                     id=get_uuid(LayoutElements.heatmap-ensemble_names),
+#                                     options=[
+#                                         {"label": ens, "value": ens}
+#                                         for ens in ensembles
+#                                     ],
+#                                     value=ensembles,
+#                                     multi=True,
+#                                     clearable=False,
+#                                     persistence=True,
+#                                     persistence_type="memory",
+#                                 ),
+#                             ],
+#                         ),
+#                         wcc.Selectors(
+#                             label="Filter settings",
+#                             children=[
+#                                 wcc.SelectWithLabel(
+#                                     label="Date selector",
+#                                     id=get_uuid(LayoutElements.heatmap-dates),
+#                                     options=[
+#                                         {"label": _date, "value": _date}
+#                                         for _date in dates
+#                                     ],
+#                                     value=dates,
+#                                     size=min([len(dates), 5]),
+#                                 ),
+#                                 wcc.SelectWithLabel(
+#                                     label="Phase selector",
+#                                     id=get_uuid(LayoutElements.heatmap-phases),
+#                                     options=[
+#                                         {"label": phase, "value": phase}
+#                                         for phase in phases
+#                                     ],
+#                                     value=phases,
+#                                     size=min([len(phases), 3]),
+#                                 ),
+#                                 wcc.SelectWithLabel(
+#                                     label="Well selector",
+#                                     id=get_uuid(LayoutElements.heatmap-well_names),
+#                                     options=[
+#                                         {"label": well, "value": well} for well in wells
+#                                     ],
+#                                     value=wells,
+#                                     size=min([len(wells), 9]),
+#                                 ),
+#                                 wcc.Dropdown(
+#                                     label="Show wells with largest misfit",
+#                                     id=get_uuid(LayoutElements.heatmap-filter_largest),
+#                                     options=[
+#                                         {"label": "Show all", "value": 0},
+#                                         {"label": "2", "value": 2},
+#                                         {"label": "4", "value": 4},
+#                                         {"label": "6", "value": 6},
+#                                         {"label": "8", "value": 8},
+#                                         {"label": "10", "value": 10},
+#                                         {"label": "12", "value": 12},
+#                                         {"label": "15", "value": 15},
+#                                         {"label": "20", "value": 20},
+#                                         {"label": "25", "value": 25},
+#                                     ],
+#                                     value=0,
+#                                     multi=False,
+#                                     clearable=False,
+#                                     persistence=True,
+#                                     persistence_type="memory",
+#                                 ),
+#                             ],
+#                         ),
+#                         wcc.Selectors(
+#                             label="Plot settings and layout",
+#                             open_details=True,
+#                             children=[
+#                                 wcc.Dropdown(
+#                                     label="Fig layout - height",
+#                                     id=get_uuid(LayoutElements.heatmap-figheight),
+#                                     options=[
+#                                         {
+#                                             "label": "Very small",
+#                                             "value": 250,
+#                                         },
+#                                         {
+#                                             "label": "Small",
+#                                             "value": 350,
+#                                         },
+#                                         {
+#                                             "label": "Medium",
+#                                             "value": 450,
+#                                         },
+#                                         {
+#                                             "label": "Large",
+#                                             "value": 700,
+#                                         },
+#                                         {
+#                                             "label": "Very large",
+#                                             "value": 1000,
+#                                         },
+#                                     ],
+#                                     value=450,
+#                                     clearable=False,
+#                                     persistence=True,
+#                                     persistence_type="memory",
+#                                 ),
+#                                 wcc.Dropdown(
+#                                     label="Color range scaling (relative to max)",
+#                                     id=get_uuid(LayoutElements.heatmap-scale_col_range),
+#                                     options=[
+#                                         {"label": f"{x:.0%}", "value": x}
+#                                         for x in [
+#                                             0.1,
+#                                             0.2,
+#                                             0.3,
+#                                             0.4,
+#                                             0.5,
+#                                             0.6,
+#                                             0.7,
+#                                             0.8,
+#                                             0.9,
+#                                             1.0,
+#                                             1.5,
+#                                             2.0,
+#                                         ]
+#                                     ],
+#                                     style={"display": "block"},
+#                                     value=1.0,
+#                                     clearable=False,
+#                                     persistence=True,
+#                                     persistence_type="memory",
+#                                 ),
+#                             ],
+#                         ),
+#                     ],
+#                 ),
+#                 wcc.Frame(
+#                     style={"flex": 4, "minWidth": "500px"},
+#                     children=[html.Div(id=get_uuid(LayoutElements.heatmap-graph))],
+#                 ),
+#             ],
+#         ),
+#     ]
+#     return children
