@@ -129,15 +129,6 @@ class RftPlotterDataModel:
     def dates(self) -> List[str]:
         return sorted(list(self.ertdatadf["DATE"].unique()))
 
-    def ensemble_wells(self, ensemble: str):
-        df = self.ertdatadf[self.ertdatadf["ENSEMBLE"] == ensemble]
-        return sorted(list(df["WELL"].unique()))
-
-    def ensemble_parameters(self, ensemble: str):
-        df = self.param_model.dataframe.copy()
-        df = df[df["ENSEMBLE"] == ensemble].dropna(axis=1)
-        return list(set(df.columns) & set(self.param_model.parameters))
-
     def date_in_well(self, well: str) -> List[str]:
         df = self.ertdatadf.loc[self.ertdatadf["WELL"] == well]
         return [str(d) for d in list(df["DATE"].unique())]

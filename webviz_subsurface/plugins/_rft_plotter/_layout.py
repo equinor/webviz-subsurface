@@ -49,6 +49,7 @@ class LayoutElements:
     PARAMRESP_DATE = "param-response-date"
     PARAMRESP_ZONE = "param-response-zone"
     PARAMRESP_PARAM = "param-response-param"
+    PARAMRESP_CORRTYPE = "param-response-corrtype"
     PARAMRESP_CORR_BARCHART = "paramresp-corr-barchart"
     PARAMRESP_SCATTERPLOT = "paramresp-scatterplot"
     PARAMRESP_FORMATIONS = "paramresp-formations"
@@ -220,6 +221,26 @@ def parameter_response_selector_layout(
                     ),
                 ],
             ),
+            wcc.Selectors(
+                label="Options",
+                children=[
+                    wcc.RadioItems(
+                        label="Correlation options",
+                        id=get_uuid(LayoutElements.PARAMRESP_CORRTYPE),
+                        options=[
+                            {
+                                "label": "Simulated vs parameters",
+                                "value": "sim_vs_param",
+                            },
+                            {
+                                "label": "Parameter vs simulated",
+                                "value": "param_vs_sim",
+                            },
+                        ],
+                        value="sim_vs_param",
+                    ),
+                ],
+            ),
         ],
     )
 
@@ -240,7 +261,7 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
-                                    style={"height": "38vh"},
+                                    style={"height": "42vh"},
                                     color="white",
                                     highlight=False,
                                     children=wcc.Graph(
@@ -252,7 +273,7 @@ def parameter_response_layout(
                                     ),
                                 ),
                                 wcc.Frame(
-                                    style={"height": "38vh"},
+                                    style={"height": "42vh"},
                                     color="white",
                                     highlight=False,
                                     children=wcc.Graph(
@@ -272,7 +293,7 @@ def parameter_response_layout(
                                     id=get_uuid(LayoutElements.PARAMRESP_FORMATIONS),
                                     color="white",
                                     highlight=False,
-                                    style={"height": "80vh"},
+                                    style={"height": "87vh"},
                                     children=[],
                                 )
                             ],

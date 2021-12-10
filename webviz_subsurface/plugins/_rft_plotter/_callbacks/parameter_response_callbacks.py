@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, callback_context
+from dash import Dash, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
 from ...._figures import BarChart, ScatterPlot
@@ -16,13 +16,15 @@ def paramresp_callbacks(
     @app.callback(
         Output(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART), "clickData"),
+        State(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
     )
     def _update_parameter_selected(
         corr_vector_clickdata: Union[None, dict],
+        corrtype: str,
     ) -> str:
         """Update the selected parameter from clickdata"""
         print("clickdata callback triggered")
-        if corr_vector_clickdata is None:
+        if corr_vector_clickdata is None or corrtype != "sim_vs_param":
             raise PreventUpdate
         return corr_vector_clickdata.get("points", [{}])[0].get("y")
 
@@ -54,14 +56,18 @@ def paramresp_callbacks(
         Input(get_uuid(LayoutElements.PARAMRESP_DATE), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_ZONE), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
+        Input(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
     )
+    # pylint: disable=too-many-locals
     def _update_paramresp_graphs(
         ensemble: str,
         well: str,
         date: str,
         zone: str,
         param: Optional[str],
+        corrtype: str,
     ) -> List[Optional[Any]]:
+
         """
         Main callback to update plots.
         """
@@ -74,47 +80,52 @@ def paramresp_callbacks(
         ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
         print(ctx)
 
-        rft_df = filter_frame(
-            datamodel.ertdatadf,
-            {
-                "ENSEMBLE": ensemble,
-                "WELL": well,
-                "DATE": date,
-                "ZONE": zone,
-            },
-        ).drop("ENSEMBLE", axis=1)
-        # filter columns also?
+        keep = ["REAL", "DATE", "WELL", "ZONE", "SIMULATED", "OBSERVED", "OBSERVED_ERR"]
+        rft_df = filter_frame(datamodel.ertdatadf, {"ENSEMBLE": ensemble,}).drop(
+            "ENSEMBLE", axis=1
+        )[keep]
+        rft_df_singleobs = filter_frame(
+            rft_df, {"WELL": well, "DATE": date, "ZONE": zone}
+        )
+        if corrtype == "sim_vs_param":
+            rft_df = rft_df_singleobs
 
-        if rft_df.empty:
-            text = "No data matching the given filter criterias"
-            return [text, text, text]
-
-        param_df = filter_frame(
-            datamodel.param_model.dataframe, {"ENSEMBLE": ensemble}
-        ).drop("ENSEMBLE", axis=1)
-
-        # todo: time these alternative ways
-        rft_df["REAL"] = rft_df["REAL"].astype(int)
-        param_df["REAL"] = param_df["REAL"].astype(int)
-        param_df.set_index("REAL", inplace=True)
-        rft_df.set_index("REAL", inplace=True)
-        merged_df = rft_df.join(param_df).reset_index()
-        # merged_df = rft_df.merge(param_df, on="REAL")
-
-        corrseries = correlate(
-            merged_df[datamodel.parameters + ["SIMULATED"]], "SIMULATED"
+        rft_df["RFT_KEY"] = rft_df["WELL"] + "_" + rft_df["DATE"] + "_" + rft_df["ZONE"]
+        current_key = f"{well}_{date}_{zone}"
+        pivot_df = (
+            rft_df.pivot_table(
+                index="REAL", columns="RFT_KEY", values="SIMULATED", aggfunc="mean"
+            )
+            .reset_index()
+            .merge(rft_df_singleobs[["REAL", "OBSERVED", "OBSERVED_ERR"]], on="REAL")
         )
 
-        # print(corrseries)
-        corrfig = BarChart(
-            corrseries, n_rows=15, title="Correlations with parameters", orientation="h"
+        param_df = (
+            filter_frame(datamodel.param_model.dataframe, {"ENSEMBLE": ensemble})
+            .drop("ENSEMBLE", axis=1)
+            .dropna(axis=1)
         )
-        # Get clicked parameter correlation bar or largest bar initially
-        param = param if param is not None else corrfig.first_y_value
-        corrfig.color_bars(param, "#007079", 0.5)
+
+        merged_df = pivot_df.merge(param_df, on="REAL")
+
+        if corrtype == "sim_vs_param" or param is None:
+            corrseries = correlate(
+                merged_df[datamodel.parameters + [current_key]], current_key
+            )
+            corr_title = f"{current_key} vs parameters"
+            corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
+            param = param if param is not None else corrfig.first_y_value
+            corrfig.color_bars(param, "#007079", 0.5)
+            scatter_x, scatter_y = param, current_key
+        if corrtype == "param_vs_sim":
+            corrseries = correlate(merged_df, param)
+            corr_title = f"{param} vs simulated RFTs"
+            corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
+            corrfig.color_bars(current_key, "#007079", 0.5)
+            scatter_x, scatter_y = param, current_key
 
         # Scatter plot
-        scatterplot = ScatterPlot(merged_df, "SIMULATED", param, "#007079")
+        scatterplot = ScatterPlot(merged_df, scatter_y, scatter_x, "#007079")
         scatterplot.add_vertical_line_with_error(
             merged_df["OBSERVED"].values[0],
             merged_df["OBSERVED_ERR"].values[0],

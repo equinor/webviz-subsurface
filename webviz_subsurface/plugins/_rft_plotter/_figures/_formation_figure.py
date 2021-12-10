@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from ...._utils.colors import find_intermediate_color
 from ...._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
@@ -12,7 +13,6 @@ from ...._utils.fanchart_plotting import (
     get_fanchart_traces,
 )
 from .._business_logic import filter_frame, interpolate_depth
-from ...._utils.colors import find_intermediate_color
 
 
 class FormationFigure:
