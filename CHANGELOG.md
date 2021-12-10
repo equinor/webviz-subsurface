@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.8] - 2021-12-10
+
 ### Fixed
 - [#877](https://github.com/equinor/webviz-subsurface/pull/877) - Update `WellLogViewer` to work with the latest version of the component.
 
