@@ -84,11 +84,7 @@ class MapViewerFMU(WebvizPluginABC):
     @property
     def layout(self) -> html.Div:
 
-        return main_layout(
-            get_uuid=self.uuid,
-            ensemble_surface_providers=self._ensemble_surface_providers,
-            well_set_model=self._well_set_model,
-        )
+        return main_layout(get_uuid=self.uuid, well_set_model=self._well_set_model)
 
     def set_callbacks(self) -> None:
 
