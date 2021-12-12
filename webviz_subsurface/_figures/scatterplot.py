@@ -14,6 +14,7 @@ class ScatterPlot:
         response: str,
         param: str,
         color: str,
+        title: str,
         plot_trendline: bool = False,
     ):
 
@@ -36,7 +37,7 @@ class ScatterPlot:
                 },
                 paper_bgcolor="white",
                 plot_bgcolor="white",
-                title={"text": f"RFT pressure vs {param}", "x": 0.5},
+                title={"text": title, "x": 0.5},
                 xaxis_title=None,
                 yaxis_title=None,
             )
