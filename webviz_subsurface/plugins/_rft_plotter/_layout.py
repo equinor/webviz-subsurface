@@ -154,8 +154,8 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
         ),
     ]
 
-    #
-    if datamodel.param_model is not None:
+    # It there is parameters, add the parameter response tab
+    if datamodel.parameters:
         tabs.append(
             wcc.Tab(
                 label="RFT parameter response",

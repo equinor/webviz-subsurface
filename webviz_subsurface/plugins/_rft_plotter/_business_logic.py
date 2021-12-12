@@ -190,6 +190,39 @@ class RftPlotterDataModel:
             )
         return df.reset_index(drop=True)
 
+    def create_rft_and_param_pivot_table(
+        self, ensemble: str, well: str, date: str, zone: str, keep_all_rfts: bool
+    ) -> Tuple[pd.DataFrame, float, float]:
+        """Description"""
+
+        keep = ["REAL", "DATE", "WELL", "ZONE", "SIMULATED", "OBSERVED", "OBSERVED_ERR"]
+        rft_filter = {"ENSEMBLE": ensemble}
+
+        if not keep_all_rfts:
+            rft_filter.update({"WELL": well, "DATE": date, "ZONE": zone})
+
+        rft_df = filter_frame(self.ertdatadf, rft_filter)[keep]
+        rft_df["RFT_KEY"] = rft_df["WELL"] + " " + rft_df["DATE"] + " " + rft_df["ZONE"]
+
+        # Get observation and error
+        # In case there are multiple observations in the same well/date/zone
+        # they are averaged (as in the pivot table)
+        df_current_obs = rft_df[rft_df["RFT_KEY"] == f"{well} {date} {zone}"]
+        obs = df_current_obs["OBSERVED"].mean()
+        obs_err = df_current_obs["OBSERVED_ERR"].mean()
+
+        pivot_df = rft_df.pivot_table(
+            index="REAL", columns="RFT_KEY", values="SIMULATED", aggfunc="mean"
+        ).reset_index()
+
+        param_df = (
+            filter_frame(self.param_model.dataframe, {"ENSEMBLE": ensemble})
+            .drop("ENSEMBLE", axis=1)
+            .dropna(axis=1)  # Removes parameters not used in this ensemble
+        )
+
+        return pivot_df.merge(param_df, on="REAL"), obs, obs_err
+
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
         functions: List[Tuple[Callable, List[Dict[str, Any]]]] = [

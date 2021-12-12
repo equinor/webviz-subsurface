@@ -5,7 +5,7 @@ from dash import Dash, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
 from ...._figures import BarChart, ScatterPlot
-from .._business_logic import RftPlotterDataModel, correlate, filter_frame
+from .._business_logic import RftPlotterDataModel, correlate
 from .._figures._formation_figure import FormationFigure
 from .._layout import LayoutElements
 
@@ -17,6 +17,7 @@ def paramresp_callbacks(
         Output(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART), "clickData"),
         State(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
+        prevent_initial_call=True,
     )
     def _update_parameter_selected(
         corr_vector_clickdata: Union[None, dict],
@@ -67,74 +68,50 @@ def paramresp_callbacks(
         param: Optional[str],
         corrtype: str,
     ) -> List[Optional[Any]]:
-
         """
         Main callback to update plots.
         """
-        print("update paramresp graph triggered")
-        if (
-            callback_context.triggered is None
-            or callback_context.triggered[0]["prop_id"] == "."
-        ):
-            raise PreventUpdate
-        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
-        print(ctx)
-
-        keep = ["REAL", "DATE", "WELL", "ZONE", "SIMULATED", "OBSERVED", "OBSERVED_ERR"]
-        rft_df = filter_frame(datamodel.ertdatadf, {"ENSEMBLE": ensemble,}).drop(
-            "ENSEMBLE", axis=1
-        )[keep]
-        rft_df_singleobs = filter_frame(
-            rft_df, {"WELL": well, "DATE": date, "ZONE": zone}
+        df, obs, obs_err = datamodel.create_rft_and_param_pivot_table(
+            ensemble=ensemble,
+            well=well,
+            date=date,
+            zone=zone,
+            keep_all_rfts=(corrtype == "param_vs_sim"),
         )
-        if corrtype == "sim_vs_param":
-            rft_df = rft_df_singleobs
-
-        rft_df["RFT_KEY"] = rft_df["WELL"] + "_" + rft_df["DATE"] + "_" + rft_df["ZONE"]
-        current_key = f"{well}_{date}_{zone}"
-        pivot_df = (
-            rft_df.pivot_table(
-                index="REAL", columns="RFT_KEY", values="SIMULATED", aggfunc="mean"
-            )
-            .reset_index()
-            .merge(rft_df_singleobs[["REAL", "OBSERVED", "OBSERVED_ERR"]], on="REAL")
-        )
-
-        param_df = (
-            filter_frame(datamodel.param_model.dataframe, {"ENSEMBLE": ensemble})
-            .drop("ENSEMBLE", axis=1)
-            .dropna(axis=1)
-        )
-
-        merged_df = pivot_df.merge(param_df, on="REAL")
+        current_key = f"{well} {date} {zone}"
 
         if corrtype == "sim_vs_param" or param is None:
             corrseries = correlate(
-                merged_df[datamodel.parameters + [current_key]], current_key
+                df[datamodel.parameters + [current_key]], current_key
             )
             corr_title = f"{current_key} vs parameters"
             corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
             param = param if param is not None else corrfig.first_y_value
             corrfig.color_bars(param, "#007079", 0.5)
             scatter_x, scatter_y = param, current_key
+
         if corrtype == "param_vs_sim":
-            corrseries = correlate(merged_df, param)
+            corr_with = [
+                col for col in df.columns if col not in datamodel.parameters
+            ] + [param]
+            corrseries = correlate(df[corr_with], param)
             corr_title = f"{param} vs simulated RFTs"
             corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
             corrfig.color_bars(current_key, "#007079", 0.5)
             scatter_x, scatter_y = param, current_key
 
         # Scatter plot
-        scatterplot = ScatterPlot(merged_df, scatter_y, scatter_x, "#007079")
+        scatterplot = ScatterPlot(
+            df, scatter_y, scatter_x, "#007079", f"{current_key} vs {param}"
+        )
         scatterplot.add_vertical_line_with_error(
-            merged_df["OBSERVED"].values[0],
-            merged_df["OBSERVED_ERR"].values[0],
-            merged_df[param].min(),
-            merged_df[param].max(),
+            obs,
+            obs_err,
+            df[param].min(),
+            df[param].max(),
         )
 
         # Formations plot
-        # trenger bare oppdateres ved ny broenn
         formations_figure = FormationFigure(
             well=well,
             ertdf=datamodel.ertdatadf,
