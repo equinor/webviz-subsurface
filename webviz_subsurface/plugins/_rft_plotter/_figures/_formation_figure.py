@@ -153,9 +153,7 @@ class FormationFigure:
                     "name": row["ZONE"],
                     "y0": row[top_col],
                     "y1": row[base_col],
-                    "linecolor": formation_colors[
-                        list(df["ZONE"].unique()).index(row["ZONE"])
-                    ],
+                    "line": dict(color="#646567", width=1.0),
                     "fillcolor": formation_colors[
                         list(df["ZONE"].unique()).index(row["ZONE"])
                     ]
