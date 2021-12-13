@@ -1,5 +1,5 @@
 import abc
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 import pandas as pd
 
@@ -25,6 +25,10 @@ class DerivedEnsembleVectorsAccessor:
 
     @abc.abstractmethod
     def has_vector_calculator_expressions(self) -> bool:
+        ...
+
+    @abc.abstractmethod
+    def realizations(self) -> List[int]:
         ...
 
     @abc.abstractmethod

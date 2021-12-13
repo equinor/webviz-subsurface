@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, ItemsView, List, Optional, Set
+from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
@@ -23,10 +23,8 @@ class ProviderSet:
         self._all_vector_names = self._create_union_of_vector_names_from_providers(
             list(self._provider_dict.values())
         )
-        self._intersected_realizations = (
-            self._create_intersection_realizations_from_providers(
-                list(self._provider_dict.values())
-            )
+        self._all_realizations = self._create_union_of_realizations_from_providers(
+            list(self._provider_dict.values())
         )
 
     def verify_consistent_vector_metadata(self) -> None:
@@ -80,17 +78,15 @@ class ProviderSet:
         return vector_names
 
     @staticmethod
-    def _create_intersection_realizations_from_providers(
-        providers: List[EnsembleSummaryProvider],
+    def _create_union_of_realizations_from_providers(
+        providers: Sequence[EnsembleSummaryProvider],
     ) -> List[int]:
-        """Create list with the intersection of realizations among providers"""
-        if len(providers) == 0:
-            return []
-
-        realizations_set: Set[int] = set(providers[0].realizations())
+        """Create list with the union of realizations among providers"""
+        realizations: Set[int] = set()
         for provider in providers:
-            realizations_set.intersection_update(provider.realizations())
-        return sorted(realizations_set)
+            realizations.update(provider.realizations())
+        output = list(sorted(realizations))
+        return output
 
     def items(self) -> ItemsView[str, EnsembleSummaryProvider]:
         return self._provider_dict.items()
@@ -103,15 +99,15 @@ class ProviderSet:
             raise ValueError(f'Provider with name "{name}" not present in set!')
         return self._provider_dict[name]
 
-    def realizations_intersection(self) -> List[int]:
-        """Intersection of realizations for provider set"""
-        return self._intersected_realizations
-
     def all_providers(self) -> List[EnsembleSummaryProvider]:
         return list(self._provider_dict.values())
 
+    def all_realizations(self) -> List[int]:
+        """List with the union of realizations among providers"""
+        return self._all_realizations
+
     def all_vector_names(self) -> List[str]:
-        """Create list with the union of vector names among providers"""
+        """List with the union of vector names among providers"""
         return self._all_vector_names
 
     def vector_metadata(self, vector: str) -> Optional[VectorMetadata]:

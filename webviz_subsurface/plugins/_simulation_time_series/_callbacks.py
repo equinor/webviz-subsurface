@@ -11,6 +11,7 @@ from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.formatting import printable_int_list
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
@@ -174,6 +175,7 @@ def plugin_callbacks(
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
 
         # Prevent update if realization filtering is not affecting pure statistics plot
+        # TODO: Refactor code or create utility for getting trigger ID in a "cleaner" way?
         ctx = dash.callback_context.triggered
         trigger_id = ctx[0]["prop_id"].split(".")[0]
         if (
@@ -247,9 +249,12 @@ def plugin_callbacks(
             # dataframe with vector columns. NB: Assumes equal sampling rate
             # for all vectors - i.e equal number of rows in dataframes
 
-            # Retrive vectors data from accessor
-            vectors_df_list: List[pd.DataFrame] = []
-            realizations_filter_query: Optional[List[int]] = selected_realizations
+            # Filter realization query - only request realizations existing for accessor
+            realizations_filter_query: Optional[List[int]] = [
+                realization
+                for realization in selected_realizations
+                if realization in accessor.realizations()
+            ]
 
             # Retrieve all realizations only when statistics across all reals
             # are needed - otherwise filter request
@@ -264,6 +269,13 @@ def plugin_callbacks(
             ):
                 realizations_filter_query = None
 
+            # If all selected realizations are invalid for accessor
+            # NB: Query of None equals no filter, i.e. all realizations
+            if realizations_filter_query == []:
+                continue
+
+            # Retrive vectors data from accessor
+            vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
                 vectors_df_list.append(
                     accessor.get_provider_vectors_df(
@@ -439,6 +451,7 @@ def plugin_callbacks(
         """Callback to download data based on selections
 
         NOTE:
+        * Does not group based on "Group By" - data is stored per vector
         * No history vector
         * No filtering on statistics selections
         * No observation data
@@ -798,7 +811,9 @@ def plugin_callbacks(
         if not realizations:
             raise PreventUpdate
 
-        return f"{min(realizations)}-{max(realizations)}"
+        realizations_filter_text = printable_int_list(realizations)
+
+        return realizations_filter_text
 
 
 def _create_delta_ensemble_table_column_data(

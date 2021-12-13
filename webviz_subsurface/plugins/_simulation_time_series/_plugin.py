@@ -214,7 +214,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             vector_selector_data=self._initial_vector_selector_data,
             vector_calculator_data=self._vector_calculator_data,
             predefined_expressions=self._predefined_expressions,
-            realizations=self._input_provider_set.realizations_intersection(),
+            realizations=self._input_provider_set.all_realizations(),
             disable_resampling_dropdown=self._presampled_frequency is not None,
             selected_resampling_frequency=self._sampling,
             selected_visualization=self._initial_visualization_selection,

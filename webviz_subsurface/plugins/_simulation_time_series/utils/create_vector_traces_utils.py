@@ -137,6 +137,7 @@ def validate_vector_statistics_df_columns(
         )
 
 
+# pylint: disable = too-many-arguments, too-many-locals
 def create_vector_statistics_traces(
     vector_statistics_df: pd.DataFrame,
     statistics_options: List[StatisticsOptions],

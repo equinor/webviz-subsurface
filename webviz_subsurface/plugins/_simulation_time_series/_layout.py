@@ -412,7 +412,6 @@ def __delta_ensemble_table_layout(get_uuid: Callable) -> dash_table.DataTable:
 
 def __realization_filters(get_uuid: Callable, realizations: List[int]) -> html.Div:
     return html.Div(
-        style={"margin-top": "15px"},
         children=[
             html.Div(
                 style={"display": "inline-flex"},
@@ -423,14 +422,18 @@ def __realization_filters(get_uuid: Callable, realizations: List[int]) -> html.D
                     ),
                     html.Label(
                         id=get_uuid(LayoutElements.REALIZATIONS_FILTER_SPAN),
-                        style={"margin-left": "10px"},
+                        style={
+                            "margin-left": "10px",
+                            "margin-bottom": "5px",
+                        },
                         children=f"{min(realizations)}-{max(realizations)}",
                     ),
                 ],
             ),
-            html.Label("Statistics calculated from:"),
             wcc.RadioItems(
+                label="Statistics calculated from:",
                 id=get_uuid(LayoutElements.STATISTICS_FROM_RADIO_ITEMS),
+                style={"margin-bottom": "10px"},
                 options=[
                     {
                         "label": "All",
@@ -449,6 +452,7 @@ def __realization_filters(get_uuid: Callable, realizations: List[int]) -> html.D
                     id=get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR),
                     options=[{"label": i, "value": i} for i in realizations],
                     value=realizations,
+                    size=min(10, len(realizations)),
                 ),
             ),
         ],

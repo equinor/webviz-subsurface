@@ -61,8 +61,15 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
                 f"and Ensemble B support resampling: {self._provider_b.supports_resampling()}"
             )
 
-        # All common vectors in providers
-        self._common_provider_vectors = [
+        # Intersection of realizations in providers
+        self._intersection_provider_realizations = [
+            elm
+            for elm in self._provider_a.realizations()
+            if elm in self._provider_b.realizations()
+        ]
+
+        # Intersection of vectors in providers
+        self._intersection_provider_vectors = [
             elm
             for elm in self._provider_a.vector_names()
             if elm in self._provider_b.vector_names()
@@ -70,13 +77,16 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
 
         # Categorize vector types among the vectors in argument
         self._provider_vectors = [
-            vector for vector in vectors if vector in self._common_provider_vectors
+            vector
+            for vector in vectors
+            if vector in self._intersection_provider_vectors
         ]
         self._interval_and_average_vectors = [
             vector
             for vector in vectors
             if is_interval_or_average_vector(vector)
-            and get_cumulative_vector_name(vector) in self._common_provider_vectors
+            and get_cumulative_vector_name(vector)
+            in self._intersection_provider_vectors
         ]
         self._vector_calculator_expressions = (
             get_selected_expressions(expressions, vectors)
@@ -152,6 +162,10 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
 
     def has_vector_calculator_expressions(self) -> bool:
         return len(self._vector_calculator_expressions) > 0
+
+    def realizations(self) -> List[int]:
+        """Get intersection of realizations for the two providers"""
+        return self._intersection_provider_realizations
 
     def get_provider_vectors_df(
         self, realizations: Optional[Sequence[int]] = None
@@ -275,10 +289,16 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         provider_b_calculated_vectors_df = pd.DataFrame()
         for expression in self._vector_calculator_expressions:
             provider_a_calculated_vector_df = create_calculated_vector_df(
-                expression, self._provider_a, realizations, self._resampling_frequency
+                expression,
+                self._provider_a,
+                realizations,
+                self._resampling_frequency,
             )
             provider_b_calculated_vector_df = create_calculated_vector_df(
-                expression, self._provider_b, realizations, self._resampling_frequency
+                expression,
+                self._provider_b,
+                realizations,
+                self._resampling_frequency,
             )
 
             if (

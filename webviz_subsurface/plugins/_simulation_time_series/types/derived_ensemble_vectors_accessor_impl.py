@@ -43,6 +43,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
     ) -> None:
         self._name = name
         self._provider = provider
+        self._provider_realizations = self._provider.realizations()
         self._provider_vectors = [
             vector for vector in vectors if vector in self._provider.vector_names()
         ]
@@ -69,6 +70,10 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
 
     def has_vector_calculator_expressions(self) -> bool:
         return len(self._vector_calculator_expressions) > 0
+
+    def realizations(self) -> List[int]:
+        """Get realizations for provider in """
+        return self._provider_realizations
 
     def get_provider_vectors_df(
         self, realizations: Optional[Sequence[int]] = None
@@ -175,7 +180,10 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         calculated_vectors_df = pd.DataFrame()
         for expression in self._vector_calculator_expressions:
             calculated_vector_df = create_calculated_vector_df(
-                expression, self._provider, realizations, self._resampling_frequency
+                expression,
+                self._provider,
+                realizations,
+                self._resampling_frequency,
             )
             if calculated_vectors_df.empty:
                 calculated_vectors_df = calculated_vector_df
