@@ -2110,9 +2110,9 @@ def update_misfit_plot(
             x="REAL",
             y="ABSDIFF",
             title=ens_name,
-            range_y=[min_diff * 0.30, max_diff * 1.05],
+            range_y=[min_diff * 0.0, max_diff * 1.05],
             color="ABSDIFF",
-            range_color=[min_diff * 0.30, max_diff * 1.00],
+            range_color=[min_diff * 0.0, max_diff * 1.00],
             color_continuous_scale=px.colors.sequential.amp,
             hover_data={"ABSDIFF": ":,.3r"},
         )
