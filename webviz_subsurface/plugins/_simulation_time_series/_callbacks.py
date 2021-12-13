@@ -256,9 +256,13 @@ def plugin_callbacks(
                 if realization in accessor.realizations()
             ]
 
-            # Retrieve all realizations only when statistics across all reals
-            # are needed - otherwise filter request
-            if (
+            # Retrieve all realizations when:
+            # - all accessor realizations are to be retrieved
+            # - Statistics across all reals are needed - otherwise filter request
+            get_all_realizations_query = realizations_filter_query and set(
+                realizations_filter_query
+            ) == set(accessor.realizations())
+            get_statistics_across_all_realizations = (
                 statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization
                 in [
@@ -266,7 +270,8 @@ def plugin_callbacks(
                     VisualizationOptions.STATISTICS,
                     VisualizationOptions.STATISTICS_AND_REALIZATIONS,
                 ]
-            ):
+            )
+            if get_all_realizations_query or get_statistics_across_all_realizations:
                 realizations_filter_query = None
 
             # If all selected realizations are invalid for accessor
