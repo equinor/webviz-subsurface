@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, State, callback_context
+from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from ...._figures import BarChart, ScatterPlot
@@ -15,7 +15,7 @@ def paramresp_callbacks(
 ) -> None:
     @app.callback(
         Output(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
-        Input(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART), "clickData"),
+        Input(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE), "clickData"),
         State(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
         prevent_initial_call=True,
     )
@@ -24,7 +24,6 @@ def paramresp_callbacks(
         corrtype: str,
     ) -> str:
         """Update the selected parameter from clickdata"""
-        print("clickdata callback triggered")
         if corr_vector_clickdata is None or corrtype != "sim_vs_param":
             raise PreventUpdate
         return corr_vector_clickdata.get("points", [{}])[0].get("y")
@@ -39,8 +38,8 @@ def paramresp_callbacks(
     def _update_date_and_zone(
         well: str,
     ) -> Tuple[List[Dict[str, str]], str, List[Dict[str, str]], str]:
+        """Update dates and zones when selecting well"""
         dates_in_well, zones_in_well = datamodel.well_dates_and_zones(well)
-        print("update date and zone triggered")
         return (
             [{"label": date, "value": date} for date in dates_in_well],
             dates_in_well[0],
@@ -49,8 +48,8 @@ def paramresp_callbacks(
         )
 
     @app.callback(
-        Output(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART), "figure"),
-        Output(get_uuid(LayoutElements.PARAMRESP_SCATTERPLOT), "figure"),
+        Output(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART), "children"),
+        Output(get_uuid(LayoutElements.PARAMRESP_SCATTERPLOT), "children"),
         Output(get_uuid(LayoutElements.PARAMRESP_FORMATIONS), "children"),
         Input(get_uuid(LayoutElements.PARAMRESP_ENSEMBLE), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_WELL), "value"),
@@ -69,9 +68,15 @@ def paramresp_callbacks(
         corrtype: str,
     ) -> List[Optional[Any]]:
         """
-        Main callback to update plots.
+        Main callback to update graphs.
         """
-        df, obs, obs_err = datamodel.create_rft_and_param_pivot_table(
+        (
+            df,
+            obs,
+            obs_err,
+            ens_params,
+            ens_rfts,
+        ) = datamodel.create_rft_and_param_pivot_table(
             ensemble=ensemble,
             well=well,
             date=date,
@@ -80,25 +85,29 @@ def paramresp_callbacks(
         )
         current_key = f"{well} {date} {zone}"
 
+        if df is None:
+            # This happens if the filtering criterias returns no data
+            # Could f.ex happen when there are ensembles with different well names
+            return ["No data matching the given filter criterias"] * 3
+        if param is not None and param not in ens_params:
+            # This happens if the selected parameter does not exist in the
+            # selected ensemble
+            return ["Selected parameter not valid for selected ensemble"] * 3
+
         if corrtype == "sim_vs_param" or param is None:
-            corrseries = correlate(
-                df[datamodel.parameters + [current_key]], current_key
-            )
+            corrseries = correlate(df[ens_params + [current_key]], current_key)
+            param = param if param is not None else corrseries.abs().idxmax()
             corr_title = f"{current_key} vs parameters"
-            corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
-            param = param if param is not None else corrfig.first_y_value
-            corrfig.color_bars(param, "#007079", 0.5)
-            scatter_x, scatter_y = param, current_key
+            scatter_x, scatter_y, highlight_bar = param, current_key, param
 
         if corrtype == "param_vs_sim":
-            corr_with = [
-                col for col in df.columns if col not in datamodel.parameters
-            ] + [param]
-            corrseries = correlate(df[corr_with], param)
+            corrseries = correlate(df[ens_rfts + [param]], param)
             corr_title = f"{param} vs simulated RFTs"
-            corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
-            corrfig.color_bars(current_key, "#007079", 0.5)
-            scatter_x, scatter_y = param, current_key
+            scatter_x, scatter_y, highlight_bar = param, current_key, current_key
+
+        # Correlation bar chart
+        corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
+        corrfig.color_bars(highlight_bar, "#007079", 0.5)
 
         # Scatter plot
         scatterplot = ScatterPlot(
@@ -136,8 +145,17 @@ def paramresp_callbacks(
         formations_figure.color_by_param_value(df_value_norm, param)
 
         return [
-            corrfig.figure,
-            scatterplot.figure,
+            wcc.Graph(
+                style={"height": "42vh"},
+                config={"displayModeBar": False},
+                figure=corrfig.figure,
+                id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
+            ),
+            wcc.Graph(
+                style={"height": "42vh"},
+                config={"displayModeBar": False},
+                figure=scatterplot.figure,
+            ),
             wcc.Graph(
                 style={"height": "87vh"},
                 figure=formations_figure.figure,

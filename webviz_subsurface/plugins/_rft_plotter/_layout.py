@@ -51,6 +51,7 @@ class LayoutElements:
     PARAMRESP_PARAM = "param-response-param"
     PARAMRESP_CORRTYPE = "param-response-corrtype"
     PARAMRESP_CORR_BARCHART = "paramresp-corr-barchart"
+    PARAMRESP_CORR_BARCHART_FIGURE = "paramresp-corr-barchart-figure"
     PARAMRESP_SCATTERPLOT = "paramresp-scatterplot"
     PARAMRESP_FORMATIONS = "paramresp-formations"
 
@@ -262,27 +263,17 @@ def parameter_response_layout(
                             children=[
                                 wcc.Frame(
                                     style={"height": "42vh"},
+                                    id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART),
                                     color="white",
                                     highlight=False,
-                                    children=wcc.Graph(
-                                        config={"displayModeBar": False},
-                                        # style={"height": "43vh"},
-                                        id=get_uuid(
-                                            LayoutElements.PARAMRESP_CORR_BARCHART
-                                        ),
-                                    ),
+                                    children=[],
                                 ),
                                 wcc.Frame(
                                     style={"height": "42vh"},
+                                    id=get_uuid(LayoutElements.PARAMRESP_SCATTERPLOT),
                                     color="white",
                                     highlight=False,
-                                    children=wcc.Graph(
-                                        config={"displayModeBar": False},
-                                        # style={"height": "43vh"},
-                                        id=get_uuid(
-                                            LayoutElements.PARAMRESP_SCATTERPLOT
-                                        ),
-                                    ),
+                                    children=[],
                                 ),
                             ],
                         ),
