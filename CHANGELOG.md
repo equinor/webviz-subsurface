@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Fixed
+
+- [#888](https://github.com/equinor/webviz-subsurface/pull/888) - Improved `SeismicMisfit` performance when using polygon files with a large number of polygons.
+
 ### Added
 
 - [#883](https://github.com/equinor/webviz-subsurface/pull/883) - Added `Statistics + Realizations`-plot for New `SimulationTimeSeries` plugin. Includes filtering of realizations and selection to calculate statistics from all realizations or selected subset of realizations. Updated visualization mode included in user download data.
