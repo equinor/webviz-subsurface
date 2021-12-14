@@ -154,6 +154,9 @@ def plugin_callbacks(
         from the VectorCalculatorgets edited, without changing the expression name - i.e.
         VectorSelector selectedNodes remain unchanged.
         """
+        if not isinstance(selected_ensembles, list):
+            raise TypeError("ensembles should always be of type list")
+
         if vectors is None:
             vectors = initial_selected_vectors
 
@@ -188,9 +191,6 @@ def plugin_callbacks(
             ]
         ):
             raise PreventUpdate
-
-        if not isinstance(selected_ensembles, list):
-            raise TypeError("ensembles should always be of type list")
 
         # Create dict of derived ensemble vectors accessors for selected ensembles
         derived_ensemble_vectors_accessors: Dict[
@@ -243,41 +243,40 @@ def plugin_callbacks(
         else:
             raise PreventUpdate
 
+        # Get all realizations if statistics accross all realizations are requested
+        is_statistics_from_all_realizations = (
+            statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+            and visualization
+            in [
+                VisualizationOptions.FANCHART,
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+        )
+
         # Plotting per derived ensemble vectors accessor
         for ensemble, accessor in derived_ensemble_vectors_accessors.items():
-            # TODO: Consider to remove list and use pd.concat to obtain one single
-            # dataframe with vector columns. NB: Assumes equal sampling rate
-            # for all vectors - i.e equal number of rows in dataframes
-
-            # Filter realization query - only request realizations existing for accessor
-            realizations_filter_query: Optional[List[int]] = [
-                realization
-                for realization in selected_realizations
-                if realization in accessor.realizations()
-            ]
+            # Filter realization query - realizations query for accessor
+            # Value:
+            # - List[int]: Filtered valid realizations, empty list if none are valid
+            # - None: Get all realizations, i.e. non-filtered query
+            realizations_filter_query = accessor.create_valid_realizations_query(
+                selected_realizations
+            )
 
             # Retrieve all realizations when:
-            # - all accessor realizations are to be retrieved
-            # - Statistics across all reals are needed - otherwise filter request
-            get_all_realizations_query = realizations_filter_query and set(
-                realizations_filter_query
-            ) == set(accessor.realizations())
-            get_statistics_across_all_realizations = (
-                statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
-                and visualization
-                in [
-                    VisualizationOptions.FANCHART,
-                    VisualizationOptions.STATISTICS,
-                    VisualizationOptions.STATISTICS_AND_REALIZATIONS,
-                ]
-            )
-            if get_all_realizations_query or get_statistics_across_all_realizations:
+            # - Statistics from all realizations
+            # Otherwise keep realizations filter query
+            if is_statistics_from_all_realizations:
                 realizations_filter_query = None
 
-            # If all selected realizations are invalid for accessor
-            # NB: Query of None equals no filter, i.e. all realizations
+            # If all selected realizations are invalid for accessor - empty list
             if realizations_filter_query == []:
                 continue
+
+            # TODO: Consider to remove list vectors_df_list and use pd.concat to obtain
+            # one single dataframe with vector columns. NB: Assumes equal sampling rate
+            # for each vector type - i.e equal number of rows in dataframes
 
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
@@ -369,6 +368,7 @@ def plugin_callbacks(
                     figure_builder.add_vector_observations(vector, vector_observations)
 
         # Add history trace
+        # TODO: Improve when new history vector input format is in place
         if TraceOptions.HISTORY in trace_options:
             if (
                 isinstance(figure_builder, VectorSubplotBuilder)
@@ -434,6 +434,11 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
+            State(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+            State(
+                get_uuid(LayoutElements.STATISTICS_FROM_RADIO_ITEMS),
+                "value",
+            ),
             State(
                 get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
                 "data",
@@ -450,19 +455,26 @@ def plugin_callbacks(
         selected_ensembles: List[str],
         visualization_value: str,
         resampling_frequency_value: str,
+        selected_realizations: List[int],
+        statistics_calculated_from_value: str,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
     ) -> Union[EncodedFile, str]:
         """Callback to download data based on selections
 
+        Retrieve vector data based on selected visualizations and filtered realizations
+
         NOTE:
         * Does not group based on "Group By" - data is stored per vector
+        * All statistics included - no filtering on statistics selections
         * No history vector
-        * No filtering on statistics selections
         * No observation data
         """
         if data_requested is None:
             raise PreventUpdate
+
+        if not isinstance(selected_ensembles, list):
+            raise TypeError("ensembles should always be of type list")
 
         if vectors is None:
             vectors = initial_selected_vectors
@@ -475,9 +487,7 @@ def plugin_callbacks(
         # Convert from string values to enum types
         visualization = VisualizationOptions(visualization_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
-
-        if not isinstance(selected_ensembles, list):
-            raise TypeError("ensembles should always be of type list")
+        statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
 
         # Create dict of derived ensemble vectors accessors for selected ensembles
         derived_ensemble_vectors_accessors: Dict[
@@ -494,57 +504,117 @@ def plugin_callbacks(
         # Dict with vector name as key and dataframe data as value
         vector_dataframe_dict: Dict[str, pd.DataFrame] = {}
 
-        # Access per ensemble
+        # Get all realizations if statistics accross all realizations are requested
+        is_statistics_from_all_realizations = (
+            statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+            and visualization
+            in [
+                VisualizationOptions.FANCHART,
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+        )
+
+        # Handle per accessor
         for ensemble, accessor in derived_ensemble_vectors_accessors.items():
+            # Filter realization query - realizations query for accessor
+            # Value:
+            # - List[int]: Filtered valid realizations, empty list if none are valid
+            # - None: Get all realizations, i.e. non-filtered query
+            realizations_filter_query = accessor.create_valid_realizations_query(
+                selected_realizations
+            )
+
+            # Retrieve all realizations when:
+            # - Statistics from all realizations
+            # Otherwise keep realizations filter query
+            if is_statistics_from_all_realizations:
+                realizations_filter_query = None
+
+            # If all selected realizations are invalid for accessor - empty list
+            if realizations_filter_query == []:
+                continue
+
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
-                vectors_df_list.append(accessor.get_provider_vectors_df())
+                vectors_df_list.append(
+                    accessor.get_provider_vectors_df(
+                        realizations=realizations_filter_query
+                    )
+                )
             if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df()
+                    accessor.create_interval_and_average_vectors_df(
+                        realizations=realizations_filter_query
+                    )
                 )
             if accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(accessor.create_calculated_vectors_df())
+                vectors_df_list.append(
+                    accessor.create_calculated_vectors_df(
+                        realizations=realizations_filter_query
+                    )
+                )
 
             # Append data for each vector
             for vectors_df in vectors_df_list:
                 vector_names = [
                     elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
                 ]
-                for vector in vector_names:
-                    if visualization == VisualizationOptions.REALIZATIONS:
-                        vector_df = vectors_df[["DATE", "REAL", vector]]
+
+                if visualization in [
+                    VisualizationOptions.REALIZATIONS,
+                    VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                ]:
+                    # NOTE: Should in theory not have situation with query of all realizations
+                    # if not wanted
+                    vectors_df_filtered = (
+                        vectors_df
+                        if realizations_filter_query
+                        else vectors_df[vectors_df["REAL"].isin(selected_realizations)]
+                    )
+                    for vector in vector_names:
+                        vector_df = vectors_df_filtered[["DATE", "REAL", vector]]
                         row_count = vector_df.shape[0]
                         ensemble_name_list = [ensemble] * row_count
                         vector_df.insert(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
-                        if vector_dataframe_dict.get(vector) is None:
-                            vector_dataframe_dict[vector] = vector_df
+
+                        vector_key = vector + "_realizations"
+                        if vector_dataframe_dict.get(vector_key) is None:
+                            vector_dataframe_dict[vector_key] = vector_df
                         else:
-                            vector_dataframe_dict[vector] = pd.concat(
-                                [vector_dataframe_dict[vector], vector_df],
+                            vector_dataframe_dict[vector_key] = pd.concat(
+                                [vector_dataframe_dict[vector_key], vector_df],
                                 ignore_index=True,
                                 axis=0,
                             )
 
-                    if visualization in [
-                        VisualizationOptions.STATISTICS,
-                        VisualizationOptions.FANCHART,
-                    ]:
-                        vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+                if visualization in [
+                    VisualizationOptions.STATISTICS,
+                    VisualizationOptions.FANCHART,
+                    VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                ]:
+                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+
+                    for vector in vector_names:
                         vector_statistics_df = vectors_statistics_df[["DATE", vector]]
                         row_count = vector_statistics_df.shape[0]
                         ensemble_name_list = [ensemble] * row_count
                         vector_statistics_df.insert(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
-                        if vector_dataframe_dict.get(vector) is None:
-                            vector_dataframe_dict[vector] = vector_statistics_df
+
+                        vector_key = vector + "_statistics"
+                        if vector_dataframe_dict.get(vector_key) is None:
+                            vector_dataframe_dict[vector_key] = vector_statistics_df
                         else:
-                            vector_dataframe_dict[vector] = pd.concat(
-                                [vector_dataframe_dict[vector], vector_statistics_df],
+                            vector_dataframe_dict[vector_key] = pd.concat(
+                                [
+                                    vector_dataframe_dict[vector_key],
+                                    vector_statistics_df,
+                                ],
                                 ignore_index=True,
                                 axis=0,
                             )
