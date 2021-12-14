@@ -316,10 +316,10 @@ def set_real_color(df_norm: pd.DataFrame, real_no: str) -> str:
     norm_value = df_norm.loc[df_norm["REAL"] == real_no].iloc[0]["VALUE_NORM"]
     if norm_value <= mean:
         intermed = norm_value / mean
-        return find_intermediate_color(red, mid_color, intermed, colortype="rgba")
+        return find_intermediate_color(red, mid_color, intermed)
 
     intermed = (norm_value - mean) / (1 - mean)
-    return find_intermediate_color(mid_color, green, intermed, colortype="rgba")
+    return find_intermediate_color(mid_color, green, intermed)
 
 
 def _get_fanchart_traces(

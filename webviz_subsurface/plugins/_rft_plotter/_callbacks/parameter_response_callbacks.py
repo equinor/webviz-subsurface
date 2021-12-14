@@ -88,11 +88,15 @@ def paramresp_callbacks(
         if df is None:
             # This happens if the filtering criterias returns no data
             # Could f.ex happen when there are ensembles with different well names
-            return ["No data matching the given filter criterias"] * 3
+            return ["No data matching the given filter criterias."] * 3
         if param is not None and param not in ens_params:
             # This happens if the selected parameter does not exist in the
             # selected ensemble
-            return ["Selected parameter not valid for selected ensemble"] * 3
+            return ["The selected parameter not valid for selected ensemble."] * 3
+        if not ens_params:
+            # This happens if there are multiple ensembles and one of the ensembles
+            # doesn't have non-constant parameters.
+            return ["The selected ensemble has no non-constant parameters."] * 3
 
         if corrtype == "sim_vs_param" or param is None:
             corrseries = correlate(df[ens_params + [current_key]], current_key)
@@ -146,13 +150,13 @@ def paramresp_callbacks(
 
         return [
             wcc.Graph(
-                style={"height": "42vh"},
+                style={"height": "40vh"},
                 config={"displayModeBar": False},
                 figure=corrfig.figure,
                 id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
             ),
             wcc.Graph(
-                style={"height": "42vh"},
+                style={"height": "40vh"},
                 config={"displayModeBar": False},
                 figure=scatterplot.figure,
             ),

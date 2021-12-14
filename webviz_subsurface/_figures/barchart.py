@@ -1,4 +1,7 @@
+from typing import Any, Dict, List
+
 import pandas as pd
+
 from .._utils.colors import hex_to_rgba
 
 
@@ -10,15 +13,15 @@ class BarChart:
         self._data = self.initial_data
 
     @property
-    def data(self):
+    def data(self) -> List[Dict[str, Any]]:
         return self._data
 
     @property
-    def figure(self):
+    def figure(self) -> Dict[str, Any]:
         return {"data": self.data, "layout": self.layout}
 
     @property
-    def initial_data(self):
+    def initial_data(self) -> List[Dict[str, Any]]:
         return [
             {
                 "x": self.series.values,
@@ -30,7 +33,7 @@ class BarChart:
         ]
 
     @property
-    def layout(self):
+    def layout(self) -> Dict[str, Any]:
         return {
             "title": self.title,
             "margin": {
@@ -49,7 +52,7 @@ class BarChart:
         }
 
     @property
-    def first_y_value(self):
+    def first_y_value(self) -> str:
         return self.data[0]["y"][-1]
 
     def color_bars(
@@ -57,7 +60,7 @@ class BarChart:
         selected_bar: str,
         color: str,
         opacity: float,
-        color_selected="#FF1243",
+        color_selected: str = "#FF1243",
     ) -> None:
         """
         Set colors to the correlation plot bar,

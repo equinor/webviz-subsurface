@@ -262,14 +262,14 @@ def parameter_response_layout(
                             flex=2,
                             children=[
                                 wcc.Frame(
-                                    style={"height": "42vh"},
+                                    style={"height": "41.5vh"},
                                     id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART),
                                     color="white",
                                     highlight=False,
                                     children=[],
                                 ),
                                 wcc.Frame(
-                                    style={"height": "42vh"},
+                                    style={"height": "41.5vh"},
                                     id=get_uuid(LayoutElements.PARAMRESP_SCATTERPLOT),
                                     color="white",
                                     highlight=False,

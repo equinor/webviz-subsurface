@@ -200,7 +200,7 @@ class RftPlotterDataModel:
             rft_filter.update({"WELL": well, "DATE": date, "ZONE": zone})
 
         rft_df = filter_frame(self.ertdatadf, rft_filter)[
-            "REAL", "DATE", "WELL", "ZONE", "SIMULATED", "OBSERVED", "OBSERVED_ERR"
+            ["REAL", "DATE", "WELL", "ZONE", "SIMULATED", "OBSERVED", "OBSERVED_ERR"]
         ]
 
         if rft_df.empty:

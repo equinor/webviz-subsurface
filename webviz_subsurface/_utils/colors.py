@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import colorsys
 from typing import Tuple
 
@@ -124,51 +123,41 @@ def hex_to_rgba(hex_string: str, opacity: float = 1.0) -> str:
     return f"rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity})"
 
 
-def rgba_to_hex(color):
+def rgba_to_hex(color: str) -> str:
     """Converts a rgb color to hex"""
-    color = color.strip("rgb()")
-    color = color.split(",")
-    return "#" + "".join(f"{int(i):02x}" for i in color)
+    color_list = color.strip("rgb()").split(",")
+    return "#" + "".join(f"{int(i):02x}" for i in color_list)
 
 
-def find_intermediate_color(
-    lowcolor: str, highcolor: str, intermed: float, colortype: str = "tuple"
-) -> str:
+def find_intermediate_color(lowcolor: str, highcolor: str, intermed: float) -> str:
     """
     Returns the color at a given distance between two colors
     This function takes two color tuples, where each element is between 0
     and 1, along with a value 0 < intermed < 1 and returns a color that is
-    intermed-percent from lowcolor to highcolor. If colortype is set to 'rgb',
-    the function will automatically convert the rgb type to a tuple, find the
-    intermediate color and return it as an rgb color.
+    intermed-percent from lowcolor to highcolor.
     """
 
-    if colortype == "rgba":
-        # convert to tuple color, eg. (1, 0.45, 0.7)
-        lowcolor = unlabel_rgba(lowcolor)
-        highcolor = unlabel_rgba(highcolor)
+    # convert to tuple color, eg. (1, 0.45, 0.7)
+    lowcolor_tuple = unlabel_rgba(lowcolor)
+    highcolor_tuple = unlabel_rgba(highcolor)
 
-    diff_0 = float(highcolor[0] - lowcolor[0])
-    diff_1 = float(highcolor[1] - lowcolor[1])
-    diff_2 = float(highcolor[2] - lowcolor[2])
-    diff_3 = float(highcolor[3] - lowcolor[3])
+    diff_0 = float(highcolor_tuple[0] - lowcolor_tuple[0])
+    diff_1 = float(highcolor_tuple[1] - lowcolor_tuple[1])
+    diff_2 = float(highcolor_tuple[2] - lowcolor_tuple[2])
+    diff_3 = float(highcolor_tuple[3] - lowcolor_tuple[3])
 
     inter_med_tuple = (
-        lowcolor[0] + intermed * diff_0,
-        lowcolor[1] + intermed * diff_1,
-        lowcolor[2] + intermed * diff_2,
-        lowcolor[3] + intermed * diff_3,
+        lowcolor_tuple[0] + intermed * diff_0,
+        lowcolor_tuple[1] + intermed * diff_1,
+        lowcolor_tuple[2] + intermed * diff_2,
+        lowcolor_tuple[3] + intermed * diff_3,
     )
 
-    if colortype == "rgba":
-        # back to an rgba string, e.g. rgba(30, 20, 10)
-        inter_med_rgba = label_rgba(inter_med_tuple)
-        return inter_med_rgba
-
-    return inter_med_tuple
+    # back to an rgba string, e.g. rgba(30, 20, 10)
+    return label_rgba(inter_med_tuple)
 
 
-def label_rgba(colors: str) -> str:
+def label_rgba(colors: Tuple[float, float, float, float]) -> str:
     """
     Takes tuple (a, b, c, d) and returns an rgba color 'rgba(a, b, c, d)'
     """
@@ -199,5 +188,9 @@ def unlabel_rgba(colors: str) -> Tuple[float, float, float, float]:
         else:
             numbers.append(float(str_num))
             str_num = ""
+<<<<<<< HEAD
     return tuple(numbers)
 >>>>>>> correlation bar chart implemented. some functionality generalized
+=======
+    return numbers[0], numbers[1], numbers[2], numbers[3]
+>>>>>>> Various code improvements

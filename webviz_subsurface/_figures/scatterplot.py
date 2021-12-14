@@ -20,13 +20,14 @@ class ScatterPlot:
 
         self._figure = (
             px.scatter(
-                df[[response, param]],
+                df[["REAL", response, param]],
                 x=param,
                 y=response,
                 trendline="ols"
                 if plot_trendline and df[response].nunique() > 1
                 else None,
                 trendline_color_override="#243746",
+                hover_data=["REAL", response, param],
             )
             .update_layout(
                 margin={
@@ -67,7 +68,9 @@ class ScatterPlot:
         y_values: List[float],
         mode: str,
         color: str,
+        text: str,
         dash: str = "solid",
+        showlegend: bool = False,
     ) -> None:
         self._figure.add_trace(
             go.Scatter(
@@ -75,19 +78,29 @@ class ScatterPlot:
                 y=y_values,
                 mode=mode,
                 line=dict(dash=dash, color=color),
-                showlegend=False,
+                showlegend=showlegend,
+                hovertext=text,
+                name=text,
             )
         )
 
     def add_vertical_line_with_error(
         self, value: float, error: float, xmin: float, xmax: float
     ) -> None:
-        self.add_trace([xmin, xmax], [value, value], "lines", "#243746")
+        self.add_trace(
+            [xmin, xmax],
+            [value, value],
+            "lines",
+            "#243746",
+            "Observation",
+            showlegend=True,
+        )
         self.add_trace(
             [xmin, xmax],
             [value - error, value - error],
             "lines",
             "#243746",
+            "Observation Error",
             dash="dash",
         )
         self.add_trace(
@@ -95,5 +108,7 @@ class ScatterPlot:
             [value + error, value + error],
             "lines",
             "#243746",
+            "Observation Error",
             dash="dash",
         )
+        self._figure.update_layout(legend=dict(orientation="h"))
