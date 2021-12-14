@@ -5,7 +5,7 @@ from plotly.subplots import make_subplots
 from webviz_config._theme_class import WebvizConfigTheme
 
 from webviz_subsurface._providers import Frequency
-from webviz_subsurface._utils.colors import hex_to_rgb, scale_rgb_lightness, rgb_to_str
+from webviz_subsurface._utils.colors import hex_to_rgb, rgb_to_str, scale_rgb_lightness
 
 from ..types import FanchartOptions, StatisticsOptions
 from ..utils.create_vector_traces_utils import (

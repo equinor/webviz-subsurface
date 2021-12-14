@@ -1,6 +1,5 @@
-from typing import Tuple
-
 import colorsys
+from typing import Tuple
 
 
 def hex_to_rgb(hex_string: str) -> Tuple[float, float, float]:

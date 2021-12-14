@@ -15,8 +15,8 @@ from webviz_subsurface._utils.vector_calculator import (
 
 from .types import (
     FanchartOptions,
-    StatisticsOptions,
     StatisticsFromOptions,
+    StatisticsOptions,
     SubplotGroupByOptions,
     TraceOptions,
     VisualizationOptions,
