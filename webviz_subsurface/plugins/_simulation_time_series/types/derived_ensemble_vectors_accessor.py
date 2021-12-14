@@ -59,9 +59,8 @@ class DerivedEnsembleVectorsAccessor:
         - List[int] - List of realization numbers existing for the accessor - empty list
         is returned if no realizations exist.
         """
-        if set(selected_realizations) == set(self._accessor_realizations):
+        if set(self._accessor_realizations).issubset(set(selected_realizations)):
             return None
-
         return [
             realization
             for realization in selected_realizations

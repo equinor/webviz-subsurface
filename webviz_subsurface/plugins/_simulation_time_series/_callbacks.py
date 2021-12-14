@@ -256,22 +256,19 @@ def plugin_callbacks(
 
         # Plotting per derived ensemble vectors accessor
         for ensemble, accessor in derived_ensemble_vectors_accessors.items():
-            # Filter realization query - realizations query for accessor
-            # Value:
-            # - List[int]: Filtered valid realizations, empty list if none are valid
-            # - None: Get all realizations, i.e. non-filtered query
-            realizations_filter_query = accessor.create_valid_realizations_query(
-                selected_realizations
+            # Realization query - realizations query for accessor
+            # - Get non-filter query, None, if statistics from all realizations is needed
+            # - Create valid realizations query for accessor otherwise:
+            #   * List[int]: Filtered valid realizations, empty list if none are valid
+            #   * None: Get all realizations, i.e. non-filtered query
+            realizations_query = (
+                None
+                if is_statistics_from_all_realizations
+                else accessor.create_valid_realizations_query(selected_realizations)
             )
 
-            # Retrieve all realizations when:
-            # - Statistics from all realizations
-            # Otherwise keep realizations filter query
-            if is_statistics_from_all_realizations:
-                realizations_filter_query = None
-
             # If all selected realizations are invalid for accessor - empty list
-            if realizations_filter_query == []:
+            if realizations_query == []:
                 continue
 
             # TODO: Consider to remove list vectors_df_list and use pd.concat to obtain
@@ -282,20 +279,18 @@ def plugin_callbacks(
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
                 vectors_df_list.append(
-                    accessor.get_provider_vectors_df(
-                        realizations=realizations_filter_query
-                    )
+                    accessor.get_provider_vectors_df(realizations=realizations_query)
                 )
             if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
                     accessor.create_interval_and_average_vectors_df(
-                        realizations=realizations_filter_query
+                        realizations=realizations_query
                     )
                 )
             if accessor.has_vector_calculator_expressions():
                 vectors_df_list.append(
                     accessor.create_calculated_vectors_df(
-                        realizations=realizations_filter_query
+                        realizations=realizations_query
                     )
                 )
 
@@ -305,7 +300,7 @@ def plugin_callbacks(
                     # query is not performed
                     figure_builder.add_realizations_traces(
                         vectors_df
-                        if realizations_filter_query
+                        if realizations_query
                         else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
                         ensemble,
                     )
@@ -337,7 +332,7 @@ def plugin_callbacks(
                     # query is not performed
                     figure_builder.add_realizations_traces(
                         vectors_df
-                        if realizations_filter_query
+                        if realizations_query
                         else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
                         ensemble,
                         color_lightness_scale=150.0,
@@ -517,42 +512,37 @@ def plugin_callbacks(
 
         # Handle per accessor
         for ensemble, accessor in derived_ensemble_vectors_accessors.items():
-            # Filter realization query - realizations query for accessor
-            # Value:
-            # - List[int]: Filtered valid realizations, empty list if none are valid
-            # - None: Get all realizations, i.e. non-filtered query
-            realizations_filter_query = accessor.create_valid_realizations_query(
-                selected_realizations
+            # Realization query - realizations query for accessor
+            # - Get non-filter query, None, if statistics from all realizations is needed
+            # - Create valid realizations query for accessor otherwise:
+            #   * List[int]: Filtered valid realizations, empty list if none are valid
+            #   * None: Get all realizations, i.e. non-filtered query
+            realizations_query = (
+                None
+                if is_statistics_from_all_realizations
+                else accessor.create_valid_realizations_query(selected_realizations)
             )
 
-            # Retrieve all realizations when:
-            # - Statistics from all realizations
-            # Otherwise keep realizations filter query
-            if is_statistics_from_all_realizations:
-                realizations_filter_query = None
-
             # If all selected realizations are invalid for accessor - empty list
-            if realizations_filter_query == []:
+            if realizations_query == []:
                 continue
 
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
                 vectors_df_list.append(
-                    accessor.get_provider_vectors_df(
-                        realizations=realizations_filter_query
-                    )
+                    accessor.get_provider_vectors_df(realizations=realizations_query)
                 )
             if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
                     accessor.create_interval_and_average_vectors_df(
-                        realizations=realizations_filter_query
+                        realizations=realizations_query
                     )
                 )
             if accessor.has_vector_calculator_expressions():
                 vectors_df_list.append(
                     accessor.create_calculated_vectors_df(
-                        realizations=realizations_filter_query
+                        realizations=realizations_query
                     )
                 )
 
@@ -570,7 +560,7 @@ def plugin_callbacks(
                     # if not wanted
                     vectors_df_filtered = (
                         vectors_df
-                        if realizations_filter_query
+                        if realizations_query
                         else vectors_df[vectors_df["REAL"].isin(selected_realizations)]
                     )
                     for vector in vector_names:
