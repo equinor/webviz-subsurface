@@ -26,6 +26,8 @@ Several visualizations are available:
 
 * Boxplot showing misfit per ERT observation for each ensemble.
 
+* Plots for analysing the parameter response of the RFT data. Not available for aggregated data.
+
 ---
 **Using data per realization**
 
@@ -45,6 +47,8 @@ using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) \
 01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). \
 Simulated RFT data can be visualized along MD if a "CONMD" column is present in \
 the dataframe and only for wells where each RFT datapoint has a unique MD.
+
+* **`parameters.txt`**: File with parameters and values
 
 **Using aggregated data**
 
