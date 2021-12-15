@@ -7,8 +7,8 @@ from webviz_subsurface._providers import Frequency
 from ..types import (
     DeltaEnsemble,
     DerivedDeltaEnsembleVectorsAccessorImpl,
-    DerivedVectorsAccessor,
     DerivedEnsembleVectorsAccessorImpl,
+    DerivedVectorsAccessor,
     ProviderSet,
 )
 from .delta_ensemble_utils import (
