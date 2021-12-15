@@ -4,10 +4,7 @@ from typing import Optional, Sequence
 import pandas as pd
 
 
-# TODO: Rename?
-# Suggestions:
-# - DerivedVectorsAccessor
-class DerivedEnsembleVectorsAccessor:
+class DerivedVectorsAccessor:
     @abc.abstractmethod
     def has_provider_vectors(self) -> bool:
         ...

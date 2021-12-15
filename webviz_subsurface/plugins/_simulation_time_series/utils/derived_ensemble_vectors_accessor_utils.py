@@ -7,7 +7,7 @@ from webviz_subsurface._providers import Frequency
 from ..types import (
     DeltaEnsemble,
     DerivedDeltaEnsembleVectorsAccessorImpl,
-    DerivedEnsembleVectorsAccessor,
+    DerivedVectorsAccessor,
     DerivedEnsembleVectorsAccessorImpl,
     ProviderSet,
 )
@@ -18,21 +18,21 @@ from .delta_ensemble_utils import (
 )
 
 
-def create_derived_ensemble_vectors_accessor_dict(
+def create_derived_vectors_accessor_dict(
     ensembles: List[str],
     vectors: List[str],
     provider_set: ProviderSet,
     expressions: List[ExpressionInfo],
     delta_ensembles: List[DeltaEnsemble],
     resampling_frequency: Optional[Frequency],
-) -> Dict[str, DerivedEnsembleVectorsAccessor]:
-    """Create dictionary with ensemble name as key and derived ensemble vectors accessor
+) -> Dict[str, DerivedVectorsAccessor]:
+    """Create dictionary with ensemble name as key and derived vectors accessor
     as key.
 
     Obtain iterable object with ensemble name and corresponding vector data accessor.
 
-    Creates derived ensemble vectors accessor based on ensemble type: Single ensemble
-    or Delta ensemble.
+    Creates derived vectors accessor based on ensemble type: Single ensemble or
+    Delta ensemble.
 
     The derived vectors are based on listed vectors and created expressions.
 
@@ -46,13 +46,13 @@ def create_derived_ensemble_vectors_accessor_dict(
     EnsembleSummaryProviders
 
     `Return:`
-    * Dict[str, DerivedVectorsAccessorInterface] - dictionary with ensemble name as key
-    and DerivedVectorAccessor implementations based on ensemble type - single ensemble
+    * Dict[str, DerivedVectorsAccessor] - dictionary with ensemble name as key and
+    DerivedVectorsAccessor implementations based on ensemble type - single ensemble
     or delta ensemble.
 
     TODO: Consider as a factory?
     """
-    ensemble_data_accessor_dict: Dict[str, DerivedEnsembleVectorsAccessor] = {}
+    ensemble_data_accessor_dict: Dict[str, DerivedVectorsAccessor] = {}
     delta_ensemble_name_dict = create_delta_ensemble_name_dict(delta_ensembles)
     provider_names = provider_set.names()
     for ensemble in ensembles:

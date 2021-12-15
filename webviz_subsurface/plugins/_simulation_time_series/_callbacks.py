@@ -29,7 +29,7 @@ from ._property_serialization import (
 )
 from .types import (
     DeltaEnsemble,
-    DerivedEnsembleVectorsAccessor,
+    DerivedVectorsAccessor,
     FanchartOptions,
     ProviderSet,
     StatisticsOptions,
@@ -39,7 +39,7 @@ from .types import (
 )
 from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
-    create_derived_ensemble_vectors_accessor_dict,
+    create_derived_vectors_accessor_dict,
 )
 from .utils.history_vectors import create_history_vectors_df
 from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
@@ -167,10 +167,10 @@ def plugin_callbacks(
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
 
-        # Create dict of derived ensemble vectors accessors for selected ensembles
-        derived_ensemble_vectors_accessors: Dict[
-            str, DerivedEnsembleVectorsAccessor
-        ] = create_derived_ensemble_vectors_accessor_dict(
+        # Create dict of derived vectors accessors for selected ensembles
+        derived_vectors_accessors: Dict[
+            str, DerivedVectorsAccessor
+        ] = create_derived_vectors_accessor_dict(
             ensembles=selected_ensembles,
             vectors=vectors,
             provider_set=input_provider_set,
@@ -217,8 +217,8 @@ def plugin_callbacks(
         else:
             raise PreventUpdate
 
-        # Plotting per derived ensemble vectors accessor
-        for ensemble, accessor in derived_ensemble_vectors_accessors.items():
+        # Plotting per derived vectors accessor
+        for ensemble, accessor in derived_vectors_accessors.items():
             # TODO: Consider to remove list and use pd.concat to obtain one single
             # dataframe with vector columns. NB: Assumes equal sampling rate
             # for all vectors - i.e equal number of rows in dataframes
@@ -267,7 +267,7 @@ def plugin_callbacks(
         # Do not add observations if only delta ensembles are selected
         is_only_delta_ensembles = (
             len(selected_input_providers.names()) == 0
-            and len(derived_ensemble_vectors_accessors) > 0
+            and len(derived_vectors_accessors) > 0
         )
         if (
             observations
@@ -388,10 +388,10 @@ def plugin_callbacks(
         if not isinstance(selected_ensembles, list):
             raise TypeError("ensembles should always be of type list")
 
-        # Create dict of derived ensemble vectors accessors for selected ensembles
-        derived_ensemble_vectors_accessors: Dict[
-            str, DerivedEnsembleVectorsAccessor
-        ] = create_derived_ensemble_vectors_accessor_dict(
+        # Create dict of derived vectors accessors for selected ensembles
+        derived_vectors_accessors: Dict[
+            str, DerivedVectorsAccessor
+        ] = create_derived_vectors_accessor_dict(
             ensembles=selected_ensembles,
             vectors=vectors,
             provider_set=input_provider_set,
@@ -403,8 +403,8 @@ def plugin_callbacks(
         # Dict with vector name as key and dataframe data as value
         vector_dataframe_dict: Dict[str, pd.DataFrame] = {}
 
-        # Access per ensemble
-        for ensemble, accessor in derived_ensemble_vectors_accessors.items():
+        # Plotting per derived vectors accessor
+        for ensemble, accessor in derived_vectors_accessors.items():
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():

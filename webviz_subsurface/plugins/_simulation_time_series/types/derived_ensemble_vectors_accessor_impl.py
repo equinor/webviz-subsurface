@@ -14,10 +14,10 @@ from ..utils.from_timeseries_cumulatives import (
     get_cumulative_vector_name,
     is_interval_or_average_vector,
 )
-from .derived_ensemble_vectors_accessor import DerivedEnsembleVectorsAccessor
+from .derived_vectors_accessor import DerivedVectorsAccessor
 
 
-class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
+class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
     """
     Class to create derived vector data and access these for a regular ensemble.
 
