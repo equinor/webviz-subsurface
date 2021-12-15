@@ -267,17 +267,17 @@ def get_statistical_surface(
 ) -> xtgeo.RegularSurface:
     """Calculates a statistical surface from a list of Xtgeo surface instances"""
     if calculation == "Mean":
-        return surfaces.apply(np.nanmean, axis=0)
+        return surfaces.apply(np.mean, axis=0)
     if calculation == "StdDev":
-        return surfaces.apply(np.nanstd, axis=0)
+        return surfaces.apply(np.std, axis=0)
     if calculation == "Min":
-        return surfaces.apply(np.nanmin, axis=0)
+        return surfaces.apply(np.min, axis=0)
     if calculation == "Max":
-        return surfaces.apply(np.nanmax, axis=0)
+        return surfaces.apply(np.max, axis=0)
     if calculation == "P10":
-        return surfaces.apply(np.nanpercentile, 10, axis=0)
+        return surfaces.apply(np.percentile, 10, axis=0)
     if calculation == "P90":
-        return surfaces.apply(np.nanpercentile, 90, axis=0)
+        return surfaces.apply(np.percentile, 90, axis=0)
     return xtgeo.RegularSurface(
         ncol=1, nrow=1, xinc=1, yinc=1
     )  # 1's as input is required

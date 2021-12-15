@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.8] - 2021-12-10
+
+### Fixed
+- [#877](https://github.com/equinor/webviz-subsurface/pull/877) - Update `WellLogViewer` to work with the latest version of the component.
+
+- [#875](https://github.com/equinor/webviz-subsurface/pull/875) - Fixed an issue with the uncertainty envelope in `Structural Uncertainty` where the plot misbehaved for discontinuous surfaces. A side effect is that percentile calculations are now much faster.
+
 ### Added
 - [#856](https://github.com/equinor/webviz-subsurface/pull/856) - `VolumetricAnalysis` - Added support for comparing sensitivities both within and across ensembles.
 - [#721](https://github.com/equinor/webviz-subsurface/pull/721) - Added data provider for reading ensemble summary data through a unified interface, supporting optional lazy resampling/interpolation depending on data input format.
