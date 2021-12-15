@@ -187,6 +187,8 @@ def coverage_diff_boxplot(
     colorby: str,
     vector_type: str = "well",
     figheight: int = 450,
+    boxmode: str = "group",
+    boxplot_points: str = "outliers",
 ) -> List[wcc.Graph]:
     """Create plot of misfit per well. One plot per phase."""
 
@@ -195,6 +197,7 @@ def coverage_diff_boxplot(
 
     # --- drop columns (realizations) with no data
     ensdf = df_diff.dropna(axis="columns")
+    ensdf.DATE = ensdf.DATE.str[:10]
 
     if vector_type == "group":
         oil_vector, wat_vector, gas_vector = "DIFF_GOPT", "DIFF_GWPT", "DIFF_GGPT"
@@ -208,10 +211,31 @@ def coverage_diff_boxplot(
         )
 
     all_columns = list(ensdf)  # column names
+    facet_name = "DATE"
+    if colorby == "DATE":
+        facet_name = "ENSEMBLE"
 
     if "Oil" in phases:
         oil_columns = [x for x in all_columns if x.startswith(oil_vector)]
-        fig_oil = px.box(ensdf, y=oil_columns, color=colorby)
+        oil_well_labels = [col.split(":")[1] for col in oil_columns]
+        text_labels = dict(value="Oil diff (sim-obs)", variable="Well name")
+
+        fig_oil = px.box(
+            ensdf,
+            y=oil_columns,
+            color=colorby,
+            facet_col=facet_name,
+            facet_col_wrap=2,
+            points=boxplot_points,
+            labels=text_labels,
+            boxmode=boxmode,
+        )
+
+        # fig_oil.update_layout(boxmode="overlay")
+        # fig_oil.update_layout(yaxis_title="Oil diff (sim-obs)")
+        # fig_oil.update_xaxes(row=1, title="Well name")
+        fig_oil.update_xaxes(ticktext=oil_well_labels, tickvals=oil_columns)
+
         figures.append(wcc.Graph(figure=fig_oil, style={"height": figheight}))
 
     return figures

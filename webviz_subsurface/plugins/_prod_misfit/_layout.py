@@ -52,6 +52,8 @@ class LayoutElements:
     WELL_COVERAGE_SORTING = "well_coverage_sorting"
     WELL_COVERAGE_FIGHEIGHT = "well_coverage_figheight"
     WELL_COVERAGE_PLOT_TYPE = "well_coverage_plot_type"
+    WELL_COVERAGE_BOXMODE = "well_coverage_boxmode"
+    WELL_COVERAGE_BOXPLOT_POINTS = "well_coverage_points"
     WELL_COVERAGE_GRAPH = "well_coverage_graph"
 
 
@@ -459,7 +461,7 @@ def _well_prod_coverage(
                             ],
                         ),
                         wcc.Selectors(
-                            label="Filter settings",
+                            label="Filter settings - dates and phases",
                             children=[
                                 wcc.SelectWithLabel(
                                     label="Date selector",
@@ -484,6 +486,11 @@ def _well_prod_coverage(
                                     value=phases,
                                     size=min([len(phases), 3]),
                                 ),
+                            ],
+                        ),
+                        wcc.Selectors(
+                            label="Filter settings - wells",
+                            children=[
                                 wcc.SelectWithLabel(
                                     label="Well selector",
                                     id=get_uuid(
@@ -519,6 +526,12 @@ def _well_prod_coverage(
                                     value=all_well_collection_names,
                                     size=min([len(wells), 5]),
                                 ),
+                            ],
+                        ),
+                        wcc.Selectors(
+                            label="Filter settings - realizations",
+                            open_details=False,
+                            children=[
                                 wcc.SelectWithLabel(
                                     label="Realization selector",
                                     id=get_uuid(
@@ -545,7 +558,7 @@ def _well_prod_coverage(
                                             "label": "Ensemble",
                                             "value": "ENSEMBLE",
                                         },
-                                        {"label": "Well", "value": "WELL"},
+                                        # {"label": "Well", "value": "WELL"},
                                         {"label": "Date", "value": "DATE"},
                                     ],
                                     value="ENSEMBLE",
@@ -567,6 +580,56 @@ def _well_prod_coverage(
                                     clearable=False,
                                     persistence=True,
                                     persistence_type="memory",
+                                ),
+                                wcc.Dropdown(
+                                    label="Fig layout - height",
+                                    id=get_uuid(LayoutElements.WELL_COVERAGE_FIGHEIGHT),
+                                    options=[
+                                        {
+                                            "label": "Very small",
+                                            "value": 250,
+                                        },
+                                        {
+                                            "label": "Small",
+                                            "value": 350,
+                                        },
+                                        {
+                                            "label": "Medium",
+                                            "value": 450,
+                                        },
+                                        {
+                                            "label": "Large",
+                                            "value": 700,
+                                        },
+                                        {
+                                            "label": "Very large",
+                                            "value": 1000,
+                                        },
+                                    ],
+                                    value=450,
+                                    clearable=False,
+                                    persistence=True,
+                                    persistence_type="memory",
+                                ),
+                                wcc.RadioItems(
+                                    label="Colorby grouping",
+                                    id=get_uuid(LayoutElements.WELL_COVERAGE_BOXMODE),
+                                    options=[
+                                        {"label": "Side by side", "value": "group"},
+                                        {"label": "Overlay", "value": "overlay"},
+                                    ],
+                                    value="group",
+                                ),
+                                wcc.RadioItems(
+                                    label="Show points",
+                                    id=get_uuid(
+                                        LayoutElements.WELL_COVERAGE_BOXPLOT_POINTS
+                                    ),
+                                    options=[
+                                        {"label": "Outliers only", "value": "outliers"},
+                                        {"label": "All points", "value": "all"},
+                                    ],
+                                    value="outliers",
                                 ),
                             ],
                         ),

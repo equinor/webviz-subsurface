@@ -123,6 +123,6 @@ def get_df_diff(
     # df_diff = df_diff.astype({"DATE": "string"})
 
     logging.debug(
-        f"\n--- _get_df__diff --- Total time: {time.time() - start_time} seconds.\n"
+        f"\n--- get_df_diff --- Total time: {time.time() - start_time} seconds.\n"
     )
     return df_diff

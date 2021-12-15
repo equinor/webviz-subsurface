@@ -142,6 +142,9 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.WELL_COVERAGE_REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_COLORBY), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_PLOT_TYPE), "value"),
+        Input(get_uuid(LayoutElements.WELL_COVERAGE_FIGHEIGHT), "value"),
+        Input(get_uuid(LayoutElements.WELL_COVERAGE_BOXMODE), "value"),
+        Input(get_uuid(LayoutElements.WELL_COVERAGE_BOXPLOT_POINTS), "value"),
     )
     def _update_well_coverage_graph(
         ensemble_names: List[str],
@@ -153,6 +156,9 @@ def plugin_callbacks(
         selector_realizations: List[int],
         colorby: str,
         plot_type: str,
+        figheight: int,
+        boxmode: str,
+        boxplot_points: str,
     ) -> List[wcc.Graph]:
 
         all_collection_wells = []
@@ -196,6 +202,9 @@ def plugin_callbacks(
                 selector_phases,
                 colorby,
                 vector_type="well",
+                figheight=figheight,
+                boxmode=boxmode,
+                boxplot_points=boxplot_points,
             )
         elif plot_type == "crossplot":
             figures = update_coverage_crossplot(
@@ -203,6 +212,7 @@ def plugin_callbacks(
                 selector_phases,
                 colorby,
                 vector_type="well",
+                figheight=figheight,
             )
         else:
             figures = update_coverage_diff_plot(
@@ -210,6 +220,7 @@ def plugin_callbacks(
                 selector_phases,
                 colorby,
                 vector_type="well",
+                figheight=figheight,
             )
         return figures
 
