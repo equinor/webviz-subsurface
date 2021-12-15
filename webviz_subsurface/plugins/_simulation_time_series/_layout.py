@@ -76,9 +76,7 @@ class LayoutElements:
     TOUR_STEP_SETTINGS_LAYOUT = "tour_step_settings_layout"
     TOUR_STEP_GROUP_BY = "tour_step_group_by"
     TOUR_STEP_DELTA_ENSEMBLE = "tour_step_delta_ensemble"
-    TOUR_STEP_VISUALIZATION = "tour_step_visualization"
     TOUR_STEP_OPTIONS = "tour_step_options"
-    TOUR_STEP_FILTER_REALIZATIONS = "tour_step_filter_realizations"
 
 
 # pylint: disable = too-many-arguments
@@ -261,7 +259,6 @@ def __settings_layout(
             ),
             wcc.Selectors(
                 label="Visualization",
-                id=get_uuid(LayoutElements.TOUR_STEP_VISUALIZATION),
                 children=[
                     wcc.RadioItems(
                         id=get_uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
@@ -297,7 +294,6 @@ def __settings_layout(
             ),
             wcc.Selectors(
                 label="Filter Realizations",
-                id=get_uuid(LayoutElements.TOUR_STEP_FILTER_REALIZATIONS),
                 children=__realization_filters(get_uuid, realizations),
             ),
             __vector_calculator_modal_layout(
