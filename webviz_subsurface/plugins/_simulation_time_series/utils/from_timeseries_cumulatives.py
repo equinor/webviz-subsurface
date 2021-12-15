@@ -17,7 +17,6 @@ def is_interval_or_average_vector(vector: str) -> bool:
 
 
 def get_cumulative_vector_name(vector: str) -> str:
-    # TODO: Improve name?
     if not is_interval_or_average_vector(vector):
         raise ValueError(
             f'Expected "{vector}" to be a vector calculated from cumulative!'
@@ -57,6 +56,7 @@ def calculate_from_resampled_cumulative_vectors_df(
 
     `TODO:`
     * IMPROVE FUNCTION NAME?
+    * Handle raw data format?
     * Give e.g. a dict with info of "avg and intvl" calculation for each vector column?
     Can thereby calculate everything for provided vector columns and no iterate column per
     column?

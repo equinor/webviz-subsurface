@@ -5,14 +5,7 @@ import pandas as pd
 
 
 # TODO: Rename?
-# "Possessor"
-# "Accessor"
 # Suggestions:
-# - DerivedEnsembleDataAccessor
-# - DerivedEnsembleData
-# - DerivedEnsembleVectors
-# - DerivedEnsembleVectorsProvider
-# - DerivedVectorsProvider
 # - DerivedVectorsAccessor
 class DerivedEnsembleVectorsAccessor:
     @abc.abstractmethod

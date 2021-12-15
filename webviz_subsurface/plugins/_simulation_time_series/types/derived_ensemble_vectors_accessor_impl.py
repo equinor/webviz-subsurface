@@ -103,9 +103,8 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
 
         ---------------------
-        `TODO:`
-        * Verify calculation of cumulative
-        * IMPROVE FUNCTION NAME!
+        `NOTE:`
+        * Handle calculation of cumulative when raw data is added
         * See TODO in calculate_from_resampled_cumulative_vectors_df()
         """
         if not self.has_interval_and_average_vectors():
@@ -121,9 +120,6 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         ]
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
-        # TODO: Fetch vectors df with correct sampling and perform calculation.
-        # Ensure valid sampling and ensure correct AVG_ calculation (unit/day)
-        # calculation, i.e num days between sampling points
         vectors_df = self._provider.get_vectors_df(
             cumulative_vector_names, self._resampling_frequency, realizations
         )

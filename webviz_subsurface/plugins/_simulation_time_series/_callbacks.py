@@ -179,7 +179,6 @@ def plugin_callbacks(
             resampling_frequency=resampling_frequency,
         )
 
-        # TODO: How to handle vector metadata the best way?
         # TODO: How to get metadata for calculated vector?
         vector_line_shapes: Dict[str, str] = {
             vector: get_simulation_line_shape(
@@ -328,7 +327,6 @@ def plugin_callbacks(
 
         return figure_builder.get_serialized_figure()
 
-    # TODO: Implement callback
     @app.callback(
         get_data_output,
         [get_data_requested],

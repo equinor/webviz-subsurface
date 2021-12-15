@@ -9,8 +9,6 @@ from webviz_subsurface._providers import (
 )
 
 
-# TODO: Consider if "ensemble" should be a part of names in class (Both class name,
-# function names and attribute names).
 class ProviderSet:
     """
     Class to create a set of ensemble summary providers with unique names
