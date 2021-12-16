@@ -110,6 +110,7 @@ class ProviderSet:
 
 def create_lazy_provider_set_from_paths(
     name_path_dict: Dict[str, Path],
+    rel_file_pattern: str,
 ) -> ProviderSet:
     """Create set of providers with lazy (on-demand) resampling/interpolation, from
     dictionary of ensemble name and corresponding arrow file paths
@@ -123,12 +124,15 @@ def create_lazy_provider_set_from_paths(
     provider_factory = EnsembleSummaryProviderFactory.instance()
     provider_dict: Dict[str, EnsembleSummaryProvider] = {}
     for name, path in name_path_dict.items():
-        provider_dict[name] = provider_factory.create_from_arrow_unsmry_lazy(str(path))
+        provider_dict[name] = provider_factory.create_from_arrow_unsmry_lazy(
+            str(path), rel_file_pattern
+        )
     return ProviderSet(provider_dict)
 
 
 def create_presampled_provider_set_from_paths(
     name_path_dict: Dict[str, Path],
+    rel_file_pattern: str,
     presampling_frequency: Frequency,
 ) -> ProviderSet:
     """Create set of providers without lazy resampling, but with specified frequency, from
@@ -148,6 +152,6 @@ def create_presampled_provider_set_from_paths(
     provider_dict: Dict[str, EnsembleSummaryProvider] = {}
     for name, path in name_path_dict.items():
         provider_dict[name] = provider_factory.create_from_arrow_unsmry_presampled(
-            str(path), presampling_frequency
+            str(path), rel_file_pattern, presampling_frequency
         )
     return ProviderSet(provider_dict)

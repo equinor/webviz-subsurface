@@ -43,6 +43,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
+        rel_file_pattern: str = "share/results/unsmry/*.arrow",
         perform_presampling: bool = False,
         obsfile: Path = None,
         options: dict = None,
@@ -87,11 +88,11 @@ class SimulationTimeSeries(WebvizPluginABC):
             if perform_presampling:
                 self._presampled_frequency = self._sampling
                 self._input_provider_set = create_presampled_provider_set_from_paths(
-                    ensemble_paths, self._presampled_frequency
+                    ensemble_paths, rel_file_pattern, self._presampled_frequency
                 )
             else:
                 self._input_provider_set = create_lazy_provider_set_from_paths(
-                    ensemble_paths
+                    ensemble_paths, rel_file_pattern
                 )
         else:
             raise ValueError('Incorrect argument, must provide "ensembles"')
