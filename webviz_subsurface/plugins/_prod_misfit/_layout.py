@@ -30,7 +30,7 @@ class LayoutElements:
     PROD_MISFIT_PHASES = "prod_misfit_phases"
     PROD_MISFIT_WELL_NAMES = "prod_misfit_well_names"
     PROD_MISFIT_WELL_COLLECTIONS = "prod_misfit_well_collections"
-    PROD_MISFIT_COMBINE = "prod_misfit_combine"
+    PROD_MISFIT_WELL_COMBINE_TYPE = "prod_misfit_well_combine_type"
     PROD_MISFIT_REALIZATIONS = "prod_misfit_realizations"
     PROD_MISFIT_COLORBY = "prod_misfit_colorby"
     PROD_MISFIT_SORTING = "prod_misfit_sorting"
@@ -46,7 +46,7 @@ class LayoutElements:
     WELL_COVERAGE_PHASES = "well_coverage_phases"
     WELL_COVERAGE_WELL_NAMES = "well_coverage_well_names"
     WELL_COVERAGE_WELL_COLLECTIONS = "well_coverage_well_collections"
-    WELL_COVERAGE_COMBINE = "well_coverage_combine"
+    WELL_COVERAGE_WELL_COMBINE_TYPE = "well_coverage_well_combine_type"
     WELL_COVERAGE_REALIZATIONS = "well_coverage_realizations"
     WELL_COVERAGE_COLORBY = "well_coverage_colorby"
     WELL_COVERAGE_SORTING = "well_coverage_sorting"
@@ -226,7 +226,9 @@ def _misfit_per_real_layout(
                                 ),
                                 wcc.RadioItems(
                                     label="Combine wells and collections as",
-                                    id=get_uuid(LayoutElements.PROD_MISFIT_COMBINE),
+                                    id=get_uuid(
+                                        LayoutElements.PROD_MISFIT_WELL_COMBINE_TYPE
+                                    ),
                                     options=[
                                         {
                                             "label": "Intersection",
@@ -504,7 +506,9 @@ def _well_prod_coverage(
                                 ),
                                 wcc.RadioItems(
                                     label="Combine wells and collections as",
-                                    id=get_uuid(LayoutElements.WELL_COVERAGE_COMBINE),
+                                    id=get_uuid(
+                                        LayoutElements.WELL_COVERAGE_WELL_COMBINE_TYPE
+                                    ),
                                     options=[
                                         {
                                             "label": "Intersection",
@@ -572,10 +576,13 @@ def _well_prod_coverage(
                                     id=get_uuid(LayoutElements.WELL_COVERAGE_PLOT_TYPE),
                                     options=[
                                         {"label": "Diff plot", "value": "diffplot"},
+                                        {
+                                            "label": "Diff plot relative (%)",
+                                            "value": "rel_diffplot",
+                                        },
                                         {"label": "Cross plot", "value": "crossplot"},
-                                        {"label": "Box plot", "value": "boxplot"},
                                     ],
-                                    value="crossplot",
+                                    value="diffplot",
                                     multi=False,
                                     clearable=False,
                                     persistence=True,
@@ -628,6 +635,10 @@ def _well_prod_coverage(
                                     options=[
                                         {"label": "Outliers only", "value": "outliers"},
                                         {"label": "All points", "value": "all"},
+                                        {
+                                            "label": "All points, no box",
+                                            "value": "strip",
+                                        },
                                     ],
                                     value="outliers",
                                 ),

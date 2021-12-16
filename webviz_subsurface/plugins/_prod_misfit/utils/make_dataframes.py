@@ -82,6 +82,7 @@ def get_df_diff(
     weight_reduction_factor_wat: float = 1,
     weight_reduction_factor_gas: float = 1,
     misfit_exponent: float = 1.0,
+    relative_diff: bool = False,
 ) -> pd.DataFrame:
     """Return dataframe with diff (sim-obs) for all data.
     Return empty dataframe if no realizations included."""
@@ -99,7 +100,12 @@ def get_df_diff(
             vectortype, wellname = simvector.split(":")[0], simvector.split(":")[1]
             obsvector = vectortype + "H:" + wellname
             diff_col_name = "DIFF_" + vectortype + ":" + wellname
-            if obs_error_weight > 0:
+            if relative_diff:
+                df_diff[diff_col_name] = (
+                    (df_smry[simvector] - df_smry[obsvector])
+                    / df_smry[obsvector].clip(1000)
+                ) * 100
+            elif obs_error_weight > 0:
                 # obs error, including a lower bound (diminish very low values)
                 obs_error = (obs_error_weight * df_smry[obsvector]).clip(1000)
                 df_diff[diff_col_name] = (

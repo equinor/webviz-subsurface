@@ -52,7 +52,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.PROD_MISFIT_PHASES), "value"),
         Input(get_uuid(LayoutElements.PROD_MISFIT_WELL_NAMES), "value"),
         Input(get_uuid(LayoutElements.PROD_MISFIT_WELL_COLLECTIONS), "value"),
-        Input(get_uuid(LayoutElements.PROD_MISFIT_COMBINE), "value"),
+        Input(get_uuid(LayoutElements.PROD_MISFIT_WELL_COMBINE_TYPE), "value"),
         Input(get_uuid(LayoutElements.PROD_MISFIT_REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.PROD_MISFIT_COLORBY), "value"),
         Input(get_uuid(LayoutElements.PROD_MISFIT_SORTING), "value"),
@@ -67,7 +67,7 @@ def plugin_callbacks(
         selector_phases: list,
         selector_well_names: list,
         selector_well_collection_names: list,
-        selector_well_combine: str,
+        selector_well_combine_type: str,
         selector_realizations: List[int],
         colorby: str,
         sorting: str,
@@ -79,21 +79,12 @@ def plugin_callbacks(
 
         start_time = time.time()
 
-        all_collection_wells = []
-        for collection_name in selector_well_collection_names:
-            all_collection_wells.extend(well_collections[collection_name])
-        all_collection_wells = set(all_collection_wells)
-
-        if selector_well_combine == "intersection":
-            # find intersection of selector wells and selector well collections
-            well_names_combine = [
-                well for well in selector_well_names if well in all_collection_wells
-            ]
-        else:
-            # find union of selector wells and selector well collections
-            well_names_combine = list(all_collection_wells)
-            well_names_combine.extend(selector_well_names)
-            well_names_combine = list(set(well_names_combine))
+        well_names = _get_well_names_combined(
+            well_collections,
+            selector_well_collection_names,
+            selector_well_names,
+            selector_well_combine_type,
+        )
 
         dframe = makedf.get_df_diff(
             makedf.get_df_smry(
@@ -102,7 +93,7 @@ def plugin_callbacks(
                 ens_vectors,
                 ens_realizations,
                 selector_realizations,
-                well_names_combine,
+                well_names,
                 selector_phases,
                 selector_dates,
             ),
@@ -138,7 +129,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.WELL_COVERAGE_PHASES), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_WELL_NAMES), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_WELL_COLLECTIONS), "value"),
-        Input(get_uuid(LayoutElements.WELL_COVERAGE_COMBINE), "value"),
+        Input(get_uuid(LayoutElements.WELL_COVERAGE_WELL_COMBINE_TYPE), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_COLORBY), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_PLOT_TYPE), "value"),
@@ -148,11 +139,11 @@ def plugin_callbacks(
     )
     def _update_well_coverage_graph(
         ensemble_names: List[str],
-        selector_dates: list,
-        selector_phases: list,
-        selector_well_names: list,
-        selector_well_collection_names: list,
-        selector_well_combine: str,
+        selector_dates: List[str],
+        selector_phases: List[str],
+        selector_well_names: List[str],
+        selector_well_collection_names: List[str],
+        selector_well_combine_type: str,
         selector_realizations: List[int],
         colorby: str,
         plot_type: str,
@@ -161,24 +152,15 @@ def plugin_callbacks(
         boxplot_points: str,
     ) -> List[wcc.Graph]:
 
-        all_collection_wells = []
-        for collection_name in selector_well_collection_names:
-            all_collection_wells.extend(well_collections[collection_name])
-        all_collection_wells = set(all_collection_wells)
+        well_names = _get_well_names_combined(
+            well_collections,
+            selector_well_collection_names,
+            selector_well_names,
+            selector_well_combine_type,
+        )
 
-        if selector_well_combine == "intersection":
-            # find intersection of selector wells and selector well collections
-            well_names_combine = [
-                well for well in selector_well_names if well in all_collection_wells
-            ]
-        else:
-            # find union of selector wells and selector well collections
-            well_names_combine = list(all_collection_wells)
-            well_names_combine.extend(selector_well_names)
-            well_names_combine = list(set(well_names_combine))
-
-        plot_type = "boxplot"
-        if plot_type == "boxplot":
+        if plot_type in ["diffplot", "rel_diffplot"]:
+            relative_diff = plot_type == "rel_diffplot"
             dframe = makedf.get_df_diff(
                 makedf.get_df_smry(
                     input_provider_set,
@@ -186,18 +168,13 @@ def plugin_callbacks(
                     ens_vectors,
                     ens_realizations,
                     selector_realizations,
-                    well_names_combine,
+                    well_names,
                     selector_phases,
                     selector_dates,
-                )
+                ),
+                relative_diff=relative_diff,
             )
-        # elif plot_type == "crossplot":
-        #     dframe = self.df_stat.copy()
-        # else:
-        #     dframe = self.df_diff_stat.copy()
-
-        if plot_type == "boxplot":
-            figures = makefigs.coverage_diff_boxplot(
+            figures = makefigs.coverage_diffplot(
                 dframe,
                 selector_phases,
                 colorby,
@@ -206,22 +183,26 @@ def plugin_callbacks(
                 boxmode=boxmode,
                 boxplot_points=boxplot_points,
             )
-        elif plot_type == "crossplot":
-            figures = update_coverage_crossplot(
+        if plot_type == "crossplot":
+            dframe = makedf.get_df_smry(
+                input_provider_set,
+                ensemble_names,
+                ens_vectors,
+                ens_realizations,
+                selector_realizations,
+                well_names,
+                selector_phases,
+                selector_dates,
+            )
+            figures = makefigs.coverage_crossplot(
                 dframe,
                 selector_phases,
                 colorby,
                 vector_type="well",
                 figheight=figheight,
+                boxplot_points=boxplot_points,
             )
-        else:
-            figures = update_coverage_diff_plot(
-                dframe,
-                selector_phases,
-                colorby,
-                vector_type="well",
-                figheight=figheight,
-            )
+
         return figures
 
     # # --------------------------------------------
@@ -320,3 +301,33 @@ def plugin_callbacks(
     #         scale_col_range=scale_col_range,
     #     )
     #     return figures
+
+
+# --- help functions ---
+
+
+def _get_well_names_combined(
+    well_collections: Dict[str, List[str]],
+    selected_collection_names: list,
+    selected_wells: list,
+    combine_type: str = "intersection",
+) -> List[str]:
+    """Return union or intersection of well list and well collection lists."""
+
+    selected_collection_wells = []
+    for collection_name in selected_collection_names:
+        selected_collection_wells.extend(well_collections[collection_name])
+    selected_collection_wells = set(selected_collection_wells)
+
+    if combine_type == "intersection":
+        # find intersection of selector wells and selector well collections
+        well_names_combined = [
+            well for well in selected_wells if well in selected_collection_wells
+        ]
+    else:
+        # find union of selector wells and selector well collections
+        well_names_combined = list(selected_collection_wells)
+        well_names_combined.extend(selected_wells)
+        well_names_combined = list(set(well_names_combined))
+
+    return well_names_combined

@@ -181,7 +181,7 @@ def average_arrow_annotation(mean_value: np.float64, yref: str = "y") -> Dict[st
 
 
 # -------------------------------
-def coverage_diff_boxplot(
+def coverage_diffplot(
     df_diff: pd.DataFrame,
     phases: list,
     colorby: str,
@@ -199,30 +199,25 @@ def coverage_diff_boxplot(
     ensdf = df_diff.dropna(axis="columns")
     ensdf.DATE = ensdf.DATE.str[:10]
 
-    if vector_type == "group":
-        oil_vector, wat_vector, gas_vector = "DIFF_GOPT", "DIFF_GWPT", "DIFF_GGPT"
-    elif vector_type == "well":
-        oil_vector, wat_vector, gas_vector = "DIFF_WOPT", "DIFF_WWPT", "DIFF_WGPT"
-    else:
-        raise ValueError(
-            "vector_type = ",
-            vector_type,
-            ". 'vector_type' argument must be 'well' or 'group'",
-        )
+    phase_vector = {}
+    prefix = "W" if vector_type == "well" else "G"
+    phase_vector["Oil"] = prefix + "OPT"
+    phase_vector["Water"] = prefix + "WPT"
+    phase_vector["Gas"] = prefix + "GPT"
 
     all_columns = list(ensdf)  # column names
     facet_name = "DATE"
     if colorby == "DATE":
         facet_name = "ENSEMBLE"
 
-    if "Oil" in phases:
-        oil_columns = [x for x in all_columns if x.startswith(oil_vector)]
-        oil_well_labels = [col.split(":")[1] for col in oil_columns]
-        text_labels = dict(value="Oil diff (sim-obs)", variable="Well name")
+    for phase in phases:
+        phase_columns = [x for x in all_columns if x.startswith(phase_vector[phase])]
+        phase_well_labels = [col.split(":")[1] for col in phase_columns]
+        text_labels = dict(value=f"{phase} diff (sim-obs)", variable="Well name")
 
-        fig_oil = px.box(
+        fig_phase = px.box(
             ensdf,
-            y=oil_columns,
+            y=phase_columns,
             color=colorby,
             facet_col=facet_name,
             facet_col_wrap=2,
@@ -230,59 +225,86 @@ def coverage_diff_boxplot(
             labels=text_labels,
             boxmode=boxmode,
         )
+        fig_phase.add_hline(0)
+        fig_phase.update_xaxes(ticktext=phase_well_labels, tickvals=phase_columns)
 
-        # fig_oil.update_layout(boxmode="overlay")
-        # fig_oil.update_layout(yaxis_title="Oil diff (sim-obs)")
-        # fig_oil.update_xaxes(row=1, title="Well name")
-        fig_oil.update_xaxes(ticktext=oil_well_labels, tickvals=oil_columns)
-
-        figures.append(wcc.Graph(figure=fig_oil, style={"height": figheight}))
+        figures.append(wcc.Graph(figure=fig_phase, style={"height": figheight}))
 
     return figures
 
 
 # -------------------------------
-def update_coverage_crossplot(
-    df_stat: pd.DataFrame, phases: list, colorby: str, vector_type: str = "well"
+def coverage_crossplot(
+    df_smry: pd.DataFrame,
+    phases: list,
+    colorby: str,
+    vector_type: str = "well",
+    figheight: int = 450,
+    boxplot_points: str = "outliers",
 ) -> List[wcc.Graph]:
+    """Create plot of hist vs simvector. One plot per phase."""
 
-    logging.debug("--- Updating coverage plot ---")
-
+    logging.debug("--- Updating coverage box plot ---")
     figures = []
-    figheight = 400
-    # logging.debug(phases, colorby, vector_type, "\n", df_stat, "\n")
 
-    if vector_type == "group":
-        oil_vector, wat_vector, gas_vector = "GOPT", "GWPT", "GGPT"
-    elif vector_type == "well":
-        oil_vector, wat_vector, gas_vector = "WOPT", "WWPT", "WGPT"
-    else:
-        raise ValueError(
-            "vector_type = ",
-            vector_type,
-            ". 'vector_type' argument must be 'well' or 'group'",
-        )
+    # --- drop columns (realizations) with no data
+    # ensdf = df_smry.dropna(axis="columns")
 
-    # ---------------------------------------
-    if "Oil" in phases:
-        df_stat_oil = df_stat[df_stat.VECTOR == oil_vector]
-        _p10 = abs(df_stat_oil["SIM_MEAN"] - df_stat_oil["SIM_P10"])
-        _p90 = abs(df_stat_oil["SIM_MEAN"] - df_stat_oil["SIM_P90"])
-        fig_oil = px.scatter(
-            df_stat_oil,
-            x="OBS",
-            y="SIM_MEAN",
-            error_y=_p10,
-            error_y_minus=_p90,
-            text="WELL",
-            color=colorby,
-        )
-        fig_oil.update_traces(textposition="middle left")
+    ensdf = df_smry
+    ensdf.DATE = ensdf.DATE.str[:10]
+    ensdf["id"] = ensdf.reset_index().index
+    ensdf = pd.wide_to_long(
+        ensdf,
+        ["WOPT", "WWPT", "WGPT", "WOPTH", "WWPTH", "WGPTH"],
+        i="id",
+        j="WELL",
+        sep=":",
+        suffix=r"\w+",
+    )
+    print(ensdf)
 
-        # add zeroline (diagonal) for oil_vector
-        rmin = min(df_stat_oil.OBS.min(), df_stat_oil.SIM_MEAN.min())
-        rmax = max(df_stat_oil.OBS.max(), df_stat_oil.SIM_MEAN.max())
-        fig_oil.add_trace(
+    phase_vector = {}
+    phase_hvector = {}
+    prefix = "W" if vector_type == "well" else "G"
+    phase_vector["Oil"] = prefix + "OPT"
+    phase_vector["Water"] = prefix + "WPT"
+    phase_vector["Gas"] = prefix + "GPT"
+    phase_hvector["Oil"] = prefix + "OPTH"
+    phase_hvector["Water"] = prefix + "WPTH"
+    phase_hvector["Gas"] = prefix + "GPTH"
+
+    facet_name = "DATE"
+    if colorby == "DATE":
+        facet_name = "ENSEMBLE"
+
+    for phase in phases:
+
+        if boxplot_points == "strip":
+            fig_phase = px.strip(
+                ensdf,
+                x=phase_hvector[phase],
+                y=phase_vector[phase],
+                color=colorby,
+                facet_col=facet_name,
+                facet_col_wrap=2,
+                hover_name=ensdf.index.get_level_values("WELL"),
+            )
+        else:
+            fig_phase = px.box(
+                ensdf,
+                x=phase_hvector[phase],
+                y=phase_vector[phase],
+                color=colorby,
+                facet_col=facet_name,
+                facet_col_wrap=2,
+                points=boxplot_points,
+                hover_name=ensdf.index.get_level_values("WELL"),
+            )
+
+        # -- add zeroline (diagonal) for oil_vector
+        rmin = min(ensdf[phase_hvector[phase]].min(), ensdf[phase_vector[phase]].min())
+        rmax = max(ensdf[phase_hvector[phase]].max(), ensdf[phase_vector[phase]].max())
+        fig_phase.add_trace(
             go.Scattergl(
                 x=[rmin, rmax],
                 y=[rmin, rmax],
@@ -291,10 +313,13 @@ def update_coverage_crossplot(
                 name="zeroline",
                 showlegend=True,
             ),
+            row="all",
+            col="all",
+            exclude_empty_subplots=True,
         )
 
-        # add 10% off-set for oil_vector
-        fig_oil.add_trace(
+        # -- add 10% off-set for oil_vector
+        fig_phase.add_trace(
             go.Scattergl(
                 x=[rmin, rmax] + [rmax, rmin],
                 y=[rmin * 1.1, rmax * 1.1] + [rmax * 0.9, rmin * 0.9],
@@ -305,10 +330,13 @@ def update_coverage_crossplot(
                 name="±10% off-set",
                 showlegend=True,
             ),
+            row="all",
+            col="all",
+            exclude_empty_subplots=True,
         )
 
-        # add 20% off-set for oil_vector
-        fig_oil.add_trace(
+        # -- add 20% off-set for oil_vector
+        fig_phase.add_trace(
             go.Scattergl(
                 x=[rmin, rmax] + [rmax, rmin],
                 y=[rmin * 1.2, rmax * 1.2] + [rmax * 0.8, rmin * 0.8],
@@ -319,240 +347,18 @@ def update_coverage_crossplot(
                 name="±20% off-set",
                 showlegend=True,
             ),
+            row="all",
+            col="all",
+            exclude_empty_subplots=True,
         )
 
-        fig_oil.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-        fig_oil.update_xaxes(title_text="Obs/hist")
-        fig_oil.update_yaxes(title_text="Sim mean ± p10/p90")
-        figures.append(wcc.Graph(figure=fig_oil, style={"height": figheight}))
-
-    # ---------------------------------------
-    if "Water" in phases:
-        df_stat_wat = df_stat[df_stat.VECTOR == wat_vector]
-        _p10 = abs(df_stat_wat["SIM_MEAN"] - df_stat_wat["SIM_P10"])
-        _p90 = abs(df_stat_wat["SIM_MEAN"] - df_stat_wat["SIM_P90"])
-        fig_wat = px.scatter(
-            df_stat_wat,
-            x="OBS",
-            y="SIM_MEAN",
-            error_y=_p10,
-            error_y_minus=_p90,
-            text="WELL",
-            color=colorby,
-        )
-        fig_wat.update_traces(textposition="middle left")
-
-        # add zeroline (diagonal) for wat_vector
-        rmin = min(df_stat_wat.OBS.min(), df_stat_wat.SIM_MEAN.min())
-        rmax = max(df_stat_wat.OBS.max(), df_stat_wat.SIM_MEAN.max())
-        fig_wat.add_trace(
-            go.Scattergl(
-                x=[rmin, rmax],
-                y=[rmin, rmax],
-                mode="lines",
-                line_color="gray",
-                name="zeroline",
-                showlegend=True,
-            ),
-        )
-
-        # add 10% off-set for wat_vector
-        fig_wat.add_trace(
-            go.Scattergl(
-                x=[rmin, rmax] + [rmax, rmin],
-                y=[rmin * 1.1, rmax * 1.1] + [rmax * 0.9, rmin * 0.9],
-                fill="toself",
-                fillcolor="rgba(0,100,80,0.2)",
-                # mode="lines",
-                line_color="rgba(255,255,255,0)",
-                name="±10% off-set",
-                showlegend=True,
-            ),
-        )
-
-        # add 20% off-set for wat_vector
-        fig_wat.add_trace(
-            go.Scattergl(
-                x=[rmin, rmax] + [rmax, rmin],
-                y=[rmin * 1.2, rmax * 1.2] + [rmax * 0.8, rmin * 0.8],
-                fill="toself",
-                fillcolor="rgba(255, 99, 71, 0.1)",
-                # mode="lines",
-                line_color="rgba(255,255,255,0)",
-                name="±20% off-set",
-                showlegend=True,
-            ),
-        )
-
-        fig_wat.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-        fig_wat.update_xaxes(title_text="Obs/hist")
-        fig_wat.update_yaxes(title_text="Sim mean ± p10/p90")
-        figures.append(wcc.Graph(figure=fig_wat, style={"height": figheight}))
-
-    # ---------------------------------------
-    if "Gas" in phases:
-        df_stat_gas = df_stat[df_stat.VECTOR == gas_vector]
-        _p10 = abs(df_stat_gas["SIM_MEAN"] - df_stat_gas["SIM_P10"])
-        _p90 = abs(df_stat_gas["SIM_MEAN"] - df_stat_gas["SIM_P90"])
-        fig_gas = px.scatter(
-            df_stat_gas,
-            x="OBS",
-            y="SIM_MEAN",
-            error_y=_p10,
-            error_y_minus=_p90,
-            text="WELL",
-            color=colorby,
-        )
-        fig_gas.update_traces(textposition="middle left")
-
-        # add zeroline (diagonal) for gas_vector
-        rmin = min(df_stat_gas.OBS.min(), df_stat_gas.SIM_MEAN.min())
-        rmax = max(df_stat_gas.OBS.max(), df_stat_gas.SIM_MEAN.max())
-        fig_gas.add_trace(
-            go.Scattergl(
-                x=[rmin, rmax],
-                y=[rmin, rmax],
-                mode="lines",
-                line_color="gray",
-                name="zeroline",
-                showlegend=True,
-            ),
-        )
-
-        # add 10% off-set for gas_vector
-        fig_gas.add_trace(
-            go.Scattergl(
-                x=[rmin, rmax] + [rmax, rmin],
-                y=[rmin * 1.1, rmax * 1.1] + [rmax * 0.9, rmin * 0.9],
-                fill="toself",
-                fillcolor="rgba(0,100,80,0.2)",
-                # mode="lines",
-                line_color="rgba(255,255,255,0)",
-                name="±10% off-set",
-                showlegend=True,
-            ),
-        )
-
-        # add 20% off-set for gas_vector
-        fig_gas.add_trace(
-            go.Scattergl(
-                x=[rmin, rmax] + [rmax, rmin],
-                y=[rmin * 1.2, rmax * 1.2] + [rmax * 0.8, rmin * 0.8],
-                fill="toself",
-                fillcolor="rgba(255, 99, 71, 0.1)",
-                # mode="lines",
-                line_color="rgba(255,255,255,0)",
-                name="±20% off-set",
-                showlegend=True,
-            ),
-        )
-
-        fig_gas.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-        fig_gas.update_xaxes(title_text="Obs/hist")
-        fig_gas.update_yaxes(title_text="Sim mean ± p10/p90")
-        figures.append(wcc.Graph(figure=fig_gas, style={"height": figheight}))
+        figures.append(wcc.Graph(figure=fig_phase, style={"height": figheight}))
 
     return figures
 
 
 # -------------------------------
-def update_coverage_diff_plot(
-    df_diff_stat: pd.DataFrame,
-    phases: list,
-    colorby: str,
-    vector_type: str = "well",
-    figheight: int = 450,
-) -> List[wcc.Graph]:
-    """Create plot of misfit per well. One plot per phase."""
-
-    logging.debug("--- Updating coverage diff plot ---")
-    figures = []
-
-    if vector_type == "group":
-        oil_vector, wat_vector, gas_vector = "DIFF_GOPT", "DIFF_GWPT", "DIFF_GGPT"
-    elif vector_type == "well":
-        oil_vector, wat_vector, gas_vector = "DIFF_WOPT", "DIFF_WWPT", "DIFF_WGPT"
-    else:
-        raise ValueError(
-            "vector_type = ",
-            vector_type,
-            ". 'vector_type' argument must be 'well' or 'group'",
-        )
-
-    # -------------------------
-    if "Oil" in phases:
-        df_diff_stat_oil = df_diff_stat[df_diff_stat.VECTOR == oil_vector]
-        # logging.debug(f"Dataframe, diff oil phase:\n{df_diff_stat_oil}")
-        _p10 = abs(df_diff_stat_oil["DIFF_MEAN"] - df_diff_stat_oil["DIFF_P10"])
-        _p90 = abs(df_diff_stat_oil["DIFF_MEAN"] - df_diff_stat_oil["DIFF_P90"])
-        fig_oil = px.scatter(
-            df_diff_stat_oil,
-            x="WELL",
-            y="DIFF_MEAN",
-            error_y=_p10,
-            error_y_minus=_p90,
-            # text="WELL",
-            color=colorby,
-        )
-        # fig_oil.update_traces(textposition="middle left")
-        fig_oil.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-        fig_oil.update_xaxes(title_text="Well")
-        fig_oil.update_yaxes(title_text="Oil mismatch ± p10/p90")
-        fig_oil.add_hline(0)
-
-        figures.append(wcc.Graph(figure=fig_oil, style={"height": figheight}))
-
-    # -------------------------
-    if "Water" in phases:
-        df_diff_stat_wat = df_diff_stat[df_diff_stat.VECTOR == wat_vector]
-        # logging.debug(f"Dataframe, diff water phase:\n{df_diff_stat_wat}")
-        _p10 = abs(df_diff_stat_wat["DIFF_MEAN"] - df_diff_stat_wat["DIFF_P10"])
-        _p90 = abs(df_diff_stat_wat["DIFF_MEAN"] - df_diff_stat_wat["DIFF_P90"])
-        fig_wat = px.scatter(
-            df_diff_stat_wat,
-            x="WELL",
-            y="DIFF_MEAN",
-            error_y=_p10,
-            error_y_minus=_p90,
-            # text="WELL",
-            color=colorby,
-        )
-        # fig_wat.update_traces(textposition="middle left")
-        fig_wat.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-        fig_wat.update_xaxes(title_text="Well")
-        fig_wat.update_yaxes(title_text="Water mismatch ± p10/p90")
-        fig_wat.add_hline(0)
-
-        figures.append(wcc.Graph(figure=fig_wat, style={"height": figheight}))
-
-    # -------------------------
-    if "Gas" in phases:
-        df_diff_stat_gas = df_diff_stat[df_diff_stat.VECTOR == gas_vector]
-        # logging.debug(f"Dataframe, diff gas phase:\n{df_diff_stat_gas}")
-        _p10 = abs(df_diff_stat_gas["DIFF_MEAN"] - df_diff_stat_gas["DIFF_P10"])
-        _p90 = abs(df_diff_stat_gas["DIFF_MEAN"] - df_diff_stat_gas["DIFF_P90"])
-        fig_gas = px.scatter(
-            df_diff_stat_gas,
-            x="WELL",
-            y="DIFF_MEAN",
-            error_y=_p10,
-            error_y_minus=_p90,
-            # text="WELL",
-            color=colorby,
-        )
-        # fig_gas.update_traces(textposition="middle left")
-        fig_gas.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-        fig_gas.update_xaxes(title_text="Well")
-        fig_gas.update_yaxes(title_text="Gas mismatch ± p10/p90")
-        fig_gas.add_hline(0)
-
-        figures.append(wcc.Graph(figure=fig_gas, style={"height": figheight}))
-
-    return figures
-
-
-# -------------------------------
-def update_heatmap_plot(
+def heatmap_plot(
     df_diff_stat: pd.DataFrame,
     phases: list,
     vector_type: str = "well",
