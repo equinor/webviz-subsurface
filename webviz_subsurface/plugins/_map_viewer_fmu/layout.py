@@ -282,12 +282,17 @@ class SurfaceColorSelector(wcc.Selectors):
                     style={"margin-top": "10px"},
                     id={"id": get_uuid(LayoutElements.WRAPPER), "selector": "colormap"},
                 ),
-                LinkCheckBox(get_uuid, selector="color_range"),
                 html.Div(
-                    id={
-                        "id": get_uuid(LayoutElements.WRAPPER),
-                        "selector": "color_range",
-                    }
+                    style={"margin-top": "10px"},
+                    children=[
+                        LinkCheckBox(get_uuid, selector="color_range"),
+                        html.Div(
+                            id={
+                                "id": get_uuid(LayoutElements.WRAPPER),
+                                "selector": "color_range",
+                            }
+                        ),
+                    ],
                 ),
             ],
         )
@@ -311,7 +316,7 @@ def dropdown_vs_select(value, options, component_id, multi=False):
 
 
 def color_range_selection_layout(get_uuid, value, value_range, step, view_idx):
-    number_format = ".1f" if all(val > 100 for val in value) else ".3g"
+    #   number_format = ".1f" if all(val > 100 for val in value) else ".3g"
     return html.Div(
         children=[
             f"{LayoutLabels.COLORMAP_RANGE}",  #: {value[0]:{number_format}} - {value[1]:{number_format}}",
@@ -385,7 +390,7 @@ def create_map_matrix(figures):
     figs_in_row = min([x for x in range(20) if (x * (x + 1)) > len(figures)])
     len_of_matrix = figs_in_row * math.ceil(len(figures) / figs_in_row)
 
-    figheigth = f"{(LayoutStyle.VIEWHEIGHT/(len_of_matrix/figs_in_row))-7}vh"
+    figheigth = f"{(LayoutStyle.VIEWHEIGHT/(len_of_matrix/figs_in_row))-4}vh"
 
     view_matrix = []
     for i in range(0, len_of_matrix, figs_in_row):
