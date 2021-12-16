@@ -1,8 +1,7 @@
 from typing import Callable, Dict, List, Optional, Tuple, Any
-
+import json
 from dash import Input, Output, State, callback, callback_context, no_update, ALL
 from flask import url_for
-import json
 
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
@@ -83,7 +82,6 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "data"),
         State(selections(), "id"),
         State(selector_wrapper(), "id"),
-        State(get_uuid(LayoutElements.SELECTED_DATA), "data"),
         State(links(), "id"),
         State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
     )
@@ -96,7 +94,6 @@ def plugin_callbacks(
         color_reset_view,
         selector_ids,
         wrapper_ids,
-        previous_selections,
         link_ids,
         stored_color_settings,
     ) -> Tuple[List[Dict], List[Any]]:
@@ -120,28 +117,17 @@ def plugin_callbacks(
                 and color_reset_view == idx
             )
             view_selections["color_update"] = "color" in ctx
-            view_selections["update"] = (
-                previous_selections is None
-                or get_uuid(LayoutElements.MAINVIEW) in ctx
-                or get_uuid(LayoutElements.WELLS) in ctx
-                or view_selections["reset_colors"]
-                or f'"view":{idx}' in ctx
-                or any(links.values())
-            )
             selections.append(view_selections)
 
-        for data in selections:
-            for selector in links:
-                if links[selector] and selector in data:
-                    data[selector]["value"] = selections[0][selector]["value"]
-
-        _update_ensemble_data(selections)
-        _update_attribute_data(selections)
-        _update_name_data(selections)
-        _update_date_data(selections)
-        _update_mode_data(selections)
-        _update_realization_data(selections)
-        stored_color_settings = _update_color_data(selections, stored_color_settings)
+        _update_ensemble_data(selections, links)
+        _update_attribute_data(selections, links)
+        _update_name_data(selections, links)
+        _update_date_data(selections, links)
+        _update_mode_data(selections, links)
+        _update_realization_data(selections, links)
+        stored_color_settings = _update_color_data(
+            selections, stored_color_settings, links
+        )
 
         return (
             selections,
@@ -171,155 +157,172 @@ def plugin_callbacks(
         bounds = []
         for idx, map_id in enumerate(map_ids):
             data = selections[map_id["view"]]
-            if data["update"]:
-                selected_surface = get_surface_context_from_data(data)
-                ensemble = selected_surface.ensemble
-                surface = ensemble_surface_providers[ensemble].get_surface(
-                    selected_surface
-                )
+            selected_surface = get_surface_context_from_data(data)
+            ensemble = selected_surface.ensemble
+            surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
 
-                layer_model = DeckGLMapLayersModel(current_layers[idx])
+            layer_model = DeckGLMapLayersModel(current_layers[idx])
 
-                property_bounds = get_surface_bounds(surface)
-                surface_range = get_surface_range(surface)
-                layer_model.set_propertymap(
-                    image_url=url_for(
-                        "_send_surface_as_png", surface_context=selected_surface
-                    ),
-                    bounds=property_bounds,
-                    value_range=surface_range,
-                )
-                layer_model.set_colormap_image(
-                    f"/colormaps/{data['colormap']['value']}.png"
-                )
-                layer_model.set_colormap_range(data["color_range"]["value"])
-                if well_set_model is not None:
-                    layer_model.set_well_data(
-                        well_data=url_for(
-                            "_send_well_data_as_json",
-                            wells_context=WellsContext(well_names=data["wells"]),
-                        )
+            property_bounds = get_surface_bounds(surface)
+            surface_range = get_surface_range(surface)
+            layer_model.set_propertymap(
+                image_url=url_for(
+                    "_send_surface_as_png", surface_context=selected_surface
+                ),
+                bounds=property_bounds,
+                value_range=surface_range,
+            )
+            layer_model.set_colormap_image(
+                f"/colormaps/{data['colormap']['value']}.png"
+            )
+            layer_model.set_colormap_range(data["color_range"]["value"])
+            if well_set_model is not None:
+                layer_model.set_well_data(
+                    well_data=url_for(
+                        "_send_well_data_as_json",
+                        wells_context=WellsContext(well_names=data["wells"]),
                     )
-                layers.append(layer_model.layers)
-                bounds.append(property_bounds)
-            else:
-                layers.append(no_update)
-                bounds.append(no_update)
+                )
+            layers.append(layer_model.layers)
+            bounds.append(property_bounds)
 
         return layers, bounds
 
-    def _update_ensemble_data(selections) -> None:
-        for data in selections:
-            options = list(ensemble_surface_providers.keys())
-            value = data["ensemble"]["value"] if "ensemble" in data else options[0]
+    def _update_ensemble_data(selections, links) -> None:
+        for idx, data in enumerate(selections):
+            if not (links["ensemble"] and idx > 0):
+                options = list(ensemble_surface_providers.keys())
+                value = data["ensemble"]["value"] if "ensemble" in data else options[0]
             data["ensemble"] = {"value": value, "options": options}
 
-    def _update_attribute_data(selections) -> None:
-        for data in selections:
-            options = ensemble_surface_providers.get(
-                data["ensemble"]["value"]
-            ).attributes
+    def _update_attribute_data(selections, links) -> None:
+        for idx, data in enumerate(selections):
+            if not (links["attribute"] and idx > 0):
+                options = ensemble_surface_providers.get(
+                    data["ensemble"]["value"]
+                ).attributes
 
-            value = (
-                data["attribute"]["value"]
-                if "attribute" in data and data["attribute"]["value"][0] in options
-                else options[:1]
-            )
-            data["attribute"] = {"value": value, "options": options}
-
-    def _update_name_data(selections) -> None:
-        for data in selections:
-            options = ensemble_surface_providers.get(
-                data["ensemble"]["value"]
-            ).names_in_attribute(data["attribute"]["value"][0])
-
-            value = (
-                data["name"]["value"]
-                if "name" in data and data["name"]["value"][0] in options
-                else options[:1]
-            )
-            data["name"] = {"value": value, "options": options}
-
-    def _update_date_data(selections) -> None:
-        for data in selections:
-            options = ensemble_surface_providers.get(
-                data["ensemble"]["value"]
-            ).dates_in_attribute(data["attribute"]["value"][0])
-
-            if not options:
-                data["date"] = {"value": [], "options": []}
-            else:
                 value = (
-                    data["date"]["value"]
-                    if "date" in data
-                    and data["date"]["value"]
-                    and data["date"]["value"][0] in options
+                    data["attribute"]["value"]
+                    if "attribute" in data and data["attribute"]["value"][0] in options
                     else options[:1]
                 )
-                data["date"] = {"value": value, "options": options}
+            data["attribute"] = {"value": value, "options": options}
 
-    def _update_mode_data(selections) -> None:
-        for data in selections:
-            options = [mode for mode in SurfaceMode]
-            value = data["mode"]["value"] if "mode" in data else SurfaceMode.REALIZATION
+    def _update_name_data(selections, links) -> None:
+        for idx, data in enumerate(selections):
+            if not (links["name"] and idx > 0):
+                options = ensemble_surface_providers.get(
+                    data["ensemble"]["value"]
+                ).names_in_attribute(data["attribute"]["value"][0])
+
+                value = (
+                    data["name"]["value"]
+                    if "name" in data and data["name"]["value"][0] in options
+                    else options[:1]
+                )
+            data["name"] = {"value": value, "options": options}
+
+    def _update_date_data(selections, links) -> None:
+        for idx, data in enumerate(selections):
+            if not (links["date"] and idx > 0):
+                options = ensemble_surface_providers.get(
+                    data["ensemble"]["value"]
+                ).dates_in_attribute(data["attribute"]["value"][0])
+
+                if options is None:
+                    options = value = []
+                else:
+                    value = (
+                        data["date"]["value"]
+                        if "date" in data
+                        and data["date"]["value"]
+                        and data["date"]["value"][0] in options
+                        else options[:1]
+                    )
+            data["date"] = {"value": value, "options": options}
+
+    def _update_mode_data(selections, links) -> None:
+        for idx, data in enumerate(selections):
+            if not (links["mode"] and idx > 0):
+                options = [mode for mode in SurfaceMode]
+                value = (
+                    data["mode"]["value"] if "mode" in data else SurfaceMode.REALIZATION
+                )
             data["mode"] = {"value": value, "options": options}
 
-    def _update_realization_data(selections) -> None:
-        for data in selections:
-            options = ensemble_surface_providers[data["ensemble"]["value"]].realizations
+    def _update_realization_data(selections, links) -> None:
+        for idx, data in enumerate(selections):
+            if not (links["realizations"] and idx > 0):
+                options = ensemble_surface_providers[
+                    data["ensemble"]["value"]
+                ].realizations
 
-            if SurfaceMode(data["mode"]["value"]) == SurfaceMode.REALIZATION:
-                value = (
-                    [data["realizations"]["value"][0]]
-                    if "realizations" in data
-                    else [options[0]]
-                )
-                multi = False
-            else:
-                value = (
-                    data["realizations"]["value"]
-                    if "realizations" in data and len(data["realizations"]["value"]) > 1
-                    else options
-                )
-                multi = True
+                if SurfaceMode(data["mode"]["value"]) == SurfaceMode.REALIZATION:
+                    value = (
+                        [data["realizations"]["value"][0]]
+                        if "realizations" in data
+                        else [options[0]]
+                    )
+                    multi = False
+                else:
+                    value = (
+                        data["realizations"]["value"]
+                        if "realizations" in data
+                        and len(data["realizations"]["value"]) > 1
+                        else options
+                    )
+                    multi = True
 
             data["realizations"] = {"value": value, "options": options, "multi": multi}
 
-    def _update_color_data(selections, stored_color_settings) -> None:
+    def _update_color_data(selections, stored_color_settings, links) -> None:
 
         stored_color_settings = (
             stored_color_settings if stored_color_settings is not None else {}
         )
 
         colormaps = ["viridis_r", "seismic"]
-        for data in selections:
+
+        for idx, data in enumerate(selections):
             surfaceid = get_surface_id_from_data(data)
 
-            selected_surface = get_surface_context_from_data(data)
-            surface = ensemble_surface_providers[selected_surface.ensemble].get_surface(
-                selected_surface
-            )
-            value_range = get_surface_range(surface)
-
-            if (
+            use_stored_color_settings = (
                 surfaceid in stored_color_settings
                 and not data["reset_colors"]
                 and not data["color_update"]
-            ):
-                colormap_value = stored_color_settings[surfaceid]["colormap"]
-                color_range = stored_color_settings[surfaceid]["color_range"]
-            else:
+            )
+            if not (links["colormap"] and idx > 0):
+
                 colormap_value = (
-                    data["colormap"]["value"] if "colormap" in data else colormaps[0]
-                )
-                color_range = (
-                    value_range
-                    if data["reset_colors"]
-                    or (
-                        not data["color_update"]
-                        and not data.get("colormap_keep_range", {}).get("value")
+                    stored_color_settings[surfaceid]["colormap"]
+                    if use_stored_color_settings
+                    else (
+                        data["colormap"]["value"]
+                        if "colormap" in data
+                        else colormaps[0]
                     )
-                    else data["color_range"]["value"]
+                )
+
+            if not (links["color_range"] and idx > 0):
+                selected_surface = get_surface_context_from_data(data)
+                surface = ensemble_surface_providers[
+                    selected_surface.ensemble
+                ].get_surface(selected_surface)
+                value_range = get_surface_range(surface)
+
+                color_range = (
+                    stored_color_settings[surfaceid]["color_range"]
+                    if use_stored_color_settings
+                    else (
+                        value_range
+                        if data["reset_colors"]
+                        or (
+                            not data["color_update"]
+                            and not data.get("colormap_keep_range", {}).get("value")
+                        )
+                        else data["color_range"]["value"]
+                    )
                 )
 
             data["colormap"] = {"value": colormap_value, "options": colormaps}
