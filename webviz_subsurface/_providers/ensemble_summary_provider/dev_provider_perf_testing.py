@@ -241,7 +241,9 @@ def main() -> None:
         root_storage_dir, allow_storage_writes=True
     )
 
-    provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
+    provider = factory.create_from_arrow_unsmry_lazy(
+        ens_path=ensemble_path, rel_file_pattern="share/results/unsmry/*.arrow"
+    )
     resampling_frequency = frequency
 
     # provider = factory.create_from_arrow_unsmry_presampled(ensemble_path, frequency)

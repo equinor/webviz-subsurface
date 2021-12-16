@@ -58,18 +58,20 @@ def _load_table_from_arrow_file(entry: FileEntry) -> pa.Table:
     return reader.read_all()
 
 
-def load_per_realization_arrow_unsmry_files(ens_path: str) -> Dict[int, pa.Table]:
+def load_per_realization_arrow_unsmry_files(
+    ens_path: str, rel_file_pattern: str
+) -> Dict[int, pa.Table]:
     """Load summary data stored in per-realization arrow files.
     Returns dictionary containing a PyArrow table for each realization, indexed by
     realization number.
+
+    `rel_file_pattern` denotes a file pattern relative to the realization's runpath,
+    typical value is: "share/results/unsmry/*.arrow"
     """
 
     LOGGER.debug(f"load_per_realization_arrow_unsmry_files() starting - {ens_path}")
+    LOGGER.debug(f"looking for .arrow files using relative pattern: {rel_file_pattern}")
     timer = PerfTimer()
-
-    # We should probably expose this realization relative search pattern as a
-    # user configurable parameter to this function
-    rel_file_pattern = "share/results/unsmry/*.arrow"
 
     per_real_tables: Dict[int, pa.Table] = {}
     globpattern = os.path.join(ens_path, rel_file_pattern)
