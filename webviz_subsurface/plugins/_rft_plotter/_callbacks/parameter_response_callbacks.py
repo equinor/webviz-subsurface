@@ -34,9 +34,10 @@ def paramresp_callbacks(
         Output(get_uuid(LayoutElements.PARAMRESP_ZONE), "options"),
         Output(get_uuid(LayoutElements.PARAMRESP_ZONE), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_WELL), "value"),
+        State(get_uuid(LayoutElements.PARAMRESP_ZONE), "value"),
     )
     def _update_date_and_zone(
-        well: str,
+        well: str, zone_state: str
     ) -> Tuple[List[Dict[str, str]], str, List[Dict[str, str]], str]:
         """Update dates and zones when selecting well"""
         dates_in_well, zones_in_well = datamodel.well_dates_and_zones(well)
@@ -44,7 +45,7 @@ def paramresp_callbacks(
             [{"label": date, "value": date} for date in dates_in_well],
             dates_in_well[0],
             [{"label": zone, "value": zone} for zone in zones_in_well],
-            zones_in_well[0],
+            zone_state if zone_state in zones_in_well else zones_in_well[0],
         )
 
     @app.callback(
