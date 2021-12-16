@@ -180,15 +180,24 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         return provider
 
-    def create_from_arrow_unsmry_lazy(self, ens_path: str) -> EnsembleSummaryProvider:
+    def create_from_arrow_unsmry_lazy(
+        self, ens_path: str, rel_file_pattern: str
+    ) -> EnsembleSummaryProvider:
         """Create EnsembleSummaryProvider from per-realization unsmry data in .arrow format.
+
+        The `rel_file_pattern` parameter must specify a relative (per realization) file pattern
+        that will be used to find the wanted .arrow files within each realization. The file
+        pattern is relative to each realization's `runpath`.
+        Typically the file pattern will be: "share/results/unsmry/*.arrow"
 
         The returned summary provider supports lazy resampling.
         """
 
         timer = PerfTimer()
 
-        storage_key = f"arrow_unsmry_lazy__{_make_hash_string(ens_path)}"
+        storage_key = (
+            f"arrow_unsmry_lazy__{_make_hash_string(ens_path + rel_file_pattern)}"
+        )
         provider = ProviderImplArrowLazy.from_backing_store(
             self._storage_dir, storage_key
         )
@@ -206,7 +215,9 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing/saving arrow summary data for: {ens_path}")
 
         timer.lap_s()
-        per_real_tables = load_per_realization_arrow_unsmry_files(ens_path)
+        per_real_tables = load_per_realization_arrow_unsmry_files(
+            ens_path, rel_file_pattern
+        )
         if not per_real_tables:
             raise ValueError(
                 f"Could not find any .arrow unsmry files for ens_path={ens_path}"
@@ -234,9 +245,15 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
     def create_from_arrow_unsmry_presampled(
         self,
         ens_path: str,
+        rel_file_pattern: str,
         sampling_frequency: Optional[Frequency],
     ) -> EnsembleSummaryProvider:
         """Create EnsembleSummaryProvider from per-realization unsmry data in .arrow format.
+
+        The `rel_file_pattern` parameter must specify a relative (per realization) file pattern
+        that will be used to find the wanted .arrow files within each realization. The file
+        pattern is relative to each realization's `runpath`.
+        Typically the file pattern will be: "share/results/unsmry/*.arrow"
 
         This factory method will sample the input data according to the specified
         `sampling_frequency` during import.
@@ -248,9 +265,8 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         timer = PerfTimer()
 
         freq_str = sampling_frequency.value if sampling_frequency else "raw"
-        storage_key = (
-            f"arrow_unsmry_presampled_{freq_str}__{_make_hash_string(ens_path)}"
-        )
+        hash_str = _make_hash_string(ens_path + rel_file_pattern)
+        storage_key = f"arrow_unsmry_presampled_{freq_str}__{hash_str}"
         provider = ProviderImplArrowPresampled.from_backing_store(
             self._storage_dir, storage_key
         )
@@ -271,7 +287,9 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing/saving arrow summary data for: {ens_path}")
 
         timer.lap_s()
-        per_real_tables = load_per_realization_arrow_unsmry_files(ens_path)
+        per_real_tables = load_per_realization_arrow_unsmry_files(
+            ens_path, rel_file_pattern
+        )
         if not per_real_tables:
             raise ValueError(
                 f"Could not find any .arrow unsmry files for ens_path={ens_path}"

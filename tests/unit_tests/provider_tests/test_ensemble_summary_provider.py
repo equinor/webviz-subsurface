@@ -58,7 +58,9 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
     # _dump_smry_to_csv_using_fmu(ensemble_path, "monthly", "expected_smry.csv")
 
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
-    provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
+    provider = factory.create_from_arrow_unsmry_lazy(
+        ens_path=ensemble_path, rel_file_pattern="share/results/unsmry/*.arrow"
+    )
 
     assert provider.supports_resampling()
 
@@ -100,7 +102,9 @@ def test_arrow_unsmry_lazy_vector_metadata(
 
     ensemble_path = str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
-    provider = factory.create_from_arrow_unsmry_lazy(ensemble_path)
+    provider = factory.create_from_arrow_unsmry_lazy(
+        ens_path=ensemble_path, rel_file_pattern="share/results/unsmry/*.arrow"
+    )
 
     meta: Optional[VectorMetadata] = provider.vector_metadata("FOPR")
     assert meta is not None
@@ -141,7 +145,9 @@ def test_create_from_arrow_unsmry_presampled_monthly(
 
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_arrow_unsmry_presampled(
-        str(ensemble_path), Frequency.MONTHLY
+        ens_path=str(ensemble_path),
+        rel_file_pattern="share/results/unsmry/*.arrow",
+        sampling_frequency=Frequency.MONTHLY,
     )
 
     assert not provider.supports_resampling()
