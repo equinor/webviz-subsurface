@@ -125,5 +125,5 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     def set_callbacks(self, app: Dash) -> None:
         plugin_callbacks(app, self.uuid, self._datamodel)
-        if self._datamodel.param_model is not None:
+        if self._datamodel.parameters:
             paramresp_callbacks(app, self.uuid, self._datamodel)
