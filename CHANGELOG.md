@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+- [#867](https://github.com/equinor/webviz-subsurface/pull/867) - Added new `SimulationTimeSeries` plugin, with code structure according to best practice plugin example `webviz-plugin-boilerplate` and usage of `EnsembleSummaryProvider`. New functionality as multiple Delta Ensembles in same plot, selectable resampling frequency and possibility to group subplots per selected ensemble or per selected vector.
+
 ## [0.2.8] - 2021-12-10
 
 ### Fixed
