@@ -66,6 +66,11 @@ class SimulationTimeSeries(WebvizPluginABC):
         )
 
         # Must define valid freqency!
+        if Frequency.from_string_value(sampling) is None:
+            raise ValueError(
+                'Sampling frequency conversion is "None", i.e. Raw sampling, and '
+                "is not supported by plugin yet!"
+            )
         self._sampling = Frequency(sampling)
         self._presampled_frequency = None
 
@@ -88,11 +93,8 @@ class SimulationTimeSeries(WebvizPluginABC):
                 self._input_provider_set = create_lazy_provider_set_from_paths(
                     ensemble_paths
                 )
-            self._input_provider_set.verify_consistent_vector_metadata()
         else:
-            raise ValueError(
-                'Incorrect arguments. Either provide a "csvfile" or "ensembles"'
-            )
+            raise ValueError('Incorrect argument, must provide "ensembles"')
 
         if not self._input_provider_set:
             raise ValueError(
