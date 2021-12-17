@@ -8,6 +8,7 @@ from .._utils.colors import hex_to_rgba_str
 
 
 class ScatterPlot:
+    """Class to create a general scatterplot"""
     def __init__(
         self,
         df: pd.DataFrame,
