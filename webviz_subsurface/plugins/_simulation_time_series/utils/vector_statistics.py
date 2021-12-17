@@ -44,7 +44,7 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(level=["DATE"], col_level=0)
     )
 
-    # Rename nanmin, nanmax and nanmean to min, max and mean.
+    # Rename columns to StatisticsOptions enum types for strongly typed format
     col_stat_label_map = {
         "nanmin": StatisticsOptions.MIN,
         "nanmax": StatisticsOptions.MAX,

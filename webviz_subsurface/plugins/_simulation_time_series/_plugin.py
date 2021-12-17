@@ -217,6 +217,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             vector_selector_data=self._initial_vector_selector_data,
             vector_calculator_data=self._vector_calculator_data,
             predefined_expressions=self._predefined_expressions,
+            realizations=self._input_provider_set.all_realizations(),
             disable_resampling_dropdown=self._presampled_frequency is not None,
             selected_resampling_frequency=self._sampling,
             selected_visualization=self._initial_visualization_selection,
@@ -276,7 +277,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "id": self.uuid(LayoutElements.ENSEMBLES_DROPDOWN),
                 "content": (
                     "Display time series from one or several ensembles. "
-                    "Ensembles will be overlain in subplot or represented as subplot, "
+                    "Ensembles will be overlain in subplot or represented per subplot, "
                     'based on selection in "Group By".'
                 ),
             },
@@ -310,11 +311,11 @@ class SimulationTimeSeries(WebvizPluginABC):
                 ),
             },
             {
-                "id": self.uuid(LayoutElements.TOUR_STEP_VISUALIZATION),
+                "id": self.uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
                 "content": (
                     "Choose between different visualizations. 1. Show time series as "
                     "individual lines per realization. 2. Show statistical lines per "
-                    "ensemble. 3. Show statistical fanchart per ensemble"
+                    "ensemble. 3. Show statistical fanchart per ensemble."
                 ),
             },
             {
@@ -323,6 +324,20 @@ class SimulationTimeSeries(WebvizPluginABC):
                     "Various plot options: Whether to include history trace or vector observations "
                     "and which statistics to show if statistical lines or fanchart is chosen as "
                     "visualization."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR),
+                "content": (
+                    "Filter realizations. Select realization numbers to include in visualization, "
+                    "and utilize in statistics calculation when calculating from selected subset."
+                ),
+            },
+            {
+                "id": self.uuid(LayoutElements.STATISTICS_FROM_RADIO_ITEMS),
+                "content": (
+                    "Select whether to calculate statistics from all realizations, or to calculate "
+                    "statistics from the selected subset of realizations "
                 ),
             },
         ]

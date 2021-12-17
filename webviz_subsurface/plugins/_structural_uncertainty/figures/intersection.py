@@ -6,7 +6,7 @@ import xtgeo
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import SurfaceSetModel
-from webviz_subsurface._utils.colors import hex_to_rgba
+from webviz_subsurface._utils.colors import hex_to_rgba_str
 
 from ...._utils.fanchart_plotting import (
     FanchartData,
@@ -57,7 +57,7 @@ def get_plotly_trace_statistical_surface(
         "showlegend": showlegend,
         "hoverinfo": "y+x+text",
         "mode": "lines",
-        "marker": {"color": hex_to_rgba(hex_string=color)},
+        "marker": {"color": hex_to_rgba_str(hex_string=color)},
         "line": line_style,
     }
 
@@ -155,7 +155,7 @@ def get_plotly_trace_realization_surface(
         "showlegend": showlegend,
         "hoverinfo": "y+x+text",
         "mode": "lines",
-        "marker": {"color": hex_to_rgba(hex_string=color, opacity=0.5)},
+        "marker": {"color": hex_to_rgba_str(hex_string=color, opacity=0.5)},
     }
 
 

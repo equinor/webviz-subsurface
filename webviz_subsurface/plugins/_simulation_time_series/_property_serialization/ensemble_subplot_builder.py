@@ -5,6 +5,7 @@ from plotly.subplots import make_subplots
 from webviz_config._theme_class import WebvizConfigTheme
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.colors import hex_to_rgb, rgb_to_str, scale_rgb_lightness
 
 from ..types import FanchartOptions, StatisticsOptions
 from ..utils.create_vector_traces_utils import (
@@ -135,6 +136,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
+        color_lightness_scale: Optional[float] = None,
     ) -> None:
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
@@ -147,7 +149,13 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             self._added_vector_traces.add(vector)
 
             vector_df = vectors_df[["DATE", "REAL", vector]]
+
             color = self._vector_colors.get(vector, "black")
+            if color_lightness_scale:
+                # Range: 50% - 150% lightness
+                scale = max(50.0, min(150.0, color_lightness_scale))
+                color = rgb_to_str(scale_rgb_lightness(hex_to_rgb(color), scale))
+
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_traces_set[vector] = create_vector_realization_traces(
                 vector_df=vector_df,
@@ -166,6 +174,8 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         statistics_options: List[StatisticsOptions],
+        line_width: Optional[int] = None,
+        color_lightness_scale: Optional[float] = None,
     ) -> None:
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
@@ -183,13 +193,20 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
                 vectors_statistics_df[vector]
             )
+
             color = self._vector_colors.get(vector, "black")
+            if color_lightness_scale:
+                # Range: 50% - 150% lightness
+                scale = max(50.0, min(150.0, color_lightness_scale))
+                color = rgb_to_str(scale_rgb_lightness(hex_to_rgb(color), scale))
+
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_traces_set[vector] = create_vector_statistics_traces(
                 vector_statistics_df=vector_statistics_df,
                 color=color,
                 legend_group=vector,
                 line_shape=line_shape,
+                line_width=line_width if line_width else 2,
                 statistics_options=statistics_options,
                 hovertemplate=render_hovertemplate(vector, self._sampling_frequency),
             )
@@ -219,6 +236,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
                 vectors_statistics_df[vector]
             )
+
             color = self._vector_colors.get(vector, "black")
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_traces_set[vector] = create_vector_fanchart_traces(
@@ -273,7 +291,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
 
         vector_observations_traces_set = {
             vector_name: create_vector_observation_traces(
-                vector_observations, vector_name
+                vector_observations, legend_group=vector_name
             )
         }
         for ensemble in self._selected_ensembles:

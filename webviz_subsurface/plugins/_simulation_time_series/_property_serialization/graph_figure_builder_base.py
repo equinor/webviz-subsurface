@@ -46,6 +46,7 @@ class GraphFigureBuilderBase(abc.ABC):
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
+        color_lightness_scale: Optional[float] = None,
     ) -> None:
         """Add realization traces to figure
 
@@ -54,6 +55,8 @@ class GraphFigureBuilderBase(abc.ABC):
             ["DATE", "REAL", vector1, ..., vectorN]
 
         * ensemble: str - Name of ensemble providing the input vector data
+        * color_lightness_scale: float - Color lightness scale percentage, to adjust trace colors
+        relative to original trace line color defined. Range 50% - 150%
         """
         ...
 
@@ -63,6 +66,8 @@ class GraphFigureBuilderBase(abc.ABC):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         statistics_options: List[StatisticsOptions],
+        line_width: Optional[int] = None,
+        color_lightness_scale: Optional[float] = None,
     ) -> None:
         """Add statistics traces to figure
 
@@ -73,6 +78,9 @@ class GraphFigureBuilderBase(abc.ABC):
 
         * ensemble: str - Name of ensemble providing the input vector data
         * statistics_options: List[StatisticsOptions] - List of statistics options traces to include
+        * line_width: int - Line width for statistics traces
+        * color_lightness_scale: float - Color lightness scale percentage, to adjust trace colors
+        relative to original trace line color defined. Range 50% - 150%
         """
         ...
 

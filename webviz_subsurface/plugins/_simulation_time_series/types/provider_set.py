@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, ItemsView, List, Optional
+from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
@@ -19,6 +19,9 @@ class ProviderSet:
     def __init__(self, provider_dict: Dict[str, EnsembleSummaryProvider]) -> None:
         self._provider_dict = provider_dict.copy()
         self._all_vector_names = self._create_union_of_vector_names_from_providers(
+            list(self._provider_dict.values())
+        )
+        self._all_realizations = self._create_union_of_realizations_from_providers(
             list(self._provider_dict.values())
         )
 
@@ -72,6 +75,17 @@ class ProviderSet:
         vector_names = list(sorted(set(vector_names)))
         return vector_names
 
+    @staticmethod
+    def _create_union_of_realizations_from_providers(
+        providers: Sequence[EnsembleSummaryProvider],
+    ) -> List[int]:
+        """Create list with the union of realizations among providers"""
+        realizations: Set[int] = set()
+        for provider in providers:
+            realizations.update(provider.realizations())
+        output = list(sorted(realizations))
+        return output
+
     def items(self) -> ItemsView[str, EnsembleSummaryProvider]:
         return self._provider_dict.items()
 
@@ -86,8 +100,12 @@ class ProviderSet:
     def all_providers(self) -> List[EnsembleSummaryProvider]:
         return list(self._provider_dict.values())
 
+    def all_realizations(self) -> List[int]:
+        """List with the union of realizations among providers"""
+        return self._all_realizations
+
     def all_vector_names(self) -> List[str]:
-        """Create list with the union of vector names among providers"""
+        """List with the union of vector names among providers"""
         return self._all_vector_names
 
     def vector_metadata(self, vector: str) -> Optional[VectorMetadata]:
@@ -117,6 +135,8 @@ def create_lazy_provider_set_from_paths(
 
     `Input:`
     * name_path_dict: Dict[str, Path] - ensemble name as key and arrow file path as value
+    * rel_file_pattern: str - specify a relative (per realization) file pattern to find the
+    wanted .arrow files within each realization
 
     `Return:`
     Provider set with ensemble summary providers with lazy (on-demand) resampling/interpolation
@@ -140,6 +160,8 @@ def create_presampled_provider_set_from_paths(
 
     `Input:`
     * name_path_dict: Dict[str, Path] - ensemble name as key and arrow file path as value
+    * rel_file_pattern: str - specify a relative (per realization) file pattern to find the
+    wanted .arrow files within each realization
     * presampling_frequency: Frequency - Frequency to sample input data in factory with, during
     import.
 

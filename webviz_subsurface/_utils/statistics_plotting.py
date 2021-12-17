@@ -102,6 +102,7 @@ def create_statistics_traces(
     legend_group: str,
     legend_name: Optional[str] = None,
     line_shape: str = "linear",
+    line_width: int = 2,
     xaxis: str = "x",
     yaxis: str = "y",
     show_legend: bool = True,
@@ -141,7 +142,7 @@ def create_statistics_traces(
             "xaxis": xaxis,
             "yaxis": yaxis,
             "mode": "lines",
-            "line": {"width": 1, "color": color, "shape": line_shape},
+            "line": {"width": line_width, "color": color, "shape": line_shape},
             "legendgroup": legend_group,
             "showlegend": False,
         }
@@ -170,7 +171,7 @@ def create_statistics_traces(
             "color": color,
             "shape": line_shape,
             "dash": "longdash",
-            "width": 1.5,
+            "width": line_width,
         }
         traces.append(minimum_trace)
 
@@ -179,7 +180,12 @@ def create_statistics_traces(
         low_trace = get_default_trace(
             statistics_name=data.low.name, values=data.low.data
         )
-        low_trace["line"] = {"color": color, "shape": line_shape, "dash": "dashdot"}
+        low_trace["line"] = {
+            "width": line_width,
+            "color": color,
+            "shape": line_shape,
+            "dash": "dashdot",
+        }
         traces.append(low_trace)
 
     # Mid percentile
@@ -191,7 +197,7 @@ def create_statistics_traces(
             "color": color,
             "shape": line_shape,
             "dash": "dot",
-            "width": 3,
+            "width": line_width,
         }
         traces.append(mid_trace)
 
@@ -200,7 +206,12 @@ def create_statistics_traces(
         high_trace = get_default_trace(
             statistics_name=data.high.name, values=data.high.data
         )
-        high_trace["line"] = {"color": color, "shape": line_shape, "dash": "dashdot"}
+        high_trace["line"] = {
+            "width": line_width,
+            "color": color,
+            "shape": line_shape,
+            "dash": "dashdot",
+        }
         traces.append(high_trace)
 
     # Maximum
@@ -213,7 +224,7 @@ def create_statistics_traces(
             "color": color,
             "shape": line_shape,
             "dash": "longdash",
-            "width": 1.5,
+            "width": line_width,
         }
         traces.append(maximum_trace)
 
@@ -224,7 +235,7 @@ def create_statistics_traces(
             values=data.free_line.data,
         )
         # Set solid line
-        line_trace["line"] = {"color": color, "shape": line_shape}
+        line_trace["line"] = {"width": line_width, "color": color, "shape": line_shape}
         traces.append(line_trace)
 
     # Set legend for last trace in list

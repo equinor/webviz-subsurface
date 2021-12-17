@@ -5,6 +5,7 @@ from plotly.subplots import make_subplots
 from webviz_config._theme_class import WebvizConfigTheme
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.colors import hex_to_rgb, rgb_to_str, scale_rgb_lightness
 
 from ..types import FanchartOptions, StatisticsOptions
 from ..utils.create_vector_traces_utils import (
@@ -56,6 +57,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         self._vector_line_shapes = vector_line_shapes
         self._line_shape_fallback = line_shape_fallback
         self._history_vector_color = "black"
+        self._observation_color = "black"
 
         # Overwrite graph figure widget
         self._figure = make_subplots(
@@ -77,6 +79,9 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
 
         # Status for added history vectors
         self._added_history_trace = False
+
+        # Status for added observation traces
+        self._added_observation_trace = False
 
     #############################################################################
     #
@@ -123,14 +128,40 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
                 col=1,
             )
 
+        # Add legend for observation trace with legendrank after history vector
+        if self._added_observation_trace:
+            observation_legend_trace = {
+                "name": "Observation",
+                "x": [None],
+                "y": [None],
+                "legendgroup": "Observation",
+                "showlegend": True,
+                "visible": True,
+                "mode": "markers+lines",
+                "marker": {"color": self._observation_color},
+                "line": {"color": self._observation_color},
+                "legendrank": len(self._added_ensemble_traces) + 2,
+            }
+            self._figure.add_trace(
+                trace=observation_legend_trace,
+                row=1,
+                col=1,
+            )
+
     def add_realizations_traces(
         self,
         vectors_df: pd.DataFrame,
         ensemble: str,
+        color_lightness_scale: Optional[float] = None,
     ) -> None:
         color = self._ensemble_colors.get(ensemble)
         if not color:
             raise ValueError(f'Ensemble "{ensemble}" is not present in colors dict!')
+
+        if color_lightness_scale:
+            # Range: 50% - 150% lightness
+            scale = max(50.0, min(150.0, color_lightness_scale))
+            color = rgb_to_str(scale_rgb_lightness(hex_to_rgb(color), scale))
 
         # Get vectors - order not important
         vectors: Set[str] = set(vectors_df.columns) - set(["DATE", "REAL"])
@@ -162,10 +193,17 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         vectors_statistics_df: pd.DataFrame,
         ensemble: str,
         statistics_options: List[StatisticsOptions],
+        line_width: Optional[int] = None,
+        color_lightness_scale: Optional[float] = None,
     ) -> None:
         color = self._ensemble_colors.get(ensemble)
         if not color:
             raise ValueError(f'Ensemble "{ensemble}" is not present in colors dict!')
+
+        if color_lightness_scale:
+            # Range: 50% - 150% lightness
+            scale = max(50.0, min(150.0, color_lightness_scale))
+            color = rgb_to_str(scale_rgb_lightness(hex_to_rgb(color), scale))
 
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
@@ -187,6 +225,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
                 color=color,
                 legend_group=ensemble,
                 line_shape=line_shape,
+                line_width=line_width if line_width else 2,
                 hovertemplate=render_hovertemplate(vector, self._sampling_frequency),
                 statistics_options=statistics_options,
             )
@@ -275,8 +314,15 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         if vector_name not in self._selected_vectors:
             raise ValueError(f"Vector {vector_name} not among selected vectors!")
 
+        # Set added flag
+        self._added_observation_trace = True
+
         self._add_vector_traces_set_to_figure(
-            {vector_name: create_vector_observation_traces(vector_observations)}
+            {
+                vector_name: create_vector_observation_traces(
+                    vector_observations, self._observation_color, "Observation"
+                )
+            }
         )
 
     #############################################################################

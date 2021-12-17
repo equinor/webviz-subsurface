@@ -41,8 +41,6 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         expressions: Optional[List[ExpressionInfo]] = None,
         resampling_frequency: Optional[Frequency] = None,
     ) -> None:
-        self._name = name
-
         if len(provider_pair) != 2:
             raise ValueError(
                 'Expect input argument "provider_pair" to have two providers!'
@@ -51,6 +49,15 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         self._provider_a = provider_pair[0]
         self._provider_b = provider_pair[1]
 
+        # Initialize base class
+        _intersected_realizations = [
+            elm
+            for elm in self._provider_a.realizations()
+            if elm in self._provider_b.realizations()
+        ]
+        super().__init__(_intersected_realizations)
+
+        self._name = name
         if (
             self._provider_a.supports_resampling()
             != self._provider_b.supports_resampling()
@@ -61,8 +68,8 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                 f"and Ensemble B support resampling: {self._provider_b.supports_resampling()}"
             )
 
-        # All common vectors in providers
-        self._common_provider_vectors = [
+        # Intersection of vectors in providers
+        _accessor_vectors = [
             elm
             for elm in self._provider_a.vector_names()
             if elm in self._provider_b.vector_names()
@@ -70,13 +77,13 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
         # Categorize vector types among the vectors in argument
         self._provider_vectors = [
-            vector for vector in vectors if vector in self._common_provider_vectors
+            vector for vector in vectors if vector in _accessor_vectors
         ]
         self._interval_and_average_vectors = [
             vector
             for vector in vectors
             if is_interval_or_average_vector(vector)
-            and get_cumulative_vector_name(vector) in self._common_provider_vectors
+            and get_cumulative_vector_name(vector) in _accessor_vectors
         ]
         self._vector_calculator_expressions = (
             get_selected_expressions(expressions, vectors)

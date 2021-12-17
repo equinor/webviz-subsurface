@@ -27,9 +27,18 @@ class FanchartOptions(str, Enum):
     P10_P90 = "P10/P90"  # P10 and P90 pair
 
 
+class StatisticsFromOptions(str, Enum):
+    """
+    Type definition of options for what to generate statistics from in simulation time series
+    """
+
+    ALL_REALIZATIONS = "all_realizations"
+    SELECTED_REALIZATIONS = "selected_realizations"
+
+
 class StatisticsOptions(str, Enum):
     """
-    Type definition for statistics options in simulation time series
+    Type definition of statistics to include in plot in simulation time series
     """
 
     MEAN = "Mean"
@@ -66,3 +75,4 @@ class VisualizationOptions(str, Enum):
     REALIZATIONS = "realizations"
     STATISTICS = "statistics"
     FANCHART = "fanchart"
+    STATISTICS_AND_REALIZATIONS = "statistics and realizations"

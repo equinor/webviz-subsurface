@@ -11,6 +11,7 @@ from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.formatting import printable_int_list
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
@@ -32,6 +33,7 @@ from .types import (
     DerivedVectorsAccessor,
     FanchartOptions,
     ProviderSet,
+    StatisticsFromOptions,
     StatisticsOptions,
     SubplotGroupByOptions,
     TraceOptions,
@@ -96,6 +98,11 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
+            Input(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+            Input(
+                get_uuid(LayoutElements.STATISTICS_FROM_RADIO_ITEMS),
+                "value",
+            ),
             Input(
                 get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
                 "data",
@@ -122,6 +129,8 @@ def plugin_callbacks(
         trace_option_values: List[str],
         subplot_owner_options_value: str,
         resampling_frequency_value: str,
+        selected_realizations: List[int],
+        statistics_calculated_from_value: str,
         __graph_data_has_changed_trigger: int,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
@@ -138,13 +147,16 @@ def plugin_callbacks(
             with single providers or delta ensemble with two providers
             * GraphFigureBuilder to create graph with subplots per vector or subplots per
             ensemble, using VectorSubplotBuilder and EnsembleSubplotBuilder, respectively
-        * Create/build prop serialization in FigureBuilder by use of business logic data
+        * Create/build property serialization in FigureBuilder by use of business logic data
 
         NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
         graphs data has changed and re-render of graph is necessary. E.g. when a selected expression
         from the VectorCalculatorgets edited, without changing the expression name - i.e.
         VectorSelector selectedNodes remain unchanged.
         """
+        if not isinstance(selected_ensembles, list):
+            raise TypeError("ensembles should always be of type list")
+
         if vectors is None:
             vectors = initial_selected_vectors
 
@@ -163,9 +175,22 @@ def plugin_callbacks(
         subplot_owner = SubplotGroupByOptions(subplot_owner_options_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
+        statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
 
-        if not isinstance(selected_ensembles, list):
-            raise TypeError("ensembles should always be of type list")
+        # Prevent update if realization filtering is not affecting pure statistics plot
+        # TODO: Refactor code or create utility for getting trigger ID in a "cleaner" way?
+        ctx = dash.callback_context.triggered
+        trigger_id = ctx[0]["prop_id"].split(".")[0]
+        if (
+            trigger_id == get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR)
+            and statistics_from_option is StatisticsFromOptions.ALL_REALIZATIONS
+            and visualization
+            in [
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.FANCHART,
+            ]
+        ):
+            raise PreventUpdate
 
         # Create dict of derived vectors accessors for selected ensembles
         derived_vectors_accessors: Dict[
@@ -217,27 +242,65 @@ def plugin_callbacks(
         else:
             raise PreventUpdate
 
+        # Get all realizations if statistics accross all realizations are requested
+        is_statistics_from_all_realizations = (
+            statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+            and visualization
+            in [
+                VisualizationOptions.FANCHART,
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+        )
+
         # Plotting per derived vectors accessor
         for ensemble, accessor in derived_vectors_accessors.items():
-            # TODO: Consider to remove list and use pd.concat to obtain one single
-            # dataframe with vector columns. NB: Assumes equal sampling rate
-            # for all vectors - i.e equal number of rows in dataframes
+            # Realization query - realizations query for accessor
+            # - Get non-filter query, None, if statistics from all realizations is needed
+            # - Create valid realizations query for accessor otherwise:
+            #   * List[int]: Filtered valid realizations, empty list if none are valid
+            #   * None: Get all realizations, i.e. non-filtered query
+            realizations_query = (
+                None
+                if is_statistics_from_all_realizations
+                else accessor.create_valid_realizations_query(selected_realizations)
+            )
+
+            # If all selected realizations are invalid for accessor - empty list
+            if realizations_query == []:
+                continue
+
+            # TODO: Consider to remove list vectors_df_list and use pd.concat to obtain
+            # one single dataframe with vector columns. NB: Assumes equal sampling rate
+            # for each vector type - i.e equal number of rows in dataframes
 
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
-                vectors_df_list.append(accessor.get_provider_vectors_df())
+                vectors_df_list.append(
+                    accessor.get_provider_vectors_df(realizations=realizations_query)
+                )
             if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df()
+                    accessor.create_interval_and_average_vectors_df(
+                        realizations=realizations_query
+                    )
                 )
             if accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(accessor.create_calculated_vectors_df())
+                vectors_df_list.append(
+                    accessor.create_calculated_vectors_df(
+                        realizations=realizations_query
+                    )
+                )
 
             for vectors_df in vectors_df_list:
                 if visualization == VisualizationOptions.REALIZATIONS:
+                    # Show selected realizations - only filter df if realizations filter
+                    # query is not performed
                     figure_builder.add_realizations_traces(
-                        vectors_df,
+                        vectors_df
+                        if realizations_query
+                        else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
                         ensemble,
                     )
                 if visualization == VisualizationOptions.STATISTICS:
@@ -253,6 +316,25 @@ def plugin_callbacks(
                         vectors_statistics_df,
                         ensemble,
                         fanchart_options,
+                    )
+                if visualization == VisualizationOptions.STATISTICS_AND_REALIZATIONS:
+                    # Configure line width and color scaling to easier separate
+                    # statistics traces and realization traces
+                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+                    figure_builder.add_statistics_traces(
+                        vectors_statistics_df,
+                        ensemble,
+                        statistics_options,
+                        line_width=3,
+                    )
+                    # Show selected realizations on top - only filter df if realizations filter
+                    # query is not performed
+                    figure_builder.add_realizations_traces(
+                        vectors_df
+                        if realizations_query
+                        else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
+                        ensemble,
+                        color_lightness_scale=150.0,
                     )
 
         # Retrieve selected input providers
@@ -280,6 +362,7 @@ def plugin_callbacks(
                     figure_builder.add_vector_observations(vector, vector_observations)
 
         # Add history trace
+        # TODO: Improve when new history vector input format is in place
         if TraceOptions.HISTORY in trace_options:
             if (
                 isinstance(figure_builder, VectorSubplotBuilder)
@@ -344,6 +427,11 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
                 "value",
             ),
+            State(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+            State(
+                get_uuid(LayoutElements.STATISTICS_FROM_RADIO_ITEMS),
+                "value",
+            ),
             State(
                 get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
                 "data",
@@ -360,18 +448,26 @@ def plugin_callbacks(
         selected_ensembles: List[str],
         visualization_value: str,
         resampling_frequency_value: str,
+        selected_realizations: List[int],
+        statistics_calculated_from_value: str,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
     ) -> Union[EncodedFile, str]:
         """Callback to download data based on selections
 
+        Retrieve vector data based on selected visualizations and filtered realizations
+
         NOTE:
+        * Does not group based on "Group By" - data is stored per vector
+        * All statistics included - no filtering on statistics selections
         * No history vector
-        * No filtering on statistics selections
         * No observation data
         """
         if data_requested is None:
             raise PreventUpdate
+
+        if not isinstance(selected_ensembles, list):
+            raise TypeError("ensembles should always be of type list")
 
         if vectors is None:
             vectors = initial_selected_vectors
@@ -384,9 +480,7 @@ def plugin_callbacks(
         # Convert from string values to enum types
         visualization = VisualizationOptions(visualization_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
-
-        if not isinstance(selected_ensembles, list):
-            raise TypeError("ensembles should always be of type list")
+        statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
 
         # Create dict of derived vectors accessors for selected ensembles
         derived_vectors_accessors: Dict[
@@ -403,57 +497,112 @@ def plugin_callbacks(
         # Dict with vector name as key and dataframe data as value
         vector_dataframe_dict: Dict[str, pd.DataFrame] = {}
 
+        # Get all realizations if statistics accross all realizations are requested
+        is_statistics_from_all_realizations = (
+            statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+            and visualization
+            in [
+                VisualizationOptions.FANCHART,
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+        )
+
         # Plotting per derived vectors accessor
         for ensemble, accessor in derived_vectors_accessors.items():
+            # Realization query - realizations query for accessor
+            # - Get non-filter query, None, if statistics from all realizations is needed
+            # - Create valid realizations query for accessor otherwise:
+            #   * List[int]: Filtered valid realizations, empty list if none are valid
+            #   * None: Get all realizations, i.e. non-filtered query
+            realizations_query = (
+                None
+                if is_statistics_from_all_realizations
+                else accessor.create_valid_realizations_query(selected_realizations)
+            )
+
+            # If all selected realizations are invalid for accessor - empty list
+            if realizations_query == []:
+                continue
+
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
-                vectors_df_list.append(accessor.get_provider_vectors_df())
+                vectors_df_list.append(
+                    accessor.get_provider_vectors_df(realizations=realizations_query)
+                )
             if accessor.has_interval_and_average_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df()
+                    accessor.create_interval_and_average_vectors_df(
+                        realizations=realizations_query
+                    )
                 )
             if accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(accessor.create_calculated_vectors_df())
+                vectors_df_list.append(
+                    accessor.create_calculated_vectors_df(
+                        realizations=realizations_query
+                    )
+                )
 
             # Append data for each vector
             for vectors_df in vectors_df_list:
                 vector_names = [
                     elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
                 ]
-                for vector in vector_names:
-                    if visualization == VisualizationOptions.REALIZATIONS:
-                        vector_df = vectors_df[["DATE", "REAL", vector]]
+
+                if visualization in [
+                    VisualizationOptions.REALIZATIONS,
+                    VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                ]:
+                    # NOTE: Should in theory not have situation with query of all realizations
+                    # if not wanted
+                    vectors_df_filtered = (
+                        vectors_df
+                        if realizations_query
+                        else vectors_df[vectors_df["REAL"].isin(selected_realizations)]
+                    )
+                    for vector in vector_names:
+                        vector_df = vectors_df_filtered[["DATE", "REAL", vector]]
                         row_count = vector_df.shape[0]
                         ensemble_name_list = [ensemble] * row_count
                         vector_df.insert(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
-                        if vector_dataframe_dict.get(vector) is None:
-                            vector_dataframe_dict[vector] = vector_df
+
+                        vector_key = vector + "_realizations"
+                        if vector_dataframe_dict.get(vector_key) is None:
+                            vector_dataframe_dict[vector_key] = vector_df
                         else:
-                            vector_dataframe_dict[vector] = pd.concat(
-                                [vector_dataframe_dict[vector], vector_df],
+                            vector_dataframe_dict[vector_key] = pd.concat(
+                                [vector_dataframe_dict[vector_key], vector_df],
                                 ignore_index=True,
                                 axis=0,
                             )
 
-                    if visualization in [
-                        VisualizationOptions.STATISTICS,
-                        VisualizationOptions.FANCHART,
-                    ]:
-                        vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+                if visualization in [
+                    VisualizationOptions.STATISTICS,
+                    VisualizationOptions.FANCHART,
+                    VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                ]:
+                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+
+                    for vector in vector_names:
                         vector_statistics_df = vectors_statistics_df[["DATE", vector]]
                         row_count = vector_statistics_df.shape[0]
                         ensemble_name_list = [ensemble] * row_count
                         vector_statistics_df.insert(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
-                        if vector_dataframe_dict.get(vector) is None:
-                            vector_dataframe_dict[vector] = vector_statistics_df
+
+                        vector_key = vector + "_statistics"
+                        if vector_dataframe_dict.get(vector_key) is None:
+                            vector_dataframe_dict[vector_key] = vector_statistics_df
                         else:
-                            vector_dataframe_dict[vector] = pd.concat(
-                                [vector_dataframe_dict[vector], vector_statistics_df],
+                            vector_dataframe_dict[vector_key] = pd.concat(
+                                [
+                                    vector_dataframe_dict[vector_key],
+                                    vector_statistics_df,
+                                ],
                                 ignore_index=True,
                                 axis=0,
                             )
@@ -488,21 +637,26 @@ def plugin_callbacks(
             )
         ],
     )
-    def _update_statistics_options_layout(visualization: str) -> List[dict]:
+    def _update_statistics_options_layout(selected_visualization: str) -> List[dict]:
         """Only show statistics checklist if in statistics mode"""
 
         # Convert to enum type
-        visualization = VisualizationOptions(visualization)
+        selected_visualization = VisualizationOptions(selected_visualization)
 
-        def get_style(visualization_type: VisualizationOptions) -> dict:
+        def get_style(visualization_options: List[VisualizationOptions]) -> dict:
             return (
                 {"display": "block"}
-                if visualization == visualization_type
+                if selected_visualization in visualization_options
                 else {"display": "none"}
             )
 
-        statistics_options_style = get_style(VisualizationOptions.STATISTICS)
-        fanchart_options_style = get_style(VisualizationOptions.FANCHART)
+        statistics_options_style = get_style(
+            [
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+        )
+        fanchart_options_style = get_style([VisualizationOptions.FANCHART])
 
         return [statistics_options_style, fanchart_options_style]
 
@@ -711,6 +865,18 @@ def plugin_callbacks(
             elm for elm in expressions if elm["isValid"]
         ]
         return new_expressions
+
+    @app.callback(
+        Output(get_uuid(LayoutElements.REALIZATIONS_FILTER_SPAN), "children"),
+        Input(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+    )
+    def _update_realization_range(realizations: List[int]) -> Optional[str]:
+        if not realizations:
+            raise PreventUpdate
+
+        realizations_filter_text = printable_int_list(realizations)
+
+        return realizations_filter_text
 
 
 def _create_delta_ensemble_table_column_data(

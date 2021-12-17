@@ -41,6 +41,9 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         expressions: Optional[List[ExpressionInfo]] = None,
         resampling_frequency: Optional[Frequency] = None,
     ) -> None:
+        # Initialize base class
+        super().__init__(provider.realizations())
+
         self._name = name
         self._provider = provider
         self._provider_vectors = [
