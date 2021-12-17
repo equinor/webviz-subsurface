@@ -30,7 +30,7 @@ from ._property_serialization import (
 )
 from .types import (
     DeltaEnsemble,
-    DerivedEnsembleVectorsAccessor,
+    DerivedVectorsAccessor,
     FanchartOptions,
     ProviderSet,
     StatisticsFromOptions,
@@ -41,7 +41,7 @@ from .types import (
 )
 from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
-    create_derived_ensemble_vectors_accessor_dict,
+    create_derived_vectors_accessor_dict,
 )
 from .utils.history_vectors import create_history_vectors_df
 from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
@@ -192,10 +192,10 @@ def plugin_callbacks(
         ):
             raise PreventUpdate
 
-        # Create dict of derived ensemble vectors accessors for selected ensembles
-        derived_ensemble_vectors_accessors: Dict[
-            str, DerivedEnsembleVectorsAccessor
-        ] = create_derived_ensemble_vectors_accessor_dict(
+        # Create dict of derived vectors accessors for selected ensembles
+        derived_vectors_accessors: Dict[
+            str, DerivedVectorsAccessor
+        ] = create_derived_vectors_accessor_dict(
             ensembles=selected_ensembles,
             vectors=vectors,
             provider_set=input_provider_set,
@@ -204,7 +204,6 @@ def plugin_callbacks(
             resampling_frequency=resampling_frequency,
         )
 
-        # TODO: How to handle vector metadata the best way?
         # TODO: How to get metadata for calculated vector?
         vector_line_shapes: Dict[str, str] = {
             vector: get_simulation_line_shape(
@@ -254,8 +253,8 @@ def plugin_callbacks(
             ]
         )
 
-        # Plotting per derived ensemble vectors accessor
-        for ensemble, accessor in derived_ensemble_vectors_accessors.items():
+        # Plotting per derived vectors accessor
+        for ensemble, accessor in derived_vectors_accessors.items():
             # Realization query - realizations query for accessor
             # - Get non-filter query, None, if statistics from all realizations is needed
             # - Create valid realizations query for accessor otherwise:
@@ -350,7 +349,7 @@ def plugin_callbacks(
         # Do not add observations if only delta ensembles are selected
         is_only_delta_ensembles = (
             len(selected_input_providers.names()) == 0
-            and len(derived_ensemble_vectors_accessors) > 0
+            and len(derived_vectors_accessors) > 0
         )
         if (
             observations
@@ -411,7 +410,6 @@ def plugin_callbacks(
 
         return figure_builder.get_serialized_figure()
 
-    # TODO: Implement callback
     @app.callback(
         get_data_output,
         [get_data_requested],
@@ -484,10 +482,10 @@ def plugin_callbacks(
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
 
-        # Create dict of derived ensemble vectors accessors for selected ensembles
-        derived_ensemble_vectors_accessors: Dict[
-            str, DerivedEnsembleVectorsAccessor
-        ] = create_derived_ensemble_vectors_accessor_dict(
+        # Create dict of derived vectors accessors for selected ensembles
+        derived_vectors_accessors: Dict[
+            str, DerivedVectorsAccessor
+        ] = create_derived_vectors_accessor_dict(
             ensembles=selected_ensembles,
             vectors=vectors,
             provider_set=input_provider_set,
@@ -510,8 +508,8 @@ def plugin_callbacks(
             ]
         )
 
-        # Handle per accessor
-        for ensemble, accessor in derived_ensemble_vectors_accessors.items():
+        # Plotting per derived vectors accessor
+        for ensemble, accessor in derived_vectors_accessors.items():
             # Realization query - realizations query for accessor
             # - Get non-filter query, None, if statistics from all realizations is needed
             # - Create valid realizations query for accessor otherwise:

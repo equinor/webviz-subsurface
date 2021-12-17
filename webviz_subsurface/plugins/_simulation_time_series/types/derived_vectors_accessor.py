@@ -4,17 +4,7 @@ from typing import List, Optional, Sequence
 import pandas as pd
 
 
-# TODO: Rename?
-# "Possessor"
-# "Accessor"
-# Suggestions:
-# - DerivedEnsembleDataAccessor
-# - DerivedEnsembleData
-# - DerivedEnsembleVectors
-# - DerivedEnsembleVectorsProvider
-# - DerivedVectorsProvider
-# - DerivedVectorsAccessor
-class DerivedEnsembleVectorsAccessor:
+class DerivedVectorsAccessor:
     def __init__(self, accessor_realizations: List[int]) -> None:
         self._accessor_realizations: List[int] = accessor_realizations
 

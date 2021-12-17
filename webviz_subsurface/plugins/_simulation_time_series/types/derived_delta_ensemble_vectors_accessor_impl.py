@@ -14,10 +14,10 @@ from ..utils.from_timeseries_cumulatives import (
     get_cumulative_vector_name,
     is_interval_or_average_vector,
 )
-from .derived_ensemble_vectors_accessor import DerivedEnsembleVectorsAccessor
+from .derived_vectors_accessor import DerivedVectorsAccessor
 
 
-class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
+class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
     """
     Class to create derived vector data and access these for a delta ensemble.
 
@@ -120,19 +120,15 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         * realizations: Optional[Sequence[int]] - Optional sequence of realization numbers for
         vectors
 
-        TODO:
-        - Verify vector names and realizations exist for both ensemble A and B? Raise exception if
-          not?
-        - Perform "inner join"? Only obtain matching index ["DATE", "REAL"] - i.e "DATE"-"REAL"
+        NOTE:
+        - Performs "inner join". Only obtain matching index ["DATE", "REAL"] - i.e "DATE"-"REAL"
         combination present in only one vector -> neglected
-        - Ensure equal dates samples and realizations
-        - Ensure same sorting of dates and realizations
+        - Ensures equal dates samples and realizations by dropping nan-values
         """
 
         if not vector_names:
             raise ValueError("List of requested vector names is empty")
 
-        # NOTE: Assuming request for existing vector names and realizations
         # NOTE: index order ["REAL","DATE"] to obtain grouping by realization
         # and order by date
         ensemble_a_vectors_df = self._provider_a.get_vectors_df(
@@ -203,9 +199,8 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
 
         ---------------------
-        `TODO:`
-        * Verify calculation of cumulative
-        * IMPROVE FUNCTION NAME!
+        `NOTE:`
+        * Handle calculation of cumulative when raw data is added
         * See TODO in calculate_from_resampled_cumulative_vectors_df()
         """
         if not self.has_interval_and_average_vectors():
@@ -221,9 +216,6 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         ]
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
-        # TODO: Fetch vectors df with correct sampling and perform calculation.
-        # Ensure valid sampling and ensure correct AVG_ calculation (unit/day)
-        # calculation, i.e num days between sampling points
         vectors_df = self.__create_delta_ensemble_vectors_df(
             cumulative_vector_names, self._resampling_frequency, realizations
         )
@@ -282,16 +274,10 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         provider_b_calculated_vectors_df = pd.DataFrame()
         for expression in self._vector_calculator_expressions:
             provider_a_calculated_vector_df = create_calculated_vector_df(
-                expression,
-                self._provider_a,
-                realizations,
-                self._resampling_frequency,
+                expression, self._provider_a, realizations, self._resampling_frequency
             )
             provider_b_calculated_vector_df = create_calculated_vector_df(
-                expression,
-                self._provider_b,
-                realizations,
-                self._resampling_frequency,
+                expression, self._provider_b, realizations, self._resampling_frequency
             )
 
             if (

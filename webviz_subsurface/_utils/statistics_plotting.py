@@ -60,33 +60,34 @@ def validate_statistics_data(data: StatisticsData) -> None:
 
     Raise ValueError if lengths are unequal
     """
-    if len(data.samples) <= 0:
+    samples_length = len(data.samples)
+    if samples_length <= 0:
         raise ValueError("Empty x-axis data list in StatisticsData")
-    if data.free_line is not None and len(data.samples) != len(data.free_line.data):
+    if data.free_line is not None and samples_length != len(data.free_line.data):
         raise ValueError(
             "Invalid statistics mean value data length. len(data.samples) != len(free_line.data)"
         )
-    if data.minimum is not None and len(data.samples) != len(data.minimum):
+    if data.minimum is not None and samples_length != len(data.minimum):
         raise ValueError(
             "Invalid statistics minimum value data length. len(data.samples) "
             "!= len(data.minimum)"
         )
-    if data.maximum is not None and len(data.samples) != len(data.maximum):
+    if data.maximum is not None and samples_length != len(data.maximum):
         raise ValueError(
             "Invalid statistics maximum value data length. len(data.samples) != "
             "len(data.maximum)"
         )
-    if data.low is not None and len(data.samples) != len(data.low.data):
+    if data.low is not None and samples_length != len(data.low.data):
         raise ValueError(
             "Invalid statistics low percentile value data length. len(data.samples) "
             "!= len(data.low.data)"
         )
-    if data.mid is not None and len(data.samples) != len(data.mid.data):
+    if data.mid is not None and samples_length != len(data.mid.data):
         raise ValueError(
             "Invalid statistics middle percentile value data length. len(data.samples) "
             "!= len(data.mid.data)"
         )
-    if data.high is not None and len(data.samples) != len(data.high.data):
+    if data.high is not None and samples_length != len(data.high.data):
         raise ValueError(
             "Invalid statistics high percentile value data length. "
             "len(data.samples) != len(data.high.data)"

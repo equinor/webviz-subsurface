@@ -12,6 +12,8 @@ from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
 from ._validate_log_templates import load_and_validate_log_templates
 from .controllers import well_controller
+from .utils.default_color_tables import default_color_tables
+from .utils.xtgeo_well_log_to_json import xtgeo_well_logs_to_json_format
 
 
 class WellLogViewer(WebvizPluginABC):
@@ -31,6 +33,8 @@ be added in later releases.
 * **`well_tvdmin`:** Truncate well data values above this depth.
 * **`well_tvdmax`:** Truncate well data values below this depth.
 * **`well_downsample_interval`:** Sampling interval used for coarsening a well trajectory
+* **`colortables`:** Color tables on json format. See https://git.io/JDLyb \
+    for an example file.
 * **`initial_settings`:** Configuration for initializing the plugin with various \
     properties set. All properties are optional.
     See the data section for available properties.
@@ -83,6 +87,7 @@ Format of the `initial_settings` argument:
         app: Dash,
         wellfolder: Path,
         logtemplates: List[Path],
+        colortables: Path = None,
         wellsuffix: str = ".w",
         mdlog: str = None,
         well_tvdmin: Union[int, float] = None,
@@ -108,7 +113,19 @@ Format of the `initial_settings` argument:
             tvdmax=well_tvdmax,
             downsample_interval=well_downsample_interval,
         )
-        self._initial_settings = initial_settings if initial_settings else {}
+        self.colortable_file = colortables
+        if self.colortable_file:
+            self.colortables = json.loads(get_path(self.colortable_file).read_text())
+        else:
+            self.colortables = default_color_tables()
+
+        initial_settings = initial_settings if initial_settings else {}
+        self.initial_well_name = initial_settings.get(
+            "well_name", self._well_set_model.well_names[0]
+        )
+        self.initial_log_template = initial_settings.get(
+            "logtemplate", list(self._log_templates.keys())[0]
+        )
         self.set_callbacks(app)
 
     @property
@@ -125,9 +142,7 @@ Format of the `initial_settings` argument:
                                 {"label": name, "value": name}
                                 for name in self._well_set_model.well_names
                             ],
-                            value=self._initial_settings.get(
-                                "well_name", self._well_set_model.well_names[0]
-                            ),
+                            value=self.initial_well_name,
                             clearable=False,
                         ),
                         wcc.Dropdown(
@@ -137,9 +152,7 @@ Format of the `initial_settings` argument:
                                 {"label": name, "value": name}
                                 for name in list(self._log_templates.keys())
                             ],
-                            value=self._initial_settings.get(
-                                "logtemplate", list(self._log_templates.keys())[0]
-                            ),
+                            value=self.initial_log_template,
                             clearable=False,
                         ),
                     ],
@@ -149,9 +162,13 @@ Format of the `initial_settings` argument:
                     children=[
                         WellLogViewerComponent(
                             id=self.uuid("well-log-viewer"),
-                            template=self._log_templates[
-                                list(self._log_templates.keys())[0]
-                            ],
+                            template=self._log_templates.get(self.initial_log_template),
+                            welllog=xtgeo_well_logs_to_json_format(
+                                well=self._well_set_model.get_well(
+                                    self.initial_well_name
+                                )
+                            ),
+                            colorTables=self.colortables,
                         )
                     ],
                 ),
@@ -170,8 +187,11 @@ Format of the `initial_settings` argument:
         store_functions = [
             (find_files, [{"folder": self._wellfolder, "suffix": self._wellsuffix}])
         ]
+
         store_functions.extend([(get_path, [{"path": fn}]) for fn in self._wellfiles])
         store_functions.extend(
             [(get_path, [{"path": fn}]) for fn in self._logtemplatefiles]
         )
+        if self.colortable_file is not None:
+            store_functions.append((get_path, [{"path": self.colortable_file}]))
         return store_functions

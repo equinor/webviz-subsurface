@@ -29,7 +29,7 @@ def create_vector_observation_traces(
     `Input:`
     * vector_observations: dict - Dictionary with observation data for a vector
     * color: str - Color of observation traces for vector
-    * vector_name: Optional[str] - Name of legend group, added as legend group and name if provided
+    * legend_group: Optional[str] - Name of legend group, added as legend group and name if provided
 
     `Return:`
     List of marker traces for each observation for vector

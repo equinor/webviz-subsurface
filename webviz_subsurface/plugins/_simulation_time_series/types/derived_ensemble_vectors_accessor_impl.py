@@ -14,10 +14,10 @@ from ..utils.from_timeseries_cumulatives import (
     get_cumulative_vector_name,
     is_interval_or_average_vector,
 )
-from .derived_ensemble_vectors_accessor import DerivedEnsembleVectorsAccessor
+from .derived_vectors_accessor import DerivedVectorsAccessor
 
 
-class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
+class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
     """
     Class to create derived vector data and access these for a regular ensemble.
 
@@ -106,9 +106,8 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
 
         ---------------------
-        `TODO:`
-        * Verify calculation of cumulative
-        * IMPROVE FUNCTION NAME!
+        `NOTE:`
+        * Handle calculation of cumulative when raw data is added
         * See TODO in calculate_from_resampled_cumulative_vectors_df()
         """
         if not self.has_interval_and_average_vectors():
@@ -124,9 +123,6 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         ]
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
-        # TODO: Fetch vectors df with correct sampling and perform calculation.
-        # Ensure valid sampling and ensure correct AVG_ calculation (unit/day)
-        # calculation, i.e num days between sampling points
         vectors_df = self._provider.get_vectors_df(
             cumulative_vector_names, self._resampling_frequency, realizations
         )
@@ -178,10 +174,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedEnsembleVectorsAccessor):
         calculated_vectors_df = pd.DataFrame()
         for expression in self._vector_calculator_expressions:
             calculated_vector_df = create_calculated_vector_df(
-                expression,
-                self._provider,
-                realizations,
-                self._resampling_frequency,
+                expression, self._provider, realizations, self._resampling_frequency
             )
             if calculated_vectors_df.empty:
                 calculated_vectors_df = calculated_vector_df

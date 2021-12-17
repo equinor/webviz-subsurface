@@ -16,15 +16,11 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
     * vectors_df: pd.DataFrame - Dataframe with vectors dataframe and columns:
         ["DATE", "REAL", vector1, ... , vectorN]
 
-    # TODO: Verify returned dataframe index format
     `Returns:`
     * Dataframe with double column level:\n
       [ "DATE",     vector1,                        ... vectorN
                     MEAN, MIN, MAX, P10, P90, P50   ... MEAN, MIN, MAX, P10, P90, P50]
     """
-    # TODO: Add verification of format and raise value error - i.e required columns and
-    # "dimension" of vectors_statistics_df?
-
     # Get vectors names, keep order
     columns_list = list(vectors_df.columns)
     vector_names = sorted(
