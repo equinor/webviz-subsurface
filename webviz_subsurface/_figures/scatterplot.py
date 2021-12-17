@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 
-from .._utils.colors import hex_to_rgba
+from .._utils.colors import hex_to_rgba_str
 
 
 class ScatterPlot:
@@ -45,8 +45,8 @@ class ScatterPlot:
             .update_traces(
                 marker={
                     "size": 15,
-                    "color": hex_to_rgba(color, 0.7),
-                    "line": {"width": 1.2, "color": hex_to_rgba(color, 1)},
+                    "color": hex_to_rgba_str(color, 0.7),
+                    "line": {"width": 1.2, "color": hex_to_rgba_str(color, 1)},
                 }
             )
         )
@@ -59,8 +59,8 @@ class ScatterPlot:
         """Update color for scatter plot"""
         for trace in self._figure["data"]:
             if trace["mode"] == "markers":
-                trace["marker"].update(color=hex_to_rgba(color, opacity))
-                trace["marker"]["line"].update(color=hex_to_rgba(color, 1))
+                trace["marker"].update(color=hex_to_rgba_str(color, opacity))
+                trace["marker"]["line"].update(color=hex_to_rgba_str(color, 1))
 
     def add_trace(
         self,

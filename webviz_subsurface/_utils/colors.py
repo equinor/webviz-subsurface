@@ -65,6 +65,31 @@ def rgb_to_str(rgb: Tuple[float, float, float]) -> str:
     return f"rgb({round(rgb[0])}, {round(rgb[1])}, {round(rgb[2])})"
 
 
+def rgba_to_str(rgba: Tuple[float, float, float, float]) -> str:
+    """Convert rgba tuple with floating point byte color values to string
+    `Input:`
+    * rgb - Tuple[float,float,float,float] - RGBA color on tuple format
+    `Return:`
+    RGBA color on string format "rgba(r,g,b,a)" where, channels r, g and b are
+    represented with byte color integer value 0-255, and a is represented by a
+    decimal number 0-1"""
+    return f"rgba({round(rgba[0])}, {round(rgba[1])}, {round(rgba[2])}, {rgba[3]})"
+
+
+def rgba_to_tuple(rgba: str) -> Tuple[float, float, float, float]:
+    """
+    Takes rgba color 'rgba(a, b, c, d)' and returns a tuple (a, b, c, d)
+    """
+    numbers = [float(value) for value in rgba.strip("rbga()").split(",")]
+    return numbers[0], numbers[1], numbers[2], numbers[3]
+
+
+def rgba_to_hex(color: str) -> str:
+    """Converts a rgba color to hex"""
+    color_list = color.strip("rgba()").split(",")
+    return "#" + "".join(f"{int(i):02x}" for i in color_list)
+
+
 def scale_rgb_lightness(
     rgb: Tuple[float, float, float],
     scale_percentage: float,
@@ -99,3 +124,31 @@ def scale_rgb_lightness(
     # Convert lightness scaled hls to rgb
     rgb = colorsys.hls_to_rgb(hls[0], l_scaled, s=hls[2])
     return 255.0 * rgb[0], 255.0 * rgb[1], 255.0 * rgb[2]
+
+
+def find_intermediate_color(lowcolor: str, highcolor: str, intermed: float) -> str:
+    """
+    Returns the color at a given distance between two colors
+    This function takes two color tuples, where each element is between 0
+    and 1, along with a value 0 < intermed < 1 and returns a color that is
+    intermed-percent from lowcolor to highcolor.
+    """
+
+    # convert to tuple color, eg. (1, 0.45, 0.7)
+    lowcolor_tuple = rgba_to_tuple(lowcolor)
+    highcolor_tuple = rgba_to_tuple(highcolor)
+
+    diff_0 = float(highcolor_tuple[0] - lowcolor_tuple[0])
+    diff_1 = float(highcolor_tuple[1] - lowcolor_tuple[1])
+    diff_2 = float(highcolor_tuple[2] - lowcolor_tuple[2])
+    diff_3 = float(highcolor_tuple[3] - lowcolor_tuple[3])
+
+    inter_med_tuple = (
+        lowcolor_tuple[0] + intermed * diff_0,
+        lowcolor_tuple[1] + intermed * diff_1,
+        lowcolor_tuple[2] + intermed * diff_2,
+        lowcolor_tuple[3] + intermed * diff_3,
+    )
+
+    # back to an rgba string, e.g. rgba(30, 20, 10)
+    return rgba_to_str(inter_med_tuple)

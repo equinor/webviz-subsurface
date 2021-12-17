@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from .._utils.colors import hex_to_rgba
+from .._utils.colors import hex_to_rgba_str
 
 
 class BarChart:
@@ -68,9 +68,9 @@ class BarChart:
         """
         self._data[0]["marker"] = {
             "color": [
-                hex_to_rgba(color, opacity)
+                hex_to_rgba_str(color, opacity)
                 if _bar != selected_bar
-                else hex_to_rgba(color_selected, 0.8)
+                else hex_to_rgba_str(color_selected, 0.8)
                 for _bar in self._data[0]["y"]
             ],
             "line": {
