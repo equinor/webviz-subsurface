@@ -8,7 +8,16 @@ from .._utils.colors import hex_to_rgba_str
 
 
 class ScatterPlot:
-    """Class to create a general scatterplot"""
+    """Class to create a general scatterplot
+
+    Input:
+    * df: dataframe with values
+    * response: y-axis parameter
+    * param: x-axis parameter
+    * color: marker color
+    * title
+    * plot_trendline (default False)
+    """
 
     def __init__(
         self,
