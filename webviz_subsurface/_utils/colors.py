@@ -4,7 +4,9 @@ from typing import Tuple
 
 def hex_to_rgb(hex_string: str) -> Tuple[float, float, float]:
     """Converts the given hex color to rgb tuple with floating point byte color values.
+
     Byte color channels: 0-255
+
     `Return:`
     RGB color on tuple format Tuple[float, float, float] with r-, g- and b-channel
     on index 0, 1 and 2, respectively. With floating point byte color value 0-255.
@@ -20,8 +22,10 @@ def hex_to_rgba(
 ) -> Tuple[float, float, float, float]:
     """Converts the given hex color to rgba tuple with floating point byte color values
     and alpha channel as opacity.
+
     Byte color channels: 0-255
     alpha: 0-1
+
     `Return:`
     RGBA color on tuple format Tuple[float,float,float,float] with r-, g-, b- and alpha-channel
     on index 0, 1, 2 and 3, respectively. With floating point byte color value 0-255.
@@ -33,7 +37,9 @@ def hex_to_rgba(
 
 def hex_to_rgb_str(hex_string: str) -> str:
     """Converts the given hex color to rgb string
+
     Byte color channels: 0-255
+
     `Return:`
     RGB color on string format "rgb(r,g,b)" where, channels r, g and b are
     represented with byte color value 0-255.
@@ -44,7 +50,9 @@ def hex_to_rgb_str(hex_string: str) -> str:
 
 def hex_to_rgba_str(hex_string: str, opacity: float = 1.0) -> str:
     """Converts the given hex color to rgba string
+
     Byte color channels: 0-255
+
     `Return:`
     RGB color on string format "rgba(r,g,b,alpha)" where, channels r, g and b are
     represented with byte color value 0-255.
@@ -55,9 +63,11 @@ def hex_to_rgba_str(hex_string: str, opacity: float = 1.0) -> str:
 
 def rgb_to_str(rgb: Tuple[float, float, float]) -> str:
     """Convert rgb tuple with floating point byte color values to string
+
     `Input:`
     * rgb - Tuple[float,float,float] - RGB color on tuple format, r-, g- and b-channel
     is index 0, 1 and 2, respectively. Byte color values 0-255
+
     `Return:`
     RGB color on string format "rgb(r,g,b)" where, channels r, g and b are
     represented with byte color integer value 0-255.
@@ -67,8 +77,10 @@ def rgb_to_str(rgb: Tuple[float, float, float]) -> str:
 
 def rgba_to_str(rgba: Tuple[float, float, float, float]) -> str:
     """Convert rgba tuple with floating point byte color values to string
+
     `Input:`
     * rgb - Tuple[float,float,float,float] - RGBA color on tuple format
+
     `Return:`
     RGBA color on string format "rgba(r,g,b,a)" where, channels r, g and b are
     represented with byte color integer value 0-255, and a is represented by a
@@ -97,8 +109,10 @@ def scale_rgb_lightness(
     max_lightness_percentage: float = 90.0,
 ) -> Tuple[float, float, float]:
     """Scale lightness of rgb tuple with byte color values, in percentage
+
     Method utilizes HLS color space, and adjust lightness of color
     where larger percentage is lighther, and lower percentage is darker.
+
     `Input:`
     * rgb - Tuple[float,float,float] - RGB color on tuple format, r-, g- and b-channel
     is index 0, 1 and 2, respectively. Byte color values 0-255
