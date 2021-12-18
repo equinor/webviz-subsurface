@@ -39,7 +39,9 @@ def paramresp_callbacks(
     def _update_date_and_zone(
         well: str, zone_state: str
     ) -> Tuple[List[Dict[str, str]], str, List[Dict[str, str]], str]:
-        """Update dates and zones when selecting well"""
+        """Update dates and zones when selecting well. If the current
+        selected zone is also present in the new well it will be kept as value.
+        """
         dates_in_well, zones_in_well = datamodel.well_dates_and_zones(well)
         return (
             [{"label": date, "value": date} for date in dates_in_well],
@@ -68,8 +70,11 @@ def paramresp_callbacks(
         param: Optional[str],
         corrtype: str,
     ) -> List[Optional[Any]]:
-        """
-        Main callback to update graphs.
+        """Main callback to update the graphs:
+
+        * ranked correlations bar chart
+        * response vs param scatter plot
+        * formations chart RFT pressure vs depth, colored by parameter value
         """
         (
             df,

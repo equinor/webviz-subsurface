@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#883](https://github.com/equinor/webviz-subsurface/pull/883) - Added `Statistics + Realizations`-plot for New `SimulationTimeSeries` plugin. Includes filtering of realizations and selection to calculate statistics from all realizations or selected subset of realizations. Updated visualization mode included in user download data.
 - [#867](https://github.com/equinor/webviz-subsurface/pull/867) - Added new `SimulationTimeSeries` plugin, with code structure according to best practice plugin example `webviz-plugin-boilerplate` and usage of `EnsembleSummaryProvider`. New functionality as multiple Delta Ensembles in same plot, selectable resampling frequency and possibility to group subplots per selected ensemble or per selected vector.
-- [#884](https://github.com/equinor/webviz-subsurface/pull/884) - Added a new tab to the RFTPlotter plugin, with functionality to analyse the RFT pressure responses to the parameters.
+- [#884](https://github.com/equinor/webviz-subsurface/pull/884) - Added a new tab to the `RFTPlotter` plugin, with functionality to analyse RFT pressure responses to parameters.
 
 ### Changed
 
