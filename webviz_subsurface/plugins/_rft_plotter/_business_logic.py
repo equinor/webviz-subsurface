@@ -16,6 +16,10 @@ from webviz_subsurface._utils.unique_theming import unique_colors
 
 
 class RftPlotterDataModel:
+    """Class keeping the data needed in the RFT vizualisations and various
+    data providing methods.
+    """
+
     def __init__(
         self,
         webviz_settings: WebvizSettings,
@@ -193,7 +197,24 @@ class RftPlotterDataModel:
     def create_rft_and_param_pivot_table(
         self, ensemble: str, well: str, date: str, zone: str, keep_all_rfts: bool
     ) -> Tuple[Optional[pd.DataFrame], float, float, List[str], List[str],]:
-        """Description"""
+        """This method merges rft observations and parameters.
+
+        The RFT observations are converted from long form (all simulated values
+        in one column: SIMULATED) to wide form (on column for each well/date/zone).
+        This is needed for calculating correlations between RFTs. It is an option
+        whether to keep one or all RFT columns. If there are multiple observations
+        with the same well/date/zone, they are averaged (depth could be added as a
+        fourth parameter here, f.ex optional).
+
+        This RFT wide form table is then merged on REAL with the ensemble parameters.
+
+        Returns:
+        * merged dataframe with RFTs and parameters
+        * observation for well/date/zone
+        * observation error
+        * list with ensemble parameters
+        * list with rft names
+        """
 
         rft_filter = {"ENSEMBLE": ensemble}
         if not keep_all_rfts:
@@ -218,7 +239,7 @@ class RftPlotterDataModel:
         pivot_df = rft_df.pivot_table(
             index="REAL", columns="RFT_KEY", values="SIMULATED", aggfunc="mean"
         ).reset_index()
-        pivot_df.to_csv("/private/olind/webviz/pivot_df.csv")
+
         param_df = (
             filter_frame(self.param_model.dataframe, {"ENSEMBLE": ensemble})
             .drop("ENSEMBLE", axis=1)
@@ -262,19 +283,20 @@ def read_csv(csv_file: str) -> pd.DataFrame:
     return pd.read_csv(csv_file)
 
 
-def interpolate_depth(df: pd.DataFrame) -> pd.DataFrame:
-    df = (
-        df.pivot_table(index=["DEPTH"], columns=["REAL"], values="PRESSURE")
-        .interpolate(limit_direction="both")
-        .stack("REAL")
-    )
-    return df.to_frame().rename(columns={0: "PRESSURE"}).reset_index()
+# def interpolate_depth(df: pd.DataFrame) -> pd.DataFrame:
+#     df = (
+#         df.pivot_table(index=["DEPTH"], columns=["REAL"], values="PRESSURE")
+#         .interpolate(limit_direction="both")
+#         .stack("REAL")
+#     )
+#     return df.to_frame().rename(columns={0: "PRESSURE"}).reset_index()
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def filter_frame(
     dframe: pd.DataFrame, column_values: Dict[str, Union[List[str], str]]
 ) -> pd.DataFrame:
+    """General function for filtering dataframes"""
     df = dframe.copy()
     for column, value in column_values.items():
         if isinstance(value, list):
@@ -287,7 +309,7 @@ def filter_frame(
 def correlate(df: pd.DataFrame, response: str) -> pd.Series:
     """Returns the correlation matrix for a dataframe
 
-    This function is the same as in ParameterAnalysis and should be generalized
+    This function is the same as in ParameterAnalysis and could be generalized
     """
     df = df[df.columns[df.nunique() > 1]].copy()
     if response not in df.columns:
