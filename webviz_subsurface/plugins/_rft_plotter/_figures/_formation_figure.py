@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from ...._utils.colors import find_intermediate_color
+from ...._utils.colors import find_intermediate_color, rgba_to_str
 from ...._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
@@ -284,7 +284,9 @@ class FormationFigure:
                     )
 
     def color_by_param_value(self, df_norm: pd.DataFrame, selected_param: str) -> None:
-
+        """This method colors the RFT traces according to the value of the input
+        selected_param
+        """
         for trace in self.traces:
             if "customdata" in trace:
                 trace["line"]["color"] = set_real_color(
@@ -307,9 +309,9 @@ def set_real_color(df_norm: pd.DataFrame, real_no: str) -> str:
 
     Same function as in Parameter Analysis. Shout be generalized
     """
-    red = "rgba(255,18,67, 1)"
-    mid_color = "rgba(220,220,220,1)"
-    green = "rgba(62,208,62, 1)"
+    red = rgba_to_str((255, 18, 67, 1))
+    mid_color = rgba_to_str((220, 220, 220, 1))
+    green = rgba_to_str((62, 208, 62, 1))
 
     mean = df_norm["VALUE_NORM"].mean()
 

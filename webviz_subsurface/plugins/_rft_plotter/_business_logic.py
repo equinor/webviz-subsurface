@@ -283,13 +283,13 @@ def read_csv(csv_file: str) -> pd.DataFrame:
     return pd.read_csv(csv_file)
 
 
-# def interpolate_depth(df: pd.DataFrame) -> pd.DataFrame:
-#     df = (
-#         df.pivot_table(index=["DEPTH"], columns=["REAL"], values="PRESSURE")
-#         .interpolate(limit_direction="both")
-#         .stack("REAL")
-#     )
-#     return df.to_frame().rename(columns={0: "PRESSURE"}).reset_index()
+def interpolate_depth(df: pd.DataFrame) -> pd.DataFrame:
+    df = (
+        df.pivot_table(index=["DEPTH"], columns=["REAL"], values="PRESSURE")
+        .interpolate(limit_direction="both")
+        .stack("REAL")
+    )
+    return df.to_frame().rename(columns={0: "PRESSURE"}).reset_index()
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
