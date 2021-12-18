@@ -6,6 +6,15 @@ from .._utils.colors import hex_to_rgba_str
 
 
 class BarChart:
+    """General bar chart class.
+
+    Input:
+    * series: pandas series with values and names in the index
+    * n_rows: how many of the values to display
+    * title
+    * orientation
+    """
+
     def __init__(self, series: pd.Series, n_rows: int, title: str, orientation: str):
         self.series = series.tail(n=n_rows)
         self.title = title
