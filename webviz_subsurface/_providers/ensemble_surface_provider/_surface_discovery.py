@@ -1,5 +1,7 @@
 import glob
 from dataclasses import dataclass
+import os
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -15,10 +17,31 @@ class SurfaceFileInfo:
     datestr: Optional[str]
 
 
-def _discover_ensemble_realizations(ens_path: str) -> Dict[int, str]:
+def _discover_ensemble_realizations_fmu(ens_path: str) -> Dict[int, str]:
     """Returns dict indexed by realization number and with runpath as value"""
     scratch_ensemble = ScratchEnsemble("dummyEnsembleName", paths=ens_path).filter("OK")
     real_dict = {i: r.runpath() for i, r in scratch_ensemble.realizations.items()}
+    return real_dict
+
+
+def _discover_ensemble_realizations(ens_path: str) -> Dict[int, str]:
+    # Much faster than FMU impl above, but is it risky?
+    # Do we need to check for OK-file?
+    real_dict: Dict[int, str] = {}
+
+    realidxregexp = re.compile(r"realization-(\d+)")
+    globbed_real_dirs = sorted(glob.glob(str(ens_path)))
+    for real_dir in globbed_real_dirs:
+        realnum: Optional[nt] = None
+        for path_comp in reversed(real_dir.split(os.path.sep)):
+            realmatch = re.match(realidxregexp, path_comp)
+            if realmatch:
+                realnum = int(realmatch.group(1))
+                break
+
+        if realnum is not None:
+            real_dict[realnum] = real_dir
+
     return real_dict
 
 
@@ -48,7 +71,7 @@ def discover_per_realization_surface_files(ens_path: str) -> List[SurfaceFileInf
 
     surface_files: List[SurfaceFileInfo] = []
 
-    real_dict = _discover_ensemble_realizations(ens_path)
+    real_dict = _discover_ensemble_realizations_fmu(ens_path)
     for realnum, runpath in sorted(real_dict.items()):
         globbed_filenames = glob.glob(str(Path(runpath) / rel_surface_folder / suffix))
         for surf_filename in sorted(globbed_filenames):
