@@ -1,5 +1,10 @@
+import datetime
+from typing import Optional
+
 import numpy as np
 import pandas as pd
+
+from webviz_subsurface._providers import Frequency
 
 ###################################################################################
 # NOTE: This code is a copy and modification of
@@ -141,3 +146,25 @@ def rename_vector_from_cumulative(vector: str, as_rate: bool) -> str:
         if as_rate
         else f"INTVL_{vector}"
     )
+
+
+# pylint: disable=too-many-return-statements
+def datetime_to_intervalstr(date: datetime.datetime, freq: Frequency) -> Optional[str]:
+    if date is None:
+        return date
+
+    if freq == Frequency.DAILY:
+        return f"{date.year}-{date.month:02d}-{date.day:02d}"
+    if freq == Frequency.WEEKLY:
+        # Note: weekyear may differ from actual year for week numbers 1,52,53.
+        (weekyear, week, _) = date.isocalendar()
+        return f"{weekyear}-W{week:02d}"
+    if freq == Frequency.MONTHLY:
+        return f"{date.year}-{date.month:02d}"
+    if freq == Frequency.QUARTERLY:
+        return f"{date.year}-Q{(date.month//3+1)}"
+    if freq == Frequency.YEARLY:
+        return f"{date.year}"
+
+    # Using isoformat if frequency is none of the listed instead of error.
+    return date.isoformat()
