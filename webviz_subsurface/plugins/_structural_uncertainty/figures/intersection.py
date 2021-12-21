@@ -122,7 +122,7 @@ def get_plotly_traces_uncertainty_envelope(
                 legend_group=name,
                 legend_name=legendname,
                 show_legend=showlegend,
-                show_hoverinfo=False,
+                show_hoverinfo=True,
             )
         )
     return fan_chart_traces
