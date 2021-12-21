@@ -361,6 +361,8 @@ def render_hovertemplate(vector: str, sampling_frequency: Optional[Frequency]) -
             return "(%{x|%b} %{x|%-d}, %{x|%Y}, %{y})<br>"
         if sampling_frequency == Frequency.MONTHLY:
             return "(%{x|%b} %{x|%Y}, %{y})<br>"
+        if sampling_frequency == Frequency.QUARTERLY:
+            return "(Q%{x|%q} %{x|%Y}, %{y})<br>"
         if sampling_frequency == Frequency.YEARLY:
             return "(%{x|%Y}, %{y})<br>"
         raise ValueError(f"Interval {sampling_frequency.value} is not supported.")
