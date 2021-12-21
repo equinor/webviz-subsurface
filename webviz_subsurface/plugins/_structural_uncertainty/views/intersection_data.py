@@ -267,7 +267,7 @@ def statistical_layout(uuid: str, value: List[str]) -> html.Div:
             {"label": "Max", "value": "Max"},
             {"label": "Realizations", "value": "Realizations"},
             {
-                "label": "Uncertainty envelope (slow)",
+                "label": "Uncertainty envelope",
                 "value": "Uncertainty envelope",
             },
         ],
