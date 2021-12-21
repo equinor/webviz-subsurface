@@ -28,8 +28,8 @@ def main() -> None:
     root_storage_dir = Path("/home/sigurdp/buf/webviz_storage_dir")
 
     # fmt:off
-    ensemble_path = "../webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
-    # ensemble_path = "../hk-webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
+    # ensemble_path = "../webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
+    ensemble_path = "../hk-webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
     # fmt:on
 
     # WEBVIZ_FACTORY_REGISTRY.initialize(
@@ -93,11 +93,22 @@ def main() -> None:
     # )
     # print(surf)
 
+    # surf = provider.get_surface(
+    #     StatisticalSurfaceAddress(
+    #         attribute="amplitude_mean",
+    #         name="basevolantis",
+    #         datestr="20180701_20180101",
+    #         statistic=SurfaceStatistic.P10,
+    #         realizations=all_realizations,
+    #     )
+    # )
+    # print(surf)
+
     surf = provider.get_surface(
         StatisticalSurfaceAddress(
-            attribute="amplitude_mean",
-            name="basevolantis",
-            datestr="20180701_20180101",
+            attribute="ds_extract_postprocess-refined8",
+            name="topvolantis",
+            datestr=None,
             statistic=SurfaceStatistic.P10,
             realizations=all_realizations,
         )

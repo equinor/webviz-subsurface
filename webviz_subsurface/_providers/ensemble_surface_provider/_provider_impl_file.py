@@ -13,6 +13,7 @@ import xtgeo
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._surface_discovery import SurfaceFileInfo
+from ._stat_surf_cache import StatSurfCache
 from .ensemble_surface_provider import (
     EnsembleSurfaceProvider,
     ObservedSurfaceAddress,
@@ -25,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 STORE_REL_SIM_DIR = "sim"
 STORE_REL_OBS_DIR = "obs"
-
+STORE_REL_STAT_CACHE_DIR = "stat_cache"
 
 # pylint: disable=too-few-public-methods
 class Col:
@@ -48,6 +49,8 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         self._storage_dir = storage_dir
         self._inventory_df = surface_inventory_df
 
+        self._stat_surf_cache = StatSurfCache(storage_dir / STORE_REL_STAT_CACHE_DIR)
+
     @staticmethod
     def write_backing_store(
         provider_storage_dir: Path,
@@ -61,6 +64,9 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         provider_storage_dir.mkdir(parents=True, exist_ok=True)
         (provider_storage_dir / STORE_REL_SIM_DIR).mkdir(parents=True, exist_ok=True)
         (provider_storage_dir / STORE_REL_OBS_DIR).mkdir(parents=True, exist_ok=True)
+        (provider_storage_dir / STORE_REL_STAT_CACHE_DIR).mkdir(
+            parents=True, exist_ok=True
+        )
 
         type_arr: List[SurfaceType] = []
         real_arr: List[int] = []
@@ -185,6 +191,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         ],
     ) -> Optional[xtgeo.RegularSurface]:
         if isinstance(address, StatisticalSurfaceAddress):
+            # return self._get_or_create_statistical_surface(address)
             return self._create_statistical_surface(address)
         if isinstance(address, SimulatedSurfaceAddress):
             return self._get_simulated_surface(address)
@@ -192,6 +199,32 @@ class ProviderImplFile(EnsembleSurfaceProvider):
             return self._get_observed_surface(address)
 
         raise TypeError("Unknown type of surface address")
+
+    def _get_or_create_statistical_surface(
+        self, address: StatisticalSurfaceAddress
+    ) -> Optional[xtgeo.RegularSurface]:
+
+        timer = PerfTimer()
+
+        surf = self._stat_surf_cache.fetch(address)
+        if surf:
+            LOGGER.debug(
+                f"Fetched statistical surface from cache in: {timer.elapsed_s():.2f}s"
+            )
+            return surf
+
+        surf = self._create_statistical_surface(address)
+        et_create_s = timer.lap_s()
+
+        self._stat_surf_cache.store(address, surf)
+        et_write_cache_s = timer.lap_s()
+
+        LOGGER.debug(
+            f"Created and wrote statistical surface to cache in: {timer.elapsed_s():.2f}s ("
+            f"create={et_create_s:.2f}s, store={et_write_cache_s:.2f}s)"
+        )
+
+        return surf
 
     def _create_statistical_surface(
         self, address: StatisticalSurfaceAddress
