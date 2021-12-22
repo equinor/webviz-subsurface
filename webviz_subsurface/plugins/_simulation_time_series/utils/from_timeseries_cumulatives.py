@@ -162,7 +162,7 @@ def datetime_to_intervalstr(date: datetime.datetime, freq: Frequency) -> Optiona
     if freq == Frequency.MONTHLY:
         return f"{date.year}-{date.month:02d}"
     if freq == Frequency.QUARTERLY:
-        return f"{date.year}-Q{(date.month//3+1)}"
+        return f"{date.year}-Q{1 + (date.month-1)//3}"
     if freq == Frequency.YEARLY:
         return f"{date.year}"
 
