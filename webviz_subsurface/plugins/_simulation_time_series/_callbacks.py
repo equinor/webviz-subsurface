@@ -43,6 +43,7 @@ from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
+from .utils.from_timeseries_cumulatives import datetime_to_intervalstr
 from .utils.history_vectors import create_history_vectors_df
 from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from .utils.trace_line_shape import get_simulation_line_shape
@@ -569,6 +570,11 @@ def plugin_callbacks(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
 
+                        if vector.startswith(("AVG_", "INTVL_")):
+                            vector_df["DATE"] = vector_df["DATE"].apply(
+                                datetime_to_intervalstr, freq=resampling_frequency
+                            )
+
                         vector_key = vector + "_realizations"
                         if vector_dataframe_dict.get(vector_key) is None:
                             vector_dataframe_dict[vector_key] = vector_df
@@ -595,6 +601,13 @@ def plugin_callbacks(
                         )
 
                         vector_key = vector + "_statistics"
+
+                        if vector.startswith(("AVG_", "INTVL_")):
+                            vector_statistics_df.loc[
+                                :, ("DATE", "")
+                            ] = vector_statistics_df.loc[:, ("DATE", "")].apply(
+                                datetime_to_intervalstr, freq=resampling_frequency
+                            )
                         if vector_dataframe_dict.get(vector_key) is None:
                             vector_dataframe_dict[vector_key] = vector_statistics_df
                         else:
