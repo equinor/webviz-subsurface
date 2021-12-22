@@ -66,6 +66,7 @@ setup(
             "SubsurfaceMap = webviz_subsurface.plugins:SubsurfaceMap",
             "EnsembleSurfaceCached = webviz_subsurface.plugins:EnsembleSurfaceCached",
             "EnsembleSurfaceSendSurfaceAddress = webviz_subsurface.plugins:EnsembleSurfaceSendSurfaceAddress",
+            "EnsembleSurfaceSharedServer = webviz_subsurface.plugins:EnsembleSurfaceSharedServer",
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
             "SurfaceWithGridCrossSection = webviz_subsurface.plugins:SurfaceWithGridCrossSection",
             "SurfaceWithSeismicCrossSection = webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",

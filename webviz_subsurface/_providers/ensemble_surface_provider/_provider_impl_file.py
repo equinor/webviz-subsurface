@@ -24,9 +24,9 @@ from .ensemble_surface_provider import (
 
 LOGGER = logging.getLogger(__name__)
 
-STORE_REL_SIM_DIR = "sim"
-STORE_REL_OBS_DIR = "obs"
-STORE_REL_STAT_CACHE_DIR = "stat_cache"
+REL_SIM_DIR = "sim"
+REL_OBS_DIR = "obs"
+REL_STAT_CACHE_DIR = "stat_cache"
 
 # pylint: disable=too-few-public-methods
 class Col:
@@ -36,7 +36,7 @@ class Col:
     NAME = "name"
     DATESTR = "datestr"
     ORIGINAL_PATH = "original_path"
-    STORE_PATH = "store_path"
+    REL_PATH = "rel_path"
 
 
 class SurfaceType(str, Enum):
@@ -45,39 +45,44 @@ class SurfaceType(str, Enum):
 
 
 class ProviderImplFile(EnsembleSurfaceProvider):
-    def __init__(self, storage_dir: Path, surface_inventory_df: pd.DataFrame) -> None:
-        self._storage_dir = storage_dir
+    def __init__(
+        self, provider_id: str, provider_dir: Path, surface_inventory_df: pd.DataFrame
+    ) -> None:
+        self._provider_id = provider_id
+        self._provider_dir = provider_dir
         self._inventory_df = surface_inventory_df
 
-        self._stat_surf_cache = StatSurfCache(storage_dir / STORE_REL_STAT_CACHE_DIR)
+        self._stat_surf_cache = StatSurfCache(self._provider_dir / REL_STAT_CACHE_DIR)
 
     @staticmethod
     def write_backing_store(
-        provider_storage_dir: Path,
+        storage_dir: Path,
+        storage_key: str,
         sim_surfaces: List[SurfaceFileInfo],
         obs_surfaces: List[SurfaceFileInfo],
     ) -> None:
 
         timer = PerfTimer()
-        LOGGER.debug(f"Writing surface backing store to: {provider_storage_dir}")
 
-        provider_storage_dir.mkdir(parents=True, exist_ok=True)
-        (provider_storage_dir / STORE_REL_SIM_DIR).mkdir(parents=True, exist_ok=True)
-        (provider_storage_dir / STORE_REL_OBS_DIR).mkdir(parents=True, exist_ok=True)
-        (provider_storage_dir / STORE_REL_STAT_CACHE_DIR).mkdir(
-            parents=True, exist_ok=True
-        )
+        # All data for this provider will be stored inside a sub-directory
+        # given by the storage key
+        provider_dir = storage_dir / storage_key
+        LOGGER.debug(f"Writing surface backing store to: {provider_dir}")
+        provider_dir.mkdir(parents=True, exist_ok=True)
+        (provider_dir / REL_SIM_DIR).mkdir(parents=True, exist_ok=True)
+        (provider_dir / REL_OBS_DIR).mkdir(parents=True, exist_ok=True)
+        (provider_dir / REL_STAT_CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
         type_arr: List[SurfaceType] = []
         real_arr: List[int] = []
         attribute_arr: List[str] = []
         name_arr: List[str] = []
         datestr_arr: List[str] = []
-        store_path_arr: List[str] = []
+        rel_path_arr: List[str] = []
         original_path_arr: List[str] = []
 
         for surfinfo in sim_surfaces:
-            path_in_store = _compose_sim_surf_store_path(
+            rel_path_in_store = _compose_rel_sim_surf_path(
                 real=surfinfo.real,
                 attribute=surfinfo.attribute,
                 name=surfinfo.name,
@@ -89,7 +94,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
             attribute_arr.append(surfinfo.attribute)
             name_arr.append(surfinfo.name)
             datestr_arr.append(surfinfo.datestr if surfinfo.datestr else "")
-            store_path_arr.append(str(path_in_store))
+            rel_path_arr.append(str(rel_path_in_store))
             original_path_arr.append(surfinfo.path)
 
         # We want to strip out observed surfaces without a matching simulated surface
@@ -98,7 +103,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         )
 
         for surfinfo in valid_obs_surfaces:
-            path_in_store = _compose_obs_surf_store_path(
+            rel_path_in_store = _compose_rel_obs_surf_path(
                 attribute=surfinfo.attribute,
                 name=surfinfo.name,
                 datestr=surfinfo.datestr,
@@ -109,14 +114,12 @@ class ProviderImplFile(EnsembleSurfaceProvider):
             attribute_arr.append(surfinfo.attribute)
             name_arr.append(surfinfo.name)
             datestr_arr.append(surfinfo.datestr if surfinfo.datestr else "")
-            store_path_arr.append(str(path_in_store))
+            rel_path_arr.append(str(rel_path_in_store))
             original_path_arr.append(surfinfo.path)
 
         LOGGER.debug(f"Copying {len(original_path_arr)} surfaces into backing store...")
         timer.lap_s()
-        _copy_surfaces_into_storage_dir(
-            original_path_arr, store_path_arr, provider_storage_dir
-        )
+        _copy_surfaces_into_provider_dir(original_path_arr, rel_path_arr, provider_dir)
         et_copy_s = timer.lap_s()
 
         surface_inventory_df = pd.DataFrame(
@@ -126,12 +129,12 @@ class ProviderImplFile(EnsembleSurfaceProvider):
                 Col.ATTRIBUTE: attribute_arr,
                 Col.NAME: name_arr,
                 Col.DATESTR: datestr_arr,
-                Col.STORE_PATH: store_path_arr,
+                Col.REL_PATH: rel_path_arr,
                 Col.ORIGINAL_PATH: original_path_arr,
             }
         )
 
-        parquet_file_name = provider_storage_dir / "surface_inventory.parquet"
+        parquet_file_name = provider_dir / "surface_inventory.parquet"
         surface_inventory_df.to_parquet(path=parquet_file_name)
 
         LOGGER.debug(
@@ -140,15 +143,22 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         )
 
     @staticmethod
-    def from_backing_store(provider_storage_dir: Path) -> Optional["ProviderImplFile"]:
+    def from_backing_store(
+        storage_dir: Path,
+        storage_key: str,
+    ) -> Optional["ProviderImplFile"]:
 
-        parquet_file_name = provider_storage_dir / "surface_inventory.parquet"
+        provider_dir = storage_dir / storage_key
+        parquet_file_name = provider_dir / "surface_inventory.parquet"
 
         try:
             surface_inventory_df = pd.read_parquet(path=parquet_file_name)
-            return ProviderImplFile(provider_storage_dir, surface_inventory_df)
+            return ProviderImplFile(storage_key, provider_dir, surface_inventory_df)
         except FileNotFoundError:
             return None
+
+    def provider_id(self) -> str:
+        return self._provider_id
 
     def attributes(self) -> List[str]:
         return sorted(list(self._inventory_df[Col.ATTRIBUTE].unique()))
@@ -191,8 +201,8 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         ],
     ) -> Optional[xtgeo.RegularSurface]:
         if isinstance(address, StatisticalSurfaceAddress):
-            # return self._get_or_create_statistical_surface(address)
-            return self._create_statistical_surface(address)
+            return self._get_or_create_statistical_surface(address)
+            # return self._create_statistical_surface(address)
         if isinstance(address, SimulatedSurfaceAddress):
             return self._get_simulated_surface(address)
         if isinstance(address, ObservedSurfaceAddress):
@@ -353,7 +363,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
             & (df[Col.REAL].isin(realizations))
         ]
 
-        return [self._storage_dir / rel_path for rel_path in df[Col.STORE_PATH]]
+        return [self._provider_dir / rel_path for rel_path in df[Col.REL_PATH]]
 
     def _locate_observed_surfaces(
         self, attribute: str, name: str, datestr: str
@@ -369,7 +379,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
             & (df[Col.DATESTR] == datestr)
         ]
 
-        return [self._storage_dir / rel_path for rel_path in df[Col.STORE_PATH]]
+        return [self._provider_dir / rel_path for rel_path in df[Col.REL_PATH]]
 
 
 def _find_observed_surfaces_corresponding_to_simulated(
@@ -395,47 +405,47 @@ def _find_observed_surfaces_corresponding_to_simulated(
     return valid_obs_surfaces
 
 
-def _copy_surfaces_into_storage_dir(
+def _copy_surfaces_into_provider_dir(
     original_path_arr: List[str],
-    store_path_arr: List[str],
-    storage_dir: Path,
+    rel_path_arr: List[str],
+    provider_dir: Path,
 ) -> None:
-    for src_path, dst_rel_path in zip(original_path_arr, store_path_arr):
+    for src_path, dst_rel_path in zip(original_path_arr, rel_path_arr):
         # LOGGER.debug(f"copying surface from: {src_path}")
-        shutil.copyfile(src_path, storage_dir / dst_rel_path)
+        shutil.copyfile(src_path, provider_dir / dst_rel_path)
 
     # full_dst_path_arr = [storage_dir / dst_rel_path for dst_rel_path in store_path_arr]
     # with ProcessPoolExecutor() as executor:
     #     executor.map(shutil.copyfile, original_path_arr, full_dst_path_arr)
 
 
-def _compose_sim_surf_store_path(
+def _compose_rel_sim_surf_path(
     real: int,
     attribute: str,
     name: str,
     datestr: Optional[str],
     extension: str,
 ) -> Path:
-    """Compose path to simulated surface file, relative to be used relative to our store dir"""
+    """Compose path to simulated surface file, relative to provider's directory"""
     if datestr:
         fname = f"{real}--{name}--{attribute}--{datestr}{extension}"
     else:
         fname = f"{real}--{name}--{attribute}{extension}"
-    return Path(STORE_REL_SIM_DIR) / fname
+    return Path(REL_SIM_DIR) / fname
 
 
-def _compose_obs_surf_store_path(
+def _compose_rel_obs_surf_path(
     attribute: str,
     name: str,
     datestr: Optional[str],
     extension: str,
 ) -> Path:
-    """Compose path to observed surface file, relative to be used relative to our store dir"""
+    """Compose path to observed surface file, relative to provider's directory"""
     if datestr:
         fname = f"{name}--{attribute}--{datestr}{extension}"
     else:
         fname = f"{name}--{attribute}{extension}"
-    return Path(STORE_REL_OBS_DIR) / fname
+    return Path(REL_OBS_DIR) / fname
 
 
 def _calc_statistic_across_surfaces(

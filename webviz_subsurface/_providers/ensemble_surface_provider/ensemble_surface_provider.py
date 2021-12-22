@@ -48,6 +48,11 @@ class ObservedSurfaceAddress:
 # Class provides data for ensemble surfaces
 class EnsembleSurfaceProvider(abc.ABC):
     @abc.abstractmethod
+    def provider_id(self) -> str:
+        """Returns string ID of the provider."""
+        ...
+
+    @abc.abstractmethod
     def attributes(self) -> List[str]:
         """Returns list of all available attributes."""
         ...

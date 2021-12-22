@@ -26,6 +26,7 @@ from ._disk_usage import DiskUsage
 from ._ensemble_surface_plugin import (
     EnsembleSurfaceCached,
     EnsembleSurfaceSendSurfaceAddress,
+    EnsembleSurfaceSharedServer,
 )
 from ._group_tree import GroupTree
 from ._history_match import HistoryMatch

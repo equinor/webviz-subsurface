@@ -14,7 +14,15 @@ def main_layout(get_uuid):
                             id=get_uuid("mode"),
                             options=[
                                 {"label": mode, "value": mode}
-                                for mode in ["Realization", "Mean"]
+                                for mode in [
+                                    "Realization",
+                                    "Mean",
+                                    "StdDev",
+                                    "Minimum",
+                                    "Maximum",
+                                    "P10",
+                                    "P90",
+                                ]
                             ],
                             value="Realization",
                             clearable=False,

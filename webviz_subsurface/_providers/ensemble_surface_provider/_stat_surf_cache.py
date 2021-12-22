@@ -1,31 +1,14 @@
 import hashlib
 import logging
-import shutil
-import warnings
-from concurrent.futures import ProcessPoolExecutor
-from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Set, Union
+from typing import Optional
 import pickle
 import os
-import io
 import uuid
 
-import numpy as np
-import pandas as pd
 import xtgeo
-from tempfile import NamedTemporaryFile
 
-from webviz_subsurface._utils.perf_timer import PerfTimer
-
-from ._surface_discovery import SurfaceFileInfo
-from .ensemble_surface_provider import (
-    EnsembleSurfaceProvider,
-    ObservedSurfaceAddress,
-    SimulatedSurfaceAddress,
-    StatisticalSurfaceAddress,
-    SurfaceStatistic,
-)
+from .ensemble_surface_provider import StatisticalSurfaceAddress
 
 LOGGER = logging.getLogger(__name__)
 
@@ -88,7 +71,7 @@ def _compose_stat_surf_file_name(
     # Also, what about duplicates
     # And further, handling of missing realizations...
 
-    p = pickle.dumps(address.realizations, pickle.HIGHEST_PROTOCOL)
-    real_hash = hashlib.md5(p).hexdigest()
+    pickled = pickle.dumps(address.realizations, pickle.HIGHEST_PROTOCOL)
+    real_hash = hashlib.md5(pickled).hexdigest()
 
     return f"{address.statistic}--{address.name}--{address.attribute}--{address.datestr}--{real_hash}{extension}"

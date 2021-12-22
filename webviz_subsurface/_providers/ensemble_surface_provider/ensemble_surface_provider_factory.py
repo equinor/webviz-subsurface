@@ -53,8 +53,8 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
     ) -> EnsembleSurfaceProvider:
         timer = PerfTimer()
 
-        provider_storage_dir = self._storage_dir / f"ens__{_make_hash_string(ens_path)}"
-        provider = ProviderImplFile.from_backing_store(provider_storage_dir)
+        storage_key = f"ens__{_make_hash_string(ens_path)}"
+        provider = ProviderImplFile.from_backing_store(self._storage_dir, storage_key)
         if provider:
             LOGGER.info(
                 f"Loaded surface provider from backing store in {timer.elapsed_s():.2f}s ("
@@ -74,13 +74,14 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
         et_discover_s = timer.lap_s()
 
         ProviderImplFile.write_backing_store(
-            provider_storage_dir,
+            self._storage_dir,
+            storage_key,
             sim_surfaces=sim_surface_files,
             obs_surfaces=obs_surface_files,
         )
         et_write_s = timer.lap_s()
 
-        provider = ProviderImplFile.from_backing_store(provider_storage_dir)
+        provider = ProviderImplFile.from_backing_store(self._storage_dir, storage_key)
         if not provider:
             raise ValueError(f"Failed to load/create surface provider for {ens_path}")
 
