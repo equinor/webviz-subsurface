@@ -32,7 +32,7 @@ def _discover_ensemble_realizations(ens_path: str) -> Dict[int, str]:
     realidxregexp = re.compile(r"realization-(\d+)")
     globbed_real_dirs = sorted(glob.glob(str(ens_path)))
     for real_dir in globbed_real_dirs:
-        realnum: Optional[nt] = None
+        realnum: Optional[int] = None
         for path_comp in reversed(real_dir.split(os.path.sep)):
             realmatch = re.match(realidxregexp, path_comp)
             if realmatch:
