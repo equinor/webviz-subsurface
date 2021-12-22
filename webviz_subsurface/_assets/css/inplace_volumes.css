@@ -1,11 +1,10 @@
 .webviz-inplace-vol-btn {
     background-color: #E8E8E8;
     width: 100%;
-    display: block;
-    margin-left: auto;
     font-size: 12px;
     height: 30px;
     line-height:30px;
+    padding:0px;
 }
 
 

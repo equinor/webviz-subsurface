@@ -23,7 +23,7 @@ def layout_controllers(get_uuid: Callable) -> None:
     ) -> tuple:
 
         ctx = callback_context.triggered[0]
-        initial_pages = {"voldist": "1p1t", "tornado": "torn_multi"}
+        initial_pages = {"voldist": "custom", "tornado": "torn_multi"}
 
         # handle initial callback
         if ctx["prop_id"] == ".":
@@ -123,33 +123,3 @@ def layout_controllers(get_uuid: Callable) -> None:
             else:
                 main_layout.append({"display": "none"})
         return main_layout
-
-    @callback(
-        Output(
-            {
-                "id": get_uuid("main-voldist"),
-                "wrapper": ALL,
-                "page": "custom",
-            },
-            "style",
-        ),
-        Input(
-            {"id": get_uuid("main-voldist"), "element": "plot-table-select"}, "value"
-        ),
-        State(
-            {
-                "id": get_uuid("main-voldist"),
-                "wrapper": ALL,
-                "page": "custom",
-            },
-            "id",
-        ),
-    )
-    def _show_hide_1x1(plot_table_select: str, all_ids: dict) -> list:
-        styles = []
-        for input_id in all_ids:
-            if input_id["wrapper"] == plot_table_select:
-                styles.append({"display": "block"})
-            else:
-                styles.append({"display": "none"})
-        return styles

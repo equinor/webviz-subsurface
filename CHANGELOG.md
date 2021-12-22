@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [#889](https://github.com/equinor/webviz-subsurface/pull/889) - Added `rel_file_pattern` argument to .arrow related factory methods in EnsembleSummaryProviderFactory.
+- [#895](https://github.com/equinor/webviz-subsurface/pull/895) - Various improvements to `VolumetricAnalysis` mainly affecting functionality in the `Inplace distribution` tab e.g. merged functionality in pages `Custom plotting` and `1 plot / 1 table` into one, added colorby option in `Plots per zone/region`, and added shade to the convergence plot to indicate missing realizations.
 
 ## [0.2.8] - 2021-12-10
 

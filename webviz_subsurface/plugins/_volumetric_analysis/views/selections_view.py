@@ -25,12 +25,11 @@ def selections_layout(
             html.Div(
                 style={"margin-bottom": "20px"},
                 children=[
-                    button(uuid=uuid, title="1 plot / 1 table", page_id="1p1t"),
+                    button(uuid=uuid, title="Custom plotting", page_id="custom"),
                     button(uuid=uuid, title=f"Plots per {selectors}", page_id="per_zr"),
                     button(
                         uuid=uuid, title="Convergence plot mean/p10/p90", page_id="conv"
                     ),
-                    button(uuid=uuid, title="Custom plotting", page_id="custom"),
                 ],
             ),
             plot_selections_layout(uuid, volumemodel, tab),
@@ -57,7 +56,22 @@ def plot_selections_layout(
     return wcc.Selectors(
         label="PLOT CONTROLS",
         open_details=True,
-        children=plot_selector_dropdowns(uuid=uuid, volumemodel=volumemodel, tab=tab),
+        children=plot_selector_dropdowns(uuid=uuid, volumemodel=volumemodel, tab=tab)
+        + [
+            html.Div(
+                style={"margin-top": "10px"},
+                children=wcc.RadioItems(
+                    label="Visualization below plot:",
+                    id={"id": uuid, "tab": tab, "selector": "bottom_viz"},
+                    options=[
+                        {"label": "Table", "value": "table"},
+                        {"label": "None", "value": "none"},
+                    ],
+                    vertical=False,
+                    value="table",
+                ),
+            ),
+        ],
     )
 
 
@@ -89,11 +103,7 @@ def table_selections_layout(
             ),
             wcc.SelectWithLabel(
                 label="Responses",
-                id={
-                    "id": uuid,
-                    "tab": tab,
-                    "selector": "table_responses",
-                },
+                id={"id": uuid, "tab": tab, "selector": "table_responses"},
                 options=[{"label": i, "value": i} for i in responses],
                 value=responses,
                 size=min(20, len(responses)),
@@ -130,7 +140,7 @@ def plot_selector_dropdowns(
             elements = [x for x in volumemodel.selectors if x != "REAL"]
             value = None
         if selector == "Color by":
-            elements = volumemodel.selectors
+            elements = [x for x in volumemodel.selectors if x != "REAL"]
             value = "ENSEMBLE"
 
         dropdowns.append(
@@ -140,7 +150,7 @@ def plot_selector_dropdowns(
                 options=[{"label": elm, "value": elm} for elm in elements],
                 value=value,
                 clearable=selector in ["Subplots", "Color by", "Y Response"],
-                disabled=selector in ["Subplots", "Y Response"],
+                disabled=selector == "Y Response",
             )
         )
     return dropdowns

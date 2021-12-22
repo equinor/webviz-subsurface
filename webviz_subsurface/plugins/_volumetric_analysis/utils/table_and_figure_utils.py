@@ -4,7 +4,6 @@ from typing import List, Optional, Union
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dash_table
-from dash.dash_table.Format import Format
 
 
 def create_table_columns(
@@ -28,7 +27,7 @@ def create_table_columns(
             elif col in use_si_format:
                 data["format"] = {"locale": {"symbol": ["", ""]}, "specifier": "$.4s"}
             else:
-                data["format"] = Format(precision=3)
+                data["format"] = {"specifier": ".3~r"}
         table_columns.append(data)
     return table_columns
 

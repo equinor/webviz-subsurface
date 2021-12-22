@@ -113,14 +113,14 @@ def tornado_controllers(
                 columns=columns,
                 selectors=[selections["Subplots"]] if subplots else [],
                 data=[x for table in tables for x in table],
-                height="41vh",
+                height="39vh",
                 table_id={"table_id": f"{page_selected}-torntable"},
             )
         elif selections["bottom_viz"] == "realplot" and figures:
             bottom_display = [
                 wcc.Graph(
                     config={"displayModeBar": False},
-                    style={"height": "41vh"},
+                    style={"height": "40vh"},
                     figure=realplot,
                 )
                 if not subplots
@@ -305,7 +305,7 @@ def create_realplot(df: pd.DataFrame, sensitivity_colors: dict) -> go.Figure:
             color="sensname_case",
             color_discrete_map=senscasecolors,
             barmode="overlay",
-            hover_data={"casetype": True},
+            custom_data=["casetype"],
             yaxis={"range": [df["VALUE"].min() * 0.7, df["VALUE"].max() * 1.1]},
             opacity=0.85,
         )

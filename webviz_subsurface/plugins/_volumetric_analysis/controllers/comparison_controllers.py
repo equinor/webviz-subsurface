@@ -101,11 +101,10 @@ def comparison_callback(
 
     groupby = selections["Group by"] if selections["Group by"] is not None else []
     group_on_fluid = "FLUID_ZONE" in groupby
-    hc_responses = ["STOIIP", "GIIP", "ASSOCIATEDGAS", "ASSOCIATEDOIL"]
     # for hc responses and bo/bg the data should be grouped
     # on fluid zone to avoid misinterpretations
     if (
-        selections["Response"] in hc_responses + ["BO", "BG"]
+        selections["Response"] in volumemodel.hc_responses + ["BO", "BG"]
         and "FLUID_ZONE" not in groupby
     ):
         groupby.append("FLUID_ZONE")
@@ -115,7 +114,7 @@ def comparison_callback(
         responses = [selections["Response"]] + [
             col
             for col in volumemodel.responses
-            if col not in hc_responses and col != selections["Response"]
+            if col not in volumemodel.hc_responses and col != selections["Response"]
         ]
         df = create_comparison_df(
             volumemodel,
@@ -299,9 +298,9 @@ def create_comparison_df(
     df["highlighted"] = compute_highlighted_col(df, resp, value1, selections)
     df.columns = df.columns.map(" ".join).str.strip(" ")
 
-    # remove columns where all values are nan and drop SOURCE/ENSMEBLE column
+    # remove BO∕BG columns if they are nan and drop SOURCE/ENSMEBLE column
     dropcols = [
-        x for x in df.columns[df.isna().all()] if "diff" not in x
+        x for x in df.columns[df.isna().all()] if x.split(" ")[0] in ["BO", "BG"]
     ] + adiitional_groups
     df = df[[x for x in df.columns if x not in dropcols]]
 
@@ -420,14 +419,16 @@ def create_scatterfig(
             color_discrete_sequence=px.colors.qualitative.Dark2,
             color_discrete_map=highlight_colors if colorby == "highlighted" else None,
             color=colorby,
-            hover_data={col: True for col in groupby},
+            hover_data=groupby,
         )
         .update_traces(marker_size=10)
         .update_layout(margin={"l": 20, "r": 20, "t": 20, "b": 20})
     )
+    if len(df) == 1:
+        fig.update_xaxes(range=[df[x].mean() * 0.95, df[x].mean() * 1.05])
     if diff_mode is not None:
         fig.update_yaxes(range=find_diff_plot_range(df, diff_mode, selections))
-        if diff_mode == "diff (%)" and x == "REAL":
+        if diff_mode == "diff (%)" and y == diff_mode:
             fig.add_hline(y=selections["Accept value"], line_dash="dot").add_hline(
                 y=-selections["Accept value"], line_dash="dot"
             )

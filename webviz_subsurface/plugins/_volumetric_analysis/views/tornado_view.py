@@ -9,13 +9,9 @@ from ..utils.table_and_figure_utils import create_figure_matrix
 def tornado_main_layout(uuid: str) -> html.Div:
     return html.Div(
         children=[
+            html.Div(id={"id": uuid, "page": "torn_multi"}, style={"display": "block"}),
             html.Div(
-                id={"id": uuid, "page": "torn_multi"},
-                style={"display": "block"},
-            ),
-            html.Div(
-                id={"id": uuid, "page": "torn_bulk_inplace"},
-                style={"display": "none"},
+                id={"id": uuid, "page": "torn_bulk_inplace"}, style={"display": "none"}
             ),
         ]
     )
@@ -23,14 +19,11 @@ def tornado_main_layout(uuid: str) -> html.Div:
 
 def tornado_plots_layout(figures: list, bottom_display: list) -> html.Div:
     matrix = create_figure_matrix(figures)
-    max_height = 42 if bottom_display else 88
+    max_height = 45 if bottom_display else 86
 
     return html.Div(
         children=[
-            wcc.Frame(
-                color="white",
-                highlight=False,
-                style={"height": "44vh" if bottom_display else "91vh"},
+            html.Div(
                 children=[
                     wcc.FlexBox(
                         children=[
@@ -50,26 +43,20 @@ def tornado_plots_layout(figures: list, bottom_display: list) -> html.Div:
                     for row in matrix
                 ],
             ),
-            wcc.Frame(
-                color="white",
-                highlight=False,
+            html.Div(
+                bottom_display,
                 style={
-                    "height": "44vh",
+                    "height": "40vh",
                     "display": "block" if bottom_display else "none",
+                    "margin-top": "20px",
                 },
-                children=html.Div(bottom_display, style={"margin-top": "20px"}),
             ),
         ]
     )
 
 
 def tornado_error_layout(message: str) -> wcc.Frame:
-    return wcc.Frame(
-        color="white",
-        highlight=False,
-        style={"height": "91vh"},
-        children=html.Div(message, style={"margin-top": "40px"}),
-    )
+    return html.Div(message, style={"margin-top": "40px"})
 
 
 def tornado_selections_layout(
