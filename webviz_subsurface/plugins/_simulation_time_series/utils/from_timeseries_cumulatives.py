@@ -151,7 +151,7 @@ def rename_vector_from_cumulative(vector: str, as_rate: bool) -> str:
 # pylint: disable=too-many-return-statements
 def datetime_to_intervalstr(date: datetime.datetime, freq: Frequency) -> Optional[str]:
     if date is None:
-        return date
+        return None
 
     if freq == Frequency.DAILY:
         return f"{date.year}-{date.month:02d}-{date.day:02d}"
