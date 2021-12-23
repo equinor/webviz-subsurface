@@ -37,12 +37,11 @@ def load_ensemble_summary_csv_file(
     df: pd.DataFrame = pd.read_csv(csv_file)
 
     if ensemble_filter is not None:
-        if not "ENSEMBLE" in df.columns:
+        if "ENSEMBLE" not in df.columns:
             raise ValueError(
                 "Cannot filter on ensemble, no ENSEMBLE column exist in CSV file"
             )
 
-        # pylint: disable=unsubscriptable-object
         df = df[df["ENSEMBLE"] == ensemble_filter]
 
     if "ENSEMBLE" in df.columns:

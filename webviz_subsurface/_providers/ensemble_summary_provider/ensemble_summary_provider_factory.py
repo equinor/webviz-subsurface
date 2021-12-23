@@ -96,9 +96,9 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         if len(ensemble_df) == 0:
             raise ValueError("Import resulted in empty DataFrame")
-        if not "DATE" in ensemble_df.columns:
+        if "DATE" not in ensemble_df.columns:
             raise ValueError("No DATE column present in input data")
-        if not "REAL" in ensemble_df.columns:  # pylint: disable=no-member
+        if "REAL" not in ensemble_df.columns:
             raise ValueError("No REAL column present in input data")
 
         ProviderImplArrowPresampled.write_backing_store_from_ensemble_dataframe(

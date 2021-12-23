@@ -9,7 +9,7 @@ from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.themes import default_theme
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
-from webviz_config.webviz_instance_info import WebvizInstanceInfo, WebvizRunMode
+from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO, WebvizRunMode
 
 
 def pytest_addoption(parser: Parser) -> None:
@@ -28,14 +28,19 @@ def testdata_folder_fixture(request: SubRequest) -> Any:
 
 @pytest.fixture()
 def app() -> dash.Dash:
-    run_mode = WebvizRunMode.NON_PORTABLE
-    storage_folder = pathlib.Path(__file__).resolve().parent
-    app_instance_info = WebvizInstanceInfo(run_mode, storage_folder)
+    dash_app = dash.Dash(__name__)
+
+    WEBVIZ_INSTANCE_INFO.initialize(
+        dash_app=dash_app,
+        run_mode=WebvizRunMode.NON_PORTABLE,
+        theme=default_theme,
+        storage_folder=pathlib.Path(__file__).resolve().parent,
+    )
     try:
-        WEBVIZ_FACTORY_REGISTRY.initialize(app_instance_info, None)
+        WEBVIZ_FACTORY_REGISTRY.initialize(None)
     except RuntimeError:
         pass
-    dash_app = dash.Dash(__name__)
+
     dash_app.css.config.serve_locally = True
     dash_app.scripts.config.serve_locally = True
     dash_app.config.suppress_callback_exceptions = True
