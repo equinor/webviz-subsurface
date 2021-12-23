@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.8` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.9rc0` of `webviz-subsurface`.
 
 
 
@@ -1828,6 +1828,8 @@ Several visualizations are available:
 
 * Boxplot showing misfit per ERT observation for each ensemble.
 
+* Plots for analysing the parameter response of the RFT data. Not available for aggregated data.
+
 
 
 
@@ -1857,6 +1859,8 @@ In addition, you need to have rft-files in your realizations stored at the local
 * **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations defined in ERT [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
 * **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). Simulated RFT data can be visualized along MD if a "CONMD" column is present in the dataframe and only for wells where each RFT datapoint has a unique MD.
+
+* **`parameters.txt`**: File with parameters and values
 
 **Using aggregated data**
 
@@ -2189,6 +2193,56 @@ polygons (e.g. fault polygons), identified with the POLY_ID value.
     460604.33,5935575.08,1674.16,2
     ...
     ...
+```
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
+#### SimulationTimeSeries
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
+How to use in YAML config file:
+```yaml
+    - SimulationTimeSeries:
+        ensembles:  # Optional, type Union[list, NoneType].
+        rel_file_pattern:  # Optional, type str.
+        perform_presampling:  # Optional, type bool.
+        obsfile:  # Optional, type str (corresponding to a path).
+        options:  # Optional, type dict.
+        sampling:  # Optional, type str.
+        predefined_expressions:  # Optional, type str.
+        line_shape_fallback:  # Optional, type str.
 ```
 
 
