@@ -5,40 +5,41 @@ import numpy as np
 import pandas as pd
 from webviz_config.common_cache import CACHE
 
+from webviz_subsurface._providers import EnsembleSummaryProvider
 
-class GroupTreeData:
+
+class EnsembleGroupTreeData:
     """This class holds the summary and gruptree datasets and functionality
     to combine the data and calculate the GroupTree component input dataset.
     """
 
-    def __init__(self, smry: pd.DataFrame, gruptree: pd.DataFrame):
-        self.smry = smry
+    def __init__(self, provider: EnsembleSummaryProvider, gruptree: pd.DataFrame):
+
+        self.provider = provider
         self.gruptree = gruptree
-        self.ensembles: Set[str] = gruptree["ENSEMBLE"].unique()
+
         self.wells: Set[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
             "CHILD"
         ].unique()
 
-        # Check that all field rate summary vectors exist
-        self.check_that_sumvecs_exists(["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"])
+        # Check that all field rate and WSTAT summary vectors exist
+        self.check_that_sumvecs_exists(
+            ["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"]
+            + [f"WSTAT:{well}" for well in self.wells]
+        )
 
-        # Check that WSTAT exists for all wells
-        self.check_that_sumvecs_exists([f"WSTAT:{well}" for well in self.wells])
-
-        # Check if the ensembles have waterinj and/or gasinj
-        self.has_waterinj, self.has_gasinj = {}, {}
-        for ensemble in self.ensembles:
-            smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
-            self.has_waterinj[ensemble] = smry_ens["FWIR"].sum() > 0
-            self.has_gasinj[ensemble] = smry_ens["FGIR"].sum() > 0
+        # Check if the ensemble has waterinj and/or gasinj
+        smry = self.provider.get_vectors_df(["FWIR", "FGIR"], None)
+        self.has_waterinj = smry["FWIR"].sum() > 0
+        self.has_gasinj = smry["FGIR"].sum() > 0
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
-        self.gruptree = add_nodetype(self.gruptree, self.smry)
+        self.gruptree = add_nodetype(self.gruptree, self.provider)
 
         # Add edge label
         self.gruptree["EDGE_LABEL"] = self.gruptree.apply(get_edge_label, axis=1)
 
-        # Get summary data with metadata (ensemble, nodename, datatype, edge_or_node)
+        # Get summary data with metadata (nodename, datatype, edge_or_node)
         self.sumvecs: pd.DataFrame = self.get_sumvecs_with_metadata()
 
         # Check that all summary vectors exist
@@ -47,7 +48,6 @@ class GroupTreeData:
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def create_grouptree_dataset(
         self,
-        ensemble: str,
         tree_mode: str,
         stat_option: str,
         real: int,
@@ -66,43 +66,40 @@ class GroupTreeData:
         """  # noqa
 
         # Filter smry
-        smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
+        smry = self.provider.get_vectors_df(list(self.sumvecs["SUMVEC"]), None)
 
         if tree_mode == "statistics":
             if stat_option == "mean":
-                smry_ens = smry_ens.groupby("DATE").mean().reset_index()
+                smry = smry.groupby("DATE").mean().reset_index()
             elif stat_option in ["p50", "p10", "p90"]:
                 quantile = {"p50": 0.5, "p10": 0.9, "p90": 0.1}[stat_option]
-                smry_ens = smry_ens.groupby("DATE").quantile(quantile).reset_index()
+                smry = smry.groupby("DATE").quantile(quantile).reset_index()
             elif stat_option == "max":
-                smry_ens = smry_ens.groupby("DATE").max().reset_index()
+                smry = smry.groupby("DATE").max().reset_index()
             elif stat_option == "min":
-                smry_ens = smry_ens.groupby("DATE").min().reset_index()
+                smry = smry.groupby("DATE").min().reset_index()
             else:
                 raise ValueError(f"Statistical option: {stat_option} not implemented")
         else:
-            smry_ens = smry_ens[smry_ens["REAL"] == real]
+            smry = smry[smry["REAL"] == real]
 
-        # Filter Gruptree ensemble and realization
-        gruptree_ens = self.gruptree[self.gruptree["ENSEMBLE"] == ensemble]
-        if tree_mode == "single_real" and not self.tree_is_equivalent_in_all_real(
-            ensemble
-        ):
+        gruptree_filtered = self.gruptree
+        if tree_mode == "single_real" and not self.tree_is_equivalent_in_all_real():
             # Trees are not equal. Filter on realization
-            gruptree_ens = gruptree_ens[gruptree_ens["REAL"] == real]
+            gruptree_filtered = gruptree_filtered[gruptree_filtered["REAL"] == real]
 
         # Filter nodetype prod, inj and/or other
         df = pd.DataFrame()
         for tpe in ["prod", "inj", "other"]:
             if tpe in prod_inj_other:
-                df = pd.concat([df, gruptree_ens[gruptree_ens[f"IS_{tpe}".upper()]]])
-        gruptree_ens = df.drop_duplicates()
-
-        ens_sumvecs = self.sumvecs[self.sumvecs["ENSEMBLE"] == ensemble]
+                df = pd.concat(
+                    [df, gruptree_filtered[gruptree_filtered[f"IS_{tpe}".upper()]]]
+                )
+        gruptree_filtered = df.drop_duplicates()
 
         return (
-            create_dataset(smry_ens, gruptree_ens, ens_sumvecs),
-            self.get_edge_options(ensemble, prod_inj_other),
+            create_dataset(smry, gruptree_filtered, self.sumvecs),
+            self.get_edge_options(prod_inj_other),
             [
                 {"name": option, "label": get_label(option)}
                 for option in ["pressure", "bhp", "wmctl"]
@@ -110,18 +107,16 @@ class GroupTreeData:
         )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_ensemble_unique_real(self, ensemble: str) -> List[int]:
-        """Returns a list of runique realizations for an ensemble"""
-        smry_ens = self.smry[self.smry["ENSEMBLE"] == ensemble]
-        return sorted(smry_ens["REAL"].unique())
+    def get_unique_real(self) -> List[int]:
+        """Returns a list of unique realizations"""
+        return self.provider.realizations()
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def tree_is_equivalent_in_all_real(self, ensemble: str) -> bool:
+    def tree_is_equivalent_in_all_real(self) -> bool:
         """Checks if the group tree is equivalent in all realizations,
         in which case there is only one REAL number in the dataframe
         """
-        gruptree_ens = self.gruptree[self.gruptree["ENSEMBLE"] == ensemble]
-        return gruptree_ens["REAL"].nunique() == 1
+        return self.gruptree["REAL"].nunique() == 1
 
     def get_sumvecs_with_metadata(
         self,
@@ -129,27 +124,23 @@ class GroupTreeData:
         """Returns a dataframe with the summary vectors that is needed to
         put together the group tree dataset. The other columns are metadata:
 
-        * ensemble
         * nodename: name in eclipse network
         * datatype: oilrate, gasrate, pressure etc
         * edge_node: whether the datatype is edge (f.ex rates) or node (f.ex pressure)
         """
         records = []
 
-        unique_nodes = self.gruptree.drop_duplicates(
-            subset=["ENSEMBLE", "CHILD", "KEYWORD"]
-        )
+        unique_nodes = self.gruptree.drop_duplicates(subset=["CHILD", "KEYWORD"])
         for _, noderow in unique_nodes.iterrows():
-            ensemble = noderow["ENSEMBLE"]
             nodename = noderow["CHILD"]
             keyword = noderow["KEYWORD"]
 
             datatypes = ["pressure"]
             if noderow["IS_PROD"]:
                 datatypes += ["oilrate", "gasrate", "waterrate"]
-            if noderow["IS_INJ"] and self.has_waterinj[ensemble]:
+            if noderow["IS_INJ"] and self.has_waterinj:
                 datatypes.append("waterinjrate")
-            if noderow["IS_INJ"] and self.has_gasinj[ensemble]:
+            if noderow["IS_INJ"] and self.has_gasinj:
                 datatypes.append("gasinjrate")
             if keyword == "WELSPECS":
                 datatypes += ["bhp", "wmctl"]
@@ -157,7 +148,6 @@ class GroupTreeData:
             for datatype in datatypes:
                 records.append(
                     {
-                        "ENSEMBLE": ensemble,
                         "NODENAME": nodename,
                         "DATATYPE": datatype,
                         "EDGE_NODE": get_edge_node(datatype),
@@ -166,13 +156,15 @@ class GroupTreeData:
                 )
         return pd.DataFrame(records)
 
-    def check_that_sumvecs_exists(self, sumvecs: List[str]) -> None:
+    def check_that_sumvecs_exists(self, check_sumvecs: List[str]) -> None:
         """Takes in a list of summary vectors and checks if they are
         present in the summary dataset. If any are missing, a ValueError
         is raised with the list of all missing summary vectors.
         """
         missing_sumvecs = [
-            sumvec for sumvec in sumvecs if sumvec not in self.smry.columns
+            sumvec
+            for sumvec in check_sumvecs
+            if sumvec not in self.provider.vector_names()
         ]
         if missing_sumvecs:
             str_missing_sumvecs = ", ".join(missing_sumvecs)
@@ -182,9 +174,7 @@ class GroupTreeData:
             )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_edge_options(
-        self, ensemble: str, prod_inj_other: list
-    ) -> List[Dict[str, str]]:
+    def get_edge_options(self, prod_inj_other: list) -> List[Dict[str, str]]:
         """Returns a list with edge node options for the dropdown
         menu in the GroupTree component. The output list has the format:
         [
@@ -196,9 +186,9 @@ class GroupTreeData:
         if "prod" in prod_inj_other:
             for rate in ["oilrate", "gasrate", "waterrate"]:
                 options.append({"name": rate, "label": get_label(rate)})
-        if "inj" in prod_inj_other and self.has_waterinj[ensemble]:
+        if "inj" in prod_inj_other and self.has_waterinj:
             options.append({"name": "waterinjrate", "label": get_label("waterinjrate")})
-        if "inj" in prod_inj_other and self.has_gasinj[ensemble]:
+        if "inj" in prod_inj_other and self.has_gasinj:
             options.append({"name": "gasinjrate", "label": get_label("gasinjrate")})
         if options:
             return options
@@ -392,25 +382,10 @@ def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
     return df.to_dict("records")[0]
 
 
-def add_nodetype(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
-    """Adds three columns to the gruptree dataframe: IS_PROD, IS_INJ and IS_OTHER.
-
-    Wells are classified as producers, injectors or other based on the WSTAT summary data.
-
-    Group nodes are classified as producing if it has any producing wells upstream and
-    correspondingly for injecting and other.
-    """
-
-    ens_list = []
-    for ensemble in gruptree["ENSEMBLE"].unique():
-        gruptree_ens = gruptree[gruptree["ENSEMBLE"] == ensemble].copy()
-        smry_ens = smry[smry["ENSEMBLE"] == ensemble].copy()
-        ens_list.append(add_nodetype_for_ens(gruptree_ens, smry_ens))
-    return pd.concat(ens_list)
-
-
-def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataFrame:
-    """Adds nodetype IS_PROD, IS_INJ and IS_OTHER for an ensemble."""
+def add_nodetype(
+    gruptree: pd.DataFrame, provider: EnsembleSummaryProvider
+) -> pd.DataFrame:
+    """Adds nodetype IS_PROD, IS_INJ and IS_OTHER."""
 
     # Get all nodes
     nodes = gruptree.drop_duplicates(subset=["CHILD"], keep="first").copy()
@@ -425,7 +400,7 @@ def add_nodetype_for_ens(gruptree: pd.DataFrame, smry: pd.DataFrame) -> pd.DataF
 
     # Classify leaf nodes as producer, injector or other
     is_prod_map, is_inj_map, is_other_map = create_leafnodetype_maps(
-        nodes[nodes["IS_LEAF"]], smry
+        nodes[nodes["IS_LEAF"]], provider
     )
     nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
     nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
@@ -479,7 +454,7 @@ def get_leafnode_types(
 
 
 def create_leafnodetype_maps(
-    leafnodes: pd.DataFrame, smry: pd.DataFrame
+    leafnodes: pd.DataFrame, provider: EnsembleSummaryProvider
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """Returns three dictionaries classifying leaf nodes as producer,
     injector and/or other (f.ex observation well).
@@ -488,13 +463,16 @@ def create_leafnodetype_maps(
     are classified using summary data.
     """
     is_prod_map, is_inj_map, is_other_map = {}, {}, {}
+
     for _, leafnode in leafnodes.iterrows():
         nodename = leafnode["CHILD"]
         nodekeyword = leafnode["KEYWORD"]
 
         if nodekeyword == "WELSPECS":
             # The leaf node is a well
-            wstat = smry[f"WSTAT:{nodename}"].unique()
+            wstat = provider.get_vectors_df([f"WSTAT:{nodename}"], None)[
+                f"WSTAT:{nodename}"
+            ].unique()
             is_prod_map[nodename] = 1 in wstat
             is_inj_map[nodename] = 2 in wstat
             is_other_map[nodename] = (1 not in wstat) and (2 not in wstat)
@@ -504,6 +482,24 @@ def create_leafnodetype_maps(
                 get_sumvec(datatype, nodename, nodekeyword)
                 for datatype in ["oilrate", "gasrate", "waterrate"]
             ]
+            inj_sumvecs = (
+                [
+                    get_sumvec(datatype, nodename, nodekeyword)
+                    for datatype in ["waterinjrate", "gasinjrate"]
+                ]
+                if nodekeyword != "BRANPROP"
+                else []
+            )
+
+            smry = provider.get_vectors_df(
+                [
+                    sumvec
+                    for sumvec in (prod_sumvecs + inj_sumvecs)
+                    if sumvec in provider.vector_names()
+                ],
+                None,
+            )
+
             sumprod = sum(
                 [
                     smry[sumvec].sum()
@@ -512,21 +508,9 @@ def create_leafnodetype_maps(
                 ]
             )
 
-            if nodekeyword == "BRANPROP":
-                # BRANPROP nodes has no injection by definition
-                suminj = 0
-            else:
-                inj_sumvecs = [
-                    get_sumvec(datatype, nodename, nodekeyword)
-                    for datatype in ["waterinjrate", "gasinjrate"]
-                ]
-                suminj = sum(
-                    [
-                        smry[sumvec].sum()
-                        for sumvec in inj_sumvecs
-                        if sumvec in smry.columns
-                    ]
-                )
+            suminj = sum(
+                [smry[sumvec].sum() for sumvec in inj_sumvecs if sumvec in smry.columns]
+            )
 
             is_prod_map[nodename] = sumprod > 0
             is_inj_map[nodename] = suminj > 0

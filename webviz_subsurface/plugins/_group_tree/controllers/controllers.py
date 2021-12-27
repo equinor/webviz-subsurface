@@ -4,11 +4,11 @@ import dash
 import webviz_subsurface_components
 from dash.dependencies import Input, Output, State
 
-from ..group_tree_data import GroupTreeData
+from ..group_tree_data import EnsembleGroupTreeData
 
 
 def controllers(
-    app: dash.Dash, get_uuid: Callable, grouptreedata: GroupTreeData
+    app: dash.Dash, get_uuid: Callable, ensemble_dict: Dict[str, EnsembleGroupTreeData]
 ) -> None:
     @app.callback(
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "options"),
@@ -22,7 +22,7 @@ def controllers(
         State({"id": get_uuid("options"), "element": "realization"}, "value"),
     )
     def _update_ensemble_options(
-        ensemble: str, tree_mode_state: str, stat_option_state: str, real_state: int
+        ensemble_name: str, tree_mode_state: str, stat_option_state: str, real_state: int
     ) -> Tuple[List[Dict[str, Any]], str, str, List[Dict[str, Any]], Optional[int]]:
         """Updates the selection options when the ensemble value changes"""
         tree_mode_options: List[Dict[str, Any]] = [
@@ -41,13 +41,13 @@ def controllers(
         stat_option_value = (
             stat_option_state if stat_option_state is not None else "mean"
         )
-
-        if not grouptreedata.tree_is_equivalent_in_all_real(ensemble):
+        ensemble = ensemble_dict[ensemble_name]
+        if not ensemble.tree_is_equivalent_in_all_real():
             tree_mode_options[0]["label"] = "Ensemble mean (disabled)"
             tree_mode_options[0]["disabled"] = True
             tree_mode_value = "single_real"
 
-        unique_real = grouptreedata.get_ensemble_unique_real(ensemble)
+        unique_real = ensemble.get_unique_real()
 
         return (
             tree_mode_options,
@@ -66,12 +66,12 @@ def controllers(
         State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
     def _render_grouptree(
-        tree_mode: str, stat_option: str, real: int, prod_inj_other: list, ensemble: str
+        tree_mode: str, stat_option: str, real: int, prod_inj_other: list, ensemble_name: str
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
-        data, edge_options, node_options = grouptreedata.create_grouptree_dataset(
-            ensemble, tree_mode, stat_option, real, prod_inj_other
-        )
+        data, edge_options, node_options = ensemble_dict[
+            ensemble_name
+        ].create_grouptree_dataset(tree_mode, stat_option, real, prod_inj_other)
 
         return [
             webviz_subsurface_components.GroupTree(
