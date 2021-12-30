@@ -7,16 +7,15 @@ from dash import html
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
+from ..._datainput.fmu_input import scratch_ensemble
 from ..._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
     Frequency,
 )
-
-from ..._datainput.fmu_input import scratch_ensemble
-from .controllers import controllers
-from .group_tree_data import EnsembleGroupTreeData
-from .views import main_view
+from ._callbacks import plugin_callbacks
+from ._ensemble_group_tree_data import EnsembleGroupTreeData
+from ._layout import main_layout
 
 
 class GroupTree(WebvizPluginABC):
@@ -144,12 +143,12 @@ class GroupTree(WebvizPluginABC):
         return html.Div(
             children=[
                 # clientside_stores(get_uuid=self.uuid),
-                main_view(get_uuid=self.uuid, ensembles=self.ensembles),
+                main_layout(get_uuid=self.uuid, ensembles=self.ensembles),
             ],
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        controllers(app=app, get_uuid=self.uuid, ensemble_dict=self.ensemble_dict)
+        plugin_callbacks(app=app, get_uuid=self.uuid, ensemble_dict=self.ensemble_dict)
 
 
 @webvizstore
