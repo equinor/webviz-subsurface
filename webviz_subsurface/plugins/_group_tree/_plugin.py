@@ -67,8 +67,8 @@ class GroupTree(WebvizPluginABC):
     ):
         super().__init__()
         assert time_index in [
-           "monthly",
-           "yearly",
+            "monthly",
+            "yearly",
         ], "time_index must be monthly or yearly"
         self.ensembles = ensembles
         self.gruptree_file = gruptree_file
