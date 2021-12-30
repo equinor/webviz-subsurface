@@ -316,7 +316,7 @@ def create_dataset(
                 }
             )
         else:
-            logging.getLogger(__name__).warning(
+            logging.getLogger(__name__).info(
                 f"""No summary data found for gruptree between {date} and {next_date}"""
             )
     return trees

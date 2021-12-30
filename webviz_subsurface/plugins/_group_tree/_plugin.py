@@ -66,10 +66,10 @@ class GroupTree(WebvizPluginABC):
         time_index: str = "yearly",
     ):
         super().__init__()
-        # assert time_index in [
-        #    "monthly",
-        #    "yearly",
-        # ], "time_index must be monthly or yearly"
+        assert time_index in [
+           "monthly",
+           "yearly",
+        ], "time_index must be monthly or yearly"
         self.ensembles = ensembles
         self.gruptree_file = gruptree_file
 
@@ -101,7 +101,7 @@ class GroupTree(WebvizPluginABC):
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
-        functions: List[Tuple[Callable, List[Dict]]] = []  # self.emodel.webvizstore
+        functions: List[Tuple[Callable, List[Dict]]] = []
         functions.append(
             (
                 read_ensemble_gruptree,
