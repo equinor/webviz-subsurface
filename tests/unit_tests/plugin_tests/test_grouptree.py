@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import pytest
 
-from webviz_subsurface.plugins._group_tree.group_tree_data import add_nodetype_for_ens
+from webviz_subsurface.plugins._group_tree.ensemble_group_tree_data import add_nodetype
 
 ADD_NODETYPE_CASES = [
     # Group leaf nodes:
@@ -107,7 +107,7 @@ ADD_NODETYPE_CASES = [
 
 
 @pytest.mark.parametrize("gruptree, smry, expected", ADD_NODETYPE_CASES)
-def test_add_nodetype(gruptree, smry, expected):
+def test_add_nodetype(gruptree, smry, expected, mocker):
     """Test functionality of the add_nodetype_for_ens function"""
     columns_to_check = [
         "DATE",
@@ -118,6 +118,7 @@ def test_add_nodetype(gruptree, smry, expected):
         "IS_INJ",
         "IS_OTHER",
     ]
-    output = add_nodetype_for_ens(gruptree, smry)
+    mocker.patch("provider.get_vectors_df", smry)
+    output = add_nodetype(gruptree, smry)
 
     pd.testing.assert_frame_equal(output[columns_to_check], expected[columns_to_check])
