@@ -95,13 +95,12 @@ def create_vector_realization_traces(
     vector_name = vector_names[0]
     return [
         {
-            "line": {"width": 1, "shape": line_shape},
+            "line": {"width": 1, "shape": line_shape, "color": color},
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector_name]),
             "hovertemplate": f"{hovertemplate}Realization: {real}, Ensemble: {ensemble}",
             "name": legend_group,
             "legendgroup": legend_group,
-            "marker": {"color": color},
             "legendrank": legendrank,
             "showlegend": real_no == 0 and show_legend,
         }
