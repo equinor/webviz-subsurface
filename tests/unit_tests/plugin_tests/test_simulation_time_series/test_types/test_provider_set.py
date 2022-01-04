@@ -1,5 +1,5 @@
-import pytest
 from typing import Dict
+import pytest
 
 from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
     EnsembleSummaryProvider,
