@@ -9,7 +9,7 @@ from webviz_subsurface._providers import EnsembleSummaryProvider
 
 
 class EnsembleGroupTreeData:
-    """This class holds the summary and gruptree datasets and functionality
+    """This class holds the summary provider and gruptree dataset. It has functionality
     to combine the data and calculate the GroupTree component input dataset.
     """
 
@@ -18,7 +18,7 @@ class EnsembleGroupTreeData:
         self.provider = provider
         self.gruptree = gruptree
 
-        self.wells: Set[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
+        self.wells: List[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
             "CHILD"
         ].unique()
 
@@ -34,7 +34,7 @@ class EnsembleGroupTreeData:
         self.has_gasinj = smry["FGIR"].sum() > 0
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
-        self.gruptree = add_nodetype(self.gruptree, self.provider)
+        self.gruptree = add_nodetype(self.gruptree, self.provider, self.wells)
 
         # Add edge label
         self.gruptree["EDGE_LABEL"] = self.gruptree.apply(get_edge_label, axis=1)
@@ -383,7 +383,7 @@ def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
 
 
 def add_nodetype(
-    gruptree: pd.DataFrame, provider: EnsembleSummaryProvider
+    gruptree: pd.DataFrame, provider: EnsembleSummaryProvider, all_wells: List[str]
 ) -> pd.DataFrame:
     """Adds nodetype IS_PROD, IS_INJ and IS_OTHER."""
 
@@ -400,7 +400,7 @@ def add_nodetype(
 
     # Classify leaf nodes as producer, injector or other
     is_prod_map, is_inj_map, is_other_map = create_leafnodetype_maps(
-        nodes[nodes["IS_LEAF"]], provider
+        nodes[nodes["IS_LEAF"]], provider, all_wells
     )
     nodes["IS_PROD"] = nodes["CHILD"].map(is_prod_map)
     nodes["IS_INJ"] = nodes["CHILD"].map(is_inj_map)
@@ -454,7 +454,7 @@ def get_leafnode_types(
 
 
 def create_leafnodetype_maps(
-    leafnodes: pd.DataFrame, provider: EnsembleSummaryProvider
+    leafnodes: pd.DataFrame, provider: EnsembleSummaryProvider, all_wells: List[str]
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """Returns three dictionaries classifying leaf nodes as producer,
     injector and/or other (f.ex observation well).
@@ -463,6 +463,7 @@ def create_leafnodetype_maps(
     are classified using summary data.
     """
     is_prod_map, is_inj_map, is_other_map = {}, {}, {}
+    wstat_df = provider.get_vectors_df([f"WSTAT:{well}" for well in all_wells], None)
 
     for _, leafnode in leafnodes.iterrows():
         nodename = leafnode["CHILD"]
@@ -470,9 +471,7 @@ def create_leafnodetype_maps(
 
         if nodekeyword == "WELSPECS":
             # The leaf node is a well
-            wstat = provider.get_vectors_df([f"WSTAT:{nodename}"], None)[
-                f"WSTAT:{nodename}"
-            ].unique()
+            wstat = wstat_df[f"WSTAT:{nodename}"].unique()
             is_prod_map[nodename] = 1 in wstat
             is_inj_map[nodename] = 2 in wstat
             is_other_map[nodename] = (1 not in wstat) and (2 not in wstat)

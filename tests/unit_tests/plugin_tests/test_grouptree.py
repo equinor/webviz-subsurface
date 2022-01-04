@@ -150,7 +150,7 @@ def fixture_provider(
 def test_add_nodetype(
     testdata: Tuple[pd.DataFrame, EnsembleSummaryProvider, pd.DataFrame]
 ) -> None:
-    """Test functionality of the add_nodetype_for_ens function"""
+    """Test functionality for the add_nodetype function"""
     gruptree_df = testdata[0]
     provider = testdata[1]
     expected_df = testdata[2]
@@ -165,7 +165,11 @@ def test_add_nodetype(
         "IS_OTHER",
     ]
 
-    output = add_nodetype(gruptree_df, provider)
+    wells: Set[str] = gruptree_df[gruptree_df["KEYWORD"] == "WELSPECS"][
+        "CHILD"
+    ].unique()
+
+    output = add_nodetype(gruptree_df, provider, wells)
     pd.testing.assert_frame_equal(
         output[columns_to_check], expected_df[columns_to_check]
     )
