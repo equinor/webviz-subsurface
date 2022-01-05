@@ -1,18 +1,17 @@
 import datetime
 from pathlib import Path
+from typing import List, Tuple
 
 import pandas as pd
 import pytest
 from _pytest.fixtures import SubRequest
 
-from typing import Tuple
-from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_presampled import (
-    ProviderImplArrowPresampled,
-)
-from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
-    EnsembleSummaryProvider,
-)
-from webviz_subsurface.plugins._group_tree._ensemble_group_tree_data import add_nodetype
+from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_presampled import \
+    ProviderImplArrowPresampled
+from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import \
+    EnsembleSummaryProvider
+from webviz_subsurface.plugins._group_tree._ensemble_group_tree_data import \
+    add_nodetype
 
 ADD_NODETYPE_CASES = [
     # Group leaf nodes:
@@ -166,7 +165,7 @@ def test_add_nodetype(
         "IS_OTHER",
     ]
 
-    wells: Set[str] = gruptree_df[gruptree_df["KEYWORD"] == "WELSPECS"][
+    wells: List[str] = gruptree_df[gruptree_df["KEYWORD"] == "WELSPECS"][
         "CHILD"
     ].unique()
 

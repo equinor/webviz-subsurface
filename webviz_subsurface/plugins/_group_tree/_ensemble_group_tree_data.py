@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -462,6 +462,7 @@ def create_leafnodetype_maps(
     Well leaf nodes are classified using WSTAT and group leaf nodes
     are classified using summary data.
     """
+    # pylint: disable=too-many-locals
     is_prod_map, is_inj_map, is_other_map = {}, {}, {}
     wstat_df = provider.get_vectors_df([f"WSTAT:{well}" for well in all_wells], None)
 
