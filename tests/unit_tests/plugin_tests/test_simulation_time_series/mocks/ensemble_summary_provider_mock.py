@@ -19,74 +19,27 @@ from webviz_subsurface._providers import (
 ##################################################################################################
 
 
-class EnsembleSummaryProviderMockBase(EnsembleSummaryProvider):
-    """Base class for EnsembleSummaryProvider mock implementations
+class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
+    """Class for EnsembleSummaryProvider mock implementations
 
     Contains implementation of EnsembleSummaryProvider interface methods to utilize in
     unit tests. Unused methods raise NotImplementedError.
-
-    The derived classes are responsible to overwrite attributes and initialize necessary
-    attributes to obtain correct functionality.
     """
 
-    def __init__(self) -> None:
-        self._vector_metadata_dict: Dict[str, VectorMetadata] = {}
-        self._vector_names: List[str] = []
-        self._realizations: List[int] = []
-
-    def vector_names(self) -> List[str]:
-        return self._vector_names
-
-    def realizations(self) -> List[int]:
-        return self._realizations
-
-    def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
-        return self._vector_metadata_dict.get(vector_name, None)
-
-    # -- NOT Implemented Methods! ---
-
-    def vector_names_filtered_by_value(
+    def __init__(
         self,
-        exclude_all_values_zero: bool = False,
-        exclude_constant_values: bool = False,
-    ) -> List[str]:
-        raise NotImplementedError("Method not implemented for mock!")
+        dataset_name: str,
+        vector_metadata_dict: Dict[str, VectorMetadata],
+        realizations: List[int],
+    ) -> None:
+        self._vector_metadata_dict: Dict[str, VectorMetadata] = vector_metadata_dict.copy()
+        self._vector_names: List[str] = list(self._vector_metadata_dict.keys())
+        self._realizations: List[int] = realizations
+        self._dataset_name = dataset_name
 
-    def dates(
-        self,
-        resampling_frequency: Optional[Frequency],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> List[datetime.datetime]:
-        raise NotImplementedError("Method not implemented for mock!")
-
-    def supports_resampling(self) -> bool:
-        raise NotImplementedError("Method not implemented for mock!")
-
-    def get_vectors_df(
-        self,
-        vector_names: Sequence[str],
-        resampling_frequency: Optional[Frequency],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> pd.DataFrame:
-        raise NotImplementedError("Method not implemented for mock!")
-
-    def get_vectors_for_date_df(
-        self,
-        date: datetime.datetime,
-        vector_names: Sequence[str],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> pd.DataFrame:
-        raise NotImplementedError("Method not implemented for mock!")
-
-
-class FirstEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
-    """First mock implementation, with defined vector names, metadata and realization numbers"""
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        # Overwrite attributes
-        self._vector_metadata_dict = {
+    @staticmethod
+    def create_mock_with_first_dataset() -> "EnsembleSummaryProviderMock":
+        vector_metadata_dict = {
             "WWCT:A1": VectorMetadata(
                 unit="",
                 is_total=False,
@@ -142,18 +95,12 @@ class FirstEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
                 get_num=7,
             ),
         }
-        self._vector_names = list(self._vector_metadata_dict.keys())
-        self._realizations = [1, 2, 3, 4, 5]
+        realizations = [1, 2, 3, 4, 5]
+        return EnsembleSummaryProviderMock("First dataset", vector_metadata_dict, realizations)
 
-
-class SecondEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
-    """Second mock implementation, with defined vector names, metadata and realization numbers"""
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        # Overwrite attributes
-        self._vector_metadata_dict = {
+    @staticmethod
+    def create_mock_with_second_dataset() -> "EnsembleSummaryProviderMock":
+        vector_metadata_dict = {
             "WOPT:A1": VectorMetadata(
                 unit="SM3",
                 is_total=True,
@@ -209,18 +156,12 @@ class SecondEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
                 get_num=0,
             ),
         }
-        self._vector_names = list(self._vector_metadata_dict.keys())
-        self._realizations = [1, 2, 4, 5, 8]
+        realizations = [1, 2, 4, 5, 8]
+        return EnsembleSummaryProviderMock("Second dataset", vector_metadata_dict, realizations)
 
-
-class ThirdEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
-    """Third mock implementation, with defined vector names, metadata and realization numbers"""
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        # Overwrite attributes
-        self._vector_metadata_dict = {
+    @staticmethod
+    def create_mock_with_third_dataset() -> "EnsembleSummaryProviderMock":
+        vector_metadata_dict = {
             "WGOR:A1": VectorMetadata(
                 unit="SM3/SM3",
                 is_total=False,
@@ -276,23 +217,16 @@ class ThirdEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
                 get_num=0,
             ),
         }
-        self._vector_names = list(self._vector_metadata_dict.keys())
-        self._realizations = [1, 2, 3, 4, 7]
+        realizations = [1, 2, 3, 4, 7]
+        return EnsembleSummaryProviderMock("Third dataset", vector_metadata_dict, realizations)
 
+    @staticmethod
+    def create_mock_with_inconsistent_dataset() -> "EnsembleSummaryProviderMock":
+        """Mock implementation to define inconsistent metadata
 
-class InconsistentEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
-    """Mock implementation to define inconsistent metadata
-
-    Introduces metadata info breaking with the metadata in the three previous implementations
-
-    Contains defined vector names, metadata and realization numbers
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        # Overwrite attributes with incorrect metadata to create inconsistency
-        self._vector_metadata_dict = {
+        Introduces metadata info breaking with the metadata in the three previous implementations
+        """
+        vector_metadata_dict = {
             "WWCT:A1": VectorMetadata(
                 unit="Invalid Unit",
                 is_total=False,
@@ -330,5 +264,57 @@ class InconsistentEnsembleSummaryProviderMock(EnsembleSummaryProviderMockBase):
                 get_num=7,
             ),
         }
-        self._vector_names = list(self._vector_metadata_dict.keys())
-        self._realizations = [1, 2, 4, 5, 6]
+        realizations = [1, 2, 4, 5, 6]
+        return EnsembleSummaryProviderMock("Inconsistent", vector_metadata_dict, realizations)
+
+    def get_dataset_name(self) -> str:
+        return self._dataset_name
+
+    ########################################
+    #
+    # Override abstract methods
+    #
+    ########################################
+    def vector_names(self) -> List[str]:
+        return self._vector_names
+
+    def realizations(self) -> List[int]:
+        return self._realizations
+
+    def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
+        return self._vector_metadata_dict.get(vector_name, None)
+
+    # -- NOT Implemented Methods! ---
+
+    def vector_names_filtered_by_value(
+        self,
+        exclude_all_values_zero: bool = False,
+        exclude_constant_values: bool = False,
+    ) -> List[str]:
+        raise NotImplementedError("Method not implemented for mock!")
+
+    def dates(
+        self,
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
+    ) -> List[datetime.datetime]:
+        raise NotImplementedError("Method not implemented for mock!")
+
+    def supports_resampling(self) -> bool:
+        raise NotImplementedError("Method not implemented for mock!")
+
+    def get_vectors_df(
+        self,
+        vector_names: Sequence[str],
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
+    ) -> pd.DataFrame:
+        raise NotImplementedError("Method not implemented for mock!")
+
+    def get_vectors_for_date_df(
+        self,
+        date: datetime.datetime,
+        vector_names: Sequence[str],
+        realizations: Optional[Sequence[int]] = None,
+    ) -> pd.DataFrame:
+        raise NotImplementedError("Method not implemented for mock!")

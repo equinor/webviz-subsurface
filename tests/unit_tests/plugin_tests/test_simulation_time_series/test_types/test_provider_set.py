@@ -10,23 +10,18 @@ from webviz_subsurface.plugins._simulation_time_series.types.provider_set import
     ProviderSet,
 )
 
-from ..mocks.ensemble_summary_provider_mock import (
-    FirstEnsembleSummaryProviderMock,
-    SecondEnsembleSummaryProviderMock,
-    ThirdEnsembleSummaryProviderMock,
-    InconsistentEnsembleSummaryProviderMock,
-)
+from ..mocks.ensemble_summary_provider_mock import EnsembleSummaryProviderMock
 
 TEST_PROVIDER_DICT: Dict[str, EnsembleSummaryProvider] = {
-    "First Ensemble": FirstEnsembleSummaryProviderMock(),
-    "Second Ensemble": SecondEnsembleSummaryProviderMock(),
-    "Third Ensemble": ThirdEnsembleSummaryProviderMock(),
+    "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
+    "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
+    "Third provider": EnsembleSummaryProviderMock.create_mock_with_third_dataset(),
 }
 
 TEST_INCONSISTENT_PROVIDER_DICT: Dict[str, EnsembleSummaryProvider] = {
-    "First Ensemble": FirstEnsembleSummaryProviderMock(),
-    "Third Ensemble": ThirdEnsembleSummaryProviderMock(),
-    "Inconsistent ensemble": InconsistentEnsembleSummaryProviderMock(),
+    "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
+    "Third provider": EnsembleSummaryProviderMock.create_mock_with_third_dataset(),
+    "Inconsistent provider": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
 }
 
 
@@ -38,9 +33,7 @@ def test_verify_consistent_vector_metadata() -> None:
     try:
         consistent_provider_set.verify_consistent_vector_metadata()
     except ValueError as err:
-        pytest.fail(
-            f"Expected successful validation for consistent_metadata_set. Exception: {err}"
-        )
+        pytest.fail(f"Expected successful validation for consistent_metadata_set. Exception: {err}")
 
     # Expect ValueError when verifying
     with pytest.raises(ValueError):
@@ -53,8 +46,8 @@ def test_verify_consistent_vector_metadata() -> None:
 
 def test_create_union_of_vector_names_from_providers() -> None:
     provider_dict = {
-        "First Ensemble": FirstEnsembleSummaryProviderMock(),
-        "Second Ensemble": SecondEnsembleSummaryProviderMock(),
+        "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
+        "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
     }
     provider_set = ProviderSet(provider_dict)
 
@@ -82,8 +75,8 @@ def test_create_union_of_vector_names_from_providers() -> None:
 
 def test_create_union_of_realizations_from_providers() -> None:
     provider_dict = {
-        "First Ensemble": FirstEnsembleSummaryProviderMock(),
-        "Second Ensemble": SecondEnsembleSummaryProviderMock(),
+        "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
+        "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
     }
     provider_set = ProviderSet(provider_dict)
 
@@ -111,15 +104,13 @@ def test_names() -> None:
 def test_provider() -> None:
     provider_set = ProviderSet(TEST_PROVIDER_DICT)
 
-    assert isinstance(
-        provider_set.provider("First Ensemble"), FirstEnsembleSummaryProviderMock
-    )
-    assert isinstance(
-        provider_set.provider("Second Ensemble"), SecondEnsembleSummaryProviderMock
-    )
-    assert isinstance(
-        provider_set.provider("Third Ensemble"), ThirdEnsembleSummaryProviderMock
-    )
+    first_provider: EnsembleSummaryProviderMock = provider_set.provider("First provider")
+    second_provider: EnsembleSummaryProviderMock = provider_set.provider("Second provider")
+    third_provider: EnsembleSummaryProviderMock = provider_set.provider("Third provider")
+
+    assert first_provider.get_dataset_name() == "First dataset"
+    assert second_provider.get_dataset_name() == "Second dataset"
+    assert third_provider.get_dataset_name() == "Third dataset"
 
     # Expect ValueError when getting invalid provider name
     with pytest.raises(ValueError):
@@ -135,9 +126,13 @@ def test_all_providers() -> None:
     all_providers = provider_set.all_providers()
 
     assert len(all_providers) == 3
-    assert isinstance(all_providers[0], FirstEnsembleSummaryProviderMock)
-    assert isinstance(all_providers[1], SecondEnsembleSummaryProviderMock)
-    assert isinstance(all_providers[2], ThirdEnsembleSummaryProviderMock)
+    first_provider: EnsembleSummaryProviderMock = all_providers[0]
+    second_provider: EnsembleSummaryProviderMock = all_providers[1]
+    third_provider: EnsembleSummaryProviderMock = all_providers[2]
+
+    assert first_provider.get_dataset_name() == "First dataset"
+    assert second_provider.get_dataset_name() == "Second dataset"
+    assert third_provider.get_dataset_name() == "Third dataset"
 
 
 def test_all_realizations() -> None:
@@ -205,7 +200,7 @@ def test_vector_metadata() -> None:
     assert provider_set.vector_metadata("WGOR:A1") == first_expected_metadata
     assert provider_set.vector_metadata("WWCT:A1") == second_expected_metadata
     assert provider_set.vector_metadata("FGIT") == third_expected_metadata
-    assert provider_set.vector_metadata("Invalid Vector") == None
+    assert provider_set.vector_metadata("Invalid Vector") is None
 
 
 def test_vector_metadata_order() -> None:
@@ -213,19 +208,19 @@ def test_vector_metadata_order() -> None:
     will affect result, based on order of the providers in set.
     """
     first_provider_dict = {
-        "First Ensemble": FirstEnsembleSummaryProviderMock(),
-        "Inconsistent ensemble": InconsistentEnsembleSummaryProviderMock(),
+        "First": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
+        "Inconsistent": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
     }
     second_provider_dict = {
-        "Inconsistent ensemble": InconsistentEnsembleSummaryProviderMock(),
-        "First Ensemble": FirstEnsembleSummaryProviderMock(),
+        "Inconsistent": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
+        "First": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
     }
 
     first_provider_set = ProviderSet(first_provider_dict)
     second_provider_set = ProviderSet(second_provider_dict)
 
     # Metadata for first ensemble mock implementation
-    first_ensemble_WWCT_A1 = VectorMetadata(
+    first_ensemble_wwct_a1 = VectorMetadata(
         unit="",
         is_total=False,
         is_rate=True,
@@ -234,7 +229,7 @@ def test_vector_metadata_order() -> None:
         wgname="A1",
         get_num=6,
     )
-    first_ensemble_WGOR_A2 = VectorMetadata(
+    first_ensemble_wgor_a2 = VectorMetadata(
         unit="SM3/SM3",
         is_total=False,
         is_rate=True,
@@ -245,7 +240,7 @@ def test_vector_metadata_order() -> None:
     )
 
     # Metadata for inconsistent ensemble mock implementation
-    inconsistent_ensemble_WWCT_A1 = VectorMetadata(
+    inconsistent_ensemble_wwct_a1 = VectorMetadata(
         unit="Invalid Unit",
         is_total=False,
         is_rate=False,
@@ -254,7 +249,7 @@ def test_vector_metadata_order() -> None:
         wgname="A1",
         get_num=6,
     )
-    inconsistent_ensemble_WGOR_A2 = VectorMetadata(
+    inconsistent_ensemble_wgor_a2 = VectorMetadata(
         unit="SM3",
         is_total=False,
         is_rate=False,
@@ -265,13 +260,9 @@ def test_vector_metadata_order() -> None:
     )
 
     # First provider set should return metadata for the first ensemble mock implementation
-    assert first_provider_set.vector_metadata("WWCT:A1") == first_ensemble_WWCT_A1
-    assert first_provider_set.vector_metadata("WGOR:A2") == first_ensemble_WGOR_A2
+    assert first_provider_set.vector_metadata("WWCT:A1") == first_ensemble_wwct_a1
+    assert first_provider_set.vector_metadata("WGOR:A2") == first_ensemble_wgor_a2
 
     # Second provider set should return metadata for the inconsistent ensemble mock implementation
-    assert (
-        second_provider_set.vector_metadata("WWCT:A1") == inconsistent_ensemble_WWCT_A1
-    )
-    assert (
-        second_provider_set.vector_metadata("WGOR:A2") == inconsistent_ensemble_WGOR_A2
-    )
+    assert second_provider_set.vector_metadata("WWCT:A1") == inconsistent_ensemble_wwct_a1
+    assert second_provider_set.vector_metadata("WGOR:A2") == inconsistent_ensemble_wgor_a2
