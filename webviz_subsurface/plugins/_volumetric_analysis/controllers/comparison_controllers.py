@@ -312,7 +312,7 @@ def create_comparison_df(
 
 def compute_highlighted_col(
     df: pd.DataFrame, response: str, value1: str, selections: dict
-) -> list:
+) -> np.ndarray:
     highlight_mask = (df[response][value1] > selections["Ignore <"]) & (
         df[response]["diff (%)"].abs() > selections["Accept value"]
     )
