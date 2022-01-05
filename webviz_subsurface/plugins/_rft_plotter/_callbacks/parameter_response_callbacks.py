@@ -19,14 +19,57 @@ def paramresp_callbacks(
         State(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
         prevent_initial_call=True,
     )
-    def _update_parameter_selected(
+    def _update_param_from_clickdata(
         corr_vector_clickdata: Union[None, dict],
         corrtype: str,
     ) -> str:
         """Update the selected parameter from clickdata"""
-        if corr_vector_clickdata is None or corrtype != "sim_vs_param":
+        if corr_vector_clickdata is None or corrtype == "param_vs_sim":
             raise PreventUpdate
         return corr_vector_clickdata.get("points", [{}])[0].get("y")
+
+    @app.callback(
+        Output(get_uuid(LayoutElements.PARAMRESP_WELL), "value"),
+        Output(get_uuid(LayoutElements.PARAMRESP_DATE_DROPDOWN), "children"),
+        Output(get_uuid(LayoutElements.PARAMRESP_ZONE_DROPDOWN), "children"),
+        Input(get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE), "clickData"),
+        State(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
+        State(get_uuid(LayoutElements.PARAMRESP_WELL), "value"),
+        State(get_uuid(LayoutElements.PARAMRESP_DATE), "value"),
+        State(get_uuid(LayoutElements.PARAMRESP_ZONE), "value"),
+        prevent_initial_call=True,
+    )
+    def _update_selections_from_clickdata(
+        corr_vector_clickdata: Union[None, dict],
+        corrtype: str,
+        well: str,
+        date: str,
+        zone: str,
+    ) -> Tuple[str, wcc.Dropdown, wcc.Dropdown]:
+        """Update well, date and zone from clickdata"""
+        if corr_vector_clickdata is None or corrtype == "sim_vs_param":
+            raise PreventUpdate
+
+        clickdata = corr_vector_clickdata.get("points", [{}])[0].get("y")
+        ls_clickdata = clickdata.split()
+
+        dates_in_well, zones_in_well = datamodel.well_dates_and_zones(well)
+        dates_dropdown = wcc.Dropdown(
+            label="Date",
+            id=get_uuid(LayoutElements.PARAMRESP_DATE),
+            options=[{"label": date, "value": date} for date in dates_in_well],
+            value=ls_clickdata[1],
+            clearable=False,
+        )
+        zones_dropdown = wcc.Dropdown(
+            label="Zone",
+            id=get_uuid(LayoutElements.PARAMRESP_ZONE),
+            options=[{"label": zone, "value": zone} for zone in zones_in_well],
+            value=ls_clickdata[2],
+            clearable=False,
+        )
+
+        return ls_clickdata[0], dates_dropdown, zones_dropdown
 
     @app.callback(
         Output(get_uuid(LayoutElements.PARAMRESP_DATE), "options"),
