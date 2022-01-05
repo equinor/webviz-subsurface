@@ -84,7 +84,7 @@ def interpolate_backfill(
     # Finds the leftmost valid insertion indices for the values x in xp
     indices = np.searchsorted(xp, x, side="left")
 
-    padded_y = np.concatenate((yp, [yright]))
+    padded_y = np.concatenate((yp, np.array(yright)))
 
     ret_arr = padded_y[indices]
 

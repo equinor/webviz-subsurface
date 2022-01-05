@@ -28,13 +28,13 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # Invert p10 and p90 due to oil industry convention.
-    def p10(x: List[float]) -> List[float]:
+    def p10(x: List[float]) -> np.floating:
         return np.nanpercentile(x, q=90)
 
-    def p90(x: List[float]) -> List[float]:
+    def p90(x: List[float]) -> np.floating:
         return np.nanpercentile(x, q=10)
 
-    def p50(x: List[float]) -> List[float]:
+    def p50(x: List[float]) -> np.floating:
         return np.nanpercentile(x, q=50)
 
     statistics_df: pd.DataFrame = (
