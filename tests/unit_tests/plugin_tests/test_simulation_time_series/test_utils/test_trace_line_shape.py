@@ -1,0 +1,50 @@
+from webviz_subsurface._providers import VectorMetadata
+
+from webviz_subsurface.plugins._simulation_time_series.utils.trace_line_shape import (
+    get_simulation_line_shape,
+)
+
+
+def test_get_simulation_line_shape() -> None:
+    total_vector_metadata = VectorMetadata(
+        unit="M3",
+        is_total=True,
+        is_rate=False,
+        is_historical=False,
+        keyword="Test",
+        wgname=None,
+        get_num=None,
+    )
+
+    rate_vector_metadata = VectorMetadata(
+        unit="M3/Day",
+        is_total=False,
+        is_rate=True,
+        is_historical=False,
+        keyword="Test rate",
+        wgname=None,
+        get_num=None,
+    )
+
+    fallthrough_vector_metadata = VectorMetadata(
+        unit="M3/M3",
+        is_total=False,
+        is_rate=False,
+        is_historical=False,
+        keyword="Test fallthrough",
+        wgname=None,
+        get_num=None,
+    )
+
+    assert "hv" == get_simulation_line_shape("Fallback", "INTVL_vector", None)
+    assert "hv" == get_simulation_line_shape("Fallback", "AVG_vector", None)
+    assert "Fallback" == get_simulation_line_shape("Fallback", "test_vector", None)
+    assert "linear" == get_simulation_line_shape(
+        "Fallback", "test_vector", total_vector_metadata
+    )
+    assert "vh" == get_simulation_line_shape(
+        "Fallback", "test_vector", rate_vector_metadata
+    )
+    assert "Fallback" == get_simulation_line_shape(
+        "Fallback", "test_vector", fallthrough_vector_metadata
+    )
