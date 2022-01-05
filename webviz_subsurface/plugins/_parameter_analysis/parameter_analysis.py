@@ -4,7 +4,6 @@ from typing import Optional
 from dash import dcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._components.parameter_filter import ParameterFilter
 from webviz_subsurface._models import (
     EnsembleSetModel,
     caching_ensemble_set_model_factory,
@@ -125,10 +124,6 @@ slow for large models.
             else:
                 self.vmodel = None
 
-        self._parameter_filter = ParameterFilter(
-            app, self.uuid("parameter-filter"), self.pmodel.dataframe
-        )
-
         self.set_callbacks(app)
 
     @property
@@ -137,7 +132,6 @@ slow for large models.
             get_uuid=self.uuid,
             vectormodel=self.vmodel,
             parametermodel=self.pmodel,
-            parameterfilter_layout=self._parameter_filter.layout,
             theme=self.theme,
         )
 

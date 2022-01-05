@@ -110,7 +110,7 @@ class LinePlotterFMU(WebvizPluginABC):
         parameterdf = pd.concat(dfs)
         self._realizations = sorted(list(parameterdf["REAL"].unique()))
         self._parameter_filter = ParameterFilter(
-            app, self.uuid("parameter-filter"), parameterdf
+            self.uuid("parameter-filter"), parameterdf
         )
         self._observationfile = observation_file
         self._observationmodel = (

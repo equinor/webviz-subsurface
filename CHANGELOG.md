@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#921](https://github.com/equinor/webviz-subsurface/pull/921) - Fixed bug with History Vectors in new `SimulationTimeSeries` plugin. Replaced hard coded realization number of 0, with first valid realization in provider.
 
+### Changed
+
+- [#924](https://github.com/equinor/webviz-subsurface/pull/924) - Improvements to the `ParameterFilter` functionality, e.g information regarding active filters and which relizatons are filtered out, and better handling of multiple ensembles. Improvements to the `ParameterAnalysis` plugin, e.g. added boxplot, fixed table formatting and update of parameters based on selected ensemble.
+
 ## [0.2.9] - 2022-01-06
 
 ### Fixed

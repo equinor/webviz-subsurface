@@ -1,7 +1,6 @@
 from typing import Callable
 
 import webviz_core_components as wcc
-from dash import html
 from webviz_config import WebvizConfigTheme
 
 from ..models import ParametersModel, SimulationTimeSeriesModel
@@ -13,7 +12,6 @@ def main_view(
     get_uuid: Callable,
     vectormodel: SimulationTimeSeriesModel,
     parametermodel: ParametersModel,
-    parameterfilter_layout: html.Div,
     theme: WebvizConfigTheme,
 ) -> wcc.Tabs:
     tabs = [
@@ -26,7 +24,7 @@ def main_view(
         )
     ]
 
-    if vectormodel is not None:
+    if vectormodel is not None and parametermodel.mc_ensembles:
         tabs.append(
             wcc.Tab(
                 label="Parameters impact on simulation profiles",
@@ -34,7 +32,6 @@ def main_view(
                 children=parameter_response_view(
                     get_uuid=get_uuid,
                     parametermodel=parametermodel,
-                    parameterfilter_layout=parameterfilter_layout,
                     vectormodel=vectormodel,
                     theme=theme,
                 ),

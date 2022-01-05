@@ -4,6 +4,8 @@ import webviz_core_components as wcc
 from dash import html
 from webviz_config import WebvizConfigTheme
 
+from webviz_subsurface._components.parameter_filter import ParameterFilter
+
 from ..models import ParametersModel, SimulationTimeSeriesModel
 from .selector_view import (
     color_opacity_selector,
@@ -34,13 +36,9 @@ def selector_view(
     vectormodel: SimulationTimeSeriesModel,
     parametermodel: ParametersModel,
     theme: WebvizConfigTheme,
-) -> html.Div:
+) -> wcc.Frame:
 
     theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
-    theme_colors = (
-        theme_colors[1:12] if theme_colors and len(theme_colors) >= 12 else theme_colors
-    )
-
     return wcc.Frame(
         style={
             "height": "80vh",
@@ -53,11 +51,10 @@ def selector_view(
                 children=[
                     ensemble_selector(
                         get_uuid=get_uuid,
-                        parametermodel=parametermodel,
+                        ensembles=parametermodel.mc_ensembles,
                         tab="response",
                         id_string="ensemble-selector",
                         heading="Ensemble:",
-                        value=parametermodel.ensembles[0],
                     ),
                     vector_selector(get_uuid=get_uuid, vectormodel=vectormodel),
                     date_selector(get_uuid=get_uuid, vectormodel=vectormodel),
@@ -103,10 +100,15 @@ def selector_view(
 def parameter_response_view(
     get_uuid: Callable,
     parametermodel: ParametersModel,
-    parameterfilter_layout: html.Div,
     vectormodel: SimulationTimeSeriesModel,
     theme: WebvizConfigTheme,
 ) -> wcc.FlexBox:
+    df = parametermodel.dataframe
+    parameter_filter = ParameterFilter(
+        uuid=get_uuid("parameter-filter"),
+        dframe=df[df["ENSEMBLE"].isin(parametermodel.mc_ensembles)].copy(),
+        reset_on_ensemble_update=True,
+    )
     return wcc.FlexBox(
         children=[
             wcc.FlexColumn(
@@ -180,7 +182,7 @@ def parameter_response_view(
                             flex=1,
                             children=wcc.Frame(
                                 style={"height": "80vh"},
-                                children=parameterfilter_layout,
+                                children=parameter_filter.layout,
                             ),
                         ),
                     ],
