@@ -18,19 +18,21 @@ from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 #       - String split on ":" and append "H" on first part, i.e. WA -> WAH,
 #         WA:OP_1 -> WAH:OP_1
 #  - Method utilize realization 0! I.e. if realization = 0 does not exist -> crash
-TEST_INPUT_COLUMNS = ["DATE", "REAL",  "WA", "WAH", "WB", "WBH"]
-TEST_INPUT_DATA = [
-    [date(2000,1,1),  0,  11.0,  13.0,  15.0,   17.0],
-    [date(2000,2,1),  0,  21.0,  23.0,  25.0,   27.0],
-    [date(2000,3,1),  0,  31.0,  33.0,  35.0,   37.0],
-    [date(2000,4,1),  0,  41.0,  43.0,  45.0,   47.0],
-    [date(2000,5,1),  0,  51.0,  53.0,  55.0,   57.0],
-    [date(2000,1,1),  3,  110.0, 115.0, 135.0,  139.0],
-    [date(2000,2,1),  3,  310.0, 215.0, 235.0,  239.0],
-    [date(2000,3,1),  3,  410.0, 315.0, 335.0,  339.0],
-    [date(2000,4,1),  3,  510.0, 415.0, 435.0,  439.0],
-    [date(2000,5,1),  3,  610.0, 515.0, 535.0,  539.0],
-]
+TEST_INPUT_DF = pd.DataFrame(
+    columns = ["DATE", "REAL",  "WA", "WAH", "WB", "WBH"],
+    data = [
+        [date(2000,1,1),  0,  11.0,  13.0,  15.0,   17.0],
+        [date(2000,2,1),  0,  21.0,  23.0,  25.0,   27.0],
+        [date(2000,3,1),  0,  31.0,  33.0,  35.0,   37.0],
+        [date(2000,4,1),  0,  41.0,  43.0,  45.0,   47.0],
+        [date(2000,5,1),  0,  51.0,  53.0,  55.0,   57.0],
+        [date(2000,1,1),  3,  110.0, 115.0, 135.0,  139.0],
+        [date(2000,2,1),  3,  310.0, 215.0, 235.0,  239.0],
+        [date(2000,3,1),  3,  410.0, 315.0, 335.0,  339.0],
+        [date(2000,4,1),  3,  510.0, 415.0, 435.0,  439.0],
+        [date(2000,5,1),  3,  610.0, 515.0, 535.0,  539.0],
+    ]
+)
 # fmt: on
 
 
@@ -45,8 +47,7 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
         super().__init__()
 
         # Configure dataframe
-        self.df = pd.DataFrame(TEST_INPUT_DATA)
-        self.df.columns = TEST_INPUT_COLUMNS
+        self.df = TEST_INPUT_DF
 
     def supports_resampling(self) -> bool:
         return False
