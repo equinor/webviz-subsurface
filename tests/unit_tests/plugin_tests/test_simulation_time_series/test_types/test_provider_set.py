@@ -1,16 +1,18 @@
 from typing import Dict
+
 import pytest
 
 from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
     EnsembleSummaryProvider,
     VectorMetadata,
 )
-
 from webviz_subsurface.plugins._simulation_time_series.types.provider_set import (
     ProviderSet,
 )
 
-from ..mocks.ensemble_summary_provider_mock import EnsembleSummaryProviderMock
+from ..mocks.provider_set_tests_ensemble_summary_provider_mock import (
+    EnsembleSummaryProviderMock,
+)
 
 TEST_PROVIDER_DICT: Dict[str, EnsembleSummaryProvider] = {
     "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
@@ -33,7 +35,9 @@ def test_verify_consistent_vector_metadata() -> None:
     try:
         consistent_provider_set.verify_consistent_vector_metadata()
     except ValueError as err:
-        pytest.fail(f"Expected successful validation for consistent_metadata_set. Exception: {err}")
+        pytest.fail(
+            f"Expected successful validation for consistent_metadata_set. Exception: {err}"
+        )
 
     # Expect ValueError when verifying
     with pytest.raises(ValueError):
@@ -45,7 +49,9 @@ def test_verify_consistent_vector_metadata() -> None:
 
 
 def test_create_union_of_vector_names_from_providers() -> None:
-    provider_dict = {
+    # NOTE: Use explicit type annotation for EnsembleSummaryProviderMock as Dict is invariant.
+    # See: https://mypy.readthedocs.io/en/latest/common_issues.html#variance
+    provider_dict: Dict[str, EnsembleSummaryProvider] = {
         "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
         "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
     }
@@ -74,7 +80,9 @@ def test_create_union_of_vector_names_from_providers() -> None:
 
 
 def test_create_union_of_realizations_from_providers() -> None:
-    provider_dict = {
+    # NOTE: Use explicit type annotation for EnsembleSummaryProviderMock as Dict is invariant.
+    # See: https://mypy.readthedocs.io/en/latest/common_issues.html#variance
+    provider_dict: Dict[str, EnsembleSummaryProvider] = {
         "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
         "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
     }
@@ -104,9 +112,21 @@ def test_names() -> None:
 def test_provider() -> None:
     provider_set = ProviderSet(TEST_PROVIDER_DICT)
 
-    first_provider: EnsembleSummaryProviderMock = provider_set.provider("First provider")
-    second_provider: EnsembleSummaryProviderMock = provider_set.provider("Second provider")
-    third_provider: EnsembleSummaryProviderMock = provider_set.provider("Third provider")
+    first_provider = provider_set.provider("First provider")
+    second_provider = provider_set.provider("Second provider")
+    third_provider = provider_set.provider("Third provider")
+    if not isinstance(first_provider, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected first provider "{first_provider}" to be type EnsembleSummaryProviderMock'
+        )
+    if not isinstance(second_provider, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected second provider "{second_provider}" to be type EnsembleSummaryProviderMock'
+        )
+    if not isinstance(third_provider, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected third provider "{third_provider}" to be type EnsembleSummaryProviderMock'
+        )
 
     assert first_provider.get_dataset_name() == "First dataset"
     assert second_provider.get_dataset_name() == "Second dataset"
@@ -126,9 +146,21 @@ def test_all_providers() -> None:
     all_providers = provider_set.all_providers()
 
     assert len(all_providers) == 3
-    first_provider: EnsembleSummaryProviderMock = all_providers[0]
-    second_provider: EnsembleSummaryProviderMock = all_providers[1]
-    third_provider: EnsembleSummaryProviderMock = all_providers[2]
+    first_provider = all_providers[0]
+    second_provider = all_providers[1]
+    third_provider = all_providers[2]
+    if not isinstance(first_provider, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected first provider "{first_provider}" to be type EnsembleSummaryProviderMock'
+        )
+    if not isinstance(second_provider, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected second provider "{second_provider}" to be type EnsembleSummaryProviderMock'
+        )
+    if not isinstance(third_provider, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected third provider "{third_provider}" to be type EnsembleSummaryProviderMock'
+        )
 
     assert first_provider.get_dataset_name() == "First dataset"
     assert second_provider.get_dataset_name() == "Second dataset"
@@ -205,17 +237,19 @@ def test_vector_metadata() -> None:
 
 def test_vector_metadata_order() -> None:
     """The metadata returns first existing metadata, thereby inconsistent metadata
-    will affect result, based on order of the providers in set.
+    will affect result based on the order of the providers in set.
     """
-    first_provider_dict = {
-        "First": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
-        "Inconsistent": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
-    }
-    second_provider_dict = {
-        "Inconsistent": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
-        "First": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
-    }
 
+    # NOTE: Use explicit type annotation for EnsembleSummaryProviderMock as Dict is invariant.
+    # See: https://mypy.readthedocs.io/en/latest/common_issues.html#variance
+    first_provider_dict: Dict[str, EnsembleSummaryProvider] = {
+        "First": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
+        "Inconsistent": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
+    }
+    second_provider_dict: Dict[str, EnsembleSummaryProvider] = {
+        "Inconsistent": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
+        "First": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
+    }
     first_provider_set = ProviderSet(first_provider_dict)
     second_provider_set = ProviderSet(second_provider_dict)
 
@@ -264,5 +298,9 @@ def test_vector_metadata_order() -> None:
     assert first_provider_set.vector_metadata("WGOR:A2") == first_ensemble_wgor_a2
 
     # Second provider set should return metadata for the inconsistent ensemble mock implementation
-    assert second_provider_set.vector_metadata("WWCT:A1") == inconsistent_ensemble_wwct_a1
-    assert second_provider_set.vector_metadata("WGOR:A2") == inconsistent_ensemble_wgor_a2
+    assert (
+        second_provider_set.vector_metadata("WWCT:A1") == inconsistent_ensemble_wwct_a1
+    )
+    assert (
+        second_provider_set.vector_metadata("WGOR:A2") == inconsistent_ensemble_wgor_a2
+    )

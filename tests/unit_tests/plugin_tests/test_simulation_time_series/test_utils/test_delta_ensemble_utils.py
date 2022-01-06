@@ -1,18 +1,48 @@
+from typing import List
+
 import pytest
 
 from webviz_subsurface.plugins._simulation_time_series.types.provider_set import (
     ProviderSet,
 )
 from webviz_subsurface.plugins._simulation_time_series.utils.delta_ensemble_utils import (
+    DeltaEnsemble,
     create_delta_ensemble_name,
     create_delta_ensemble_name_dict,
     create_delta_ensemble_names,
     create_delta_ensemble_provider_pair,
     is_delta_ensemble_providers_in_provider_set,
-    DeltaEnsemble,
 )
 
-from ..mocks.ensemble_summary_provider_mock import EnsembleSummaryProviderMock
+from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
+
+
+class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
+    """Ensemble summary provider mock for testing
+
+    Note empty list returned in override methods, only to allow constructing
+    ProviderSet objects!
+    """
+
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self._name = name
+
+    def get_name(self) -> str:
+        return self._name
+
+    ########################################
+    #
+    # Override methods
+    #
+    ########################################
+    def vector_names(self) -> List[str]:
+        """Return empty list only to allow constructing ProviderSet object"""
+        return []
+
+    def realizations(self) -> List[int]:
+        """Return empty list only to allow constructing ProviderSet object"""
+        return []
 
 
 def test_create_delta_ensemble_name() -> None:
@@ -28,8 +58,12 @@ def test_create_delta_ensemble_name() -> None:
 
 
 def test_create_delta_ensemble_names() -> None:
-    first_delta_ensemble = DeltaEnsemble(ensemble_a="first name", ensemble_b="second name")
-    second_delta_ensemble = DeltaEnsemble(ensemble_a="first-Name", ensemble_b="second-Name")
+    first_delta_ensemble = DeltaEnsemble(
+        ensemble_a="first name", ensemble_b="second name"
+    )
+    second_delta_ensemble = DeltaEnsemble(
+        ensemble_a="first-Name", ensemble_b="second-Name"
+    )
     third_delta_ensemble = DeltaEnsemble(ensemble_a="ens-0", ensemble_b="ens-3")
 
     assert create_delta_ensemble_names(
@@ -38,8 +72,12 @@ def test_create_delta_ensemble_names() -> None:
 
 
 def test_create_delta_ensemble_name_dict() -> None:
-    first_delta_ensemble = DeltaEnsemble(ensemble_a="first name", ensemble_b="second name")
-    second_delta_ensemble = DeltaEnsemble(ensemble_a="first-Name", ensemble_b="second-Name")
+    first_delta_ensemble = DeltaEnsemble(
+        ensemble_a="first name", ensemble_b="second name"
+    )
+    second_delta_ensemble = DeltaEnsemble(
+        ensemble_a="first-Name", ensemble_b="second-Name"
+    )
     third_delta_ensemble = DeltaEnsemble(ensemble_a="ens-0", ensemble_b="ens-3")
 
     expected_delta_ensemble_name_dict = {
@@ -59,51 +97,87 @@ def test_create_delta_ensemble_name_dict() -> None:
 def test_is_delta_ensemble_providers_in_provider_set() -> None:
     provider_set = ProviderSet(
         {
-            "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
-            "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
+            "First provider": EnsembleSummaryProviderMock("First mock"),
+            "Second provider": EnsembleSummaryProviderMock("Second mock"),
         }
     )
 
-    valid_delta_ensemble = DeltaEnsemble(ensemble_a="First provider", ensemble_b="Second provider")
-    invalid_delta_ensemble = DeltaEnsemble(ensemble_a="First provider", ensemble_b="Third provider")
+    valid_delta_ensemble = DeltaEnsemble(
+        ensemble_a="First provider", ensemble_b="Second provider"
+    )
+    invalid_delta_ensemble = DeltaEnsemble(
+        ensemble_a="First provider", ensemble_b="Third provider"
+    )
 
-    assert is_delta_ensemble_providers_in_provider_set(valid_delta_ensemble, provider_set)
-    assert not is_delta_ensemble_providers_in_provider_set(invalid_delta_ensemble, provider_set)
+    assert is_delta_ensemble_providers_in_provider_set(
+        valid_delta_ensemble, provider_set
+    )
+    assert not is_delta_ensemble_providers_in_provider_set(
+        invalid_delta_ensemble, provider_set
+    )
 
 
 def test_create_delta_ensemble_provider_pair() -> None:
     provider_set = ProviderSet(
         {
-            "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
-            "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
-            "Third provider": EnsembleSummaryProviderMock.create_mock_with_third_dataset(),
+            "First provider": EnsembleSummaryProviderMock("First mock"),
+            "Second provider": EnsembleSummaryProviderMock("Second mock"),
+            "Third provider": EnsembleSummaryProviderMock(("Third mock")),
         }
     )
 
-    first_delta_ensemble = DeltaEnsemble(ensemble_a="First provider", ensemble_b="Third provider")
-    second_delta_ensemble = DeltaEnsemble(ensemble_a="Third provider", ensemble_b="Second provider")
+    first_delta_ensemble = DeltaEnsemble(
+        ensemble_a="First provider", ensemble_b="Third provider"
+    )
+    second_delta_ensemble = DeltaEnsemble(
+        ensemble_a="Third provider", ensemble_b="Second provider"
+    )
 
-    first_provider_pair = create_delta_ensemble_provider_pair(first_delta_ensemble, provider_set)
-    second_provider_pair = create_delta_ensemble_provider_pair(second_delta_ensemble, provider_set)
+    first_provider_pair = create_delta_ensemble_provider_pair(
+        first_delta_ensemble, provider_set
+    )
+    second_provider_pair = create_delta_ensemble_provider_pair(
+        second_delta_ensemble, provider_set
+    )
 
     assert len(first_provider_pair) == 2
-    ensemble_a: EnsembleSummaryProviderMock = first_provider_pair[0]
-    ensemble_b: EnsembleSummaryProviderMock = first_provider_pair[1]
-    assert ensemble_a.get_dataset_name() == "First dataset"
-    assert ensemble_b.get_dataset_name() == "Third dataset"
+    ensemble_a = first_provider_pair[0]
+    ensemble_b = first_provider_pair[1]
+    if not isinstance(ensemble_a, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected "{ensemble_a}" in second provider pair to be of type '
+            "EnsembleSummaryProviderMock"
+        )
+    if not isinstance(ensemble_b, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected "{ensemble_b}" in second provider pair to be of type '
+            "EnsembleSummaryProviderMock"
+        )
+    assert ensemble_a.get_name() == "First mock"
+    assert ensemble_b.get_name() == "Third mock"
 
     assert len(second_provider_pair) == 2
     ensemble_a = second_provider_pair[0]
     ensemble_b = second_provider_pair[1]
-    assert ensemble_a.get_dataset_name() == "Third dataset"
-    assert ensemble_b.get_dataset_name() == "Second dataset"
+    if not isinstance(ensemble_a, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected "{ensemble_a}" in second provider pair to be of type '
+            "EnsembleSummaryProviderMock"
+        )
+    if not isinstance(ensemble_b, EnsembleSummaryProviderMock):
+        pytest.fail(
+            f'Expected "{ensemble_b}" in second provider pair to be of type '
+            "EnsembleSummaryProviderMock"
+        )
+    assert ensemble_a.get_name() == "Third mock"
+    assert ensemble_b.get_name() == "Second mock"
 
 
 def test_create_delta_ensemble_provider_pair_invalid_ensemble() -> None:
     provider_set = ProviderSet(
         {
-            "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
-            "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
+            "First provider": EnsembleSummaryProviderMock("First mock"),
+            "Second provider": EnsembleSummaryProviderMock("Second mock"),
         }
     )
 

@@ -1,29 +1,22 @@
-import datetime
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional
 
-import pandas as pd
+from webviz_subsurface._providers import VectorMetadata
 
-from webviz_subsurface._providers import (
-    EnsembleSummaryProvider,
-    Frequency,
-    VectorMetadata,
-)
+from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 
 ##################################################################################################
 #
 # Mock implementations of EnsembleSummaryProvider for testing of ProviderSet class
 #
-# Only methods utilized by the ProviderSet is implemented for the various EnsembleSummaryProvider
-# mock implementations
+# Only methods utilized by the ProviderSet is implemented for the EnsembleSummaryProvider mock
 #
 ##################################################################################################
 
 
-class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
-    """Class for EnsembleSummaryProvider mock implementations
+class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
+    """Class for EnsembleSummaryProvider mock implementations for testing of ProviderSet class
 
-    Contains implementation of EnsembleSummaryProvider interface methods to utilize in
-    unit tests. Unused methods raise NotImplementedError.
+    Contains implementation of methods for utilize in unit tests.
     """
 
     def __init__(
@@ -32,7 +25,9 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
         vector_metadata_dict: Dict[str, VectorMetadata],
         realizations: List[int],
     ) -> None:
-        self._vector_metadata_dict: Dict[str, VectorMetadata] = vector_metadata_dict.copy()
+        self._vector_metadata_dict: Dict[
+            str, VectorMetadata
+        ] = vector_metadata_dict.copy()
         self._vector_names: List[str] = list(self._vector_metadata_dict.keys())
         self._realizations: List[int] = realizations
         self._dataset_name = dataset_name
@@ -96,7 +91,9 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
             ),
         }
         realizations = [1, 2, 3, 4, 5]
-        return EnsembleSummaryProviderMock("First dataset", vector_metadata_dict, realizations)
+        return EnsembleSummaryProviderMock(
+            "First dataset", vector_metadata_dict, realizations
+        )
 
     @staticmethod
     def create_mock_with_second_dataset() -> "EnsembleSummaryProviderMock":
@@ -157,7 +154,9 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
             ),
         }
         realizations = [1, 2, 4, 5, 8]
-        return EnsembleSummaryProviderMock("Second dataset", vector_metadata_dict, realizations)
+        return EnsembleSummaryProviderMock(
+            "Second dataset", vector_metadata_dict, realizations
+        )
 
     @staticmethod
     def create_mock_with_third_dataset() -> "EnsembleSummaryProviderMock":
@@ -218,7 +217,9 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
             ),
         }
         realizations = [1, 2, 3, 4, 7]
-        return EnsembleSummaryProviderMock("Third dataset", vector_metadata_dict, realizations)
+        return EnsembleSummaryProviderMock(
+            "Third dataset", vector_metadata_dict, realizations
+        )
 
     @staticmethod
     def create_mock_with_inconsistent_dataset() -> "EnsembleSummaryProviderMock":
@@ -265,14 +266,16 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
             ),
         }
         realizations = [1, 2, 4, 5, 6]
-        return EnsembleSummaryProviderMock("Inconsistent", vector_metadata_dict, realizations)
+        return EnsembleSummaryProviderMock(
+            "Inconsistent", vector_metadata_dict, realizations
+        )
 
     def get_dataset_name(self) -> str:
         return self._dataset_name
 
     ########################################
     #
-    # Override abstract methods
+    # Override methods
     #
     ########################################
     def vector_names(self) -> List[str]:
@@ -283,38 +286,3 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProvider):
 
     def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
         return self._vector_metadata_dict.get(vector_name, None)
-
-    # -- NOT Implemented Methods! ---
-
-    def vector_names_filtered_by_value(
-        self,
-        exclude_all_values_zero: bool = False,
-        exclude_constant_values: bool = False,
-    ) -> List[str]:
-        raise NotImplementedError("Method not implemented for mock!")
-
-    def dates(
-        self,
-        resampling_frequency: Optional[Frequency],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> List[datetime.datetime]:
-        raise NotImplementedError("Method not implemented for mock!")
-
-    def supports_resampling(self) -> bool:
-        raise NotImplementedError("Method not implemented for mock!")
-
-    def get_vectors_df(
-        self,
-        vector_names: Sequence[str],
-        resampling_frequency: Optional[Frequency],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> pd.DataFrame:
-        raise NotImplementedError("Method not implemented for mock!")
-
-    def get_vectors_for_date_df(
-        self,
-        date: datetime.datetime,
-        vector_names: Sequence[str],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> pd.DataFrame:
-        raise NotImplementedError("Method not implemented for mock!")
