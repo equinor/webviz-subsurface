@@ -49,7 +49,7 @@ def generate_surface_table(
                     zone_in_file = surface_renaming.get(zone, zone)
                     prop_in_file = surface_renaming.get(prop, prop)
                     path = (
-                        surface_folders[ensemble]
+                        surface_folders.get(ensemble, pathlib.Path())
                         / statistic
                         / f"{zone_in_file}--{prop_in_file}.gri"
                     )

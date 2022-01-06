@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#888](https://github.com/equinor/webviz-subsurface/pull/888) - Improved `SeismicMisfit` performance when using polygon files with a large number of polygons.
+- [#911](https://github.com/equinor/webviz-subsurface/pull/911) - Handle ensembles with missing surface folders in `PropertyStatistics`.
 
 ### Added
 
