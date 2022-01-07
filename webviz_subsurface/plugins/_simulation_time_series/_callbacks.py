@@ -330,8 +330,7 @@ def plugin_callbacks(
                         ensemble,
                         color_lightness_scale=150.0,
                     )
-                    # Configure line width and color scaling + add statistics on top
-                    # to easier separate statistics traces and realization traces
+                    # Add statistics on top
                     vectors_statistics_df = create_vectors_statistics_df(vectors_df)
                     figure_builder.add_statistics_traces(
                         vectors_statistics_df,
