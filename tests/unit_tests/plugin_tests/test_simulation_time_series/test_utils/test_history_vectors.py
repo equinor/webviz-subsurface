@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from typing import List, Optional, Sequence
 
 import pandas as pd
@@ -21,16 +21,16 @@ from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 TEST_INPUT_DF = pd.DataFrame(
     columns = ["DATE", "REAL",  "WA", "WAH", "WB", "WBH"],
     data = [
-        [date(2000,1,1),  0,  11.0,  13.0,  15.0,   17.0],
-        [date(2000,2,1),  0,  21.0,  23.0,  25.0,   27.0],
-        [date(2000,3,1),  0,  31.0,  33.0,  35.0,   37.0],
-        [date(2000,4,1),  0,  41.0,  43.0,  45.0,   47.0],
-        [date(2000,5,1),  0,  51.0,  53.0,  55.0,   57.0],
-        [date(2000,1,1),  3,  110.0, 115.0, 135.0,  139.0],
-        [date(2000,2,1),  3,  310.0, 215.0, 235.0,  239.0],
-        [date(2000,3,1),  3,  410.0, 315.0, 335.0,  339.0],
-        [date(2000,4,1),  3,  510.0, 415.0, 435.0,  439.0],
-        [date(2000,5,1),  3,  610.0, 515.0, 535.0,  539.0],
+        [datetime(2000,1,1),  0,  11.0,  13.0,  15.0,   17.0],
+        [datetime(2000,2,1),  0,  21.0,  23.0,  25.0,   27.0],
+        [datetime(2000,3,1),  0,  31.0,  33.0,  35.0,   37.0],
+        [datetime(2000,4,1),  0,  41.0,  43.0,  45.0,   47.0],
+        [datetime(2000,5,1),  0,  51.0,  53.0,  55.0,   57.0],
+        [datetime(2000,1,1),  3,  110.0, 115.0, 135.0,  139.0],
+        [datetime(2000,2,1),  3,  310.0, 215.0, 235.0,  239.0],
+        [datetime(2000,3,1),  3,  410.0, 315.0, 335.0,  339.0],
+        [datetime(2000,4,1),  3,  510.0, 415.0, 435.0,  439.0],
+        [datetime(2000,5,1),  3,  610.0, 515.0, 535.0,  539.0],
     ]
 )
 # fmt: on
@@ -79,11 +79,11 @@ def test_create_history_vectors_df() -> None:
     # Data of real = 0 for "WAH"
     expected_first_history_vectors_df = pd.DataFrame(
         [
-            [date(2000,1,1),  0,  13.0],
-            [date(2000,2,1),  0,  23.0],
-            [date(2000,3,1),  0,  33.0],
-            [date(2000,4,1),  0,  43.0],
-            [date(2000,5,1),  0,  53.0],
+            [datetime(2000,1,1),  0,  13.0],
+            [datetime(2000,2,1),  0,  23.0],
+            [datetime(2000,3,1),  0,  33.0],
+            [datetime(2000,4,1),  0,  43.0],
+            [datetime(2000,5,1),  0,  53.0],
         ]
     )
     # fmt: on
@@ -94,11 +94,11 @@ def test_create_history_vectors_df() -> None:
     # Data of real = 0 for "WBH" and "WAH"
     expected_second_history_vectors_df = pd.DataFrame(
         [
-            [date(2000,1,1),  0,  17.0,  13.0],
-            [date(2000,2,1),  0,  27.0,  23.0],
-            [date(2000,3,1),  0,  37.0,  33.0],
-            [date(2000,4,1),  0,  47.0,  43.0],
-            [date(2000,5,1),  0,  57.0,  53.0],
+            [datetime(2000,1,1),  0,  17.0,  13.0],
+            [datetime(2000,2,1),  0,  27.0,  23.0],
+            [datetime(2000,3,1),  0,  37.0,  33.0],
+            [datetime(2000,4,1),  0,  47.0,  43.0],
+            [datetime(2000,5,1),  0,  57.0,  53.0],
         ]
     )
     # fmt: on
