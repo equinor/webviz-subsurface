@@ -8,7 +8,9 @@ from ._ensemble_group_tree_data import EnsembleGroupTreeData
 
 
 def plugin_callbacks(
-    app: dash.Dash, get_uuid: Callable, ensemble_dict: Dict[str, EnsembleGroupTreeData]
+    app: dash.Dash,
+    get_uuid: Callable,
+    group_tree_data: Dict[str, EnsembleGroupTreeData],
 ) -> None:
     @app.callback(
         Output({"id": get_uuid("controls"), "element": "tree_mode"}, "options"),
@@ -44,7 +46,7 @@ def plugin_callbacks(
         stat_option_value = (
             stat_option_state if stat_option_state is not None else "mean"
         )
-        ensemble = ensemble_dict[ensemble_name]
+        ensemble = group_tree_data[ensemble_name]
         if not ensemble.tree_is_equivalent_in_all_real():
             tree_mode_options[0]["label"] = "Ensemble mean (disabled)"
             tree_mode_options[0]["disabled"] = True
@@ -76,7 +78,7 @@ def plugin_callbacks(
         ensemble_name: str,
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
-        data, edge_options, node_options = ensemble_dict[
+        data, edge_options, node_options = group_tree_data[
             ensemble_name
         ].create_grouptree_dataset(tree_mode, stat_option, real, prod_inj_other)
 

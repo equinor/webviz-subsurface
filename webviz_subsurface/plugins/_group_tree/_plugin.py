@@ -70,15 +70,15 @@ class GroupTree(WebvizPluginABC):
             "monthly",
             "yearly",
         ], "time_index must be monthly or yearly"
-        self.ensembles = ensembles
-        self.gruptree_file = gruptree_file
+        self._ensembles = ensembles
+        self._gruptree_file = gruptree_file
 
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
 
-        self._sampling = Frequency(time_index)
+        sampling = Frequency(time_index)
 
-        self.ensemble_paths: Dict[str, Path] = {
+        self._ensemble_paths: Dict[str, Path] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                 ensemble_name
             ]
@@ -87,16 +87,17 @@ class GroupTree(WebvizPluginABC):
 
         provider_factory = EnsembleSummaryProviderFactory.instance()
 
-        self.ensemble_dict: Dict[str, EnsembleGroupTreeData] = {}
+        self._group_tree_data: Dict[str, EnsembleGroupTreeData] = {}
 
-        for ens_name, ens_path in self.ensemble_paths.items():
+        sampling = Frequency(time_index)
+        for ens_name, ens_path in self._ensemble_paths.items():
             provider: EnsembleSummaryProvider = (
                 provider_factory.create_from_arrow_unsmry_presampled(
-                    str(ens_path), rel_file_pattern, self._sampling
+                    str(ens_path), rel_file_pattern, sampling
                 )
             )
             gruptree = read_ensemble_gruptree(ens_name, ens_path, gruptree_file)
-            self.ensemble_dict[ens_name] = EnsembleGroupTreeData(provider, gruptree)
+            self._group_tree_data[ens_name] = EnsembleGroupTreeData(provider, gruptree)
 
         self.set_callbacks(app)
 
@@ -109,9 +110,9 @@ class GroupTree(WebvizPluginABC):
                     {
                         "ens_name": ens_name,
                         "ens_path": ens_path,
-                        "gruptree_file": self.gruptree_file,
+                        "gruptree_file": self._gruptree_file,
                     }
-                    for ens_name, ens_path in self.ensemble_paths.items()
+                    for ens_name, ens_path in self._ensemble_paths.items()
                 ],
             )
         )
@@ -142,13 +143,14 @@ class GroupTree(WebvizPluginABC):
     def layout(self) -> html.Div:
         return html.Div(
             children=[
-                # clientside_stores(get_uuid=self.uuid),
-                main_layout(get_uuid=self.uuid, ensembles=self.ensembles),
+                main_layout(get_uuid=self.uuid, ensembles=self._ensembles),
             ],
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        plugin_callbacks(app=app, get_uuid=self.uuid, ensemble_dict=self.ensemble_dict)
+        plugin_callbacks(
+            app=app, get_uuid=self.uuid, group_tree_data=self._group_tree_data
+        )
 
 
 @webvizstore

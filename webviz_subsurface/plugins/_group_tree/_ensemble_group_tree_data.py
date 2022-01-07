@@ -15,35 +15,33 @@ class EnsembleGroupTreeData:
 
     def __init__(self, provider: EnsembleSummaryProvider, gruptree: pd.DataFrame):
 
-        self.provider = provider
-        self.gruptree = gruptree
-
-        self.wells: List[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
+        self._provider = provider
+        self._wells: List[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
             "CHILD"
         ].unique()
 
         # Check that all field rate and WSTAT summary vectors exist
-        self.check_that_sumvecs_exists(
+        self._check_that_sumvecs_exists(
             ["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"]
-            + [f"WSTAT:{well}" for well in self.wells]
+            + [f"WSTAT:{well}" for well in self._wells]
         )
 
         # Check if the ensemble has waterinj and/or gasinj
-        smry = self.provider.get_vectors_df(["FWIR", "FGIR"], None)
+        smry = self._provider.get_vectors_df(["FWIR", "FGIR"], None)
         self.has_waterinj = smry["FWIR"].sum() > 0
         self.has_gasinj = smry["FGIR"].sum() > 0
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
-        self.gruptree = add_nodetype(self.gruptree, self.provider, self.wells)
+        self._gruptree = add_nodetype(gruptree, self._provider, self._wells)
 
         # Add edge label
-        self.gruptree["EDGE_LABEL"] = self.gruptree.apply(get_edge_label, axis=1)
+        self._gruptree["EDGE_LABEL"] = self._gruptree.apply(get_edge_label, axis=1)
 
         # Get summary data with metadata (nodename, datatype, edge_or_node)
-        self.sumvecs: pd.DataFrame = self.get_sumvecs_with_metadata()
+        self._sumvecs: pd.DataFrame = self._get_sumvecs_with_metadata()
 
         # Check that all summary vectors exist
-        self.check_that_sumvecs_exists(list(self.sumvecs["SUMVEC"]))
+        self._check_that_sumvecs_exists(list(self._sumvecs["SUMVEC"]))
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def create_grouptree_dataset(
@@ -66,7 +64,7 @@ class EnsembleGroupTreeData:
         """  # noqa
 
         # Filter smry
-        smry = self.provider.get_vectors_df(list(self.sumvecs["SUMVEC"]), None)
+        smry = self._provider.get_vectors_df(list(self._sumvecs["SUMVEC"]), None)
 
         if tree_mode == "statistics":
             if stat_option == "mean":
@@ -83,7 +81,7 @@ class EnsembleGroupTreeData:
         else:
             smry = smry[smry["REAL"] == real]
 
-        gruptree_filtered = self.gruptree
+        gruptree_filtered = self._gruptree
         if tree_mode == "single_real" and not self.tree_is_equivalent_in_all_real():
             # Trees are not equal. Filter on realization
             gruptree_filtered = gruptree_filtered[gruptree_filtered["REAL"] == real]
@@ -98,7 +96,7 @@ class EnsembleGroupTreeData:
         gruptree_filtered = df.drop_duplicates()
 
         return (
-            create_dataset(smry, gruptree_filtered, self.sumvecs),
+            create_dataset(smry, gruptree_filtered, self._sumvecs),
             self.get_edge_options(prod_inj_other),
             [
                 {"name": option, "label": get_label(option)}
@@ -109,16 +107,16 @@ class EnsembleGroupTreeData:
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_unique_real(self) -> List[int]:
         """Returns a list of unique realizations"""
-        return self.provider.realizations()
+        return self._provider.realizations()
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def tree_is_equivalent_in_all_real(self) -> bool:
         """Checks if the group tree is equivalent in all realizations,
         in which case there is only one REAL number in the dataframe
         """
-        return self.gruptree["REAL"].nunique() == 1
+        return self._gruptree["REAL"].nunique() == 1
 
-    def get_sumvecs_with_metadata(
+    def _get_sumvecs_with_metadata(
         self,
     ) -> pd.DataFrame:
         """Returns a dataframe with the summary vectors that is needed to
@@ -130,7 +128,7 @@ class EnsembleGroupTreeData:
         """
         records = []
 
-        unique_nodes = self.gruptree.drop_duplicates(subset=["CHILD", "KEYWORD"])
+        unique_nodes = self._gruptree.drop_duplicates(subset=["CHILD", "KEYWORD"])
         for _, noderow in unique_nodes.iterrows():
             nodename = noderow["CHILD"]
             keyword = noderow["KEYWORD"]
@@ -156,7 +154,7 @@ class EnsembleGroupTreeData:
                 )
         return pd.DataFrame(records)
 
-    def check_that_sumvecs_exists(self, check_sumvecs: List[str]) -> None:
+    def _check_that_sumvecs_exists(self, check_sumvecs: List[str]) -> None:
         """Takes in a list of summary vectors and checks if they are
         present in the summary dataset. If any are missing, a ValueError
         is raised with the list of all missing summary vectors.
@@ -164,7 +162,7 @@ class EnsembleGroupTreeData:
         missing_sumvecs = [
             sumvec
             for sumvec in check_sumvecs
-            if sumvec not in self.provider.vector_names()
+            if sumvec not in self._provider.vector_names()
         ]
         if missing_sumvecs:
             str_missing_sumvecs = ", ".join(missing_sumvecs)
