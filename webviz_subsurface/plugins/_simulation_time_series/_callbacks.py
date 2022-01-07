@@ -319,6 +319,8 @@ def plugin_callbacks(
                         fanchart_options,
                     )
                 if visualization == VisualizationOptions.STATISTICS_AND_REALIZATIONS:
+                    # Configure line width and color scaling to easier separate
+                    # statistics traces and realization traces.
                     # Show selected realizations - only filter df if realizations filter
                     # query is not performed
                     figure_builder.add_realizations_traces(
