@@ -10,19 +10,10 @@ from webviz_subsurface_components import ExpressionInfo
 from ..._providers import Frequency
 from ..._utils.vector_calculator import get_custom_vector_definitions_from_expressions
 
-# from .types import (
-#     FanchartOptions,
-#     StatisticsOptions,
-#     TraceOptions,
-#     VisualizationOptions,
-# )
-
 
 # pylint: disable=too-few-public-methods
 class LayoutElements:
-    """
-    Definition of names of HTML-elements in layout.
-    """
+    """Definition of names of HTML-elements in layout."""
 
     PROD_MISFIT_LAYOUT = "prod_misfit_layout"
     PROD_MISFIT_ENSEMBLE_NAMES = "prod_misfit_ensemble_names"

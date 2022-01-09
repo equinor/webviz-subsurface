@@ -86,6 +86,7 @@ class ProdMisfit(WebvizPluginABC):
 
         # Must define valid freqency
         self._sampling = Frequency(sampling)
+        logging(self._sampling)
 
         ensemble_paths: Dict[str, Path] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -195,165 +196,8 @@ def get_path(path: Path) -> Path:
 
 
 # ------------------------------------------------------------------------
-# plot, dataframe and support functions below here
+# support functions below here
 # ------------------------------------------------------------------------
-
-
-# def _get_filtered_df(
-#     dframe: pd.DataFrame, excl_name_startswith: list, excl_name_contains: list
-# ) -> pd.DataFrame:
-#     """Remove unwanted wells/groups from dframe"""
-
-#     drop_list = []
-#     for colname in dframe.columns:
-#         if ":" in colname:
-#             name = colname.split(":")[1]
-#             if name.startswith(tuple(excl_name_startswith)):
-#                 drop_list.append(colname)
-#                 continue
-#             # else:
-#             for excl in excl_name_contains:
-#                 if excl in name:
-#                     drop_list.append(colname)
-#                     continue
-#     if len(drop_list) > 0:
-#         logging.info(f"\nDropping column keys: {drop_list}")
-#     return dframe.drop(columns=drop_list)
-
-
-# def _calcualte_diff_at_date(
-#     df_sim: pd.DataFrame, df_hist: pd.DataFrame
-# ) -> pd.DataFrame:
-#     """Calculate diff (sim - obs)."""
-
-#     date = df_sim.DATE.values[2]
-#     dframe = pd.DataFrame()
-#     df_sim = df_sim[df_sim.DATE == date]
-#     df_hist = df_hist[df_hist.DATE == date]
-#     for col in df_sim.columns:
-#         if col in ["REAL", "ENSEMBLE", "DATE"]:
-#             dframe[col] = df_sim[col]
-#         elif col in ["WOPT", "WWPT", "WGPT", "GOPT", "GWPT", "GGPT"]:
-#             vector, well = col.split(":")[0], col.split(":")[1]
-#             # logging.debug(f"{vector} {well}")
-#             dframe[vector + "_DIFF:" + well] = (
-#                 df_sim[col] - df_hist[vector + "H:" + well].values[0]
-#             )
-
-#     return dframe
-
-
-# # --------------------------------
-# def get_df_stat(df_smry: pd.DataFrame) -> pd.DataFrame:
-#     """Return dataframe with ensemble statistics per well across all realizations.
-#     Return empty dataframe if no realizations included in df."""
-
-#     my_ensembles = []
-#     my_dates = []
-#     my_wells = []
-#     my_sim_vectors = []
-#     my_sim_mean_values = []
-#     my_sim_std_values = []
-#     my_sim_p10_values = []
-#     my_sim_p90_values = []
-#     my_hist_values = []
-
-#     for ens_name, dframe in df_smry.groupby("ENSEMBLE"):
-#         for _date, ensdf in dframe.groupby("DATE"):
-
-#             for col in ensdf.columns:
-#                 if ":" in col:
-#                     vector = col.split(":")[0]
-#                     if vector in [
-#                         "WOPT",
-#                         "WWPT",
-#                         "WGPT",
-#                         "GOPT",
-#                         "GWPT",
-#                         "GGPT",
-#                     ]:
-#                         well = col.split(":")[1]
-#                         my_wells.append(well)
-#                         my_dates.append(_date)
-#                         my_ensembles.append(ens_name)
-#                         my_sim_vectors.append(vector)
-#                         my_sim_mean_values.append(ensdf[col].mean())
-#                         my_sim_std_values.append(ensdf[col].std())
-#                         my_sim_p10_values.append(ensdf[col].quantile(0.9))
-#                         my_sim_p90_values.append(ensdf[col].quantile(0.1))
-#                         my_hist_values.append(ensdf[vector + "H:" + well].mean())
-
-#     df_stat = pd.DataFrame(
-#         data={
-#             "ENSEMBLE": my_ensembles,
-#             "WELL": my_wells,
-#             "VECTOR": my_sim_vectors,
-#             "DATE": my_dates,
-#             "OBS": my_hist_values,
-#             "SIM_MEAN": my_sim_mean_values,
-#             "SIM_STD": my_sim_std_values,
-#             "SIM_P10": my_sim_p10_values,
-#             "SIM_P90": my_sim_p90_values,
-#         }
-#     )
-#     df_stat = df_stat.astype({"DATE": "string"})
-#     return df_stat
-
-
-# # --------------------------------
-# def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
-#     """Return dataframe with ensemble statistics of production
-#     difference per well across all realizations.
-#     Return empty dataframe if no realizations included in df."""
-
-#     my_ensembles = []
-#     my_dates = []
-#     my_wells = []
-#     my_diff_vectors = []
-#     my_diff_mean_values = []
-#     my_diff_std_values = []
-#     my_diff_p10_values = []
-#     my_diff_p90_values = []
-
-#     for ens_name, dframe in df_diff.groupby("ENSEMBLE"):
-#         for _date, ensdf in dframe.groupby("DATE"):
-
-#             for col in ensdf.columns:
-#                 if ":" in col:
-#                     vector = col.split(":")[0]
-#                     if vector in [
-#                         "DIFF_WOPT",
-#                         "DIFF_WWPT",
-#                         "DIFF_WGPT",
-#                         "DIFF_GOPT",
-#                         "DIFF_GWPT",
-#                         "DIFF_GGPT",
-#                     ]:
-#                         well = col.split(":")[1]
-#                         my_wells.append(well)
-#                         my_dates.append(_date)
-#                         my_ensembles.append(ens_name)
-#                         my_diff_vectors.append(vector)
-#                         my_diff_mean_values.append(ensdf[col].mean())
-#                         my_diff_std_values.append(ensdf[col].std())
-#                         my_diff_p10_values.append(ensdf[col].quantile(0.9))
-#                         my_diff_p90_values.append(ensdf[col].quantile(0.1))
-
-#     df_stat = pd.DataFrame(
-#         data={
-#             "ENSEMBLE": my_ensembles,
-#             "WELL": my_wells,
-#             "VECTOR": my_diff_vectors,
-#             "DATE": my_dates,
-#             "DIFF_MEAN": my_diff_mean_values,
-#             "DIFF_STD": my_diff_std_values,
-#             "DIFF_P10": my_diff_p10_values,
-#             "DIFF_P90": my_diff_p90_values,
-#         }
-#     )
-#     df_stat = df_stat.astype({"DATE": "string"})
-#     return df_stat
-
 
 # --------------------------------
 def _get_wells_vectors_phases(
@@ -388,9 +232,9 @@ def _get_wells_vectors_phases(
                 vectors.append(vector)
                 if vector_type == "WOPT":
                     oil_phase = True
-                if vector_type == "WWPT":
+                elif vector_type == "WWPT":
                     wat_phase = True
-                if vector_type == "WGPT":
+                elif vector_type == "WGPT":
                     gas_phase = True
     wells, vectors = sorted(wells), sorted(vectors)
 
