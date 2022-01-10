@@ -367,9 +367,10 @@ def color_range_selection_layout(get_uuid, value, value_range, step, view_idx):
 
 
 def create_map_list(get_uuid, views, well_set_model):
+    print(views)
     return [
         DeckGLMap(
-            id={"id": get_uuid(LayoutElements.DECKGLMAP), "view": view},
+            id={"id": get_uuid(LayoutElements.DECKGLMAP), "view": 0},
             layers=list(
                 filter(
                     None,
@@ -380,8 +381,24 @@ def create_map_list(get_uuid, views, well_set_model):
                     ],
                 )
             ),
+            bounds=[
+                456063.6875,
+                5926551,
+                467483.6875,
+                5939431,
+            ],
+            views={
+                "layout": [2, 2],
+                "viewports": [
+                    {
+                        "id": f"view_{view}",
+                        "show3D": False,
+                        "layerIds": ["colormap-layer", "wells-layer"],
+                    }
+                    for view in range(views)
+                ],
+            },
         )
-        for view in range(views)
     ]
 
 
