@@ -23,8 +23,8 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
 )
-from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
-    SurfaceServer,
+from webviz_subsurface._providers.ensemble_surface_provider.surface_server_lazy import (
+    SurfaceServerLazy,
 )
 
 import webviz_core_components as wcc
@@ -54,7 +54,7 @@ class EnsembleSurfaceSharedServer(WebvizPluginABC):
             )
         )
 
-        self.surf_server = SurfaceServer.instance(app)
+        self.surf_server = SurfaceServerLazy.instance(app)
         self.surf_server.add_provider(self.provider)
 
         # self._attribute = "ds_extract_postprocess"
@@ -106,7 +106,7 @@ class EnsembleSurfaceSharedServer(WebvizPluginABC):
             layers[0]["valueRange"] = [surface.values.min(), surface.values.max()]
 
             surface_url = self.surf_server.encode_partial_url(
-                self.provider, surface_address
+                self.provider.provider_id(), surface_address
             )
             print("SURFACE_URL", surface_url)
 

@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 ROOT_URL_PATH = "/sigroute"
 
 
-class SurfaceServer:
+class SurfaceServerLazy:
     def __init__(self, app: Dash) -> None:
         self._dash_app: Dash = app
         self._id_to_provider_dict: Dict[str, EnsembleSurfaceProvider] = {}
@@ -49,11 +49,11 @@ class SurfaceServer:
         # self._image_cache.init_app(app.server)
 
     @staticmethod
-    def instance(app: Dash) -> "SurfaceServer":
+    def instance(app: Dash) -> "SurfaceServerLazy":
         global SURFACE_SERVER_INSTANCE
         if not SURFACE_SERVER_INSTANCE:
             LOGGER.debug("Initializing SurfaceServer instance")
-            SURFACE_SERVER_INSTANCE = SurfaceServer(app)
+            SURFACE_SERVER_INSTANCE = SurfaceServerLazy(app)
 
         return SURFACE_SERVER_INSTANCE
 
@@ -88,12 +88,11 @@ class SurfaceServer:
 
     def encode_partial_url(
         self,
-        provider: EnsembleSurfaceProvider,
+        provider_id: str,
         address: Union[
             StatisticalSurfaceAddress, SimulatedSurfaceAddress, ObservedSurfaceAddress
         ],
     ) -> str:
-        provider_id: str = provider.provider_id()
         if not provider_id in self._id_to_provider_dict:
             raise ValueError("Could not find provider")
 
@@ -197,4 +196,4 @@ class SurfaceServer:
             return response
 
 
-SURFACE_SERVER_INSTANCE: Optional[SurfaceServer] = None
+SURFACE_SERVER_INSTANCE: Optional[SurfaceServerLazy] = None
