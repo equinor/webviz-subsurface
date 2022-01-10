@@ -9,6 +9,7 @@ from ._business_logic import RftPlotterDataModel
 # pylint: disable = too-few-public-methods
 class LayoutElements:
     MAP = "map-wrapper"
+    MAP_GRAPH = "map-graph"
     FORMATIONS_GRAPH = "formations-graph-wrapper"
     MISFITPLOT_GRAPH = "misfit-graph-wrapper"
     CROSSPLOT_GRAPH = "crossplot-graph-wrapper"
