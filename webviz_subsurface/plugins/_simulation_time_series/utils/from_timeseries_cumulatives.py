@@ -80,10 +80,7 @@ def calculate_from_resampled_cumulative_vectors_df(
     # larger datasets.
     vectors_df["realuid"] = vectors_df["REAL"]
 
-    vectors_df.set_index(["REAL", "DATE"], inplace=True)
-
-    # Resample on DATE frequency
-    vectors_df.reset_index(level=["REAL"], inplace=True)
+    vectors_df.set_index(["DATE"], inplace=True)
 
     cumulative_name_map = {
         vector: rename_vector_from_cumulative(vector, as_rate_per_day)
