@@ -199,11 +199,13 @@ def coverage_diffplot(
     ensdf = df_diff.dropna(axis="columns")
     ensdf.DATE = ensdf.DATE.str[:10]
 
+    print(phases)
+
     phase_vector = {}
     prefix = "W" if vector_type == "well" else "G"
-    phase_vector["Oil"] = prefix + "OPT"
-    phase_vector["Water"] = prefix + "WPT"
-    phase_vector["Gas"] = prefix + "GPT"
+    phase_vector["Oil"] = "DIFF_" + prefix + "OPT"
+    phase_vector["Water"] = "DIFF_" + prefix + "WPT"
+    phase_vector["Gas"] = "DIFF_" + prefix + "GPT"
 
     all_columns = list(ensdf)  # column names
     facet_name = "DATE"
@@ -215,16 +217,30 @@ def coverage_diffplot(
         phase_well_labels = [col.split(":")[1] for col in phase_columns]
         text_labels = dict(value=f"{phase} diff (sim-obs)", variable="Well name")
 
-        fig_phase = px.box(
-            ensdf,
-            y=phase_columns,
-            color=colorby,
-            facet_col=facet_name,
-            facet_col_wrap=2,
-            points=boxplot_points,
-            labels=text_labels,
-            boxmode=boxmode,
-        )
+        print(phase_columns, phase_well_labels)
+
+        if boxplot_points == "strip":
+            fig_phase = px.strip(
+                ensdf,
+                y=phase_columns,
+                color=colorby,
+                facet_col=facet_name,
+                facet_col_wrap=2,
+                # points=boxplot_points,
+                labels=text_labels,
+                stripmode=boxmode,
+            )
+        else:
+            fig_phase = px.box(
+                ensdf,
+                y=phase_columns,
+                color=colorby,
+                facet_col=facet_name,
+                facet_col_wrap=2,
+                points=boxplot_points,
+                labels=text_labels,
+                boxmode=boxmode,
+            )
         fig_phase.add_hline(0)
         fig_phase.update_xaxes(ticktext=phase_well_labels, tickvals=phase_columns)
 

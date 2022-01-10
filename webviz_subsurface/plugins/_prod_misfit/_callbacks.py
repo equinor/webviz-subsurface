@@ -174,6 +174,7 @@ def plugin_callbacks(
                 ),
                 relative_diff=relative_diff,
             )
+            print(boxmode, dframe)
             figures = makefigs.coverage_diffplot(
                 dframe,
                 selector_phases,

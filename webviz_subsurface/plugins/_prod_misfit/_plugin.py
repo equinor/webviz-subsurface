@@ -50,6 +50,10 @@ SYMMETRIC = [
 class ProdMisfit(WebvizPluginABC):
     """Visualizes production data misfit at selected date.
 
+    When not dealing with absolute value of differences, difference plots are
+    represented as: (simulated - observed),
+    i.e. negative values means sim is lower than obs and vice versa.
+
     **Features**
     * Visualization of prod misfit at selected time.
     * Visualization of prod coverage at selected time.
@@ -86,7 +90,6 @@ class ProdMisfit(WebvizPluginABC):
 
         # Must define valid freqency
         self._sampling = Frequency(sampling)
-        logging(self._sampling)
 
         ensemble_paths: Dict[str, Path] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -96,7 +99,7 @@ class ProdMisfit(WebvizPluginABC):
         }
 
         self._input_provider_set = create_presampled_provider_set_from_paths(
-            ensemble_paths, self._sampling
+            ensemble_paths, "share/results/unsmry/*.arrow", self._sampling
         )
         # self._input_provider_set.verify_consistent_vector_metadata()
 
