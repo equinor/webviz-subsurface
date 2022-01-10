@@ -129,16 +129,17 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         if not vector_names:
             raise ValueError("List of requested vector names is empty")
 
-        # NOTE: index order ["REAL","DATE"] to obtain grouping by realization
-        # and order by date
+        # NOTE: index order ["DATE","REAL"] to obtain column order when
+        # performing reset_index() later
         ensemble_a_vectors_df = self._provider_a.get_vectors_df(
             vector_names, resampling_frequency, realizations
-        ).set_index(["REAL", "DATE"])
+        ).set_index(["DATE", "REAL"])
         ensemble_b_vectors_df = self._provider_b.get_vectors_df(
             vector_names, resampling_frequency, realizations
-        ).set_index(["REAL", "DATE"])
+        ).set_index(["DATE", "REAL"])
 
-        # Reset index, group by "REAL" and sort groups by "DATE"
+        # Reset index, sort values by "REAL" and thereafter by "DATE" to
+        # group realizations and order by date
         ensembles_delta_vectors_df = (
             ensemble_a_vectors_df.sub(ensemble_b_vectors_df)
             .reset_index()
