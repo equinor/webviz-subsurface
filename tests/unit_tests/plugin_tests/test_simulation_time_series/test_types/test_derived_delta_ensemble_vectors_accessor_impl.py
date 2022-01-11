@@ -178,9 +178,7 @@ def test_get_provider_vectors_filter_realizations() -> None:
 
     # Verify realizations query
     expected_reals_df = (
-        TEST_DELTA_DF.loc[TEST_DELTA_DF["REAL"].isin([1, 4])]
-        .reset_index()
-        .drop("index", axis=1)
+        TEST_DELTA_DF.loc[TEST_DELTA_DF["REAL"].isin([1, 4])].reset_index().drop("index", axis=1)
     )
 
     test_df = TEST_ACCESSOR.get_provider_vectors_df(realizations=[1, 4])
@@ -252,9 +250,7 @@ def test_create_interval_and_average_vectors_df_filter_realizations() -> None:
     expected_df["DATE"] = pd.Series(expected_df["DATE"].dt.to_pydatetime(), dtype=object)
     # fmt: on
 
-    created_df = TEST_ACCESSOR.create_interval_and_average_vectors_df(
-        realizations=[1, 4]
-    )
+    created_df = TEST_ACCESSOR.create_interval_and_average_vectors_df(realizations=[1, 4])
 
     # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
     created_df["DATE"] = pd.Series(created_df["DATE"].dt.to_pydatetime(), dtype=object)
@@ -295,8 +291,6 @@ def test_create_calculated_vectors_df() -> None:
 
     # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
     created_df["DATE"] = pd.Series(created_df["DATE"].dt.to_pydatetime(), dtype=object)
-    print(expected_df)
-    print(created_df)
 
     assert expected_df.equals(created_df)
     assert expected_df.columns.equals(created_df.columns)
