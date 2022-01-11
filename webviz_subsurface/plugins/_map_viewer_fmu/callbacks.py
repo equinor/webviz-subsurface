@@ -1,6 +1,16 @@
 from typing import Callable, Dict, List, Optional, Tuple, Any
 import json
-from dash import Input, Output, State, callback, callback_context, no_update, ALL
+import math
+from dash import (
+    Input,
+    Output,
+    State,
+    callback,
+    callback_context,
+    no_update,
+    ALL,
+)
+from dash.exceptions import PreventUpdate
 from flask import url_for
 
 from webviz_config.utils._dash_component_utils import calculate_slider_step
@@ -15,12 +25,7 @@ from webviz_subsurface._components.deckgl_map.providers.xtgeo import (
 
 from webviz_subsurface._models.well_set_model import WellSetModel
 
-from .layout import (
-    LayoutElements,
-    SideBySideSelectorFlex,
-    create_map_matrix,
-    create_map_list,
-)
+from .layout import LayoutElements, SideBySideSelectorFlex, update_map_layers
 from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfaceProvider
 from .types import SurfaceContext, WellsContext
 from .utils.formatting import format_date  # , update_nested_dict
@@ -45,19 +50,6 @@ def plugin_callbacks(
         return {"id": get_uuid(LayoutElements.LINK), "selector": ALL}
 
     @callback(
-        Output(get_uuid(LayoutElements.MAINVIEW), "children"),
-        Input(get_uuid(LayoutElements.VIEWS), "value"),
-    )
-    def _update_number_of_maps(number_of_views) -> dict:
-        return create_map_matrix(
-            figures=create_map_list(
-                get_uuid,
-                views=number_of_views,
-                well_set_model=well_set_model,
-            )
-        )
-
-    @callback(
         Output(get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "data"),
         Input(
             {"view": ALL, "id": get_uuid(LayoutElements.COLORMAP_RESET_RANGE)},
@@ -65,7 +57,7 @@ def plugin_callbacks(
         ),
         prevent_initial_call=True,
     )
-    def _colormap_reset_indictor(_buttom_click) -> dict:
+    def _colormap_reset_indicator(_buttom_click) -> dict:
         ctx = callback_context.triggered[0]["prop_id"]
         update_view = json.loads(ctx.split(".")[0])["view"]
         return update_view if update_view is not None else no_update
@@ -77,8 +69,7 @@ def plugin_callbacks(
         Input(selections(), "value"),
         Input(get_uuid(LayoutElements.WELLS), "value"),
         Input(links(), "value"),
-        Input(get_uuid(LayoutElements.MAINVIEW), "children"),
-        State(get_uuid(LayoutElements.VIEWS), "value"),
+        Input(get_uuid(LayoutElements.VIEWS), "value"),
         Input(get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "data"),
         State(selections(), "id"),
         State(selector_wrapper(), "id"),
@@ -89,7 +80,6 @@ def plugin_callbacks(
         selector_values: list,
         selected_wells,
         link_values,
-        _number_of_views_updated,
         number_of_views,
         color_reset_view,
         selector_ids,
@@ -98,6 +88,9 @@ def plugin_callbacks(
         stored_color_settings,
     ) -> Tuple[List[Dict], List[Any]]:
         ctx = callback_context.triggered[0]["prop_id"]
+
+        if number_of_views is None:
+            raise PreventUpdate
 
         links = {
             id_values["selector"]: bool(value)
@@ -145,48 +138,79 @@ def plugin_callbacks(
         )
 
     @callback(
-        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "layers"),
-        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "bounds"),
+        Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
+        Output(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
+        Output(get_uuid(LayoutElements.DECKGLMAP), "views"),
         Input(get_uuid(LayoutElements.SELECTED_DATA), "data"),
-        State({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "layers"),
-        State({"id": get_uuid(LayoutElements.DECKGLMAP), "view": ALL}, "id"),
+        State(get_uuid(LayoutElements.VIEWS), "value"),
+        State(get_uuid(LayoutElements.DECKGLMAP), "layers"),
     )
-    def _update_maps(selections: dict, current_layers, map_ids):
+    def _update_maps(selections: dict, number_of_views, current_layers):
+        # layers = update_map_layers(number_of_views, well_set_model)
+        # layers = [json.loads(x.to_json()) for x in layers]
+        layer_model = DeckGLMapLayersModel(current_layers)
 
-        layers = []
-        bounds = []
-        for idx, map_id in enumerate(map_ids):
-            data = selections[map_id["view"]]
+        for idx, data in enumerate(selections):
             selected_surface = get_surface_context_from_data(data)
+
             ensemble = selected_surface.ensemble
             surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
-
-            layer_model = DeckGLMapLayersModel(current_layers[idx])
-
-            property_bounds = get_surface_bounds(surface)
             surface_range = get_surface_range(surface)
-            layer_model.set_propertymap(
-                image_url=url_for(
+            if idx == 0:
+                property_bounds = get_surface_bounds(surface)
+
+            layer_data = {
+                "image": url_for(
                     "_send_surface_as_png", surface_context=selected_surface
                 ),
-                bounds=property_bounds,
-                value_range=surface_range,
-            )
-            layer_model.set_colormap_image(
-                f"/colormaps/{data['colormap']['value']}.png"
-            )
-            layer_model.set_colormap_range(data["color_range"]["value"])
-            if well_set_model is not None:
-                layer_model.set_well_data(
-                    well_data=url_for(
-                        "_send_well_data_as_json",
-                        wells_context=WellsContext(well_names=data["wells"]),
-                    )
-                )
-            layers.append(layer_model.layers)
-            bounds.append(property_bounds)
+                "bounds": property_bounds,
+                "valueRange": surface_range,
+            }
 
-        return layers, bounds
+            layer_model.update_layer_by_id(
+                layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}", layer_data=layer_data
+            )
+            layer_model.update_layer_by_id(
+                layer_id=f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
+                layer_data=layer_data,
+            )
+            layer_model.update_layer_by_id(
+                layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                layer_data={
+                    "colormap": data["colormap"]["value"],
+                    "colorMapRange": data["color_range"]["value"],
+                },
+            )
+            if well_set_model is not None:
+                layer_model.update_layer_by_id(
+                    layer_id=f"{LayoutElements.WELLS_LAYER}-{idx}",
+                    layer_data={
+                        "data": url_for(
+                            "_send_well_data_as_json",
+                            wells_context=WellsContext(well_names=data["wells"]),
+                        )
+                    },
+                )
+
+        return (
+            layer_model.layers,
+            property_bounds,
+            {
+                "layout": view_layout(number_of_views),
+                "viewports": [
+                    {
+                        "id": f"view_{view}",
+                        "show3D": False,
+                        "layerIds": [
+                            f"{LayoutElements.COLORMAP_LAYER}-{view}",
+                            f"{LayoutElements.HILLSHADING_LAYER}-{view}",
+                            f"{LayoutElements.WELLS_LAYER}-{view}",
+                        ],
+                    }
+                    for view in range(number_of_views)
+                ],
+            },
+        )
 
     def _update_ensemble_data(selections, links) -> None:
         for idx, data in enumerate(selections):
@@ -358,3 +382,10 @@ def plugin_callbacks(
         if data["date"]["value"]:
             surfaceid += data["date"]["value"][0]
         return surfaceid
+
+
+def view_layout(views):
+    """Convert a list of figures into a matrix for display"""
+    cols = min([x for x in range(5) if (x * x) >= views])
+    rows = math.ceil(views / cols)
+    return [rows, cols]

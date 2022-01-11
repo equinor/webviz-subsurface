@@ -1,10 +1,9 @@
 from enum import Enum, auto, unique
 from typing import Callable, List, Dict, Any, Optional
-import math
+
 import webviz_core_components as wcc
 from dash import dcc, html
-from pydeck import Layer
-from pydeck.types import String
+
 
 from webviz_subsurface._components.deckgl_map import DeckGLMap  # type: ignore
 from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
@@ -39,6 +38,10 @@ class LayoutElements(str, Enum):
     WRAPPER = auto()
     RESET_BUTTOM_CLICK = auto()
 
+    COLORMAP_LAYER = "colormaplayer"
+    HILLSHADING_LAYER = "hillshadinglayer"
+    WELLS_LAYER = "wellayer"
+
 
 class LayoutLabels(str, Enum):
     """Text labels used in layout components"""
@@ -64,8 +67,7 @@ class LayoutLabels(str, Enum):
 class LayoutStyle:
     """CSS styling"""
 
-    VIEWHEIGHT = 90
-
+    MAPHEIGHT = "87vh"
     SIDEBAR = {"flex": 1, "height": "90vh"}
     MAINVIEW = {"flex": 3, "height": "90vh"}
 
@@ -104,8 +106,7 @@ def main_layout(
                                 for selector, label in selector_labels.items()
                             ],
                             RealizationSelector(get_uuid=get_uuid),
-                            well_set_model
-                            and WellsSelector(
+                            WellsSelector(
                                 get_uuid=get_uuid, well_set_model=well_set_model
                             ),
                             show_fault_polygons
@@ -120,9 +121,20 @@ def main_layout(
                 style=LayoutStyle.MAINVIEW,
                 color="white",
                 highlight=False,
-                children=[],
+                children=FullScreen(
+                    html.Div(
+                        [
+                            DeckGLMap(
+                                id=get_uuid(LayoutElements.DECKGLMAP),
+                                layers=update_map_layers(9, well_set_model),
+                                bounds=[456063.6875, 5926551, 467483.6875, 5939431],
+                            )
+                        ],
+                        style={"height": LayoutStyle.MAPHEIGHT},
+                    ),
+                ),
             ),
-        ],
+        ]
     )
 
 
@@ -196,7 +208,7 @@ class ViewSelector(html.Div):
                         id=get_uuid(LayoutElements.VIEWS),
                         type="number",
                         min=1,
-                        max=10,
+                        max=9,
                         step=1,
                         value=1,
                     ),
@@ -223,16 +235,22 @@ class MapSelector(wcc.Selectors):
         )
 
 
-class WellsSelector(wcc.Selectors):
+class WellsSelector(html.Div):
     def __init__(self, get_uuid: Callable, well_set_model):
+        value = options = (
+            well_set_model.well_names if well_set_model is not None else []
+        )
         super().__init__(
-            label=LayoutLabels.WELLS,
-            open_details=False,
-            children=dropdown_vs_select(
-                value=well_set_model.well_names,
-                options=well_set_model.well_names,
-                component_id=get_uuid(LayoutElements.WELLS),
-                multi=True,
+            style={"display": "none" if well_set_model is None else "block"},
+            children=wcc.Selectors(
+                label=LayoutLabels.WELLS,
+                open_details=False,
+                children=dropdown_vs_select(
+                    value=value,
+                    options=options,
+                    component_id=get_uuid(LayoutElements.WELLS),
+                    multi=True,
+                ),
             ),
         )
 
@@ -366,70 +384,23 @@ def color_range_selection_layout(get_uuid, value, value_range, step, view_idx):
     )
 
 
-def create_map_list(get_uuid, views, well_set_model):
-    print(views)
-    return [
-        DeckGLMap(
-            id={"id": get_uuid(LayoutElements.DECKGLMAP), "view": 0},
-            layers=list(
+def update_map_layers(views, well_set_model):
+    layers = []
+    for idx in range(views):
+        layers.extend(
+            list(
                 filter(
                     None,
                     [
-                        ColormapLayer(),
-                        Hillshading2DLayer(),
-                        well_set_model and WellsLayer(),
+                        ColormapLayer(uuid=f"{LayoutElements.COLORMAP_LAYER}-{idx}"),
+                        Hillshading2DLayer(
+                            uuid=f"{LayoutElements.HILLSHADING_LAYER}-{idx}"
+                        ),
+                        well_set_model
+                        and WellsLayer(uuid=f"{LayoutElements.WELLS_LAYER}-{idx}"),
                     ],
                 )
-            ),
-            bounds=[
-                456063.6875,
-                5926551,
-                467483.6875,
-                5939431,
-            ],
-            views={
-                "layout": [2, 2],
-                "viewports": [
-                    {
-                        "id": f"view_{view}",
-                        "show3D": False,
-                        "layerIds": ["colormap-layer", "wells-layer"],
-                    }
-                    for view in range(views)
-                ],
-            },
-        )
-    ]
-
-
-def create_map_matrix(figures):
-    """Convert a list of figures into a matrix for display"""
-    figs_in_row = min([x for x in range(20) if (x * (x + 1)) > len(figures)])
-    len_of_matrix = figs_in_row * math.ceil(len(figures) / figs_in_row)
-
-    figheigth = f"{(LayoutStyle.VIEWHEIGHT/(len_of_matrix/figs_in_row))-4}vh"
-
-    view_matrix = []
-    for i in range(0, len_of_matrix, figs_in_row):
-        row_figs = (
-            figures[i : i + figs_in_row]
-            if len(figures) > (i + figs_in_row)
-            else figures[i : len(figures)] + [None] * (len_of_matrix - len(figures))
-        )
-        view_matrix.append(
-            wcc.FlexBox(
-                children=[
-                    html.Div(
-                        style={"flex": 1},
-                        children=[
-                            wcc.Label(f"Map view {str(i+fig_idx+1)}"),
-                            FullScreen(html.Div(fig, style={"height": figheigth})),
-                        ]
-                        if fig is not None
-                        else [],
-                    )
-                    for fig_idx, fig in enumerate(row_figs)
-                ]
             )
         )
-    return html.Div(view_matrix)
+
+    return layers

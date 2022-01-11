@@ -78,6 +78,8 @@ class MapViewerFMU(WebvizPluginABC):
             else None
         )
 
+        self._well_set_model = None
+
         self.set_callbacks()
         self.set_routes(app)
 
