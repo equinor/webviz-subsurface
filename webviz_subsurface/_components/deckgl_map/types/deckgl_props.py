@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from geojson.feature import FeatureCollection
 
 import pydeck
@@ -54,11 +54,12 @@ class Hillshading2DLayer(pydeck.Layer):
         name: str = LayerNames.HILLSHADING,
         bounds: List[float] = DeckGLMapProps.bounds,
         value_range: List[float] = [0, 1],
+        uuid: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
             type=LayerTypes.HILLSHADING,
-            id=LayerIds.HILLSHADING,
+            id=uuid if uuid is not None else LayerIds.HILLSHADING,
             image=String(image),
             name=String(name),
             bounds=bounds,
@@ -76,11 +77,12 @@ class ColormapLayer(pydeck.Layer):
         bounds: List[float] = DeckGLMapProps.bounds,
         value_range: List[float] = [0, 1],
         color_map_range: List[float] = [0, 1],
+        uuid: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
             type=LayerTypes.COLORMAP,
-            id=LayerIds.COLORMAP,
+            id=uuid if uuid is not None else LayerIds.COLORMAP,
             image=String(image),
             colormap=String(colormap),
             name=String(name),
@@ -100,11 +102,12 @@ class WellsLayer(pydeck.Layer):
         log_name: str = None,
         name: str = LayerNames.WELL,
         selected_well: str = "@@#editedData.selectedWell",
+        uuid: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
             type=LayerTypes.WELL,
-            id=LayerIds.WELL,
+            id=uuid if uuid is not None else LayerIds.WELL,
             name=String(name),
             data={} if data is None else data,
             logData=log_data,
@@ -123,10 +126,11 @@ class DrawingLayer(pydeck.Layer):
         mode: Literal[  # Use Enum?
             "view", "modify", "transform", "drawPoint", "drawLineString", "drawPolygon"
         ] = "view",
+        uuid: Optional[str] = None,
     ):
         super().__init__(
             type=LayerTypes.DRAWING,
-            id=LayerIds.DRAWING,
+            id=uuid if uuid is not None else LayerIds.DRAWING,
             name=LayerNames.DRAWING,
             data=String(data),
             mode=String(mode),
