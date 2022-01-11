@@ -33,6 +33,7 @@ TEST_INPUT_DF = pd.DataFrame(
         [datetime(2000,5,1),  3,  610.0, 515.0, 535.0,  539.0],
     ]
 )
+TEST_INPUT_DF["DATE"] = pd.Series(TEST_INPUT_DF["DATE"].dt.to_pydatetime(), dtype=object)
 # fmt: on
 
 
@@ -72,13 +73,11 @@ def test_create_history_vectors_df() -> None:
     """Test function to return the real = 0 data for the historical vector
     with original vector name as column
     """
-    provider = EnsembleSummaryProviderMock()
-
-    first_history_vectors_df = create_history_vectors_df(provider, ["WA"], None)
     # fmt: off
     # Data of real = 0 for "WAH"
     expected_first_history_vectors_df = pd.DataFrame(
-        [
+        columns = ["DATE", "REAL", "WA"],
+        data = [
             [datetime(2000,1,1),  0,  13.0],
             [datetime(2000,2,1),  0,  23.0],
             [datetime(2000,3,1),  0,  33.0],
@@ -86,14 +85,14 @@ def test_create_history_vectors_df() -> None:
             [datetime(2000,5,1),  0,  53.0],
         ]
     )
-    # fmt: on
-    expected_first_history_vectors_df.columns = ["DATE", "REAL", "WA"]
+    expected_first_history_vectors_df["DATE"] = pd.Series(
+        expected_first_history_vectors_df["DATE"].dt.to_pydatetime(), dtype=object
+    )    
 
-    second_history_vectors_df = create_history_vectors_df(provider, ["WB", "WA"], None)
-    # fmt: off
     # Data of real = 0 for "WBH" and "WAH"
     expected_second_history_vectors_df = pd.DataFrame(
-        [
+        columns = ["DATE", "REAL", "WB", "WA"],
+        data = [
             [datetime(2000,1,1),  0,  17.0,  13.0],
             [datetime(2000,2,1),  0,  27.0,  23.0],
             [datetime(2000,3,1),  0,  37.0,  33.0],
@@ -101,8 +100,14 @@ def test_create_history_vectors_df() -> None:
             [datetime(2000,5,1),  0,  57.0,  53.0],
         ]
     )
+    expected_second_history_vectors_df["DATE"] = pd.Series(
+        expected_second_history_vectors_df["DATE"].dt.to_pydatetime(), dtype=object
+    )
     # fmt: on
-    expected_second_history_vectors_df.columns = ["DATE", "REAL", "WB", "WA"]
+
+    provider = EnsembleSummaryProviderMock()
+    first_history_vectors_df = create_history_vectors_df(provider, ["WA"], None)
+    second_history_vectors_df = create_history_vectors_df(provider, ["WB", "WA"], None)
 
     assert list(first_history_vectors_df.columns) == ["DATE", "REAL", "WA"]
     assert first_history_vectors_df.equals(expected_first_history_vectors_df)

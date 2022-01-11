@@ -33,6 +33,8 @@ TEST_INPUT_DF = pd.DataFrame(
         [datetime(2000,5,1),  5,      400000.0,   800000.0]
     ]
 )
+TEST_INPUT_DF["DATE"] = pd.Series(TEST_INPUT_DF["DATE"].dt.to_pydatetime(), dtype=object)
+
 
 # pylint: disable=line-too-long
 # Columns are:
@@ -63,11 +65,17 @@ TEST_EXPECTED_DF = pd.DataFrame(
         [datetime(2000,5,1), 250000.0, 100000.0, 400000.0, 370000.0, 130000.0, 250000.0, 650000.0, 500000.0, 800000.0, 770000.0, 530000.0, 650000.0],
     ]
 )
+TEST_EXPECTED_DF["DATE"] = pd.Series(TEST_EXPECTED_DF["DATE"].dt.to_pydatetime(), dtype=object)
 # fmt: on
 
 
 def test_create_vectors_statistics_df() -> None:
+    # TODO: Update test when decision on how to handle datetime.datetime -> pd.Timeseries
+    # for "DATE" column when utilizing df.set_index(["DATE"]).
     statistics_df = create_vectors_statistics_df(TEST_INPUT_DF)
+
+    # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
+    statistics_df["DATE"] = pd.Series(statistics_df["DATE"].dt.to_pydatetime(), dtype=object)
 
     assert statistics_df.equals(TEST_EXPECTED_DF)
     assert list(statistics_df.columns) == list(TEST_EXPECTED_DF.columns)
