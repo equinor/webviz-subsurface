@@ -23,8 +23,8 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
     The delta ensemble is represented a pair of two ensemble summary providers.
 
-    A sequence of vector names are provided, and data is fetched or created based on which
-    type of vectors are present in the sequence.
+    A list of vector names are provided, and data is fetched or created based on which
+    type of vectors are present in the list.
 
     Vector names can be regular vectors existing among vector names in the providers, Interval
     Delta/Average rate vector or a calculated vector from vector calculator.
@@ -37,7 +37,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         self,
         name: str,
         provider_pair: Tuple[EnsembleSummaryProvider, EnsembleSummaryProvider],
-        vectors: Sequence[str],
+        vectors: List[str],
         expressions: Optional[List[ExpressionInfo]] = None,
         resampling_frequency: Optional[Frequency] = None,
     ) -> None:
@@ -101,7 +101,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
     def __create_delta_ensemble_vectors_df(
         self,
-        vector_names: Sequence[str],
+        vector_names: List[str],
         resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
@@ -115,7 +115,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         * DataFrame with columns ["DATE", "REAL", vector1, ..., vectorN]
 
         `Input:`
-        * vector_names: Sequence[str] - Sequence of vector names to get data for
+        * vector_names: List[str] - List of vector names to get data for
         * resampling_frequency: Optional[Frequency] - Optional resampling frequency
         * realizations: Optional[Sequence[int]] - Optional sequence of realization numbers for
         vectors

@@ -23,8 +23,8 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
     The ensemble is represented with an ensemble summary provider.
 
-    A sequence of vector names are provided, and data is fetched or created based on which
-    type of vectors are present in the sequence.
+    A list of vector names are provided, and data is fetched or created based on which
+    type of vectors are present in the list.
 
     Vector names can be regular vectors existing among vector names in the provider, Interval
     Delta/Average rate vector or a calculated vector from vector calculator.
@@ -37,7 +37,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         self,
         name: str,
         provider: EnsembleSummaryProvider,
-        vectors: Sequence[str],
+        vectors: List[str],
         expressions: Optional[List[ExpressionInfo]] = None,
         resampling_frequency: Optional[Frequency] = None,
     ) -> None:
