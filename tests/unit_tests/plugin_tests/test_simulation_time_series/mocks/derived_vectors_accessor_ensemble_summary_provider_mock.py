@@ -17,7 +17,9 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     def __init__(self, df: pd.DataFrame) -> None:
         super().__init__()
         self._df = df
-        self._vectors: List[str] = [elm for elm in df.columns if elm not in ["DATE", "REAL"]]
+        self._vectors: List[str] = [
+            elm for elm in df.columns if elm not in ["DATE", "REAL"]
+        ]
         self._realizations: List[int] = list(df["REAL"]) if "REAL" in df.columns else []
 
     #####################################
@@ -42,7 +44,9 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     ) -> pd.DataFrame:
         for elm in vector_names:
             if elm not in self._vectors:
-                raise ValueError(f'Requested vector "{elm}" not among provider vectors!')
+                raise ValueError(
+                    f'Requested vector "{elm}" not among provider vectors!'
+                )
         if realizations:
             # Note: Reset index as providers reset index counter when filtering
             # realization query.

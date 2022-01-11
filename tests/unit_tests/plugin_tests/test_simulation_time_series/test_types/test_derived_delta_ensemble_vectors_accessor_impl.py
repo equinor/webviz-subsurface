@@ -1,6 +1,4 @@
 from datetime import datetime
-from typing import List, Optional, Sequence
-from numpy import real
 
 import pandas as pd
 from webviz_subsurface_components.VectorCalculatorWrapper import (
@@ -8,7 +6,6 @@ from webviz_subsurface_components.VectorCalculatorWrapper import (
     VariableVectorMapInfo,
 )
 
-from webviz_subsurface._providers import Frequency
 from webviz_subsurface.plugins._simulation_time_series.types.derived_delta_ensemble_vectors_accessor_impl import (
     DerivedDeltaEnsembleVectorsAccessorImpl,
 )
@@ -181,7 +178,9 @@ def test_get_provider_vectors_filter_realizations() -> None:
 
     # Verify realizations query
     expected_reals_df = (
-        TEST_DELTA_DF.loc[TEST_DELTA_DF["REAL"].isin([1, 4])].reset_index().drop("index", axis=1)
+        TEST_DELTA_DF.loc[TEST_DELTA_DF["REAL"].isin([1, 4])]
+        .reset_index()
+        .drop("index", axis=1)
     )
 
     test_df = TEST_ACCESSOR.get_provider_vectors_df(realizations=[1, 4])
@@ -253,7 +252,9 @@ def test_create_interval_and_average_vectors_df_filter_realizations() -> None:
     expected_df["DATE"] = pd.Series(expected_df["DATE"].dt.to_pydatetime(), dtype=object)
     # fmt: on
 
-    created_df = TEST_ACCESSOR.create_interval_and_average_vectors_df(realizations=[1, 4])
+    created_df = TEST_ACCESSOR.create_interval_and_average_vectors_df(
+        realizations=[1, 4]
+    )
 
     # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
     created_df["DATE"] = pd.Series(created_df["DATE"].dt.to_pydatetime(), dtype=object)

@@ -111,7 +111,9 @@ def test_get_provider_vectors() -> None:
     expected_reals_df = (
         TEST_DF.loc[TEST_DF["REAL"].isin([1, 4])].reset_index().drop("index", axis=1)
     )
-    assert expected_reals_df.equals(TEST_ACCESSOR.get_provider_vectors_df(realizations=[1, 4]))
+    assert expected_reals_df.equals(
+        TEST_ACCESSOR.get_provider_vectors_df(realizations=[1, 4])
+    )
 
 
 def test_create_interval_and_average_vectors_df() -> None:
@@ -176,10 +178,14 @@ def test_create_interval_and_average_vectors_df_filter_realizations() -> None:
     expected_df["DATE"] = pd.Series(expected_df["DATE"].dt.to_pydatetime(), dtype=object)
     # fmt: on
 
-    created_reals_df = TEST_ACCESSOR.create_interval_and_average_vectors_df(realizations=[2, 4])
+    created_reals_df = TEST_ACCESSOR.create_interval_and_average_vectors_df(
+        realizations=[2, 4]
+    )
 
     # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
-    created_reals_df["DATE"] = pd.Series(created_reals_df["DATE"].dt.to_pydatetime(), dtype=object)
+    created_reals_df["DATE"] = pd.Series(
+        created_reals_df["DATE"].dt.to_pydatetime(), dtype=object
+    )
 
     assert expected_df.equals(created_reals_df)
     assert expected_df.columns.equals(created_reals_df.columns)
@@ -211,10 +217,16 @@ def test_create_calculated_vectors_df() -> None:
     # fmt: on
 
     assert expected_df.equals(TEST_ACCESSOR.create_calculated_vectors_df())
-    assert expected_df.columns.equals(TEST_ACCESSOR.create_calculated_vectors_df().columns)
+    assert expected_df.columns.equals(
+        TEST_ACCESSOR.create_calculated_vectors_df().columns
+    )
 
     # Verify realizations query
     expected_reals_df = (
-        expected_df.loc[expected_df["REAL"].isin([2, 4])].reset_index().drop("index", axis=1)
+        expected_df.loc[expected_df["REAL"].isin([2, 4])]
+        .reset_index()
+        .drop("index", axis=1)
     )
-    assert expected_reals_df.equals(TEST_ACCESSOR.create_calculated_vectors_df(realizations=[2, 4]))
+    assert expected_reals_df.equals(
+        TEST_ACCESSOR.create_calculated_vectors_df(realizations=[2, 4])
+    )

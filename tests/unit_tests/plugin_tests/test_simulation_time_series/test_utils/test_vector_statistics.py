@@ -75,7 +75,9 @@ def test_create_vectors_statistics_df() -> None:
     statistics_df = create_vectors_statistics_df(TEST_INPUT_DF)
 
     # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
-    statistics_df["DATE"] = pd.Series(statistics_df["DATE"].dt.to_pydatetime(), dtype=object)
+    statistics_df["DATE"] = pd.Series(
+        statistics_df["DATE"].dt.to_pydatetime(), dtype=object
+    )
 
     assert statistics_df.equals(TEST_EXPECTED_DF)
     assert list(statistics_df.columns) == list(TEST_EXPECTED_DF.columns)
