@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional, Sequence
 
 import pandas as pd
 from webviz_subsurface_components.VectorCalculatorWrapper import (
@@ -7,56 +6,13 @@ from webviz_subsurface_components.VectorCalculatorWrapper import (
     VariableVectorMapInfo,
 )
 
-from webviz_subsurface._providers import Frequency
 from webviz_subsurface.plugins._simulation_time_series.types.derived_ensemble_vectors_accessor_impl import (
     DerivedEnsembleVectorsAccessorImpl,
 )
 
-from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
-
-
-class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
-    """Mock implementation of EnsembleSummaryProvider for testing derived
-    ensemble vectors accessor.
-
-    Implements necessary methods for obtaining wanted test data
-    """
-
-    def __init__(self, df: pd.DataFrame) -> None:
-        super().__init__()
-        self._df = df
-        self._vectors: List[str] = [elm for elm in df.columns if elm not in ["DATE", "REAL"]]
-        self._realizations: List[int] = list(df["REAL"]) if "REAL" in df.columns else []
-
-    #####################################
-    #
-    # Override methods
-    #
-    #####################################
-    def supports_resampling(self) -> bool:
-        return False
-
-    def realizations(self) -> List[int]:
-        return self._realizations
-
-    def vector_names(self) -> List[str]:
-        return self._vectors
-
-    def get_vectors_df(
-        self,
-        vector_names: Sequence[str],
-        __resampling_frequency: Optional[Frequency],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> pd.DataFrame:
-        for elm in vector_names:
-            if elm not in self._vectors:
-                raise ValueError(f'Requested vector "{elm}" not among provider vectors!')
-        if realizations:
-            return self._df[["DATE", "REAL"] + list(vector_names)].loc[
-                self._df["REAL"].isin(realizations)
-            ]
-        return self._df[["DATE", "REAL"] + list(vector_names)]
-
+from ..mocks.derived_vectors_accessor_ensemble_summary_provider_mock import (
+    EnsembleSummaryProviderMock,
+)
 
 # fmt: off
 TEST_DF = pd.DataFrame(
@@ -79,6 +35,7 @@ TEST_DF = pd.DataFrame(
         [datetime(2000,5,1),  4, 15.0,  1800.0],
     ]
 )
+TEST_DF["DATE"] = pd.Series([ts.to_pydatetime() for ts in TEST_DF["DATE"]], dtype="object")
 # fmt: on
 TEST_EXPRESSION = ExpressionInfo(
     name="Sum A and B",
@@ -93,7 +50,7 @@ TEST_EXPRESSION = ExpressionInfo(
 )
 TEST_SELECTED_VECTORS = ["A", "B", "INTVL_B", "Sum A and B"]
 TEST_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
-    name="First accessor",
+    name="Test accessor",
     provider=EnsembleSummaryProviderMock(TEST_DF),
     vectors=TEST_SELECTED_VECTORS,
     expressions=[TEST_EXPRESSION],
@@ -151,9 +108,10 @@ def test_get_provider_vectors() -> None:
     assert TEST_DF.columns.equals(TEST_ACCESSOR.get_provider_vectors_df().columns)
 
     # Verify realizations query
-    assert TEST_DF.loc[TEST_DF["REAL"].isin([1, 4])].equals(
-        TEST_ACCESSOR.get_provider_vectors_df(realizations=[1, 4])
+    expected_reals_df = (
+        TEST_DF.loc[TEST_DF["REAL"].isin([1, 4])].reset_index().drop("index", axis=1)
     )
+    assert expected_reals_df.equals(TEST_ACCESSOR.get_provider_vectors_df(realizations=[1, 4]))
 
 
 def test_create_interval_and_average_vectors_df() -> None:
@@ -182,9 +140,49 @@ def test_create_interval_and_average_vectors_df() -> None:
             [datetime(2000,5,1),  4, 0.0  ],
         ]
     )
+    expected_df["DATE"] = pd.Series(expected_df["DATE"].dt.to_pydatetime(), dtype=object)
     # fmt: on
 
-    assert expected_df.equals(TEST_ACCESSOR.create_interval_and_average_vectors_df())
+    created_df = TEST_ACCESSOR.create_interval_and_average_vectors_df()
+
+    # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
+    created_df["DATE"] = pd.Series(created_df["DATE"].dt.to_pydatetime(), dtype=object)
+
+    assert expected_df.equals(created_df)
+    assert expected_df.columns.equals(created_df.columns)
+
+
+def test_create_interval_and_average_vectors_df_filter_realizations() -> None:
+    # TODO: Fix unit test when issue with datetime.datetime -> Timestamp
+    # when df.set_index() is utilized. Thus df["DATE"] is of Timestamp when
+    # df.reset_index(level=["DATE"])
+
+    # fmt: off
+    expected_df = pd.DataFrame(
+        columns = ["DATE", "REAL",  "INTVL_B"],
+        data = [
+            [datetime(2000,1,1),  2, 100.0],
+            [datetime(2000,2,1),  2, 100.0],
+            [datetime(2000,3,1),  2, 100.0],
+            [datetime(2000,4,1),  2, 100.0],
+            [datetime(2000,5,1),  2, 0.0  ],
+            [datetime(2000,1,1),  4, 200.0],
+            [datetime(2000,2,1),  4, 200.0],
+            [datetime(2000,3,1),  4, 200.0],
+            [datetime(2000,4,1),  4, 200.0],
+            [datetime(2000,5,1),  4, 0.0  ],
+        ]
+    )
+    expected_df["DATE"] = pd.Series(expected_df["DATE"].dt.to_pydatetime(), dtype=object)
+    # fmt: on
+
+    created_reals_df = TEST_ACCESSOR.create_interval_and_average_vectors_df(realizations=[2, 4])
+
+    # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
+    created_reals_df["DATE"] = pd.Series(created_reals_df["DATE"].dt.to_pydatetime(), dtype=object)
+
+    assert expected_df.equals(created_reals_df)
+    assert expected_df.columns.equals(created_reals_df.columns)
 
 
 def test_create_calculated_vectors_df() -> None:
@@ -209,12 +207,14 @@ def test_create_calculated_vectors_df() -> None:
             [datetime(2000,5,1),  4, 1815.0],
         ]
     )
-    # fmt: ON
+    expected_df["DATE"] = pd.Series(expected_df["DATE"].dt.to_pydatetime(), dtype=object)
+    # fmt: on
 
     assert expected_df.equals(TEST_ACCESSOR.create_calculated_vectors_df())
     assert expected_df.columns.equals(TEST_ACCESSOR.create_calculated_vectors_df().columns)
 
     # Verify realizations query
-    assert expected_df.loc[expected_df["REAL"].isin([2, 4])].equals(
-        TEST_ACCESSOR.create_calculated_vectors_df(realizations=[2, 4])
+    expected_reals_df = (
+        expected_df.loc[expected_df["REAL"].isin([2, 4])].reset_index().drop("index", axis=1)
     )
+    assert expected_reals_df.equals(TEST_ACCESSOR.create_calculated_vectors_df(realizations=[2, 4]))

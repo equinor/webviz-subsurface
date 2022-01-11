@@ -144,7 +144,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             ensemble_a_vectors_df.sub(ensemble_b_vectors_df)
             .reset_index()
             .sort_values(["REAL", "DATE"])
-        )
+        ).reset_index(drop=True)
 
         return ensembles_delta_vectors_df.dropna(axis=0, how="any")
 
@@ -303,17 +303,17 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                 provider_b_calculated_vectors_df, provider_b_calculated_vector_df
             )
 
-        # Use "REAL" and "DATE" as indices
-        #  NOTE: index order ["REAL","DATE"] to obtain grouping by realization
-        # and order by date
-        provider_a_calculated_vectors_df.set_index(["REAL", "DATE"], inplace=True)
-        provider_b_calculated_vectors_df.set_index(["REAL", "DATE"], inplace=True)
+        # NOTE: index order ["DATE","REAL"] to obtain column order when
+        # performing reset_index() later
+        provider_a_calculated_vectors_df.set_index(["DATE", "REAL"], inplace=True)
+        provider_b_calculated_vectors_df.set_index(["DATE", "REAL"], inplace=True)
 
-        # Reset index, group by "REAL" and sort groups by "DATE"
+        # Reset index, sort values by "REAL" and thereafter by "DATE" to
+        # group realizations and order by date
         delta_ensemble_calculated_vectors_df = (
             provider_a_calculated_vectors_df.sub(provider_b_calculated_vectors_df)
             .reset_index()
             .sort_values(["REAL", "DATE"])
-        )
+        ).reset_index(drop=True)
 
         return delta_ensemble_calculated_vectors_df.dropna(axis=0, how="any")
