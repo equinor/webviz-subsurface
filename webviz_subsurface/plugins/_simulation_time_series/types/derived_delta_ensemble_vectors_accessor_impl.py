@@ -143,8 +143,8 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         ensembles_delta_vectors_df = (
             ensemble_a_vectors_df.sub(ensemble_b_vectors_df)
             .reset_index()
-            .sort_values(["REAL", "DATE"])
-        ).reset_index(drop=True)
+            .sort_values(["REAL", "DATE"], ignore_index=True)
+        )
 
         return ensembles_delta_vectors_df.dropna(axis=0, how="any")
 
@@ -313,7 +313,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         delta_ensemble_calculated_vectors_df = (
             provider_a_calculated_vectors_df.sub(provider_b_calculated_vectors_df)
             .reset_index()
-            .sort_values(["REAL", "DATE"])
-        ).reset_index(drop=True)
+            .sort_values(["REAL", "DATE"], ignore_index=True)
+        )
 
         return delta_ensemble_calculated_vectors_df.dropna(axis=0, how="any")
