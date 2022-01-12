@@ -199,13 +199,11 @@ def coverage_diffplot(
     ensdf = df_diff.dropna(axis="columns")
     ensdf.DATE = ensdf.DATE.str[:10]
 
-    print(phases)
-
+    prefix = "DIFF_W" if vector_type == "well" else "DIFF_G"
     phase_vector = {}
-    prefix = "W" if vector_type == "well" else "G"
-    phase_vector["Oil"] = "DIFF_" + prefix + "OPT"
-    phase_vector["Water"] = "DIFF_" + prefix + "WPT"
-    phase_vector["Gas"] = "DIFF_" + prefix + "GPT"
+    phase_vector["Oil"] = prefix + "OPT"
+    phase_vector["Water"] = prefix + "WPT"
+    phase_vector["Gas"] = prefix + "GPT"
 
     all_columns = list(ensdf)  # column names
     facet_name = "DATE"
@@ -216,8 +214,6 @@ def coverage_diffplot(
         phase_columns = [x for x in all_columns if x.startswith(phase_vector[phase])]
         phase_well_labels = [col.split(":")[1] for col in phase_columns]
         text_labels = dict(value=f"{phase} diff (sim-obs)", variable="Well name")
-
-        print(phase_columns, phase_well_labels)
 
         if boxplot_points == "strip":
             fig_phase = px.strip(
@@ -277,11 +273,9 @@ def coverage_crossplot(
         sep=":",
         suffix=r"\w+",
     )
-    print(ensdf)
 
-    phase_vector = {}
-    phase_hvector = {}
     prefix = "W" if vector_type == "well" else "G"
+    phase_vector, phase_hvector = {}, {}
     phase_vector["Oil"] = prefix + "OPT"
     phase_vector["Water"] = prefix + "WPT"
     phase_vector["Gas"] = prefix + "GPT"
@@ -375,7 +369,7 @@ def coverage_crossplot(
 
 # -------------------------------
 def heatmap_plot(
-    df_diff_stat: pd.DataFrame,
+    df_diff: pd.DataFrame,
     phases: list,
     vector_type: str = "well",
     filter_largest: int = 10,
@@ -387,16 +381,24 @@ def heatmap_plot(
     logging.debug("--- Updating heatmap ---")
     figures = []
 
-    if vector_type == "group":
-        oil_vector, wat_vector, gas_vector = "DIFF_GOPT", "DIFF_GWPT", "DIFF_GGPT"
-    elif vector_type == "well":
-        oil_vector, wat_vector, gas_vector = "DIFF_WOPT", "DIFF_WWPT", "DIFF_WGPT"
-    else:
-        raise ValueError(
-            "vector_type = ",
-            vector_type,
-            ". 'vector_type' argument must be 'well' or 'group'",
-        )
+    print(df_diff)
+
+    prefix = "DIFF_W" if vector_type == "well" else "DIFF_G"
+    phase_vector = {}
+    phase_vector["Oil"] = prefix + "OPT"
+    phase_vector["Water"] = prefix + "WPT"
+    phase_vector["Gas"] = prefix + "GPT"
+
+    # if vector_type == "group":
+    #     oil_vector, wat_vector, gas_vector = "DIFF_GOPT", "DIFF_GWPT", "DIFF_GGPT"
+    # elif vector_type == "well":
+    #     oil_vector, wat_vector, gas_vector = "DIFF_WOPT", "DIFF_WWPT", "DIFF_WGPT"
+    # else:
+    #     raise ValueError(
+    #         "vector_type = ",
+    #         vector_type,
+    #         ". 'vector_type' argument must be 'well' or 'group'",
+    #     )
 
     # -------------------------
     if "Oil" in phases:

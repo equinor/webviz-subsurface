@@ -47,6 +47,17 @@ class LayoutElements:
     WELL_COVERAGE_BOXPLOT_POINTS = "well_coverage_points"
     WELL_COVERAGE_GRAPH = "well_coverage_graph"
 
+    HEATMAP_LAYOUT = "heatmap_layout"
+    HEATMAP_ENSEMBLE_NAMES = "heatmap_ensemble_names"
+    HEATMAP_DATES = "heatmap_dates"
+    HEATMAP_PHASES = "heatmap_phases"
+    HEATMAP_WELL_NAMES = "heatmap_well_names"
+    HEATMAP_REALIZATIONS = "heatmap_realizations"
+    HEATMAP_FILTER_LARGEST = "heatmap_filter_largest"
+    HEATMAP_FIGHEIGHT = "heatmap_figheight"
+    HEATMAP_SCALE_COL_RANGE = "heatmap_scale_col_range"
+    HEATMAP_GRAPH = "heatmap_graph"
+
 
 # --- layout ---
 def main_layout(
@@ -129,12 +140,20 @@ def main_layout(
             #     selected_style=tab_selected_style,
             #     children=_group_prod_coverage(),
             # ),
-            # wcc.Tab(
-            #     label="Well production heatmap",
-            #     style=tab_style,
-            #     selected_style=tab_selected_style,
-            #     children=_heatmap(),
-            # ),
+            wcc.Tab(
+                label="Well production heatmap",
+                style=tab_style,
+                selected_style=tab_selected_style,
+                children=_heatmap(
+                    get_uuid,
+                    ensemble_names,
+                    all_dates,
+                    all_phases,
+                    all_wells,
+                    all_well_collection_names,
+                    all_realizations,
+                ),
+            ),
         ],
     )
 
@@ -740,160 +759,189 @@ def _well_prod_coverage(
 #     return children
 
 
-# def _heatmap() -> list:
-#     children = [
-#         wcc.FlexBox(
-#             id=get_uuid(LayoutElements.heatmap-layout),
-#             children=[
-#                 wcc.Frame(
-#                     style={
-#                         "flex": 1,
-#                         "height": "80vh",
-#                         "maxWidth": "200px",
-#                     },
-#                     children=[
-#                         wcc.Selectors(
-#                             label="Case settings",
-#                             children=[
-#                                 wcc.Dropdown(
-#                                     label="Ensemble selector",
-#                                     id=get_uuid(LayoutElements.heatmap-ensemble_names),
-#                                     options=[
-#                                         {"label": ens, "value": ens}
-#                                         for ens in ensembles
-#                                     ],
-#                                     value=ensembles,
-#                                     multi=True,
-#                                     clearable=False,
-#                                     persistence=True,
-#                                     persistence_type="memory",
-#                                 ),
-#                             ],
-#                         ),
-#                         wcc.Selectors(
-#                             label="Filter settings",
-#                             children=[
-#                                 wcc.SelectWithLabel(
-#                                     label="Date selector",
-#                                     id=get_uuid(LayoutElements.heatmap-dates),
-#                                     options=[
-#                                         {"label": _date, "value": _date}
-#                                         for _date in dates
-#                                     ],
-#                                     value=dates,
-#                                     size=min([len(dates), 5]),
-#                                 ),
-#                                 wcc.SelectWithLabel(
-#                                     label="Phase selector",
-#                                     id=get_uuid(LayoutElements.heatmap-phases),
-#                                     options=[
-#                                         {"label": phase, "value": phase}
-#                                         for phase in phases
-#                                     ],
-#                                     value=phases,
-#                                     size=min([len(phases), 3]),
-#                                 ),
-#                                 wcc.SelectWithLabel(
-#                                     label="Well selector",
-#                                     id=get_uuid(LayoutElements.heatmap-well_names),
-#                                     options=[
-#                                         {"label": well, "value": well} for well in wells
-#                                     ],
-#                                     value=wells,
-#                                     size=min([len(wells), 9]),
-#                                 ),
-#                                 wcc.Dropdown(
-#                                     label="Show wells with largest misfit",
-#                                     id=get_uuid(LayoutElements.heatmap-filter_largest),
-#                                     options=[
-#                                         {"label": "Show all", "value": 0},
-#                                         {"label": "2", "value": 2},
-#                                         {"label": "4", "value": 4},
-#                                         {"label": "6", "value": 6},
-#                                         {"label": "8", "value": 8},
-#                                         {"label": "10", "value": 10},
-#                                         {"label": "12", "value": 12},
-#                                         {"label": "15", "value": 15},
-#                                         {"label": "20", "value": 20},
-#                                         {"label": "25", "value": 25},
-#                                     ],
-#                                     value=0,
-#                                     multi=False,
-#                                     clearable=False,
-#                                     persistence=True,
-#                                     persistence_type="memory",
-#                                 ),
-#                             ],
-#                         ),
-#                         wcc.Selectors(
-#                             label="Plot settings and layout",
-#                             open_details=True,
-#                             children=[
-#                                 wcc.Dropdown(
-#                                     label="Fig layout - height",
-#                                     id=get_uuid(LayoutElements.heatmap-figheight),
-#                                     options=[
-#                                         {
-#                                             "label": "Very small",
-#                                             "value": 250,
-#                                         },
-#                                         {
-#                                             "label": "Small",
-#                                             "value": 350,
-#                                         },
-#                                         {
-#                                             "label": "Medium",
-#                                             "value": 450,
-#                                         },
-#                                         {
-#                                             "label": "Large",
-#                                             "value": 700,
-#                                         },
-#                                         {
-#                                             "label": "Very large",
-#                                             "value": 1000,
-#                                         },
-#                                     ],
-#                                     value=450,
-#                                     clearable=False,
-#                                     persistence=True,
-#                                     persistence_type="memory",
-#                                 ),
-#                                 wcc.Dropdown(
-#                                     label="Color range scaling (relative to max)",
-#                                     id=get_uuid(LayoutElements.heatmap-scale_col_range),
-#                                     options=[
-#                                         {"label": f"{x:.0%}", "value": x}
-#                                         for x in [
-#                                             0.1,
-#                                             0.2,
-#                                             0.3,
-#                                             0.4,
-#                                             0.5,
-#                                             0.6,
-#                                             0.7,
-#                                             0.8,
-#                                             0.9,
-#                                             1.0,
-#                                             1.5,
-#                                             2.0,
-#                                         ]
-#                                     ],
-#                                     style={"display": "block"},
-#                                     value=1.0,
-#                                     clearable=False,
-#                                     persistence=True,
-#                                     persistence_type="memory",
-#                                 ),
-#                             ],
-#                         ),
-#                     ],
-#                 ),
-#                 wcc.Frame(
-#                     style={"flex": 4, "minWidth": "500px"},
-#                     children=[html.Div(id=get_uuid(LayoutElements.heatmap-graph))],
-#                 ),
-#             ],
-#         ),
-#     ]
-#     return children
+def _heatmap(
+    get_uuid: Callable,
+    ensemble_names: List[str],
+    dates: List[str],
+    phases: List[str],
+    wells: List[str],
+    all_well_collection_names: List[str],
+    realizations: List[int],
+) -> list:
+    children = [
+        wcc.FlexBox(
+            id=get_uuid(LayoutElements.HEATMAP_LAYOUT),
+            children=[
+                wcc.Frame(
+                    style={
+                        "flex": 1,
+                        "height": "80vh",
+                        "maxWidth": "200px",
+                    },
+                    children=[
+                        wcc.Selectors(
+                            label="Case settings",
+                            children=[
+                                wcc.Dropdown(
+                                    label="Ensemble selector",
+                                    id=get_uuid(LayoutElements.HEATMAP_ENSEMBLE_NAMES),
+                                    options=[
+                                        {"label": ens, "value": ens}
+                                        for ens in ensemble_names
+                                    ],
+                                    value=ensemble_names[0:1],
+                                    multi=True,
+                                    clearable=False,
+                                    persistence=True,
+                                    persistence_type="memory",
+                                ),
+                            ],
+                        ),
+                        wcc.Selectors(
+                            label="Filter settings",
+                            children=[
+                                wcc.SelectWithLabel(
+                                    label="Date selector",
+                                    id=get_uuid(LayoutElements.HEATMAP_DATES),
+                                    options=[
+                                        {
+                                            "label": _date.strftime("%Y-%m-%d"),
+                                            "value": str(_date),
+                                        }
+                                        for _date in dates
+                                    ],
+                                    value=[str(dates[-1])],  # value=dates,
+                                    size=min([len(dates), 5]),
+                                ),
+                                wcc.SelectWithLabel(
+                                    label="Phase selector",
+                                    id=get_uuid(LayoutElements.HEATMAP_PHASES),
+                                    options=[
+                                        {"label": phase, "value": phase}
+                                        for phase in phases
+                                    ],
+                                    value=phases,
+                                    size=min([len(phases), 3]),
+                                ),
+                                wcc.SelectWithLabel(
+                                    label="Well selector",
+                                    id=get_uuid(LayoutElements.HEATMAP_WELL_NAMES),
+                                    options=[
+                                        {"label": well, "value": well} for well in wells
+                                    ],
+                                    value=wells,
+                                    size=min([len(wells), 9]),
+                                ),
+                                wcc.Selectors(
+                                    label="Filter settings - realizations",
+                                    open_details=False,
+                                    children=[
+                                        wcc.SelectWithLabel(
+                                            label="Realization selector",
+                                            id=get_uuid(
+                                                LayoutElements.HEATMAP_REALIZATIONS
+                                            ),
+                                            options=[
+                                                {"label": real, "value": real}
+                                                for real in realizations
+                                            ],
+                                            value=realizations,
+                                            size=min([len(wells), 5]),
+                                        ),
+                                    ],
+                                ),
+                                wcc.Dropdown(
+                                    label="Show wells with largest misfit",
+                                    id=get_uuid(LayoutElements.HEATMAP_FILTER_LARGEST),
+                                    options=[
+                                        {"label": "Show all", "value": 0},
+                                        {"label": "2", "value": 2},
+                                        {"label": "4", "value": 4},
+                                        {"label": "6", "value": 6},
+                                        {"label": "8", "value": 8},
+                                        {"label": "10", "value": 10},
+                                        {"label": "12", "value": 12},
+                                        {"label": "15", "value": 15},
+                                        {"label": "20", "value": 20},
+                                        {"label": "25", "value": 25},
+                                    ],
+                                    value=0,
+                                    multi=False,
+                                    clearable=False,
+                                    persistence=True,
+                                    persistence_type="memory",
+                                ),
+                            ],
+                        ),
+                        wcc.Selectors(
+                            label="Plot settings and layout",
+                            open_details=True,
+                            children=[
+                                wcc.Dropdown(
+                                    label="Fig layout - height",
+                                    id=get_uuid(LayoutElements.HEATMAP_FIGHEIGHT),
+                                    options=[
+                                        {
+                                            "label": "Very small",
+                                            "value": 250,
+                                        },
+                                        {
+                                            "label": "Small",
+                                            "value": 350,
+                                        },
+                                        {
+                                            "label": "Medium",
+                                            "value": 450,
+                                        },
+                                        {
+                                            "label": "Large",
+                                            "value": 700,
+                                        },
+                                        {
+                                            "label": "Very large",
+                                            "value": 1000,
+                                        },
+                                    ],
+                                    value=450,
+                                    clearable=False,
+                                    persistence=True,
+                                    persistence_type="memory",
+                                ),
+                                wcc.Dropdown(
+                                    label="Color range scaling (relative to max)",
+                                    id=get_uuid(LayoutElements.HEATMAP_SCALE_COL_RANGE),
+                                    options=[
+                                        {"label": f"{x:.0%}", "value": x}
+                                        for x in [
+                                            0.1,
+                                            0.2,
+                                            0.3,
+                                            0.4,
+                                            0.5,
+                                            0.6,
+                                            0.7,
+                                            0.8,
+                                            0.9,
+                                            1.0,
+                                            1.5,
+                                            2.0,
+                                        ]
+                                    ],
+                                    style={"display": "block"},
+                                    value=1.0,
+                                    clearable=False,
+                                    persistence=True,
+                                    persistence_type="memory",
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                wcc.Frame(
+                    style={"flex": 4, "minWidth": "500px"},
+                    children=[html.Div(id=get_uuid(LayoutElements.HEATMAP_GRAPH))],
+                ),
+            ],
+        ),
+    ]
+    return children

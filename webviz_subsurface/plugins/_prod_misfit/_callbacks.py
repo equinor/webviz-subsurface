@@ -60,6 +60,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.PROD_MISFIT_OBS_ERROR_WEIGHT), "value"),
         Input(get_uuid(LayoutElements.PROD_MISFIT_EXPONENT), "value"),
         # Input(get_uuid(LayoutElements.PROD_MISFIT_NORMALIZATION), "value"),
+        prevent_initial_call=True,
     )
     def _update_prod_misfit_graph(
         ensemble_names: List[str],
@@ -136,6 +137,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.WELL_COVERAGE_FIGHEIGHT), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_BOXMODE), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_BOXPLOT_POINTS), "value"),
+        prevent_initial_call=True,
     )
     def _update_well_coverage_graph(
         ensemble_names: List[str],
@@ -258,53 +260,74 @@ def plugin_callbacks(
     #         )
     #     return figures
 
-    # # --------------------------------------------
-    # # --- heatmap ---
-    # # --------------------------------------------
-    # @app.callback(
-    #     Output(get_uuid("heatmap-graph"), "children"),
-    #     Input(get_uuid("heatmap-ensemble_names"), "value"),
-    #     Input(get_uuid("heatmap-dates"), "value"),
-    #     Input(get_uuid("heatmap-phases"), "value"),
-    #     Input(get_uuid("heatmap-well_names"), "value"),
-    #     Input(get_uuid("heatmap-filter_largest"), "value"),
-    #     Input(get_uuid("heatmap-figheight"), "value"),
-    #     Input(get_uuid("heatmap-scale_col_range"), "value"),
-    #     # prevent_initial_call=True,
-    # )
-    # def _update_heatmap_graph(
-    #     ensemble_names: List[str],
-    #     dates: list,
-    #     phases: list,
-    #     well_names: list,
-    #     filter_largest: int,
-    #     figheight: int,
-    #     scale_col_range: float,
-    # ) -> List[wcc.Graph]:
+    # --------------------------------------------
+    # --- heatmap ---
+    # --------------------------------------------
+    @app.callback(
+        Output(get_uuid(LayoutElements.HEATMAP_GRAPH), "children"),
+        Input(get_uuid(LayoutElements.HEATMAP_ENSEMBLE_NAMES), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_DATES), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_PHASES), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_WELL_NAMES), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_REALIZATIONS), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_FILTER_LARGEST), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_FIGHEIGHT), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_SCALE_COL_RANGE), "value"),
+        # prevent_initial_call=True,
+    )
+    def _update_heatmap_graph(
+        ensemble_names: List[str],
+        selector_dates: list,
+        selector_phases: list,
+        selector_well_names: list,
+        selector_realizations: list,
+        selector_filter_largest: int,
+        selector_figheight: int,
+        selector_scale_col_range: float,
+    ) -> List[wcc.Graph]:
 
-    #     dframe = self.df_diff_stat.copy()
+        # if plot_type in ["diffplot", "rel_diffplot"]:
+        plot_type = "diffplot"
+        relative_diff = plot_type == "rel_diffplot"
+        dframe = makedf.get_df_diff(
+            makedf.get_df_smry(
+                input_provider_set,
+                ensemble_names,
+                ens_vectors,
+                ens_realizations,
+                selector_realizations,
+                selector_well_names,
+                selector_phases,
+                selector_dates,
+            ),
+            relative_diff=relative_diff,
+        )
 
-    #     # --- apply date filter
-    #     dframe = dframe.loc[dframe["DATE"].isin(dates)]
+        # dframe = self.df_diff_stat.copy()
 
-    #     # --- apply ensemble filter
-    #     dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
+        # # --- apply date filter
+        # dframe = dframe.loc[dframe["DATE"].isin(dates)]
 
-    #     # --- apply well filter
-    #     dframe = dframe.loc[dframe["WELL"].isin(well_names)]
+        # # --- apply ensemble filter
+        # dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
 
-    #     figures = update_heatmap_plot(
-    #         dframe,
-    #         phases,
-    #         vector_type="well",
-    #         filter_largest=filter_largest,
-    #         figheight=figheight,
-    #         scale_col_range=scale_col_range,
-    #     )
-    #     return figures
+        # # --- apply well filter
+        # dframe = dframe.loc[dframe["WELL"].isin(well_names)]
+
+        figures = makefigs.heatmap_plot(
+            dframe,
+            selector_phases,
+            vector_type="well",
+            filter_largest=selector_filter_largest,
+            figheight=selector_figheight,
+            scale_col_range=selector_scale_col_range,
+        )
+        return figures
 
 
+# ----------------------
 # --- help functions ---
+# ----------------------
 
 
 def _get_well_names_combined(
