@@ -14,6 +14,13 @@ def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:
     return datetime_day.astype("datetime64[W]").astype("datetime64[D]") + 4
 
 
+def _quarter_start_month(datetime_day: np.datetime64) -> np.datetime64:
+    # A bit hackish, utilizes the fact that datetime64 is relative to epoch
+    # 1970-01-01 which is the first day in Q1.
+    datetime_month = np.datetime64(datetime_day, "M")
+    return datetime_month - (datetime_month.astype(int) % 3)
+
+
 def generate_normalized_sample_dates(
     min_date: np.datetime64, max_date: np.datetime64, freq: Frequency
 ) -> np.ndarray:
@@ -42,12 +49,22 @@ def generate_normalized_sample_dates(
         if stop < max_date:
             stop += 1
         sampledates = np.arange(start, stop + 1)
+    elif freq == Frequency.QUARTERLY:
+        start = _quarter_start_month(min_date)
+        stop = _quarter_start_month(max_date)
+        if stop < max_date:
+            stop += 3
+        sampledates = np.arange(start, stop + 1, 3)
     elif freq == Frequency.YEARLY:
         start = np.datetime64(min_date, "Y")
         stop = np.datetime64(max_date, "Y")
         if stop < max_date:
             stop += 1
         sampledates = np.arange(start, stop + 1)
+    else:
+        raise NotImplementedError(
+            f"Currently not supporting resampling to frequency {freq}."
+        )
 
     sampledates = sampledates.astype("datetime64[ms]")
 
@@ -67,7 +84,7 @@ def interpolate_backfill(
     # Finds the leftmost valid insertion indices for the values x in xp
     indices = np.searchsorted(xp, x, side="left")
 
-    padded_y = np.concatenate((yp, [yright]))
+    padded_y = np.concatenate((yp, np.array([yright])))
 
     ret_arr = padded_y[indices]
 

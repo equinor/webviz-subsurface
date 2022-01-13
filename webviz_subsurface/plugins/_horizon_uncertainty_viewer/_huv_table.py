@@ -34,6 +34,4 @@ class FilterTable:
             for col in column_list:
                 if colm == col:
                     sorted_list.append(col)
-        return df[  # PyCQA/pylint#4577 # pylint: disable=unsubscriptable-object
-            sorted_list
-        ].round(2)
+        return df[sorted_list].round(2)

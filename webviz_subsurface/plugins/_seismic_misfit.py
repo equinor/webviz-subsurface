@@ -161,7 +161,7 @@ class SeismicMisfit(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: List[str],
         attributes: List[str],
-        attribute_sim_path: str = "sim2seis/output/4d_attribute_maps/",
+        attribute_sim_path: str = "share/results/maps/",
         attribute_obs_path: str = "../../share/observations/seismic/",
         obs_mult: float = 1.0,
         sim_mult: float = 1.0,
@@ -2056,7 +2056,6 @@ def update_misfit_plot(
 
     # max_diff = find_max_diff(df)
     max_diff = None
-    min_diff = None
     figures = []
 
     for ens_name, ensdf in df.groupby("ENSEMBLE"):
@@ -2090,11 +2089,9 @@ def update_misfit_plot(
             to_replace=r"^real-", value="", regex=True
         )
 
-        # --- calculate max/min from first ensemble, use with color range ---
+        # --- calculate max from first ensemble, use with color range ---
         if max_diff is None:
             max_diff = ensdf_diff_sum["ABSDIFF"].max()
-        if min_diff is None:
-            min_diff = ensdf_diff_sum["ABSDIFF"].min()
 
         mean_diff = ensdf_diff_sum["ABSDIFF"].mean()
 
@@ -2109,9 +2106,9 @@ def update_misfit_plot(
             x="REAL",
             y="ABSDIFF",
             title=ens_name,
-            range_y=[min_diff * 0.30, max_diff * 1.05],
+            range_y=[0, max_diff * 1.05],
             color="ABSDIFF",
-            range_color=[min_diff * 0.30, max_diff * 1.00],
+            range_color=[0, max_diff],
             color_continuous_scale=px.colors.sequential.amp,
             hover_data={"ABSDIFF": ":,.3r"},
         )
@@ -2257,21 +2254,20 @@ def update_obsdata_map(
     # ----------------------------------------
     # add polygon to map if defined
     if not df_polygon.empty:
-        for _poly, polydf in df_polygon.groupby("POLY_ID"):
-            poly_id = "pol" + str(_poly)
-            fig.add_trace(
+        for poly_id, polydf in df_polygon.groupby("POLY_ID"):
+            fig.append_trace(
                 go.Scattergl(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
                     line_color="RoyalBlue",
-                    name=poly_id,
+                    name=f"pol{poly_id}",
                     showlegend=False,
                     hoverinfo="name",
                 ),
                 row="all",
                 col="all",
-                exclude_empty_subplots=True,
+                # exclude_empty_subplots=True,
             )
 
     fig.update_yaxes(scaleanchor="x")
@@ -2515,21 +2511,20 @@ def update_obs_sim_map_plot(
     # ----------------------------------------
     # add polygon to map if defined
     if not df_polygon.empty:
-        for _poly, polydf in df_polygon.groupby("POLY_ID"):
-            poly_id = "pol" + str(_poly)
-            fig.add_trace(
+        for poly_id, polydf in df_polygon.groupby("POLY_ID"):
+            fig.append_trace(
                 go.Scattergl(
                     x=polydf["X_UTME"],
                     y=polydf["Y_UTMN"],
                     mode="lines",
                     line_color="RoyalBlue",
-                    name=poly_id,
+                    name=f"pol{poly_id}",
                     showlegend=False,
                     hoverinfo="name",
                 ),
                 row="all",
                 col="all",
-                exclude_empty_subplots=True,
+                # exclude_empty_subplots=True,
             )
 
     fig.update_yaxes(scaleanchor="x")

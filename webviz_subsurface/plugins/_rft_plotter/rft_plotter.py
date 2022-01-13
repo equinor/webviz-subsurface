@@ -6,7 +6,7 @@ from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ._business_logic import RftPlotterDataModel
-from ._callbacks import plugin_callbacks
+from ._callbacks import paramresp_callbacks, plugin_callbacks
 from ._layout import main_layout
 
 
@@ -25,6 +25,8 @@ Several visualizations are available:
 * Crossplot of simulated RFT vs observed value per ERT observation. One plot per ensemble.
 
 * Boxplot showing misfit per ERT observation for each ensemble.
+
+* Plots for analysing the parameter response of the RFT data. Not available for aggregated data.
 
 ---
 **Using data per realization**
@@ -45,6 +47,8 @@ using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) \
 01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). \
 Simulated RFT data can be visualized along MD if a "CONMD" column is present in \
 the dataframe and only for wells where each RFT datapoint has a unique MD.
+
+* **`parameters.txt`**: File with parameters and values
 
 **Using aggregated data**
 
@@ -121,3 +125,5 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     def set_callbacks(self, app: Dash) -> None:
         plugin_callbacks(app, self.uuid, self._datamodel)
+        if self._datamodel.parameters:
+            paramresp_callbacks(app, self.uuid, self._datamodel)

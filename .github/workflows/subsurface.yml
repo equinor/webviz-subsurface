@@ -77,7 +77,7 @@ jobs:
         TESTDATA_REPO_OWNER: hanskallekleiv
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
-        TESTDATA_REPO_BRANCH: mapviewer
+        TESTDATA_REPO_BRANCH: large-surface-test
       run: |
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
         # # Copy any clientside script to the test folder before running tests

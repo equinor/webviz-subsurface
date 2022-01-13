@@ -297,13 +297,7 @@ class SurfaceSelector:
             elif callback == f"{self.date_id_btn_next}.n_clicks":
                 value = next_value(current_value, dates)
             else:
-                value = (
-                    current_value
-                    if current_value
-                    in dates  # pylint: disable=unsupported-membership-test
-                    else dates[0]  # pylint: disable=unsubscriptable-object
-                )
-            # pylint: disable=not-an-iterable
+                value = current_value if current_value in dates else dates[0]
             options = [{"label": format_date(date), "value": date} for date in dates]
             return options, value, {}
 
@@ -331,12 +325,7 @@ class SurfaceSelector:
 
             dates_in_attr = self._dates_in_attr(attr)
 
-            if (
-                dates_in_attr
-                and date
-                and not date
-                in dates_in_attr  # PyCQA/pylint#3045 # pylint: disable=unsupported-membership-test
-            ):
+            if dates_in_attr and date and not date in dates_in_attr:
                 raise PreventUpdate
             return json.dumps({"name": name, "attribute": attr, "date": date})
 

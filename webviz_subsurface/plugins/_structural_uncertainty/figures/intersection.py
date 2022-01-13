@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -5,7 +6,7 @@ import xtgeo
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import SurfaceSetModel
-from webviz_subsurface._utils.colors import hex_to_rgba
+from webviz_subsurface._utils.colors import hex_to_rgba_str
 
 from ...._utils.fanchart_plotting import (
     FanchartData,
@@ -13,6 +14,13 @@ from ...._utils.fanchart_plotting import (
     MinMaxData,
     get_fanchart_traces,
 )
+
+
+class FanChartStatistics(str, Enum):
+    MINIMUM = "Min"
+    MAXIMUM = "Max"
+    P10 = "P10"
+    P90 = "P90"
 
 
 # pylint: disable=too-many-arguments
@@ -49,7 +57,7 @@ def get_plotly_trace_statistical_surface(
         "showlegend": showlegend,
         "hoverinfo": "y+x+text",
         "mode": "lines",
-        "marker": {"color": hex_to_rgba(hex_string=color)},
+        "marker": {"color": hex_to_rgba_str(hex_string=color)},
         "line": line_style,
     }
 
@@ -69,35 +77,55 @@ def get_plotly_traces_uncertainty_envelope(
 ) -> List:
     """Returns a set of plotly traces representing an uncertainty envelope
     for a surface"""
-    stat_surfaces = {}
-    for calculation in ["Min", "Max", "P10", "P90"]:
-        stat_surfaces[calculation] = surfaceset.calculate_statistical_surface(
+    values_for_fanchart: Dict[str, np.ma.MaskedArray] = {}
+    fan_chart_traces: List = []
+    for calculation in FanChartStatistics:
+        values = surfaceset.calculate_statistical_surface(
             name=name,
             attribute=attribute,
             calculation=calculation,
             realizations=realizations,
         ).get_randomline(fence_spec, sampling=sampling)
+        # Convert to masked array
+        values = np.ma.masked_array(values, mask=np.isnan(values))
 
-    data = FanchartData(
-        samples=stat_surfaces["Min"][:, 0],
-        low_high=LowHighData(
-            low_data=stat_surfaces["P10"][:, 1],
-            low_name="P10",
-            high_data=stat_surfaces["P90"][:, 1],
-            high_name="P90",
-        ),
-        minimum_maximum=MinMaxData(
-            minimum=stat_surfaces["Min"][:, 1], maximum=stat_surfaces["Max"][:, 1]
-        ),
-    )
-    return get_fanchart_traces(
-        data=data,
-        color=color,
-        legend_group=name,
-        legend_name=legendname,
-        show_legend=showlegend,
-        show_hoverinfo=False,
-    )
+        if calculation == FanChartStatistics.MINIMUM:
+            values_for_fanchart["x"] = values[:, 0]
+        values_for_fanchart[FanChartStatistics(calculation)] = values[:, 1]
+
+    # Fanchart plotting requires continuous data series.
+    # 1. Create a slice for each non-masked section of y(depth) values.
+    #    As the mask is the same for all statistical surfaces,
+    #    the minimum surface is randomly used.
+    # 2. Make a set of fanchart traces for each slice.
+
+    for unmasked_slice in np.ma.clump_unmasked(
+        values_for_fanchart[FanChartStatistics.MINIMUM]
+    ):
+        fan_chart_data = FanchartData(
+            samples=values_for_fanchart["x"][unmasked_slice],
+            low_high=LowHighData(
+                low_data=values_for_fanchart[FanChartStatistics.P10][unmasked_slice],
+                low_name=FanChartStatistics.P10,
+                high_data=values_for_fanchart[FanChartStatistics.P90][unmasked_slice],
+                high_name=FanChartStatistics.P90,
+            ),
+            minimum_maximum=MinMaxData(
+                minimum=values_for_fanchart[FanChartStatistics.MINIMUM][unmasked_slice],
+                maximum=values_for_fanchart[FanChartStatistics.MAXIMUM][unmasked_slice],
+            ),
+        )
+        fan_chart_traces.extend(
+            get_fanchart_traces(
+                data=fan_chart_data,
+                color=color,
+                legend_group=name,
+                legend_name=legendname,
+                show_legend=showlegend,
+                show_hoverinfo=True,
+            )
+        )
+    return fan_chart_traces
 
 
 # pylint: disable=too-many-arguments
@@ -127,7 +155,7 @@ def get_plotly_trace_realization_surface(
         "showlegend": showlegend,
         "hoverinfo": "y+x+text",
         "mode": "lines",
-        "marker": {"color": hex_to_rgba(hex_string=color, opacity=0.5)},
+        "marker": {"color": hex_to_rgba_str(hex_string=color, opacity=0.5)},
     }
 
 

@@ -217,7 +217,7 @@ class ParameterFilter:
                 real_dict[ens] = list(ens_df["REAL"].unique())
 
             for ens in self._ensembles:
-                if ens not in real_dict.keys():
+                if ens not in real_dict:
                     real_dict[ens] = []
             return real_dict
 

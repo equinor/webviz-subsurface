@@ -44,7 +44,9 @@ def set_default_args(**plotargs: Any) -> dict:
             facet_row_spacing=max((0.08 - (0.00071 * facet_cols)), 0.03),
             facet_col_spacing=max((0.06 - (0.00071 * facet_cols)), 0.03),
         )
-        plotargs["custom_data"] = [plotargs["facet_col"]]
+        plotargs["custom_data"] = plotargs.get("custom_data", []) + [
+            plotargs["facet_col"]
+        ]
     return plotargs
 
 
@@ -136,10 +138,8 @@ def set_marker_color(trace: go) -> go:
         and isinstance(trace.marker.color, str)
         and "#" in trace.marker.color
     ):
-        opacity = (
-            0.5
-            if trace.type in ["scatter", "scattergl"]
-            else marker_attributes.get("opacity", 0.7)
+        opacity = marker_attributes.get(
+            "opacity", 0.5 if trace.type in ["scatter", "scattergl"] else 0.7
         )
         trace.update(marker_line=dict(color=trace.marker.color, width=1))
         trace.update(marker_color=hex_to_rgb(trace.marker.color, opacity=opacity))
@@ -246,7 +246,7 @@ def hover_box_text(
     color_col: Optional[str],
 ) -> str:
     colors = list(dframe[color_col].unique()) if color_col in dframe else []
-    facet = trace["customdata"][0][0] if trace["customdata"] is not None else ""
+    facet = trace["customdata"][-1][0] if trace["customdata"] is not None else ""
     text = f"<b>{x}</b><br>" f"<b>{facet}</b><br>"
     if not colors:
         series = get_filtered_x_series(dframe, x, facet_col, facet)

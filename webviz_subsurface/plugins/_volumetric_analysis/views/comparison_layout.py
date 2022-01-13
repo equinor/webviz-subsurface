@@ -8,36 +8,31 @@ from webviz_subsurface._models import InplaceVolumesModel
 
 
 def comparison_main_layout(uuid: str) -> html.Div:
-    return wcc.Frame(
-        color="white",
-        highlight=False,
-        style={"height": "91vh"},
-        children=[
-            html.Div(
-                style={"margin-bottom": "20px"},
-                children=wcc.RadioItems(
-                    vertical=False,
-                    id={"id": uuid, "element": "display-option"},
-                    options=[
-                        {
-                            "label": "QC plots",
-                            "value": "plots",
-                        },
-                        {
-                            "label": "Difference table for selected response",
-                            "value": "single-response table",
-                        },
-                        {
-                            "label": "Difference table for multiple responses",
-                            "value": "multi-response table",
-                        },
-                    ],
-                    value="plots",
-                ),
+    return [
+        html.Div(
+            style={"margin-bottom": "20px"},
+            children=wcc.RadioItems(
+                vertical=False,
+                id={"id": uuid, "element": "display-option"},
+                options=[
+                    {
+                        "label": "QC plots",
+                        "value": "plots",
+                    },
+                    {
+                        "label": "Difference table for selected response",
+                        "value": "single-response table",
+                    },
+                    {
+                        "label": "Difference table for multiple responses",
+                        "value": "multi-response table",
+                    },
+                ],
+                value="plots",
             ),
-            html.Div(id={"id": uuid, "wrapper": "table"}),
-        ],
-    )
+        ),
+        html.Div(id={"id": uuid, "wrapper": "table"}),
+    ]
 
 
 def comparison_qc_plots_layout(
@@ -52,33 +47,33 @@ def comparison_qc_plots_layout(
             html.Div(
                 children=wcc.Graph(
                     config={"displayModeBar": False},
-                    style={"height": "22vh"},
+                    style={"height": "21vh"},
                     figure=fig_diff_vs_real,
                 )
                 if real_plot
                 else [],
             ),
             wcc.FlexBox(
-                style={"height": "32vh" if real_plot else "54vh"},
+                style={"height": "31vh" if real_plot else "52vh"},
                 children=[
                     wcc.FlexColumn(
                         children=wcc.Graph(
                             config={"displayModeBar": False},
-                            style={"height": "31vh" if real_plot else "53vh"},
+                            style={"height": "30vh" if real_plot else "51vh"},
                             figure=fig_diff_vs_response,
                         )
                     ),
                     wcc.FlexColumn(
                         children=wcc.Graph(
                             config={"displayModeBar": False},
-                            style={"height": "31vh" if real_plot else "53vh"},
+                            style={"height": "30vh" if real_plot else "51vh"},
                             figure=fig_corr,
                         )
                     ),
                 ],
             ),
             wcc.Frame(
-                style={"height": "31vh"},
+                style={"height": "29vh"},
                 children=[
                     wcc.Header("Highlighted data"),
                     wcc.Graph(

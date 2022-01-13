@@ -4,13 +4,13 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from .colors import hex_to_rgba
+from .colors import hex_to_rgba_str
 
 
 @dataclass
 class FreeLineData:
     """
-    Dataclass for defining statistics data for freee line trace in fanchart
+    Dataclass for defining statistics data for free line trace in fanchart
 
     `Attributes:`
     * `name` - Name of statistics data
@@ -86,32 +86,33 @@ def validate_fanchart_data(data: FanchartData) -> None:
 
     Raise ValueError if lengths are unequal
     """
-    if len(data.samples) <= 0:
+    samples_length = len(data.samples)
+    if samples_length <= 0:
         raise ValueError("Empty x-axis data list in FanchartData")
-    if data.free_line is not None and len(data.samples) != len(data.free_line.data):
+    if data.free_line is not None and samples_length != len(data.free_line.data):
         raise ValueError(
             "Invalid fanchart mean value data length. len(data.samples) != len(free_line.data)"
         )
-    if data.minimum_maximum is not None and len(data.samples) != len(
+    if data.minimum_maximum is not None and samples_length != len(
         data.minimum_maximum.minimum
     ):
         raise ValueError(
             "Invalid fanchart minimum value data length. len(data.samples) "
             "!= len(data.minimum_maximum.minimum)"
         )
-    if data.minimum_maximum is not None and len(data.samples) != len(
+    if data.minimum_maximum is not None and samples_length != len(
         data.minimum_maximum.maximum
     ):
         raise ValueError(
             "Invalid fanchart maximum value data length. len(data.samples) != "
             "len(data.minimum_maximum.maximum)"
         )
-    if data.low_high is not None and len(data.samples) != len(data.low_high.low_data):
+    if data.low_high is not None and samples_length != len(data.low_high.low_data):
         raise ValueError(
             "Invalid fanchart low percentile value data length. len(data.samples) "
             "!= len(data.low_high.low_data)"
         )
-    if data.low_high is not None and len(data.samples) != len(data.low_high.high_data):
+    if data.low_high is not None and samples_length != len(data.low_high.high_data):
         raise ValueError(
             "Invalid fanchart high percentile value data length. "
             "len(data.samples) != len(data.low_high.high_data)"
@@ -134,6 +135,7 @@ def get_fanchart_traces(
     hovertext: str = "",
     hovertemplate: Optional[str] = None,
     hovermode: Optional[str] = None,
+    legendrank: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """
     Utility function for creating statistical fanchart traces
@@ -168,9 +170,9 @@ def get_fanchart_traces(
 
     validate_fanchart_data(data)
 
-    fill_color_light = hex_to_rgba(color, 0.3)
-    fill_color_dark = hex_to_rgba(color, 0.6)
-    line_color = hex_to_rgba(color, 1)
+    fill_color_light = hex_to_rgba_str(color, 0.3)
+    fill_color_dark = hex_to_rgba_str(color, 0.6)
+    line_color = hex_to_rgba_str(color, 1)
 
     def get_default_trace(statistics_name: str, values: np.ndarray) -> Dict[str, Any]:
         trace = {
@@ -184,6 +186,8 @@ def get_fanchart_traces(
             "legendgroup": legend_group,
             "showlegend": False,
         }
+        if legendrank:
+            trace["legendrank"] = legendrank
         if not show_hoverinfo:
             trace["hoverinfo"] = "skip"
             return trace

@@ -139,17 +139,9 @@ def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
         columns={"usageKB": "usageKiB"}, inplace=True
     )  # Old format had an error (KB instead of KiB)
 
-    df[  # PyCQA/pylint#4577 # pylint: disable=unsupported-assignment-operation
-        "usageGiB"
-    ] = df[  # PyCQA/pylint#4577 # pylint: disable=unsubscriptable-object
-        "usageKiB"
-    ] / (
-        1024 ** 2
-    )
+    df["usageGiB"] = df["usageKiB"] / (1024 ** 2)
 
-    df.drop(  # PyCQA/pylint#4577 # pylint: disable=no-member
-        columns="usageKiB", inplace=True
-    )
+    df.drop(columns="usageKiB", inplace=True)
 
     free_space_gib = _estimate_free_space(df, scratch_dir, date)
     if free_space_gib < 0:

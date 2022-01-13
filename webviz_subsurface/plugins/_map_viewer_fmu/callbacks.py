@@ -142,10 +142,11 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
         Output(get_uuid(LayoutElements.DECKGLMAP), "views"),
         Input(get_uuid(LayoutElements.SELECTED_DATA), "data"),
+        Input(get_uuid(LayoutElements.VIEW_COLUMNS), "value"),
         State(get_uuid(LayoutElements.VIEWS), "value"),
         State(get_uuid(LayoutElements.DECKGLMAP), "layers"),
     )
-    def _update_maps(selections: dict, number_of_views, current_layers):
+    def _update_maps(selections: dict, view_columns, number_of_views, current_layers):
         # layers = update_map_layers(number_of_views, well_set_model)
         # layers = [json.loads(x.to_json()) for x in layers]
         layer_model = DeckGLMapLayersModel(current_layers)
@@ -196,7 +197,7 @@ def plugin_callbacks(
             layer_model.layers,
             property_bounds,
             {
-                "layout": view_layout(number_of_views),
+                "layout": view_layout(number_of_views, view_columns),
                 "viewports": [
                     {
                         "id": f"view_{view}",
@@ -384,8 +385,12 @@ def plugin_callbacks(
         return surfaceid
 
 
-def view_layout(views):
+def view_layout(views, columns):
     """Convert a list of figures into a matrix for display"""
-    cols = min([x for x in range(5) if (x * x) >= views])
-    rows = math.ceil(views / cols)
-    return [rows, cols]
+    columns = (
+        columns
+        if columns is not None
+        else min([x for x in range(5) if (x * x) >= views])
+    )
+    rows = math.ceil(views / columns)
+    return [rows, columns]

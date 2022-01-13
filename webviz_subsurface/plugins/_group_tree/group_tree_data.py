@@ -504,11 +504,6 @@ def create_leafnodetype_maps(
                 get_sumvec(datatype, nodename, nodekeyword)
                 for datatype in ["oilrate", "gasrate", "waterrate"]
             ]
-            inj_sumvecs = [
-                get_sumvec(datatype, nodename, nodekeyword)
-                for datatype in ["waterinjrate", "gasinjrate"]
-            ]
-
             sumprod = sum(
                 [
                     smry[sumvec].sum()
@@ -516,9 +511,22 @@ def create_leafnodetype_maps(
                     if sumvec in smry.columns
                 ]
             )
-            suminj = sum(
-                [smry[sumvec].sum() for sumvec in inj_sumvecs if sumvec in smry.columns]
-            )
+
+            if nodekeyword == "BRANPROP":
+                # BRANPROP nodes has no injection by definition
+                suminj = 0
+            else:
+                inj_sumvecs = [
+                    get_sumvec(datatype, nodename, nodekeyword)
+                    for datatype in ["waterinjrate", "gasinjrate"]
+                ]
+                suminj = sum(
+                    [
+                        smry[sumvec].sum()
+                        for sumvec in inj_sumvecs
+                        if sumvec in smry.columns
+                    ]
+                )
 
             is_prod_map[nodename] = sumprod > 0
             is_inj_map[nodename] = suminj > 0

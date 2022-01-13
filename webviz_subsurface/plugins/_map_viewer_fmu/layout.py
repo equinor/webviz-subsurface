@@ -31,6 +31,8 @@ class LayoutElements(str, Enum):
     WELLS = auto()
     LOG = auto()
     VIEWS = auto()
+    VIEW_COLUMNS = auto()
+    VIEW_TEMPLATE = auto()
     DECKGLMAP = auto()
     COLORMAP_RESET_RANGE = auto()
     STORED_COLOR_SETTINGS = auto()
@@ -200,19 +202,65 @@ class SideBySideSelectorFlex(wcc.FlexBox):
 
 class ViewSelector(html.Div):
     def __init__(self, get_uuid: Callable):
+        button_style = {
+            "height": "30px",
+            "line-height": "30px",
+            "background-color": "white",
+            "width": "50%",
+        }
         super().__init__(
             children=[
-                "Number of views",
                 html.Div(
-                    dcc.Input(
-                        id=get_uuid(LayoutElements.VIEWS),
-                        type="number",
-                        min=1,
-                        max=9,
-                        step=1,
-                        value=1,
-                    ),
-                    style={"float": "right"},
+                    [
+                        "Number of views",
+                        html.Div(
+                            dcc.Input(
+                                id=get_uuid(LayoutElements.VIEWS),
+                                type="number",
+                                min=1,
+                                max=9,
+                                step=1,
+                                value=1,
+                            ),
+                            style={"float": "right"},
+                        ),
+                    ]
+                ),
+                html.Div(
+                    [
+                        "Views in row (optional)",
+                        html.Div(
+                            dcc.Input(
+                                id=get_uuid(LayoutElements.VIEW_COLUMNS),
+                                type="number",
+                                min=1,
+                                max=9,
+                                step=1,
+                            ),
+                            style={"float": "right"},
+                        ),
+                    ]
+                ),
+                wcc.Selectors(
+                    label="Templates",
+                    children=[
+                        html.Button(
+                            "Custom",
+                            id={
+                                "id": get_uuid(LayoutElements.VIEW_TEMPLATE),
+                                "template": "custom",
+                            },
+                            style=button_style,
+                        ),
+                        html.Button(
+                            "Difference",
+                            id={
+                                "id": get_uuid(LayoutElements.VIEW_TEMPLATE),
+                                "template": "difference",
+                            },
+                            style=button_style,
+                        ),
+                    ],
                 ),
             ]
         )

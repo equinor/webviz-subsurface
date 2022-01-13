@@ -184,6 +184,14 @@ class InplaceVolumesModel:
         return self.volume_columns + self.property_columns
 
     @property
+    def hc_responses(self) -> List[str]:
+        return [
+            x
+            for x in ["STOIIP", "GIIP", "ASSOCIATEDGAS", "ASSOCIATEDOIL"]
+            if x in self.volume_columns
+        ]
+
+    @property
     def parameters(self) -> List[str]:
         return self.pmodel.parameters
 
@@ -221,11 +229,15 @@ class InplaceVolumesModel:
         available volume columns"""
         self._property_columns = []
 
-        if all(col in self._dataframe for col in ["NET", "BULK"]):
+        if all(
+            col in self._dataframe for col in ["NET", "BULK"]
+        ) and not self._dataframe["NET"].equals(self._dataframe["BULK"]):
             self._property_columns.append("NTG")
         if all(col in self._dataframe for col in ["BULK", "PORV"]):
             self._property_columns.append("PORO")
-        if all(col in self._dataframe for col in ["NET", "PORV"]):
+        if all(
+            col in self._dataframe for col in ["NET", "PORV"]
+        ) and not self._dataframe["NET"].equals(self._dataframe["BULK"]):
             self._property_columns.append("PORO_NET")
         if all(col in self._dataframe for col in ["HCPV", "PORV"]):
             self._property_columns.append("SW")
@@ -246,9 +258,9 @@ class InplaceVolumesModel:
         if "NTG" in properties:
             dframe["NTG"] = dframe["NET"] / dframe["BULK"]
         if "PORO" in properties:
-            if "NET" in dframe.columns:
-                dframe["PORO_NET"] = dframe["PORV"] / dframe["NET"]
             dframe["PORO"] = dframe["PORV"] / dframe["BULK"]
+        if "PORO_NET" in properties:
+            dframe["PORO_NET"] = dframe["PORV"] / dframe["NET"]
         if "SW" in properties:
             dframe["SW"] = 1 - (dframe["HCPV"] / dframe["PORV"])
         if "BO" in properties:

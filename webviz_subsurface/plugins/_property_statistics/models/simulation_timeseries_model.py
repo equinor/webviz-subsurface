@@ -8,7 +8,7 @@ from webviz_subsurface._abbreviations.reservoir_simulation import (
     historical_vector,
     simulation_vector_description,
 )
-from webviz_subsurface._utils.colors import hex_to_rgba
+from webviz_subsurface._utils.colors import hex_to_rgba_str
 from webviz_subsurface._utils.simulation_timeseries import (
     get_simulation_line_shape,
     set_simulation_line_shape_fallback,
@@ -252,8 +252,8 @@ def add_fanchart_traces(
 ) -> list:
     """Renders a fanchart for an ensemble vector"""
 
-    fill_color = hex_to_rgba(color, 0.3)
-    line_color = hex_to_rgba(color, 1)
+    fill_color = hex_to_rgba_str(color, 0.3)
+    line_color = hex_to_rgba_str(color, 1)
     return [
         {
             "name": legend_group,
