@@ -3,7 +3,6 @@ from typing import Callable, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from dash import ALL, Dash, Input, Output, State, callback_context, dcc, no_update
 from dash.exceptions import PreventUpdate
@@ -15,7 +14,6 @@ from ...._utils.colors import (
     rgba_to_hex,
     rgba_to_str,
 )
-
 from ..models import ParametersModel, SimulationTimeSeriesModel
 
 
@@ -138,7 +136,13 @@ def parameter_response_controller(
 
         # Create scatter plot of vector vs parameter
         if relevant_ctx(get_uuid, ctx, operation="scatter") or initial_run:
-            scatter_fig = update_scatter_graph(merged_df, vector, parameter, color)
+            scatter_fig = ScatterPlot(
+                merged_df,
+                response=vector,
+                param=parameter,
+                color=color,
+                title={"text": f"{vector} vs {parameter}", "x": 0.5},
+            ).figure
 
         scatter_fig = scatter_fig_color_update(scatter_fig, color, options["opacity"])
 
@@ -519,41 +523,6 @@ def merge_parameter_and_vector_df(
     vector_df.set_index("REAL", inplace=True)
     df = vector_df.join(param_df).reset_index()
     return df.loc[df["REAL"].isin(reals)]
-
-
-def update_scatter_graph(
-    df: pd.DataFrame, vector: str, selected_param: str, color: str = None
-):
-    """Create scatter plot of selected vector vs selected parameter"""
-    return (
-        px.scatter(
-            df[[vector, selected_param]],
-            x=selected_param,
-            y=vector,
-            trendline="ols" if df[vector].nunique() > 1 else None,
-            trendline_color_override="#243746",
-        )
-        .update_layout(
-            margin={
-                "r": 20,
-                "l": 20,
-                "t": 60,
-                "b": 20,
-            },
-            paper_bgcolor="white",
-            plot_bgcolor="white",
-            title={"text": f"{vector} vs {selected_param}", "x": 0.5},
-            xaxis_title=None,
-            yaxis_title=None,
-        )
-        .update_traces(
-            marker={
-                "size": 15,
-                "color": hex_to_rgba_str(color, 0.7),
-                "line": {"width": 1.2, "color": hex_to_rgba_str(color, 1)},
-            }
-        )
-    )
 
 
 def scatter_fig_color_update(figure: dict, color: str, opacity: float):
