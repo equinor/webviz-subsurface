@@ -8,13 +8,14 @@ import plotly.graph_objects as go
 from dash import ALL, Dash, Input, Output, State, callback_context, dcc, no_update
 from dash.exceptions import PreventUpdate
 
+from ...._figures import BarChart, ScatterPlot
 from ...._utils.colors import (
     find_intermediate_color,
     hex_to_rgba_str,
     rgba_to_hex,
     rgba_to_str,
 )
-from ..figures.correlation_figure import CorrelationFigure
+
 from ..models import ParametersModel, SimulationTimeSeriesModel
 
 
@@ -567,8 +568,8 @@ def scatter_fig_color_update(figure: dict, color: str, opacity: float):
 def make_correlation_figure(df: pd.DataFrame, response: str, corrwith: list):
     """Create a bar plot with correlations for chosen response"""
     corrseries = correlate(df[corrwith + [response]], response=response)
-    return CorrelationFigure(
-        corrseries, n_rows=15, title=f"Correlations with {response}"
+    return BarChart(
+        corrseries, n_rows=15, title=f"Correlations with {response}", orientation="h"
     )
 
 
