@@ -60,6 +60,15 @@ INPUT_DATETIME_YEAR_2263_DF = pd.DataFrame(
         [datetime.datetime(2263, 3, 15), 3.0],
     ],
 )
+INPUT_DATETIME_YEAR_2263_INCONSISTENT_INDEX_DF = pd.DataFrame(
+    columns=["DATE", "A"],
+    data=[
+        [datetime.datetime(2263, 1, 15), 1.0],
+        [datetime.datetime(2263, 2, 15), 2.0],
+        [datetime.datetime(2263, 3, 15), 3.0],
+    ],
+    index = [2,5,9]
+)
 INPUT_TIMESTAMP_YEAR_2020_DF = pd.DataFrame(
     columns=["DATE", "A"],
     data=[
@@ -105,6 +114,7 @@ TEST_CASES_NO_ERROR = [
     pytest.param(INPUT_DATETIME_YEAR_2020_DF),
     pytest.param(INPUT_DATETIME_YEAR_2263_DF),
     pytest.param(INPUT_DATETIME_TIMESTAMP_DF),
+    pytest.param(INPUT_DATETIME_YEAR_2263_INCONSISTENT_INDEX_DF),
 ]
 
 

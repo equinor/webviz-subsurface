@@ -30,8 +30,8 @@ def assert_date_column_is_datetime_object(df: pd.DataFrame) -> None:
             'type in "DATE" column!'
         )
 
-    # Get type from first element
-    sampled_date_value = df["DATE"][0]
+    # Get type from first element - use iloc to access by position rather than index label
+    sampled_date_value = df["DATE"].iloc[0]
 
     # Use type() and not isinstance() as isinstance() gives true on subclass
     # pylint: disable = unidiomatic-typecheck
@@ -66,8 +66,8 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> None:
     if df.shape[0] <= 0:
         return df
 
-    # Get type from first element
-    sampled_date_value = df["DATE"][0]
+    # Get type from first element - use iloc to access by position rather than index label
+    sampled_date_value = df["DATE"].iloc[0]
 
     # Use type() and not isinstance() as isinstance() gives true on subclass
     # pylint: disable = unidiomatic-typecheck
