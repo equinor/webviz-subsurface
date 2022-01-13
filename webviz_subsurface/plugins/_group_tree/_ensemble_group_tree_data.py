@@ -28,8 +28,8 @@ class EnsembleGroupTreeData:
 
         # Check if the ensemble has waterinj and/or gasinj
         smry = self._provider.get_vectors_df(["FWIR", "FGIR"], None)
-        self.has_waterinj = smry["FWIR"].sum() > 0
-        self.has_gasinj = smry["FGIR"].sum() > 0
+        self._has_waterinj = smry["FWIR"].sum() > 0
+        self._has_gasinj = smry["FGIR"].sum() > 0
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
         self._gruptree = add_nodetype(gruptree, self._provider, self._wells)
@@ -136,9 +136,9 @@ class EnsembleGroupTreeData:
             datatypes = ["pressure"]
             if noderow["IS_PROD"]:
                 datatypes += ["oilrate", "gasrate", "waterrate"]
-            if noderow["IS_INJ"] and self.has_waterinj:
+            if noderow["IS_INJ"] and self._has_waterinj:
                 datatypes.append("waterinjrate")
-            if noderow["IS_INJ"] and self.has_gasinj:
+            if noderow["IS_INJ"] and self._has_gasinj:
                 datatypes.append("gasinjrate")
             if keyword == "WELSPECS":
                 datatypes += ["bhp", "wmctl"]
@@ -184,9 +184,9 @@ class EnsembleGroupTreeData:
         if "prod" in prod_inj_other:
             for rate in ["oilrate", "gasrate", "waterrate"]:
                 options.append({"name": rate, "label": get_label(rate)})
-        if "inj" in prod_inj_other and self.has_waterinj:
+        if "inj" in prod_inj_other and self._has_waterinj:
             options.append({"name": "waterinjrate", "label": get_label("waterinjrate")})
-        if "inj" in prod_inj_other and self.has_gasinj:
+        if "inj" in prod_inj_other and self._has_gasinj:
             options.append({"name": "gasinjrate", "label": get_label("gasinjrate")})
         if options:
             return options
