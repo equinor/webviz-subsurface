@@ -17,10 +17,8 @@ def plugin_callbacks(
     app: Dash, get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> None:
     @app.callback(
-        Output(get_uuid("well"), "value"),
-        [
-            Input(get_uuid(LayoutElements.MAP), "clickData"),
-        ],
+        Output(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
+        Input(get_uuid(LayoutElements.MAP_GRAPH), "clickData"),
     )
     def _get_clicked_well(click_data: Dict[str, List[Dict[str, Any]]]) -> str:
         if not click_data:
@@ -34,12 +32,10 @@ def plugin_callbacks(
 
     @app.callback(
         Output(get_uuid(LayoutElements.MAP), "children"),
-        [
-            Input(get_uuid(LayoutElements.MAP_ENSEMBLE), "value"),
-            Input(get_uuid(LayoutElements.MAP_SIZE_BY), "value"),
-            Input(get_uuid(LayoutElements.MAP_COLOR_BY), "value"),
-            Input(get_uuid(LayoutElements.MAP_DATE_RANGE), "value"),
-        ],
+        Input(get_uuid(LayoutElements.MAP_ENSEMBLE), "value"),
+        Input(get_uuid(LayoutElements.MAP_SIZE_BY), "value"),
+        Input(get_uuid(LayoutElements.MAP_COLOR_BY), "value"),
+        Input(get_uuid(LayoutElements.MAP_DATE_RANGE), "value"),
     )
     def _update_map(
         ensemble: str, sizeby: str, colorby: str, dates: List[float]
@@ -54,18 +50,17 @@ def plugin_callbacks(
             wcc.Graph(
                 style={"height": "84vh"},
                 figure={"data": figure.traces, "layout": figure.layout},
+                id=get_uuid(LayoutElements.MAP_GRAPH),
             )
         ]
 
     @app.callback(
         Output(get_uuid(LayoutElements.FORMATIONS_GRAPH), "children"),
-        [
-            Input(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
-            Input(get_uuid(LayoutElements.FORMATIONS_DATE), "value"),
-            Input(get_uuid(LayoutElements.FORMATIONS_ENSEMBLE), "value"),
-            Input(get_uuid(LayoutElements.FORMATIONS_LINETYPE), "value"),
-            Input(get_uuid(LayoutElements.FORMATIONS_DEPTHOPTION), "value"),
-        ],
+        Input(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
+        Input(get_uuid(LayoutElements.FORMATIONS_DATE), "value"),
+        Input(get_uuid(LayoutElements.FORMATIONS_ENSEMBLE), "value"),
+        Input(get_uuid(LayoutElements.FORMATIONS_LINETYPE), "value"),
+        Input(get_uuid(LayoutElements.FORMATIONS_DEPTHOPTION), "value"),
     )
     def _update_formation_plot(
         well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
@@ -146,14 +141,10 @@ def plugin_callbacks(
         ], "realization"
 
     @app.callback(
-        [
-            Output(get_uuid(LayoutElements.FORMATIONS_DATE), "options"),
-            Output(get_uuid(LayoutElements.FORMATIONS_DATE), "value"),
-        ],
-        [
-            Input(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
-        ],
-        [State(get_uuid(LayoutElements.FORMATIONS_DATE), "value")],
+        Output(get_uuid(LayoutElements.FORMATIONS_DATE), "options"),
+        Output(get_uuid(LayoutElements.FORMATIONS_DATE), "value"),
+        Input(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
+        State(get_uuid(LayoutElements.FORMATIONS_DATE), "value"),
     )
     def _update_date(well: str, current_date: str) -> Tuple[List[Dict[str, str]], str]:
         dates = datamodel.date_in_well(well)
@@ -163,12 +154,10 @@ def plugin_callbacks(
 
     @app.callback(
         Output(get_uuid(LayoutElements.MISFITPLOT_GRAPH), "children"),
-        [
-            Input(get_uuid(LayoutElements.FILTER_WELLS["misfitplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_ZONES["misfitplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_DATES["misfitplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_ENSEMBLES["misfitplot"]), "value"),
-        ],
+        Input(get_uuid(LayoutElements.FILTER_WELLS["misfitplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_ZONES["misfitplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_DATES["misfitplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_ENSEMBLES["misfitplot"]), "value"),
     )
     def _misfit_plot(
         wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
@@ -184,14 +173,12 @@ def plugin_callbacks(
 
     @app.callback(
         Output(get_uuid(LayoutElements.CROSSPLOT_GRAPH), "children"),
-        [
-            Input(get_uuid(LayoutElements.FILTER_WELLS["crossplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_ZONES["crossplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_DATES["crossplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_ENSEMBLES["crossplot"]), "value"),
-            Input(get_uuid(LayoutElements.CROSSPLOT_SIZE_BY), "value"),
-            Input(get_uuid(LayoutElements.CROSSPLOT_COLOR_BY), "value"),
-        ],
+        Input(get_uuid(LayoutElements.FILTER_WELLS["crossplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_ZONES["crossplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_DATES["crossplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_ENSEMBLES["crossplot"]), "value"),
+        Input(get_uuid(LayoutElements.CROSSPLOT_SIZE_BY), "value"),
+        Input(get_uuid(LayoutElements.CROSSPLOT_COLOR_BY), "value"),
     )
     def _crossplot(
         wells: List[str],
@@ -211,12 +198,10 @@ def plugin_callbacks(
 
     @app.callback(
         Output(get_uuid(LayoutElements.ERRORPLOT_GRAPH), "children"),
-        [
-            Input(get_uuid(LayoutElements.FILTER_WELLS["errorplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_ZONES["errorplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_DATES["errorplot"]), "value"),
-            Input(get_uuid(LayoutElements.FILTER_ENSEMBLES["errorplot"]), "value"),
-        ],
+        Input(get_uuid(LayoutElements.FILTER_WELLS["errorplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_ZONES["errorplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_DATES["errorplot"]), "value"),
+        Input(get_uuid(LayoutElements.FILTER_ENSEMBLES["errorplot"]), "value"),
     )
     def _errorplot(
         wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
