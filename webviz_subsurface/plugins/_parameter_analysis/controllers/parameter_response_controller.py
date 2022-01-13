@@ -141,7 +141,8 @@ def parameter_response_controller(
                 response=vector,
                 param=parameter,
                 color=color,
-                title={"text": f"{vector} vs {parameter}", "x": 0.5},
+                title=f"{vector} vs {parameter}",
+                plot_trendline=True,
             ).figure
 
         scatter_fig = scatter_fig_color_update(scatter_fig, color, options["opacity"])
