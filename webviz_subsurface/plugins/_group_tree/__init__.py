@@ -1,1 +1,1 @@
-from .group_tree import GroupTree
+from ._plugin import GroupTree
