@@ -21,9 +21,6 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     ProviderSet objects!
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-
     ########################################
     #
     # Override methods
