@@ -5,6 +5,10 @@ import numpy as np
 import pandas as pd
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.dataframe_utils import (
+    assert_date_column_is_datetime_object,
+    make_date_column_datetime_object,
+)
 
 ###################################################################################
 # NOTE: This code is a copy and modification of
@@ -66,6 +70,8 @@ def calculate_from_resampled_cumulative_vectors_df(
     Can thereby calculate everything for provided vector columns and no iterate column per
     column?
     """
+    assert_date_column_is_datetime_object(vectors_df)
+
     vectors_df = vectors_df.copy()
 
     column_keys = [elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]]
@@ -124,6 +130,8 @@ def calculate_from_resampled_cumulative_vectors_df(
         cumulative_vectors_df["realuid"] != 0, cumulative_vectors
     ] = 0
     cumulative_vectors_df.drop("realuid", axis=1, inplace=True)
+
+    make_date_column_datetime_object(cumulative_vectors_df)
 
     return cumulative_vectors_df
 

@@ -87,7 +87,7 @@ def test_create_history_vectors_df() -> None:
     )
     expected_first_history_vectors_df["DATE"] = pd.Series(
         expected_first_history_vectors_df["DATE"].dt.to_pydatetime(), dtype=object
-    )    
+    )
 
     # Data of real = 0 for "WBH" and "WAH"
     expected_second_history_vectors_df = pd.DataFrame(

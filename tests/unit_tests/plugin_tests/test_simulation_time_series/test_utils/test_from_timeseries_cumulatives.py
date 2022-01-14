@@ -1,7 +1,7 @@
-from datetime import datetime
-import pytest
+import datetime
 
 import pandas as pd
+import pytest
 from pandas._testing import assert_frame_equal
 
 from webviz_subsurface._providers import Frequency
@@ -13,208 +13,202 @@ from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cum
     rename_vector_from_cumulative,
 )
 
+# *******************************************************************
+#####################################################################
+#
+# CONFIGURE TESTDATA
+#
+#####################################################################
+# *******************************************************************
+
 # fmt: off
 # Monthly frequency - rate per day implies divide on days in month
-TEST_INPUT_WEEKLY_DF = pd.DataFrame(
+INPUT_WEEKLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "A", "B"],
     data=[
-        [datetime(2021, 1, 1),  1, 50.0,   250.0 ],
-        [datetime(2021, 1, 8),  1, 100.0,  500.0 ],
-        [datetime(2021, 1, 15), 1, 150.0,  750.0 ],
-        [datetime(2021, 1, 22), 1, 200.0,  1000.0],
-        [datetime(2021, 1, 29), 1, 250.0,  1250.0],
-        [datetime(2021, 1, 1),  2, 300.0,  350.0 ],
-        [datetime(2021, 1, 8),  2, 400.0,  700.0 ],
-        [datetime(2021, 1, 15), 2, 500.0,  1050.0],
-        [datetime(2021, 1, 22), 2, 600.0,  1400.0],
-        [datetime(2021, 1, 29), 2, 700.0,  1750.0],
-        [datetime(2021, 1, 1),  4, 1000.0, 450.0 ],
-        [datetime(2021, 1, 8),  4, 1200.0, 900.0 ],
-        [datetime(2021, 1, 15), 4, 1400.0, 1350.0],
-        [datetime(2021, 1, 22), 4, 1600.0, 1800.0],
-        [datetime(2021, 1, 29), 4, 1800.0, 2250.0],
+        [datetime.datetime(2021, 1, 1),  1, 50.0,   250.0 ],
+        [datetime.datetime(2021, 1, 8),  1, 100.0,  500.0 ],
+        [datetime.datetime(2021, 1, 15), 1, 150.0,  750.0 ],
+        [datetime.datetime(2021, 1, 1),  2, 300.0,  350.0 ],
+        [datetime.datetime(2021, 1, 8),  2, 400.0,  700.0 ],
+        [datetime.datetime(2021, 1, 15), 2, 500.0,  1050.0],
+        [datetime.datetime(2021, 1, 1),  4, 1000.0, 450.0 ],
+        [datetime.datetime(2021, 1, 8),  4, 1200.0, 900.0 ],
+        [datetime.datetime(2021, 1, 15), 4, 1400.0, 1350.0],
     ],
 )
-TEST_INTVL_WEEKLY_DF = pd.DataFrame(
+INTVL_WEEKLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
     data=[
-        [datetime(2021, 1, 1),  1, 50.0,  250.0],
-        [datetime(2021, 1, 8),  1, 50.0,  250.0],
-        [datetime(2021, 1, 15), 1, 50.0,  250.0],
-        [datetime(2021, 1, 22), 1, 50.0,  250.0],
-        [datetime(2021, 1, 29), 1, 0.0,   0.0  ],
-        [datetime(2021, 1, 1),  2, 100.0, 350.0],
-        [datetime(2021, 1, 8),  2, 100.0, 350.0],
-        [datetime(2021, 1, 15), 2, 100.0, 350.0],
-        [datetime(2021, 1, 22), 2, 100.0, 350.0],
-        [datetime(2021, 1, 29), 2, 0.0,   0.0  ],
-        [datetime(2021, 1, 1),  4, 200.0, 450.0],
-        [datetime(2021, 1, 8),  4, 200.0, 450.0],
-        [datetime(2021, 1, 15), 4, 200.0, 450.0],
-        [datetime(2021, 1, 22), 4, 200.0, 450.0],
-        [datetime(2021, 1, 29), 4, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1),  1, 50.0,  250.0],
+        [datetime.datetime(2021, 1, 8),  1, 50.0,  250.0],
+        [datetime.datetime(2021, 1, 15), 1, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1),  2, 100.0, 350.0],
+        [datetime.datetime(2021, 1, 8),  2, 100.0, 350.0],
+        [datetime.datetime(2021, 1, 15), 2, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1),  4, 200.0, 450.0],
+        [datetime.datetime(2021, 1, 8),  4, 200.0, 450.0],
+        [datetime.datetime(2021, 1, 15), 4, 0.0,   0.0  ],
     ],
 )
-TEST_AVG_WEEKLY_DF = pd.DataFrame(
+AVG_WEEKLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "AVG_A", "AVG_B"],
     data=[
-        [datetime(2021, 1, 1),  1, 50.0/7.0,  250.0/7.0],
-        [datetime(2021, 1, 8),  1, 50.0/7.0,  250.0/7.0],
-        [datetime(2021, 1, 15), 1, 50.0/7.0,  250.0/7.0],
-        [datetime(2021, 1, 22), 1, 50.0/7.0,  250.0/7.0],
-        [datetime(2021, 1, 29), 1, 0.0,       0.0  ],
-        [datetime(2021, 1, 1),  2, 100.0/7.0, 350.0/7.0],
-        [datetime(2021, 1, 8),  2, 100.0/7.0, 350.0/7.0],
-        [datetime(2021, 1, 15), 2, 100.0/7.0, 350.0/7.0],
-        [datetime(2021, 1, 22), 2, 100.0/7.0, 350.0/7.0],
-        [datetime(2021, 1, 29), 2, 0.0,       0.0  ],
-        [datetime(2021, 1, 1),  4, 200.0/7.0, 450.0/7.0],
-        [datetime(2021, 1, 8),  4, 200.0/7.0, 450.0/7.0],
-        [datetime(2021, 1, 15), 4, 200.0/7.0, 450.0/7.0],
-        [datetime(2021, 1, 22), 4, 200.0/7.0, 450.0/7.0],
-        [datetime(2021, 1, 29), 4, 0.0,       0.0  ],
+        [datetime.datetime(2021, 1, 1),  1, 50.0/7.0,  250.0/7.0],
+        [datetime.datetime(2021, 1, 8),  1, 50.0/7.0,  250.0/7.0],
+        [datetime.datetime(2021, 1, 15), 1, 0.0,       0.0      ],
+        [datetime.datetime(2021, 1, 1),  2, 100.0/7.0, 350.0/7.0],
+        [datetime.datetime(2021, 1, 8),  2, 100.0/7.0, 350.0/7.0],
+        [datetime.datetime(2021, 1, 15), 2, 0.0,       0.0      ],
+        [datetime.datetime(2021, 1, 1),  4, 200.0/7.0, 450.0/7.0],
+        [datetime.datetime(2021, 1, 8),  4, 200.0/7.0, 450.0/7.0],
+        [datetime.datetime(2021, 1, 15), 4, 0.0,       0.0      ],
     ],
 )
-TEST_INPUT_WEEKLY_DF["DATE"] = pd.Series(TEST_INPUT_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-TEST_INTVL_WEEKLY_DF["DATE"] = pd.Series(TEST_INTVL_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-TEST_AVG_WEEKLY_DF["DATE"] = pd.Series(TEST_AVG_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+# Convert date columns to datetime.datetime
+INPUT_WEEKLY_DF["DATE"] = pd.Series(INPUT_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+INTVL_WEEKLY_DF["DATE"] = pd.Series(INTVL_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+AVG_WEEKLY_DF["DATE"] = pd.Series(AVG_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
 
 # Monthly frequency - rate per day implies divide on days in month
-TEST_INPUT_MONTHLY_DF = pd.DataFrame(
+INPUT_MONTHLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "A", "B"],
     data=[
-        [datetime(2021, 1, 1), 1, 50.0,   250.0 ],
-        [datetime(2021, 2, 1), 1, 100.0,  500.0 ],
-        [datetime(2021, 3, 1), 1, 150.0,  750.0 ],
-        [datetime(2021, 4, 1), 1, 200.0,  1000.0],
-        [datetime(2021, 5, 1), 1, 250.0,  1250.0],
-        [datetime(2021, 1, 1), 2, 300.0,  350.0 ],
-        [datetime(2021, 2, 1), 2, 400.0,  700.0 ],
-        [datetime(2021, 3, 1), 2, 500.0,  1050.0],
-        [datetime(2021, 4, 1), 2, 600.0,  1400.0],
-        [datetime(2021, 5, 1), 2, 700.0,  1750.0],
-        [datetime(2021, 1, 1), 4, 1000.0, 450.0 ],
-        [datetime(2021, 2, 1), 4, 1200.0, 900.0 ],
-        [datetime(2021, 3, 1), 4, 1400.0, 1350.0],
-        [datetime(2021, 4, 1), 4, 1600.0, 1800.0],
-        [datetime(2021, 5, 1), 4, 1800.0, 2250.0],
+        [datetime.datetime(2021, 1, 1), 1, 50.0,   250.0 ],
+        [datetime.datetime(2021, 2, 1), 1, 100.0,  500.0 ],
+        [datetime.datetime(2021, 3, 1), 1, 150.0,  750.0 ],
+        [datetime.datetime(2021, 1, 1), 2, 300.0,  350.0 ],
+        [datetime.datetime(2021, 2, 1), 2, 400.0,  700.0 ],
+        [datetime.datetime(2021, 3, 1), 2, 500.0,  1050.0],
+        [datetime.datetime(2021, 1, 1), 4, 1000.0, 450.0 ],
+        [datetime.datetime(2021, 2, 1), 4, 1200.0, 900.0 ],
+        [datetime.datetime(2021, 3, 1), 4, 1400.0, 1350.0],
     ],
 )
-TEST_INTVL_MONTHLY_DF = pd.DataFrame(
+INTVL_MONTHLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
     data=[
-        [datetime(2021, 1, 1), 1, 50.0,  250.0],
-        [datetime(2021, 2, 1), 1, 50.0,  250.0],
-        [datetime(2021, 3, 1), 1, 50.0,  250.0],
-        [datetime(2021, 4, 1), 1, 50.0,  250.0],
-        [datetime(2021, 5, 1), 1, 0.0,   0.0  ],
-        [datetime(2021, 1, 1), 2, 100.0, 350.0],
-        [datetime(2021, 2, 1), 2, 100.0, 350.0],
-        [datetime(2021, 3, 1), 2, 100.0, 350.0],
-        [datetime(2021, 4, 1), 2, 100.0, 350.0],
-        [datetime(2021, 5, 1), 2, 0.0,   0.0  ],
-        [datetime(2021, 1, 1), 4, 200.0, 450.0],
-        [datetime(2021, 2, 1), 4, 200.0, 450.0],
-        [datetime(2021, 3, 1), 4, 200.0, 450.0],
-        [datetime(2021, 4, 1), 4, 200.0, 450.0],
-        [datetime(2021, 5, 1), 4, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1), 1, 50.0,  250.0],
+        [datetime.datetime(2021, 2, 1), 1, 50.0,  250.0],
+        [datetime.datetime(2021, 3, 1), 1, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1), 2, 100.0, 350.0],
+        [datetime.datetime(2021, 2, 1), 2, 100.0, 350.0],
+        [datetime.datetime(2021, 3, 1), 2, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1), 4, 200.0, 450.0],
+        [datetime.datetime(2021, 2, 1), 4, 200.0, 450.0],
+        [datetime.datetime(2021, 3, 1), 4, 0.0,   0.0  ],
     ],
 )
-TEST_AVG_MONTHLY_DF = pd.DataFrame(
+AVG_MONTHLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "AVG_A", "AVG_B"],
     data=[
-        [datetime(2021, 1, 1), 1, 50.0/31.0,  250.0/31.0],
-        [datetime(2021, 2, 1), 1, 50.0/28.0,  250.0/28.0],
-        [datetime(2021, 3, 1), 1, 50.0/31.0,  250.0/31.0],
-        [datetime(2021, 4, 1), 1, 50.0/30.0,  250.0/30.0],
-        [datetime(2021, 5, 1), 1, 0.0,        0.0       ],
-        [datetime(2021, 1, 1), 2, 100.0/31.0, 350.0/31.0],
-        [datetime(2021, 2, 1), 2, 100.0/28.0, 350.0/28.0],
-        [datetime(2021, 3, 1), 2, 100.0/31.0, 350.0/31.0],
-        [datetime(2021, 4, 1), 2, 100.0/30.0, 350.0/30.0],
-        [datetime(2021, 5, 1), 2, 0.0,        0.0       ],
-        [datetime(2021, 1, 1), 4, 200.0/31.0, 450.0/31.0],
-        [datetime(2021, 2, 1), 4, 200.0/28.0, 450.0/28.0],
-        [datetime(2021, 3, 1), 4, 200.0/31.0, 450.0/31.0],
-        [datetime(2021, 4, 1), 4, 200.0/30.0, 450.0/30.0],
-        [datetime(2021, 5, 1), 4, 0.0,        0.0       ],
+        [datetime.datetime(2021, 1, 1), 1, 50.0/31.0,  250.0/31.0],
+        [datetime.datetime(2021, 2, 1), 1, 50.0/28.0,  250.0/28.0],
+        [datetime.datetime(2021, 3, 1), 1, 0.0,        0.0       ],
+        [datetime.datetime(2021, 1, 1), 2, 100.0/31.0, 350.0/31.0],
+        [datetime.datetime(2021, 2, 1), 2, 100.0/28.0, 350.0/28.0],
+        [datetime.datetime(2021, 3, 1), 2, 0.0,        0.0       ],
+        [datetime.datetime(2021, 1, 1), 4, 200.0/31.0, 450.0/31.0],
+        [datetime.datetime(2021, 2, 1), 4, 200.0/28.0, 450.0/28.0],
+        [datetime.datetime(2021, 3, 1), 4, 0.0,        0.0       ],
     ],
 )
-TEST_INPUT_MONTHLY_DF["DATE"] = pd.Series(TEST_INPUT_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-TEST_INTVL_MONTHLY_DF["DATE"] = pd.Series(TEST_INTVL_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-TEST_AVG_MONTHLY_DF["DATE"] = pd.Series(TEST_AVG_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+# Convert date columns to datetime.datetime
+INPUT_MONTHLY_DF["DATE"] = pd.Series(INPUT_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+INTVL_MONTHLY_DF["DATE"] = pd.Series(INTVL_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+AVG_MONTHLY_DF["DATE"] = pd.Series(AVG_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
 
 # Yearly frequency - rate per day implies divide on days in year
-TEST_INPUT_YEARLY_DF = pd.DataFrame(
+INPUT_YEARLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "A", "B"],
     data=[
-        [datetime(2021, 1, 1), 1, 50.0,   250.0 ],
-        [datetime(2021, 2, 1), 1, 100.0,  500.0 ],
-        [datetime(2021, 3, 1), 1, 150.0,  750.0 ],
-        [datetime(2021, 4, 1), 1, 200.0,  1000.0],
-        [datetime(2021, 5, 1), 1, 250.0,  1250.0],
-        [datetime(2021, 1, 1), 2, 300.0,  350.0 ],
-        [datetime(2021, 2, 1), 2, 400.0,  700.0 ],
-        [datetime(2021, 3, 1), 2, 500.0,  1050.0],
-        [datetime(2021, 4, 1), 2, 600.0,  1400.0],
-        [datetime(2021, 5, 1), 2, 700.0,  1750.0],
-        [datetime(2021, 1, 1), 4, 1000.0, 450.0 ],
-        [datetime(2021, 2, 1), 4, 1200.0, 900.0 ],
-        [datetime(2021, 3, 1), 4, 1400.0, 1350.0],
-        [datetime(2021, 4, 1), 4, 1600.0, 1800.0],
-        [datetime(2021, 5, 1), 4, 1800.0, 2250.0],
+        [datetime.datetime(2021, 1, 1), 1, 50.0,   250.0 ],
+        [datetime.datetime(2022, 1, 1), 1, 100.0,  500.0 ],
+        [datetime.datetime(2023, 1, 1), 1, 150.0,  750.0 ],
+        [datetime.datetime(2021, 1, 1), 2, 300.0,  350.0 ],
+        [datetime.datetime(2022, 1, 1), 2, 400.0,  700.0 ],
+        [datetime.datetime(2023, 1, 1), 2, 500.0,  1050.0],
+        [datetime.datetime(2021, 1, 1), 4, 1000.0, 450.0 ],
+        [datetime.datetime(2022, 1, 1), 4, 1200.0, 900.0 ],
+        [datetime.datetime(2023, 1, 1), 4, 1400.0, 1350.0],
     ],
 )
-TEST_INTVL_YEARLY_DF = pd.DataFrame(
+INTVL_YEARLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
     data=[
-        [datetime(2021, 1, 1), 1, 50.0,  250.0],
-        [datetime(2021, 2, 1), 1, 50.0,  250.0],
-        [datetime(2021, 3, 1), 1, 50.0,  250.0],
-        [datetime(2021, 4, 1), 1, 50.0,  250.0],
-        [datetime(2021, 5, 1), 1, 0.0,   0.0  ],
-        [datetime(2021, 1, 1), 2, 100.0, 350.0],
-        [datetime(2021, 2, 1), 2, 100.0, 350.0],
-        [datetime(2021, 3, 1), 2, 100.0, 350.0],
-        [datetime(2021, 4, 1), 2, 100.0, 350.0],
-        [datetime(2021, 5, 1), 2, 0.0,   0.0  ],
-        [datetime(2021, 1, 1), 4, 200.0, 450.0],
-        [datetime(2021, 2, 1), 4, 200.0, 450.0],
-        [datetime(2021, 3, 1), 4, 200.0, 450.0],
-        [datetime(2021, 4, 1), 4, 200.0, 450.0],
-        [datetime(2021, 5, 1), 4, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1), 1, 50.0,  250.0],
+        [datetime.datetime(2022, 1, 1), 1, 50.0,  250.0],
+        [datetime.datetime(2023, 1, 1), 1, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1), 2, 100.0, 350.0],
+        [datetime.datetime(2022, 1, 1), 2, 100.0, 350.0],
+        [datetime.datetime(2023, 1, 1), 2, 0.0,   0.0  ],
+        [datetime.datetime(2021, 1, 1), 4, 200.0, 450.0],
+        [datetime.datetime(2022, 1, 1), 4, 200.0, 450.0],
+        [datetime.datetime(2023, 1, 1), 4, 0.0,   0.0  ],
     ],
 )
-TEST_AVG_YEARLY_DF = pd.DataFrame(
+AVG_YEARLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "AVG_A", "AVG_B"],
     data=[
-        [datetime(2021, 1, 1), 1, 50.0/31.0,  250.0/31.0],
-        [datetime(2021, 2, 1), 1, 50.0/28.0,  250.0/28.0],
-        [datetime(2021, 3, 1), 1, 50.0/31.0,  250.0/31.0],
-        [datetime(2021, 4, 1), 1, 50.0/30.0,  250.0/30.0],
-        [datetime(2021, 5, 1), 1, 0.0,        0.0       ],
-        [datetime(2021, 1, 1), 2, 100.0/31.0, 350.0/31.0],
-        [datetime(2021, 2, 1), 2, 100.0/28.0, 350.0/28.0],
-        [datetime(2021, 3, 1), 2, 100.0/31.0, 350.0/31.0],
-        [datetime(2021, 4, 1), 2, 100.0/30.0, 350.0/30.0],
-        [datetime(2021, 5, 1), 2, 0.0,        0.0       ],
-        [datetime(2021, 1, 1), 4, 200.0/31.0, 450.0/31.0],
-        [datetime(2021, 2, 1), 4, 200.0/28.0, 450.0/28.0],
-        [datetime(2021, 3, 1), 4, 200.0/31.0, 450.0/31.0],
-        [datetime(2021, 4, 1), 4, 200.0/30.0, 450.0/30.0],
-        [datetime(2021, 5, 1), 4, 0.0,        0.0       ],
+        [datetime.datetime(2021, 1, 1), 1, 50.0/365.0,  250.0/365.0],
+        [datetime.datetime(2022, 1, 1), 1, 50.0/365.0,  250.0/365.0],
+        [datetime.datetime(2023, 1, 1), 1, 0.0,         0.0        ],
+        [datetime.datetime(2021, 1, 1), 2, 100.0/365.0, 350.0/365.0],
+        [datetime.datetime(2022, 1, 1), 2, 100.0/365.0, 350.0/365.0],
+        [datetime.datetime(2023, 1, 1), 2, 0.0,         0.0        ],
+        [datetime.datetime(2021, 1, 1), 4, 200.0/365.0, 450.0/365.0],
+        [datetime.datetime(2022, 1, 1), 4, 200.0/365.0, 450.0/365.0],
+        [datetime.datetime(2023, 1, 1), 4, 0.0,         0.0        ],
     ],
 )
-TEST_INPUT_YEARLY_DF["DATE"] = pd.Series(TEST_INPUT_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-TEST_INTVL_YEARLY_DF["DATE"] = pd.Series(TEST_INTVL_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-TEST_AVG_YEARLY_DF["DATE"] = pd.Series(TEST_AVG_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+# Convert date columns to datetime.datetime
+INPUT_YEARLY_DF["DATE"] = pd.Series(INPUT_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+INTVL_YEARLY_DF["DATE"] = pd.Series(INTVL_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+AVG_YEARLY_DF["DATE"] = pd.Series(AVG_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+
+
+# Monthly frequency after year 2262 - rate per day implies divide on days in month
+AFTER_2262_MONTHLY_DATES = pd.Series(
+    [
+        datetime.datetime(2265, 1, 1),
+        datetime.datetime(2265, 2, 1),
+        datetime.datetime(2265, 3, 1),
+        datetime.datetime(2265, 1, 1),
+        datetime.datetime(2265, 2, 1),
+        datetime.datetime(2265, 3, 1),
+        datetime.datetime(2265, 1, 1),
+        datetime.datetime(2265, 2, 1),
+        datetime.datetime(2265, 3, 1),
+    ]
+)
+# NOTE: datetime.datetime after year 2262 is not converted to pd.Timestamp!
+INPUT_MONTHLY_AFTER_2262_DF = INPUT_MONTHLY_DF.copy()
+INPUT_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
+INTVL_MONTHLY_AFTER_2262_DF = INTVL_MONTHLY_DF.copy()
+INTVL_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
+AVG_MONTHLY_AFTER_2262_DF = AVG_MONTHLY_DF.copy()
+AVG_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
 
 # fmt: on
 
+
+# *******************************************************************
+#####################################################################
+#
+# UNIT TESTS
+#
+#####################################################################
+# *******************************************************************
+
 TEST_CASES = [
-    pytest.param(TEST_INPUT_WEEKLY_DF, TEST_INTVL_WEEKLY_DF, TEST_AVG_WEEKLY_DF),
-    pytest.param(TEST_INPUT_MONTHLY_DF, TEST_INTVL_MONTHLY_DF, TEST_AVG_MONTHLY_DF),
-    pytest.param(TEST_INPUT_YEARLY_DF, TEST_INTVL_YEARLY_DF, TEST_AVG_YEARLY_DF),
+    pytest.param(INPUT_WEEKLY_DF, INTVL_WEEKLY_DF, AVG_WEEKLY_DF),
+    pytest.param(INPUT_MONTHLY_DF, INTVL_MONTHLY_DF, AVG_MONTHLY_DF),
+    pytest.param(INPUT_YEARLY_DF, INTVL_YEARLY_DF, AVG_YEARLY_DF),
+    pytest.param(
+        INPUT_MONTHLY_AFTER_2262_DF,
+        INTVL_MONTHLY_AFTER_2262_DF,
+        AVG_MONTHLY_AFTER_2262_DF,
+    ),
 ]
 
 
@@ -224,9 +218,6 @@ def test_calculate_from_resampled_cumulative_vectors_df(
     expected_intvl_df: pd.DataFrame,
     expected_avg_df: pd.DataFrame,
 ) -> None:
-    # TODO: Update test when decision on how to handle datetime.datetime -> pd.Timeseries
-    # for "DATE" column when utilizing df.set_index(["DATE"]).
-
     # INTVL_ due to as_rate_per_day = False
     calculated_intvl_df = calculate_from_resampled_cumulative_vectors_df(
         input_df, False
@@ -235,19 +226,32 @@ def test_calculate_from_resampled_cumulative_vectors_df(
     # AVG_ due to as_rate_per_day = True
     calculated_avg_df = calculate_from_resampled_cumulative_vectors_df(input_df, True)
 
-    # TODO: Remove conversion when datetime.datetime -> pd.Timeseries for "DATE" column is resolved
-    calculated_intvl_df["DATE"] = pd.Series(
-        calculated_intvl_df["DATE"].dt.to_pydatetime(), dtype=object
-    )
-    calculated_avg_df["DATE"] = pd.Series(
-        calculated_avg_df["DATE"].dt.to_pydatetime(), dtype=object
-    )
+    assert_frame_equal(expected_intvl_df, calculated_intvl_df)
+    assert_frame_equal(expected_avg_df, calculated_avg_df)
 
-    assert_frame_equal(
-        expected_intvl_df.sort_index(axis=1), calculated_intvl_df.sort_index(axis=1)
+
+def test_calculate_from_resampled_cumulative_vectors_df_invalid_input() -> None:
+    """Test assert check assert_date_column_is_datetime_object() in
+    webviz_subsurface._utils.dataframe_utils.py
+    """
+    # fmt: off
+    input_df = pd.DataFrame(
+        columns=["DATE", "REAL", "A", "B"],
+        data=[
+            [pd.Timestamp(2020, 1, 1), 1, 50.0,   250.0 ],
+            [pd.Timestamp(2020, 2, 1), 1, 100.0,  500.0 ],
+            [pd.Timestamp(2020, 3, 1), 1, 150.0,  750.0 ],
+            [pd.Timestamp(2020, 4, 1), 1, 200.0,  1000.0],
+            [pd.Timestamp(2020, 5, 1), 1, 250.0,  1250.0],
+        ],
     )
-    assert_frame_equal(
-        expected_avg_df.sort_index(axis=1), calculated_avg_df.sort_index(axis=1)
+    # fmt: on
+
+    with pytest.raises(ValueError) as err:
+        calculate_from_resampled_cumulative_vectors_df(input_df, True)
+    assert (
+        str(err.value)
+        == '"DATE"-column in dataframe is not on datetime.datetime format!'
     )
 
 
@@ -289,7 +293,7 @@ def test_datetime_to_intervalstr() -> None:
     # Verify early return (ignore mypy)
     assert None is datetime_to_intervalstr(None, Frequency.WEEKLY)  # type: ignore
 
-    test_date = datetime(2021, 11, 12, 13, 37)
+    test_date = datetime.datetime(2021, 11, 12, 13, 37)
     assert "2021-11-12" == datetime_to_intervalstr(test_date, Frequency.DAILY)
     assert "2021-W45" == datetime_to_intervalstr(test_date, Frequency.WEEKLY)
     assert "2021-11" == datetime_to_intervalstr(test_date, Frequency.MONTHLY)

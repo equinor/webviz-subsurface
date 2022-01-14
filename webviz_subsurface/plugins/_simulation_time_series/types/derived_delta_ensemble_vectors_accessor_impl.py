@@ -4,6 +4,7 @@ import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface._utils.vector_calculator import (
     create_calculated_vector_df,
     get_selected_expressions,
@@ -145,6 +146,10 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             .reset_index()
             .sort_values(["REAL", "DATE"], ignore_index=True)
         )
+
+        # ensembles_delta_vectors_df.dropna(axis=0, how="any", inplace=True)
+
+        make_date_column_datetime_object(ensembles_delta_vectors_df)
 
         return ensembles_delta_vectors_df.dropna(axis=0, how="any")
 
@@ -315,5 +320,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             .reset_index()
             .sort_values(["REAL", "DATE"], ignore_index=True)
         )
+
+        make_date_column_datetime_object(delta_ensemble_calculated_vectors_df)
 
         return delta_ensemble_calculated_vectors_df.dropna(axis=0, how="any")
