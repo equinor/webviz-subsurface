@@ -32,7 +32,6 @@ class LayoutElements(str, Enum):
     LOG = auto()
     VIEWS = auto()
     VIEW_COLUMNS = auto()
-    VIEW_TEMPLATE = auto()
     DECKGLMAP = auto()
     COLORMAP_RESET_RANGE = auto()
     STORED_COLOR_SETTINGS = auto()
@@ -240,27 +239,6 @@ class ViewSelector(html.Div):
                             style={"float": "right"},
                         ),
                     ]
-                ),
-                wcc.Selectors(
-                    label="Templates",
-                    children=[
-                        html.Button(
-                            "Custom",
-                            id={
-                                "id": get_uuid(LayoutElements.VIEW_TEMPLATE),
-                                "template": "custom",
-                            },
-                            style=button_style,
-                        ),
-                        html.Button(
-                            "Difference",
-                            id={
-                                "id": get_uuid(LayoutElements.VIEW_TEMPLATE),
-                                "template": "difference",
-                            },
-                            style=button_style,
-                        ),
-                    ],
                 ),
             ]
         )

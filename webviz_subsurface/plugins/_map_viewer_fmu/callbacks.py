@@ -382,6 +382,8 @@ def plugin_callbacks(
         surfaceid = data["attribute"]["value"][0] + data["name"]["value"][0]
         if data["date"]["value"]:
             surfaceid += data["date"]["value"][0]
+        if data["mode"]["value"] == SurfaceMode.STDDEV:
+            surfaceid += data["mode"]["value"]
         return surfaceid
 
 
