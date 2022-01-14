@@ -9,6 +9,21 @@ import plotly.graph_objs as go
 import webviz_core_components as wcc
 
 
+# Color scales
+SYMMETRIC = [
+    [0, "gold"],
+    [0.1, "red"],
+    [0.3, "darkred"],
+    [0.4, "dimgrey"],
+    [0.45, "lightgrey"],
+    [0.5, "WhiteSmoke"],
+    [0.55, "lightgrey"],
+    [0.6, "dimgrey"],
+    [0.7, "darkblue"],
+    [0.9, "blue"],
+    [1, "cyan"],
+]
+
 # -------------------------------
 def prod_misfit_plot(
     df_diff: pd.DataFrame,
@@ -369,19 +384,17 @@ def coverage_crossplot(
 
 # -------------------------------
 def heatmap_plot(
-    df_diff: pd.DataFrame,
+    df_diff_stat: pd.DataFrame,
     phases: list,
     vector_type: str = "well",
     filter_largest: int = 10,
     figheight: int = 450,
     scale_col_range: float = 1.0,
 ) -> List[wcc.Graph]:
-    """Create heatmap of misfit per well or group. One plot per phase."""
+    """Create heatmap of mean misfit per well or group. One plot per phase."""
 
     logging.debug("--- Updating heatmap ---")
     figures = []
-
-    print(df_diff)
 
     prefix = "DIFF_W" if vector_type == "well" else "DIFF_G"
     phase_vector = {}
@@ -389,140 +402,57 @@ def heatmap_plot(
     phase_vector["Water"] = prefix + "WPT"
     phase_vector["Gas"] = prefix + "GPT"
 
-    # if vector_type == "group":
-    #     oil_vector, wat_vector, gas_vector = "DIFF_GOPT", "DIFF_GWPT", "DIFF_GGPT"
-    # elif vector_type == "well":
-    #     oil_vector, wat_vector, gas_vector = "DIFF_WOPT", "DIFF_WWPT", "DIFF_WGPT"
-    # else:
-    #     raise ValueError(
-    #         "vector_type = ",
-    #         vector_type,
-    #         ". 'vector_type' argument must be 'well' or 'group'",
-    #     )
-
+    # df_diff_stat = df_diff_stat.astype({"DATE": "string"})
+    # df_diff_stat.DATE = df_diff_stat.DATE.str[:10]
+    logging.debug(f"Dataframe, diff_stat:\n{df_diff_stat}")
     # -------------------------
-    if "Oil" in phases:
-        df_diff_stat_oil = df_diff_stat[df_diff_stat.VECTOR == oil_vector]
-        # logging.debug(f"Dataframe, diff oil phase:\n{df_diff_stat_oil}")
+    for phase in phases:
+        df_diff_stat_phase = df_diff_stat[df_diff_stat.VECTOR == phase_vector[phase]]
+
+        # logging.debug(f"Dataframe, diff {phase} phase:\n{df_diff_stat_phase}")
 
         zmax = scale_col_range * max(
-            abs(df_diff_stat_oil.DIFF_MEAN.max()), abs(df_diff_stat_oil.DIFF_MEAN.min())
+            abs(df_diff_stat_phase.DIFF_MEAN.max()),
+            abs(df_diff_stat_phase.DIFF_MEAN.min()),
         )
         zmin = -zmax
 
-        for ens_name, ensdf in df_diff_stat_oil.groupby("ENSEMBLE"):
+        for ens_name, df_diff_stat_phase in df_diff_stat_phase.groupby("ENSEMBLE"):
 
-            df_temp = ensdf[["WELL", "DIFF_MEAN"]].copy()
-            df_temp["DIFF_MEAN"] = df_temp.DIFF_MEAN.abs()
-            df_temp = df_temp.groupby("WELL").max()
-            df_temp = df_temp.sort_values(by=["DIFF_MEAN"], ascending=False)
+            df_pivot = df_diff_stat_phase.pivot(
+                index="WELL", columns="DATE", values="DIFF_MEAN"
+            )
 
-            df_pivot = ensdf.pivot(index="WELL", columns="DATE", values="DIFF_MEAN")
+            df_sorted = df_diff_stat_phase[["WELL", "DIFF_MEAN"]].copy()
+            df_sorted["DIFF_MEAN"] = df_sorted.DIFF_MEAN.abs()
+            df_sorted = df_sorted.groupby("WELL").max()
+            df_sorted = df_sorted.sort_values(by=["DIFF_MEAN"], ascending=False)
+
             if filter_largest > 0:
-                wells_largest_misfit = list(df_temp.index)[:filter_largest]
+                wells_largest_misfit = list(df_sorted.index)[:filter_largest]
                 df_pivot = df_pivot[df_pivot.index.isin(wells_largest_misfit)]
 
-            # logging.debug(
-            #     f"Dataframe pivot table, {ens_name} diff oil phase:\n{df_pivot}"
-            # )
+            logging.debug(
+                f"Dataframe pivot table, {ens_name} diff {phase} phase:\n{df_pivot}"
+            )
 
-            fig_oil = px.imshow(
+            fig_phase = px.imshow(
                 df_pivot,
                 color_continuous_scale=SYMMETRIC,
                 zmin=zmin,
                 zmax=zmax,
             )
-            fig_oil.update_layout(
-                title_text=f"{ens_name} - Oil cummulative misfit (mean) vs date",
+            fig_phase.update_layout(
+                title_text=f"{ens_name} - {phase} cummulative misfit (mean) vs date",
                 title_font_size=16,
             )
-            fig_oil.update_traces(
+            fig_phase.update_traces(
                 hoverongaps=False,
                 hovertemplate="Date: %{x}"
                 "<br>Well: %{y}"
                 "<br>Difference: %{z:.3s}<extra></extra>",
             )
 
-            figures.append(wcc.Graph(figure=fig_oil, style={"height": figheight}))
-
-    # -------------------------
-    if "Water" in phases:
-        df_diff_stat_wat = df_diff_stat[df_diff_stat.VECTOR == wat_vector]
-
-        zmax = scale_col_range * max(
-            abs(df_diff_stat_wat.DIFF_MEAN.max()), abs(df_diff_stat_wat.DIFF_MEAN.min())
-        )
-        zmin = -zmax
-
-        for ens_name, ensdf in df_diff_stat_wat.groupby("ENSEMBLE"):
-
-            df_temp = ensdf[["WELL", "DIFF_MEAN"]].copy()
-            df_temp["DIFF_MEAN"] = df_temp.DIFF_MEAN.abs()
-            df_temp = df_temp.groupby("WELL").max()
-            df_temp = df_temp.sort_values(by=["DIFF_MEAN"], ascending=False)
-
-            df_pivot = ensdf.pivot(index="WELL", columns="DATE", values="DIFF_MEAN")
-            if filter_largest > 0:
-                wells_largest_misfit = list(df_temp.index)[:filter_largest]
-                df_pivot = df_pivot[df_pivot.index.isin(wells_largest_misfit)]
-
-            fig_wat = px.imshow(
-                df_pivot,
-                color_continuous_scale=SYMMETRIC,
-                zmin=zmin,
-                zmax=zmax,
-            )
-            fig_wat.update_layout(
-                title_text=f"{ens_name} - Wat cummulative misfit (mean) vs date",
-                title_font_size=16,
-            )
-            fig_wat.update_traces(
-                hoverongaps=False,
-                hovertemplate="Date: %{x}"
-                "<br>Well: %{y}"
-                "<br>Difference: %{z:.3s}<extra></extra>",
-            )
-
-            figures.append(wcc.Graph(figure=fig_wat, style={"height": figheight}))
-
-    # -------------------------
-    if "Gas" in phases:
-        df_diff_stat_gas = df_diff_stat[df_diff_stat.VECTOR == gas_vector]
-
-        zmax = scale_col_range * max(
-            abs(df_diff_stat_gas.DIFF_MEAN.max()), abs(df_diff_stat_gas.DIFF_MEAN.min())
-        )
-        zmin = -zmax
-
-        for ens_name, ensdf in df_diff_stat_gas.groupby("ENSEMBLE"):
-
-            df_temp = ensdf[["WELL", "DIFF_MEAN"]].copy()
-            df_temp["DIFF_MEAN"] = df_temp.DIFF_MEAN.abs()
-            df_temp = df_temp.groupby("WELL").max()
-            df_temp = df_temp.sort_values(by=["DIFF_MEAN"], ascending=False)
-
-            df_pivot = ensdf.pivot(index="WELL", columns="DATE", values="DIFF_MEAN")
-            if filter_largest > 0:
-                wells_largest_misfit = list(df_temp.index)[:filter_largest]
-                df_pivot = df_pivot[df_pivot.index.isin(wells_largest_misfit)]
-
-            fig_gas = px.imshow(
-                df_pivot,
-                color_continuous_scale=SYMMETRIC,
-                zmin=zmin,
-                zmax=zmax,
-            )
-            fig_gas.update_layout(
-                title_text=f"{ens_name} - Gas cummulative misfit (mean) vs date",
-                title_font_size=16,
-            )
-            fig_gas.update_traces(
-                hoverongaps=False,
-                hovertemplate="Date: %{x}"
-                "<br>Well: %{y}"
-                "<br>Difference: %{z:.3s}<extra></extra>",
-            )
-
-            figures.append(wcc.Graph(figure=fig_gas, style={"height": figheight}))
+            figures.append(wcc.Graph(figure=fig_phase, style={"height": figheight}))
 
     return figures

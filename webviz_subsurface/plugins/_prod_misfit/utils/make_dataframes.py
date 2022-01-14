@@ -132,3 +132,58 @@ def get_df_diff(
         f"\n--- get_df_diff --- Total time: {time.time() - start_time} seconds.\n"
     )
     return df_diff
+
+
+# --------------------------------
+def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
+    """Return dataframe with statistics of production difference
+    across all realizations per ensemble, well and date.
+    Return empty dataframe if no realizations included in df."""
+
+    my_ensembles = []
+    my_dates = []
+    my_wells = []
+    my_diff_vectors = []
+    my_diff_mean_values = []
+    my_diff_std_values = []
+    my_diff_p10_values = []
+    my_diff_p90_values = []
+
+    for ens_name, dframe in df_diff.groupby("ENSEMBLE"):
+        for _date, ensdf in dframe.groupby("DATE"):
+
+            for col in ensdf.columns:
+                if ":" in col:
+                    vector = col.split(":")[0]
+                    if vector in [
+                        "DIFF_WOPT",
+                        "DIFF_WWPT",
+                        "DIFF_WGPT",
+                        "DIFF_GOPT",
+                        "DIFF_GWPT",
+                        "DIFF_GGPT",
+                    ]:
+                        well = col.split(":")[1]
+                        my_wells.append(well)
+                        my_dates.append(_date)
+                        my_ensembles.append(ens_name)
+                        my_diff_vectors.append(vector)
+                        my_diff_mean_values.append(ensdf[col].mean())
+                        my_diff_std_values.append(ensdf[col].std())
+                        my_diff_p10_values.append(ensdf[col].quantile(0.9))
+                        my_diff_p90_values.append(ensdf[col].quantile(0.1))
+
+    df_stat = pd.DataFrame(
+        data={
+            "ENSEMBLE": my_ensembles,
+            "WELL": my_wells,
+            "VECTOR": my_diff_vectors,
+            "DATE": my_dates,
+            "DIFF_MEAN": my_diff_mean_values,
+            "DIFF_STD": my_diff_std_values,
+            "DIFF_P10": my_diff_p10_values,
+            "DIFF_P90": my_diff_p90_values,
+        }
+    )
+    # df_stat = df_stat.astype({"DATE": "string"})
+    return df_stat

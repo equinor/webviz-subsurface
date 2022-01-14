@@ -60,7 +60,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.PROD_MISFIT_OBS_ERROR_WEIGHT), "value"),
         Input(get_uuid(LayoutElements.PROD_MISFIT_EXPONENT), "value"),
         # Input(get_uuid(LayoutElements.PROD_MISFIT_NORMALIZATION), "value"),
-        prevent_initial_call=True,
+        # prevent_initial_call=True,
     )
     def _update_prod_misfit_graph(
         ensemble_names: List[str],
@@ -137,7 +137,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.WELL_COVERAGE_FIGHEIGHT), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_BOXMODE), "value"),
         Input(get_uuid(LayoutElements.WELL_COVERAGE_BOXPLOT_POINTS), "value"),
-        prevent_initial_call=True,
+        # prevent_initial_call=True,
     )
     def _update_well_coverage_graph(
         ensemble_names: List[str],
@@ -289,18 +289,20 @@ def plugin_callbacks(
         # if plot_type in ["diffplot", "rel_diffplot"]:
         plot_type = "diffplot"
         relative_diff = plot_type == "rel_diffplot"
-        dframe = makedf.get_df_diff(
-            makedf.get_df_smry(
-                input_provider_set,
-                ensemble_names,
-                ens_vectors,
-                ens_realizations,
-                selector_realizations,
-                selector_well_names,
-                selector_phases,
-                selector_dates,
-            ),
-            relative_diff=relative_diff,
+        dframe = makedf.get_df_diff_stat(
+            makedf.get_df_diff(
+                makedf.get_df_smry(
+                    input_provider_set,
+                    ensemble_names,
+                    ens_vectors,
+                    ens_realizations,
+                    selector_realizations,
+                    selector_well_names,
+                    selector_phases,
+                    selector_dates,
+                ),
+                relative_diff=relative_diff,
+            )
         )
 
         # dframe = self.df_diff_stat.copy()

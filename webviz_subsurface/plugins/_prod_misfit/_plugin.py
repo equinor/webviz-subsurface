@@ -31,21 +31,6 @@ from webviz_subsurface._models import (
 )
 from webviz_subsurface._providers import Frequency
 
-# Color scales
-SYMMETRIC = [
-    [0, "gold"],
-    [0.1, "red"],
-    [0.3, "darkred"],
-    [0.4, "dimgrey"],
-    [0.45, "lightgrey"],
-    [0.5, "WhiteSmoke"],
-    [0.55, "lightgrey"],
-    [0.6, "dimgrey"],
-    [0.7, "darkblue"],
-    [0.9, "blue"],
-    [1, "cyan"],
-]
-
 
 class ProdMisfit(WebvizPluginABC):
     """Visualizes production data misfit at selected date.

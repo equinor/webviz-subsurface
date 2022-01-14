@@ -810,7 +810,7 @@ def _heatmap(
                                         }
                                         for _date in dates
                                     ],
-                                    value=[str(dates[-1])],  # value=dates,
+                                    value=[str(_date) for _date in dates],
                                     size=min([len(dates), 5]),
                                 ),
                                 wcc.SelectWithLabel(
