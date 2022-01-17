@@ -69,42 +69,6 @@ class LogsContextConverter(BaseConverter):
         return quote_plus(json.dumps(asdict(logs_context)))
 
 
-# class RGBARouter:
-#     class Converter(BaseConverter):
-#         """A custom converter used in a flask route to convert a SurfaceContext to/from an url for use
-#         in the DeckGLMap layer prop"""
-
-#         def to_python(self, value):
-#             if value == "UNDEF":
-#                 return None
-#             return SurfaceContext(**json.loads(unquote_plus(value)))
-
-#         def to_url(self, surface_context: SurfaceContext = None):
-#             if surface_context is None:
-#                 return "UNDEF"
-#             return quote_plus(json.dumps(asdict(surface_context)))
-
-#     def __init__(self, app, ensemble_surface_providers: List[EnsembleSurfaceProvider]):
-#         self.ensemble_surface_providers = ensemble_surface_providers
-#         print(self.__class__.__name__)
-#         app.server.view_functions["test"] = self.endpoint
-#         app.server.url_map.converters["surface_context"] = RGBARouter.Converter
-#         app.server.add_url_rule(
-#             f"/surface/<surface_context:surface_context>.png",
-#             view_func=self.endpoint,
-#         )
-
-#     def endpoint(self, surface_context: SurfaceContext = None):
-#         if not surface_context:
-#             surface = xtgeo.RegularSurface(ncol=1, nrow=1, xinc=1, yinc=1)
-#         else:
-#             ensemble = surface_context.ensemble
-#             surface = self.ensemble_surface_providers[ensemble].get_surface(surface_context)
-
-#         img_stream = surface_to_rgba(surface).read()
-#         return send_file(BytesIO(img_stream), mimetype="image/png")
-
-
 def deckgl_map_routes(
     app: Dash,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
@@ -123,26 +87,11 @@ def deckgl_map_routes(
         img_stream = surface_to_rgba(surface).read()
         return send_file(BytesIO(img_stream), mimetype="image/png")
 
-    def _send_colormap(colormap: str = "seismic"):
-        return send_file(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "colormaps"
-            / f"{colormap}.png",
-            mimetype="image/png",
-        )
-
     app.server.view_functions["_send_surface_as_png"] = _send_surface_as_png
-    app.server.view_functions["_send_colormap"] = _send_colormap
     app.server.url_map.converters["surface_context"] = SurfaceContextConverter
     app.server.add_url_rule(
         "/surface/<surface_context:surface_context>.png",
         view_func=_send_surface_as_png,
-    )
-
-    app.server.add_url_rule(
-        "/colormaps/<colormap>.png",
-        "_send_colormap",
     )
 
     if well_set_model is not None:
