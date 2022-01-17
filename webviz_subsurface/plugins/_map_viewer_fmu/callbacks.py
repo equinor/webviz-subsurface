@@ -244,7 +244,7 @@ def plugin_callbacks(
             layer_model.update_layer_by_id(
                 layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                 layer_data={
-                    "colormap": data["colormap"]["value"],
+                    "colormap": f"/colormaps/{data['colormap']['value']}.png",
                     "colorMapRange": data["color_range"]["value"],
                 },
             )
