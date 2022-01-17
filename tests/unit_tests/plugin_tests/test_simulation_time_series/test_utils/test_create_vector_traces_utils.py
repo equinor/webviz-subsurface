@@ -19,7 +19,6 @@ from webviz_subsurface.plugins._simulation_time_series.utils.create_vector_trace
     render_hovertemplate,
 )
 
-
 VECTOR_STATISTICS_DF = pd.DataFrame(
     columns=[
         "DATE",
