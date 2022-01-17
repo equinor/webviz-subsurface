@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from ecl2df import EclFiles, common
-from fmu.ensemble import ScratchEnsemble
+
+from .fmu_input import scratch_ensemble
 
 
 def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -33,18 +34,33 @@ def read_zone_layer_mapping(
     """Searches for a zone layer mapping file (lyr format) on the scratch disk. \
     If one file is found it is parsed using functionality from the ecl2df \
     library.
+
+    UPDATE!
     """
-    for filename in glob.glob(f"{ensemble_path}/{zone_layer_mapping_file}"):
-        zonelist = common.parse_lyrfile(filename=filename)
+    ens = scratch_ensemble("ens", ensemble_path, filter_file="OK")
+    df_files = ens.find_files(zone_layer_mapping_file)
+    dataframes = []
+
+    for _, row in df_files.iterrows():
+        real = row["REAL"]
+        zonelist = common.parse_lyrfile(filename=row["FULLPATH"])
         layer_zone_mapping = common.convert_lyrlist_to_zonemap(zonelist)
+        df_real = pd.DataFrame.from_dict(
+            layer_zone_mapping, orient="index", columns=["ZONE"]
+        )
+        df_real["K1"] = df_real.index
+        df_real["REAL"] = real
         zonelist = remove_invalid_colors(zonelist)
         zone_color_mapping = {
             zonedict["name"]: zonedict["color"]
             for zonedict in zonelist
             if "color" in zonedict
         }
-        return layer_zone_mapping, zone_color_mapping
-    return None, None
+        df_real["COLOR"] = df["ZONE"].map(zone_color_mapping)
+        dataframes.append(df_real)
+
+    print(pd.concat(dataframes))
+    return pd.concat(dataframes)
 
 
 def read_well_attributes(
@@ -144,7 +160,8 @@ def read_well_connection_status(
     connection is SHUT and >0 if the connection is OPEN. This is independent of
     the status of the well.
     """
-    ens = ScratchEnsemble("ens", ensemble_path)
+
+    ens = scratch_ensemble("ens", ensemble_path, filter_file="OK")
     df_files = ens.find_files(well_connection_status_file)
 
     if df_files.empty:
