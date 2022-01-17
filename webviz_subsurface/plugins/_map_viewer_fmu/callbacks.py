@@ -36,46 +36,119 @@ def plugin_callbacks(
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     well_set_model: Optional[WellSetModel],
 ) -> None:
-    def selections() -> Dict[str, str]:
+    def selections(tab) -> Dict[str, str]:
         return {
             "view": ALL,
             "id": get_uuid(LayoutElements.SELECTIONS),
+            "tab": tab,
             "selector": ALL,
         }
 
-    def selector_wrapper() -> Dict[str, str]:
-        return {"id": get_uuid(LayoutElements.WRAPPER), "selector": ALL}
+    def selector_wrapper(tab) -> Dict[str, str]:
+        return {
+            "id": get_uuid(LayoutElements.WRAPPER),
+            "tab": tab,
+            "selector": ALL,
+        }
 
-    def links() -> Dict[str, str]:
-        return {"id": get_uuid(LayoutElements.LINK), "selector": ALL}
+    def links(tab) -> Dict[str, str]:
+        return {"id": get_uuid(LayoutElements.LINK), "tab": tab, "selector": ALL}
 
-    @callback(
-        Output(get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "data"),
-        Input(
-            {"view": ALL, "id": get_uuid(LayoutElements.COLORMAP_RESET_RANGE)},
-            "n_clicks",
-        ),
-        prevent_initial_call=True,
-    )
+    def callback_input_update_data_store(tab):
+        return [
+            Output({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": tab}, "data"),
+            Output(selector_wrapper(tab), "children"),
+            Output(
+                {"id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "tab": tab},
+                "data",
+            ),
+            Input(selections(tab), "value"),
+            Input({"id": get_uuid(LayoutElements.WELLS), "tab": tab}, "value"),
+            Input(links(tab), "value"),
+            Input({"id": get_uuid(LayoutElements.VIEWS), "tab": tab}, "value"),
+            Input(
+                {"id": get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "tab": tab},
+                "data",
+            ),
+            State(selections(tab), "id"),
+            State(selector_wrapper(tab), "id"),
+            State(links(tab), "id"),
+            State(
+                {"id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "tab": tab},
+                "data",
+            ),
+            State(get_uuid("tabs"), "value"),
+        ]
+
+    def callback_input_update_map(tab):
+        return [
+            Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab}, "layers"),
+            Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab}, "bounds"),
+            Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab}, "views"),
+            Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": tab}, "data"),
+            Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": tab}, "value"),
+            State({"id": get_uuid(LayoutElements.VIEWS), "tab": tab}, "value"),
+            State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab}, "layers"),
+        ]
+
+    def callback_input_colormap_reset(tab):
+        return [
+            Output(
+                {"id": get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "tab": tab}, "data"
+            ),
+            Input(
+                {
+                    "view": ALL,
+                    "id": get_uuid(LayoutElements.COLORMAP_RESET_RANGE),
+                    "tab": tab,
+                },
+                "n_clicks",
+            ),
+        ]
+
+    @callback(*callback_input_update_data_store("custom"))
+    def _update_seleced_data_store_custom(*args) -> Tuple[List[Dict], List[Any]]:
+        return _update_seleced_data_store(*args)
+
+    @callback(*callback_input_update_map("custom"))
+    def _update_map_custom(*args) -> Tuple[List[Dict], List[Any]]:
+        return _update_map(*args)
+
+    @callback(*callback_input_colormap_reset("custom"))
+    def _colormap_reset_indicator_custom(*args) -> Tuple[List[Dict], List[Any]]:
+        return _colormap_reset_indicator(*args)
+
+    @callback(*callback_input_update_data_store("diff"))
+    def _update_seleced_data_store_custom(*args) -> Tuple[List[Dict], List[Any]]:
+        return _update_seleced_data_store(*args)
+
+    @callback(*callback_input_update_map("diff"))
+    def _update_map_diff(*args) -> Tuple[List[Dict], List[Any]]:
+        return _update_map(*args)
+
+    @callback(*callback_input_colormap_reset("diff"))
+    def _colormap_reset_indicator_diff(*args) -> Tuple[List[Dict], List[Any]]:
+        return _colormap_reset_indicator(*args)
+
+    @callback(*callback_input_update_data_store("stats"))
+    def _update_seleced_data_store_stats(*args) -> Tuple[List[Dict], List[Any]]:
+        return _update_seleced_data_store(*args)
+
+    @callback(*callback_input_update_map("stats"))
+    def _update_map_stats(*args) -> Tuple[List[Dict], List[Any]]:
+        return _update_map(*args)
+
+    @callback(*callback_input_colormap_reset("stats"))
+    def _colormap_reset_indicator_stats(*args) -> Tuple[List[Dict], List[Any]]:
+        return _colormap_reset_indicator(*args)
+
     def _colormap_reset_indicator(_buttom_click) -> dict:
         ctx = callback_context.triggered[0]["prop_id"]
+        if ctx == ".":
+            raise PreventUpdate
         update_view = json.loads(ctx.split(".")[0])["view"]
         return update_view if update_view is not None else no_update
 
-    @callback(
-        Output(get_uuid(LayoutElements.SELECTED_DATA), "data"),
-        Output(selector_wrapper(), "children"),
-        Output(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-        Input(selections(), "value"),
-        Input(get_uuid(LayoutElements.WELLS), "value"),
-        Input(links(), "value"),
-        Input(get_uuid(LayoutElements.VIEWS), "value"),
-        Input(get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "data"),
-        State(selections(), "id"),
-        State(selector_wrapper(), "id"),
-        State(links(), "id"),
-        State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-    )
     def _update_seleced_data_store(
         selector_values: list,
         selected_wells,
@@ -86,6 +159,7 @@ def plugin_callbacks(
         wrapper_ids,
         link_ids,
         stored_color_settings,
+        tab,
     ) -> Tuple[List[Dict], List[Any]]:
         ctx = callback_context.triggered[0]["prop_id"]
 
@@ -126,6 +200,7 @@ def plugin_callbacks(
             selections,
             [
                 SideBySideSelectorFlex(
+                    tab,
                     get_uuid,
                     selector=id_val["selector"],
                     view_data=[data[id_val["selector"]] for data in selections],
@@ -137,16 +212,7 @@ def plugin_callbacks(
             stored_color_settings,
         )
 
-    @callback(
-        Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
-        Output(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
-        Output(get_uuid(LayoutElements.DECKGLMAP), "views"),
-        Input(get_uuid(LayoutElements.SELECTED_DATA), "data"),
-        Input(get_uuid(LayoutElements.VIEW_COLUMNS), "value"),
-        State(get_uuid(LayoutElements.VIEWS), "value"),
-        State(get_uuid(LayoutElements.DECKGLMAP), "layers"),
-    )
-    def _update_maps(selections: dict, view_columns, number_of_views, current_layers):
+    def _update_map(selections: dict, view_columns, number_of_views, current_layers):
         # layers = update_map_layers(number_of_views, well_set_model)
         # layers = [json.loads(x.to_json()) for x in layers]
         layer_model = DeckGLMapLayersModel(current_layers)

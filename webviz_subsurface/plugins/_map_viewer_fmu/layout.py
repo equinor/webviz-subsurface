@@ -84,6 +84,37 @@ def main_layout(
     show_fault_polygons: bool = True,
 ) -> None:
 
+    return wcc.Tabs(
+        id=get_uuid("tabs"),
+        style={"width": "100%"},
+        value="custom",
+        children=[
+            wcc.Tab(
+                label="Custom view",
+                value="custom",
+                children=view_layout(
+                    "custom", get_uuid, well_set_model, show_fault_polygons
+                ),
+            ),
+            wcc.Tab(
+                label="Difference between two maps",
+                value="diff",
+                children=view_layout(
+                    "diff", get_uuid, well_set_model, show_fault_polygons
+                ),
+            ),
+            wcc.Tab(
+                label="Map statistics",
+                value="stats",
+                children=view_layout(
+                    "stats", get_uuid, well_set_model, show_fault_polygons
+                ),
+            ),
+        ],
+    )
+
+
+def view_layout(tab, get_uuid, well_set_model, show_fault_polygons):
     selector_labels = {
         "ensemble": LayoutLabels.ENSEMBLE,
         "attribute": LayoutLabels.ATTRIBUTE,
@@ -91,7 +122,6 @@ def main_layout(
         "date": LayoutLabels.DATE,
         "mode": LayoutLabels.MODE,
     }
-
     return wcc.FlexBox(
         children=[
             wcc.Frame(
@@ -100,19 +130,21 @@ def main_layout(
                     filter(
                         None,
                         [
-                            DataStores(get_uuid=get_uuid),
-                            ViewSelector(get_uuid=get_uuid),
+                            DataStores(tab, get_uuid=get_uuid),
+                            ViewSelector(tab, get_uuid=get_uuid),
                             *[
-                                MapSelector(get_uuid, selector, label=label)
+                                MapSelector(tab, get_uuid, selector, label=label)
                                 for selector, label in selector_labels.items()
                             ],
-                            RealizationSelector(get_uuid=get_uuid),
+                            RealizationSelector(tab, get_uuid=get_uuid),
                             WellsSelector(
-                                get_uuid=get_uuid, well_set_model=well_set_model
+                                tab,
+                                get_uuid=get_uuid,
+                                well_set_model=well_set_model,
                             ),
                             show_fault_polygons
-                            and FaultPolygonsSelector(get_uuid=get_uuid),
-                            SurfaceColorSelector(get_uuid=get_uuid),
+                            and FaultPolygonsSelector(tab, get_uuid=get_uuid),
+                            SurfaceColorSelector(tab, get_uuid=get_uuid),
                         ],
                     )
                 ),
@@ -126,7 +158,10 @@ def main_layout(
                     html.Div(
                         [
                             DeckGLMap(
-                                id=get_uuid(LayoutElements.DECKGLMAP),
+                                id={
+                                    "id": get_uuid(LayoutElements.DECKGLMAP),
+                                    "tab": tab,
+                                },
                                 layers=update_map_layers(9, well_set_model),
                                 bounds=[456063.6875, 5926551, 467483.6875, 5939431],
                             )
@@ -140,27 +175,43 @@ def main_layout(
 
 
 class DataStores(html.Div):
-    def __init__(self, get_uuid: Callable) -> None:
+    def __init__(self, tab, get_uuid: Callable) -> None:
         super().__init__(
             children=[
-                dcc.Store(id=get_uuid(LayoutElements.SELECTED_DATA)),
-                dcc.Store(id=get_uuid(LayoutElements.RESET_BUTTOM_CLICK)),
-                dcc.Store(id=get_uuid(LayoutElements.STORED_COLOR_SETTINGS)),
+                dcc.Store(
+                    id={"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": tab}
+                ),
+                dcc.Store(
+                    id={"id": get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "tab": tab}
+                ),
+                dcc.Store(
+                    id={
+                        "id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS),
+                        "tab": tab,
+                    }
+                ),
             ]
         )
 
 
 class LinkCheckBox(wcc.Checklist):
-    def __init__(self, get_uuid, selector: str):
-        self.id = {"id": get_uuid(LayoutElements.LINK), "selector": selector}
-        self.value = None
-        self.options = [{"label": LayoutLabels.LINK, "value": selector}]
-        super().__init__(id=self.id, options=self.options)
+    def __init__(self, tab, get_uuid, selector: str, clicked=False):
+        self.id = {
+            "id": get_uuid(LayoutElements.LINK),
+            "tab": tab,
+            "selector": selector,
+        }
+        self.value = [selector] if clicked else []
+        self.options = [
+            {"label": LayoutLabels.LINK, "value": selector, "disabled": clicked}
+        ]
+        super().__init__(id=self.id, options=self.options, value=self.value)
 
 
 class SideBySideSelectorFlex(wcc.FlexBox):
     def __init__(
         self,
+        tab,
         get_uuid: Callable,
         selector: str,
         link: bool = False,
@@ -181,12 +232,14 @@ class SideBySideSelectorFlex(wcc.FlexBox):
                         component_id={
                             "view": idx,
                             "id": get_uuid(LayoutElements.SELECTIONS),
+                            "tab": tab,
                             "selector": selector,
                         },
                         multi=data.get("multi", False),
                     )
                     if selector != "color_range"
                     else color_range_selection_layout(
+                        tab,
                         get_uuid,
                         value=data["value"],
                         value_range=data["range"],
@@ -200,21 +253,17 @@ class SideBySideSelectorFlex(wcc.FlexBox):
 
 
 class ViewSelector(html.Div):
-    def __init__(self, get_uuid: Callable):
-        button_style = {
-            "height": "30px",
-            "line-height": "30px",
-            "background-color": "white",
-            "width": "50%",
-        }
+    def __init__(self, tab, get_uuid: Callable):
+
         super().__init__(
+            style={"font-size": "15px"},
             children=[
                 html.Div(
                     [
                         "Number of views",
                         html.Div(
                             dcc.Input(
-                                id=get_uuid(LayoutElements.VIEWS),
+                                id={"id": get_uuid(LayoutElements.VIEWS), "tab": tab},
                                 type="number",
                                 min=1,
                                 max=9,
@@ -230,7 +279,10 @@ class ViewSelector(html.Div):
                         "Views in row (optional)",
                         html.Div(
                             dcc.Input(
-                                id=get_uuid(LayoutElements.VIEW_COLUMNS),
+                                id={
+                                    "id": get_uuid(LayoutElements.VIEW_COLUMNS),
+                                    "tab": tab,
+                                },
                                 type="number",
                                 min=1,
                                 max=9,
@@ -240,29 +292,44 @@ class ViewSelector(html.Div):
                         ),
                     ]
                 ),
-            ]
+            ],
         )
 
 
 class MapSelector(wcc.Selectors):
     def __init__(
-        self, get_uuid: Callable, selector, label, open_details=True, info_text=None
+        self,
+        tab,
+        get_uuid: Callable,
+        selector,
+        label,
+        open_details=True,
+        info_text=None,
     ):
         super().__init__(
             label=label,
             open_details=open_details,
             children=[
                 wcc.Label(info_text) if info_text is not None else (),
-                LinkCheckBox(get_uuid, selector=selector),
+                LinkCheckBox(
+                    tab,
+                    get_uuid,
+                    selector=selector,
+                    clicked=tab == "stats" and selector not in ["mode", "realizations"],
+                ),
                 html.Div(
-                    id={"id": get_uuid(LayoutElements.WRAPPER), "selector": selector}
+                    id={
+                        "id": get_uuid(LayoutElements.WRAPPER),
+                        "tab": tab,
+                        "selector": selector,
+                    },
                 ),
             ],
         )
 
 
 class WellsSelector(html.Div):
-    def __init__(self, get_uuid: Callable, well_set_model):
+    def __init__(self, tab, get_uuid: Callable, well_set_model):
         value = options = (
             well_set_model.well_names if well_set_model is not None else []
         )
@@ -274,7 +341,7 @@ class WellsSelector(html.Div):
                 children=dropdown_vs_select(
                     value=value,
                     options=options,
-                    component_id=get_uuid(LayoutElements.WELLS),
+                    component_id={"id": get_uuid(LayoutElements.WELLS), "tab": tab},
                     multi=True,
                 ),
             ),
@@ -282,8 +349,9 @@ class WellsSelector(html.Div):
 
 
 class RealizationSelector(MapSelector):
-    def __init__(self, get_uuid: Callable):
+    def __init__(self, tab, get_uuid: Callable):
         super().__init__(
+            tab,
             get_uuid=get_uuid,
             selector="realizations",
             label=LayoutLabels.REALIZATIONS,
@@ -296,7 +364,7 @@ class RealizationSelector(MapSelector):
 
 
 class FaultPolygonsSelector(wcc.Selectors):
-    def __init__(self, get_uuid: Callable):
+    def __init__(self, tab, get_uuid: Callable):
         super().__init__(
             label=LayoutLabels.FAULTPOLYGONS,
             open_details=False,
@@ -316,23 +384,28 @@ class FaultPolygonsSelector(wcc.Selectors):
 
 
 class SurfaceColorSelector(wcc.Selectors):
-    def __init__(self, get_uuid: Callable):
+    def __init__(self, tab, get_uuid: Callable):
         super().__init__(
             label=LayoutLabels.COLORMAP_WRAPPER,
             open_details=False,
             children=[
-                LinkCheckBox(get_uuid, selector="colormap"),
+                LinkCheckBox(tab, get_uuid, selector="colormap"),
                 html.Div(
                     style={"margin-top": "10px"},
-                    id={"id": get_uuid(LayoutElements.WRAPPER), "selector": "colormap"},
+                    id={
+                        "id": get_uuid(LayoutElements.WRAPPER),
+                        "tab": tab,
+                        "selector": "colormap",
+                    },
                 ),
                 html.Div(
                     style={"margin-top": "10px"},
                     children=[
-                        LinkCheckBox(get_uuid, selector="color_range"),
+                        LinkCheckBox(tab, get_uuid, selector="color_range"),
                         html.Div(
                             id={
                                 "id": get_uuid(LayoutElements.WRAPPER),
+                                "tab": tab,
                                 "selector": "color_range",
                             }
                         ),
@@ -359,7 +432,7 @@ def dropdown_vs_select(value, options, component_id, multi=False):
     )
 
 
-def color_range_selection_layout(get_uuid, value, value_range, step, view_idx):
+def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_idx):
     #   number_format = ".1f" if all(val > 100 for val in value) else ".3g"
     return html.Div(
         children=[
@@ -369,6 +442,7 @@ def color_range_selection_layout(get_uuid, value, value_range, step, view_idx):
                     "view": view_idx,
                     "id": get_uuid(LayoutElements.SELECTIONS),
                     "selector": "color_range",
+                    "tab": tab,
                 },
                 tooltip={"placement": "bottomLeft"},
                 min=value_range[0],
@@ -382,6 +456,7 @@ def color_range_selection_layout(get_uuid, value, value_range, step, view_idx):
                     "view": view_idx,
                     "id": get_uuid(LayoutElements.SELECTIONS),
                     "selector": "colormap_keep_range",
+                    "tab": tab,
                 },
                 options=[
                     {
@@ -404,6 +479,7 @@ def color_range_selection_layout(get_uuid, value, value_range, step, view_idx):
                 id={
                     "view": view_idx,
                     "id": get_uuid(LayoutElements.COLORMAP_RESET_RANGE),
+                    "tab": tab,
                 },
             ),
         ]
