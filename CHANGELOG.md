@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Fixed
+
+- [#921](https://github.com/equinor/webviz-subsurface/pull/921) - Fixed bug with History Vectors in new `SimulationTimeSeries` plugin. Replaced hard coded realization number of 0, with first valid realization in provider.
+
 ## [0.2.9] - 2022-01-06
 
 ### Fixed
