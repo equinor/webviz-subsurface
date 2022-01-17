@@ -54,13 +54,15 @@ def create_history_vectors_df(
         if historical_vector_name and historical_vector_name in provider.vector_names():
             historical_vector_and_vector_name_dict[historical_vector_name] = vector
 
-    if not historical_vector_and_vector_name_dict:
+    # Get lowest valid realization number
+    realization = (
+        None if len(provider.realizations()) <= 0 else min(provider.realizations())
+    )
+    if not historical_vector_and_vector_name_dict or realization is None:
         return pd.DataFrame()
 
     historical_vector_names = list(historical_vector_and_vector_name_dict.keys())
-
-    # TODO: Ensure realization no 0 is good enough
     historical_vectors_df = provider.get_vectors_df(
-        historical_vector_names, resampling_frequency, realizations=[0]
+        historical_vector_names, resampling_frequency, realizations=[realization]
     )
     return historical_vectors_df.rename(columns=historical_vector_and_vector_name_dict)
