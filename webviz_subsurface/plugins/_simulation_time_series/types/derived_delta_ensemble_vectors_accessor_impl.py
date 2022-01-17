@@ -143,15 +143,14 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         # group realizations and order by date
         ensembles_delta_vectors_df = (
             ensemble_a_vectors_df.sub(ensemble_b_vectors_df)
+            .dropna(axis=0, how="any")
             .reset_index()
             .sort_values(["REAL", "DATE"], ignore_index=True)
         )
 
-        # ensembles_delta_vectors_df.dropna(axis=0, how="any", inplace=True)
-
         make_date_column_datetime_object(ensembles_delta_vectors_df)
 
-        return ensembles_delta_vectors_df.dropna(axis=0, how="any")
+        return ensembles_delta_vectors_df
 
     def has_provider_vectors(self) -> bool:
         return len(self._provider_vectors) > 0
@@ -317,10 +316,11 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         # group realizations and order by date
         delta_ensemble_calculated_vectors_df = (
             provider_a_calculated_vectors_df.sub(provider_b_calculated_vectors_df)
+            .dropna(axis=0, how="any")
             .reset_index()
             .sort_values(["REAL", "DATE"], ignore_index=True)
         )
 
         make_date_column_datetime_object(delta_ensemble_calculated_vectors_df)
 
-        return delta_ensemble_calculated_vectors_df.dropna(axis=0, how="any")
+        return delta_ensemble_calculated_vectors_df
