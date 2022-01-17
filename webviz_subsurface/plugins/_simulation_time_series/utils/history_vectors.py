@@ -55,9 +55,7 @@ def create_history_vectors_df(
             historical_vector_and_vector_name_dict[historical_vector_name] = vector
 
     # Get lowest valid realization number
-    realization = (
-        None if len(provider.realizations()) <= 0 else min(provider.realizations())
-    )
+    realization = min(provider.realizations(), default=None)
     if not historical_vector_and_vector_name_dict or realization is None:
         return pd.DataFrame()
 
