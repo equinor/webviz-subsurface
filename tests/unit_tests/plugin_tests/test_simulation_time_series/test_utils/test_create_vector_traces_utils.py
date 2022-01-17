@@ -6,11 +6,37 @@ import pandas as pd
 import pytest
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface.plugins._simulation_time_series.types.types import (
+    FanchartOptions,
+    StatisticsOptions,
+)
 from webviz_subsurface.plugins._simulation_time_series.utils.create_vector_traces_utils import (
     create_history_vector_trace,
+    create_vector_fanchart_traces,
     create_vector_observation_traces,
     create_vector_realization_traces,
+    create_vector_statistics_traces,
     render_hovertemplate,
+)
+
+
+VECTOR_STATISTICS_DF = pd.DataFrame(
+    columns=[
+        "DATE",
+        StatisticsOptions.MEAN,
+        StatisticsOptions.MIN,
+        StatisticsOptions.MAX,
+        StatisticsOptions.P10,
+        StatisticsOptions.P90,
+        StatisticsOptions.P50,
+    ],
+    data=[
+        [datetime.datetime(2020, 1, 1), 1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+        [datetime.datetime(2020, 1, 2), 1.5, 2.5, 3.5, 4.5, 5.5, 6.5],
+    ],
+)
+VECTOR_STATISTICS_DF["DATE"] = pd.Series(
+    VECTOR_STATISTICS_DF["DATE"].dt.to_pydatetime(), dtype=object
 )
 
 
@@ -205,3 +231,281 @@ def test_render_hovertemplate() -> None:
     assert template_default == render_hovertemplate("Vector_a", Frequency.QUARTERLY)
     assert template_default == render_hovertemplate("Vector_a", Frequency.YEARLY)
     assert template_default == render_hovertemplate("Vector_a", None)
+
+
+def test_create_vector_fanchart_traces_all_fanchart_options() -> None:
+    created_fanchart_traces = create_vector_fanchart_traces(
+        VECTOR_STATISTICS_DF,
+        fanchart_options=[
+            FanchartOptions.MEAN,
+            FanchartOptions.MIN_MAX,
+            FanchartOptions.P10_P90,
+        ],
+        hex_color="#2b00ff",
+        legend_group="First Legendgroup",
+        line_shape="linear",
+        show_legend=True,
+    )
+
+    # Verify number of trace dicts in list
+    assert len(created_fanchart_traces) == 5
+
+    # Verify Min
+    assert created_fanchart_traces[0]["name"] == "First Legendgroup"
+    assert created_fanchart_traces[0].get("fill", None) is None
+    assert created_fanchart_traces[0]["hovertemplate"] == "(%{x}, %{y})<br>Minimum"
+    assert np.array_equal(created_fanchart_traces[0]["y"], np.array([2.0, 2.5]))
+    assert created_fanchart_traces[0]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+    # Verify P90
+    assert created_fanchart_traces[1]["name"] == "First Legendgroup"
+    assert created_fanchart_traces[1].get("fill", None) == "tonexty"
+    assert created_fanchart_traces[1]["hovertemplate"] == "(%{x}, %{y})<br>P90"
+    assert np.array_equal(created_fanchart_traces[1]["y"], np.array([5.0, 5.5]))
+    assert created_fanchart_traces[1]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+    # Verify P10
+    assert created_fanchart_traces[2]["name"] == "First Legendgroup"
+    assert created_fanchart_traces[2].get("fill", None) == "tonexty"
+    assert created_fanchart_traces[2]["hovertemplate"] == "(%{x}, %{y})<br>P10"
+    assert np.array_equal(created_fanchart_traces[2]["y"], np.array([4.0, 4.5]))
+    assert created_fanchart_traces[2]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+    # Verify Max
+    assert created_fanchart_traces[3]["name"] == "First Legendgroup"
+    assert created_fanchart_traces[3].get("fill", None) == "tonexty"
+    assert created_fanchart_traces[3]["hovertemplate"] == "(%{x}, %{y})<br>Maximum"
+    assert np.array_equal(created_fanchart_traces[3]["y"], np.array([3.0, 3.5]))
+    assert created_fanchart_traces[3]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+    # Verify Mean
+    assert created_fanchart_traces[4]["name"] == "First Legendgroup"
+    assert created_fanchart_traces[4].get("fill", None) is None
+    assert created_fanchart_traces[4]["hovertemplate"] == "(%{x}, %{y})<br>Mean"
+    assert np.array_equal(created_fanchart_traces[4]["y"], np.array([1.0, 1.5]))
+    assert created_fanchart_traces[4]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+
+def test_create_vector_fanchart_traces_subset_fanchart_options() -> None:
+    created_fanchart_traces = create_vector_fanchart_traces(
+        VECTOR_STATISTICS_DF,
+        fanchart_options=[
+            FanchartOptions.MEAN,
+            FanchartOptions.P10_P90,
+        ],
+        hex_color="#2b00ff",
+        legend_group="Second Legendgroup",
+        line_shape="linear",
+        show_legend=True,
+    )
+
+    # Verify number of trace dicts in list
+    assert len(created_fanchart_traces) == 3
+
+    # Verify P90
+    assert created_fanchart_traces[0]["name"] == "Second Legendgroup"
+    assert created_fanchart_traces[0].get("fill", None) is None
+    assert created_fanchart_traces[0]["hovertemplate"] == "(%{x}, %{y})<br>P90"
+    assert np.array_equal(created_fanchart_traces[0]["y"], np.array([5.0, 5.5]))
+    assert created_fanchart_traces[0]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+    # Verify P10
+    assert created_fanchart_traces[1]["name"] == "Second Legendgroup"
+    assert created_fanchart_traces[1].get("fill", None) == "tonexty"
+    assert created_fanchart_traces[1]["hovertemplate"] == "(%{x}, %{y})<br>P10"
+    assert np.array_equal(created_fanchart_traces[1]["y"], np.array([4.0, 4.5]))
+    assert created_fanchart_traces[1]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+    # Verify Mean
+    assert created_fanchart_traces[2]["name"] == "Second Legendgroup"
+    assert created_fanchart_traces[2].get("fill", None) is None
+    assert created_fanchart_traces[2]["hovertemplate"] == "(%{x}, %{y})<br>Mean"
+    assert np.array_equal(created_fanchart_traces[2]["y"], np.array([1.0, 1.5]))
+    assert created_fanchart_traces[2]["x"] == [
+        datetime.datetime(2020, 1, 1),
+        datetime.datetime(2020, 1, 2),
+    ]
+
+
+def test_create_vector_statistics_traces_all_statistics_options() -> None:
+    created_statistics_traces = create_vector_statistics_traces(
+        VECTOR_STATISTICS_DF,
+        statistics_options=[
+            StatisticsOptions.MEAN,
+            StatisticsOptions.MIN,
+            StatisticsOptions.MAX,
+            StatisticsOptions.P10,
+            StatisticsOptions.P50,
+            StatisticsOptions.P90,
+        ],
+        color="green",
+        legend_group="Third Legendgroup",
+        line_shape="linear",
+    )
+
+    # Verify number of trace dicts in list
+    assert len(created_statistics_traces) == 6
+
+    # Verify Min
+    assert created_statistics_traces[0]["name"] == "Third Legendgroup"
+    assert created_statistics_traces[0]["hovertemplate"] == "(%{x}, %{y})<br>Minimum"
+    assert np.array_equal(created_statistics_traces[0]["y"], np.array([2.0, 2.5]))
+    assert np.array_equal(
+        created_statistics_traces[0]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+    # Verify P90
+    assert created_statistics_traces[1]["name"] == "Third Legendgroup"
+    assert created_statistics_traces[1]["hovertemplate"] == "(%{x}, %{y})<br>P90"
+    assert np.array_equal(created_statistics_traces[1]["y"], np.array([5.0, 5.5]))
+    assert np.array_equal(
+        created_statistics_traces[1]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+    # Verify P50
+    assert created_statistics_traces[2]["name"] == "Third Legendgroup"
+    assert created_statistics_traces[2]["hovertemplate"] == "(%{x}, %{y})<br>P50"
+    assert np.array_equal(created_statistics_traces[2]["y"], np.array([6.0, 6.5]))
+    assert np.array_equal(
+        created_statistics_traces[2]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+    # Verify P10
+    assert created_statistics_traces[3]["name"] == "Third Legendgroup"
+    assert created_statistics_traces[3]["hovertemplate"] == "(%{x}, %{y})<br>P10"
+    assert np.array_equal(created_statistics_traces[3]["y"], np.array([4.0, 4.5]))
+    assert np.array_equal(
+        created_statistics_traces[3]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+    # Verify Max
+    assert created_statistics_traces[4]["name"] == "Third Legendgroup"
+    assert created_statistics_traces[4]["hovertemplate"] == "(%{x}, %{y})<br>Maximum"
+    assert np.array_equal(created_statistics_traces[4]["y"], np.array([3.0, 3.5]))
+    assert np.array_equal(
+        created_statistics_traces[4]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+    # Verify Mean
+    assert created_statistics_traces[5]["name"] == "Third Legendgroup"
+    assert created_statistics_traces[5]["hovertemplate"] == "(%{x}, %{y})<br>Mean"
+    assert np.array_equal(created_statistics_traces[5]["y"], np.array([1.0, 1.5]))
+    assert np.array_equal(
+        created_statistics_traces[5]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+
+def test_create_vector_statistics_traces_subset_statistics_options() -> None:
+    created_statistics_traces = create_vector_statistics_traces(
+        VECTOR_STATISTICS_DF,
+        statistics_options=[
+            StatisticsOptions.MEAN,
+            StatisticsOptions.MIN,
+            StatisticsOptions.P10,
+        ],
+        color="green",
+        legend_group="Fourth Legendgroup",
+        line_shape="linear",
+    )
+
+    # Verify number of trace dicts in list
+    assert len(created_statistics_traces) == 3
+
+    # Verify P50
+    assert created_statistics_traces[0]["name"] == "Fourth Legendgroup"
+    assert created_statistics_traces[0]["hovertemplate"] == "(%{x}, %{y})<br>Minimum"
+    assert np.array_equal(created_statistics_traces[0]["y"], np.array([2.0, 2.5]))
+    assert np.array_equal(
+        created_statistics_traces[0]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+    # Verify P10
+    assert created_statistics_traces[1]["name"] == "Fourth Legendgroup"
+    assert created_statistics_traces[1]["hovertemplate"] == "(%{x}, %{y})<br>P10"
+    assert np.array_equal(created_statistics_traces[1]["y"], np.array([4.0, 4.5]))
+    assert np.array_equal(
+        created_statistics_traces[1]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )
+
+    # Verify Mean
+    assert created_statistics_traces[2]["name"] == "Fourth Legendgroup"
+    assert created_statistics_traces[2]["hovertemplate"] == "(%{x}, %{y})<br>Mean"
+    assert np.array_equal(created_statistics_traces[2]["y"], np.array([1.0, 1.5]))
+    assert np.array_equal(
+        created_statistics_traces[2]["x"],
+        np.array(
+            [
+                datetime.datetime(2020, 1, 1),
+                datetime.datetime(2020, 1, 2),
+            ]
+        ),
+    )

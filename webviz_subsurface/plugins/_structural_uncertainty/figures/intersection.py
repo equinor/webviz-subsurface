@@ -118,7 +118,7 @@ def get_plotly_traces_uncertainty_envelope(
         fan_chart_traces.extend(
             get_fanchart_traces(
                 data=fan_chart_data,
-                color=color,
+                hex_color=color,
                 legend_group=name,
                 legend_name=legendname,
                 show_legend=showlegend,
