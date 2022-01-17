@@ -121,6 +121,15 @@ EXPECTED_YEAR_2020_DF = pd.DataFrame(
 EXPECTED_YEAR_2020_DF["DATE"] = pd.Series(EXPECTED_YEAR_2020_DF["DATE"].dt.to_pydatetime(), dtype=object)
 # fmt: on
 
+
+# *******************************************************************
+#####################################################################
+#
+# UNIT TESTS
+#
+#####################################################################
+# *******************************************************************
+
 TEST_VALID_CASES = [
     pytest.param(INPUT_YEAR_2263_DF, EXPECTED_YEAR_2263_DF),
     pytest.param(INPUT_YEAR_2020_DF, EXPECTED_YEAR_2020_DF),

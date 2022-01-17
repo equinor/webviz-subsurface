@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 from pandas._testing import assert_frame_equal
 
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
@@ -37,7 +38,7 @@ INPUT_WEEKLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 1, 15), 4, 1400.0, 1350.0],
     ],
 )
-INTVL_WEEKLY_DF = pd.DataFrame(
+EXPECTED_INTVL_WEEKLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
     data=[
         [datetime.datetime(2021, 1, 1),  1, 50.0,  250.0],
@@ -51,7 +52,7 @@ INTVL_WEEKLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 1, 15), 4, 0.0,   0.0  ],
     ],
 )
-AVG_WEEKLY_DF = pd.DataFrame(
+EXPECTED_AVG_WEEKLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "AVG_A", "AVG_B"],
     data=[
         [datetime.datetime(2021, 1, 1),  1, 50.0/7.0,  250.0/7.0],
@@ -66,9 +67,9 @@ AVG_WEEKLY_DF = pd.DataFrame(
     ],
 )
 # Convert date columns to datetime.datetime
-INPUT_WEEKLY_DF["DATE"] = pd.Series(INPUT_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-INTVL_WEEKLY_DF["DATE"] = pd.Series(INTVL_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-AVG_WEEKLY_DF["DATE"] = pd.Series(AVG_WEEKLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+make_date_column_datetime_object(INPUT_WEEKLY_DF)
+make_date_column_datetime_object(EXPECTED_INTVL_WEEKLY_DF)
+make_date_column_datetime_object(EXPECTED_AVG_WEEKLY_DF)
 
 # Monthly frequency - rate per day implies divide on days in month
 INPUT_MONTHLY_DF = pd.DataFrame(
@@ -85,7 +86,7 @@ INPUT_MONTHLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 3, 1), 4, 1400.0, 1350.0],
     ],
 )
-INTVL_MONTHLY_DF = pd.DataFrame(
+EXPECTED_INTVL_MONTHLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0,  250.0],
@@ -99,7 +100,7 @@ INTVL_MONTHLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 3, 1), 4, 0.0,   0.0  ],
     ],
 )
-AVG_MONTHLY_DF = pd.DataFrame(
+EXPECTED_AVG_MONTHLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "AVG_A", "AVG_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0/31.0,  250.0/31.0],
@@ -114,9 +115,9 @@ AVG_MONTHLY_DF = pd.DataFrame(
     ],
 )
 # Convert date columns to datetime.datetime
-INPUT_MONTHLY_DF["DATE"] = pd.Series(INPUT_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-INTVL_MONTHLY_DF["DATE"] = pd.Series(INTVL_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-AVG_MONTHLY_DF["DATE"] = pd.Series(AVG_MONTHLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+make_date_column_datetime_object(INPUT_MONTHLY_DF)
+make_date_column_datetime_object(EXPECTED_INTVL_MONTHLY_DF)
+make_date_column_datetime_object(EXPECTED_AVG_MONTHLY_DF)
 
 # Yearly frequency - rate per day implies divide on days in year
 INPUT_YEARLY_DF = pd.DataFrame(
@@ -133,7 +134,7 @@ INPUT_YEARLY_DF = pd.DataFrame(
         [datetime.datetime(2023, 1, 1), 4, 1400.0, 1350.0],
     ],
 )
-INTVL_YEARLY_DF = pd.DataFrame(
+EXPECTED_INTVL_YEARLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0,  250.0],
@@ -147,7 +148,7 @@ INTVL_YEARLY_DF = pd.DataFrame(
         [datetime.datetime(2023, 1, 1), 4, 0.0,   0.0  ],
     ],
 )
-AVG_YEARLY_DF = pd.DataFrame(
+EXPECTED_AVG_YEARLY_DF = pd.DataFrame(
     columns=["DATE", "REAL", "AVG_A", "AVG_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0/365.0,  250.0/365.0],
@@ -162,9 +163,9 @@ AVG_YEARLY_DF = pd.DataFrame(
     ],
 )
 # Convert date columns to datetime.datetime
-INPUT_YEARLY_DF["DATE"] = pd.Series(INPUT_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-INTVL_YEARLY_DF["DATE"] = pd.Series(INTVL_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
-AVG_YEARLY_DF["DATE"] = pd.Series(AVG_YEARLY_DF["DATE"].dt.to_pydatetime(), dtype=object)
+make_date_column_datetime_object(INPUT_YEARLY_DF)
+make_date_column_datetime_object(EXPECTED_INTVL_YEARLY_DF)
+make_date_column_datetime_object(EXPECTED_AVG_YEARLY_DF)
 
 
 # Monthly frequency after year 2262 - rate per day implies divide on days in month
@@ -184,10 +185,10 @@ AFTER_2262_MONTHLY_DATES = pd.Series(
 # NOTE: datetime.datetime after year 2262 is not converted to pd.Timestamp!
 INPUT_MONTHLY_AFTER_2262_DF = INPUT_MONTHLY_DF.copy()
 INPUT_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
-INTVL_MONTHLY_AFTER_2262_DF = INTVL_MONTHLY_DF.copy()
-INTVL_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
-AVG_MONTHLY_AFTER_2262_DF = AVG_MONTHLY_DF.copy()
-AVG_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
+EXPECTED_INTVL_MONTHLY_AFTER_2262_DF = EXPECTED_INTVL_MONTHLY_DF.copy()
+EXPECTED_INTVL_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
+EXPECTED_AVG_MONTHLY_AFTER_2262_DF = EXPECTED_AVG_MONTHLY_DF.copy()
+EXPECTED_AVG_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
 
 # fmt: on
 
@@ -201,13 +202,13 @@ AVG_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
 # *******************************************************************
 
 TEST_CASES = [
-    pytest.param(INPUT_WEEKLY_DF, INTVL_WEEKLY_DF, AVG_WEEKLY_DF),
-    pytest.param(INPUT_MONTHLY_DF, INTVL_MONTHLY_DF, AVG_MONTHLY_DF),
-    pytest.param(INPUT_YEARLY_DF, INTVL_YEARLY_DF, AVG_YEARLY_DF),
+    pytest.param(INPUT_WEEKLY_DF, EXPECTED_INTVL_WEEKLY_DF, EXPECTED_AVG_WEEKLY_DF),
+    pytest.param(INPUT_MONTHLY_DF, EXPECTED_INTVL_MONTHLY_DF, EXPECTED_AVG_MONTHLY_DF),
+    pytest.param(INPUT_YEARLY_DF, EXPECTED_INTVL_YEARLY_DF, EXPECTED_AVG_YEARLY_DF),
     pytest.param(
         INPUT_MONTHLY_AFTER_2262_DF,
-        INTVL_MONTHLY_AFTER_2262_DF,
-        AVG_MONTHLY_AFTER_2262_DF,
+        EXPECTED_INTVL_MONTHLY_AFTER_2262_DF,
+        EXPECTED_AVG_MONTHLY_AFTER_2262_DF,
     ),
 ]
 

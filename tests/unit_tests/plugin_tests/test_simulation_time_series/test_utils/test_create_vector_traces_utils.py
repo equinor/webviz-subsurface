@@ -19,6 +19,16 @@ from webviz_subsurface.plugins._simulation_time_series.utils.create_vector_trace
     render_hovertemplate,
 )
 
+
+# *******************************************************************
+#####################################################################
+#
+# CONFIGURE TESTDATA
+#
+#####################################################################
+# *******************************************************************
+
+
 VECTOR_STATISTICS_DF = pd.DataFrame(
     columns=[
         "DATE",
@@ -37,6 +47,15 @@ VECTOR_STATISTICS_DF = pd.DataFrame(
 VECTOR_STATISTICS_DF["DATE"] = pd.Series(
     VECTOR_STATISTICS_DF["DATE"].dt.to_pydatetime(), dtype=object
 )
+
+
+# *******************************************************************
+#####################################################################
+#
+# UNIT TESTS
+#
+#####################################################################
+# *******************************************************************
 
 
 def test_crate_vector_observation_traces() -> None:
