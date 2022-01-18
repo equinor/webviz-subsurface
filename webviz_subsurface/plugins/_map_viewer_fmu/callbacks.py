@@ -227,7 +227,7 @@ def plugin_callbacks(
             layer_model.update_layer_by_id(
                 layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                 layer_data={
-                    "colormap": f"/colormaps/{data['colormap']['value']}.png",
+                    "colorMapName": data["colormap"]["value"],
                     "colorMapRange": data["color_range"]["value"],
                 },
             )
@@ -358,7 +358,20 @@ def plugin_callbacks(
             stored_color_settings if stored_color_settings is not None else {}
         )
 
-        colormaps = ["viridis_r", "seismic"]
+        colormaps = [
+            "Physics",
+            "Rainbow",
+            "Porosity",
+            "Permeability",
+            "Seismic BlueWhiteRed",
+            "Time/Depth",
+            "Stratigraphy",
+            "Facies",
+            "Gas-Oil-Water",
+            "Gas-Water",
+            "Oil-Water",
+            "Accent",
+        ]
 
         for idx, data in enumerate(selections):
             surfaceid = get_surface_id_from_data(data)
