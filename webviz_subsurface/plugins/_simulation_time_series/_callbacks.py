@@ -320,15 +320,8 @@ def plugin_callbacks(
                     )
                 if visualization == VisualizationOptions.STATISTICS_AND_REALIZATIONS:
                     # Configure line width and color scaling to easier separate
-                    # statistics traces and realization traces
-                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
-                    figure_builder.add_statistics_traces(
-                        vectors_statistics_df,
-                        ensemble,
-                        statistics_options,
-                        line_width=3,
-                    )
-                    # Show selected realizations on top - only filter df if realizations filter
+                    # statistics traces and realization traces.
+                    # Show selected realizations - only filter df if realizations filter
                     # query is not performed
                     figure_builder.add_realizations_traces(
                         vectors_df
@@ -336,6 +329,14 @@ def plugin_callbacks(
                         else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
                         ensemble,
                         color_lightness_scale=150.0,
+                    )
+                    # Add statistics on top
+                    vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+                    figure_builder.add_statistics_traces(
+                        vectors_statistics_df,
+                        ensemble,
+                        statistics_options,
+                        line_width=3,
                     )
 
         # Retrieve selected input providers

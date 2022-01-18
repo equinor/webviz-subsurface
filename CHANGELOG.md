@@ -6,15 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED] - YYYY-MM-DD
-### Added
-- [#880](https://github.com/equinor/webviz-subsurface/pull/880) - Show hover information for uncertainty envelope in `StructuralUncertainty`.
+
+### Fixed
+
+- [#921](https://github.com/equinor/webviz-subsurface/pull/921) - Fixed bug with History Vectors in new `SimulationTimeSeries` plugin. Replaced hard coded realization number of 0, with first valid realization in provider.
+
+## [0.2.9] - 2022-01-06
 
 ### Fixed
 
 - [#888](https://github.com/equinor/webviz-subsurface/pull/888) - Improved `SeismicMisfit` performance when using polygon files with a large number of polygons.
+- [#911](https://github.com/equinor/webviz-subsurface/pull/911) - Handle ensembles with missing surface folders in `PropertyStatistics`.
 
 ### Added
 
+- [#880](https://github.com/equinor/webviz-subsurface/pull/880) - Show hover information for uncertainty envelope in `StructuralUncertainty`.
 - [#883](https://github.com/equinor/webviz-subsurface/pull/883) - Added `Statistics + Realizations`-plot for New `SimulationTimeSeries` plugin. Includes filtering of realizations and selection to calculate statistics from all realizations or selected subset of realizations. Updated visualization mode included in user download data.
 - [#867](https://github.com/equinor/webviz-subsurface/pull/867) - Added new `SimulationTimeSeries` plugin, with code structure according to best practice plugin example `webviz-plugin-boilerplate` and usage of `EnsembleSummaryProvider`. New functionality as multiple Delta Ensembles in same plot, selectable resampling frequency and possibility to group subplots per selected ensemble or per selected vector.
 - [#884](https://github.com/equinor/webviz-subsurface/pull/884) - Added a new tab to the `RFTPlotter` plugin, with functionality to analyse RFT pressure responses to parameters.

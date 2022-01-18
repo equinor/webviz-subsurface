@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 import dash
@@ -7,10 +8,14 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
 from ..._datainput.fmu_input import scratch_ensemble
-from ..._models import EnsembleSetModel, caching_ensemble_set_model_factory
-from .controllers import controllers
-from .group_tree_data import GroupTreeData
-from .views import main_view
+from ..._providers import (
+    EnsembleSummaryProvider,
+    EnsembleSummaryProviderFactory,
+    Frequency,
+)
+from ._callbacks import plugin_callbacks
+from ._ensemble_group_tree_data import EnsembleGroupTreeData
+from ._layout import main_layout
 
 
 class GroupTree(WebvizPluginABC):
@@ -57,6 +62,7 @@ class GroupTree(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         gruptree_file: str = "share/results/tables/gruptree.csv",
+        rel_file_pattern: str = "share/results/unsmry/*.arrow",
         time_index: str = "yearly",
     ):
         super().__init__()
@@ -64,41 +70,50 @@ class GroupTree(WebvizPluginABC):
             "monthly",
             "yearly",
         ], "time_index must be monthly or yearly"
-        self.ensembles = ensembles
-        self.gruptree_file = gruptree_file
-        self.time_index = time_index
-        self.ens_paths = {
-            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-            for ens in ensembles
+        self._ensembles = ensembles
+        self._gruptree_file = gruptree_file
+
+        if ensembles is None:
+            raise ValueError('Incorrect argument, must provide "ensembles"')
+
+        sampling = Frequency(time_index)
+
+        self._ensemble_paths: Dict[str, Path] = {
+            ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                ensemble_name
+            ]
+            for ensemble_name in ensembles
         }
 
-        self.emodel: EnsembleSetModel = (
-            caching_ensemble_set_model_factory.get_or_create_model(
-                ensemble_paths={
-                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                    for ens in ensembles
-                },
-                time_index="monthly",
+        provider_factory = EnsembleSummaryProviderFactory.instance()
+
+        self._group_tree_data: Dict[str, EnsembleGroupTreeData] = {}
+
+        sampling = Frequency(time_index)
+        for ens_name, ens_path in self._ensemble_paths.items():
+            provider: EnsembleSummaryProvider = (
+                provider_factory.create_from_arrow_unsmry_presampled(
+                    str(ens_path), rel_file_pattern, sampling
+                )
             )
-        )
-        smry = self.emodel.get_or_load_smry_cached()
-        gruptree = read_gruptree_files(self.ens_paths, self.gruptree_file)
-        smry["DATE"] = pd.to_datetime(smry["DATE"])
-        gruptree["DATE"] = pd.to_datetime(gruptree["DATE"])
-
-        if time_index == "yearly":
-            smry = smry[smry["DATE"].dt.is_year_start]
-
-        self.grouptreedata = GroupTreeData(smry, gruptree)
+            gruptree = read_ensemble_gruptree(ens_name, ens_path, gruptree_file)
+            self._group_tree_data[ens_name] = EnsembleGroupTreeData(provider, gruptree)
 
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
-        functions: List[Tuple[Callable, List[Dict]]] = self.emodel.webvizstore
+        functions: List[Tuple[Callable, List[Dict]]] = []
         functions.append(
             (
-                read_gruptree_files,
-                [{"ens_paths": self.ens_paths, "gruptree_file": self.gruptree_file}],
+                read_ensemble_gruptree,
+                [
+                    {
+                        "ens_name": ens_name,
+                        "ens_path": ens_path,
+                        "gruptree_file": self._gruptree_file,
+                    }
+                    for ens_name, ens_path in self._ensemble_paths.items()
+                ],
             )
         )
         return functions
@@ -128,33 +143,23 @@ class GroupTree(WebvizPluginABC):
     def layout(self) -> html.Div:
         return html.Div(
             children=[
-                # clientside_stores(get_uuid=self.uuid),
-                main_view(get_uuid=self.uuid, ensembles=self.ensembles),
+                main_layout(get_uuid=self.uuid, ensembles=self._ensembles),
             ],
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:
-        controllers(app=app, get_uuid=self.uuid, grouptreedata=self.grouptreedata)
+        plugin_callbacks(
+            app=app, get_uuid=self.uuid, group_tree_data=self._group_tree_data
+        )
 
 
 @webvizstore
-def read_gruptree_files(ens_paths: Dict[str, str], gruptree_file: str) -> pd.DataFrame:
-    """Searches for gruptree files on the scratch disk. These
-    files can be exported in the FMU workflow using the ECL2CSV
-    forward model with subcommand gruptree.
-    """
-    df = pd.DataFrame()
-    for ens_name, ens_path in ens_paths.items():
-        df_ens = read_ensemble_gruptree(ens_name, ens_path, gruptree_file)
-        df_ens["ENSEMBLE"] = ens_name
-        df = pd.concat([df, df_ens])
-    return df.where(pd.notnull(df), None)
-
-
 def read_ensemble_gruptree(
     ens_name: str, ens_path: str, gruptree_file: str
 ) -> pd.DataFrame:
-    """Reads the gruptree file for an ensemble.
+    """Reads the gruptree files for an ensemble from the scratch disk. These
+    files can be exported in the FMU workflow using the ECL2CSV
+    forward model with subcommand gruptree.
 
     If BRANPROP is found in the KEYWORD column, then GRUPTREE rows
     are filtered out.
@@ -189,9 +194,12 @@ def read_ensemble_gruptree(
 
         df_real["REAL"] = row["REAL"]
         dataframes.append(df_real)
-    df_all = pd.concat(dataframes)
+    df = pd.concat(dataframes)
 
     # Return either one or all realization in a common dataframe
     if gruptrees_are_equal:
-        return df_all[df_all["REAL"] == df_all["REAL"].min()]
-    return df_all
+        df = df[df["REAL"] == df["REAL"].min()]
+
+    df["DATE"] = pd.to_datetime(df["DATE"])
+
+    return df.where(pd.notnull(df), None)

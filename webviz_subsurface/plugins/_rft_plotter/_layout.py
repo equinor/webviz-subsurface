@@ -9,6 +9,7 @@ from ._business_logic import RftPlotterDataModel
 # pylint: disable = too-few-public-methods
 class LayoutElements:
     MAP = "map-wrapper"
+    MAP_GRAPH = "map-graph"
     FORMATIONS_GRAPH = "formations-graph-wrapper"
     MISFITPLOT_GRAPH = "misfit-graph-wrapper"
     CROSSPLOT_GRAPH = "crossplot-graph-wrapper"
@@ -54,6 +55,8 @@ class LayoutElements:
     PARAMRESP_CORR_BARCHART_FIGURE = "paramresp-corr-barchart-figure"
     PARAMRESP_SCATTERPLOT = "paramresp-scatterplot"
     PARAMRESP_FORMATIONS = "paramresp-formations"
+    PARAMRESP_DATE_DROPDOWN = "paramresp-well-dropdown"
+    PARAMRESP_ZONE_DROPDOWN = "paramresp-zone-dropdown"
 
 
 def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
@@ -199,19 +202,25 @@ def parameter_response_selector_layout(
                         value=well_names[0] if well_names else "",
                         clearable=False,
                     ),
-                    wcc.Dropdown(
-                        label="Date",
-                        id=get_uuid(LayoutElements.PARAMRESP_DATE),
-                        options=None,
-                        value=None,
-                        clearable=False,
+                    html.Div(
+                        id=get_uuid(LayoutElements.PARAMRESP_DATE_DROPDOWN),
+                        children=wcc.Dropdown(
+                            label="Date",
+                            id=get_uuid(LayoutElements.PARAMRESP_DATE),
+                            options=None,
+                            value=None,
+                            clearable=False,
+                        ),
                     ),
-                    wcc.Dropdown(
-                        label="Zone",
-                        id=get_uuid(LayoutElements.PARAMRESP_ZONE),
-                        options=None,
-                        clearable=False,
-                        value=None,
+                    html.Div(
+                        id=get_uuid(LayoutElements.PARAMRESP_ZONE_DROPDOWN),
+                        children=wcc.Dropdown(
+                            label="Zone",
+                            id=get_uuid(LayoutElements.PARAMRESP_ZONE),
+                            options=None,
+                            clearable=False,
+                            value=None,
+                        ),
                     ),
                     wcc.Dropdown(
                         label="Parameter",
