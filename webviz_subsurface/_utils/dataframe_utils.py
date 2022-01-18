@@ -25,10 +25,7 @@ def assert_date_column_is_datetime_object(df: pd.DataFrame) -> None:
 
     # Empty rows
     if df.shape[0] <= 0:
-        raise ValueError(
-            "DataFrame does not contain rows of data, cannot ensure correct "
-            'type in "DATE" column!'
-        )
+        return None
 
     # Get type from first element - use iloc to access by position rather than index label
     sampled_date_value = df["DATE"].iloc[0]
@@ -39,6 +36,8 @@ def assert_date_column_is_datetime_object(df: pd.DataFrame) -> None:
         raise ValueError(
             '"DATE"-column in dataframe is not on datetime.datetime format!'
         )
+
+    return None
 
 
 def make_date_column_datetime_object(df: pd.DataFrame) -> None:
@@ -64,7 +63,7 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> None:
 
     # Empty rows
     if df.shape[0] <= 0:
-        return df
+        return None
 
     # Get type from first element - use iloc to access by position rather than index label
     sampled_date_value = df["DATE"].iloc[0]

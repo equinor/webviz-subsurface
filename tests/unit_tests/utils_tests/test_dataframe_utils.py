@@ -1,5 +1,4 @@
 import datetime
-from typing import Type
 
 import pandas as pd
 import pytest
@@ -17,28 +16,16 @@ from webviz_subsurface._utils.dataframe_utils import (
 #
 #########################################################
 # *******************************************************
+
 # fmt: off
 INPUT_EMPTY_DF = pd.DataFrame()
 INPUT_NO_ROWS_DF = pd.DataFrame(columns=["DATE", "A"])
-INPUT_TIMESTAMP_DF = pd.DataFrame(
-    columns=["DATE", "A"],
-    data=[
-        [pd.Timestamp(2000, 1, 15), 1.0],
-        [pd.Timestamp(2000, 2, 15), 1.0]],
-)
 INPUT_TIMESTAMP_DATETIME_DF = pd.DataFrame(
     columns=["DATE", "A"],
     data=[
         [pd.Timestamp(2000, 1, 1),       1.0],  # pd.Timestamp detected in df["DATE"][0]
         [datetime.datetime(2263, 2, 15), 1.0],
     ],
-)
-INPUT_DATETIME_TIMESTAMP_DF = pd.DataFrame(
-    data=[
-        [datetime.datetime(2263, 2, 1), 1.0],
-        [pd.Timestamp(2000, 1, 1),      1.0],  # pd.Timestamp NOT detected in df["DATE"][1]
-    ],
-    columns=["DATE", "A"],
 )
 INPUT_DATETIME_YEAR_2020_DF = pd.DataFrame(
     columns=["DATE", "A"],
@@ -60,15 +47,6 @@ INPUT_DATETIME_YEAR_2263_DF = pd.DataFrame(
         [datetime.datetime(2263, 3, 15), 3.0],
     ],
 )
-INPUT_DATETIME_YEAR_2263_INCONSISTENT_INDEX_DF = pd.DataFrame(
-    columns=["DATE", "A"],
-    data=[
-        [datetime.datetime(2263, 1, 15), 1.0],
-        [datetime.datetime(2263, 2, 15), 2.0],
-        [datetime.datetime(2263, 3, 15), 3.0],
-    ],
-    index = [2,5,9]
-)
 INPUT_TIMESTAMP_YEAR_2020_DF = pd.DataFrame(
     columns=["DATE", "A"],
     data=[
@@ -78,75 +56,6 @@ INPUT_TIMESTAMP_YEAR_2020_DF = pd.DataFrame(
     ],
 )
 
-INPUT_DATE_YEAR_2020_DF = pd.DataFrame(
-    columns=["DATE", "A"],
-    data=[
-        [datetime.date(2020, 1, 15), 1.0],
-        [datetime.date(2020, 2, 15), 2.0],
-        [datetime.date(2020, 3, 15), 3.0],
-    ],
-)
-# fmt: on
-
-# *******************************************************
-#########################################################
-#
-# TESTING OF: assert_date_column_is_datetime_object()
-#
-#########################################################
-# *******************************************************
-TEST_CASES_ERROR_RAISED = [
-    pytest.param(INPUT_EMPTY_DF, 'df does not contain column "DATE"'),
-    pytest.param(
-        INPUT_NO_ROWS_DF,
-        'DataFrame does not contain rows of data, cannot ensure correct type in "DATE" column!',
-    ),
-    pytest.param(
-        INPUT_TIMESTAMP_DF,
-        '"DATE"-column in dataframe is not on datetime.datetime format!',
-    ),
-    pytest.param(
-        INPUT_TIMESTAMP_DATETIME_DF,
-        '"DATE"-column in dataframe is not on datetime.datetime format!',
-    ),
-]
-TEST_CASES_NO_ERROR = [
-    pytest.param(INPUT_DATETIME_YEAR_2020_DF),
-    pytest.param(INPUT_DATETIME_YEAR_2263_DF),
-    pytest.param(INPUT_DATETIME_TIMESTAMP_DF),
-    pytest.param(INPUT_DATETIME_YEAR_2263_INCONSISTENT_INDEX_DF),
-]
-
-
-@pytest.mark.parametrize("input_df, expected_msg", TEST_CASES_ERROR_RAISED)
-def test_assert_date_column_is_datetime_object_error_raised(
-    input_df: pd.DataFrame, expected_msg: str
-) -> None:
-    with pytest.raises(ValueError) as err:
-        assert_date_column_is_datetime_object(input_df)
-    assert str(err.value) == expected_msg
-
-
-@pytest.mark.parametrize("input_df", TEST_CASES_NO_ERROR)
-def test_assert_date_column_is_datetime_object_no_errors(
-    input_df: pd.DataFrame,
-) -> None:
-    """Test cases where first element in "DATE" column is datetime.datetime"""
-    try:
-        assert_date_column_is_datetime_object(input_df)
-
-    # pylint: disable = bare-except
-    except:
-        pytest.fail("Excpected no raise of ERROR!")
-
-
-# *******************************************************
-########################################################
-#
-# TESTING OF: make_date_column_datetime_object()
-#
-########################################################
-# *******************************************************
 EXPECTED_YEAR_2020_DF = pd.DataFrame(
     columns=["DATE", "A"],
     data=[
@@ -170,28 +79,124 @@ EXPECTED_YEAR_2263_DF = pd.DataFrame(
         [datetime.datetime(2263, 3, 15), 3.0],
     ],
 )
+# fmt: on
+
+# *******************************************************
+#########################################################
+#
+# TESTING OF: assert_date_column_is_datetime_object()
+#
+#########################################################
+# *******************************************************
 
 
-TEST_VALID_CASES = [
-    pytest.param(INPUT_DATETIME_YEAR_2020_DF, EXPECTED_YEAR_2020_DF),
-    pytest.param(INPUT_TIMESTAMP_YEAR_2020_DF, EXPECTED_YEAR_2020_DF),
-    pytest.param(INPUT_DATETIME_YEAR_2263_DF, EXPECTED_YEAR_2263_DF),
-    pytest.param(INPUT_NO_ROWS_DF, INPUT_NO_ROWS_DF),
-]
+def test_assert_date_column_is_datetime_object_no_date_column_error() -> None:
+    with pytest.raises(ValueError) as err:
+        assert_date_column_is_datetime_object(INPUT_EMPTY_DF)
+    assert str(err.value) == 'df does not contain column "DATE"'
 
-TEST_INVALID_CASES = [
-    pytest.param(INPUT_EMPTY_DF, 'df does not contain column "DATE"', ValueError),
-    pytest.param(
-        INPUT_DATE_YEAR_2020_DF,
-        f'Column "DATE" of type {datetime.date} is not handled!',
-        ValueError,
-    ),
-    pytest.param(
-        INPUT_TIMESTAMP_DATETIME_DF,
-        "Can only use .dt accessor with datetimelike values",
-        AttributeError,
-    ),
-]
+
+def test_assert_date_column_is_datetime_object_timestamp_input_error() -> None:
+    # fmt: off
+    input_timestamp_df = pd.DataFrame(
+        columns=["DATE", "A"],
+        data=[
+            [pd.Timestamp(2000, 1, 15), 1.0],
+            [pd.Timestamp(2000, 2, 15), 1.0]],
+    )
+    # fmt: on
+    with pytest.raises(ValueError) as err:
+        assert_date_column_is_datetime_object(input_timestamp_df)
+    assert (
+        str(err.value)
+        == '"DATE"-column in dataframe is not on datetime.datetime format!'
+    )
+
+
+def test_assert_date_column_is_datetime_object_timestamp_datetime_input_error() -> None:
+    with pytest.raises(ValueError) as err:
+        assert_date_column_is_datetime_object(INPUT_TIMESTAMP_DATETIME_DF)
+    assert (
+        str(err.value)
+        == '"DATE"-column in dataframe is not on datetime.datetime format!'
+    )
+
+
+def test_assert_date_column_is_datetime_object_no_rows_df() -> None:
+    try:
+        assert_date_column_is_datetime_object(INPUT_NO_ROWS_DF)
+
+    # pylint: disable = bare-except
+    except:
+        pytest.fail("Excpected no raise of ERROR!")
+
+
+def test_assert_date_column_is_datetime_object_datetime_year_2020() -> None:
+    try:
+        assert_date_column_is_datetime_object(INPUT_DATETIME_YEAR_2020_DF)
+
+    # pylint: disable = bare-except
+    except:
+        pytest.fail("Excpected no raise of ERROR!")
+
+
+def test_assert_date_column_is_datetime_object_datetime_year_2263() -> None:
+    try:
+        assert_date_column_is_datetime_object(INPUT_DATETIME_YEAR_2263_DF)
+
+    # pylint: disable = bare-except
+    except:
+        pytest.fail("Excpected no raise of ERROR!")
+
+
+def test_assert_date_column_is_datetime_object_datetime_timestamp_df() -> None:
+    # fmt: off
+    input_datetime_timestamp_df = pd.DataFrame(
+        data=[
+            [datetime.datetime(2263, 2, 1), 1.0],
+            [pd.Timestamp(2000, 1, 1),      1.0],  # pd.Timestamp NOT detected in df["DATE"][1]
+        ],
+        columns=["DATE", "A"],
+    )
+    # fmt: on
+    try:
+        assert_date_column_is_datetime_object(input_datetime_timestamp_df)
+
+    # pylint: disable = bare-except
+    except:
+        pytest.fail("Excpected no raise of ERROR!")
+
+
+def test_assert_date_column_is_datetime_object_datetime_inconsistent_index_df() -> None:
+    """To verify iloc usage"""
+    # fmt: off
+    input_datetime_year_2263_inconsistent_index_df = pd.DataFrame(
+        columns=["DATE", "A"],
+        data=[
+            [datetime.datetime(2263, 1, 15), 1.0],
+            [datetime.datetime(2263, 2, 15), 2.0],
+            [datetime.datetime(2263, 3, 15), 3.0],
+        ],
+        index = [2,5,9]
+    )
+    # fmt: on
+    try:
+        assert_date_column_is_datetime_object(
+            input_datetime_year_2263_inconsistent_index_df
+        )
+
+    # pylint: disable = bare-except
+    except:
+        pytest.fail("Excpected no raise of ERROR!")
+
+
+# *******************************************************
+########################################################
+#
+# TESTING OF: make_date_column_datetime_object()
+#
+########################################################
+# *******************************************************
 
 
 def _verify_expected_df_date_column_data(df: pd.DataFrame) -> None:
@@ -206,24 +211,71 @@ def _verify_expected_df_date_column_data(df: pd.DataFrame) -> None:
         assert type(row) == datetime.datetime
 
 
-@pytest.mark.parametrize("input_df, expected_df", TEST_VALID_CASES)
-def test_make_date_column_datetime_object_valid_input(
-    input_df: pd.DataFrame, expected_df: pd.DataFrame
-) -> None:
-    _verify_expected_df_date_column_data(expected_df)
+def test_make_date_column_datetime_object_datetime_year_2020_df() -> None:
+    _verify_expected_df_date_column_data(EXPECTED_YEAR_2020_DF)
 
     # Copy to prevent modification if input_df
-    test_df = input_df.copy()
+    test_df = INPUT_DATETIME_YEAR_2020_DF.copy()
 
     make_date_column_datetime_object(test_df)
 
-    assert_frame_equal(test_df, expected_df)
+    assert_frame_equal(test_df, EXPECTED_YEAR_2020_DF)
 
 
-@pytest.mark.parametrize("input_df, expected_msg, error_type", TEST_INVALID_CASES)
-def test_make_date_column_datetime_object_invalid_input(
-    input_df: pd.DataFrame, expected_msg: str, error_type: Type
-) -> None:
-    with pytest.raises(error_type) as err:
-        make_date_column_datetime_object(input_df)
-    assert str(err.value) == expected_msg
+def test_make_date_column_datetime_object_timestamp_year_2020_df() -> None:
+    _verify_expected_df_date_column_data(EXPECTED_YEAR_2020_DF)
+
+    # Copy to prevent modification if input_df
+    test_df = INPUT_TIMESTAMP_YEAR_2020_DF.copy()
+
+    make_date_column_datetime_object(test_df)
+
+    assert_frame_equal(test_df, EXPECTED_YEAR_2020_DF)
+
+
+def test_make_date_column_datetime_object_datetime_year_2263_df() -> None:
+    _verify_expected_df_date_column_data(EXPECTED_YEAR_2263_DF)
+
+    # Copy to prevent modification if input_df
+    test_df = INPUT_DATETIME_YEAR_2263_DF.copy()
+
+    make_date_column_datetime_object(test_df)
+
+    assert_frame_equal(test_df, EXPECTED_YEAR_2263_DF)
+
+
+def test_make_date_column_datetime_object_no_rows_df() -> None:
+    # Copy to prevent modification if input_df
+    test_df = INPUT_NO_ROWS_DF.copy()
+
+    make_date_column_datetime_object(test_df)
+
+    assert_frame_equal(test_df, INPUT_NO_ROWS_DF)
+
+
+def test_make_date_column_datetime_object_input_empty_df() -> None:
+    with pytest.raises(ValueError) as err:
+        make_date_column_datetime_object(INPUT_EMPTY_DF)
+    assert str(err.value) == 'df does not contain column "DATE"'
+
+
+def test_make_date_column_datetime_object_input_timestamp_datetime_df() -> None:
+    with pytest.raises(AttributeError) as err:
+        make_date_column_datetime_object(INPUT_TIMESTAMP_DATETIME_DF)
+    assert str(err.value) == "Can only use .dt accessor with datetimelike values"
+
+
+def test_make_date_column_datetime_object_input_date_year_2020_df() -> None:
+    # fmt: off
+    input_date_year_2020_df = pd.DataFrame(
+        columns=["DATE", "A"],
+        data=[
+            [datetime.date(2020, 1, 15), 1.0],
+            [datetime.date(2020, 2, 15), 2.0],
+            [datetime.date(2020, 3, 15), 3.0],
+        ],
+    )
+    # fmt: on
+    with pytest.raises(ValueError) as err:
+        make_date_column_datetime_object(input_date_year_2020_df)
+    assert str(err.value) == f'Column "DATE" of type {datetime.date} is not handled!'
