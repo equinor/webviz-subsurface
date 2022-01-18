@@ -191,14 +191,13 @@ def plugin_callbacks(
         Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
         Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": MATCH}, "value"),
         State({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
-        State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
     )
-    def _update_map(selections: dict, view_columns, number_of_views, current_layers):
+    def _update_map(selections: dict, view_columns, number_of_views):
         if selections is None:
             raise PreventUpdate
-        # layers = update_map_layers(number_of_views, well_set_model)
-        # layers = [json.loads(x.to_json()) for x in layers]
-        layer_model = DeckGLMapLayersModel(current_layers)
+        layers = update_map_layers(number_of_views, well_set_model)
+        layers = [json.loads(x.to_json()) for x in layers]
+        layer_model = DeckGLMapLayersModel(layers)
 
         for idx, data in enumerate(selections):
             selected_surface = get_surface_context_from_data(data)

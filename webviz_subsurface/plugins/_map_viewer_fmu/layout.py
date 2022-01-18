@@ -92,8 +92,16 @@ class DefaultSettings:
 
     NUMBER_OF_VIEWS = {Tabs.STATS: 4, Tabs.DIFF: 2, Tabs.SPLIT: 1}
     LINKED_SELECTORS = {
-        Tabs.STATS: ["ensemble", "attribute", "name", "date"],
-        Tabs.SPLIT: ["ensemble", "attribute", "name", "date", "mode", "realizations"],
+        Tabs.STATS: ["ensemble", "attribute", "name", "date", "colormap"],
+        Tabs.SPLIT: [
+            "ensemble",
+            "attribute",
+            "name",
+            "date",
+            "mode",
+            "realizations",
+            "colormap",
+        ],
     }
     SELECTOR_DEFAULTS = {
         Tabs.STATS: {
@@ -205,7 +213,7 @@ def view_layout(tab, get_uuid, well_set_model, show_fault_polygons):
                                     "id": get_uuid(LayoutElements.DECKGLMAP),
                                     "tab": tab,
                                 },
-                                layers=update_map_layers(9, well_set_model),
+                                layers=update_map_layers(1, well_set_model),
                                 bounds=[456063.6875, 5926551, 467483.6875, 5939431],
                             )
                         ],
@@ -239,7 +247,8 @@ class DataStores(html.Div):
 
 
 class LinkCheckBox(wcc.Checklist):
-    def __init__(self, tab, get_uuid, selector: str, clicked=False):
+    def __init__(self, tab, get_uuid, selector: str):
+        clicked = selector in DefaultSettings.LINKED_SELECTORS.get(tab, [])
         self.id = {
             "id": get_uuid(LayoutElements.LINK),
             "tab": tab,
@@ -361,12 +370,7 @@ class MapSelector(wcc.Selectors):
             open_details=open_details,
             children=[
                 wcc.Label(info_text) if info_text is not None else (),
-                LinkCheckBox(
-                    tab,
-                    get_uuid,
-                    selector=selector,
-                    clicked=selector in DefaultSettings.LINKED_SELECTORS.get(tab, []),
-                ),
+                LinkCheckBox(tab, get_uuid, selector=selector),
                 html.Div(
                     id={
                         "id": get_uuid(LayoutElements.WRAPPER),
