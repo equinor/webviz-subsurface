@@ -13,6 +13,14 @@ from webviz_subsurface.plugins._simulation_time_series.utils.provider_set_utils 
 
 from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 
+# *******************************************************************
+#####################################################################
+#
+# CONFIGURE TESTDATA
+#
+#####################################################################
+# *******************************************************************
+
 
 class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     """Ensemble summary provider mock for testing
@@ -118,15 +126,33 @@ INVALID_TEST_EXPRESSION = ExpressionInfo(
 TEST_PROVIDER_SET = ProviderSet({"First Provider": EnsembleSummaryProviderMock()})
 
 
+# *******************************************************************
+#####################################################################
+#
+# UNIT TESTS
+#
+#####################################################################
+# *******************************************************************
+
+
 def test_create_calculated_unit_from_provider_set() -> None:
-    assert "unit_1+unit_2" == create_calculated_unit_from_provider_set(
-        FIRST_TEST_EXPRESSION, TEST_PROVIDER_SET
+    assert (
+        create_calculated_unit_from_provider_set(
+            FIRST_TEST_EXPRESSION, TEST_PROVIDER_SET
+        )
+        == "unit_1+unit_2"
     )
-    assert "unit_1-unit_3" == create_calculated_unit_from_provider_set(
-        SECOND_TEST_EXPRESSION, TEST_PROVIDER_SET
+    assert (
+        create_calculated_unit_from_provider_set(
+            SECOND_TEST_EXPRESSION, TEST_PROVIDER_SET
+        )
+        == "unit_1-unit_3"
     )
-    assert "unit_3/unit_2" == create_calculated_unit_from_provider_set(
-        THIRD_TEST_EXPRESSION, TEST_PROVIDER_SET
+    assert (
+        create_calculated_unit_from_provider_set(
+            THIRD_TEST_EXPRESSION, TEST_PROVIDER_SET
+        )
+        == "unit_3/unit_2"
     )
     assert (
         create_calculated_unit_from_provider_set(

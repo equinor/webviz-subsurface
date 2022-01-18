@@ -16,6 +16,14 @@ from webviz_subsurface.plugins._simulation_time_series.utils.delta_ensemble_util
 
 from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 
+# *******************************************************************
+#####################################################################
+#
+# CONFIGURE TESTDATA
+#
+#####################################################################
+# *******************************************************************
+
 
 class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     """Ensemble summary provider mock for testing
@@ -45,15 +53,33 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
         return []
 
 
+# *******************************************************************
+#####################################################################
+#
+# UNIT TESTS
+#
+#####################################################################
+# *******************************************************************
+
+
 def test_create_delta_ensemble_name() -> None:
-    assert "(first name)-(second name)" == create_delta_ensemble_name(
-        DeltaEnsemble(ensemble_a="first name", ensemble_b="second name")
+    assert (
+        create_delta_ensemble_name(
+            DeltaEnsemble(ensemble_a="first name", ensemble_b="second name")
+        )
+        == "(first name)-(second name)"
     )
-    assert "(first-Name)-(second-Name)" == create_delta_ensemble_name(
-        DeltaEnsemble(ensemble_a="first-Name", ensemble_b="second-Name")
+    assert (
+        create_delta_ensemble_name(
+            DeltaEnsemble(ensemble_a="first-Name", ensemble_b="second-Name")
+        )
+        == "(first-Name)-(second-Name)"
     )
-    assert "(ens-0)-(ens-3)" == create_delta_ensemble_name(
-        DeltaEnsemble(ensemble_a="ens-0", ensemble_b="ens-3")
+    assert (
+        create_delta_ensemble_name(
+            DeltaEnsemble(ensemble_a="ens-0", ensemble_b="ens-3")
+        )
+        == "(ens-0)-(ens-3)"
     )
 
 

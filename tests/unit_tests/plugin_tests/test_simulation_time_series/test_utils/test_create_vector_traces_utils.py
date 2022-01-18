@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface.plugins._simulation_time_series.types.types import (
     FanchartOptions,
     StatisticsOptions,
@@ -19,7 +20,6 @@ from webviz_subsurface.plugins._simulation_time_series.utils.create_vector_trace
     render_hovertemplate,
 )
 
-
 # *******************************************************************
 #####################################################################
 #
@@ -28,8 +28,7 @@ from webviz_subsurface.plugins._simulation_time_series.utils.create_vector_trace
 #####################################################################
 # *******************************************************************
 
-
-VECTOR_STATISTICS_DF = pd.DataFrame(
+INPUT_VECTOR_STATISTICS_DF = pd.DataFrame(
     columns=[
         "DATE",
         StatisticsOptions.MEAN,
@@ -44,9 +43,7 @@ VECTOR_STATISTICS_DF = pd.DataFrame(
         [datetime.datetime(2020, 1, 2), 1.5, 2.5, 3.5, 4.5, 5.5, 6.5],
     ],
 )
-VECTOR_STATISTICS_DF["DATE"] = pd.Series(
-    VECTOR_STATISTICS_DF["DATE"].dt.to_pydatetime(), dtype=object
-)
+make_date_column_datetime_object(INPUT_VECTOR_STATISTICS_DF)
 
 
 # *******************************************************************
@@ -126,7 +123,7 @@ def test_create_vector_realization_traces() -> None:
             [datetime.datetime(2031, 6, 10), 2, 6.0],
         ],
     )
-    vector_df["DATE"] = pd.Series(vector_df["DATE"].dt.to_pydatetime(), dtype=object)
+    make_date_column_datetime_object(vector_df)
 
     created_traces = create_vector_realization_traces(
         vector_df=vector_df,
@@ -253,7 +250,7 @@ def test_render_hovertemplate() -> None:
 
 def test_create_vector_fanchart_traces_all_fanchart_options() -> None:
     created_fanchart_traces = create_vector_fanchart_traces(
-        VECTOR_STATISTICS_DF,
+        INPUT_VECTOR_STATISTICS_DF,
         fanchart_options=[
             FanchartOptions.MEAN,
             FanchartOptions.MIN_MAX,
@@ -321,7 +318,7 @@ def test_create_vector_fanchart_traces_all_fanchart_options() -> None:
 
 def test_create_vector_fanchart_traces_subset_fanchart_options() -> None:
     created_fanchart_traces = create_vector_fanchart_traces(
-        VECTOR_STATISTICS_DF,
+        INPUT_VECTOR_STATISTICS_DF,
         fanchart_options=[
             FanchartOptions.MEAN,
             FanchartOptions.P10_P90,
@@ -368,7 +365,7 @@ def test_create_vector_fanchart_traces_subset_fanchart_options() -> None:
 
 def test_create_vector_statistics_traces_all_statistics_options() -> None:
     created_statistics_traces = create_vector_statistics_traces(
-        VECTOR_STATISTICS_DF,
+        INPUT_VECTOR_STATISTICS_DF,
         statistics_options=[
             StatisticsOptions.MEAN,
             StatisticsOptions.MIN,
@@ -472,7 +469,7 @@ def test_create_vector_statistics_traces_all_statistics_options() -> None:
 
 def test_create_vector_statistics_traces_subset_statistics_options() -> None:
     created_statistics_traces = create_vector_statistics_traces(
-        VECTOR_STATISTICS_DF,
+        INPUT_VECTOR_STATISTICS_DF,
         statistics_options=[
             StatisticsOptions.MEAN,
             StatisticsOptions.MIN,

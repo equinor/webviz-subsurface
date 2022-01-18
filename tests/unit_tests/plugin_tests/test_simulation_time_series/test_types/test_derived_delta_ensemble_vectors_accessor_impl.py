@@ -8,6 +8,8 @@ from webviz_subsurface_components.VectorCalculatorWrapper import (
     VariableVectorMapInfo,
 )
 
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
+
 # pylint: disable = line-too-long
 from webviz_subsurface.plugins._simulation_time_series.types.derived_delta_ensemble_vectors_accessor_impl import (
     DerivedDeltaEnsembleVectorsAccessorImpl,
@@ -25,7 +27,6 @@ from ..mocks.derived_vectors_accessor_ensemble_summary_provider_mock import (
 #####################################################################
 # *******************************************************************
 
-
 # fmt: off
 # Ensemble A
 INPUT_A_DF = pd.DataFrame(
@@ -42,7 +43,6 @@ INPUT_A_DF = pd.DataFrame(
         [datetime.datetime(2000,3,1),  4, 130.0,  14000.0],
     ]
 )
-INPUT_A_DF["DATE"] = pd.Series(INPUT_A_DF["DATE"].dt.to_pydatetime(), dtype=object)
 
 # Ensemble B
 INPUT_B_DF = pd.DataFrame(
@@ -59,9 +59,8 @@ INPUT_B_DF = pd.DataFrame(
         [datetime.datetime(2000,3,1),  4, 13.0,  1400.0],
     ]
 )
-INPUT_B_DF["DATE"] = pd.Series(INPUT_B_DF["DATE"].dt.to_pydatetime(), dtype=object)
 
-# Delta between A and B DF
+# Delta between A and B DF (A-B)
 EXPECTED_DELTA_DF = pd.DataFrame(
     columns = ["DATE", "REAL",  "A", "B"],
     data = [
@@ -76,45 +75,43 @@ EXPECTED_DELTA_DF = pd.DataFrame(
         [datetime.datetime(2000,3,1),  4, 117.0,  12600.0],
     ]
 )
-EXPECTED_DELTA_DF["DATE"] = pd.Series(EXPECTED_DELTA_DF["DATE"].dt.to_pydatetime(), dtype=object)
 
 # INTVL_ calc for col "B" of Delta
 EXPECTED_DELTA_INVTL_DF = pd.DataFrame(
-        columns = ["DATE", "REAL",  "INTVL_B"],
-        data = [
-            [datetime.datetime(2000,1,1),  1, 450.0 ],
-            [datetime.datetime(2000,2,1),  1, 450.0 ],
-            [datetime.datetime(2000,3,1),  1, 0.0   ],
-            [datetime.datetime(2000,1,1),  2, 900.0 ],
-            [datetime.datetime(2000,2,1),  2, 900.0 ],
-            [datetime.datetime(2000,3,1),  2, 0.0   ],
-            [datetime.datetime(2000,1,1),  4, 1800.0],
-            [datetime.datetime(2000,2,1),  4, 1800.0],
-            [datetime.datetime(2000,3,1),  4, 0.0   ],
-        ]
-    )
-EXPECTED_DELTA_INVTL_DF["DATE"] = (
-    pd.Series(EXPECTED_DELTA_INVTL_DF["DATE"].dt.to_pydatetime(), dtype=object)
+    columns = ["DATE", "REAL",  "INTVL_B"],
+    data = [
+        [datetime.datetime(2000,1,1),  1, 450.0 ],
+        [datetime.datetime(2000,2,1),  1, 450.0 ],
+        [datetime.datetime(2000,3,1),  1, 0.0   ],
+        [datetime.datetime(2000,1,1),  2, 900.0 ],
+        [datetime.datetime(2000,2,1),  2, 900.0 ],
+        [datetime.datetime(2000,3,1),  2, 0.0   ],
+        [datetime.datetime(2000,1,1),  4, 1800.0],
+        [datetime.datetime(2000,2,1),  4, 1800.0],
+        [datetime.datetime(2000,3,1),  4, 0.0   ],
+    ]
 )
 
 # Sum of col "A" and "B" in Delta
 EXPECTED_SUM_A_AND_B_DF = pd.DataFrame(
-        columns = ["DATE", "REAL",  "Sum A and B"],
-        data = [
-            [datetime.datetime(2000,1,1),  1, 459.0  ],
-            [datetime.datetime(2000,2,1),  1, 918.0  ],
-            [datetime.datetime(2000,3,1),  1, 1377.0 ],
-            [datetime.datetime(2000,1,1),  2, 2754.0 ],
-            [datetime.datetime(2000,2,1),  2, 3663.0 ],
-            [datetime.datetime(2000,3,1),  2, 4572.0 ],
-            [datetime.datetime(2000,1,1),  4, 9099.0 ],
-            [datetime.datetime(2000,2,1),  4, 10908.0],
-            [datetime.datetime(2000,3,1),  4, 12717.0],
-        ]
-    )
-EXPECTED_SUM_A_AND_B_DF["DATE"] = (
-    pd.Series(EXPECTED_SUM_A_AND_B_DF["DATE"].dt.to_pydatetime(), dtype=object)
+    columns = ["DATE", "REAL",  "Sum A and B"],
+    data = [
+        [datetime.datetime(2000,1,1),  1, 459.0  ],
+        [datetime.datetime(2000,2,1),  1, 918.0  ],
+        [datetime.datetime(2000,3,1),  1, 1377.0 ],
+        [datetime.datetime(2000,1,1),  2, 2754.0 ],
+        [datetime.datetime(2000,2,1),  2, 3663.0 ],
+        [datetime.datetime(2000,3,1),  2, 4572.0 ],
+        [datetime.datetime(2000,1,1),  4, 9099.0 ],
+        [datetime.datetime(2000,2,1),  4, 10908.0],
+        [datetime.datetime(2000,3,1),  4, 12717.0],
+    ]
 )
+make_date_column_datetime_object(INPUT_A_DF)
+make_date_column_datetime_object(INPUT_B_DF)
+make_date_column_datetime_object(EXPECTED_DELTA_DF)
+make_date_column_datetime_object(EXPECTED_DELTA_INVTL_DF)
+make_date_column_datetime_object(EXPECTED_SUM_A_AND_B_DF)
 
 
 # Dates AFTER year 2262!
@@ -131,7 +128,8 @@ AFTER_2262_DATES = pd.Series(
         datetime.datetime(2265,3,1),
     ]
 )
-# NOTE: datetime.datetime after year 2262 is not converted to pd.Timestamp!
+# NOTE: datetime.datetime after year 2262 is not converted to pd.Timestamp, thus
+# no need to make date column datetime object
 INPUT_A_AFTER_2262_DF = INPUT_A_DF.copy()
 INPUT_A_AFTER_2262_DF["DATE"] = AFTER_2262_DATES
 INPUT_B_AFTER_2262_DF = INPUT_B_DF.copy()

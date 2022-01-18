@@ -48,13 +48,18 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
         super().__init__()
 
         # Configure dataframe
-        self.df = TEST_INPUT_DF
+        self._df = TEST_INPUT_DF
+        self._vector_names = list(set(self._df.columns) ^ set(["DATE", "REAL"]))
+        self._realizations = list(self._df["REAL"].unique())
 
     def supports_resampling(self) -> bool:
         return False
 
+    def realizations(self) -> List[int]:
+        return self._realizations
+
     def vector_names(self) -> List[str]:
-        return list(set(self.df.columns) ^ set(["DATE", "REAL"]))
+        return self._vector_names
 
     def get_vectors_df(
         self,
@@ -63,8 +68,8 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
         if realizations:
-            return self.df[["DATE", "REAL"] + list(vector_names)].loc[
-                self.df["REAL"] == realizations[0]
+            return self._df[["DATE", "REAL"] + list(vector_names)].loc[
+                self._df["REAL"] == realizations[0]
             ]
         raise ValueError("Expected valid realizations argument for mock!")
 

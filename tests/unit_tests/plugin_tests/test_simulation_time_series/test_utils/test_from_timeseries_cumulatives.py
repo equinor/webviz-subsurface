@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 from pandas._testing import assert_frame_equal
 
-from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
     datetime_to_intervalstr,
@@ -265,11 +265,11 @@ def test_is_interval_or_average_vector() -> None:
 
 
 def test_get_cumulative_vector_name() -> None:
-    assert "FOPT" == get_cumulative_vector_name("AVG_FOPT")
-    assert "FOPT" == get_cumulative_vector_name("INTVL_FOPT")
+    assert get_cumulative_vector_name("AVG_FOPT") == "FOPT"
+    assert get_cumulative_vector_name("INTVL_FOPT") == "FOPT"
 
-    assert "FOPT" == get_cumulative_vector_name("AVG_FOPR")
-    assert "FOPR" == get_cumulative_vector_name("INTVL_FOPR")
+    assert get_cumulative_vector_name("AVG_FOPR") == "FOPT"
+    assert get_cumulative_vector_name("INTVL_FOPR") == "FOPR"
 
     # Expect ValueError when verifying vector not starting with "AVG_" or "INTVL_"
     try:
@@ -283,23 +283,23 @@ def test_get_cumulative_vector_name() -> None:
 
 
 def test_rename_vector_from_cumulative() -> None:
-    assert "AVG_Vector" == rename_vector_from_cumulative("Vector", True)
-    assert "AVG_FOPR" == rename_vector_from_cumulative("FOPT", True)
-    assert "AVG_FOPS" == rename_vector_from_cumulative("FOPS", True)
-    assert "INTVL_Vector" == rename_vector_from_cumulative("Vector", False)
-    assert "INTVL_FOPT" == rename_vector_from_cumulative("FOPT", False)
+    assert rename_vector_from_cumulative("Vector", True) == "AVG_Vector"
+    assert rename_vector_from_cumulative("FOPT", True) == "AVG_FOPR"
+    assert rename_vector_from_cumulative("FOPS", True) == "AVG_FOPS"
+    assert rename_vector_from_cumulative("Vector", False) == "INTVL_Vector"
+    assert rename_vector_from_cumulative("FOPT", False) == "INTVL_FOPT"
 
 
 def test_datetime_to_intervalstr() -> None:
     # Verify early return (ignore mypy)
-    assert None is datetime_to_intervalstr(None, Frequency.WEEKLY)  # type: ignore
+    assert datetime_to_intervalstr(None, Frequency.WEEKLY) is None  # type: ignore
 
     test_date = datetime.datetime(2021, 11, 12, 13, 37)
-    assert "2021-11-12" == datetime_to_intervalstr(test_date, Frequency.DAILY)
-    assert "2021-W45" == datetime_to_intervalstr(test_date, Frequency.WEEKLY)
-    assert "2021-11" == datetime_to_intervalstr(test_date, Frequency.MONTHLY)
-    assert "2021-Q4" == datetime_to_intervalstr(test_date, Frequency.QUARTERLY)
-    assert "2021" == datetime_to_intervalstr(test_date, Frequency.YEARLY)
+    assert datetime_to_intervalstr(test_date, Frequency.DAILY) == "2021-11-12"
+    assert datetime_to_intervalstr(test_date, Frequency.WEEKLY) == "2021-W45"
+    assert datetime_to_intervalstr(test_date, Frequency.MONTHLY) == "2021-11"
+    assert datetime_to_intervalstr(test_date, Frequency.QUARTERLY) == "2021-Q4"
+    assert datetime_to_intervalstr(test_date, Frequency.YEARLY) == "2021"
 
     # Verify invalid frequency - i.e. isoformat!
-    assert "2021-11-12T13:37:00" == datetime_to_intervalstr(test_date, None)  # type: ignore
+    assert datetime_to_intervalstr(test_date, None) == "2021-11-12T13:37:00"  # type: ignore

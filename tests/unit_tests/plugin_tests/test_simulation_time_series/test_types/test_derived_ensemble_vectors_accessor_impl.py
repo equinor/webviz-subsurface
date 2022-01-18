@@ -8,6 +8,8 @@ from webviz_subsurface_components.VectorCalculatorWrapper import (
     VariableVectorMapInfo,
 )
 
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
+
 # pylint: disable = line-too-long
 from webviz_subsurface.plugins._simulation_time_series.types.derived_ensemble_vectors_accessor_impl import (
     DerivedEnsembleVectorsAccessorImpl,
@@ -40,7 +42,6 @@ INPUT_DF = pd.DataFrame(
         [datetime.datetime(2000,3,1),  4, 13.0,  1400.0],
     ]
 )
-INPUT_DF["DATE"] = pd.Series(INPUT_DF["DATE"].dt.to_pydatetime(), dtype=object)
 
 # INTVL_ calc for col "B" input df
 EXPECTED_INTVL_DF = pd.DataFrame(
@@ -57,7 +58,6 @@ EXPECTED_INTVL_DF = pd.DataFrame(
         [datetime.datetime(2000,3,1),  4, 0.0  ],
     ]
 )
-EXPECTED_INTVL_DF["DATE"] = pd.Series(EXPECTED_INTVL_DF["DATE"].dt.to_pydatetime(), dtype=object)
 
 # Sum of col "A" and "B" in input df
 EXPECTED_SUM_A_AND_B_DF = pd.DataFrame(
@@ -74,9 +74,9 @@ EXPECTED_SUM_A_AND_B_DF = pd.DataFrame(
         [datetime.datetime(2000,3,1),  4, 1413.0],
     ]
 )
-EXPECTED_SUM_A_AND_B_DF["DATE"] = (
-    pd.Series(EXPECTED_SUM_A_AND_B_DF["DATE"].dt.to_pydatetime(), dtype=object)
-)
+make_date_column_datetime_object(INPUT_DF)
+make_date_column_datetime_object(EXPECTED_INTVL_DF)
+make_date_column_datetime_object(EXPECTED_SUM_A_AND_B_DF)
 
 # Dates AFTER year 2262!
 AFTER_2262_DATES = pd.Series(
@@ -92,7 +92,8 @@ AFTER_2262_DATES = pd.Series(
         datetime.datetime(2265,3,1),
     ]
 )
-# NOTE: datetime.datetime after year 2262 is not converted to pd.Timestamp!
+# NOTE: datetime.datetime after year 2262 is not converted to pd.Timestamp, thus
+# no need to make date column datetime object
 INPUT_AFTER_2262_DF = INPUT_DF.copy()
 INPUT_AFTER_2262_DF["DATE"] = AFTER_2262_DATES
 EXPECTED_INVTL_AFTER_2262_DF = EXPECTED_INTVL_DF.copy()
