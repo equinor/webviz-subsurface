@@ -10,11 +10,12 @@ def assert_date_column_is_datetime_object(df: pd.DataFrame) -> None:
     not on datetime.datetime format
 
     `Assume:`
-    * Each row element of "DATE" column is of same type
-    * Same data format in each row of in "DATE"-column. Mehtod utilize first
+    * Column named "DATE" exist
+    * Each row element of "DATE" column is of same type. Mehtod utilize first
     element of "DATE" column as sample value to detect data type.
 
     `NOTE:`
+    - When no rows - dtype of column is not checked, just early return!
     - Type check is performed using type() and not isinstance(), as
     isinstance() gives true on subclass. Thereby instance of pd.Timestamp
     return True - i.e. x: pd.Timestamp -> isinstance(x, datetime.datetime)
@@ -23,7 +24,7 @@ def assert_date_column_is_datetime_object(df: pd.DataFrame) -> None:
     if "DATE" not in df.columns:
         raise ValueError('df does not contain column "DATE"')
 
-    # Empty rows
+    # Empty rows (no dtype check of "DATE"-column)
     if df.shape[0] <= 0:
         return None
 
@@ -51,9 +52,11 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> None:
     `Assume:`
     * Column named "DATE" exist
     * "DATE" column is of type datetime.datetime or pd.Timestamp
-    * Row element of "DATE" column is of same type
+    * Each row element of "DATE" column is of same type. Mehtod utilize first
+    element of "DATE" column as sample value to detect data type.
 
     `NOTE:`
+    - When no rows - dtype of column is not checked and converted, just early return!
     - Type check is performed using type() and not isinstance(), as
     isinstance() gives true on subclass. Thereby instance of pd.Timestamp
     return True - i.e. x: pd.Timestamp -> isinstance(x, datetime.datetime) is True
@@ -61,7 +64,7 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> None:
     if "DATE" not in df.columns:
         raise ValueError('df does not contain column "DATE"')
 
-    # Empty rows
+    # Empty rows (no dtype check/conversion of "DATE"-column)
     if df.shape[0] <= 0:
         return None
 
