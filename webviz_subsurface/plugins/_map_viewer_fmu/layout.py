@@ -12,7 +12,7 @@ from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     Hillshading2DLayer,
     WellsLayer,
 )
-
+from .providers.ensemble_surface_provider import SurfaceMode
 from webviz_subsurface._models import WellSetModel
 
 from .utils.formatting import format_date
@@ -24,6 +24,7 @@ class LayoutElements(str, Enum):
     used as combinations of LEFT/RIGHT_VIEW together with other elements to
     support pattern matching callbacks."""
 
+    TEST = auto()
     MAINVIEW = auto()
     SELECTED_DATA = auto()
     SELECTIONS = auto()
@@ -73,6 +74,39 @@ class LayoutStyle:
     MAINVIEW = {"flex": 3, "height": "90vh"}
 
 
+class Tabs(str, Enum):
+    CUSTOM = "custom"
+    STATS = "stats"
+    DIFF = "diff"
+    SPLIT = "split"
+
+
+class TabsLabels(str, Enum):
+    CUSTOM = "Custom view"
+    STATS = "Map statistics"
+    DIFF = "Difference between two maps"
+    SPLIT = ("Maps per name/time",)
+
+
+class DefaultSettings:
+
+    NUMBER_OF_VIEWS = {Tabs.STATS: 4, Tabs.DIFF: 2, Tabs.SPLIT: 1}
+    LINKED_SELECTORS = {
+        Tabs.STATS: ["ensemble", "attribute", "name", "date"],
+        Tabs.SPLIT: ["ensemble", "attribute", "name", "date", "mode", "realizations"],
+    }
+    SELECTOR_DEFAULTS = {
+        Tabs.STATS: {
+            "mode": [
+                SurfaceMode.MEAN,
+                SurfaceMode.REALIZATION,
+                SurfaceMode.STDDEV,
+                SurfaceMode.OBSERVED,
+            ]
+        },
+    }
+
+
 class FullScreen(wcc.WebvizPluginPlaceholder):
     def __init__(self, children: List[Any]) -> None:
         super().__init__(buttons=["expand"], children=children)
@@ -87,27 +121,34 @@ def main_layout(
     return wcc.Tabs(
         id=get_uuid("tabs"),
         style={"width": "100%"},
-        value="custom",
+        value=Tabs.CUSTOM,
         children=[
             wcc.Tab(
-                label="Custom view",
-                value="custom",
+                label=TabsLabels.CUSTOM,
+                value=Tabs.CUSTOM,
                 children=view_layout(
-                    "custom", get_uuid, well_set_model, show_fault_polygons
+                    Tabs.CUSTOM, get_uuid, well_set_model, show_fault_polygons
                 ),
             ),
             wcc.Tab(
-                label="Difference between two maps",
-                value="diff",
+                label=TabsLabels.DIFF,
+                value=Tabs.DIFF,
                 children=view_layout(
-                    "diff", get_uuid, well_set_model, show_fault_polygons
+                    Tabs.DIFF, get_uuid, well_set_model, show_fault_polygons
                 ),
             ),
             wcc.Tab(
-                label="Map statistics",
-                value="stats",
+                label=TabsLabels.STATS,
+                value=Tabs.STATS,
                 children=view_layout(
-                    "stats", get_uuid, well_set_model, show_fault_polygons
+                    Tabs.STATS, get_uuid, well_set_model, show_fault_polygons
+                ),
+            ),
+            wcc.Tab(
+                label=TabsLabels.SPLIT,
+                value=Tabs.SPLIT,
+                children=view_layout(
+                    Tabs.SPLIT, get_uuid, well_set_model, show_fault_polygons
                 ),
             ),
         ],
@@ -135,6 +176,8 @@ def view_layout(tab, get_uuid, well_set_model, show_fault_polygons):
                             *[
                                 MapSelector(tab, get_uuid, selector, label=label)
                                 for selector, label in selector_labels.items()
+                                if not selector
+                                in DefaultSettings.SELECTOR_DEFAULTS.get(tab, {})
                             ],
                             RealizationSelector(tab, get_uuid=get_uuid),
                             WellsSelector(
@@ -190,6 +233,7 @@ class DataStores(html.Div):
                         "tab": tab,
                     }
                 ),
+                dcc.Store(id={"id": get_uuid(LayoutElements.TEST), "tab": tab}),
             ]
         )
 
@@ -202,10 +246,11 @@ class LinkCheckBox(wcc.Checklist):
             "selector": selector,
         }
         self.value = [selector] if clicked else []
-        self.options = [
-            {"label": LayoutLabels.LINK, "value": selector, "disabled": clicked}
-        ]
-        super().__init__(id=self.id, options=self.options, value=self.value)
+        self.options = [{"label": LayoutLabels.LINK, "value": selector}]
+        self.style = {"display": "none" if clicked else "block"}
+        super().__init__(
+            id=self.id, options=self.options, value=self.value, style=self.style
+        )
 
 
 class SideBySideSelectorFlex(wcc.FlexBox):
@@ -268,11 +313,16 @@ class ViewSelector(html.Div):
                                 min=1,
                                 max=9,
                                 step=1,
-                                value=1,
+                                value=DefaultSettings.NUMBER_OF_VIEWS.get(tab, 1),
                             ),
                             style={"float": "right"},
                         ),
-                    ]
+                    ],
+                    style={
+                        "display": "none"
+                        if tab in DefaultSettings.NUMBER_OF_VIEWS
+                        else "block"
+                    },
                 ),
                 html.Div(
                     [
@@ -315,7 +365,7 @@ class MapSelector(wcc.Selectors):
                     tab,
                     get_uuid,
                     selector=selector,
-                    clicked=tab == "stats" and selector not in ["mode", "realizations"],
+                    clicked=selector in DefaultSettings.LINKED_SELECTORS.get(tab, []),
                 ),
                 html.Div(
                     id={
