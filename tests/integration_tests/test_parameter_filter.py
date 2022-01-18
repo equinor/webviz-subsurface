@@ -11,6 +11,6 @@ def test_dataframe(testdata_folder) -> None:
     component = ParameterFilter("test", dframe)
     # pylint: disable=protected-access
     assert set(component._discrete_parameters) == set(
-        ["FWL", "MULTFLT_F1", "INTERPOLATE_WO", "COHIBA_MODEL_MODE", "RMS_SEED"]
+        ["FWL", "MULTFLT_F1", "INTERPOLATE_WO", "COHIBA_MODEL_MODE"]
     )
     assert component.is_sensitivity_run is True

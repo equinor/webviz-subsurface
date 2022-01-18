@@ -87,7 +87,7 @@ class ParameterFilter:
         numeric_df = self._dframe.select_dtypes(include=np.number)
         return [
             col
-            for col in numeric_df.columns[numeric_df.nunique() >= 5]
+            for col in numeric_df.columns[numeric_df.nunique() >= 6]
             if col not in self._pmodel.selectors
         ]
 
