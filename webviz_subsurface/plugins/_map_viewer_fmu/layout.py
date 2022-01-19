@@ -24,7 +24,8 @@ class LayoutElements(str, Enum):
     used as combinations of LEFT/RIGHT_VIEW together with other elements to
     support pattern matching callbacks."""
 
-    TEST = auto()
+    MULTI = auto()
+    VIEW_DATA = auto()
     MAINVIEW = auto()
     SELECTED_DATA = auto()
     SELECTIONS = auto()
@@ -85,12 +86,13 @@ class TabsLabels(str, Enum):
     CUSTOM = "Custom view"
     STATS = "Map statistics"
     DIFF = "Difference between two maps"
-    SPLIT = ("Maps per name/time",)
+    SPLIT = "Maps per name/time"
 
 
 class DefaultSettings:
 
     NUMBER_OF_VIEWS = {Tabs.STATS: 4, Tabs.DIFF: 2, Tabs.SPLIT: 1}
+    VIEWS_IN_ROW = {Tabs.DIFF: 3}
     LINKED_SELECTORS = {
         Tabs.STATS: ["ensemble", "attribute", "name", "date", "colormap"],
         Tabs.SPLIT: [
@@ -241,7 +243,7 @@ class DataStores(html.Div):
                         "tab": tab,
                     }
                 ),
-                dcc.Store(id={"id": get_uuid(LayoutElements.TEST), "tab": tab}),
+                dcc.Store(id={"id": get_uuid(LayoutElements.VIEW_DATA), "tab": tab}),
             ]
         )
 
@@ -270,6 +272,7 @@ class SideBySideSelectorFlex(wcc.FlexBox):
         selector: str,
         link: bool = False,
         view_data: list = None,
+        dropdown=False,
     ):
 
         super().__init__(
@@ -290,6 +293,7 @@ class SideBySideSelectorFlex(wcc.FlexBox):
                             "selector": selector,
                         },
                         multi=data.get("multi", False),
+                        dropdown=dropdown,
                     )
                     if selector != "color_range"
                     else color_range_selection_layout(
@@ -309,50 +313,67 @@ class SideBySideSelectorFlex(wcc.FlexBox):
 class ViewSelector(html.Div):
     def __init__(self, tab, get_uuid: Callable):
 
-        super().__init__(
-            style={"font-size": "15px"},
-            children=[
-                html.Div(
-                    [
-                        "Number of views",
-                        html.Div(
-                            dcc.Input(
-                                id={"id": get_uuid(LayoutElements.VIEWS), "tab": tab},
-                                type="number",
-                                min=1,
-                                max=9,
-                                step=1,
-                                value=DefaultSettings.NUMBER_OF_VIEWS.get(tab, 1),
-                            ),
-                            style={"float": "right"},
+        children = [
+            html.Div(
+                [
+                    "Number of views",
+                    html.Div(
+                        dcc.Input(
+                            id={"id": get_uuid(LayoutElements.VIEWS), "tab": tab},
+                            type="number",
+                            min=1,
+                            max=9,
+                            step=1,
+                            value=DefaultSettings.NUMBER_OF_VIEWS.get(tab, 1),
                         ),
+                        style={"float": "right"},
+                    ),
+                ],
+                style={
+                    "display": "none"
+                    if tab in DefaultSettings.NUMBER_OF_VIEWS
+                    else "block"
+                },
+            ),
+            html.Div(
+                wcc.Dropdown(
+                    label="Create map for each:",
+                    id={"id": get_uuid(LayoutElements.MULTI), "tab": tab},
+                    options=[
+                        {"label": LayoutLabels.NAME, "value": "name"},
+                        {"label": LayoutLabels.DATE, "value": "date"},
+                        {"label": LayoutLabels.ENSEMBLE, "value": "ensemble"},
                     ],
-                    style={
-                        "display": "none"
-                        if tab in DefaultSettings.NUMBER_OF_VIEWS
-                        else "block"
-                    },
+                    value="name" if tab == Tabs.SPLIT else None,
+                    clearable=False,
                 ),
-                html.Div(
-                    [
-                        "Views in row (optional)",
-                        html.Div(
-                            dcc.Input(
-                                id={
-                                    "id": get_uuid(LayoutElements.VIEW_COLUMNS),
-                                    "tab": tab,
-                                },
-                                type="number",
-                                min=1,
-                                max=9,
-                                step=1,
-                            ),
-                            style={"float": "right"},
+                style={
+                    "margin-bottom": "10px",
+                    "display": "block" if tab == Tabs.SPLIT else "none",
+                },
+            ),
+            html.Div(
+                [
+                    "Views in row (optional)",
+                    html.Div(
+                        dcc.Input(
+                            id={
+                                "id": get_uuid(LayoutElements.VIEW_COLUMNS),
+                                "tab": tab,
+                            },
+                            type="number",
+                            min=1,
+                            max=9,
+                            step=1,
+                            value=DefaultSettings.VIEWS_IN_ROW.get(tab),
                         ),
-                    ]
-                ),
-            ],
-        )
+                        style={"float": "right"},
+                    ),
+                ]
+            ),
+        ]
+
+        super().__init__(style={"font-size": "15px"}, children=children)
 
 
 class MapSelector(wcc.Selectors):
@@ -469,13 +490,16 @@ class SurfaceColorSelector(wcc.Selectors):
         )
 
 
-def dropdown_vs_select(value, options, component_id, multi=False):
-    if isinstance(value, str):
+def dropdown_vs_select(value, options, component_id, dropdown=False, multi=False):
+    if dropdown:
+        if isinstance(value, list) and not multi:
+            value = value[0]
         return wcc.Dropdown(
             id=component_id,
             options=[{"label": opt, "value": opt} for opt in options],
             value=value,
             clearable=False,
+            multi=multi,
         )
     return wcc.SelectWithLabel(
         id=component_id,
@@ -487,10 +511,9 @@ def dropdown_vs_select(value, options, component_id, multi=False):
 
 
 def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_idx):
-    #   number_format = ".1f" if all(val > 100 for val in value) else ".3g"
     return html.Div(
         children=[
-            f"{LayoutLabels.COLORMAP_RANGE}",  #: {value[0]:{number_format}} - {value[1]:{number_format}}",
+            f"{LayoutLabels.COLORMAP_RANGE}",
             wcc.RangeSlider(
                 id={
                     "view": view_idx,

@@ -42,7 +42,7 @@ class MapViewerFMU(WebvizPluginABC):
         }
         # Find surfaces
         self._surface_table = scrape_scratch_disk_for_surfaces(self.ens_paths)
-
+            
         # Initialize surface set
         if attributes is not None:
             self._surface_table = self._surface_table[

@@ -1,4 +1,5 @@
 from typing import Callable, Dict, List, Optional, Tuple, Any
+from copy import deepcopy
 import json
 import math
 from dash import Input, Output, State, callback, callback_context, no_update, ALL, MATCH
@@ -52,59 +53,7 @@ def plugin_callbacks(
         return {"id": get_uuid(LayoutElements.LINK), "tab": tab, "selector": ALL}
 
     @callback(
-        Output({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
-        Output(selector_wrapper(MATCH), "children"),
-        Output(
-            {"id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "tab": MATCH},
-            "data",
-        ),
-        Input({"id": get_uuid(LayoutElements.TEST), "tab": MATCH}, "data"),
-        State({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
-        State(selector_wrapper(MATCH), "id"),
-        State(
-            {"id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "tab": MATCH},
-            "data",
-        ),
-        State(get_uuid("tabs"), "value"),
-    )
-    def _update_components_and_selected_data(
-        test, number_of_views, wrapper_ids, stored_color_settings, tab
-    ):
-        selections, links = test
-        if "mode" in DefaultSettings.SELECTOR_DEFAULTS.get(tab, {}):
-            for idx in range(number_of_views):
-                selections[idx]["mode"] = {
-                    "value": DefaultSettings.SELECTOR_DEFAULTS[tab]["mode"][idx]
-                }
-
-        _update_ensemble_data(selections, links)
-        _update_attribute_data(selections, links)
-        _update_name_data(selections, links)
-        _update_date_data(selections, links)
-        _update_mode_data(selections, links)
-        _update_realization_data(selections, links)
-        stored_color_settings = _update_color_data(
-            selections, stored_color_settings, links
-        )
-
-        return (
-            selections,
-            [
-                SideBySideSelectorFlex(
-                    tab,
-                    get_uuid,
-                    selector=id_val["selector"],
-                    view_data=[data[id_val["selector"]] for data in selections],
-                    link=links[id_val.get("selector", False)]
-                    or len(selections[0][id_val["selector"]].get("options", [])) == 1,
-                )
-                for id_val in wrapper_ids
-            ],
-            stored_color_settings,
-        )
-
-    @callback(
-        Output({"id": get_uuid(LayoutElements.TEST), "tab": MATCH}, "data"),
+        Output({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
         Input(selections(MATCH), "value"),
         Input({"id": get_uuid(LayoutElements.WELLS), "tab": MATCH}, "value"),
         Input(links(MATCH), "value"),
@@ -116,7 +65,7 @@ def plugin_callbacks(
         Input(get_uuid("tabs"), "value"),
         State(selections(MATCH), "id"),
         State(links(MATCH), "id"),
-        State({"id": get_uuid(LayoutElements.TEST), "tab": MATCH}, "data"),
+        State({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
     )
     def collect_selection_and_links(
         selector_values: list,
@@ -185,27 +134,97 @@ def plugin_callbacks(
         return update_view if update_view is not None else no_update
 
     @callback(
+        Output({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
+        Output(selector_wrapper(MATCH), "children"),
+        Output(
+            {"id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "tab": MATCH},
+            "data",
+        ),
+        Input({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
+        Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
+        State(selector_wrapper(MATCH), "id"),
+        State(
+            {"id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "tab": MATCH},
+            "data",
+        ),
+        State(get_uuid("tabs"), "value"),
+    )
+    def _update_components_and_selected_data(
+        view_selections, multi, wrapper_ids, stored_color_settings, tab
+    ):
+        ctx = callback_context.triggered[0]["prop_id"]
+        if view_selections is None:
+            raise PreventUpdate
+        selections, links = view_selections
+
+        if "mode" in DefaultSettings.SELECTOR_DEFAULTS.get(tab, {}):
+            for idx, data in enumerate(selections):
+                data["mode"] = {
+                    "value": DefaultSettings.SELECTOR_DEFAULTS[tab]["mode"][idx]
+                }
+
+        multi_in_ctx = get_uuid(LayoutElements.MULTI) in ctx
+
+        _update_ensemble_data(selections, links, multi, multi_in_ctx)
+        _update_attribute_data(selections, links)
+        _update_name_data(selections, links, multi, multi_in_ctx)
+        _update_date_data(selections, links, multi, multi_in_ctx)
+        _update_mode_data(selections, links)
+        _update_realization_data(selections, links)
+        stored_color_settings = _update_color_data(
+            selections, stored_color_settings, links
+        )
+
+        return (
+            update_selections_with_multi(selections, multi)
+            if multi is not None
+            else selections,
+            [
+                SideBySideSelectorFlex(
+                    tab,
+                    get_uuid,
+                    selector=id_val["selector"],
+                    view_data=[data[id_val["selector"]] for data in selections],
+                    link=links[id_val.get("selector", False)],
+                    dropdown=id_val["selector"] in ["ensemble", "mode", "colormap"],
+                )
+                for id_val in wrapper_ids
+            ],
+            stored_color_settings,
+        )
+
+    @callback(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
         Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
         Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": MATCH}, "value"),
-        State({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
     )
-    def _update_map(selections: dict, view_columns, number_of_views):
+    def _update_map(selections: dict, view_columns):
         if selections is None:
             raise PreventUpdate
+
+        number_of_views = len(selections)
+
         layers = update_map_layers(number_of_views, well_set_model)
         layers = [json.loads(x.to_json()) for x in layers]
         layer_model = DeckGLMapLayersModel(layers)
 
+        valid_data = []
         for idx, data in enumerate(selections):
             selected_surface = get_surface_context_from_data(data)
 
             ensemble = selected_surface.ensemble
             surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
+
+            # HACK AT THE MOMENT
+            if get_surface_range(surface) == [0.0, 0.0]:
+                continue
+            valid_data.append(idx)
+
             surface_range = get_surface_range(surface)
-            if idx == 0:
+
+            if len(valid_data) == 1:
                 property_bounds = get_surface_bounds(surface)
 
             layer_data = {
@@ -243,7 +262,7 @@ def plugin_callbacks(
 
         return (
             layer_model.layers,
-            property_bounds,
+            property_bounds if valid_data else no_update,
             {
                 "layout": view_layout(number_of_views, view_columns),
                 "viewports": [
@@ -257,63 +276,72 @@ def plugin_callbacks(
                         ],
                     }
                     for view in range(number_of_views)
+                    if view in valid_data
                 ],
             },
         )
 
-    def _update_ensemble_data(selections, links) -> None:
+    def _update_ensemble_data(selections, links, multi, multi_in_ctx) -> None:
+        multi = multi == "ensemble"
         for idx, data in enumerate(selections):
             if not (links["ensemble"] and idx > 0):
                 options = list(ensemble_surface_providers.keys())
-                value = data["ensemble"]["value"] if "ensemble" in data else options[0]
-            data["ensemble"] = {"value": value, "options": options}
+                selected_value = data.get("ensemble", {}).get("value", [])
+                if isinstance(selected_value, str):
+                    selected_value = [selected_value]
+                value = [x for x in selected_value if x in options]
+                if not value or multi_in_ctx:
+                    value = options if multi else options[:1]
+            data["ensemble"] = {"value": value, "options": options, "multi": multi}
 
     def _update_attribute_data(selections, links) -> None:
         for idx, data in enumerate(selections):
             if not (links["attribute"] and idx > 0):
                 options = ensemble_surface_providers.get(
-                    data["ensemble"]["value"]
+                    data["ensemble"]["value"][0]
                 ).attributes
 
-                value = (
-                    data["attribute"]["value"]
-                    if "attribute" in data and data["attribute"]["value"][0] in options
-                    else options[:1]
-                )
+                value = [
+                    x
+                    for x in data.get("attribute", {}).get("value", [])
+                    if x in options
+                ]
+                value = value if value else options[:1]
+
             data["attribute"] = {"value": value, "options": options}
 
-    def _update_name_data(selections, links) -> None:
+    def _update_name_data(selections, links, multi, multi_in_ctx) -> None:
+        multi = multi == "name"
         for idx, data in enumerate(selections):
             if not (links["name"] and idx > 0):
                 options = ensemble_surface_providers.get(
-                    data["ensemble"]["value"]
+                    data["ensemble"]["value"][0]
                 ).names_in_attribute(data["attribute"]["value"][0])
 
-                value = (
-                    data["name"]["value"]
-                    if "name" in data and data["name"]["value"][0] in options
-                    else options[:1]
-                )
-            data["name"] = {"value": value, "options": options}
+                value = [
+                    x for x in data.get("name", {}).get("value", []) if x in options
+                ]
+                if not value or multi_in_ctx:
+                    value = options if multi else options[:1]
 
-    def _update_date_data(selections, links) -> None:
+            data["name"] = {"value": value, "options": options, "multi": multi}
+
+    def _update_date_data(selections, links, multi, multi_in_ctx) -> None:
+        multi = multi == "date"
         for idx, data in enumerate(selections):
             if not (links["date"] and idx > 0):
                 options = ensemble_surface_providers.get(
-                    data["ensemble"]["value"]
+                    data["ensemble"]["value"][0]
                 ).dates_in_attribute(data["attribute"]["value"][0])
+                options = options if options is not None else []
 
-                if options is None:
-                    options = value = []
-                else:
-                    value = (
-                        data["date"]["value"]
-                        if "date" in data
-                        and data["date"]["value"]
-                        and data["date"]["value"][0] in options
-                        else options[:1]
-                    )
-            data["date"] = {"value": value, "options": options}
+                value = [
+                    x for x in data.get("date", {}).get("value", []) if x in options
+                ]
+                if not value or multi_in_ctx:
+                    value = options if multi else options[:1]
+
+            data["date"] = {"value": value, "options": options, "multi": multi}
 
     def _update_mode_data(selections, links) -> None:
         if "mode" not in links:
@@ -330,7 +358,7 @@ def plugin_callbacks(
         for idx, data in enumerate(selections):
             if not (links["realizations"] and idx > 0):
                 options = ensemble_surface_providers[
-                    data["ensemble"]["value"]
+                    data["ensemble"]["value"][0]
                 ].realizations
 
                 if SurfaceMode(data["mode"]["value"]) == SurfaceMode.REALIZATION:
@@ -436,7 +464,7 @@ def plugin_callbacks(
             attribute=data["attribute"]["value"][0],
             name=data["name"]["value"][0],
             date=data["date"]["value"][0] if data["date"]["value"] else None,
-            ensemble=data["ensemble"]["value"],
+            ensemble=data["ensemble"]["value"][0],
             realizations=data["realizations"]["value"],
             mode=data["mode"]["value"],
         )
@@ -448,6 +476,15 @@ def plugin_callbacks(
         if data["mode"]["value"] == SurfaceMode.STDDEV:
             surfaceid += data["mode"]["value"]
         return surfaceid
+
+    def update_selections_with_multi(selections, multi):
+        multi_values = selections[0][multi]["value"]
+        new_selections = []
+        for val in multi_values:
+            updated_values = deepcopy(selections[0])
+            updated_values[multi]["value"] = [val]
+            new_selections.append(updated_values)
+        return new_selections
 
 
 def view_layout(views, columns):
