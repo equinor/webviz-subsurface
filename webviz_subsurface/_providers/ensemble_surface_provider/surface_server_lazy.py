@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import flask
 import flask_caching
-import orjson as json
+import json
 from dash import Dash
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
@@ -21,7 +21,7 @@ from .ensemble_surface_provider import (
 )
 
 LOGGER = logging.getLogger(__name__)
-ROOT_URL_PATH = "/sigroute"
+ROOT_URL_PATH = "/SurfaceServerLazy"
 
 
 class SurfaceServerLazy:
@@ -42,7 +42,6 @@ class SurfaceServerLazy:
         # self._image_cache = flask_caching.Cache(
         #     config={
         #         "CACHE_TYPE": "FileSystemCache",
-        #         "CACHE_KEY_PREFIX": f"SurfaceServer_{uuid4()}",
         #         "CACHE_DIR": "/home/sigurdp/buf/flask_filesys_cache",
         #     }
         # )
@@ -52,7 +51,7 @@ class SurfaceServerLazy:
     def instance(app: Dash) -> "SurfaceServerLazy":
         global SURFACE_SERVER_INSTANCE
         if not SURFACE_SERVER_INSTANCE:
-            LOGGER.debug("Initializing SurfaceServer instance")
+            LOGGER.debug("Initializing SurfaceServerLazy instance")
             SURFACE_SERVER_INSTANCE = SurfaceServerLazy(app)
 
         return SURFACE_SERVER_INSTANCE

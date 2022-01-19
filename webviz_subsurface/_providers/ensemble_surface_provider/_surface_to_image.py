@@ -93,6 +93,8 @@ def surface_to_png_bytes_OPTIMIZED(surface: xtgeo.RegularSurface) -> bytes:
 
     timer = PerfTimer()
 
+    # BEWARE!!!!!!!
+    # Mutates input surface!!!!!!
     surface.unrotate()
     LOGGER.debug(f"unrotate: {timer.lap_s():.2f}s")
 
