@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#921](https://github.com/equinor/webviz-subsurface/pull/921) - Fixed bug with History Vectors in new `SimulationTimeSeries` plugin. Replaced hard coded realization number of 0, with first valid realization in provider.
+- [#926](https://github.com/equinor/webviz-subsurface/pull/926) - `VolumetricAnalysis` - Fixed bug when building portables with aggregated (csvfile_vol) input.
 
 ## [0.2.9] - 2022-01-06
 
