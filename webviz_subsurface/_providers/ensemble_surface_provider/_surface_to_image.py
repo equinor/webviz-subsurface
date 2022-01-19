@@ -99,7 +99,7 @@ def surface_to_png_bytes_OPTIMIZED(surface: xtgeo.RegularSurface) -> bytes:
     # Note that returned values array is a 2d masked array
     surf_values_ma: np.ma.MaskedArray = surface.values
 
-    surf_values_ma = np.flip(surf_values_ma.transpose(), axis=0)
+    surf_values_ma = np.flip(surf_values_ma.transpose(), axis=0)  # type: ignore
     LOGGER.debug(f"flip/transpose: {timer.lap_s():.2f}s")
 
     # This will be a flat bool array with true for all valid entries
