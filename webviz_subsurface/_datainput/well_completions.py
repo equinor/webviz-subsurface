@@ -41,6 +41,9 @@ def read_zone_layer_mapping(
     df_files = ens.find_files(zone_layer_mapping_file)
     dataframes = []
 
+    if df_files.empty:
+        return pd.DataFrame()
+
     for _, row in df_files.iterrows():
         real = row["REAL"]
         zonelist = common.parse_lyrfile(filename=row["FULLPATH"])
@@ -56,10 +59,9 @@ def read_zone_layer_mapping(
             for zonedict in zonelist
             if "color" in zonedict
         }
-        df_real["COLOR"] = df["ZONE"].map(zone_color_mapping)
+        df_real["COLOR"] = df_real["ZONE"].map(zone_color_mapping)
         dataframes.append(df_real)
 
-    print(pd.concat(dataframes))
     return pd.concat(dataframes)
 
 

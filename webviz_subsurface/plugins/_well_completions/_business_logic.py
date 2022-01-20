@@ -72,7 +72,8 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
             ensemble_path=self.ensemble_path,
             well_connection_status_file=self.well_connection_status_file,
         )
-        layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
+        # layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
+        df_zone_layer = read_zone_layer_mapping(
             ensemble_path=self.ensemble_path,
             zone_layer_mapping_file=self.zone_layer_mapping_file,
         )
@@ -95,11 +96,17 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
         realizations = list(sorted(df.REAL.unique()))
         layers = np.sort(df.K1.unique())
 
-        if layer_zone_mapping is None:
-            # use layers as zones
-            layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
+        if df_zone_layer.empty:
+            print("her")
+        else:
+            df = df.merge(df_zone_layer, on=["K1", "REAL"])
+            # hva hvis det mangler verdier
 
-        df["ZONE"] = df.K1.map(layer_zone_mapping)
+        # if layer_zone_mapping is None:
+        #     # use layers as zones
+        #     layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
+
+        # df["ZONE"] = df.K1.map(layer_zone_mapping)
 
         zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
 
