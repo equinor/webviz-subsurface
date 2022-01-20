@@ -317,4 +317,5 @@ def correlate(df: pd.DataFrame, response: str) -> pd.Series:
     series = df[response]
     df = df.drop(columns=[response])
     corrdf = df.corrwith(series)
+    corrdf.fillna(0, inplace=True)
     return corrdf.reindex(corrdf.abs().sort_values().index)
