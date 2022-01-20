@@ -100,6 +100,8 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
             print("her")
         else:
             df = df.merge(df_zone_layer, on=["K1", "REAL"])
+
+        print(df)
             # hva hvis det mangler verdier
 
         # if layer_zone_mapping is None:
@@ -108,7 +110,9 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
 
         # df["ZONE"] = df.K1.map(layer_zone_mapping)
 
-        zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
+        #zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
+        zone_names = df["ZONE"].unique()
+        print(zone_names)
 
         result = {
             "version": "1.1.0",
