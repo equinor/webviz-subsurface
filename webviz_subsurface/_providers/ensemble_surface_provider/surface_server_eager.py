@@ -3,9 +3,11 @@ import io
 import logging
 from dataclasses import dataclass
 from dataclasses import asdict
-from typing import Optional, Union
+from typing import Optional, Union, List, Tuple
 from urllib.parse import quote
 from uuid import uuid4
+import math
+import os
 
 import flask
 import flask_caching
@@ -57,6 +59,8 @@ class SurfaceMeta:
     y_max: float
     val_min: float
     val_max: float
+    deckgl_bounds: List[float]
+    deckgl_rot_deg: float  # Around upper left corner
 
 
 class SurfaceServerEager:
@@ -204,6 +208,13 @@ class SurfaceServerEager:
 
         self._image_cache.add(img_cache_key, png_bytes)
 
+        # For debugging rotations
+        # unrot_surf = surface.copy()
+        # unrot_surf.unrotate()
+        # unrot_surf.quickplot("/home/sigurdp/gitRoot/hk-webviz-subsurface/quickplot.png")
+
+        deckgl_bounds, deckgl_rot = _calc_map_component_bounds_and_rot(surface)
+
         meta = SurfaceMeta(
             x_min=surface.xmin,
             x_max=surface.xmax,
@@ -211,6 +222,8 @@ class SurfaceServerEager:
             y_max=surface.ymax,
             val_min=surface.values.min(),
             val_max=surface.values.max(),
+            deckgl_bounds=deckgl_bounds,
+            deckgl_rot_deg=deckgl_rot,
         )
         self._image_cache.add(meta_cache_key, meta)
         et_write_cache_s = timer.lap_s()
@@ -251,6 +264,37 @@ def _diff_address_to_str(
         + "~~~"
         + _address_to_str(provider_id_b, address_b)
     )
+
+
+def _calc_map_component_bounds_and_rot(
+    surface: xtgeo.RegularSurface,
+) -> Tuple[List[float], float]:
+    surf_corners = surface.get_map_xycorners()
+    rptx = surf_corners[2][0]
+    rpty = surf_corners[2][1]
+    min_x = math.inf
+    max_x = -math.inf
+    min_y = math.inf
+    max_y = -math.inf
+    a = -surface.rotation * math.pi / 180
+    for c in surf_corners:
+        x = c[0]
+        y = c[1]
+        x_rotated = rptx + ((x - rptx) * math.cos(a)) - ((y - rpty) * math.sin(a))
+        y_rotated = rpty + ((x - rptx) * math.sin(a)) + ((y - rpty) * math.cos(a))
+        min_x = min(min_x, x_rotated)
+        max_x = max(max_x, x_rotated)
+        min_y = min(min_y, y_rotated)
+        max_y = max(max_y, y_rotated)
+
+    bounds = [
+        min_x,
+        min_y,
+        max_x,
+        max_y,
+    ]
+
+    return bounds, surface.rotation
 
 
 SURFACE_SERVER_INSTANCE: Optional[SurfaceServerEager] = None

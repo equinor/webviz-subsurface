@@ -2,6 +2,7 @@ from operator import sub
 from typing import Callable, Dict, List, Tuple, Optional, Union
 from pathlib import Path
 import io
+import os
 import logging
 
 from dataclasses import asdict
@@ -42,10 +43,9 @@ from ._make_rgba import surface_to_rgba
 
 from ._layout import main_layout
 
-import diskcache
-
-cache = diskcache.Cache("./cache_for_testing_long_callbacks")
-long_callback_manager = DiskcacheLongCallbackManager(cache)
+# import diskcache
+# cache = diskcache.Cache("./cache_for_testing_long_callbacks")
+# long_callback_manager = DiskcacheLongCallbackManager(cache)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -93,8 +93,9 @@ class EnsembleSurfaceSharedServer(WebvizPluginABC):
         #     Output(self.uuid("map-component"), "bounds"),
         #     Input(self.uuid("mode"), "value"),
         #     State(self.uuid("map-component"), "layers"),
-        #     interval_time=100,
+        #     # interval_time=100,
         #     manager=long_callback_manager,
+        #     prevent_initial_call=True,
         # )
         @app.callback(
             Output(self.uuid("map-component"), "layers"),
@@ -104,7 +105,7 @@ class EnsembleSurfaceSharedServer(WebvizPluginABC):
         )
         def _update_surface(mode: str, layers: List[Dict]) -> List[Dict]:
 
-            print(f"START CALLBACK  {self._plugin_uuid}")
+            print(f"START CALLBACK  pid={os.getpid()}")
 
             # ctx = dash.callback_context
             # print(f"ctx.triggered  {ctx.triggered}")
@@ -175,15 +176,16 @@ class EnsembleSurfaceSharedServer(WebvizPluginABC):
                 surf_meta.x_max,
                 surf_meta.y_max,
             ]
-            layers[0]["bounds"] = bounds
+
+            layers[0]["bounds"] = surf_meta.deckgl_bounds
+            layers[0]["rotDeg"] = surf_meta.deckgl_rot_deg
             layers[0]["valueRange"] = [surf_meta.val_min, surf_meta.val_max]
-            # layers[0]["rotDeg"] = 30
 
             surface_url = self.eager_surf_server.encode_partial_url(qualified_address)
             print("EAGER SURFACE_URL:", surface_url)
 
             layers[0]["image"] = surface_url
 
-            print(f"END CALLBACK {self._plugin_uuid}")
+            print(f"END CALLBACK pid={os.getpid()}")
 
             return layers, bounds

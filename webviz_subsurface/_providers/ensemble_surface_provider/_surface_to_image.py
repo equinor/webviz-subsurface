@@ -95,8 +95,12 @@ def surface_to_png_bytes_OPTIMIZED(surface: xtgeo.RegularSurface) -> bytes:
 
     # BEWARE!!!!!!!
     # Mutates input surface!!!!!!
-    surface.unrotate()
-    LOGGER.debug(f"unrotate: {timer.lap_s():.2f}s")
+    # !!!!!!!!!!!!!!!!!!!!!!
+    # !!!!!!!!!!!!!!!!!!!!!!
+    # Removed for testing new rotation hack
+    # !!!!!!!!!!!!!!!!!!!!!!
+    # surface.unrotate()
+    # LOGGER.debug(f"unrotate: {timer.lap_s():.2f}s")
 
     # Note that returned values array is a 2d masked array
     surf_values_ma: np.ma.MaskedArray = surface.values
@@ -169,12 +173,6 @@ def surface_to_png_bytes_OPTIMIZED(surface: xtgeo.RegularSurface) -> bytes:
     byte_io.seek(0)
     ret_bytes = byte_io.read()
     LOGGER.debug(f"read bytes: {timer.lap_s():.2f}s")
-
-    # image.save(
-    #     "/home/sigurdp/gitRoot/hk-webviz-subsurface/SIG-OPT.png",
-    #     format="png",
-    #     compress_level=1,
-    # )
 
     LOGGER.debug(f"Total time: {timer.elapsed_s():.2f}s")
 
