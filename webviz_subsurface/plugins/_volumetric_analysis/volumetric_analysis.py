@@ -226,11 +226,12 @@ reek_test_data/aggregated_data/parameters.csv)
         store_functions = []
         if self.csvfile_vol is not None:
             store_functions.append((read_csv, [{"csv_file": self.csvfile_vol}]))
+        else:
+            store_functions.extend(self.emodel.webvizstore)
         if self.fipfile is not None:
             store_functions.append((get_path, [{"path": self.fipfile}]))
         if self.csvfile_parameters is not None:
             store_functions.append((read_csv, [{"csv_file": self.csvfile_parameters}]))
-        store_functions.extend(self.emodel.webvizstore)
         return store_functions
 
 
