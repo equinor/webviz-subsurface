@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional
 
+from webviz_subsurface_components.py_expression_eval import ParserError
+
 from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_unit_reformat,
     simulation_vector_description,
@@ -75,5 +77,5 @@ def create_calculated_unit_from_provider_set(
                 unit_expr = unit_expr.replace(elm["variableName"], metadata.unit)
 
         return unit_expr
-    except ValueError:
+    except ParserError:
         return None
