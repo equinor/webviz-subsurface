@@ -166,16 +166,15 @@ def plugin_callbacks(
         test, stored_color_settings = _update_data(
             values, links, multi, multi_in_ctx, stored_color_settings
         )
-        #  stored_color_settings = _update_color_data(
-        #      values, test, stored_color_settings, links
-        #  )
+        updated_values = [
+            {selector: val["value"] for selector, val in data.items()} for data in test
+        ]
 
-        mapselections = test
         if multi is not None:
-            mapselections = update_selections_with_multi(test, multi)
+            updated_values = update_selections_with_multi(updated_values, multi)
 
             ranges = []
-            for data in mapselections:
+            for data in updated_values:
                 selected_surface = get_surface_context_from_data(data)
                 surface = ensemble_surface_providers[
                     selected_surface.ensemble
@@ -187,11 +186,13 @@ def plugin_callbacks(
                     min(r[0] for r in ranges),
                     max(r[1] for r in ranges),
                 ]
+            for data in updated_values:
                 test[0]["color_range"]["range"] = min_max_for_all
                 test[0]["color_range"]["value"] = min_max_for_all
+                data["color_range"] = min_max_for_all
 
         return (
-            mapselections,
+            updated_values,
             [
                 SideBySideSelectorFlex(
                     tab,
@@ -231,13 +232,12 @@ def plugin_callbacks(
 
             ensemble = selected_surface.ensemble
             surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
+            surface_range = get_surface_range(surface)
 
             # HACK AT THE MOMENT
-            if get_surface_range(surface) == [0.0, 0.0]:
+            if surface_range == [0.0, 0.0]:
                 continue
             valid_data.append(idx)
-
-            surface_range = get_surface_range(surface)
 
             property_bounds = get_surface_bounds(surface)
 
@@ -259,8 +259,8 @@ def plugin_callbacks(
             layer_model.update_layer_by_id(
                 layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                 layer_data={
-                    "colorMapName": data["colormap"]["value"],
-                    "colorMapRange": data["color_range"]["value"],
+                    "colorMapName": data["colormap"],
+                    "colorMapRange": data["color_range"],
                 },
             )
             if well_set_model is not None:
@@ -448,12 +448,12 @@ def plugin_callbacks(
 
     def get_surface_context_from_data(data):
         return SurfaceContext(
-            attribute=data["attribute"]["value"][0],
-            name=data["name"]["value"][0],
-            date=data["date"]["value"][0] if data["date"]["value"] else None,
-            ensemble=data["ensemble"]["value"][0],
-            realizations=data["realizations"]["value"],
-            mode=data["mode"]["value"],
+            attribute=data["attribute"][0],
+            name=data["name"][0],
+            date=data["date"][0] if data["date"] else None,
+            ensemble=data["ensemble"][0],
+            realizations=data["realizations"],
+            mode=data["mode"],
         )
 
     def get_surface_id(attribute, name, date, mode):
@@ -465,11 +465,11 @@ def plugin_callbacks(
         return surfaceid
 
     def update_selections_with_multi(selections, multi):
-        multi_values = selections[0][multi]["value"]
+        multi_values = selections[0][multi]
         new_selections = []
         for val in multi_values:
             updated_values = deepcopy(selections[0])
-            updated_values[multi]["value"] = [val]
+            updated_values[multi] = [val]
             new_selections.append(updated_values)
         return new_selections
 
