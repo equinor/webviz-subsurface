@@ -101,8 +101,15 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
         else:
             df = df.merge(df_zone_layer, on=["K1", "REAL"])
 
-        print(df)
-            # hva hvis det mangler verdier
+        zone_color_mapping = {
+            item["ZONE"]: item["COLOR"]
+            for item in df[["ZONE", "COLOR"]]
+            .dropna()
+            .drop_duplicates(keep="first")
+            .to_dict("records")
+        }
+        print(zone_color_mapping)
+        # hva hvis det mangler verdier
 
         # if layer_zone_mapping is None:
         #     # use layers as zones
@@ -110,7 +117,7 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
 
         # df["ZONE"] = df.K1.map(layer_zone_mapping)
 
-        #zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
+        # zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
         zone_names = df["ZONE"].unique()
         print(zone_names)
 
@@ -120,7 +127,7 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
                 "kh": {"unit": self.kh_unit, "decimalPlaces": self.kh_decimal_places}
             },
             "stratigraphy": extract_stratigraphy(
-                layer_zone_mapping, stratigraphy, zone_color_mapping, self.theme_colors
+                zone_names, stratigraphy, zone_color_mapping, self.theme_colors
             ),
             "timeSteps": [str(dte) for dte in time_steps],
             "wells": extract_wells(
@@ -441,7 +448,7 @@ def filter_valid_nodes(
 
 
 def extract_stratigraphy(
-    layer_zone_mapping: Dict[int, str],
+    zone_names: List[str],
     stratigraphy: Optional[List[Dict[str, Any]]],
     zone_color_mapping: Optional[Dict[str, str]],
     theme_colors: list,
@@ -457,13 +464,11 @@ def extract_stratigraphy(
                 if zone_color_mapping is not None and zone in zone_color_mapping
                 else next(color_iterator),
             }
-            for zone in dict.fromkeys(layer_zone_mapping.values())
+            for zone in zone_names
         ]
 
     # If stratigraphy is not None the following is done:
-    stratigraphy, remaining_valid_zones = filter_valid_nodes(
-        stratigraphy, list(set(layer_zone_mapping.values()))
-    )
+    stratigraphy, remaining_valid_zones = filter_valid_nodes(stratigraphy, zone_names)
 
     if remaining_valid_zones:
         raise ValueError(
