@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#921](https://github.com/equinor/webviz-subsurface/pull/921) - Fixed bug with History Vectors in new `SimulationTimeSeries` plugin. Replaced hard coded realization number of 0, with first valid realization in provider.
 - [#926](https://github.com/equinor/webviz-subsurface/pull/926) - `VolumetricAnalysis` - Fixed bug when building portables with aggregated (csvfile_vol) input.
 - [#929](https://github.com/equinor/webviz-subsurface/pull/929) - `TornadoWidget` - No longer skipping sensitivities with `SENSNAME="ref"` from tornado bars if there is more than one realizations with `SENSNAME="ref"`.
-### Changed
 
 ## [0.2.9] - 2022-01-06
 
