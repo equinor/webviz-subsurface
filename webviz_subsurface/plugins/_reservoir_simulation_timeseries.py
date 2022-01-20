@@ -18,6 +18,7 @@ from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 from webviz_config import EncodedFile, WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
+from webviz_config.deprecation_decorators import deprecated_plugin
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 from webviz_subsurface_components import ExpressionInfo, ExternalParseData
@@ -81,6 +82,10 @@ def _check_plugin_options(options: Optional[dict]) -> Optional[Tuple[str, str]]:
 
 
 # pylint: disable = too-many-instance-attributes
+@deprecated_plugin(
+    "This plugin has been replaced by the faster, "
+    "more flexible and less memory hungry plugin `SimulationTimeSeries`"
+)
 class ReservoirSimulationTimeSeries(WebvizPluginABC):
     """Visualizes reservoir simulation time series data for FMU ensembles.
 
