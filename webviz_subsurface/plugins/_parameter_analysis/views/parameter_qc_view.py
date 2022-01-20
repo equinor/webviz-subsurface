@@ -15,7 +15,7 @@ def selector_view(get_uuid: Callable, parametermodel: ParametersModel) -> html.D
                 children=[
                     ensemble_selector(
                         get_uuid=get_uuid,
-                        parametermodel=parametermodel,
+                        ensembles=parametermodel.ensembles,
                         tab="qc",
                         id_string="ensemble-selector",
                         heading="Ensemble A:",
@@ -23,7 +23,7 @@ def selector_view(get_uuid: Callable, parametermodel: ParametersModel) -> html.D
                     ),
                     ensemble_selector(
                         get_uuid=get_uuid,
-                        parametermodel=parametermodel,
+                        ensembles=parametermodel.ensembles,
                         tab="qc",
                         id_string="delta-ensemble-selector",
                         heading="Ensemble B:",
@@ -75,6 +75,7 @@ def parameter_qc_view(
                                     "label": "Distribution plots",
                                     "value": "distribution",
                                 },
+                                {"label": "Box plots", "value": "box"},
                                 {"label": "Statistics table", "value": "table"},
                             ],
                             value="distribution",

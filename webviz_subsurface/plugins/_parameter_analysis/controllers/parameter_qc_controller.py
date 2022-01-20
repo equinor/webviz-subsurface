@@ -23,6 +23,8 @@ def parameter_qc_controller(
         """Callback to switch visualization between table and distribution plots"""
         parameters = parameters if isinstance(parameters, list) else [parameters]
         ensembles = [ensemble, delta_ensemble]
+        valid_params = parametermodel.pmodel.get_parameters_for_ensembles(ensembles)
+        parameters = [x for x in parameters if x in valid_params]
 
         if plot_type == "table":
             columns, dframe = parametermodel.make_statistics_table(
@@ -56,21 +58,12 @@ def parameter_qc_controller(
         )
 
     @app.callback(
-        Output(
-            {"id": get_uuid("filter-parameter"), "tab": "qc"},
-            "options",
-        ),
-        Output(
-            {"id": get_uuid("filter-parameter"), "tab": "qc"},
-            "value",
-        ),
+        Output({"id": get_uuid("filter-parameter"), "tab": "qc"}, "options"),
+        Output({"id": get_uuid("filter-parameter"), "tab": "qc"}, "value"),
         Input(get_uuid("delta-sort"), "value"),
         Input({"id": get_uuid("ensemble-selector"), "tab": "qc"}, "value"),
         Input({"id": get_uuid("delta-ensemble-selector"), "tab": "qc"}, "value"),
-        State(
-            {"id": get_uuid("filter-parameter"), "tab": "qc"},
-            "value",
-        ),
+        State({"id": get_uuid("filter-parameter"), "tab": "qc"}, "value"),
     )
     def _update_parameters(sortby, ensemble, delta_ensemble, current_params):
         """Callback to sort parameters based on selection"""
@@ -79,6 +72,10 @@ def parameter_qc_controller(
             delta_ensemble=delta_ensemble,
             sortby=sortby,
         )
-        return [
-            {"label": i, "value": i} for i in parametermodel.parameters
-        ], current_params
+        valid_params = parametermodel.pmodel.get_parameters_for_ensembles(
+            [ensemble, delta_ensemble]
+        )
+        sorted_params = [x for x in parametermodel.parameters if x in valid_params]
+        return [{"label": i, "value": i} for i in sorted_params], [
+            x for x in current_params if x in sorted_params
+        ]

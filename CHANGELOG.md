@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#929](https://github.com/equinor/webviz-subsurface/pull/929) - `TornadoWidget` - No longer skipping sensitivities with `SENSNAME="ref"` from tornado bars if there is more than one realizations with `SENSNAME="ref"`.
 - [#932](https://github.com/equinor/webviz-subsurface/pull/932) - `RftPlotter` - Fixed bug related to calculated correlations returnin NaN if the response variable has constant values.
 
+### Changed
+
+- [#924](https://github.com/equinor/webviz-subsurface/pull/924) - Improvements to the `ParameterFilter` functionality, e.g information regarding active filters and which relizatons are filtered out, and better handling of multiple ensembles. Improvements to the `ParameterAnalysis` plugin, e.g. added boxplot, fixed table formatting and update of parameters based on selected ensemble.
+
 ## [0.2.9] - 2022-01-06
 
 ### Fixed

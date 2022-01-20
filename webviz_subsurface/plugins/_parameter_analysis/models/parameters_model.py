@@ -3,7 +3,6 @@ from typing import Any, List, Tuple
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from dash.dash_table.Format import Format
 
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models.parameter_model import ParametersModel as Pmodel
@@ -40,6 +39,10 @@ class ParametersModel:
     @property
     def statframe(self) -> pd.DataFrame:
         return self._statframe
+
+    @property
+    def mc_ensembles(self) -> pd.DataFrame:
+        return self.pmodel.mc_ensembles
 
     @property
     def parameters(self) -> pd.DataFrame:
@@ -118,7 +121,7 @@ class ParametersModel:
                 "id": col,
                 "name": [col.split("|")[0], col.split("|")[1]],
                 "type": "numeric",
-                "format": Format(precision=3),
+                "format": {"specifier": ".3~r"},
             }
             for col in df.columns
         ]
