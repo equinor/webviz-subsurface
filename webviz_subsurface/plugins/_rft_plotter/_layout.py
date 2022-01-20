@@ -158,7 +158,7 @@ def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
         ),
     ]
 
-    # It there is parameters, add the parameter response tab
+    # It this is not a sensitivity run, add the parameter response tab
     if not datamodel.param_model.sensrun:
         tabs.append(
             wcc.Tab(

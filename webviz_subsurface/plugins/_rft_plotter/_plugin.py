@@ -125,5 +125,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     def set_callbacks(self, app: Dash) -> None:
         plugin_callbacks(app, self.uuid, self._datamodel)
+
+        # It this is not a sensitivity run, add the parameter response callbacks
         if not self._datamodel.param_model.sensrun:
             paramresp_callbacks(app, self.uuid, self._datamodel)
