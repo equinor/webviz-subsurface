@@ -235,7 +235,7 @@ def create_vector_statistics_traces(
 def create_vector_fanchart_traces(
     vector_statistics_df: pd.DataFrame,
     fanchart_options: List[FanchartOptions],
-    color: str,
+    hex_color: str,
     legend_group: str,
     line_shape: str,
     hovertemplate: str = "(%{x}, %{y})<br>",
@@ -250,7 +250,7 @@ def create_vector_fanchart_traces(
         DataFrame columns: ["DATE", MEAN, MIN, MAX, P10, P90, P50]
 
     * fanchart_options: List[FanchartOptions] - List of fanchart options to include
-    * color: str - color for traces and fill
+    * hex_color: str - Hex color for traces and fill
     * legend_group: str - legend group owner
     * line_shape: str - specified line shape for trace
     * hovertemplate: str - template for hovering of data points in trace lines
@@ -295,7 +295,7 @@ def create_vector_fanchart_traces(
     )
     return get_fanchart_traces(
         data=data,
-        color=color,
+        hex_color=hex_color,
         legend_group=legend_group,
         line_shape=line_shape,
         show_legend=show_legend,

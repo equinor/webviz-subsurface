@@ -107,7 +107,7 @@ class TornadoBarChart:
                         self._set_si_prefix(row["true_high"]),
                     ]
                 )
-                casename = "P90  |  P10"
+                casename = f"{row['low_label']}  |  {row['high_label']}"
             else:
                 xvals = self._set_si_prefix_relative(row[f"{case}_tooltip"])
                 truevals = self._set_si_prefix(row[f"true_{case}"])

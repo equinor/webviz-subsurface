@@ -349,7 +349,7 @@ def _get_fanchart_traces(
 
     return get_fanchart_traces(
         data=data,
-        color=color,
+        hex_color=color,
         legend_group=legend_group,
         direction=TraceDirection.VERTICAL,
     )

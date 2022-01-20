@@ -4,6 +4,7 @@ import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface._utils.vector_calculator import (
     create_calculated_vector_df,
     get_selected_expressions,
@@ -23,8 +24,8 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
     The delta ensemble is represented a pair of two ensemble summary providers.
 
-    A sequence of vector names are provided, and data is fetched or created based on which
-    type of vectors are present in the sequence.
+    A list of vector names are provided, and data is fetched or created based on which
+    type of vectors are present in the list.
 
     Vector names can be regular vectors existing among vector names in the providers, Interval
     Delta/Average rate vector or a calculated vector from vector calculator.
@@ -37,7 +38,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         self,
         name: str,
         provider_pair: Tuple[EnsembleSummaryProvider, EnsembleSummaryProvider],
-        vectors: Sequence[str],
+        vectors: List[str],
         expressions: Optional[List[ExpressionInfo]] = None,
         resampling_frequency: Optional[Frequency] = None,
     ) -> None:
@@ -101,7 +102,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
     def __create_delta_ensemble_vectors_df(
         self,
-        vector_names: Sequence[str],
+        vector_names: List[str],
         resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
@@ -115,7 +116,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         * DataFrame with columns ["DATE", "REAL", vector1, ..., vectorN]
 
         `Input:`
-        * vector_names: Sequence[str] - Sequence of vector names to get data for
+        * vector_names: List[str] - List of vector names to get data for
         * resampling_frequency: Optional[Frequency] - Optional resampling frequency
         * realizations: Optional[Sequence[int]] - Optional sequence of realization numbers for
         vectors
@@ -129,23 +130,27 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         if not vector_names:
             raise ValueError("List of requested vector names is empty")
 
-        # NOTE: index order ["REAL","DATE"] to obtain grouping by realization
-        # and order by date
+        # NOTE: index order ["DATE","REAL"] to obtain column order when
+        # performing reset_index() later
         ensemble_a_vectors_df = self._provider_a.get_vectors_df(
             vector_names, resampling_frequency, realizations
-        ).set_index(["REAL", "DATE"])
+        ).set_index(["DATE", "REAL"])
         ensemble_b_vectors_df = self._provider_b.get_vectors_df(
             vector_names, resampling_frequency, realizations
-        ).set_index(["REAL", "DATE"])
+        ).set_index(["DATE", "REAL"])
 
-        # Reset index, group by "REAL" and sort groups by "DATE"
+        # Reset index, sort values by "REAL" and thereafter by "DATE" to
+        # group realizations and order by date
         ensembles_delta_vectors_df = (
             ensemble_a_vectors_df.sub(ensemble_b_vectors_df)
+            .dropna(axis=0, how="any")
             .reset_index()
-            .sort_values(["REAL", "DATE"])
+            .sort_values(["REAL", "DATE"], ignore_index=True)
         )
 
-        return ensembles_delta_vectors_df.dropna(axis=0, how="any")
+        make_date_column_datetime_object(ensembles_delta_vectors_df)
+
+        return ensembles_delta_vectors_df
 
     def has_provider_vectors(self) -> bool:
         return len(self._provider_vectors) > 0
@@ -302,17 +307,20 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                 provider_b_calculated_vectors_df, provider_b_calculated_vector_df
             )
 
-        # Use "REAL" and "DATE" as indices
-        #  NOTE: index order ["REAL","DATE"] to obtain grouping by realization
-        # and order by date
-        provider_a_calculated_vectors_df.set_index(["REAL", "DATE"], inplace=True)
-        provider_b_calculated_vectors_df.set_index(["REAL", "DATE"], inplace=True)
+        # NOTE: index order ["DATE","REAL"] to obtain column order when
+        # performing reset_index() later
+        provider_a_calculated_vectors_df.set_index(["DATE", "REAL"], inplace=True)
+        provider_b_calculated_vectors_df.set_index(["DATE", "REAL"], inplace=True)
 
-        # Reset index, group by "REAL" and sort groups by "DATE"
+        # Reset index, sort values by "REAL" and thereafter by "DATE" to
+        # group realizations and order by date
         delta_ensemble_calculated_vectors_df = (
             provider_a_calculated_vectors_df.sub(provider_b_calculated_vectors_df)
+            .dropna(axis=0, how="any")
             .reset_index()
-            .sort_values(["REAL", "DATE"])
+            .sort_values(["REAL", "DATE"], ignore_index=True)
         )
 
-        return delta_ensemble_calculated_vectors_df.dropna(axis=0, how="any")
+        make_date_column_datetime_object(delta_ensemble_calculated_vectors_df)
+
+        return delta_ensemble_calculated_vectors_df
