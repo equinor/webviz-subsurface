@@ -1,7 +1,7 @@
 
 ### webviz-subsurface package
 
-?> :bookmark: This documentation is valid for version `0.2.9` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.10rc0` of `webviz-subsurface`.
 
 
 
@@ -280,6 +280,131 @@ as long as `SENSCASE` and `SENSNAME` is found in `parameters.txt`.
 
 An example of an aggregated file to use with `csvfile_parameters`
 [can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/parameters.csv)
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
+#### ReservoirSimulationTimeSeries
+
+<details>
+  <summary markdown="span"> :warning: Plugin 'ReservoirSimulationTimeSeries' has been deprecated.</summary>
+
+  This plugin has been replaced by the faster, more flexible and less memory hungry plugin `SimulationTimeSeries`
+</details>
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+Visualizes reservoir simulation time series data for FMU ensembles.
+
+**Features**
+* Visualization of realization time series as line charts.
+* Visualization of ensemble time series statistics as line or fan charts.
+* Visualization of single date ensemble statistics as histograms.
+* Calculation and visualization of delta ensembles.
+* Calculation and visualization of average rates and cumulatives over a specified time interval.
+* Download of visualized data to csv files (except histogram data).
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Two main options for input data: Aggregated and read from UNSMRY.**
+
+**Using aggregated data**
+* **`csvfile`:** Aggregated csv file with `REAL`, `ENSEMBLE`,     `DATE` and vector columns.
+
+**Using simulation time series data directly from `UNSMRY` files**
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`sampling`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
+
+**Common optional settings for both input options**
+* **`obsfile`**: File with observations to plot together with the relevant time series. (absolute path or relative to config file).
+* **`options`:** Options to initialize plots with:
+    * `vector1` : First vector to display
+    * `vector2` : Second vector to display
+    * `vector3` : Third vector to display
+    * `visualization` : `realizations`, `statistics` or `fanchart`
+    * `date` : Date to show by default in histograms
+* **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as     rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are     always linearly interpolated. The rest use the fallback.
+    Supported options:
+    * `linear` (default)
+    * `backfilled`
+    * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
+
+**Calculated vector expressions**
+* **`predefined_expressions`:** yaml file with pre-defined expressions
+
+
+
+---
+How to use in YAML config file:
+```yaml
+    - ReservoirSimulationTimeSeries:
+        csvfile:  # Optional, type str (corresponding to a path).
+        ensembles:  # Optional, type list.
+        obsfile:  # Optional, type str (corresponding to a path).
+        column_keys:  # Optional, type list.
+        sampling:  # Optional, type str.
+        options:  # Optional, type dict.
+        predefined_expressions:  # Optional, type str.
+        line_shape_fallback:  # Optional, type str.
+```
+
+
+
+<!-- tab:Data input -->
+
+
+?> Vectors that are identified as historical vectors (e.g. FOPTH is the history of FOPT) will be plotted together with their non-historical counterparts as reference lines, and they are therefore not selectable as vectors to plot initially.
+
+?> The `obsfile` is a common (optional) file for all ensembles, which can be converted from e.g. ERT and ResInsight formats using the [fmuobs](https://equinor.github.io/subscript/scripts/fmuobs.html) script. [An example of the format can be found here](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/observations/observations.yml).
+
+!> It is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` (controlled by the `sampling` key). This is because the statistics and fancharts are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
+
+**Using aggregated data**
+
+The `csvfile` must have columns `ENSEMBLE`, `REAL` and `DATE` in addition to the individual
+vectors.
+* [Example of aggregated file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/aggregated_data/smry.csv).
+
+**Using simulation time series data directly from `.UNSMRY` files**
+
+Vectors are extracted automatically from the `UNSMRY` files in the individual realizations,
+using the `fmu-ensemble` library.
+
+?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and cumulatives are used to decide the line shapes in the plot. Aggregated data may on the other speed up the build of the app, as processing of `UNSMRY` files can be slow for large models. Using this method is required to use the average rate and interval cumulative functionalities, as they require identification of vectors that are cumulatives.
+
+!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
 
 

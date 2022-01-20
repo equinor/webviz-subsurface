@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.9` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.10rc0` of `webviz-subsurface`.
 
 
 
@@ -200,6 +200,8 @@ rates and other network related information.
 
 
 
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to include.
 * **`gruptree_file`:** `.csv` with gruptree information.
 * **`time_index`:** Frequency for the data sampling.
@@ -211,6 +213,7 @@ How to use in YAML config file:
     - GroupTree:
         ensembles:  # Required, type list.
         gruptree_file:  # Optional, type str.
+        rel_file_pattern:  # Optional, type str.
         time_index:  # Optional, type str.
 ```
 
@@ -1469,6 +1472,12 @@ realizations/ensembles). The file has to be compatible with
 <div class="plugin-doc">
 
 #### ReservoirSimulationTimeSeries
+
+<details>
+  <summary markdown="span"> :warning: Plugin 'ReservoirSimulationTimeSeries' has been deprecated.</summary>
+
+  This plugin has been replaced by the faster, more flexible and less memory hungry plugin `SimulationTimeSeries`
+</details>
 
 
 <!-- tabs:start -->

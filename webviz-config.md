@@ -1,6 +1,6 @@
 # Plugin project webviz-config
 
-?> :bookmark: This documentation is valid for version `0.3.8` of `webviz-config`.
+?> :bookmark: This documentation is valid for version `0.3.9rc0` of `webviz-config`.
 
 
 
@@ -38,11 +38,14 @@ Useful on e.g. the front page for introducing a field or project.
 
 
 
+
+
 * **`image`:** Path to the picture you want to add.                Either absolute path or relative to the configuration file.
 * **`title`:** Title which will be overlayed over the banner image.
 * **`color`:** Color to be used for the font.
 * **`shadow`:** Set to `False` if you do not want text shadow for the title.
 * **`height`:** Height of the banner image (in pixels).
+* **`title_position`:** Position of title (either `center`, `top` or `bottom`).
 
 
 ---
@@ -54,6 +57,7 @@ How to use in YAML config file:
         color:  # Optional, type str.
         shadow:  # Optional, type bool.
         height:  # Optional, type int.
+        title_position:  # Optional, type str.
 ```
 
 
