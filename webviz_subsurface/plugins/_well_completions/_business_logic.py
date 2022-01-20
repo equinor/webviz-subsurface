@@ -94,12 +94,14 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
 
         time_steps = sorted(df.DATE.unique())
         realizations = list(sorted(df.REAL.unique()))
-        layers = np.sort(df.K1.unique())
 
         if df_zone_layer.empty:
-            print("her")
+            df["ZONE"] = df.agg(lambda x: f"Layer {x['K1']}", axis=1)
+            df["COLOR"] = np.nan
         else:
             df = df.merge(df_zone_layer, on=["K1", "REAL"])
+
+        zone_names = list(df["ZONE"].unique())
 
         zone_color_mapping = {
             item["ZONE"]: item["COLOR"]
@@ -108,18 +110,6 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
             .drop_duplicates(keep="first")
             .to_dict("records")
         }
-        print(zone_color_mapping)
-        # hva hvis det mangler verdier
-
-        # if layer_zone_mapping is None:
-        #     # use layers as zones
-        #     layer_zone_mapping = {layer: f"Layer{layer}" for layer in layers}
-
-        # df["ZONE"] = df.K1.map(layer_zone_mapping)
-
-        # zone_names = list(dict.fromkeys(layer_zone_mapping.values()))
-        zone_names = df["ZONE"].unique()
-        print(zone_names)
 
         result = {
             "version": "1.1.0",

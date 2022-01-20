@@ -30,7 +30,7 @@ def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
 def read_zone_layer_mapping(
     ensemble_path: str, zone_layer_mapping_file: str
-) -> Tuple[Optional[Dict[int, str]], Optional[Dict[str, str]]]:
+) -> pd.DataFrame:
     """Searches for a zone layer mapping file (lyr format) on the scratch disk. \
     If one file is found it is parsed using functionality from the ecl2df \
     library.
