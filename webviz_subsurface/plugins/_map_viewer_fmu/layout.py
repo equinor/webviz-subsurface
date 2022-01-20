@@ -186,8 +186,6 @@ def view_layout(tab, get_uuid, well_set_model, show_fault_polygons):
                             *[
                                 MapSelector(tab, get_uuid, selector, label=label)
                                 for selector, label in selector_labels.items()
-                                if not selector
-                                in DefaultSettings.SELECTOR_DEFAULTS.get(tab, {})
                             ],
                             RealizationSelector(tab, get_uuid=get_uuid),
                             WellsSelector(
@@ -387,6 +385,11 @@ class MapSelector(wcc.Selectors):
         info_text=None,
     ):
         super().__init__(
+            style={
+                "display": "none"
+                if selector in DefaultSettings.SELECTOR_DEFAULTS.get(tab, {})
+                else "block"
+            },
             label=label,
             open_details=open_details,
             children=[
