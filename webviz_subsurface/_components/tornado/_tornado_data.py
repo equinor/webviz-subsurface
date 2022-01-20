@@ -107,7 +107,7 @@ class TornadoData:
         avg_per_sensitivity = []
 
         for sens_name, sens_name_df in dframe.groupby(["SENSNAME"]):
-            # Excluding cases if ref` is used as `SENSNAME`, and only one realization
+            # Excluding cases if `ref` is used as `SENSNAME`, and only one realization
             # is present for this `SENSNAME`
             if sens_name == "ref" and len(sens_name_df["REAL"].unique()) == 1:
                 continue
