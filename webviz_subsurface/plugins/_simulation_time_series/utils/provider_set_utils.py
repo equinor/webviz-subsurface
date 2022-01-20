@@ -9,6 +9,10 @@ from webviz_subsurface._utils.vector_calculator import (
     VectorCalculator,
     get_expression_from_name,
 )
+from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
+    get_cumulative_vector_name,
+    is_interval_or_average_vector,
+)
 
 from ..types import ProviderSet
 
@@ -17,6 +21,7 @@ def create_vector_plot_titles_from_provider_set(
     vector_names: List[str],
     expressions: List[ExpressionInfo],
     provider_set: ProviderSet,
+    user_defined_vector_descriptions: Dict[str, str],
 ) -> Dict[str, str]:
     """Create plot titles for vectors
 
@@ -30,22 +35,46 @@ def create_vector_plot_titles_from_provider_set(
 
     all_vector_names = provider_set.all_vector_names()
     for vector_name in vector_names:
-        vector = vector_name
 
-        if vector.startswith("AVG_"):
-            vector = vector.lstrip("AVG_")
-        if vector.startswith("INTVL_"):
-            vector = vector.lstrip("INTVL_")
-
-        if vector in all_vector_names:
-            metadata = provider_set.vector_metadata(vector)
-            title = simulation_vector_description(vector_name)
+        # Provider vector
+        if vector_name in all_vector_names:
+            metadata = provider_set.vector_metadata(vector_name)
+            title = user_defined_vector_descriptions.get(
+                vector_name.split(":")[0], simulation_vector_description(vector_name)
+            )
             if metadata and metadata.unit:
-                title = (
-                    f"{simulation_vector_description(vector_name)}"
-                    f" [{simulation_unit_reformat(metadata.unit)}]"
-                )
+                title += f" [{simulation_unit_reformat(metadata.unit)}]"
             vector_title_dict[vector_name] = title
+
+        # INTVL_ or AVG_ vector
+        elif is_interval_or_average_vector(vector_name):
+            vector = vector_name
+            cumulative_vector = get_cumulative_vector_name(vector_name)
+            title = ""
+            if vector.startswith("AVG_"):
+                vector = vector.lstrip("AVG_")
+                title = user_defined_vector_descriptions.get(
+                    cumulative_vector.split(":")[0], ""
+                )
+                title = (
+                    title + "Per Day"
+                    if title
+                    else simulation_vector_description(vector)
+                )
+
+            if vector.startswith("INTVL_"):
+                vector = vector.lstrip("INTVL_")
+                title = user_defined_vector_descriptions.get(
+                    cumulative_vector.split(":")[0],
+                    simulation_vector_description(vector),
+                )
+
+            metadata = provider_set.vector_metadata(vector)
+            if metadata and metadata.unit:
+                title += f" [{simulation_unit_reformat(metadata.unit)}]"
+            vector_title_dict[vector_name] = title
+
+        # Calculated vector
         else:
             expression = get_expression_from_name(vector_name, expressions)
             if expression:

@@ -35,6 +35,10 @@ from .types.provider_set import (
 )
 from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
 
+from webviz_subsurface._utils.user_defined_vector_description import (
+    create_user_defined_vector_descriptions_dict_from_config,
+)
+
 
 class SimulationTimeSeries(WebvizPluginABC):
     # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
@@ -49,6 +53,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         options: dict = None,
         sampling: str = Frequency.MONTHLY.value,
         predefined_expressions: str = None,
+        user_defined_vector_descriptions: str = None,
         line_shape_fallback: str = "linear",
     ) -> None:
         super().__init__()
@@ -61,6 +66,23 @@ class SimulationTimeSeries(WebvizPluginABC):
 
         self._webviz_settings = webviz_settings
         self._obsfile = obsfile
+
+        # Retreive user defined vector descriptions from configuration and validate
+        self._user_defined_vector_descriptions_path = (
+            None
+            if user_defined_vector_descriptions is None
+            else webviz_settings.shared_settings["user_defined_vector_descriptions"][
+                user_defined_vector_descriptions
+            ]
+        )
+        # Vector name as key, description data as value
+        self._user_defined_vector_descriptions: Dict[
+            str, str
+        ] = create_user_defined_vector_descriptions_dict_from_config(
+            get_path(self._user_defined_vector_descriptions_path)
+            if self._user_defined_vector_descriptions_path
+            else None
+        )
 
         self._line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
@@ -124,15 +146,18 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._vector_calculator_data: list = []
         for vector in non_historical_vector_names:
             split = vector.split(":")
+            description = self._user_defined_vector_descriptions.get(
+                split[0], simulation_vector_description(split[0])
+            )
             add_vector_to_vector_selector_data(
                 self._vector_selector_base_data,
                 vector,
-                simulation_vector_description(split[0]),
+                description,
             )
             add_vector_to_vector_selector_data(
                 self._vector_calculator_data,
                 vector,
-                simulation_vector_description(split[0]),
+                description,
             )
 
             metadata = (
@@ -151,15 +176,19 @@ class SimulationTimeSeries(WebvizPluginABC):
                 avgrate_split = avgrate_vec.split(":")
                 interval_split = interval_vec.split(":")
 
+                user_defined_description = self._user_defined_vector_descriptions.get(
+                    split[0], None
+                )
+
                 add_vector_to_vector_selector_data(
                     self._vector_selector_base_data,
                     avgrate_vec,
-                    f"{simulation_vector_description(avgrate_split[0])} ({avgrate_vec})",
+                    f"{simulation_vector_description(avgrate_split[0], user_defined_description)}",
                 )
                 add_vector_to_vector_selector_data(
                     self._vector_selector_base_data,
                     interval_vec,
-                    f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
+                    f"{simulation_vector_description(interval_split[0], user_defined_description)}",
                 )
 
         # Retreive predefined expressions from configuration and validate
@@ -235,6 +264,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             initial_selected_vectors=self._initial_vectors,
             vector_selector_base_data=self._vector_selector_base_data,
             observations=self._observations,
+            user_defined_vector_descriptions=self._user_defined_vector_descriptions,
             line_shape_fallback=self._line_shape_fallback,
         )
 
@@ -348,4 +378,8 @@ class SimulationTimeSeries(WebvizPluginABC):
             functions.append((get_path, [{"path": self._obsfile}]))
         if self._predefined_expressions_path:
             functions.append((get_path, [{"path": self._predefined_expressions_path}]))
+        if self._user_defined_vector_descriptions_path:
+            functions.append(
+                (get_path, [{"path": self._user_defined_vector_descriptions_path}])
+            )
         return functions

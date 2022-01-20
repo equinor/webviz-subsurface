@@ -61,6 +61,7 @@ def plugin_callbacks(
     initial_selected_vectors: List[str],
     vector_selector_base_data: list,
     observations: dict,  # TODO: Improve typehint?
+    user_defined_vector_descriptions: Dict[str, str],
     line_shape_fallback: str = "linear",
 ) -> None:
     # TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
@@ -220,7 +221,10 @@ def plugin_callbacks(
             # Create unique colors based on all ensemble names to preserve consistent colors
             ensemble_colors = unique_colors(all_ensemble_names, theme)
             vector_titles = create_vector_plot_titles_from_provider_set(
-                vectors, selected_expressions, input_provider_set
+                vectors,
+                selected_expressions,
+                input_provider_set,
+                user_defined_vector_descriptions,
             )
             figure_builder = VectorSubplotBuilder(
                 vectors,
