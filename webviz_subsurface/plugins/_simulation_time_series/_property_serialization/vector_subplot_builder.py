@@ -264,7 +264,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_traces_set[vector] = create_vector_fanchart_traces(
                 vector_statistics_df=vector_statistics_df,
-                color=color,
+                hex_color=color,
                 legend_group=ensemble,
                 line_shape=line_shape,
                 fanchart_options=fanchart_options,

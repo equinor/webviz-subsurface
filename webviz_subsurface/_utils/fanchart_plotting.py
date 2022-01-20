@@ -123,7 +123,7 @@ def validate_fanchart_data(data: FanchartData) -> None:
 # pylint: disable=too-many-locals
 def get_fanchart_traces(
     data: FanchartData,
-    color: str,
+    hex_color: str,
     legend_group: str,
     legend_name: Optional[str] = None,
     line_shape: str = "linear",
@@ -170,9 +170,9 @@ def get_fanchart_traces(
 
     validate_fanchart_data(data)
 
-    fill_color_light = hex_to_rgba_str(color, 0.3)
-    fill_color_dark = hex_to_rgba_str(color, 0.6)
-    line_color = hex_to_rgba_str(color, 1)
+    fill_color_light = hex_to_rgba_str(hex_color, 0.3)
+    fill_color_dark = hex_to_rgba_str(hex_color, 0.6)
+    line_color = hex_to_rgba_str(hex_color, 1)
 
     def get_default_trace(statistics_name: str, values: np.ndarray) -> Dict[str, Any]:
         trace = {
