@@ -3,6 +3,11 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from webviz_subsurface._utils.dataframe_utils import (
+    assert_date_column_is_datetime_object,
+    make_date_column_datetime_object,
+)
+
 from ..types import StatisticsOptions
 
 
@@ -21,6 +26,8 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
       [ "DATE",     vector1,                        ... vectorN
                     MEAN, MIN, MAX, P10, P90, P50   ... MEAN, MIN, MAX, P10, P90, P50]
     """
+    assert_date_column_is_datetime_object(vectors_df)
+
     # Get vectors names, keep order
     columns_list = list(vectors_df.columns)
     vector_names = sorted(
@@ -54,5 +61,7 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
         "p50": StatisticsOptions.P50,
     }
     statistics_df.rename(columns=col_stat_label_map, level=1, inplace=True)
+
+    make_date_column_datetime_object(statistics_df)
 
     return statistics_df
