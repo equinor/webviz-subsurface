@@ -1,7 +1,9 @@
-from typing import Callable, Dict, List, Optional, Tuple, Any
+from typing import Callable, Dict, List, Optional, Tuple, Any, Union
 from copy import deepcopy
 import json
 import math
+
+import numpy as np
 from dash import Input, Output, State, callback, callback_context, no_update, ALL, MATCH
 from dash.exceptions import PreventUpdate
 from flask import url_for
@@ -17,14 +19,33 @@ from webviz_subsurface._components.deckgl_map.providers.xtgeo import (
 )
 
 from webviz_subsurface._models.well_set_model import WellSetModel
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    SimulatedSurfaceAddress,
+)
 
 from .layout import (
     LayoutElements,
     SideBySideSelectorFlex,
     update_map_layers,
     DefaultSettings,
+    Tabs,
 )
-from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfaceProvider
+from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
+    SurfaceServer,
+    QualifiedAddress,
+    QualifiedDiffAddress,
+)
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    SurfaceStatistic,
+    SimulatedSurfaceAddress,
+    StatisticalSurfaceAddress,
+    ObservedSurfaceAddress,
+)
+from webviz_subsurface._providers import (
+    EnsembleSurfaceProviderFactory,
+    EnsembleSurfaceProvider,
+)
+from .providers.ensemble_surface_provider import SurfaceMode
 from .types import SurfaceContext, WellsContext
 from .utils.formatting import format_date  # , update_nested_dict
 
@@ -32,6 +53,7 @@ from .utils.formatting import format_date  # , update_nested_dict
 def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
+    surface_server: SurfaceServer,
     well_set_model: Optional[WellSetModel],
 ) -> None:
     def selections(tab) -> Dict[str, str]:
@@ -213,14 +235,16 @@ def plugin_callbacks(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
         Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
         Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": MATCH}, "value"),
+        State(get_uuid("tabs"), "value"),
     )
-    def _update_map(selections: dict, view_columns):
+    def _update_map(selections: dict, view_columns, tab_name):
         if selections is None:
             raise PreventUpdate
-
         number_of_views = len(selections)
         if number_of_views == 0:
             number_of_views = 1
+        if tab_name == Tabs.DIFF:
+            number_of_views += 1
 
         layers = update_map_layers(number_of_views, well_set_model)
         layers = [json.loads(x.to_json()) for x in layers]
@@ -228,25 +252,51 @@ def plugin_callbacks(
 
         valid_data = []
         for idx, data in enumerate(selections):
-            selected_surface = get_surface_context_from_data(data)
+            surface_address = get_surface_context_from_data(data)
+            ensemble = data["ensemble"][0]
+            provider = ensemble_surface_providers[ensemble]
+            provider_id: str = provider.provider_id()
 
-            ensemble = selected_surface.ensemble
-            surface = ensemble_surface_providers[ensemble].get_surface(selected_surface)
-            surface_range = get_surface_range(surface)
+            qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
+            sub_surface_address = None
+            if sub_surface_address:
+                qualified_address = QualifiedDiffAddress(
+                    provider_id, surface_address, provider_id, sub_surface_address
+                )
+            else:
+                qualified_address = QualifiedAddress(provider_id, surface_address)
+            surf_meta = surface_server.get_surface_metadata(qualified_address)
 
-            # HACK AT THE MOMENT
-            if surface_range == [0.0, 0.0]:
-                continue
+            if not surf_meta:
+                # This means we need to compute the surface
+                if sub_surface_address:
+                    surface_a = provider.get_surface(address=surface_address)
+                    surface_b = provider.get_surface(address=sub_surface_address)
+                    surface = surface_a - surface_b
+                else:
+
+                    surface = provider.get_surface(address=surface_address)
+                    if not surface:
+                        raise ValueError(
+                            f"Could not get surface for address: {surface_address}"
+                        )
+
+                surface_server.publish_surface(qualified_address, surface)
+                surf_meta = surface_server.get_surface_metadata(qualified_address)
+            viewport_bounds = [
+                surf_meta.x_min,
+                surf_meta.y_min,
+                surf_meta.x_max,
+                surf_meta.y_max,
+            ]
+
             valid_data.append(idx)
 
-            property_bounds = get_surface_bounds(surface)
-
             layer_data = {
-                "image": url_for(
-                    "_send_surface_as_png", surface_context=selected_surface
-                ),
-                "bounds": property_bounds,
-                "valueRange": surface_range,
+                "image": surface_server.encode_partial_url(qualified_address),
+                "bounds": surf_meta.deckgl_bounds,
+                "rotDeg": surf_meta.deckgl_rot_deg,
+                "valueRange": [surf_meta.val_min, surf_meta.val_max],
             }
 
             layer_model.update_layer_by_id(
@@ -273,10 +323,73 @@ def plugin_callbacks(
                         )
                     },
                 )
+        if tab_name == Tabs.DIFF:
 
+            surface_address = get_surface_context_from_data(selections[0])
+            subsurface_address = get_surface_context_from_data(selections[1])
+            ensemble = selections[0]["ensemble"][0]
+            subensemble = selections[1]["ensemble"][0]
+            provider = ensemble_surface_providers[ensemble]
+            subprovider = ensemble_surface_providers[subensemble]
+            provider_id: str = provider.provider_id()
+            subprovider_id = subprovider.provider_id()
+            qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
+
+            qualified_address = QualifiedDiffAddress(
+                provider_id, surface_address, subprovider_id, subsurface_address
+            )
+
+            surf_meta = surface_server.get_surface_metadata(qualified_address)
+            if not surf_meta:
+                surface_a = provider.get_surface(address=surface_address)
+                surface_b = subprovider.get_surface(address=subsurface_address)
+                surface = surface_a - surface_b
+
+                surface_server.publish_surface(qualified_address, surface)
+                surf_meta = surface_server.get_surface_metadata(qualified_address)
+            viewport_bounds = [
+                surf_meta.x_min,
+                surf_meta.y_min,
+                surf_meta.x_max,
+                surf_meta.y_max,
+            ]
+
+            valid_data.append(2)
+
+            layer_data = {
+                "image": surface_server.encode_partial_url(qualified_address),
+                "bounds": surf_meta.deckgl_bounds,
+                "rotDeg": surf_meta.deckgl_rot_deg,
+                "valueRange": [surf_meta.val_min, surf_meta.val_max],
+            }
+
+            layer_model.update_layer_by_id(
+                layer_id=f"{LayoutElements.COLORMAP_LAYER}-{2}", layer_data=layer_data
+            )
+            layer_model.update_layer_by_id(
+                layer_id=f"{LayoutElements.HILLSHADING_LAYER}-{2}",
+                layer_data=layer_data,
+            )
+            layer_model.update_layer_by_id(
+                layer_id=f"{LayoutElements.COLORMAP_LAYER}-{2}",
+                layer_data={
+                    "colorMapName": data["colormap"],
+                    "colorMapRange": data["color_range"],
+                },
+            )
+            if well_set_model is not None:
+                layer_model.update_layer_by_id(
+                    layer_id=f"{LayoutElements.WELLS_LAYER}-{2}",
+                    layer_data={
+                        "data": url_for(
+                            "_send_well_data_as_json",
+                            wells_context=WellsContext(well_names=data["wells"]),
+                        )
+                    },
+                )
         return (
             layer_model.layers,
-            property_bounds if valid_data else no_update,
+            viewport_bounds if valid_data else no_update,
             {
                 "layout": view_layout(number_of_views, view_columns),
                 "viewports": [
@@ -325,22 +438,22 @@ def plugin_callbacks(
                     ensemble = ensembles if multi == "ensemble" else ensembles[:1]
 
             if not (links["attribute"] and idx > 0):
-                attributes = ensemble_surface_providers.get(ensemble[0]).attributes
+                attributes = ensemble_surface_providers.get(ensemble[0]).attributes()
                 attribute = [x for x in data.get("attribute", []) if x in attributes]
                 attribute = attribute if attribute else attributes[:1]
 
             if not (links["name"] and idx > 0):
-                names = ensemble_surface_providers.get(ensemble[0]).names_in_attribute(
-                    attribute[0]
-                )
+                names = ensemble_surface_providers.get(
+                    ensemble[0]
+                ).surface_names_for_attribute(attribute[0])
                 name = [x for x in data.get("name", []) if x in names]
                 if not name or multi_in_ctx:
                     name = names if multi == "name" else names[:1]
 
             if not (links["date"] and idx > 0):
-                dates = ensemble_surface_providers.get(ensemble[0]).dates_in_attribute(
-                    attribute[0]
-                )
+                dates = ensemble_surface_providers.get(
+                    ensemble[0]
+                ).surface_dates_for_attribute(attribute[0])
                 dates = dates if dates is not None else []
                 dates = [x for x in dates if not "_" in x] + [
                     x for x in dates if "_" in x
@@ -355,7 +468,7 @@ def plugin_callbacks(
                 mode = data.get("mode", SurfaceMode.REALIZATION)
 
             if not (links["realizations"] and idx > 0):
-                reals = ensemble_surface_providers[ensemble[0]].realizations
+                reals = ensemble_surface_providers[ensemble[0]].realizations()
 
                 if mode == SurfaceMode.REALIZATION:
                     real = [data.get("realizations", reals)[0]]
@@ -381,18 +494,30 @@ def plugin_callbacks(
                 )
 
             if not (links["color_range"] and idx > 0):
-                selected_surface = SurfaceContext(
-                    attribute=attribute[0],
-                    name=name[0],
-                    date=date[0] if date else None,
-                    ensemble=ensemble[0],
-                    realizations=real,
-                    mode=mode,
+                if mode == SurfaceMode.REALIZATION:
+                    selected_surface = SimulatedSurfaceAddress(
+                        attribute=attribute[0],
+                        name=name[0],
+                        datestr=date[0] if date else None,
+                        realization=real[0],
+                    )
+                elif mode == SurfaceMode.OBSERVED:
+                    selected_surface = ObservedSurfaceAddress(
+                        attribute=attribute[0],
+                        name=name[0],
+                        datestr=date[0] if date else None,
+                    )
+                else:
+                    selected_surface = StatisticalSurfaceAddress(
+                        attribute=attribute[0],
+                        name=name[0],
+                        datestr=date[0] if date else None,
+                        realizations=real,
+                    )
+                surface = ensemble_surface_providers[ensemble[0]].get_surface(
+                    selected_surface
                 )
-                surface = ensemble_surface_providers[
-                    selected_surface.ensemble
-                ].get_surface(selected_surface)
-                value_range = get_surface_range(surface)
+                value_range = [np.nanmin(surface.values), np.nanmax(surface.values)]
 
                 color_range = (
                     stored_color_settings[surfaceid]["color_range"]
@@ -447,13 +572,24 @@ def plugin_callbacks(
         return view_data, stored_color_settings
 
     def get_surface_context_from_data(data):
-        return SurfaceContext(
+        if data["mode"] == SurfaceMode.REALIZATION:
+            return SimulatedSurfaceAddress(
+                attribute=data["attribute"][0],
+                name=data["name"][0],
+                datestr=data["date"][0] if data["date"] else None,
+                realization=data["realizations"][0],
+            )
+        if data["mode"] == SurfaceMode.OBSERVED:
+            return ObservedSurfaceAddress(
+                attribute=data["attribute"][0],
+                name=data["name"][0],
+                datestr=data["date"][0] if data["date"] else None,
+            )
+        return StatisticalSurfaceAddress(
             attribute=data["attribute"][0],
             name=data["name"][0],
-            date=data["date"][0] if data["date"] else None,
-            ensemble=data["ensemble"][0],
+            datestr=data["date"][0] if data["date"] else None,
             realizations=data["realizations"],
-            mode=data["mode"],
         )
 
     def get_surface_id(attribute, name, date, mode):

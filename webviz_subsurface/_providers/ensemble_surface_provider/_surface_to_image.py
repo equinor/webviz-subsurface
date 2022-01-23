@@ -20,7 +20,7 @@ def surface_to_png_bytes(surface: xtgeo.RegularSurface) -> bytes:
 
     timer = PerfTimer()
 
-    surface.unrotate()
+    # surface.unrotate()
     LOGGER.debug(f"unrotate: {timer.lap_s():.2f}s")
 
     surface.fill(np.nan)
