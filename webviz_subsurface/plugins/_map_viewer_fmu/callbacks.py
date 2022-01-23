@@ -1,3 +1,4 @@
+import statistics
 from typing import Callable, Dict, List, Optional, Tuple, Any, Union
 from copy import deepcopy
 import json
@@ -198,9 +199,10 @@ def plugin_callbacks(
             ranges = []
             for data in updated_values:
                 selected_surface = get_surface_context_from_data(data)
-                surface = ensemble_surface_providers[
-                    selected_surface.ensemble
-                ].get_surface(selected_surface)
+
+                surface = ensemble_surface_providers[data["ensemble"][0]].get_surface(
+                    selected_surface
+                )
                 ranges.append(get_surface_range(surface))
 
             if ranges:
@@ -244,6 +246,7 @@ def plugin_callbacks(
         if number_of_views == 0:
             number_of_views = 1
         if tab_name == Tabs.DIFF:
+            # Add an additional view for difference map
             number_of_views += 1
 
         layers = update_map_layers(number_of_views, well_set_model)
@@ -258,28 +261,16 @@ def plugin_callbacks(
             provider_id: str = provider.provider_id()
 
             qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
-            sub_surface_address = None
-            if sub_surface_address:
-                qualified_address = QualifiedDiffAddress(
-                    provider_id, surface_address, provider_id, sub_surface_address
-                )
-            else:
-                qualified_address = QualifiedAddress(provider_id, surface_address)
+            qualified_address = QualifiedAddress(provider_id, surface_address)
             surf_meta = surface_server.get_surface_metadata(qualified_address)
 
             if not surf_meta:
                 # This means we need to compute the surface
-                if sub_surface_address:
-                    surface_a = provider.get_surface(address=surface_address)
-                    surface_b = provider.get_surface(address=sub_surface_address)
-                    surface = surface_a - surface_b
-                else:
-
-                    surface = provider.get_surface(address=surface_address)
-                    if not surface:
-                        raise ValueError(
-                            f"Could not get surface for address: {surface_address}"
-                        )
+                surface = provider.get_surface(address=surface_address)
+                if not surface:
+                    raise ValueError(
+                        f"Could not get surface for address: {surface_address}"
+                    )
 
                 surface_server.publish_surface(qualified_address, surface)
                 surf_meta = surface_server.get_surface_metadata(qualified_address)
@@ -324,7 +315,8 @@ def plugin_callbacks(
                     },
                 )
         if tab_name == Tabs.DIFF:
-
+            # Calculate and add layers for difference map.
+            # Mostly duplicate code to the above. Should be improved.
             surface_address = get_surface_context_from_data(selections[0])
             subsurface_address = get_surface_context_from_data(selections[1])
             ensemble = selections[0]["ensemble"][0]
@@ -513,6 +505,7 @@ def plugin_callbacks(
                         name=name[0],
                         datestr=date[0] if date else None,
                         realizations=real,
+                        statistic=mode,
                     )
                 surface = ensemble_surface_providers[ensemble[0]].get_surface(
                     selected_surface
@@ -590,6 +583,7 @@ def plugin_callbacks(
             name=data["name"][0],
             datestr=data["date"][0] if data["date"] else None,
             realizations=data["realizations"],
+            statistic=data["mode"],
         )
 
     def get_surface_id(attribute, name, date, mode):
