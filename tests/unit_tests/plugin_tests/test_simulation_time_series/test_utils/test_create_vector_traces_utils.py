@@ -73,6 +73,7 @@ def test_crate_vector_observation_traces() -> None:
     expected_traces = [
         {
             "name": "Observation",
+            "legendgroup": "Observation",
             "x": [datetime.datetime(2020, 1, 1), []],
             "y": [2.0, []],
             "marker": {"color": "black"},
@@ -86,6 +87,7 @@ def test_crate_vector_observation_traces() -> None:
         },
         {
             "name": "Observation",
+            "legendgroup": "Observation",
             "x": [datetime.datetime(2020, 6, 5), []],
             "y": [5.0, []],
             "marker": {"color": "black"},

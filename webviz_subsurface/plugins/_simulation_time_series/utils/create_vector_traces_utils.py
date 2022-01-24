@@ -22,43 +22,50 @@ from ..utils.from_timeseries_cumulatives import is_interval_or_average_vector
 
 
 def create_vector_observation_traces(
-    vector_observations: dict, color: str = "black", legend_group: Optional[str] = None
+    vector_observations: dict,
+    color: str = "black",
+    legend_group: Optional[str] = None,
+    show_legend: bool = False,
 ) -> List[dict]:
     """Create list of observations traces from vector observations
 
     `Input:`
     * vector_observations: dict - Dictionary with observation data for a vector
     * color: str - Color of observation traces for vector
-    * legend_group: Optional[str] - Name of legend group, added as legend group and name if provided
+    * legend_group: Optional[str] - Overwrite default legend group. Name of legend group, added as
+    legend group and name if provided.
+    * show_legend: bool - Show legend status for traces
+
 
     `Return:`
     List of marker traces for each observation for vector
     """
     observation_traces: List[dict] = []
 
+    _name = "Observation" if legend_group is None else "Observation: " + legend_group
+    _legend_group = "Observation" if legend_group is None else legend_group
+
     for observation in vector_observations.get("observations", []):
-        hovertext = observation.get("comment", "")
+        hovertext = observation.get("comment", None)
         hovertemplate = (
             "(%{x}, %{y})<br>" + hovertext if hovertext else "(%{x}, %{y})<br>"
         )
-        trace = {
-            "name": "Observation",
-            "x": [observation.get("date"), []],
-            "y": [observation.get("value"), []],
-            "marker": {"color": color},
-            "hovertemplate": hovertemplate,
-            "showlegend": False,
-            "error_y": {
-                "type": "data",
-                "array": [observation.get("error"), []],
-                "visible": True,
-            },
-        }
-        if legend_group:
-            trace["name"] = "Observation: " + legend_group
-            trace["legendgroup"] = legend_group
-
-        observation_traces.append(trace)
+        observation_traces.append(
+            {
+                "name": _name,
+                "legendgroup": _legend_group,
+                "x": [observation.get("date"), []],
+                "y": [observation.get("value"), []],
+                "marker": {"color": color},
+                "hovertemplate": hovertemplate,
+                "showlegend": show_legend,
+                "error_y": {
+                    "type": "data",
+                    "array": [observation.get("error"), []],
+                    "visible": True,
+                },
+            }
+        )
     return observation_traces
 
 
