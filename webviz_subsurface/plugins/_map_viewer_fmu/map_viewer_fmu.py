@@ -109,10 +109,7 @@ class MapViewerFMU(WebvizPluginABC):
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
 
-        store_functions = webviz_store_functions(
-            ensemble_surface_providers=self._ensemble_surface_providers,
-            ensemble_paths=self.ens_paths,
-        )
+        store_functions = []
         if self._wellfolder is not None:
             store_functions.append(
                 (find_files, [{"folder": self._wellfolder, "suffix": self._wellsuffix}])
