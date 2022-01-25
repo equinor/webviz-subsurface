@@ -25,7 +25,10 @@ from .ensemble_surface_provider import (
 )
 
 LOGGER = logging.getLogger(__name__)
-ROOT_URL_PATH = "/SurfaceServer"
+
+_ROOT_URL_PATH = "/SurfaceServer"
+
+_SURFACE_SERVER_INSTANCE: Optional["SurfaceServer"] = None
 
 
 @dataclass(frozen=True)
@@ -73,12 +76,12 @@ class SurfaceServer:
 
     @staticmethod
     def instance(app: Dash) -> "SurfaceServer":
-        global SURFACE_SERVER_INSTANCE
-        if not SURFACE_SERVER_INSTANCE:
+        global _SURFACE_SERVER_INSTANCE
+        if not _SURFACE_SERVER_INSTANCE:
             LOGGER.debug("Initializing SurfaceServer instance")
-            SURFACE_SERVER_INSTANCE = SurfaceServer(app)
+            _SURFACE_SERVER_INSTANCE = SurfaceServer(app)
 
-        return SURFACE_SERVER_INSTANCE
+        return _SURFACE_SERVER_INSTANCE
 
     def publish_surface(
         self,
@@ -150,11 +153,11 @@ class SurfaceServer:
                 qualified_address.address_b,
             )
 
-        url_path: str = f"{ROOT_URL_PATH}/{quote(address_str)}"
+        url_path: str = f"{_ROOT_URL_PATH}/{quote(address_str)}"
         return url_path
 
     def _setup_url_rule(self, app: Dash) -> None:
-        @app.server.route(ROOT_URL_PATH + "/<full_surf_address_str>")
+        @app.server.route(_ROOT_URL_PATH + "/<full_surf_address_str>")
         def _handle_request(full_surf_address_str: str) -> flask.Response:
             LOGGER.debug(
                 f"Handling request: " f"full_surf_address_str={full_surf_address_str} "
@@ -286,6 +289,3 @@ def _calc_map_component_bounds_and_rot(
     ]
 
     return bounds, surface.rotation
-
-
-SURFACE_SERVER_INSTANCE: Optional[SurfaceServer] = None
