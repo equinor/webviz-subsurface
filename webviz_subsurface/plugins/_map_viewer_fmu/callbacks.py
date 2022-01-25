@@ -24,6 +24,7 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     ObservedSurfaceAddress,
+    SurfaceAddress,
 )
 from webviz_subsurface._providers import EnsembleSurfaceProvider
 from .providers.ensemble_surface_provider import SurfaceMode
@@ -294,23 +295,9 @@ def plugin_callbacks(
                 surface_address = get_surface_context_from_data(data)
 
                 provider = ensemble_surface_providers[data["ensemble"][0]]
-                provider_id: str = provider.provider_id()
-
-                qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
-                qualified_address = QualifiedAddress(provider_id, surface_address)
-
-                surf_meta = surface_server.get_surface_metadata(qualified_address)
-
-                if not surf_meta:
-                    # This means we need to compute the surface
-                    surface = provider.get_surface(address=surface_address)
-                    if not surface:
-                        raise ValueError(
-                            f"Could not get surface for address: {surface_address}"
-                        )
-
-                    surface_server.publish_surface(qualified_address, surface)
-                    surf_meta = surface_server.get_surface_metadata(qualified_address)
+                surf_meta, img_url = publish_and_get_surface_metadata(
+                    surface_provider=provider, surface_address=surface_address
+                )
             else:
                 # Calculate and add layers for difference map.
                 # Mostly duplicate code to the above. Should be improved.
@@ -318,22 +305,12 @@ def plugin_callbacks(
                 subsurface_address = get_surface_context_from_data(values[1])
                 provider = ensemble_surface_providers[values[0]["ensemble"][0]]
                 subprovider = ensemble_surface_providers[values[1]["ensemble"][0]]
-                provider_id: str = provider.provider_id()
-                subprovider_id = subprovider.provider_id()
-                qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
-
-                qualified_address = QualifiedDiffAddress(
-                    provider_id, surface_address, subprovider_id, subsurface_address
+                surf_meta, img_url = publish_and_get_diff_surface_metadata(
+                    surface_provider=provider,
+                    surface_address=surface_address,
+                    sub_surface_provider=subprovider,
+                    sub_surface_address=subsurface_address,
                 )
-
-                surf_meta = surface_server.get_surface_metadata(qualified_address)
-                if not surf_meta:
-                    surface_a = provider.get_surface(address=surface_address)
-                    surface_b = subprovider.get_surface(address=subsurface_address)
-                    surface = surface_a - surface_b
-
-                    surface_server.publish_surface(qualified_address, surface)
-                    surf_meta = surface_server.get_surface_metadata(qualified_address)
 
             viewport_bounds = [
                 surf_meta.x_min,
@@ -343,7 +320,7 @@ def plugin_callbacks(
             ]
 
             layer_data = {
-                "image": surface_server.encode_partial_url(qualified_address),
+                "image": img_url,
                 "bounds": surf_meta.deckgl_bounds,
                 "rotDeg": surf_meta.deckgl_rot_deg,
                 "valueRange": [surf_meta.val_min, surf_meta.val_max],
@@ -585,7 +562,7 @@ def plugin_callbacks(
                 attribute=data["attribute"][0],
                 name=data["name"][0],
                 datestr=data["date"][0] if has_date else None,
-                realization=data["realizations"][0],
+                realization=int(data["realizations"][0]),
             )
         if data["mode"] == SurfaceMode.OBSERVED:
             return ObservedSurfaceAddress(
@@ -600,6 +577,47 @@ def plugin_callbacks(
             realizations=data["realizations"],
             statistic=data["mode"],
         )
+
+    def publish_and_get_surface_metadata(
+        surface_provider: EnsembleSurfaceProvider, surface_address: SurfaceAddress
+    ) -> Dict:
+        provider_id: str = surface_provider.provider_id()
+        qualified_address = QualifiedAddress(provider_id, surface_address)
+        surf_meta = surface_server.get_surface_metadata(qualified_address)
+        if not surf_meta:
+            # This means we need to compute the surface
+            surface = surface_provider.get_surface(address=surface_address)
+            if not surface:
+                raise ValueError(
+                    f"Could not get surface for address: {surface_address}"
+                )
+            surface_server.publish_surface(qualified_address, surface)
+            surf_meta = surface_server.get_surface_metadata(qualified_address)
+        return surf_meta, surface_server.encode_partial_url(qualified_address)
+
+    def publish_and_get_diff_surface_metadata(
+        surface_provider: EnsembleSurfaceProvider,
+        surface_address: SurfaceAddress,
+        sub_surface_provider: EnsembleSurfaceProvider,
+        sub_surface_address: SurfaceAddress,
+    ) -> Tuple:
+        provider_id: str = surface_provider.provider_id()
+        subprovider_id = sub_surface_provider.provider_id()
+        qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
+
+        qualified_address = QualifiedDiffAddress(
+            provider_id, surface_address, subprovider_id, sub_surface_address
+        )
+
+        surf_meta = surface_server.get_surface_metadata(qualified_address)
+        if not surf_meta:
+            surface_a = surface_provider.get_surface(address=surface_address)
+            surface_b = sub_surface_provider.get_surface(address=sub_surface_address)
+            surface = surface_a - surface_b
+
+            surface_server.publish_surface(qualified_address, surface)
+            surf_meta = surface_server.get_surface_metadata(qualified_address)
+        return surf_meta, surface_server.encode_partial_url(qualified_address)
 
     def get_surface_id_from_data(data):
         surfaceid = data["attribute"][0] + data["name"][0]
@@ -635,33 +653,31 @@ def plugin_callbacks(
         updated_values = []
         surfaces = []
         for data in values:
-            selected_surface = get_surface_context_from_data(data)
+            surface_address = get_surface_context_from_data(data)
             try:
-                surface = ensemble_surface_providers[data["ensemble"][0]].get_surface(
-                    selected_surface
+                provider = ensemble_surface_providers[data["ensemble"][0]]
+
+                surf_meta, _ = publish_and_get_surface_metadata(
+                    surface_address=surface_address,
+                    surface_provider=provider,
                 )
             except ValueError:
                 continue
 
-            if surface is not None and not surface.values.mask.all():
-                data["surface_range"] = [
-                    np.nanmin(surface.values),
-                    np.nanmax(surface.values),
-                ]
-                surfaces.append(surface)
-                updated_values.append(data)
+            data["surface_range"] = [surf_meta.val_min, surf_meta.val_max]
+            updated_values.append(data)
 
-        if tab == Tabs.DIFF and len(surfaces) == 2:
-            diff_surf = surfaces[0] - surfaces[1]
-            updated_values.append(
-                {
-                    "surface_range": [
-                        np.nanmin(diff_surf.values),
-                        np.nanmax(diff_surf.values),
-                    ],
-                    "surf_type": "diff",
-                }
-            )
+        # if tab == Tabs.DIFF and len(surfaces) == 2:
+        #     diff_surf = surfaces[0] - surfaces[1]
+        #     updated_values.append(
+        #         {
+        #             "surface_range": [
+        #                 np.nanmin(diff_surf.values),
+        #                 np.nanmax(diff_surf.values),
+        #             ],
+        #             "surf_type": "diff",
+        #         }
+        #     )
 
         return updated_values
 
