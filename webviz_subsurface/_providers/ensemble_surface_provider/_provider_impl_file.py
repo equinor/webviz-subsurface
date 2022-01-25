@@ -230,7 +230,9 @@ class ProviderImplFile(EnsembleSurfaceProvider):
 
         LOGGER.debug(
             f"Created and wrote statistical surface to cache in: {timer.elapsed_s():.2f}s ("
-            f"create={et_create_s:.2f}s, store={et_write_cache_s:.2f}s)"
+            f"create={et_create_s:.2f}s, store={et_write_cache_s:.2f}s), "
+            f"[stat={address.statistic}, "
+            f"attr={address.attribute}, name={address.name}, date={address.datestr}]"
         )
 
         return surf
@@ -254,7 +256,8 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         surfaces = xtgeo.Surfaces(surf_fns)
         et_load_s = timer.lap_s()
 
-        if len(surfaces.surfaces) == 0:
+        surf_count = len(surfaces.surfaces)
+        if surf_count == 0:
             LOGGER.warning(
                 f"Could not load input surfaces for statistical surface {address}"
             )
@@ -285,7 +288,9 @@ class ProviderImplFile(EnsembleSurfaceProvider):
 
         LOGGER.debug(
             f"Created statistical surface in: {timer.elapsed_s():.2f}s ("
-            f"load={et_load_s:.2f}s, calc={et_calc_s:.2f}s)"
+            f"load={et_load_s:.2f}s, calc={et_calc_s:.2f}s), "
+            f"[#surfaces={surf_count}, stat={address.statistic}, "
+            f"attr={address.attribute}, name={address.name}, date={address.datestr}]"
         )
 
         return stat_surface
