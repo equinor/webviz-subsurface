@@ -349,10 +349,9 @@ def plugin_callbacks(
                 "valueRange": [surf_meta.val_min, surf_meta.val_max],
             }
 
-            print(surface_server.encode_partial_url(qualified_address))
-
             layer_model.update_layer_by_id(
-                layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}", layer_data=layer_data
+                layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                layer_data=layer_data,
             )
             layer_model.update_layer_by_id(
                 layer_id=f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
@@ -383,7 +382,7 @@ def plugin_callbacks(
                 "layout": view_layout(number_of_views, view_columns),
                 "viewports": [
                     {
-                        "id": f"view_{view}",
+                        "id": f"{view}_view",
                         "show3D": False,
                         "layerIds": [
                             f"{LayoutElements.COLORMAP_LAYER}-{view}",
@@ -397,7 +396,6 @@ def plugin_callbacks(
         )
 
     def _update_data(values, links, multi, multi_in_ctx) -> None:
-
         view_data = []
         for idx, data in enumerate(values):
 
@@ -415,7 +413,7 @@ def plugin_callbacks(
                     attributes.extend(
                         [x for x in provider.attributes() if x not in attributes]
                     )
-                    # only allow attributes with date
+                    # only show attributes with date when multi is set to date
                     if multi == "date":
                         attributes = [
                             x for x in attributes if attribute_has_date(x, provider)
@@ -443,7 +441,7 @@ def plugin_callbacks(
                     provider = ensemble_surface_providers[ens]
                     for attr in attribute:
                         attr_dates = provider.surface_dates_for_attribute(attr)
-                        # EMPTY STRING returned ... not None anymore
+                        # EMPTY STRING returned ... not None anymore?
                         if bool(attr_dates[0]):
                             dates.extend([x for x in attr_dates if x not in dates])
 

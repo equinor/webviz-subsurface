@@ -84,7 +84,7 @@ class ColormapLayer(pydeck.Layer):
             type=LayerTypes.COLORMAP,
             id=uuid if uuid is not None else LayerIds.COLORMAP,
             image=String(image),
-            colormap=String(colormap),
+            colorMapName=String(colormap),
             name=String(name),
             bounds=bounds,
             valueRange=value_range,
