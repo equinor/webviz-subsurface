@@ -29,18 +29,21 @@ class LayoutElements(str, Enum):
     MAINVIEW = auto()
     SELECTED_DATA = auto()
     SELECTIONS = auto()
+    COLORSELECTIONS = auto()
     LINK = auto()
+    COLORLINK = auto()
     WELLS = auto()
     LOG = auto()
     VIEWS = auto()
     VIEW_COLUMNS = auto()
     DECKGLMAP = auto()
-    COLORMAP_RESET_RANGE = auto()
+    RANGE_RESET = auto()
     STORED_COLOR_SETTINGS = auto()
     FAULTPOLYGONS = auto()
     WRAPPER = auto()
+    COLORWRAPPER = auto()
     RESET_BUTTOM_CLICK = auto()
-
+    SELECTORVALUES = auto()
     COLORMAP_LAYER = "colormaplayer"
     HILLSHADING_LAYER = "hillshadinglayer"
     WELLS_LAYER = "wellayer"
@@ -60,8 +63,8 @@ class LayoutLabels(str, Enum):
     COLORMAP_WRAPPER = "Surface coloring"
     COLORMAP_SELECT = "Colormap"
     COLORMAP_RANGE = "Value range"
-    COLORMAP_RESET_RANGE = "Reset"
-    COLORMAP_KEEP_RANGE_OPTIONS = "Lock range"
+    RANGE_RESET = "Reset"
+    COLORMAP_KEEP_RANGE = "Lock range"
     LINK = "🔗 Link"
     FAULTPOLYGONS = "Fault polygons"
     FAULTPOLYGONS_OPTIONS = "Show fault polygons"
@@ -73,6 +76,14 @@ class LayoutStyle:
     MAPHEIGHT = "87vh"
     SIDEBAR = {"flex": 1, "height": "90vh"}
     MAINVIEW = {"flex": 3, "height": "90vh"}
+    RESET_BUTTON = {
+        "marginTop": "5px",
+        "width": "100%",
+        "height": "20px",
+        "line-height": "20px",
+        "background-color": "#7393B3",
+        "color": "#fff",
+    }
 
 
 class Tabs(str, Enum):
@@ -86,7 +97,7 @@ class TabsLabels(str, Enum):
     CUSTOM = "Custom view"
     STATS = "Map statistics"
     DIFF = "Difference between two maps"
-    SPLIT = "Maps per name/time"
+    SPLIT = "Maps per selector"
 
 
 class DefaultSettings:
@@ -115,6 +126,20 @@ class DefaultSettings:
             ]
         },
     }
+    COLORMAP_OPTIONS = [
+        "Physics",
+        "Rainbow",
+        "Porosity",
+        "Permeability",
+        "Seismic BlueWhiteRed",
+        "Time/Depth",
+        "Stratigraphy",
+        "Facies",
+        "Gas-Oil-Water",
+        "Gas-Water",
+        "Oil-Water",
+        "Accent",
+    ]
 
 
 class FullScreen(wcc.WebvizPluginPlaceholder):
@@ -233,14 +258,12 @@ class DataStores(html.Div):
                     id={"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": tab}
                 ),
                 dcc.Store(
-                    id={"id": get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "tab": tab}
+                    id={"id": get_uuid(LayoutElements.SELECTORVALUES), "tab": tab}
                 ),
                 dcc.Store(
-                    id={
-                        "id": get_uuid(LayoutElements.STORED_COLOR_SETTINGS),
-                        "tab": tab,
-                    }
+                    id={"id": get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "tab": tab}
                 ),
+                dcc.Store(id=get_uuid(LayoutElements.STORED_COLOR_SETTINGS)),
                 dcc.Store(id={"id": get_uuid(LayoutElements.VIEW_DATA), "tab": tab}),
             ]
         )
@@ -249,16 +272,17 @@ class DataStores(html.Div):
 class LinkCheckBox(wcc.Checklist):
     def __init__(self, tab, get_uuid, selector: str):
         clicked = selector in DefaultSettings.LINKED_SELECTORS.get(tab, [])
-        self.id = {
-            "id": get_uuid(LayoutElements.LINK),
-            "tab": tab,
-            "selector": selector,
-        }
-        self.value = [selector] if clicked else []
-        self.options = [{"label": LayoutLabels.LINK, "value": selector}]
-        self.style = {"display": "none" if clicked else "block"}
         super().__init__(
-            id=self.id, options=self.options, value=self.value, style=self.style
+            id={
+                "id": get_uuid(LayoutElements.LINK)
+                if selector not in ["color_range", "colormap"]
+                else get_uuid(LayoutElements.COLORLINK),
+                "tab": tab,
+                "selector": selector,
+            },
+            options=[{"label": LayoutLabels.LINK, "value": selector}],
+            value=[selector] if clicked else [],
+            style={"display": "none" if clicked else "block"},
         )
 
 
@@ -286,7 +310,9 @@ class SideBySideSelectorFlex(wcc.FlexBox):
                         options=data["options"],
                         component_id={
                             "view": idx,
-                            "id": get_uuid(LayoutElements.SELECTIONS),
+                            "id": get_uuid(LayoutElements.COLORSELECTIONS)
+                            if selector in ["colormap", "color_range"]
+                            else get_uuid(LayoutElements.SELECTIONS),
                             "tab": tab,
                             "selector": selector,
                         },
@@ -341,6 +367,8 @@ class ViewSelector(html.Div):
                         {"label": LayoutLabels.NAME, "value": "name"},
                         {"label": LayoutLabels.DATE, "value": "date"},
                         {"label": LayoutLabels.ENSEMBLE, "value": "ensemble"},
+                        {"label": LayoutLabels.ATTRIBUTE, "value": "attribute"},
+                        {"label": LayoutLabels.REALIZATIONS, "value": "realizations"},
                     ],
                     value="name" if tab == Tabs.SPLIT else None,
                     clearable=False,
@@ -374,7 +402,7 @@ class ViewSelector(html.Div):
         super().__init__(style={"font-size": "15px"}, children=children)
 
 
-class MapSelector(wcc.Selectors):
+class MapSelector(html.Div):
     def __init__(
         self,
         tab,
@@ -390,19 +418,21 @@ class MapSelector(wcc.Selectors):
                 if selector in DefaultSettings.SELECTOR_DEFAULTS.get(tab, {})
                 else "block"
             },
-            label=label,
-            open_details=open_details,
-            children=[
-                wcc.Label(info_text) if info_text is not None else (),
-                LinkCheckBox(tab, get_uuid, selector=selector),
-                html.Div(
-                    id={
-                        "id": get_uuid(LayoutElements.WRAPPER),
-                        "tab": tab,
-                        "selector": selector,
-                    },
-                ),
-            ],
+            children=wcc.Selectors(
+                label=label,
+                open_details=open_details,
+                children=[
+                    wcc.Label(info_text) if info_text is not None else (),
+                    LinkCheckBox(tab, get_uuid, selector=selector),
+                    html.Div(
+                        id={
+                            "id": get_uuid(LayoutElements.WRAPPER),
+                            "tab": tab,
+                            "selector": selector,
+                        },
+                    ),
+                ],
+            ),
         )
 
 
@@ -467,28 +497,20 @@ class SurfaceColorSelector(wcc.Selectors):
             label=LayoutLabels.COLORMAP_WRAPPER,
             open_details=False,
             children=[
-                LinkCheckBox(tab, get_uuid, selector="colormap"),
                 html.Div(
-                    style={"margin-top": "10px"},
-                    id={
-                        "id": get_uuid(LayoutElements.WRAPPER),
-                        "tab": tab,
-                        "selector": "colormap",
-                    },
-                ),
-                html.Div(
-                    style={"margin-top": "10px"},
+                    style={"margin-bottom": "10px"},
                     children=[
-                        LinkCheckBox(tab, get_uuid, selector="color_range"),
+                        LinkCheckBox(tab, get_uuid, selector),
                         html.Div(
                             id={
-                                "id": get_uuid(LayoutElements.WRAPPER),
+                                "id": get_uuid(LayoutElements.COLORWRAPPER),
                                 "tab": tab,
-                                "selector": "color_range",
+                                "selector": selector,
                             }
                         ),
                     ],
-                ),
+                )
+                for selector in ["colormap", "color_range"]
             ],
         )
 
@@ -520,7 +542,7 @@ def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_i
             wcc.RangeSlider(
                 id={
                     "view": view_idx,
-                    "id": get_uuid(LayoutElements.SELECTIONS),
+                    "id": get_uuid(LayoutElements.COLORSELECTIONS),
                     "selector": "color_range",
                     "tab": tab,
                 },
@@ -534,31 +556,24 @@ def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_i
             wcc.Checklist(
                 id={
                     "view": view_idx,
-                    "id": get_uuid(LayoutElements.SELECTIONS),
+                    "id": get_uuid(LayoutElements.COLORSELECTIONS),
                     "selector": "colormap_keep_range",
                     "tab": tab,
                 },
                 options=[
                     {
-                        "label": LayoutLabels.COLORMAP_KEEP_RANGE_OPTIONS,
-                        "value": LayoutLabels.COLORMAP_KEEP_RANGE_OPTIONS,
+                        "label": LayoutLabels.COLORMAP_KEEP_RANGE,
+                        "value": LayoutLabels.COLORMAP_KEEP_RANGE,
                     }
                 ],
                 value=[],
             ),
             html.Button(
-                children=LayoutLabels.COLORMAP_RESET_RANGE,
-                style={
-                    "marginTop": "5px",
-                    "width": "100%",
-                    "height": "20px",
-                    "line-height": "20px",
-                    "background-color": "#7393B3",
-                    "color": "#fff",
-                },
+                children=LayoutLabels.RANGE_RESET,
+                style=LayoutStyle.RESET_BUTTON,
                 id={
                     "view": view_idx,
-                    "id": get_uuid(LayoutElements.COLORMAP_RESET_RANGE),
+                    "id": get_uuid(LayoutElements.RANGE_RESET),
                     "tab": tab,
                 },
             ),
