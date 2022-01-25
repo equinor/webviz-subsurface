@@ -286,7 +286,8 @@ def coverage_crossplot(
         i="id",
         j="WELL",
         sep=":",
-        suffix=r"\w+",
+        # suffix=r"\w+|\d+",
+        suffix=r".+",
     )
 
     prefix = "W" if vector_type == "well" else "G"
