@@ -89,9 +89,6 @@ class SurfaceServer:
         surface: xtgeo.RegularSurface,
     ) -> None:
         timer = PerfTimer()
-        LOGGER.debug(
-            f"Publishing surface (dim={surface.dimensions}, #cells={surface.ncol*surface.nrow})"
-        )
 
         if isinstance(qualified_address, QualifiedAddress):
             base_cache_key = _address_to_str(
@@ -104,6 +101,12 @@ class SurfaceServer:
                 qualified_address.provider_id_b,
                 qualified_address.address_b,
             )
+
+        LOGGER.debug(
+            f"Publishing surface (dim={surface.dimensions}, #cells={surface.ncol*surface.nrow}), "
+            f"[base_cache_key={base_cache_key}]"
+        )
+
         self._create_and_store_image_in_cache(base_cache_key, surface)
 
         LOGGER.debug(f"Surface published in: {timer.elapsed_s():.2f}s")
@@ -224,7 +227,8 @@ class SurfaceServer:
 
         LOGGER.debug(
             f"Created image and wrote to cache in in: {timer.elapsed_s():.2f}s ("
-            f"to_image={et_to_image_s:.2f}s, write_cache={et_write_cache_s:.2f}s)"
+            f"to_image={et_to_image_s:.2f}s, write_cache={et_write_cache_s:.2f}s), "
+            f"[base_cache_key={base_cache_key}]"
         )
 
 
