@@ -61,6 +61,9 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
         Returns a dictionary on a given format specified here:
         https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/lib/inputSchema/wellCompletions.json
         """
+        import time
+
+        t1 = time.time()
         df = load_csv(
             ensemble_paths={self.ensemble_name: self.ensemble_path},
             csv_file=self.compdat_file,
@@ -72,7 +75,6 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
             ensemble_path=self.ensemble_path,
             well_connection_status_file=self.well_connection_status_file,
         )
-        # layer_zone_mapping, zone_color_mapping = read_zone_layer_mapping(
         df_zone_layer = read_zone_layer_mapping(
             ensemble_path=self.ensemble_path,
             zone_layer_mapping_file=self.zone_layer_mapping_file,
@@ -99,7 +101,19 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
             df["ZONE"] = df.agg(lambda x: f"Layer {x['K1']}", axis=1)
             df["COLOR"] = np.nan
         else:
-            df = df.merge(df_zone_layer, on=["K1", "REAL"])
+            reals_without_mapping = set(df["REAL"].unique()) - set(
+                df_zone_layer["REAL"].unique()
+            )
+            if reals_without_mapping:
+                raise ValueError(
+                    "The zone layer mapping seems to be missing for the "
+                    f"following realizations: {reals_without_mapping}"
+                )
+
+            # We know that all realizations has a zone layer mapping, but we do
+            # not require that all layers are defined in the zone layer mapping.
+            # Layers missing from the zone layer mapping will be filtered out here.
+            df = df.merge(df_zone_layer, on=["K1", "REAL"], how="inner")
 
         zone_names = list(df["ZONE"].unique())
 
@@ -124,6 +138,7 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
                 df, zone_names, time_steps, realizations, well_attributes
             ),
         }
+        print(f"dataset created in {time.time()-t1} seconds.")
         return io.BytesIO(json.dumps(result).encode())
 
     @property
