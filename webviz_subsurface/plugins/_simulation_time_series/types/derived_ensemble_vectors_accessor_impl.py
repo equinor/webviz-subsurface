@@ -12,7 +12,7 @@ from webviz_subsurface._utils.vector_calculator import (
 from ..utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
     get_cumulative_vector_name,
-    is_interval_or_average_vector,
+    is_per_interval_or_per_day_vector,
 )
 from .derived_vectors_accessor import DerivedVectorsAccessor
 
@@ -26,8 +26,8 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
     A sequence of vector names are provided, and data is fetched or created based on which
     type of vectors are present in the sequence.
 
-    Vector names can be regular vectors existing among vector names in the provider, Interval
-    Delta/Average rate vector or a calculated vector from vector calculator.
+    Vector names can be regular vectors existing among vector names in the provider, Per
+    Interval/Per Day vector or a calculated vector from vector calculator.
 
     Based on the vector type, the class provides an interface for retrieveing dataframes
     for the set of such vectors for the provider.
@@ -49,10 +49,10 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         self._provider_vectors = [
             vector for vector in vectors if vector in self._provider.vector_names()
         ]
-        self._interval_and_average_vectors = [
+        self._per_interval_and_per_day_vectors = [
             vector
             for vector in vectors
-            if is_interval_or_average_vector(vector)
+            if is_per_interval_or_per_day_vector(vector)
             and get_cumulative_vector_name(vector) in provider.vector_names()
         ]
         self._vector_calculator_expressions = (
@@ -67,8 +67,8 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
     def has_provider_vectors(self) -> bool:
         return len(self._provider_vectors) > 0
 
-    def has_interval_and_average_vectors(self) -> bool:
-        return len(self._interval_and_average_vectors) > 0
+    def has_per_interval_and_per_day_vectors(self) -> bool:
+        return len(self._per_interval_and_per_day_vectors) > 0
 
     def has_vector_calculator_expressions(self) -> bool:
         return len(self._vector_calculator_expressions) > 0
@@ -85,16 +85,16 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             self._provider_vectors, self._resampling_frequency, realizations
         )
 
-    def create_interval_and_average_vectors_df(
+    def create_per_interval_and_per_day_vectors_df(
         self,
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
-        """Get dataframe with interval delta and average rate vector data for provided vectors.
+        """Get dataframe with interval delta and per day delta vector data for provided vectors.
 
         The returned dataframe contains columns with name of vector and corresponding interval delta
-        or average rate data.
+        or per day delta data.
 
-        Interval delta and average rate date is calculated with same sampling frequency as provider
+        Interval delta and per day delta date is calculated with same sampling frequency as provider
         is set with. I.e. resampling frequency is given for providers supporting resampling,
         otherwise sampling frequency is fixed.
 
@@ -110,16 +110,16 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         * Handle calculation of cumulative when raw data is added
         * See TODO in calculate_from_resampled_cumulative_vectors_df()
         """
-        if not self.has_interval_and_average_vectors():
+        if not self.has_per_interval_and_per_day_vectors():
             raise ValueError(
-                f'Vector data handler for provider "{self._name}" has no interval delta '
-                "and average rate vector names"
+                f'Vector data handler for provider "{self._name}" has no per interval '
+                "or per day vector names"
             )
 
         cumulative_vector_names = [
             get_cumulative_vector_name(elm)
-            for elm in self._interval_and_average_vectors
-            if is_interval_or_average_vector(elm)
+            for elm in self._per_interval_and_per_day_vectors
+            if is_per_interval_or_per_day_vector(elm)
         ]
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
@@ -127,25 +127,25 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             cumulative_vector_names, self._resampling_frequency, realizations
         )
 
-        interval_and_average_vectors_df = pd.DataFrame()
-        for vector_name in self._interval_and_average_vectors:
+        per_interval_and_per_day_vectors_df = pd.DataFrame()
+        for vector_name in self._per_interval_and_per_day_vectors:
             cumulative_vector_name = get_cumulative_vector_name(vector_name)
-            interval_and_average_vector_df = (
+            per_interval_or_per_day_vector_df = (
                 calculate_from_resampled_cumulative_vectors_df(
                     vectors_df[["DATE", "REAL", cumulative_vector_name]],
-                    as_rate_per_day=vector_name.startswith("AVG_"),
+                    as_rate_per_day=vector_name.startswith("PER_DAY_"),
                 )
             )
-            if interval_and_average_vectors_df.empty:
-                interval_and_average_vectors_df = interval_and_average_vector_df
+            if per_interval_and_per_day_vectors_df.empty:
+                per_interval_and_per_day_vectors_df = per_interval_or_per_day_vector_df
             else:
-                interval_and_average_vectors_df = pd.merge(
-                    interval_and_average_vectors_df,
-                    interval_and_average_vector_df,
+                per_interval_and_per_day_vectors_df = pd.merge(
+                    per_interval_and_per_day_vectors_df,
+                    per_interval_or_per_day_vector_df,
                     how="inner",
                 )
 
-        return interval_and_average_vectors_df
+        return per_interval_and_per_day_vectors_df
 
     def create_calculated_vectors_df(
         self, realizations: Optional[Sequence[int]] = None

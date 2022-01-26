@@ -1,10 +1,13 @@
 import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._abbreviations.reservoir_simulation import (
+    simulation_vector_description,
+)
 
 ###################################################################################
 # NOTE: This code is a copy and modification of
@@ -17,21 +20,50 @@ from webviz_subsurface._providers import Frequency
 ###################################################################################
 
 
-def is_interval_or_average_vector(vector: str) -> bool:
-    return vector.startswith("AVG_") or vector.startswith("INTVL_")
+def is_per_interval_or_per_day_vector(vector: str) -> bool:
+    return vector.startswith("PER_DAY_") or vector.startswith("PER_INTVL_")
 
 
 def get_cumulative_vector_name(vector: str) -> str:
-    if not is_interval_or_average_vector(vector):
+    if not is_per_interval_or_per_day_vector(vector):
         raise ValueError(
             f'Expected "{vector}" to be a vector calculated from cumulative!'
         )
 
-    if vector.startswith("AVG_"):
-        return f"{vector[4:7] + vector[7:].replace('R', 'T', 1)}"
-    if vector.startswith("INTVL_"):
-        return vector.lstrip("INTVL_")
+    if vector.startswith("PER_DAY_"):
+        return vector.lstrip("PER_DAY_")
+    if vector.startswith("PER_INTVL_"):
+        return vector.lstrip("PER_INTVL_")
     raise ValueError(f"Expected {vector} to be a cumulative vector!")
+
+
+def create_per_day_vector_name(vector: str) -> str:
+    return f"PER_DAY_{vector}"
+
+
+def create_per_interval_vector_name(vector: str) -> str:
+    return f"PER_INTVL_{vector}"
+
+
+def create_per_interval_or_per_day_vector_description(
+    vector: str,
+    user_defined_descriptions: Dict[str, str] = None,
+) -> str:
+    if not is_per_interval_or_per_day_vector(vector):
+        raise ValueError(
+            f'Expected "{vector}" to be a vector calculated from cumulative!'
+        )
+    if not user_defined_descriptions:
+        return simulation_vector_description(vector)
+
+    cumulative_vector_base = get_cumulative_vector_name(vector).split(":")[0]
+    _description = user_defined_descriptions.get(cumulative_vector_base, None)
+    if _description and vector.startswith("PER_DAY_"):
+        return "Average " + _description + " Per day"
+    if _description and vector.startswith("PER_INTVL_"):
+        return "Interval " + _description
+
+    return simulation_vector_description(vector)
 
 
 def calculate_from_resampled_cumulative_vectors_df(
@@ -62,7 +94,7 @@ def calculate_from_resampled_cumulative_vectors_df(
     `TODO:`
     * IMPROVE FUNCTION NAME?
     * Handle raw data format?
-    * Give e.g. a dict with info of "avg and intvl" calculation for each vector column?
+    * Give e.g. a dict with info of "per_day and per_intvl" calculation for each vector column?
     Can thereby calculate everything for provided vector columns and no iterate column per
     column?
     """
@@ -86,7 +118,9 @@ def calculate_from_resampled_cumulative_vectors_df(
     vectors_df.reset_index(level=["REAL"], inplace=True)
 
     cumulative_name_map = {
-        vector: rename_vector_from_cumulative(vector, as_rate_per_day)
+        vector: create_per_day_vector_name(vector)
+        if as_rate_per_day
+        else create_per_interval_vector_name(vector)
         for vector in column_keys
     }
     cumulative_vectors = list(cumulative_name_map.values())
@@ -129,23 +163,6 @@ def calculate_from_resampled_cumulative_vectors_df(
     cumulative_vectors_df.drop("realuid", axis=1, inplace=True)
 
     return cumulative_vectors_df
-
-
-def rename_vector_from_cumulative(vector: str, as_rate: bool) -> str:
-    """This function assumes that it is a cumulative/total vector named in the Eclipse standard
-    and is fairly naive when converting to rate. Based in the list in libecl
-    https://github.com/equinor/libecl/blob/69f1ee0ddf696c87b6d85eca37eed7e8b66ac2db/\
-        lib/ecl/smspec_node.cpp#L531-L586
-    the T identifying total/cumulative should not occur before letter 4,
-    as all the listed strings are prefixed with one or two letters in the vectors.
-    Therefore starting the replace at the position 3 (4th letter) to reduce risk of errors
-    in the conversion to rate naming, but hard to be completely safe.
-    """
-    return (
-        f"AVG_{vector[0:3] + vector[3:].replace('T', 'R', 1)}"
-        if as_rate
-        else f"INTVL_{vector}"
-    )
 
 
 # pylint: disable=too-many-return-statements

@@ -5,11 +5,11 @@ from typing import Optional, Tuple, cast
 
 import pandas as pd
 
+from webviz_subsurface_components import VectorDefinitions
+
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 
-SIMULATION_VECTOR_TERMINOLOGY = json.loads(
-    (_DATA_PATH / "reservoir_simulation_vectors.json").read_text()
-)
+SIMULATION_VECTOR_TERMINOLOGY = VectorDefinitions
 
 RESERVOIR_SIMULATION_UNIT_TERMINOLOGY = json.loads(
     (_DATA_PATH / "reservoir_simulation_unit_terminology.json").read_text()
@@ -39,13 +39,21 @@ def simulation_vector_base(vector: str) -> str:
 def simulation_vector_description(vector: str) -> str:
     """Returns a more human friendly description of the simulation vector if possible,
     otherwise returns the input as is.
+
+    # TODO: Remove support for "AVG_" and "INTVL_" when all usage is deprecated
     """
     if vector.startswith("AVG_"):
         prefix = "Average "
         vector = vector[4:]
+    elif vector.startswith("PER_DAY_"):
+        prefix = "Average "
+        vector = vector[8:]
     elif vector.startswith("INTVL_"):
         prefix = "Interval "
         vector = vector[6:]
+    elif vector.startswith("PER_INTVL_"):
+        prefix = "Interval "
+        vector = vector[10:]
     else:
         prefix = ""
 

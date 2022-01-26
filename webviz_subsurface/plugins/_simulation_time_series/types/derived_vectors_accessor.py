@@ -13,7 +13,7 @@ class DerivedVectorsAccessor:
         ...
 
     @abc.abstractmethod
-    def has_interval_and_average_vectors(self) -> bool:
+    def has_per_interval_and_per_day_vectors(self) -> bool:
         ...
 
     @abc.abstractmethod
@@ -27,7 +27,7 @@ class DerivedVectorsAccessor:
         ...
 
     @abc.abstractmethod
-    def create_interval_and_average_vectors_df(
+    def create_per_interval_and_per_day_vectors_df(
         self,
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:

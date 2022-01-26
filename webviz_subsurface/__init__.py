@@ -13,8 +13,8 @@ from webviz_subsurface._utils.vector_calculator import (
     ConfigExpressionData,
 )
 
-from webviz_subsurface._utils.user_defined_vector_description import (
-    USER_DEFINED_VECTOR_DESCRIPTION_JSON_SCHEMA,
+from webviz_subsurface._utils.user_defined_vector_definitions import (
+    USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
 )
 
 try:
@@ -84,33 +84,31 @@ def subscribe_predefined_expressions(
 
 
 @webviz_config.SHARED_SETTINGS_SUBSCRIPTIONS.subscribe(
-    "user_defined_vector_descriptions"
+    "user_defined_vector_definitions"
 )
-def subscribe_user_defined_vector_descriptions(
-    user_defined_vector_descriptions: Optional[Dict[str, str]],
+def subscribe_user_defined_vector_definitions(
+    user_defined_vector_definitions: Optional[Dict[str, str]],
     config_folder: pathlib.Path,
     portable: bool,
 ) -> Dict[str, pathlib.Path]:
 
     output: Dict[str, pathlib.Path] = {}
 
-    if user_defined_vector_descriptions is None:
+    if user_defined_vector_definitions is None:
         return output
 
-    for key, path in user_defined_vector_descriptions.items():
+    for key, path in user_defined_vector_definitions.items():
 
         if not pathlib.Path(path).is_absolute():
             output[key] = config_folder / path
 
         if not portable:
-            vector_descriptions: Dict[str, str] = yaml.safe_load(
-                output[key].read_text()
-            )
+            vector_definitions: Dict[str, str] = yaml.safe_load(output[key].read_text())
 
             try:
                 jsonschema.validate(
-                    instance=vector_descriptions,
-                    schema=USER_DEFINED_VECTOR_DESCRIPTION_JSON_SCHEMA,
+                    instance=vector_definitions,
+                    schema=USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
                 )
             except jsonschema.exceptions.ValidationError as err:
                 raise ValueError from err

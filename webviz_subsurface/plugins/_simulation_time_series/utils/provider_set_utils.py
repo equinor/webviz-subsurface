@@ -4,14 +4,16 @@ from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_unit_reformat,
     simulation_vector_description,
 )
+from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.vector_calculator import (
     ExpressionInfo,
     VectorCalculator,
     get_expression_from_name,
 )
 from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
+    create_per_interval_or_per_day_vector_description,
     get_cumulative_vector_name,
-    is_interval_or_average_vector,
+    is_per_interval_or_per_day_vector,
 )
 
 from ..types import ProviderSet
@@ -21,6 +23,7 @@ def create_vector_plot_titles_from_provider_set(
     vector_names: List[str],
     expressions: List[ExpressionInfo],
     provider_set: ProviderSet,
+    resampling_frequency: Optional[Frequency],
     user_defined_vector_descriptions: Dict[str, str],
 ) -> Dict[str, str]:
     """Create plot titles for vectors
@@ -46,32 +49,23 @@ def create_vector_plot_titles_from_provider_set(
                 title += f" [{simulation_unit_reformat(metadata.unit)}]"
             vector_title_dict[vector_name] = title
 
-        # INTVL_ or AVG_ vector
-        elif is_interval_or_average_vector(vector_name):
-            vector = vector_name
+        # Per Interval or Per Day vector
+        elif is_per_interval_or_per_day_vector(vector_name):
+            title = create_per_interval_or_per_day_vector_description(
+                vector_name, user_defined_vector_descriptions
+            )
+
             cumulative_vector = get_cumulative_vector_name(vector_name)
-            title = ""
-            if vector.startswith("AVG_"):
-                vector = vector.lstrip("AVG_")
-                title = user_defined_vector_descriptions.get(
-                    cumulative_vector.split(":")[0], ""
-                )
-                title = (
-                    title + "Per Day"
-                    if title
-                    else simulation_vector_description(vector)
-                )
-
-            if vector.startswith("INTVL_"):
-                vector = vector.lstrip("INTVL_")
-                title = user_defined_vector_descriptions.get(
-                    cumulative_vector.split(":")[0],
-                    simulation_vector_description(vector),
-                )
-
-            metadata = provider_set.vector_metadata(vector)
-            if metadata and metadata.unit:
-                title += f" [{simulation_unit_reformat(metadata.unit)}]"
+            metadata = provider_set.vector_metadata(cumulative_vector)
+            if resampling_frequency:
+                title = f"{str(resampling_frequency.value).capitalize()} " + title
+            if vector_name.startswith("PER_DAY_"):
+                if metadata and metadata.unit:
+                    _unit = metadata.unit + "/DAY"
+                    title += f" [{simulation_unit_reformat(_unit)}]"
+            if vector_name.startswith("PER_INTVL_"):
+                if metadata and metadata.unit:
+                    title += f" [{simulation_unit_reformat(metadata.unit)}]"
             vector_title_dict[vector_name] = title
 
         # Calculated vector
