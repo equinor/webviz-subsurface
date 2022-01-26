@@ -4,10 +4,10 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
-from webviz_subsurface._providers import Frequency
 from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
 )
+from webviz_subsurface._providers import Frequency
 
 ###################################################################################
 # NOTE: This code is a copy and modification of

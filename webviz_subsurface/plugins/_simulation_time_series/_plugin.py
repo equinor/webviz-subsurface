@@ -5,26 +5,32 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import dash
 import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
-import webviz_subsurface_components as wsc
-
 import webviz_subsurface
-from webviz_subsurface._abbreviations.reservoir_simulation import (
-    historical_vector,
-)
+from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.simulation_timeseries import (
     check_and_format_observations,
     set_simulation_line_shape_fallback,
 )
+from webviz_subsurface._utils.user_defined_vector_definitions import (
+    UserDefinedVectorDefinition,
+    create_user_defined_vector_description_dict,
+    create_user_defined_vector_descriptions_from_config,
+)
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
     expressions_from_config,
+    get_custom_vector_definitions_from_expressions,
     validate_predefined_expression,
 )
-from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
+from webviz_subsurface._utils.vector_selector import (
+    add_vector_to_vector_selector_data,
+    create_custom_vector_definition_from_user_defined_vector_data,
+)
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
 from ._callbacks import plugin_callbacks
@@ -35,22 +41,11 @@ from .types.provider_set import (
     create_presampled_provider_set_from_paths,
 )
 from .utils.from_timeseries_cumulatives import (
-    create_per_interval_or_per_day_vector_description,
     create_per_day_vector_name,
+    create_per_interval_or_per_day_vector_description,
     create_per_interval_vector_name,
 )
-from webviz_subsurface._utils.vector_calculator import (
-    get_custom_vector_definitions_from_expressions,
-)
-from webviz_subsurface._utils.vector_selector import (
-    create_custom_vector_definition_from_user_defined_vector_data,
-)
 
-from webviz_subsurface._utils.user_defined_vector_definitions import (
-    create_user_defined_vector_descriptions_from_config,
-    create_user_defined_vector_description_dict,
-    UserDefinedVectorDefinition,
-)
 
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
