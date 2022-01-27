@@ -1,11 +1,11 @@
 import json
 import pathlib
 import warnings
-from typing import Optional, Tuple, cast
+from typing import Dict, Optional, Tuple, cast
 
 import pandas as pd
 
-from webviz_subsurface_components import VectorDefinitions
+from webviz_subsurface_components import VectorDefinitions, VectorDefinition
 
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 
@@ -36,17 +36,23 @@ def simulation_vector_base(vector: str) -> str:
     return vector.split(":", 1)[0].split("_", 1)[0][:5] if ":" in vector else vector
 
 
-def simulation_vector_description(vector: str) -> str:
+def simulation_vector_description(
+    vector: str,
+    user_defined_vector_definitions: Optional[Dict[str, VectorDefinition]] = None,
+) -> str:
     """Returns a more human friendly description of the simulation vector if possible,
     otherwise returns the input as is.
 
-    # TODO: Remove support for "AVG_" and "INTVL_" when all usage is deprecated
+    # TODO: Remove support for "AVG_" and "INTVL_" when all usage is deprecated.
     """
+    prefix = ""
+    suffix = ""
     if vector.startswith("AVG_"):
         prefix = "Average "
         vector = vector[4:]
     elif vector.startswith("PER_DAY_"):
         prefix = "Average "
+        suffix = " Per day"
         vector = vector[8:]
     elif vector.startswith("INTVL_"):
         prefix = "Interval "
@@ -54,8 +60,6 @@ def simulation_vector_description(vector: str) -> str:
     elif vector.startswith("PER_INTVL_"):
         prefix = "Interval "
         vector = vector[10:]
-    else:
-        prefix = ""
 
     vector_name: str
     node: Optional[str]
@@ -65,6 +69,17 @@ def simulation_vector_description(vector: str) -> str:
         vector_name = vector
         node = None
 
+    def _get_vector_definition(vector: str) -> Optional[VectorDefinition]:
+        """Get vector definition. Fetch user defined if existing"""
+        if (
+            user_defined_vector_definitions
+            and vector in user_defined_vector_definitions
+        ):
+            return user_defined_vector_definitions[vector]
+        if vector in SIMULATION_VECTOR_TERMINOLOGY:
+            return SIMULATION_VECTOR_TERMINOLOGY[vector]
+        return None
+
     if len(vector_name) == 8:
         if vector_name[0] == "R":
             # Region vectors for other FIP regions than FIPNUM are written on a special form:
@@ -72,34 +87,32 @@ def simulation_vector_description(vector: str) -> str:
             # E.g.: For an array "FIPREG": ROIP is ROIP_REG, RPR is RPR__REG and ROIPL is ROIPLREG
             # Underscores _ are always used to fill
             [vector_base_name, fip] = [vector_name[0:5].rstrip("_"), vector_name[5:]]
-            if (
-                vector_base_name in SIMULATION_VECTOR_TERMINOLOGY
-                and SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"] == "region"
-            ):
+
+            _definition = _get_vector_definition(vector_base_name)
+            if _definition and _definition["type"] == "region":
                 return (
-                    f"{prefix}{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
-                    f", region {fip} {node}"
+                    f"{prefix}{_definition['description']}{suffix}, region {fip} {node}"
                 )
         elif vector_name.startswith("W") and vector_name[4] == "L":
             # These are completion vectors, e.g. WWCTL:__1:OP_1 and WOPRL_10:OP_1 for
             # water-cut in OP_1 completion 1 and oil production rate in OP_1 completion 10
             [vector_base_name, comp] = [vector_name[0:5], vector_name[5:].lstrip("_")]
 
-            if (
-                vector_base_name in SIMULATION_VECTOR_TERMINOLOGY
-                and SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]["type"]
-                == "completion"
-            ):
+            _definition = _get_vector_definition(vector_base_name)
+            if _definition and _definition["type"] == "completion":
                 return (
-                    f"{prefix}{SIMULATION_VECTOR_TERMINOLOGY[vector_base_name]['description']}"
-                    f", well {node} completion {comp}"
+                    f"{prefix}{_definition['description']}"
+                    f"{suffix}, well {node} completion {comp}"
                 )
 
-    if vector_name in SIMULATION_VECTOR_TERMINOLOGY:
-        metadata = SIMULATION_VECTOR_TERMINOLOGY[vector_name]
+    _definition = _get_vector_definition(vector_name)
+    if _definition:
         if node is None:
-            return prefix + metadata["description"]
-        return f"{prefix}{metadata['description']}, {metadata['type'].replace('_', ' ')} {node}"
+            return prefix + _definition["description"] + suffix
+        return (
+            f"{prefix}{_definition['description']}{suffix}, "
+            f"{_definition['type'].replace('_', ' ')} {node}"
+        )
 
     if not vector.startswith(
         ("AU", "BU", "CU", "FU", "GU", "RU", "SU", "WU", "Recovery Factor of")
@@ -110,11 +123,11 @@ def simulation_vector_description(vector: str) -> str:
         warnings.warn(
             (
                 f"Could not find description for vector {vector_name}. Consider adding"
-                " it in the GitHub repo https://github.com/equinor/webviz-subsurface?"
+                " it in the GitHub repo https://github.com/equinor/webviz-subsurface-components?"
             ),
             UserWarning,
         )
-    return prefix + vector
+    return prefix + vector + suffix
 
 
 def historical_vector(

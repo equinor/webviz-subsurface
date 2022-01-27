@@ -10,29 +10,25 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
-from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
+from webviz_subsurface._abbreviations.reservoir_simulation import (
+    historical_vector,
+    simulation_vector_description,
+)
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.simulation_timeseries import (
     check_and_format_observations,
     set_simulation_line_shape_fallback,
 )
 from webviz_subsurface._utils.user_defined_vector_definitions import (
-    UserDefinedVectorDefinition,
-    create_user_defined_vector_description_dict,
     create_user_defined_vector_descriptions_from_config,
 )
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
     expressions_from_config,
-    get_custom_vector_definitions_from_expressions,
+    get_vector_definitions_from_expressions,
     validate_predefined_expression,
 )
-from webviz_subsurface._utils.vector_selector import (
-    CustomVectorDefinition,
-    add_vector_definition_to_vector_definitions,
-    add_vector_to_vector_selector_data,
-    create_custom_vector_definitions_from_user_defined_vector_definitions,
-)
+from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
 from ._callbacks import plugin_callbacks
@@ -44,7 +40,6 @@ from .types.provider_set import (
 )
 from .utils.from_timeseries_cumulatives import (
     create_per_day_vector_name,
-    create_per_interval_or_per_day_vector_description,
     create_per_interval_vector_name,
 )
 
@@ -85,23 +80,15 @@ class SimulationTimeSeries(WebvizPluginABC):
                 user_defined_vector_definitions
             ]
         )
-        # Vector name as key, description data as value
-        _user_defined_vector_definitions: Dict[
-            str, UserDefinedVectorDefinition
+        self._user_defined_vector_definitions: Dict[
+            str, wsc.VectorDefinition
         ] = create_user_defined_vector_descriptions_from_config(
             get_path(self._user_defined_vector_descriptions_path)
             if self._user_defined_vector_descriptions_path
             else None
         )
-        self._user_defined_vector_descriptions = (
-            create_user_defined_vector_description_dict(
-                _user_defined_vector_definitions
-            )
-        )
-        self._custom_vector_definitions = (
-            create_custom_vector_definitions_from_user_defined_vector_definitions(
-                _user_defined_vector_definitions
-            )
+        self._custom_vector_definitions = copy.deepcopy(
+            self._user_defined_vector_definitions
         )
 
         self._line_shape_fallback = set_simulation_line_shape_fallback(
@@ -197,30 +184,30 @@ class SimulationTimeSeries(WebvizPluginABC):
                 )
 
                 # Add vector base to custom vector definition if not existing
-                # TODO: Make an util?
                 vector_base = vector.split(":")[0]
                 _definition = wsc.VectorDefinitions.get(vector_base, None)
                 _type = _definition["type"] if _definition else "others"
-                add_vector_definition_to_vector_definitions(
-                    per_day_vec,
-                    CustomVectorDefinition(
+
+                per_day_vec_base = per_day_vec.split(":")[0]
+                per_intvl_vec_base = per_intvl_vec.split(":")[0]
+                if per_day_vec_base not in self._custom_vector_definitions:
+                    self._custom_vector_definitions[
+                        per_day_vec_base
+                    ] = wsc.VectorDefinition(
                         type=_type,
-                        description=create_per_interval_or_per_day_vector_description(
-                            per_day_vec, self._user_defined_vector_descriptions
+                        description=simulation_vector_description(
+                            per_day_vec_base, self._user_defined_vector_definitions
                         ),
-                    ),
-                    custom_vector_definitions=self._custom_vector_definitions,
-                )
-                add_vector_definition_to_vector_definitions(
-                    per_intvl_vec,
-                    CustomVectorDefinition(
+                    )
+                if per_intvl_vec_base not in self._custom_vector_definitions:
+                    self._custom_vector_definitions[
+                        per_intvl_vec_base
+                    ] = wsc.VectorDefinition(
                         type=_type,
-                        description=create_per_interval_or_per_day_vector_description(
-                            per_intvl_vec, self._user_defined_vector_descriptions
+                        description=simulation_vector_description(
+                            per_intvl_vec_base, self._user_defined_vector_definitions
                         ),
-                    ),
-                    custom_vector_definitions=self._custom_vector_definitions,
-                )
+                    )
 
         # Retreive predefined expressions from configuration and validate
         self._predefined_expressions_path = (
@@ -248,7 +235,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             self._custom_vector_definitions
         )
         _custom_vector_definitions_from_expressions = (
-            get_custom_vector_definitions_from_expressions(self._predefined_expressions)
+            get_vector_definitions_from_expressions(self._predefined_expressions)
         )
         for key, value in _custom_vector_definitions_from_expressions.items():
             if key not in self._custom_vector_definitions:
@@ -308,7 +295,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             vector_selector_base_data=self._vector_selector_base_data,
             custom_vector_definitions_base=self._custom_vector_definitions_base,
             observations=self._observations,
-            user_defined_vector_descriptions=self._user_defined_vector_descriptions,
+            user_defined_vector_definitions=self._user_defined_vector_definitions,
             line_shape_fallback=self._line_shape_fallback,
         )
 

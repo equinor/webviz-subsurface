@@ -1,10 +1,11 @@
 import sys
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
 
 import yaml
+
+from webviz_subsurface_components import VectorDefinition
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -66,24 +67,18 @@ class ConfigUserDefinedVectorDefinition(
     type: str
 
 
-@dataclass(frozen=True)
-class UserDefinedVectorDefinition:
-    description: str
-    type: Optional[str]
-
-
 def create_user_defined_vector_descriptions_from_config(
     user_defined_vector_data_path: Optional[Path],
-) -> Dict[str, UserDefinedVectorDefinition]:
-    """Create user defined vector data from config
+) -> Dict[str, VectorDefinition]:
+    """Create user defined vector definitions from config
 
     `Input:`
-    Path for yaml-file containing user defined vector data
+    Path for yaml-file containing user defined vector definitions
 
     `Return:`
-    Dict with vector as name, and user defined vector data object as value.
+    Dict with vector as name, and user defined vector definition object as value.
     """
-    output: Dict[str, UserDefinedVectorDefinition] = {}
+    output: Dict[str, VectorDefinition] = {}
 
     if user_defined_vector_data_path is None:
         return output
@@ -94,18 +89,7 @@ def create_user_defined_vector_descriptions_from_config(
 
     for vector, vector_data in vector_data_dict.items():
         _description = vector_data.get("description", "")
-        _type = vector_data.get("type", None)
-        output[vector] = UserDefinedVectorDefinition(
-            description=_description, type=_type
-        )
+        _type = vector_data.get("type", "others")
+        output[vector] = VectorDefinition(description=_description, type=_type)
 
-    return output
-
-
-def create_user_defined_vector_description_dict(
-    user_defined_vector_definitions: Dict[str, UserDefinedVectorDefinition]
-) -> Dict[str, str]:
-    output: Dict[str, str] = {}
-    for elm in user_defined_vector_definitions:
-        output[elm] = user_defined_vector_definitions[elm].description
     return output

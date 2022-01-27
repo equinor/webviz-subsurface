@@ -76,9 +76,9 @@ EXPECTED_DELTA_DF = pd.DataFrame(
     ]
 )
 
-# INTVL_ calc for col "B" of Delta
+# PER_INTVL_ calc for col "B" of Delta
 EXPECTED_DELTA_INVTL_DF = pd.DataFrame(
-    columns = ["DATE", "REAL",  "INTVL_B"],
+    columns = ["DATE", "REAL",  "PER_INTVL_B"],
     data = [
         [datetime.datetime(2000,1,1),  1, 450.0 ],
         [datetime.datetime(2000,2,1),  1, 450.0 ],
@@ -160,7 +160,7 @@ TEST_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
         EnsembleSummaryProviderMock(INPUT_A_DF),
         EnsembleSummaryProviderMock(INPUT_B_DF),
     ),
-    vectors=["A", "B", "INTVL_B", "Sum A and B"],
+    vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
     resampling_frequency=None,
 )
@@ -171,7 +171,7 @@ TEST_AFTER_2262_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
         EnsembleSummaryProviderMock(INPUT_A_AFTER_2262_DF),
         EnsembleSummaryProviderMock(INPUT_B_AFTER_2262_DF),
     ),
-    vectors=["A", "B", "INTVL_B", "Sum A and B"],
+    vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
     resampling_frequency=None,
 )
@@ -182,7 +182,7 @@ TEST_EMPTY_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
         EnsembleSummaryProviderMock(pd.DataFrame()),
         EnsembleSummaryProviderMock(pd.DataFrame()),
     ),
-    vectors=["A", "B", "INTVL_B", "Sum A and B"],
+    vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=None,
     resampling_frequency=None,
 )
@@ -204,7 +204,7 @@ TEST_GET_VECTOR_CASES = [
     pytest.param(TEST_ACCESSOR, EXPECTED_DELTA_DF),
     pytest.param(TEST_AFTER_2262_ACCESSOR, EXPECTED_DELTA_AFTER_2262_DF),
 ]
-TEST_CREATE_INTVL_AVG_VECTOR_CASES = [
+TEST_CREATE_PER_INTVL_PER_DAY_VECTOR_CASES = [
     pytest.param(TEST_ACCESSOR, EXPECTED_DELTA_INVTL_DF),
     pytest.param(TEST_AFTER_2262_ACCESSOR, EXPECTED_DELTA_INVTL_AFTER_2262_DF),
 ]
@@ -222,10 +222,10 @@ def test_has_provider_vectors(
 
 
 @pytest.mark.parametrize("test_accessor, expected_state", TEST_STATUS_CASES)
-def test_has_interval_and_average_vectors(
+def test_has_per_interval_and_per_day_vectors(
     test_accessor: DerivedDeltaEnsembleVectorsAccessorImpl, expected_state: bool
 ) -> None:
-    assert test_accessor.has_interval_and_average_vectors() == expected_state
+    assert test_accessor.has_per_interval_and_per_day_vectors() == expected_state
 
 
 @pytest.mark.parametrize("test_accessor, expected_state", TEST_STATUS_CASES)
@@ -260,20 +260,20 @@ def test_get_provider_vectors_filter_realizations(
 
 
 @pytest.mark.parametrize(
-    "test_accessor, expected_df", TEST_CREATE_INTVL_AVG_VECTOR_CASES
+    "test_accessor, expected_df", TEST_CREATE_PER_INTVL_PER_DAY_VECTOR_CASES
 )
-def test_create_interval_and_average_vectors_df(
+def test_create_per_interval_and_per_day_vectors_df(
     test_accessor: DerivedDeltaEnsembleVectorsAccessorImpl, expected_df: pd.DataFrame
 ) -> None:
     assert_frame_equal(
-        expected_df, test_accessor.create_interval_and_average_vectors_df()
+        expected_df, test_accessor.create_per_interval_and_per_day_vectors_df()
     )
 
 
 @pytest.mark.parametrize(
-    "test_accessor, expected_df", TEST_CREATE_INTVL_AVG_VECTOR_CASES
+    "test_accessor, expected_df", TEST_CREATE_PER_INTVL_PER_DAY_VECTOR_CASES
 )
-def test_create_interval_and_average_vectors_df_filter_realizations(
+def test_create_per_interval_and_per_day_vectors_df_filter_realizations(
     test_accessor: DerivedDeltaEnsembleVectorsAccessorImpl, expected_df: pd.DataFrame
 ) -> None:
     # Filter realizations
@@ -283,7 +283,9 @@ def test_create_interval_and_average_vectors_df_filter_realizations(
         .drop("index", axis=1)
     )
 
-    test_df = test_accessor.create_interval_and_average_vectors_df(realizations=[1, 4])
+    test_df = test_accessor.create_per_interval_and_per_day_vectors_df(
+        realizations=[1, 4]
+    )
 
     assert_frame_equal(expected_reals_df, test_df)
     assert list(set(test_df["REAL"].values)) == [1, 4]

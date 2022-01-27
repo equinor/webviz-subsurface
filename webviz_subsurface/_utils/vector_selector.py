@@ -1,21 +1,4 @@
-import sys
-
-from typing import Dict, Optional
-
-from webviz_subsurface._utils.user_defined_vector_definitions import (
-    UserDefinedVectorDefinition,
-)
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
-
-class CustomVectorDefinition(TypedDict):
-
-    description: str
-    type: str
+from typing import Optional
 
 
 def add_vector_to_vector_selector_data(
@@ -66,32 +49,3 @@ def is_vector_name_in_vector_selector_data(
         if not found:
             return False
     return found
-
-
-def create_custom_vector_definitions_from_user_defined_vector_definitions(
-    user_defined_vector_data: Dict[str, UserDefinedVectorDefinition]
-) -> Dict[str, CustomVectorDefinition]:
-    """Create dict of custom vector definitions for VectorSelector from dict
-    of user defined vector definitions dataclass objects from config
-
-    Note: If type is not existing in config, type is set to "others"
-    """
-    output: Dict[str, CustomVectorDefinition] = {}
-    for elm in user_defined_vector_data:
-        _type = user_defined_vector_data[elm].type
-        output[elm] = {
-            "description": user_defined_vector_data[elm].description,
-            "type": _type if _type is not None else "others",
-        }
-    return output
-
-
-def add_vector_definition_to_vector_definitions(
-    vector: str,
-    definition: CustomVectorDefinition,
-    custom_vector_definitions: Dict[str, CustomVectorDefinition],
-) -> None:
-    """Add vector definition to dict of existing vector definitions"""
-    vector_base = vector.split(":")[0]
-    if vector_base not in custom_vector_definitions:
-        custom_vector_definitions[vector_base] = definition

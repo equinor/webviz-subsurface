@@ -1,12 +1,9 @@
 import datetime
-from typing import Dict, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 
-from webviz_subsurface._abbreviations.reservoir_simulation import (
-    simulation_vector_description,
-)
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.dataframe_utils import (
     assert_date_column_is_datetime_object,
@@ -47,27 +44,6 @@ def create_per_day_vector_name(vector: str) -> str:
 
 def create_per_interval_vector_name(vector: str) -> str:
     return f"PER_INTVL_{vector}"
-
-
-def create_per_interval_or_per_day_vector_description(
-    vector: str,
-    user_defined_descriptions: Dict[str, str] = None,
-) -> str:
-    if not is_per_interval_or_per_day_vector(vector):
-        raise ValueError(
-            f'Expected "{vector}" to be a vector calculated from cumulative!'
-        )
-    if not user_defined_descriptions:
-        return simulation_vector_description(vector)
-
-    cumulative_vector_base = get_cumulative_vector_name(vector).split(":")[0]
-    _description = user_defined_descriptions.get(cumulative_vector_base, None)
-    if _description and vector.startswith("PER_DAY_"):
-        return "Average " + _description + " Per day"
-    if _description and vector.startswith("PER_INTVL_"):
-        return "Interval " + _description
-
-    return simulation_vector_description(vector)
 
 
 def calculate_from_resampled_cumulative_vectors_df(

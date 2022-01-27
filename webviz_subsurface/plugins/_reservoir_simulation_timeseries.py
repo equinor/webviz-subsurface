@@ -59,7 +59,7 @@ from .._utils.vector_calculator import (
     expressions_from_config,
     get_calculated_units,
     get_calculated_vector_df,
-    get_custom_vector_definitions_from_expressions,
+    get_vector_definitions_from_expressions,
     get_expression_from_name,
     get_selected_expressions,
     validate_predefined_expression,
@@ -629,7 +629,7 @@ folder, to avoid risk of not extracting the right data.
                                     numSecondsUntilSuggestionsAreShown=0.5,
                                     lineBreakAfterTag=True,
                                     customVectorDefinitions=(
-                                        get_custom_vector_definitions_from_expressions(
+                                        get_vector_definitions_from_expressions(
                                             self.predefined_expressions
                                         )
                                     ),
@@ -1231,8 +1231,8 @@ folder, to avoid risk of not extracting the right data.
             if new_selected_vectors == selected_vectors:
                 new_selected_vectors = dash.no_update
 
-            new_custom_vector_definitions = (
-                get_custom_vector_definitions_from_expressions(new_expressions)
+            new_custom_vector_definitions = get_vector_definitions_from_expressions(
+                new_expressions
             )
 
             if new_custom_vector_definitions == custom_vector_definitions:

@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional
 
+from webviz_subsurface_components import VectorDefinition
 from webviz_subsurface_components.py_expression_eval import ParserError
 
 from webviz_subsurface._abbreviations.reservoir_simulation import (
@@ -13,7 +14,6 @@ from webviz_subsurface._utils.vector_calculator import (
     get_expression_from_name,
 )
 from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
-    create_per_interval_or_per_day_vector_description,
     get_cumulative_vector_name,
     is_per_interval_or_per_day_vector,
 )
@@ -25,8 +25,8 @@ def create_vector_plot_titles_from_provider_set(
     vector_names: List[str],
     expressions: List[ExpressionInfo],
     provider_set: ProviderSet,
-    resampling_frequency: Optional[Frequency],
-    user_defined_vector_descriptions: Dict[str, str],
+    user_defined_vector_definitions: Dict[str, VectorDefinition],
+    resampling_frequency: Optional[Frequency] = None,
 ) -> Dict[str, str]:
     """Create plot titles for vectors
 
@@ -44,8 +44,8 @@ def create_vector_plot_titles_from_provider_set(
         # Provider vector
         if vector_name in all_vector_names:
             metadata = provider_set.vector_metadata(vector_name)
-            title = user_defined_vector_descriptions.get(
-                vector_name.split(":")[0], simulation_vector_description(vector_name)
+            title = simulation_vector_description(
+                vector_name, user_defined_vector_definitions
             )
             if metadata and metadata.unit:
                 title += f" [{simulation_unit_reformat(metadata.unit)}]"
@@ -53,8 +53,8 @@ def create_vector_plot_titles_from_provider_set(
 
         # Per Interval or Per Day vector
         elif is_per_interval_or_per_day_vector(vector_name):
-            title = create_per_interval_or_per_day_vector_description(
-                vector_name, user_defined_vector_descriptions
+            title = simulation_vector_description(
+                vector_name, user_defined_vector_definitions
             )
 
             cumulative_vector = get_cumulative_vector_name(vector_name)
