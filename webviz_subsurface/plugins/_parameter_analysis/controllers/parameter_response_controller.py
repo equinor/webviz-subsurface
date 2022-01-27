@@ -4,7 +4,8 @@ from typing import Callable, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from dash import ALL, Dash, Input, Output, State, callback_context, dcc, no_update
+import webviz_core_components as wcc
+from dash import ALL, Dash, Input, Output, State, callback_context, no_update
 from dash.exceptions import PreventUpdate
 
 from ...._figures import BarChart, ScatterPlot
@@ -32,17 +33,12 @@ def parameter_response_controller(
         Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
         Input(get_uuid("vector-select"), "children"),
         Input({"id": get_uuid("parameter-select"), "tab": "response"}, "value"),
-        Input(get_uuid("date-selected"), "children"),
+        Input(get_uuid("date-selected"), "data"),
         Input({"id": get_uuid("vtype-filter"), "tab": "response"}, "value"),
         Input(
-            {
-                "id": get_uuid("vitem-filter"),
-                "tab": "response",
-                "vtype": ALL,
-            },
-            "value",
+            {"id": get_uuid("vitem-filter"), "tab": "response", "vtype": ALL}, "value"
         ),
-        Input({"id": get_uuid("plot-options"), "tab": "response"}, "value"),
+        Input({"id": get_uuid("plot-options"), "tab": "response"}, "data"),
         Input({"id": get_uuid("parameter-filter"), "type": "data-store"}, "data"),
         State(get_uuid("vector-vs-time-graph"), "figure"),
         State(get_uuid("param-corr-graph"), "figure"),
@@ -68,16 +64,11 @@ def parameter_response_controller(
         Main callback to update plots. Initially all plots are generated,
         while only relevant plots are updated in subsequent callbacks
         """
-
-        if (
-            callback_context.triggered is None
-            or callback_context.triggered[0]["prop_id"] == "."
-            or vector is None
-        ):
-            raise PreventUpdate
         ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
+        if not ctx or vector is None:
+            raise PreventUpdate
 
-        if not real_filter[ensemble]:
+        if len(real_filter[ensemble]) <= 1:
             return [empty_figure()] * 4
 
         initial_run = timeseries_fig is None
@@ -170,37 +161,43 @@ def parameter_response_controller(
     @app.callback(
         Output(get_uuid("date-slider"), "value"),
         Input(get_uuid("vector-vs-time-graph"), "clickData"),
+        State(get_uuid("date-selected"), "data"),
     )
-    def _update_date_from_clickdata(timeseries_clickdata: Union[None, dict]):
+    def _update_date_from_clickdata(timeseries_clickdata: Union[None, dict], date):
         """Update date-slider from clickdata"""
         dates = vectormodel.dates
         return (
             dates.index(timeseries_clickdata.get("points", [{}])[0]["x"])
             if timeseries_clickdata is not None
-            else len(dates) - 1
+            else dates.index(date)
         )
 
     @app.callback(
-        Output(get_uuid("date-selected"), "children"),
+        Output(get_uuid("date-selected-text"), "children"),
+        Output(get_uuid("date-selected"), "data"),
         Input(get_uuid("date-slider"), "value"),
     )
     def _update_date(dateidx: int):
         """Update selected date from date-slider"""
-        return vectormodel.dates[dateidx]
+        return [vectormodel.dates[dateidx]] * 2
 
     @app.callback(
-        Output({"id": get_uuid("plot-options"), "tab": "response"}, "value"),
+        Output({"id": get_uuid("plot-options"), "tab": "response"}, "data"),
         Input({"id": get_uuid("checkbox-options"), "tab": "response"}, "value"),
         Input({"id": get_uuid("color-selector"), "tab": "response"}, "clickData"),
         Input({"id": get_uuid("opacity-selector"), "tab": "response"}, "value"),
+        State({"id": get_uuid("plot-options"), "tab": "response"}, "data"),
     )
     def _update_plot_options(
         checkbox_options: list,
         color_clickdata: str,
         opacity: float,
+        plot_options: dict,
     ):
         """Combine plot options in one dictionary"""
         ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
+        if plot_options is not None and not ctx:
+            raise PreventUpdate
         if color_clickdata is not None:
             color = color_clickdata["points"][0]["marker.color"]
             if "rgb" in color:
@@ -306,19 +303,17 @@ def parameter_response_controller(
 
         return (
             [
-                dcc.Dropdown(
+                wcc.Dropdown(
                     id={"id": get_uuid("vitem-select"), "shortname": shortname},
                     options=[{"label": i, "value": i} for i in items],
                     value=item if items else None,
                     disabled=not items,
                     placeholder="No subselections...",
                     clearable=False,
-                    persistence=True,
-                    persistence_type="session",
                 )
             ],
             [
-                dcc.RadioItems(
+                wcc.RadioItems(
                     id={"id": get_uuid("vtype-select"), "state": "update"},
                     options=[
                         {"label": i, "value": i} for i in vectormodel.vector_groups
@@ -332,16 +327,32 @@ def parameter_response_controller(
         )
 
     @app.callback(
+        Output({"id": get_uuid("parameter-select"), "tab": "response"}, "options"),
         Output({"id": get_uuid("parameter-select"), "tab": "response"}, "value"),
         Input(get_uuid("vector-corr-graph"), "clickData"),
+        Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
+        State({"id": get_uuid("parameter-select"), "tab": "response"}, "value"),
     )
     def _update_parameter_selected(
-        corr_vector_clickdata: Union[None, dict],
-    ) -> str:
-        """Update the selected parameter from clickdata"""
-        if corr_vector_clickdata is None:
+        corr_vector_clickdata: Union[None, dict], ensemble: str, selected_parameter: str
+    ) -> tuple:
+        """Update the selected parameter from clickdata, or when ensemble is changed"""
+        ctx = callback_context.triggered[0]["prop_id"]
+        if ctx == ".":
             raise PreventUpdate
-        return corr_vector_clickdata.get("points", [{}])[0].get("y")
+        parameters = parametermodel.pmodel.parameters_per_ensemble[ensemble]
+        options = [{"label": i, "value": i} for i in parameters]
+        if "vector-corr-graph" in ctx:
+            return options, corr_vector_clickdata.get("points", [{}])[0].get("y")
+        return options, selected_parameter if selected_parameter in parameters else None
+
+    @app.callback(
+        Output({"id": get_uuid("parameter-filter"), "type": "ensemble-update"}, "data"),
+        Input({"id": get_uuid("ensemble-selector"), "tab": "response"}, "value"),
+    )
+    def _update_parameter_filter_selection(ensemble: str):
+        """Update ensemble in parameter filter"""
+        return [ensemble]
 
     @app.callback(
         Output(get_uuid("param-filter-wrapper"), "style"),

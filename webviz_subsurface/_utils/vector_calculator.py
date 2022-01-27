@@ -6,7 +6,6 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import yaml
-from webviz_config.common_cache import CACHE
 from webviz_subsurface_components import (
     ExpressionInfo,
     ExternalParseData,
@@ -240,7 +239,6 @@ def get_custom_vector_definitions_from_expressions(
     return output
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_selected_expressions(
     expressions: List[ExpressionInfo], selected_names: List[str]
 ) -> List[ExpressionInfo]:
@@ -322,7 +320,6 @@ def create_calculated_vector_df(
     return pd.DataFrame()
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_calculated_units(
     expressions: List[ExpressionInfo],
     units: pd.Series,

@@ -107,10 +107,9 @@ class TornadoData:
         avg_per_sensitivity = []
 
         for sens_name, sens_name_df in dframe.groupby(["SENSNAME"]):
-            # Excluding the reference case as well as any cases named `ref`
-            # `ref` is used as `SENSNAME`, typically for a single realization only,
-            # when no seed uncertainty is used
-            if sens_name == "ref":
+            # Excluding cases if `ref` is used as `SENSNAME`, and only one realization
+            # is present for this `SENSNAME`
+            if sens_name == "ref" and len(sens_name_df["REAL"].unique()) == 1:
                 continue
 
             # If `SENSTYPE` is scalar get the mean for each `SENSCASE`

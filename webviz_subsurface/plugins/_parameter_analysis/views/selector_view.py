@@ -9,26 +9,21 @@ from ..models import ParametersModel, SimulationTimeSeriesModel
 
 def ensemble_selector(
     get_uuid: Callable,
-    parametermodel: ParametersModel,
+    ensembles: list,
     tab: str,
     id_string: str,
     multi: bool = False,
     value: str = None,
     heading: str = None,
 ) -> html.Div:
-    children = []
-
-    children.append(
-        wcc.Dropdown(
-            label=heading,
-            id={"id": get_uuid(id_string), "tab": tab},
-            options=[{"label": ens, "value": ens} for ens in parametermodel.ensembles],
-            multi=multi,
-            value=value if value is not None else parametermodel.ensembles[0],
-            clearable=False,
-        )
+    return wcc.Dropdown(
+        label=heading,
+        id={"id": get_uuid(id_string), "tab": tab},
+        options=[{"label": ens, "value": ens} for ens in ensembles],
+        multi=multi,
+        value=value if value is not None else ensembles[0],
+        clearable=False,
     )
-    return html.Div(children)
 
 
 def vector_selector(
@@ -46,7 +41,7 @@ def vector_selector(
             html.Div(
                 id=get_uuid("vtype-container"),
                 children=[
-                    dcc.RadioItems(
+                    wcc.RadioItems(
                         id={"id": get_uuid("vtype-select"), "state": "initial"},
                         options=[
                             {"label": i, "value": i} for i in vectormodel.vector_groups
@@ -136,9 +131,8 @@ def plot_options(get_uuid: Callable, tab: str) -> html.Div:
                 ],
                 value=["DateLine", "AutoCompute"],
             ),
-            html.Div(
-                id={"id": get_uuid("plot-options"), "tab": tab},
-                style={"display": "none"},
+            dcc.Store(
+                id={"id": get_uuid("plot-options"), "tab": tab}, storage_type="session"
             ),
         ],
     )
@@ -154,13 +148,16 @@ def date_selector(
             html.Div(
                 style={"display": "inline-flex"},
                 children=[
-                    html.Span(wcc.Label("Date:")),
-                    html.Span(
-                        html.Label(
-                            "date",
-                            id=get_uuid("date-selected"),
-                            style={"margin-left": "10px"},
-                        ),
+                    wcc.Label("Date:"),
+                    wcc.Label(
+                        dates[len(dates) - 1],
+                        id=get_uuid("date-selected-text"),
+                        style={"margin-left": "10px"},
+                    ),
+                    dcc.Store(
+                        id=get_uuid("date-selected"),
+                        storage_type="session",
+                        data=dates[len(dates) - 1],
                     ),
                 ],
             ),

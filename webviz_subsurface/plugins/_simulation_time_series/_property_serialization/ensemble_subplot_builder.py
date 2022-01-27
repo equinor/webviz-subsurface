@@ -237,11 +237,11 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
                 vectors_statistics_df[vector]
             )
 
-            color = self._vector_colors.get(vector, "black")
+            color = self._vector_colors.get(vector, "#000000")  # Black Hex color
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
             vector_traces_set[vector] = create_vector_fanchart_traces(
                 vector_statistics_df=vector_statistics_df,
-                color=color,
+                hex_color=color,
                 legend_group=vector,
                 line_shape=line_shape,
                 fanchart_options=fanchart_options,
