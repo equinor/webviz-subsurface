@@ -61,9 +61,6 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
         Returns a dictionary on a given format specified here:
         https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/lib/inputSchema/wellCompletions.json
         """
-        import time
-
-        t1 = time.time()
         df = load_csv(
             ensemble_paths={self.ensemble_name: self.ensemble_path},
             csv_file=self.compdat_file,
@@ -98,15 +95,22 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
         realizations = list(sorted(df.REAL.unique()))
 
         if df_zone_layer.empty:
-            df["ZONE"] = df.agg(lambda x: f"Layer {x['K1']}", axis=1)
-            df["COLOR"] = np.nan
+            if stratigraphy is None:
+                df["ZONE"] = df.agg(lambda x: f"Layer {x['K1']}", axis=1)
+                df["COLOR"] = np.nan
+            else:
+                raise ValueError(
+                    "It is not permitted to define the stratigraphy, but not the "
+                    "zone ➔ layer mapping. If neither input is provided then layers "
+                    "will be used as zones (NB! this can be slow with many wells and realizations)"
+                )
         else:
             reals_without_mapping = set(df["REAL"].unique()) - set(
                 df_zone_layer["REAL"].unique()
             )
             if reals_without_mapping:
                 raise ValueError(
-                    "The zone layer mapping seems to be missing for the "
+                    "The zone ➔ layer mapping seems to be missing for the "
                     f"following realizations: {reals_without_mapping}"
                 )
 
@@ -138,7 +142,6 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
                 df, zone_names, time_steps, realizations, well_attributes
             ),
         }
-        print(f"dataset created in {time.time()-t1} seconds.")
         return io.BytesIO(json.dumps(result).encode())
 
     @property
