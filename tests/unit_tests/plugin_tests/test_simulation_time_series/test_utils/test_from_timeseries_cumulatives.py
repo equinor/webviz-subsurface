@@ -8,11 +8,11 @@ from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
+    create_per_day_vector_name,
+    create_per_interval_vector_name,
     datetime_to_intervalstr,
     get_cumulative_vector_name,
     is_per_interval_or_per_day_vector,
-    create_per_day_vector_name,
-    create_per_interval_vector_name,
 )
 
 # *******************************************************************
