@@ -19,6 +19,7 @@ from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 from .vector_selector import (
     add_vector_to_vector_selector_data,
     is_vector_name_in_vector_selector_data,
+    CustomVectorDefinition,
 )
 
 if sys.version_info >= (3, 8):
@@ -208,7 +209,7 @@ def get_expression_from_name(
 
 def get_custom_vector_definitions_from_expressions(
     expressions: List[ExpressionInfo],
-) -> dict:
+) -> Dict[str, CustomVectorDefinition]:
     """
     Get custom vector definitions for vector selector from list of calculated expressions.
 
@@ -225,7 +226,7 @@ def get_custom_vector_definitions_from_expressions(
     Uses expression str as description if optional expression description str does not exist.
     """
 
-    output = {}
+    output: Dict[str, CustomVectorDefinition] = {}
     for expression in expressions:
         name = expression["name"]
         key = name.split(":")[0]
@@ -235,7 +236,7 @@ def get_custom_vector_definitions_from_expressions(
             if not "description" in expression
             else expression["description"]
         )
-        output[key] = {"type": vector_type, "description": description}
+        output[key] = CustomVectorDefinition(type=vector_type, description=description)
     return output
 
 

@@ -28,8 +28,10 @@ from webviz_subsurface._utils.vector_calculator import (
     validate_predefined_expression,
 )
 from webviz_subsurface._utils.vector_selector import (
+    CustomVectorDefinition,
+    add_vector_definition_to_vector_definitions,
     add_vector_to_vector_selector_data,
-    create_custom_vector_definition_from_user_defined_vector_data,
+    create_custom_vector_definitions_from_user_defined_vector_definitions,
 )
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
@@ -97,7 +99,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             )
         )
         self._custom_vector_definitions = (
-            create_custom_vector_definition_from_user_defined_vector_data(
+            create_custom_vector_definitions_from_user_defined_vector_definitions(
                 _user_defined_vector_definitions
             )
         )
@@ -116,7 +118,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._presampled_frequency = None
 
         # TODO: Update functionality when allowing raw data and csv file input
-        # NOTE: If csv is implemented-> handle/disable statistics, INTVL_, AVG_, delta
+        # NOTE: If csv is implemented-> handle/disable statistics, PER_INTVL_, PER_DAY_, delta
         # ensemble, etc.
         if ensembles is not None:
             ensemble_paths: Dict[str, Path] = {
@@ -199,22 +201,26 @@ class SimulationTimeSeries(WebvizPluginABC):
                 vector_base = vector.split(":")[0]
                 _definition = wsc.VectorDefinitions.get(vector_base, None)
                 _type = _definition["type"] if _definition else "others"
-                per_day_vec_base = per_day_vec.split(":")[0]
-                per_intvl_vec_base = per_intvl_vec.split(":")[0]
-                if per_day_vec_base not in self._custom_vector_definitions:
-                    self._custom_vector_definitions[per_day_vec_base] = {
-                        "type": _type,
-                        "description": create_per_interval_or_per_day_vector_description(
+                add_vector_definition_to_vector_definitions(
+                    per_day_vec,
+                    CustomVectorDefinition(
+                        type=_type,
+                        description=create_per_interval_or_per_day_vector_description(
                             per_day_vec, self._user_defined_vector_descriptions
                         ),
-                    }
-                if per_intvl_vec_base not in self._custom_vector_definitions:
-                    self._custom_vector_definitions[per_intvl_vec_base] = {
-                        "type": _type,
-                        "description": create_per_interval_or_per_day_vector_description(
-                            per_intvl_vec_base, self._user_defined_vector_descriptions
+                    ),
+                    custom_vector_definitions=self._custom_vector_definitions,
+                )
+                add_vector_definition_to_vector_definitions(
+                    per_intvl_vec,
+                    CustomVectorDefinition(
+                        type=_type,
+                        description=create_per_interval_or_per_day_vector_description(
+                            per_intvl_vec, self._user_defined_vector_descriptions
                         ),
-                    }
+                    ),
+                    custom_vector_definitions=self._custom_vector_definitions,
+                )
 
         # Retreive predefined expressions from configuration and validate
         self._predefined_expressions_path = (
@@ -238,11 +244,11 @@ class SimulationTimeSeries(WebvizPluginABC):
             expression["isValid"] = valid
 
         # Add expressions to custom vector definitions
-        _custom_vector_definitions_from_expressions = (
-            get_custom_vector_definitions_from_expressions(self._predefined_expressions)
-        )
         self._custom_vector_definitions_base = copy.deepcopy(
             self._custom_vector_definitions
+        )
+        _custom_vector_definitions_from_expressions = (
+            get_custom_vector_definitions_from_expressions(self._predefined_expressions)
         )
         for key, value in _custom_vector_definitions_from_expressions.items():
             if key not in self._custom_vector_definitions:
@@ -362,7 +368,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "content": (
                     "Display up to three different time series. "
                     "Each time series will be visualized in a separate plot. "
-                    "Vectors prefixed with AVG_ and INTVL_ are calculated in the fly "
+                    "Vectors prefixed with PER_DAY_ and PER_INTVL_ are calculated in the fly "
                     "from cumulative vectors, providing average rates and interval cumulatives "
                     "over a time interval from the selected resampling frequency. Vectors "
                     "categorized as calculated are created using the Vector Calculator below."

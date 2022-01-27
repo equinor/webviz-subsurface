@@ -68,10 +68,10 @@ def create_per_interval_or_per_day_vector_description(
 
 def calculate_from_resampled_cumulative_vectors_df(
     vectors_df: pd.DataFrame,
-    as_rate_per_day: bool,
+    as_per_day: bool,
 ) -> pd.DataFrame:
     """
-    Calculates interval delta or average rate data for vector columns in provided dataframe.
+    Calculates interval delta or average per day data for vector columns in provided dataframe.
     This function assumes data is already resampled when retrieved with ensemble summary
     provider.
 
@@ -119,7 +119,7 @@ def calculate_from_resampled_cumulative_vectors_df(
 
     cumulative_name_map = {
         vector: create_per_day_vector_name(vector)
-        if as_rate_per_day
+        if as_per_day
         else create_per_interval_vector_name(vector)
         for vector in column_keys
     }
@@ -147,7 +147,7 @@ def calculate_from_resampled_cumulative_vectors_df(
     cumulative_vectors_df.reset_index(inplace=True)
 
     # Convert interval cumulative to daily average rate if requested
-    if as_rate_per_day:
+    if as_per_day:
         days = cumulative_vectors_df["DATE"].diff().shift(-1).dt.days.fillna(value=0)
         for vector in column_keys:
             with np.errstate(invalid="ignore"):

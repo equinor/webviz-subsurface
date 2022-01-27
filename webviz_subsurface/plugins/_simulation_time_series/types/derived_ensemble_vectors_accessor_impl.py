@@ -133,7 +133,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             per_interval_or_per_day_vector_df = (
                 calculate_from_resampled_cumulative_vectors_df(
                     vectors_df[["DATE", "REAL", cumulative_vector_name]],
-                    as_rate_per_day=vector_name.startswith("PER_DAY_"),
+                    as_per_day=vector_name.startswith("PER_DAY_"),
                 )
             )
             if per_interval_and_per_day_vectors_df.empty:
