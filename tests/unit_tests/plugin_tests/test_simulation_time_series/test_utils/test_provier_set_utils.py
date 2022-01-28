@@ -181,28 +181,29 @@ def test_create_vector_plot_titles_from_provider_set() -> None:
     vector_names = ["FGIT", "WGOR:A1", "PER_DAY_WOPT:A1", "First Expression"]
     expressions = [FIRST_TEST_EXPRESSION]
 
-    user_defined_definitions = {
-        "FGIT": VectorDefinition(description="First Test title", type="field"),
-        "WOPT": VectorDefinition(description="Second Test title", type="well"),
-    }
-
-    first_expected_titles = {
+    # Test WITHOUT user defined vector definitions
+    expected_titles = {
         "FGIT": "Gas Injection Total [unit_1]",
         "WGOR:A1": "Gas-Oil Ratio, well A1 [unit_2]",
         "PER_DAY_WOPT:A1": "Average Oil Production Total Per day, well A1 [unit_4/DAY]",
         "First Expression": "First Expression [unit_1+unit_2]",
     }
+    assert expected_titles == create_vector_plot_titles_from_provider_set(
+        vector_names, expressions, TEST_PROVIDER_SET, {}
+    )
 
-    second_expected_titles = {
+    # Test WITH user defined vector definitions
+    user_defined_definitions = {
+        "FGIT": VectorDefinition(description="First Test title", type="field"),
+        "WOPT": VectorDefinition(description="Second Test title", type="well"),
+    }
+    expected_titles = {
         "FGIT": "First Test title [unit_1]",
         "WGOR:A1": "Gas-Oil Ratio, well A1 [unit_2]",
         "PER_DAY_WOPT:A1": "Average Second Test title Per day, well A1 [unit_4/DAY]",
         "First Expression": "First Expression [unit_1+unit_2]",
     }
 
-    assert first_expected_titles == create_vector_plot_titles_from_provider_set(
-        vector_names, expressions, TEST_PROVIDER_SET, {}
-    )
-    assert second_expected_titles == create_vector_plot_titles_from_provider_set(
+    assert expected_titles == create_vector_plot_titles_from_provider_set(
         vector_names, expressions, TEST_PROVIDER_SET, user_defined_definitions
     )
