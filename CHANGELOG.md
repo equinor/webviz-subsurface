@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#926](https://github.com/equinor/webviz-subsurface/pull/926) - `VolumetricAnalysis` - Fixed bug when building portables with aggregated (`csvfile_vol`) input.
 - [#929](https://github.com/equinor/webviz-subsurface/pull/929) - `TornadoWidget` - No longer skipping sensitivities with `SENSNAME="ref"` from tornado bars if there is more than one realization with `SENSNAME="ref"`.
 - [#932](https://github.com/equinor/webviz-subsurface/pull/932) - `RftPlotter` - Fixed bug related to calculated correlations returning `NaN` if the response variable has constant values.
+- [#937](https://github.com/equinor/webviz-subsurface/pull/937) - `SimulationTimeSeries` - Fixed hover info for observation trace
 
 ### Changed
 

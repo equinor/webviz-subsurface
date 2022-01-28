@@ -320,7 +320,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
         self._add_vector_traces_set_to_figure(
             {
                 vector_name: create_vector_observation_traces(
-                    vector_observations, self._observation_color, "Observation"
+                    vector_observations, color=self._observation_color
                 )
             }
         )
