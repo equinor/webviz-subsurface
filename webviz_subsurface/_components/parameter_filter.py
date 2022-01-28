@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 from uuid import uuid4
 
 import numpy as np
@@ -556,9 +556,10 @@ def _validate_slider_value(min_max: list, value: list) -> list:
     return value
 
 
-def format_marker_value(number: float) -> str:
+def format_marker_value(number: Union[float, int]) -> str:
     # In order to show up on the RangeSlider the values used for the marks
     # needs to be without trailing zeros and scientific notification
+    number = float(number)
     if number.is_integer():
         return str(int(number))
     return f"{number:.6f}".rstrip("0")
