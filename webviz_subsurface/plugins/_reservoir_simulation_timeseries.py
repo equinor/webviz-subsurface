@@ -59,9 +59,9 @@ from .._utils.vector_calculator import (
     expressions_from_config,
     get_calculated_units,
     get_calculated_vector_df,
-    get_vector_definitions_from_expressions,
     get_expression_from_name,
     get_selected_expressions,
+    get_vector_definitions_from_expressions,
     validate_predefined_expression,
 )
 from .._utils.vector_selector import (
