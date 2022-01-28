@@ -1,20 +1,18 @@
 import glob
-import json
 import pathlib
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import jsonschema
 import webviz_config
 import yaml
 from pkg_resources import DistributionNotFound, get_distribution
 
+from webviz_subsurface._utils.user_defined_vector_definitions import (
+    USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
+)
 from webviz_subsurface._utils.vector_calculator import (
     PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
     ConfigExpressionData,
-)
-
-from webviz_subsurface._utils.user_defined_vector_definitions import (
-    USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
 )
 
 try:

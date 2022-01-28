@@ -1,10 +1,8 @@
 import sys
-
 from pathlib import Path
 from typing import Dict, Optional
 
 import yaml
-
 from webviz_subsurface_components import VectorDefinition
 
 if sys.version_info >= (3, 8):

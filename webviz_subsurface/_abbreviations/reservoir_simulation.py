@@ -4,8 +4,7 @@ import warnings
 from typing import Dict, Optional, Tuple, cast
 
 import pandas as pd
-
-from webviz_subsurface_components import VectorDefinitions, VectorDefinition
+from webviz_subsurface_components import VectorDefinition, VectorDefinitions
 
 _DATA_PATH = pathlib.Path(__file__).parent.absolute() / "abbreviation_data"
 
