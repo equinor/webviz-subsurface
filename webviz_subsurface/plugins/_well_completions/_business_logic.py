@@ -119,7 +119,12 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
             # Layers missing from the zone layer mapping will be filtered out here.
             df = df.merge(df_zone_layer, on=["K1", "REAL"], how="inner")
 
-        zone_names = list(df["ZONE"].unique())
+        # Get the zone names in the correct order
+        zone_names = (
+            df.drop_duplicates(subset=["K1", "ZONE"])
+            .sort_values(by="K1")["ZONE"]
+            .unique()
+        )
 
         zone_color_mapping = {
             item["ZONE"]: item["COLOR"]
