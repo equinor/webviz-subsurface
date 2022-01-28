@@ -72,7 +72,6 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         provider_dir.mkdir(parents=True, exist_ok=True)
         (provider_dir / REL_SIM_DIR).mkdir(parents=True, exist_ok=True)
         (provider_dir / REL_OBS_DIR).mkdir(parents=True, exist_ok=True)
-        (provider_dir / REL_STAT_CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
         type_arr: List[SurfaceType] = []
         real_arr: List[int] = []

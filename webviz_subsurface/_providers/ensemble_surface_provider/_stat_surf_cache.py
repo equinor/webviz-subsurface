@@ -5,6 +5,7 @@ import pickle
 import uuid
 from pathlib import Path
 from typing import Optional
+import datetime
 
 import xtgeo
 
@@ -26,6 +27,12 @@ FILE_EXTENSION = ".gri"
 class StatSurfCache:
     def __init__(self, cache_dir: Path) -> None:
         self.cache_dir = cache_dir
+
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        placeholder_file = self.cache_dir / "placeholder.txt"
+        placeholder_file.write_text(
+            f"Placeholder -- {datetime.datetime.now()} -- {os.getpid()}"
+        )
 
     def fetch(
         self, address: StatisticalSurfaceAddress
