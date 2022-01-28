@@ -46,7 +46,7 @@ def create_vector_observation_traces(
     _legend_group = "Observation" if legend_group is None else legend_group
 
     for observation in vector_observations.get("observations", []):
-        hovertext = observation.get("comment", None)
+        hovertext = observation.get("comment")
         hovertemplate = (
             "(%{x}, %{y})<br>" + hovertext if hovertext else "(%{x}, %{y})<br>"
         )
