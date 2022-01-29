@@ -23,6 +23,7 @@ class LayoutElements:
     MAP_SIZE_BY = "map-size-by"
     MAP_COLOR_BY = "map-color-by"
     MAP_DATE_RANGE = "map-date-range"
+    MAP_ZONES = "map-zones"
     FILTER_ENSEMBLES = {
         "misfitplot": "ensembles-misfit",
         "crossplot": "ensembles-crossplot",
@@ -377,6 +378,7 @@ def map_plot_selectors(
     get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> List[html.Div]:
     ensembles = datamodel.ensembles
+    zone_names = datamodel.zone_names
     return wcc.Selectors(
         label="Map plot settings",
         children=[
@@ -433,6 +435,19 @@ def map_plot_selectors(
                     datamodel.ertdatadf["DATE_IDX"].max(),
                 ],
                 marks=datamodel.date_marks,
+            ),
+            wcc.Selectors(
+                label="Zone filter",
+                open_details=False,
+                children=[
+                    wcc.SelectWithLabel(
+                        size=min(10, len(zone_names)),
+                        id=get_uuid(LayoutElements.MAP_ZONES),
+                        options=[{"label": name, "value": name} for name in zone_names],
+                        value=zone_names,
+                        multi=True,
+                    ),
+                ],
             ),
         ],
     )
