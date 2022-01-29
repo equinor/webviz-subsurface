@@ -121,7 +121,9 @@ def plugin_callbacks(
         and updates visible and valid selections in layout"""
         if selector_values is None:
             raise PreventUpdate
+        import time
 
+        time.sleep(5)
         ctx = callback_context.triggered[0]["prop_id"]
 
         linked_selector_names = [l[0] for l in selectorlinks if l]
