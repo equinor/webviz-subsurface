@@ -65,36 +65,7 @@ def plugin_callbacks(
         )
         return {"id": uuid, "tab": tab, "selector": ALL}
 
-    @callback(
-        Output(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-        Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": ALL}, "data"),
-        State(get_uuid("tabs"), "value"),
-        State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-        State({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": ALL}, "id"),
-    )
-    def _update_color_store(
-        selector_values, tab, stored_color_settings, data_id
-    ) -> dict:
-        if selector_values is None:
-            raise PreventUpdate
-        index = [x["tab"] for x in data_id].index(tab)
-
-        stored_color_settings = (
-            stored_color_settings if stored_color_settings is not None else {}
-        )
-        for data in selector_values[index]:
-            surfaceid = (
-                get_surface_id_for_diff_surf(selector_values[index])
-                if data.get("surf_type") == "diff"
-                else get_surface_id_from_data(data)
-            )
-            stored_color_settings[surfaceid] = {
-                "colormap": data["colormap"],
-                "color_range": data["color_range"],
-            }
-
-        return stored_color_settings
-
+    # 1st callback
     @callback(
         Output({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
         Input(selections(MATCH), "value"),
@@ -129,6 +100,7 @@ def plugin_callbacks(
 
         return selections
 
+    # 2nd callback
     @callback(
         Output({"id": get_uuid(LayoutElements.SELECTORVALUES), "tab": MATCH}, "data"),
         Output(selector_wrapper(MATCH), "children"),
@@ -189,6 +161,7 @@ def plugin_callbacks(
             ],
         )
 
+    # 3rd callback
     @callback(
         Output({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
         Output(selector_wrapper(MATCH, colorselector=True), "children"),
@@ -281,6 +254,38 @@ def plugin_callbacks(
             ],
         )
 
+    # 4th callback
+    @callback(
+        Output(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
+        Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": ALL}, "data"),
+        State(get_uuid("tabs"), "value"),
+        State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
+        State({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": ALL}, "id"),
+    )
+    def _update_color_store(
+        selector_values, tab, stored_color_settings, data_id
+    ) -> dict:
+        if selector_values is None:
+            raise PreventUpdate
+        index = [x["tab"] for x in data_id].index(tab)
+
+        stored_color_settings = (
+            stored_color_settings if stored_color_settings is not None else {}
+        )
+        for data in selector_values[index]:
+            surfaceid = (
+                get_surface_id_for_diff_surf(selector_values[index])
+                if data.get("surf_type") == "diff"
+                else get_surface_id_from_data(data)
+            )
+            stored_color_settings[surfaceid] = {
+                "colormap": data["colormap"],
+                "color_range": data["color_range"],
+            }
+
+        return stored_color_settings
+
+    # 5th callback
     @callback(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
