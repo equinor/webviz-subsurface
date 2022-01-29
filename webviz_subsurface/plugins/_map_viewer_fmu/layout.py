@@ -24,29 +24,32 @@ class LayoutElements(str, Enum):
     used as combinations of LEFT/RIGHT_VIEW together with other elements to
     support pattern matching callbacks."""
 
-    MULTI = auto()
-    VIEW_DATA = auto()
-    MAINVIEW = auto()
-    SELECTED_DATA = auto()
-    SELECTIONS = auto()
-    COLORSELECTIONS = auto()
-    LINK = auto()
-    COLORLINK = auto()
-    WELLS = auto()
-    LOG = auto()
-    VIEWS = auto()
-    VIEW_COLUMNS = auto()
-    DECKGLMAP = auto()
-    RANGE_RESET = auto()
-    STORED_COLOR_SETTINGS = auto()
-    FAULTPOLYGONS = auto()
-    WRAPPER = auto()
-    COLORWRAPPER = auto()
-    RESET_BUTTOM_CLICK = auto()
-    SELECTORVALUES = auto()
-    COLORMAP_LAYER = "colormaplayer"
-    HILLSHADING_LAYER = "hillshadinglayer"
-    WELLS_LAYER = "wellayer"
+    MULTI = "multiselection"
+    MAINVIEW = "main-view"
+    SELECTIONS = "input-selections-from-layout"
+    COLORSELECTIONS = "input-color-selections-from-layout"
+    STORED_COLOR_SETTINGS = "cached-color-selections"
+    VIEW_DATA = "stored-combined-raw-selections"
+    LINKED_VIEW_DATA = "stored-selections-after-linking-set"
+    VERIFIED_VIEW_DATA = "stored-verified-selections"
+    VERIFIED_VIEW_DATA_WITH_COLORS = "stored-verified-selections-with-colors"
+
+    LINK = "link-checkbox"
+    COLORLINK = "color-link-checkbox"
+    WELLS = "wells-selector"
+    LOG = "log-selector"
+    VIEWS = "number-of-views-input"
+    VIEW_COLUMNS = "number-of-views-in-column-input"
+    DECKGLMAP = "deckgl-component"
+    RANGE_RESET = "color-range-reset-button"
+    RESET_BUTTOM_CLICK = "color-range-reset-stored-state"
+    FAULTPOLYGONS = "fault-polygon-toggle"
+    WRAPPER = "wrapper-for-selector-component"
+    COLORWRAPPER = "wrapper-for-color-selector-component"
+
+    COLORMAP_LAYER = "deckglcolormaplayer"
+    HILLSHADING_LAYER = "deckglhillshadinglayer"
+    WELLS_LAYER = "deckglwelllayer"
 
 
 class LayoutLabels(str, Enum):
@@ -255,13 +258,16 @@ class DataStores(html.Div):
         super().__init__(
             children=[
                 dcc.Store(
-                    id={"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": tab}
+                    id={
+                        "id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA_WITH_COLORS),
+                        "tab": tab,
+                    }
                 ),
                 dcc.Store(
-                    id={"id": get_uuid(LayoutElements.SELECTORVALUES), "tab": tab}
+                    id={"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": tab}
                 ),
                 dcc.Store(
-                    id={"id": get_uuid(LayoutElements.RESET_BUTTOM_CLICK), "tab": tab}
+                    id={"id": get_uuid(LayoutElements.LINKED_VIEW_DATA), "tab": tab}
                 ),
                 dcc.Store(id=get_uuid(LayoutElements.STORED_COLOR_SETTINGS)),
                 dcc.Store(id={"id": get_uuid(LayoutElements.VIEW_DATA), "tab": tab}),

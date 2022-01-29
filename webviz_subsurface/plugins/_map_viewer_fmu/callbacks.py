@@ -102,7 +102,7 @@ def plugin_callbacks(
 
     # 2nd callback
     @callback(
-        Output({"id": get_uuid(LayoutElements.SELECTORVALUES), "tab": MATCH}, "data"),
+        Output({"id": get_uuid(LayoutElements.LINKED_VIEW_DATA), "tab": MATCH}, "data"),
         Output(selector_wrapper(MATCH), "children"),
         Input({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
         Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
@@ -163,9 +163,11 @@ def plugin_callbacks(
 
     # 3rd callback
     @callback(
-        Output({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
+        Output(
+            {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": MATCH}, "data"
+        ),
         Output(selector_wrapper(MATCH, colorselector=True), "children"),
-        Input({"id": get_uuid(LayoutElements.SELECTORVALUES), "tab": MATCH}, "data"),
+        Input({"id": get_uuid(LayoutElements.LINKED_VIEW_DATA), "tab": MATCH}, "data"),
         Input(selections(MATCH, colorselector=True), "value"),
         Input(
             {"view": ALL, "id": get_uuid(LayoutElements.RANGE_RESET), "tab": MATCH},
@@ -257,10 +259,10 @@ def plugin_callbacks(
     # 4th callback
     @callback(
         Output(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-        Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": ALL}, "data"),
+        Input({"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": ALL}, "data"),
         State(get_uuid("tabs"), "value"),
         State(get_uuid(LayoutElements.STORED_COLOR_SETTINGS), "data"),
-        State({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": ALL}, "id"),
+        State({"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": ALL}, "id"),
     )
     def _update_color_store(
         selector_values, tab, stored_color_settings, data_id
@@ -290,7 +292,9 @@ def plugin_callbacks(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
-        Input({"id": get_uuid(LayoutElements.SELECTED_DATA), "tab": MATCH}, "data"),
+        Input(
+            {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": MATCH}, "data"
+        ),
         Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": MATCH}, "value"),
         State(get_uuid("tabs"), "value"),
     )
