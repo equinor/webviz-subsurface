@@ -49,7 +49,17 @@ class RftPlotterDataModel:
 
         if csvfile_rft_ert is not None:
             self.ertdatadf = read_csv(self.csvfile_rft_ert)
-            self.param_model = ParametersModel(pd.DataFrame())
+
+            # Must send a dummy dataframe to ParametersModel
+            # The ensembles will be identified as a sensrun
+            self.param_model = ParametersModel(
+                pd.DataFrame(
+                    columns=["REAL", "ENSEMBLE", "SENSNAME", "SENSCASE"],
+                    data=[
+                        [0, "ensemble", "sensname", "low"],
+                    ],
+                )
+            )
 
         if ensembles is not None:
             ens_paths = {
