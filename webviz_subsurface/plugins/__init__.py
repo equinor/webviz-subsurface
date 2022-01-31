@@ -19,7 +19,7 @@ pages:
           - iter-1
 ```
 """
-
+from ._map_long_callback_spike import MapLongCallbackSpike
 from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
 from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
