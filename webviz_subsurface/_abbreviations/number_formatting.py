@@ -91,7 +91,7 @@ def si_prefixed(
     (exp_div_3, log10_rem) = divmod(math.log10(math.fabs(number)), 3)
     # Take log 10 and then mod 3 as we have one prefix per 10^3, the divisor*3 is then the exponent
     return (
-        number_formatter(-(10 ** log10_rem), SI_PREFIXES[str(int(exp_div_3 * 3))])
+        number_formatter(-(10**log10_rem), SI_PREFIXES[str(int(exp_div_3 * 3))])
         if (number < 0)
-        else number_formatter(10 ** log10_rem, SI_PREFIXES[str(int(exp_div_3 * 3))])
+        else number_formatter(10**log10_rem, SI_PREFIXES[str(int(exp_div_3 * 3))])
     )

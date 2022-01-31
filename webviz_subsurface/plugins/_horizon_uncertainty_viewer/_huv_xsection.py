@@ -438,7 +438,7 @@ def get_zonation_points(well_df, wellname, zonation_status_file):
     for i, _ in enumerate(zone_df_xval):
         well_df["XLEN"] = well_df["X_UTME"] - zone_df_xval[i]
         well_df["YLEN"] = well_df["Y_UTMN"] - zone_df_yval[i]
-        well_df["SDIFF"] = np.sqrt(well_df.XLEN ** 2 + well_df.YLEN ** 2)
+        well_df["SDIFF"] = np.sqrt(well_df.XLEN**2 + well_df.YLEN**2)
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
         zone_rhlen[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([zone_rhlen, zone_df["TVD"]])
@@ -462,7 +462,7 @@ def get_conditional_points(well_df, wellname, well_points_file):
     for i, _ in enumerate(wellpoint_df_xval):
         well_df["XLEN"] = well_df["X_UTME"] - wellpoint_df_xval[i]
         well_df["YLEN"] = well_df["Y_UTMN"] - wellpoint_df_yval[i]
-        well_df["SDIFF"] = np.sqrt(well_df.XLEN ** 2 + well_df.YLEN ** 2)
+        well_df["SDIFF"] = np.sqrt(well_df.XLEN**2 + well_df.YLEN**2)
         index_array = np.where(well_df.SDIFF == well_df.SDIFF.min())
         cond_rhlen[i] = well_df["R_HLEN"].values[index_array[0]][0]
     return np.array([cond_rhlen, wellpoint_df["TVD"]])

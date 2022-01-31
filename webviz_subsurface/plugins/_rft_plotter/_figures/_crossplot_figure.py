@@ -41,7 +41,7 @@ def update_crossplot(df: pd.DataFrame, sizeby: str, colorby: str) -> List[wcc.Gr
             "hoverinfo": "text",
             "marker": {
                 "size": dframe[sizeby],
-                "sizeref": 2.0 * sizeref / (30.0 ** 2),
+                "sizeref": 2.0 * sizeref / (30.0**2),
                 "sizemode": "area",
                 "sizemin": 6,
                 "color": dframe[colorby],
