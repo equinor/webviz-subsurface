@@ -51,7 +51,7 @@ class RftPlotterDataModel:
             self.ertdatadf = read_csv(self.csvfile_rft_ert)
 
             # Must send a dummy dataframe to ParametersModel
-            # The ensembles will be identified as a sensrun
+            # The ensembles will be identified as sensitivity runs
             self.param_model = ParametersModel(
                 pd.DataFrame(
                     columns=["REAL", "ENSEMBLE", "SENSNAME", "SENSCASE"],
