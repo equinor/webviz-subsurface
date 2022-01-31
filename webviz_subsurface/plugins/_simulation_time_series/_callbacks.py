@@ -617,11 +617,11 @@ def plugin_callbacks(
                         vector_key = vector + "_statistics"
 
                         if is_per_interval_or_per_day_vector(vector):
-                            vector_statistics_df.loc[
-                                :, ("DATE", "")
-                            ] = vector_statistics_df.loc[:, ("DATE", "")].apply(
-                                datetime_to_intervalstr, freq=resampling_frequency
-                            )
+                            # Copy df to prevent SettingWithCopyWarning
+                            vector_statistics_df = vector_statistics_df.copy()
+                            vector_statistics_df["DATE"] = vector_statistics_df[
+                                "DATE"
+                            ].apply(datetime_to_intervalstr, freq=resampling_frequency)
                         if vector_dataframe_dict.get(vector_key) is None:
                             vector_dataframe_dict[vector_key] = vector_statistics_df
                         else:
