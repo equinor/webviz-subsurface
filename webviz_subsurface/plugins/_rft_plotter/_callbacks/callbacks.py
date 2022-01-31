@@ -36,11 +36,12 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.MAP_SIZE_BY), "value"),
         Input(get_uuid(LayoutElements.MAP_COLOR_BY), "value"),
         Input(get_uuid(LayoutElements.MAP_DATE_RANGE), "value"),
+        Input(get_uuid(LayoutElements.MAP_ZONES), "value"),
     )
     def _update_map(
-        ensemble: str, sizeby: str, colorby: str, dates: List[float]
+        ensemble: str, sizeby: str, colorby: str, dates: List[float], zones: List[str]
     ) -> Union[str, List[wcc.Graph]]:
-
+        print(zones)
         figure = MapFigure(datamodel.ertdatadf, ensemble)
         if datamodel.faultlinesdf is not None:
             figure.add_fault_lines(datamodel.faultlinesdf)
