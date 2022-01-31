@@ -504,8 +504,8 @@ def create_graph(
                         "layout": plot_layout(
                             color_by,
                             theme,
-                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            fr"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]",
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]",
                         ),
                         "data": create_traces(
                             data_frame,
@@ -527,8 +527,8 @@ def create_graph(
                         "layout": plot_layout(
                             color_by,
                             theme,
-                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            fr"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]",
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]",
                         ),
                         "data": create_traces(
                             data_frame,
@@ -550,8 +550,8 @@ def create_graph(
                         "layout": plot_layout(
                             color_by,
                             theme,
-                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            fr"[{data_frame['DENSITY_UNIT'].iloc[0]}]",
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['DENSITY_UNIT'].iloc[0]}]",
                         ),
                         "data": create_traces(
                             data_frame,
@@ -573,8 +573,8 @@ def create_graph(
                         "layout": plot_layout(
                             color_by,
                             theme,
-                            fr"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            fr"[{data_frame['RATIO_UNIT'].iloc[0]}]",
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['RATIO_UNIT'].iloc[0]}]",
                         ),
                         "data": create_traces(
                             data_frame,

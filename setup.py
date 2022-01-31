@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 TESTS_REQUIRE = [
     "bandit",
-    "black>=21.4b0",
+    "black>=22.1",
     "dash[testing]",
     "flaky",
     "isort",

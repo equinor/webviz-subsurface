@@ -61,7 +61,7 @@ class SurfaceLeafletModel:
         width, height = img.size
         if width * height >= 300 * 300:
             return 1.0
-        ratio = (1000 ** 2) / (width * height)
+        ratio = (1000**2) / (width * height)
         return np.sqrt(ratio).round(2)
 
     def get_zvalues(
