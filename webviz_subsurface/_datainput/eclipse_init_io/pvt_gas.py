@@ -305,8 +305,8 @@ class Gas(FluidImplementation):
 
         if latex:
             return (
-                fr"${{{unit_system.reservoir_volume().symbol}}}"
-                fr"/{{{unit_system.surface_volume_gas().symbol}}}$"
+                rf"${{{unit_system.reservoir_volume().symbol}}}"
+                rf"/{{{unit_system.surface_volume_gas().symbol}}}$"
             )
         return (
             f"{unit_system.reservoir_volume().symbol}"
@@ -331,8 +331,8 @@ class Gas(FluidImplementation):
 
         if latex:
             return (
-                fr"${{{unit_system.surface_volume_liquid().symbol}}}/"
-                fr"{{{unit_system.surface_volume_gas().symbol}}}$"
+                rf"${{{unit_system.surface_volume_liquid().symbol}}}/"
+                rf"{{{unit_system.surface_volume_gas().symbol}}}$"
             )
         return (
             f"{unit_system.surface_volume_liquid().symbol}/"

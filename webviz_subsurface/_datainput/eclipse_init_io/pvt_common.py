@@ -761,7 +761,7 @@ class FluidImplementation(abc.ABC):
         )
 
         if latex:
-            return fr"${unit_system.pressure().symbol}$"
+            return rf"${unit_system.pressure().symbol}$"
         return f"{unit_system.pressure().symbol}"
 
     def formation_volume_factor(
@@ -825,7 +825,7 @@ class FluidImplementation(abc.ABC):
         )
 
         if latex:
-            return fr"${unit_system.viscosity().symbol}$"
+            return rf"${unit_system.viscosity().symbol}$"
         return unit_system.viscosity().symbol
 
     def density(
@@ -859,7 +859,7 @@ class FluidImplementation(abc.ABC):
         )
 
         if latex:
-            return fr"${unit_system.density().symbol}$"
+            return rf"${unit_system.density().symbol}$"
         return unit_system.density().symbol
 
     @abc.abstractmethod

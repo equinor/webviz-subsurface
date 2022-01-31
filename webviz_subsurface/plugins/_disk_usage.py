@@ -139,7 +139,7 @@ def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
         columns={"usageKB": "usageKiB"}, inplace=True
     )  # Old format had an error (KB instead of KiB)
 
-    df["usageGiB"] = df["usageKiB"] / (1024 ** 2)
+    df["usageGiB"] = df["usageKiB"] / (1024**2)
 
     df.drop(columns="usageKiB", inplace=True)
 
@@ -203,4 +203,4 @@ def _estimate_free_space(df: pd.DataFrame, scratch_dir: Path, date: str) -> floa
                 break
 
     total_usage = df["usageGiB"].sum() if total_usage is None else total_usage
-    return shutil.disk_usage(scratch_dir).total / (1024 ** 3) - total_usage
+    return shutil.disk_usage(scratch_dir).total / (1024**3) - total_usage

@@ -40,7 +40,7 @@ class MapFigure:
                 "showlegend": False,
                 "marker": {
                     "size": df[sizeby],
-                    "sizeref": 2.0 * self.ertdf[sizeby].quantile(0.9) / (40.0 ** 2),
+                    "sizeref": 2.0 * self.ertdf[sizeby].quantile(0.9) / (40.0**2),
                     "sizemode": "area",
                     "sizemin": 6,
                     "color": df[colorby],
