@@ -41,16 +41,17 @@ class MapLongCallbackSpike(WebvizPluginABC):
         }
         self.surface_server = SurfaceServer.instance(app)
 
-        self.set_callbacks()
+        self.set_callbacks(app)
 
     @property
     def layout(self) -> html.Div:
 
         return main_layout(get_uuid=self.uuid)
 
-    def set_callbacks(self) -> None:
+    def set_callbacks(self, app) -> None:
 
         plugin_callbacks(
+            app=app,
             get_uuid=self.uuid,
             ensemble_surface_providers=self._ensemble_surface_providers,
             surface_server=self.surface_server,

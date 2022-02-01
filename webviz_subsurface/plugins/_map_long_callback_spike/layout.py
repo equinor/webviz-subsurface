@@ -32,11 +32,15 @@ def main_layout(get_uuid):
                             get_uuid, EnsembleSurfaceProviderContent()
                         ),
                     ),
+                    html.Progress(id=get_uuid("value-range-progress")),
                     html.Pre(id=get_uuid("value-range")),
                 ],
             ),
             wcc.Frame(style={"flex": 5}, children=map_view(get_uuid)),
             dcc.Store(id=get_uuid("stored-selections")),
+            dcc.Store(id=get_uuid("stored-surface-address")),
+            dcc.Store(id=get_uuid("stored-surface-meta")),
+            dcc.Store(id=get_uuid("stored-qualified-address")),
         ]
     )
 
@@ -94,4 +98,4 @@ def surface_selectors(get_uuid, provider_content: EnsembleSurfaceProviderContent
 
 
 def map_view(get_uuid):
-    return wsc.DeckGLMap(id=get_uuid("deckgl"), layers=[])
+    return wsc.DeckGLMap(id=get_uuid("deckgl"), layers=[], bounds=[0, 0, 10, 10])
