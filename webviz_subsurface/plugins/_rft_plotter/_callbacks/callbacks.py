@@ -41,8 +41,7 @@ def plugin_callbacks(
     def _update_map(
         ensemble: str, sizeby: str, colorby: str, dates: List[float], zones: List[str]
     ) -> Union[str, List[wcc.Graph]]:
-        print(zones)
-        figure = MapFigure(datamodel.ertdatadf, ensemble)
+        figure = MapFigure(datamodel.ertdatadf, ensemble, zones)
         if datamodel.faultlinesdf is not None:
             figure.add_fault_lines(datamodel.faultlinesdf)
         figure.add_misfit_plot(sizeby, colorby, dates)
