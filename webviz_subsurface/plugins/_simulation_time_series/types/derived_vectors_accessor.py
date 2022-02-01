@@ -1,7 +1,11 @@
 import abc
 from typing import List, Optional, Sequence
 
+import datetime
+
 import pandas as pd
+
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 
 
 class DerivedVectorsAccessor:
@@ -56,3 +60,56 @@ class DerivedVectorsAccessor:
             for realization in selected_realizations
             if realization in self._accessor_realizations
         ]
+
+    @staticmethod
+    def _create_relative_to_date_df(
+        df: pd.DataFrame, relative_date: datetime.datetime
+    ) -> pd.DataFrame:
+        """
+        Create dataframe where data for relative_date is subtracted from respective
+        vector data.
+
+        I.e. Subtract vector data for set of realizations at give date from vectors
+        for all dates present in dataframe.
+
+        `Input:`
+        * df - `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
+
+        NOTE: THIS IS A PROTOTYPE, WHICH IS NOT OPTIMAL FOR PERFORMANCE
+
+        TODO:
+        - OPTIMIZE CODE/ REFACTOR
+        - HOW TO HANDLE IF relative_date does not exist in one REAL? .dropna()?
+        """
+
+        _relative_date_df: pd.DataFrame = (
+            df.loc[df["DATE"] == relative_date]
+            .drop(columns=["DATE"])
+            .set_index(["REAL"])
+        )
+        if _relative_date_df.empty:
+            return _relative_date_df
+
+        output_df = pd.DataFrame(columns=df.columns)
+        for __, _df in df.groupby("DATE"):
+            # TODO: Simplify code within loop?
+            _date = _df["DATE"]
+            _date_index = pd.Index(_date)
+
+            _df.drop(columns=["DATE"], inplace=True)
+            _df.set_index(["REAL"], inplace=True)
+
+            # TODO: What if "REAL" is not matching between _relative_date_df and _df
+            res = _df.sub(_relative_date_df)  # .dropna(axis=0, how="any")
+            res.reset_index(inplace=True)
+            res.set_index(_date_index, inplace=True)
+            res.reset_index(inplace=True)
+
+            output_df = pd.concat([output_df, res], ignore_index=True)
+
+        # TODO: Drop sorting?
+        output_df.sort_values(["REAL", "DATE"], ignore_index=True, inplace=True)
+
+        make_date_column_datetime_object(output_df)
+
+        return output_df

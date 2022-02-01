@@ -281,6 +281,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             selected_resampling_frequency=self._sampling,
             selected_visualization=self._initial_visualization_selection,
             selected_vectors=self._initial_vectors,
+            selected_ensembles_dates=self._input_provider_set.all_dates(self._sampling),
         )
 
     def set_callbacks(self, app: dash.Dash) -> None:

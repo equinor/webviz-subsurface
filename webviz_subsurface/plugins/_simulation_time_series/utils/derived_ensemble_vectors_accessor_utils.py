@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional
 
+import datetime
+
 from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import Frequency
@@ -25,6 +27,7 @@ def create_derived_vectors_accessor_dict(
     expressions: List[ExpressionInfo],
     delta_ensembles: List[DeltaEnsemble],
     resampling_frequency: Optional[Frequency],
+    relative_date: Optional[datetime.datetime],
 ) -> Dict[str, DerivedVectorsAccessor]:
     """Create dictionary with ensemble name as key and derived vectors accessor
     as key.
@@ -58,11 +61,12 @@ def create_derived_vectors_accessor_dict(
     for ensemble in ensembles:
         if ensemble in provider_names:
             ensemble_data_accessor_dict[ensemble] = DerivedEnsembleVectorsAccessorImpl(
-                ensemble,
-                provider_set.provider(ensemble),
-                vectors,
-                expressions,
-                resampling_frequency,
+                name=ensemble,
+                provider=provider_set.provider(ensemble),
+                vectors=vectors,
+                expressions=expressions,
+                resampling_frequency=resampling_frequency,
+                relative_date=relative_date,
             )
         elif (
             ensemble in delta_ensemble_name_dict.keys()
@@ -81,6 +85,7 @@ def create_derived_vectors_accessor_dict(
                 vectors=vectors,
                 expressions=expressions,
                 resampling_frequency=resampling_frequency,
+                relative_date=relative_date,
             )
 
     return ensemble_data_accessor_dict

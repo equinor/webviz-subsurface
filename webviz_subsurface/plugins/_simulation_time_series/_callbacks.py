@@ -1,5 +1,7 @@
 import copy
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Set, Tuple, Union
+
+import datetime
 
 import dash
 import pandas as pd
@@ -43,7 +45,10 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
-from .utils.delta_ensemble_utils import create_delta_ensemble_names
+from .utils import datetime_utils
+from .utils.delta_ensemble_utils import (
+    create_delta_ensemble_names,
+)
 from .utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
@@ -52,6 +57,7 @@ from .utils.from_timeseries_cumulatives import (
     is_per_interval_or_per_day_vector,
 )
 from .utils.history_vectors import create_history_vectors_df
+from .utils import provider_utils
 from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from .utils.trace_line_shape import get_simulation_line_shape
 from .utils.vector_statistics import create_vectors_statistics_df
@@ -114,6 +120,10 @@ def plugin_callbacks(
                 "value",
             ),
             Input(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            ),
+            Input(
                 get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
                 "data",
             ),
@@ -141,6 +151,7 @@ def plugin_callbacks(
         resampling_frequency_value: str,
         selected_realizations: List[int],
         statistics_calculated_from_value: str,
+        relative_date_value: str,
         __graph_data_has_changed_trigger: int,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
@@ -187,6 +198,22 @@ def plugin_callbacks(
         all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
 
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
+
+        # **************************
+        #
+        # TODO: REMOVE CODE!!!!
+
+        print(relative_date_value)
+        print(relative_date)
+
+        #
+        # **************************
+
         # Prevent update if realization filtering is not affecting pure statistics plot
         # TODO: Refactor code or create utility for getting trigger ID in a "cleaner" way?
         ctx = dash.callback_context.triggered
@@ -212,6 +239,7 @@ def plugin_callbacks(
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
             resampling_frequency=resampling_frequency,
+            relative_date=relative_date,
         )
 
         # TODO: How to get metadata for calculated vector?
@@ -507,6 +535,7 @@ def plugin_callbacks(
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
             resampling_frequency=resampling_frequency,
+            relative_date=None,
         )
 
         # Dict with vector name as key and dataframe data as value
@@ -907,6 +936,157 @@ def plugin_callbacks(
         realizations_filter_text = printable_int_list(realizations)
 
         return realizations_filter_text
+
+    # @app.callback(
+    #     [
+    #         Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+    #         Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+    #     ],
+    #     [
+    #         Input(get_uuid(LayoutElements.ENSEMBLES_DROPDOWN), "value"),
+    #         Input(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+    #         Input(
+    #             get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
+    #             "value",
+    #         ),
+    #     ],
+    #     [
+    #         State(
+    #             get_uuid(LayoutElements.CREATED_DELTA_ENSEMBLES),
+    #             "data",
+    #         ),
+    #         State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+    #         State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+    #     ],
+    # )
+    # def _update_relative_date_dropdown(
+    #     selected_ensembles: List[str],
+    #     selected_realizations: List[int],
+    #     resampling_frequency_value: str,
+    #     delta_ensembles: List[DeltaEnsemble],
+    #     current_dropdown_options: List[dict],
+    #     current_dropdown_value: Optional[str],
+    # ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+    #     resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+
+    #     # Create list of all provider for selected ensembles!
+    #     selected_providers: List[EnsembleSummaryProvider] = []
+    #     delta_ensemble_name_dict = create_delta_ensemble_name_dict(delta_ensembles)
+    #     for ensemble in selected_ensembles:
+    #         if ensemble in input_provider_set.names():
+    #             selected_providers.append(input_provider_set.provider(ensemble))
+    #         elif ensemble in delta_ensemble_name_dict.keys():
+    #             provider_pair = create_delta_ensemble_provider_pair(
+    #                 delta_ensemble_name_dict[ensemble], input_provider_set
+    #             )
+    #             if provider_pair[0] not in selected_providers:
+    #                 selected_providers.append(provider_pair[0])
+    #             if provider_pair[1] not in selected_providers:
+    #                 selected_providers.append(provider_pair[1])
+
+    #     # Create intersection of dates from selected ensembles
+    #     dates_intersection: Set[datetime.datetime] = set()
+    #     for provider in selected_providers:
+    #         realizations_query = provider_utils.create_valid_realizations_query(
+    #             selected_realizations, provider
+    #         )
+    #         _dates = set(provider.dates(resampling_frequency, realizations_query))
+    #         if dates_intersection == set():
+    #             dates_intersection = _dates
+    #         else:
+    #             dates_intersection.intersection_update(_dates)
+
+    #     # Create dropdown options:
+    #     new_dropdown_options: List[Dict[str, str]] = [
+    #         {
+    #             "label": datetime_utils.to_str(_date),
+    #             "value": datetime_utils.to_str(_date),
+    #         }
+    #         for _date in sorted(list(dates_intersection))
+    #     ]
+
+    #     # Create valid dropdown value:
+    #     new_dropdown_value = next(
+    #         (
+    #             elm["value"]
+    #             for elm in new_dropdown_options
+    #             if elm["value"] == current_dropdown_value
+    #         ),
+    #         None,
+    #     )
+
+    #     # Prevent updates if unchanged
+    #     if new_dropdown_options == current_dropdown_options:
+    #         new_dropdown_options = dash.no_update
+    #     if new_dropdown_value == current_dropdown_value:
+    #         new_dropdown_value = dash.no_update
+
+    #     return new_dropdown_options, new_dropdown_value
+
+    @app.callback(
+        [
+            Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+            Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+        ],
+        [
+            Input(
+                get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                "value",
+            ),
+        ],
+        [
+            State(get_uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR), "value"),
+            State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+            State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+        ],
+    )
+    def _update_relative_date_dropdown(
+        resampling_frequency_value: str,
+        selected_realizations: List[int],
+        current_dropdown_options: List[dict],
+        current_dropdown_value: Optional[str],
+    ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+        """This callback updates dropdown based on selected resampling frequency selection
+
+        If dates are not existing for a provider, the data accessor must handle invalid
+        relative date selection!
+        """
+        resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+
+        dates_union: Set[datetime.datetime] = set()
+        for provider in input_provider_set.all_providers():
+            realizations_query = provider_utils.create_valid_realizations_query(
+                selected_realizations, provider
+            )
+            _dates = set(provider.dates(resampling_frequency, realizations_query))
+            dates_union.update(_dates)
+
+        # Create dropdown options:
+        new_dropdown_options: List[Dict[str, str]] = [
+            {
+                "label": datetime_utils.to_str(_date),
+                "value": datetime_utils.to_str(_date),
+            }
+            for _date in sorted(list(dates_union))
+        ]
+
+        # Create valid dropdown value:
+        new_dropdown_value = next(
+            (
+                elm["value"]
+                for elm in new_dropdown_options
+                if elm["value"] == current_dropdown_value
+            ),
+            None,
+        )
+
+        # Prevent updates if unchanged
+        if new_dropdown_options == current_dropdown_options:
+            new_dropdown_options = dash.no_update
+        if new_dropdown_value == current_dropdown_value:
+            new_dropdown_value = dash.no_update
+
+        return new_dropdown_options, new_dropdown_value
 
 
 def _create_delta_ensemble_table_column_data(

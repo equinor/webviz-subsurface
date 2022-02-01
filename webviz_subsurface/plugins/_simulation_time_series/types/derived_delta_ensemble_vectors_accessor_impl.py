@@ -1,5 +1,7 @@
 from typing import List, Optional, Sequence, Tuple
 
+import datetime
+
 import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 
@@ -41,6 +43,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         vectors: List[str],
         expressions: Optional[List[ExpressionInfo]] = None,
         resampling_frequency: Optional[Frequency] = None,
+        relative_date: Optional[datetime.datetime] = None,
     ) -> None:
         if len(provider_pair) != 2:
             raise ValueError(
@@ -99,6 +102,8 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             and self._provider_b.supports_resampling()
             else None
         )
+
+        self._relative_date = relative_date
 
     def __create_delta_ensemble_vectors_df(
         self,
@@ -179,8 +184,16 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                 f'Vector data handler for provider "{self._name}" has no provider vectors'
             )
 
-        return self.__create_delta_ensemble_vectors_df(
-            self._provider_vectors, self._resampling_frequency, realizations
+        if not self._relative_date:
+            return self.__create_delta_ensemble_vectors_df(
+                self._provider_vectors, self._resampling_frequency, realizations
+            )
+
+        return DerivedVectorsAccessor._create_relative_to_date_df(
+            self.__create_delta_ensemble_vectors_df(
+                self._provider_vectors, self._resampling_frequency, realizations
+            ),
+            self._relative_date,
         )
 
     def create_per_interval_and_per_day_vectors_df(
@@ -243,6 +256,11 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                     how="inner",
                 )
 
+        if self._relative_date:
+            return DerivedVectorsAccessor._create_relative_to_date_df(
+                per_interval_and_per_day_vectors_df,
+                self._relative_date,
+            )
         return per_interval_and_per_day_vectors_df
 
     def create_calculated_vectors_df(
@@ -323,4 +341,9 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
         make_date_column_datetime_object(delta_ensemble_calculated_vectors_df)
 
+        if self._relative_date:
+            return DerivedVectorsAccessor._create_relative_to_date_df(
+                delta_ensemble_calculated_vectors_df,
+                self._relative_date,
+            )
         return delta_ensemble_calculated_vectors_df

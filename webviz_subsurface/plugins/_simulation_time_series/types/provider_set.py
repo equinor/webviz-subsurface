@@ -1,3 +1,4 @@
+import datetime
 from pathlib import Path
 from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
@@ -18,6 +19,7 @@ class ProviderSet:
 
     def __init__(self, provider_dict: Dict[str, EnsembleSummaryProvider]) -> None:
         self._provider_dict = provider_dict.copy()
+        self._names = list(self._provider_dict.keys())
         self._all_vector_names = self._create_union_of_vector_names_from_providers(
             list(self._provider_dict.values())
         )
@@ -90,7 +92,7 @@ class ProviderSet:
         return self._provider_dict.items()
 
     def names(self) -> List[str]:
-        return list(self._provider_dict.keys())
+        return self._names
 
     def provider(self, name: str) -> EnsembleSummaryProvider:
         if name not in self._provider_dict.keys():
@@ -99,6 +101,39 @@ class ProviderSet:
 
     def all_providers(self) -> List[EnsembleSummaryProvider]:
         return list(self._provider_dict.values())
+
+    def dates(
+        self,
+        names: List[str],
+        resampling_frequency: Optional[Frequency],
+        realizations: Optional[Sequence[int]] = None,
+    ) -> List[datetime.datetime]:
+        # TODO: Verify method - delete or modify?
+        for name in names:
+            if name not in self._names:
+                raise ValueError(
+                    f'Provider set does not contain provider named "{name}"!'
+                )
+        _dates: Set[datetime.datetime] = set()
+        for name in names:
+            _dates.update(
+                self._provider_dict[name].dates(resampling_frequency, realizations)
+            )
+        output = list(sorted(_dates))
+        return output
+
+    def all_dates(
+        self,
+        resampling_frequency: Optional[Frequency],
+    ) -> List[datetime.datetime]:
+        # TODO: Verify method - delete or modify?
+        # Consider adding argument: realizations: Optional[Sequence[int]] = None
+        dates_union: Set[datetime.datetime] = set()
+        for provider in self.all_providers():
+            realizations_query = provider.realizations()  # TODO: None?
+            _dates = set(provider.dates(resampling_frequency, realizations_query))
+            dates_union.update(_dates)
+        return list(sorted(dates_union))
 
     def all_realizations(self) -> List[int]:
         """List with the union of realizations among providers"""
