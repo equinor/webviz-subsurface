@@ -169,9 +169,16 @@ def plugin_callbacks(app, get_uuid, ensemble_surface_providers, surface_server):
         if meta is None or qualified_address is None:
             raise PreventUpdate
         meta = SurfaceMeta(**meta)
+
         qualified_address = QualifiedAddress(**qualified_address)
-        viewport_bounds = [meta.x_min, meta.y_min, meta.x_max, meta.y_max]
+        from dataclasses import asdict
+
+        print(asdict(qualified_address))
+        assert isinstance(qualified_address, QualifiedAddress)
         image = surface_server.encode_partial_url(qualified_address)
+
+        viewport_bounds = [meta.x_min, meta.y_min, meta.x_max, meta.y_max]
+
         return [
             ColormapLayer(
                 colormap="Physics",
@@ -179,4 +186,4 @@ def plugin_callbacks(app, get_uuid, ensemble_surface_providers, surface_server):
                 bounds=meta.deckgl_bounds,
                 value_range=[meta.val_min, meta.val_max],
             ),
-        ]
+        ], viewport_bounds
