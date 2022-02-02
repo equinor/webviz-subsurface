@@ -103,6 +103,9 @@ def paramresp_callbacks(
         Input(get_uuid(LayoutElements.PARAMRESP_ZONE), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
+        Input(
+            {"id": get_uuid(LayoutElements.PARAM_FILTER), "type": "data-store"}, "data"
+        ),
     )
     # pylint: disable=too-many-locals
     def _update_paramresp_graphs(
@@ -112,6 +115,7 @@ def paramresp_callbacks(
         zone: str,
         param: Optional[str],
         corrtype: str,
+        real_filter: Dict[str, List[int]],
     ) -> List[Optional[Any]]:
         """Main callback to update the graphs:
 
@@ -130,6 +134,7 @@ def paramresp_callbacks(
             well=well,
             date=date,
             zone=zone,
+            reals=real_filter[ensemble],
             keep_all_rfts=(corrtype == "param_vs_sim"),
         )
         current_key = f"{well} {date} {zone}"
@@ -214,3 +219,11 @@ def paramresp_callbacks(
                 figure=formations_figure.figure,
             ),
         ]
+
+    @app.callback(
+        Output(get_uuid(LayoutElements.PARAM_FILTER_WRAPPER), "style"),
+        Input(get_uuid(LayoutElements.DISPLAY_PARAM_FILTER), "value"),
+    )
+    def _show_hide_parameter_filter(display_param_filter: list) -> Dict[str, Any]:
+        """Display/hide parameter filter"""
+        return {"display": "block" if display_param_filter else "none", "flex": 1}

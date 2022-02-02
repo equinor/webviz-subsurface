@@ -3,6 +3,7 @@ from typing import Callable, List
 import webviz_core_components as wcc
 from dash import html
 
+from ..._components.parameter_filter import ParameterFilter
 from ._business_logic import RftPlotterDataModel
 
 
@@ -58,6 +59,9 @@ class LayoutElements:
     PARAMRESP_FORMATIONS = "paramresp-formations"
     PARAMRESP_DATE_DROPDOWN = "paramresp-well-dropdown"
     PARAMRESP_ZONE_DROPDOWN = "paramresp-zone-dropdown"
+    PARAM_FILTER = "param-filter"
+    PARAM_FILTER_WRAPPER = "param-filter-wrapper"
+    DISPLAY_PARAM_FILTER = "display-param-filter"
 
 
 def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
@@ -235,6 +239,11 @@ def parameter_response_selector_layout(
             wcc.Selectors(
                 label="Options",
                 children=[
+                    wcc.Checklist(
+                        id=get_uuid(LayoutElements.DISPLAY_PARAM_FILTER),
+                        options=[{"label": "Show parameter filter", "value": "Show"}],
+                        value=[],
+                    ),
                     wcc.RadioItems(
                         label="Correlation options",
                         id=get_uuid(LayoutElements.PARAMRESP_CORRTYPE),
@@ -259,6 +268,12 @@ def parameter_response_selector_layout(
 def parameter_response_layout(
     get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> wcc.FlexBox:
+    df = datamodel.param_model.dataframe
+    parameter_filter = ParameterFilter(
+        uuid=get_uuid(LayoutElements.PARAM_FILTER),
+        dframe=df[df["ENSEMBLE"].isin(datamodel.param_model.mc_ensembles)].copy(),
+        reset_on_ensemble_update=True,
+    )
     return wcc.FlexBox(
         children=[
             wcc.FlexColumn(
@@ -300,6 +315,15 @@ def parameter_response_layout(
                             ],
                         ),
                     ],
+                ),
+            ),
+            wcc.FlexColumn(
+                id=get_uuid(LayoutElements.PARAM_FILTER_WRAPPER),
+                style={"display": "none"},
+                flex=1,
+                children=wcc.Frame(
+                    style={"height": "87vh"},
+                    children=parameter_filter.layout,
                 ),
             ),
         ]
