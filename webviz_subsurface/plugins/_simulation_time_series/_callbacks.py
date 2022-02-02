@@ -1070,6 +1070,14 @@ def plugin_callbacks(
             for _date in sorted(list(dates_union))
         ]
 
+        # TODO: REMOVE!! Only added to obtain invalid date for testing!
+        new_dropdown_options.append(
+            {
+                "label": datetime_utils.to_str(datetime.datetime(2264, 1, 1)),
+                "value": datetime_utils.to_str(datetime.datetime(2264, 1, 1)),
+            }
+        )
+
         # Create valid dropdown value:
         new_dropdown_value = next(
             (

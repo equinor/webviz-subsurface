@@ -201,6 +201,21 @@ def __settings_layout(
                         ],
                         value=selected_resampling_frequency,
                     ),
+                    wcc.Dropdown(
+                        label="Data relative to date",
+                        clearable=True,
+                        id=get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                        options=[
+                            {
+                                "label": datetime_utils.to_str(_date),
+                                "value": datetime_utils.to_str(_date),
+                            }
+                            for _date in sorted(selected_ensembles_dates)
+                        ],
+                        style={
+                            "margin-top": "5px",
+                        },
+                    ),
                     wcc.Label(
                         "NB: Disabled for presampled data",
                         style={"font-style": "italic"}
@@ -208,22 +223,6 @@ def __settings_layout(
                         else {"display": "none"},
                     ),
                 ],
-            ),
-            wcc.Selectors(
-                label="Data relative to date",
-                open_details=True,
-                children=wcc.Dropdown(
-                    label="Select Date",
-                    clearable=True,
-                    id=get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
-                    options=[
-                        {
-                            "label": datetime_utils.to_str(_date),
-                            "value": datetime_utils.to_str(_date),
-                        }
-                        for _date in sorted(selected_ensembles_dates)
-                    ],
-                ),
             ),
             wcc.Selectors(
                 label="Ensembles",
