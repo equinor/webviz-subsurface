@@ -61,7 +61,7 @@ class FormationFigure:
             "margin": {"t": 50},
             "hovermode": "closest",
             "uirevision": f"{well}{depth_option}",
-            "title": well,
+            "title": f"{well} at {date}",
         }
 
     @property
