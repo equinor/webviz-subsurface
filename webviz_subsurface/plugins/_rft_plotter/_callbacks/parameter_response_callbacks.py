@@ -106,6 +106,7 @@ def paramresp_callbacks(
         Input(
             {"id": get_uuid(LayoutElements.PARAM_FILTER), "type": "data-store"}, "data"
         ),
+        Input(get_uuid(LayoutElements.PARAMRESP_DEPTHOPTION), "value"),
     )
     # pylint: disable=too-many-locals
     def _update_paramresp_graphs(
@@ -116,6 +117,7 @@ def paramresp_callbacks(
         param: Optional[str],
         corrtype: str,
         real_filter: Dict[str, List[int]],
+        depth_option: str,
     ) -> List[Optional[Any]]:
         """Main callback to update the graphs:
 
@@ -183,12 +185,28 @@ def paramresp_callbacks(
             well=well,
             ertdf=datamodel.ertdatadf,
             enscolors=datamodel.enscolors,
-            depth_option="TVD",
+            depth_option=depth_option,
             date=date,
             ensembles=[ensemble],
             simdf=datamodel.simdf,
             obsdf=datamodel.obsdatadf,
         )
+
+        if formations_figure.use_ertdf:
+            return [
+                wcc.Graph(
+                    style={"height": "40vh"},
+                    config={"displayModeBar": False},
+                    figure=corrfig.figure,
+                    id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
+                ),
+                wcc.Graph(
+                    style={"height": "40vh"},
+                    config={"displayModeBar": False},
+                    figure=scatterplot.figure,
+                ),
+                f"Realization lines not available for depth option {depth_option}",
+            ]
 
         if datamodel.formations is not None:
             formations_figure.add_formation(datamodel.formationdf, fill_color=False)

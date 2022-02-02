@@ -59,6 +59,7 @@ class LayoutElements:
     PARAMRESP_FORMATIONS = "paramresp-formations"
     PARAMRESP_DATE_DROPDOWN = "paramresp-well-dropdown"
     PARAMRESP_ZONE_DROPDOWN = "paramresp-zone-dropdown"
+    PARAMRESP_DEPTHOPTION = "paramresp-depthoption"
     PARAM_FILTER = "param-filter"
     PARAM_FILTER_WRAPPER = "param-filter-wrapper"
     DISPLAY_PARAM_FILTER = "display-param-filter"
@@ -258,6 +259,21 @@ def parameter_response_selector_layout(
                             },
                         ],
                         value="sim_vs_param",
+                    ),
+                    wcc.RadioItems(
+                        label="Depth option",
+                        id=get_uuid(LayoutElements.PARAMRESP_DEPTHOPTION),
+                        options=[
+                            {
+                                "label": "TVD",
+                                "value": "TVD",
+                            },
+                            {
+                                "label": "MD",
+                                "value": "MD",
+                            },
+                        ],
+                        value="TVD",
                     ),
                 ],
             ),
