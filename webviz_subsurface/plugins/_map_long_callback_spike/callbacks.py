@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from dash import callback, Input, Output, State, ALL
 from dash.long_callback import DiskcacheLongCallbackManager
 from dash.exceptions import PreventUpdate
+import dash
 import webviz_core_components as wcc
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SimulatedSurfaceAddress,
@@ -21,6 +22,9 @@ from webviz_subsurface._providers.ensemble_surface_provider.surface_server impor
 from .layout import surface_selectors, EnsembleSurfaceProviderContent
 
 import diskcache
+
+from dacite import from_dict
+from dataclasses import asdict
 
 
 @dataclass
@@ -112,7 +116,8 @@ def plugin_callbacks(app, get_uuid, ensemble_surface_providers, surface_server):
     def _store_selections(selected_surface):
 
         if selected_surface is None:
-            raise PreventUpdate
+            return dash.no_update, dash.no_update
+
         selected_surface = SelectedSurfaceAddress(**selected_surface)
         surface_provider = ensemble_surface_providers[selected_surface.ensemble]
         if selected_surface.stype == SurfaceType.REAL:
@@ -165,27 +170,28 @@ def plugin_callbacks(app, get_uuid, ensemble_surface_providers, surface_server):
         Input(get_uuid("stored-surface-meta"), "data"),
         Input(get_uuid("stored-qualified-address"), "data"),
     )
-    def _update_deckgl(meta, qualified_address):
-        if meta is None or qualified_address is None:
+    def _update_deckgl(meta, qualified_address_data):
+        if meta is None or qualified_address_data is None:
             raise PreventUpdate
         meta = SurfaceMeta(**meta)
 
         #!! This is not a valid qualified address as nested dataclasses are not picked up.
-        qualified_address = QualifiedAddress(**qualified_address)
-        from dataclasses import asdict
+        qualified_address = from_dict(
+            data_class=QualifiedAddress, data=qualified_address_data
+        )
 
-        print(asdict(qualified_address))
-        assert isinstance(qualified_address, QualifiedAddress)
+        # print(asdict(qualified_address))
+        # assert isinstance(qualified_address, QualifiedAddress)
 
         image = surface_server.encode_partial_url(qualified_address)
 
         viewport_bounds = [meta.x_min, meta.y_min, meta.x_max, meta.y_max]
 
         return [
-            ColormapLayer(
-                colormap="Physics",
-                image=image,
-                bounds=meta.deckgl_bounds,
-                value_range=[meta.val_min, meta.val_max],
-            ),
+            {
+                "@@type": "Hillshading2DLayer",
+                "image": image,
+                "bounds": meta.deckgl_bounds,
+                "valueRange": [meta.val_min, meta.val_max],
+            },
         ], viewport_bounds
