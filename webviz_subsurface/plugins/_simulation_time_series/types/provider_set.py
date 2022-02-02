@@ -102,30 +102,11 @@ class ProviderSet:
     def all_providers(self) -> List[EnsembleSummaryProvider]:
         return list(self._provider_dict.values())
 
-    def dates(
-        self,
-        names: List[str],
-        resampling_frequency: Optional[Frequency],
-        realizations: Optional[Sequence[int]] = None,
-    ) -> List[datetime.datetime]:
-        # TODO: Verify method - delete or modify?
-        for name in names:
-            if name not in self._names:
-                raise ValueError(
-                    f'Provider set does not contain provider named "{name}"!'
-                )
-        _dates: Set[datetime.datetime] = set()
-        for name in names:
-            _dates.update(
-                self._provider_dict[name].dates(resampling_frequency, realizations)
-            )
-        output = list(sorted(_dates))
-        return output
-
     def all_dates(
         self,
         resampling_frequency: Optional[Frequency],
     ) -> List[datetime.datetime]:
+        """List with the union of dates among providers"""
         # TODO: Verify method - delete or modify?
         # Consider adding argument: realizations: Optional[Sequence[int]] = None
         dates_union: Set[datetime.datetime] = set()

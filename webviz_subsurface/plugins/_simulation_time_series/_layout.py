@@ -92,7 +92,7 @@ def main_layout(
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
-    selected_ensembles_dates: List[datetime.datetime],
+    ensembles_dates: List[datetime.datetime],
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return wcc.FlexBox(
@@ -115,7 +115,7 @@ def main_layout(
                         selected_resampling_frequency=selected_resampling_frequency,
                         selected_visualization=selected_visualization,
                         selected_vectors=selected_vectors,
-                        selected_ensembles_dates=selected_ensembles_dates,
+                        ensembles_dates=ensembles_dates,
                     ),
                 ),
             ),
@@ -160,7 +160,7 @@ def __settings_layout(
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
-    selected_ensembles_dates: List[datetime.datetime],
+    ensembles_dates: List[datetime.datetime],
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return html.Div(
@@ -210,7 +210,7 @@ def __settings_layout(
                                 "label": datetime_utils.to_str(_date),
                                 "value": datetime_utils.to_str(_date),
                             }
-                            for _date in sorted(selected_ensembles_dates)
+                            for _date in sorted(ensembles_dates)
                         ],
                         style={
                             "margin-top": "5px",
@@ -483,6 +483,7 @@ def __plot_options_layout(
         children=[
             wcc.Checklist(
                 id=get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
+                style={"display": "block"},
                 options=[
                     {"label": "History", "value": TraceOptions.HISTORY.value},
                     {
