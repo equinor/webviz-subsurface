@@ -62,7 +62,7 @@ class DerivedVectorsAccessor:
         ]
 
     @staticmethod
-    def _create_relative_to_date_df(
+    def _create_relative_to_date_df_2(
         df: pd.DataFrame, relative_date: datetime.datetime
     ) -> pd.DataFrame:
         """
@@ -81,16 +81,16 @@ class DerivedVectorsAccessor:
         - OPTIMIZE CODE/ REFACTOR
         - HOW TO HANDLE IF relative_date does not exist in one REAL? .dropna()?
         """
-
+        output_df = pd.DataFrame(columns=df.columns)
         _relative_date_df: pd.DataFrame = (
             df.loc[df["DATE"] == relative_date]
             .drop(columns=["DATE"])
             .set_index(["REAL"])
         )
         if _relative_date_df.empty:
-            return _relative_date_df
+            # TODO: Return empty dataframe with columns and no rows or input df?
+            return output_df
 
-        output_df = pd.DataFrame(columns=df.columns)
         for __, _df in df.groupby("DATE"):
             # TODO: Simplify code within loop?
             _date = _df["DATE"]
@@ -109,6 +109,56 @@ class DerivedVectorsAccessor:
 
         # TODO: Drop sorting?
         output_df.sort_values(["REAL", "DATE"], ignore_index=True, inplace=True)
+
+        make_date_column_datetime_object(output_df)
+
+        return output_df
+
+    @staticmethod
+    def _create_relative_to_date_df(
+        df: pd.DataFrame, relative_date: datetime.datetime
+    ) -> pd.DataFrame:
+        """
+        Create dataframe where data for relative_date is subtracted from respective
+        vector data.
+
+        I.e. Subtract vector data for set of realizations at give date from vectors
+        for all dates present in dataframe.
+
+        `Input:`
+        * df - `Columns` in dataframe: ["DATE", "REAL", vector1, ..., vectorN]
+
+        NOTE:
+        - THIS IS A PROTOTYPE, WHICH IS NOT OPTIMAL FOR PERFORMANCE
+        - This function assumes equal reals for each datetime - df.groupby("REAL") and .loc[_relative_date_df["REAL"] == _real]
+        needs equal realizations
+
+        TODO:
+        - OPTIMIZE CODE/ REFACTOR
+        - Possible to perform calc inplace?
+        """
+        output_df = pd.DataFrame(columns=df.columns)
+        _relative_date_df: pd.DataFrame = df.loc[df["DATE"] == relative_date].drop(
+            columns=["DATE"]
+        )
+        if _relative_date_df.empty:
+            # TODO: Return empty dataframe with columns and no rows or input df?
+            return output_df
+
+        if set(_relative_date_df["REAL"]) != set(df["REAL"]):
+            return output_df
+            # raise ValueError(f"Missing realizations for relative date {relative_date}!")
+
+        vectors = [elm for elm in df.columns if elm not in ("DATE", "REAL")]
+        for _real, _df in df.groupby("REAL"):
+            # TODO: Verify loc[_relative_date_df["REAL"] == _real] and iloc[0]
+            _relative_date_data = (
+                _relative_date_df.loc[_relative_date_df["REAL"] == _real]
+                .drop(columns=["REAL"])
+                .iloc[0]
+            )
+            _df[vectors] = _df[vectors].sub(_relative_date_data, axis=1)
+            output_df = pd.concat([output_df, _df], ignore_index=True)
 
         make_date_column_datetime_object(output_df)
 

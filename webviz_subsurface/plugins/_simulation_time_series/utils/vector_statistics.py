@@ -34,6 +34,22 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
         (set(columns_list) ^ set(["DATE", "REAL"])), key=columns_list.index
     )
 
+    # If no rows of data:
+    if vectors_df.shape[0] <= 0:
+        columns_tuples = [("DATE", "")]
+        for vector in vector_names:
+            columns_tuples.extend(
+                [
+                    (vector, StatisticsOptions.MEAN),
+                    (vector, StatisticsOptions.MIN),
+                    (vector, StatisticsOptions.MAX),
+                    (vector, StatisticsOptions.P10),
+                    (vector, StatisticsOptions.P90),
+                    (vector, StatisticsOptions.P50),
+                ]
+            )
+        return pd.DataFrame(columns=pd.MultiIndex.from_tuples(columns_tuples))
+
     # Invert p10 and p90 due to oil industry convention.
     def p10(x: List[float]) -> np.floating:
         return np.nanpercentile(x, q=90)

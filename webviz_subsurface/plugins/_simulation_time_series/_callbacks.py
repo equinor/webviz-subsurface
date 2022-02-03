@@ -318,21 +318,21 @@ def plugin_callbacks(
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
-                vectors_df_list.append(
-                    accessor.get_provider_vectors_df(realizations=realizations_query)
-                )
+                _df = accessor.get_provider_vectors_df(realizations=realizations_query)
+                if _df.shape[0] > 0:
+                    vectors_df_list.append(_df)
             if accessor.has_per_interval_and_per_day_vectors():
-                vectors_df_list.append(
-                    accessor.create_per_interval_and_per_day_vectors_df(
-                        realizations=realizations_query
-                    )
+                _df = accessor.create_per_interval_and_per_day_vectors_df(
+                    realizations=realizations_query
                 )
+                if _df.shape[0] > 0:
+                    vectors_df_list.append(_df)
             if accessor.has_vector_calculator_expressions():
-                vectors_df_list.append(
-                    accessor.create_calculated_vectors_df(
-                        realizations=realizations_query
-                    )
+                _df = accessor.create_calculated_vectors_df(
+                    realizations=realizations_query
                 )
+                if _df.shape[0] > 0:
+                    vectors_df_list.append(_df)
 
             for vectors_df in vectors_df_list:
                 if visualization == VisualizationOptions.REALIZATIONS:

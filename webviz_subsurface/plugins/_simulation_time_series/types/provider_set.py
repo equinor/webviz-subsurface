@@ -111,8 +111,7 @@ class ProviderSet:
         # Consider adding argument: realizations: Optional[Sequence[int]] = None
         dates_union: Set[datetime.datetime] = set()
         for provider in self.all_providers():
-            realizations_query = provider.realizations()  # TODO: None?
-            _dates = set(provider.dates(resampling_frequency, realizations_query))
+            _dates = set(provider.dates(resampling_frequency, None))
             dates_union.update(_dates)
         return list(sorted(dates_union))
 
