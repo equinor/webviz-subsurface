@@ -168,6 +168,12 @@ def paramresp_callbacks(
         # Correlation bar chart
         corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
         corrfig.color_bars(highlight_bar, "#007079", 0.5)
+        corr_graph = wcc.Graph(
+            style={"height": "40vh"},
+            config={"displayModeBar": False},
+            figure=corrfig.figure,
+            id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
+        )
 
         # Scatter plot
         scatterplot = ScatterPlot(
@@ -178,6 +184,13 @@ def paramresp_callbacks(
             obs_err,
             df[param].min(),
             df[param].max(),
+        )
+        scatter_graph = (
+            wcc.Graph(
+                style={"height": "40vh"},
+                config={"displayModeBar": False},
+                figure=scatterplot.figure,
+            ),
         )
 
         # Formations plot
@@ -194,17 +207,8 @@ def paramresp_callbacks(
 
         if formations_figure.use_ertdf:
             return [
-                wcc.Graph(
-                    style={"height": "40vh"},
-                    config={"displayModeBar": False},
-                    figure=corrfig.figure,
-                    id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
-                ),
-                wcc.Graph(
-                    style={"height": "40vh"},
-                    config={"displayModeBar": False},
-                    figure=scatterplot.figure,
-                ),
+                corr_graph,
+                scatter_graph,
                 f"Realization lines not available for depth option {depth_option}",
             ]
 
@@ -221,17 +225,8 @@ def paramresp_callbacks(
         formations_figure.color_by_param_value(df_value_norm, param)
 
         return [
-            wcc.Graph(
-                style={"height": "40vh"},
-                config={"displayModeBar": False},
-                figure=corrfig.figure,
-                id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
-            ),
-            wcc.Graph(
-                style={"height": "40vh"},
-                config={"displayModeBar": False},
-                figure=scatterplot.figure,
-            ),
+            corr_graph,
+            scatter_graph,
             wcc.Graph(
                 style={"height": "87vh"},
                 figure=formations_figure.figure,
