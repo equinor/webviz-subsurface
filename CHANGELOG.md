@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Added configurable user defined vector definitions.
+- [#951](https://github.com/equinor/webviz-subsurface/pull/951) - `SimulationTimeSeries` - Added calculating delta relative to date within ensemble - i.e. subtract realization values on selected date from corresponding realization values for each date in the selected vectors.
 
 
 ### Changed
