@@ -198,10 +198,19 @@ def __settings_layout(
                             for frequency in Frequency
                         ],
                         value=selected_resampling_frequency,
+                        style={
+                            "margin-bottom": "10px",
+                        },
+                    ),
+                    wcc.Label(
+                        "Data relative to date:",
+                        style={
+                            "font-style": "italic",
+                        },
                     ),
                     wcc.Dropdown(
-                        label="Data relative to date",
                         clearable=True,
+                        disabled=disable_resampling_dropdown,
                         id=get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
                         options=[
                             {
@@ -210,9 +219,6 @@ def __settings_layout(
                             }
                             for _date in sorted(ensembles_dates)
                         ],
-                        style={
-                            "margin-top": "5px",
-                        },
                     ),
                     wcc.Label(
                         "NB: Disabled for presampled data",

@@ -184,16 +184,15 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                 f'Vector data handler for provider "{self._name}" has no provider vectors'
             )
 
-        if not self._relative_date:
-            return self.__create_delta_ensemble_vectors_df(
-                self._provider_vectors, self._resampling_frequency, realizations
+        if self._relative_date:
+            return dataframe_utils.create_relative_to_date_df(
+                self.__create_delta_ensemble_vectors_df(
+                    self._provider_vectors, self._resampling_frequency, realizations
+                ),
+                self._relative_date,
             )
-
-        return dataframe_utils.create_relative_to_date_df(
-            self.__create_delta_ensemble_vectors_df(
-                self._provider_vectors, self._resampling_frequency, realizations
-            ),
-            self._relative_date,
+        return self.__create_delta_ensemble_vectors_df(
+            self._provider_vectors, self._resampling_frequency, realizations
         )
 
     def create_per_interval_and_per_day_vectors_df(

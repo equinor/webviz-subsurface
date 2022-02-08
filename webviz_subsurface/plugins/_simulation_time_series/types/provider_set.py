@@ -107,8 +107,7 @@ class ProviderSet:
         resampling_frequency: Optional[Frequency],
     ) -> List[datetime.datetime]:
         """List with the union of dates among providers"""
-        # TODO: Verify method - delete or modify?
-        # Consider adding argument: realizations: Optional[Sequence[int]] = None
+        # TODO: Adjust when providers are updated!
         dates_union: Set[datetime.datetime] = set()
         for provider in self.all_providers():
             _dates = set(provider.dates(resampling_frequency, None))

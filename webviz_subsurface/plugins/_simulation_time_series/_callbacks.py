@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import copy
 import datetime
 from typing import Callable, Dict, List, Optional, Tuple, Union
@@ -182,7 +183,7 @@ def plugin_callbacks(
             vector_calculator_expressions, vectors
         )
 
-        # Convert from string values to enum types
+        # Convert from string values to strongly typed
         visualization = VisualizationOptions(visualization_value)
         statistics_options = [
             StatisticsOptions(elm) for elm in statistics_option_values
@@ -199,16 +200,6 @@ def plugin_callbacks(
             if relative_date_value is None
             else datetime_utils.from_str(relative_date_value)
         )
-
-        # **************************
-        #
-        # TODO: REMOVE CODE!!!!
-
-        # print(relative_date_value)
-        # print(relative_date)
-
-        #
-        # **************************
 
         # Prevent update if realization filtering is not affecting pure statistics plot
         # TODO: Refactor code or create utility for getting trigger ID in a "cleaner" way?
@@ -484,6 +475,10 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
                 "data",
             ),
+            State(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            ),
         ],
     )
     def _user_download_data(
@@ -496,6 +491,7 @@ def plugin_callbacks(
         statistics_calculated_from_value: str,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
+        relative_date_value: str,
     ) -> Union[EncodedFile, str]:
         """Callback to download data based on selections
 
@@ -521,10 +517,16 @@ def plugin_callbacks(
             vector_calculator_expressions, vectors
         )
 
-        # Convert from string values to enum types
+        # Convert from string values to strongly typed
         visualization = VisualizationOptions(visualization_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
+
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
 
         # Create dict of derived vectors accessors for selected ensembles
         derived_vectors_accessors: Dict[
@@ -536,7 +538,7 @@ def plugin_callbacks(
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
             resampling_frequency=resampling_frequency,
-            relative_date=None,
+            relative_date=relative_date,
         )
 
         # Dict with vector name as key and dataframe data as value
@@ -591,6 +593,10 @@ def plugin_callbacks(
 
             # Append data for each vector
             for vectors_df in vectors_df_list:
+                # Ensure rows of data
+                if vectors_df.shape[0] <= 0:
+                    continue
+
                 vector_names = [
                     elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
                 ]
@@ -975,16 +981,6 @@ def plugin_callbacks(
             }
             for _date in dates_union
         ]
-
-        # ********************************************************************
-        # TODO: REMOVE!! Only added to obtain invalid date for testing!
-        new_relative_date_options.append(
-            {
-                "label": datetime_utils.to_str(datetime.datetime(2264, 1, 1)),
-                "value": datetime_utils.to_str(datetime.datetime(2264, 1, 1)),
-            }
-        )
-        # ********************************************************************
 
         # Create valid dropdown value:
         new_relative_date_value = next(
