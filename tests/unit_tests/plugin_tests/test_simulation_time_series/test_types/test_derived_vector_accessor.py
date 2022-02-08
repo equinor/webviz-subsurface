@@ -17,7 +17,7 @@ class DerivedVectorsAccessorMock(DerivedVectorsAccessor):
     def has_provider_vectors(self) -> bool:
         raise NotImplementedError("Method not implemented for mock!")
 
-    def has_interval_and_average_vectors(self) -> bool:
+    def has_per_interval_and_per_day_vectors(self) -> bool:
         raise NotImplementedError("Method not implemented for mock!")
 
     def has_vector_calculator_expressions(self) -> bool:
@@ -28,7 +28,7 @@ class DerivedVectorsAccessorMock(DerivedVectorsAccessor):
     ) -> pd.DataFrame:
         raise NotImplementedError("Method not implemented for mock!")
 
-    def create_interval_and_average_vectors_df(
+    def create_per_interval_and_per_day_vectors_df(
         self, realizations: Optional[Sequence[int]] = None
     ) -> pd.DataFrame:
         raise NotImplementedError("Method not implemented for mock!")

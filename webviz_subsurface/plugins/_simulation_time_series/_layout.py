@@ -1,6 +1,5 @@
-from typing import Callable, List, Optional
-
 import datetime
+from typing import Callable, List, Optional
 
 import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
@@ -18,7 +17,6 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
-
 from .utils import datetime_utils
 
 

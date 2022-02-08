@@ -1,7 +1,6 @@
 import copy
-from typing import Callable, Dict, List, Optional, Tuple, Union
-
 import datetime
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import dash
 import pandas as pd
@@ -46,9 +45,7 @@ from .types import (
     VisualizationOptions,
 )
 from .utils import datetime_utils
-from .utils.delta_ensemble_utils import (
-    create_delta_ensemble_names,
-)
+from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
@@ -207,8 +204,8 @@ def plugin_callbacks(
         #
         # TODO: REMOVE CODE!!!!
 
-        print(relative_date_value)
-        print(relative_date)
+        # print(relative_date_value)
+        # print(relative_date)
 
         #
         # **************************
@@ -318,23 +315,27 @@ def plugin_callbacks(
             # Retrive vectors data from accessor
             vectors_df_list: List[pd.DataFrame] = []
             if accessor.has_provider_vectors():
-                _df = accessor.get_provider_vectors_df(realizations=realizations_query)
-                if _df.shape[0] > 0:
-                    vectors_df_list.append(_df)
+                vectors_df_list.append(
+                    accessor.get_provider_vectors_df(realizations=realizations_query)
+                )
             if accessor.has_per_interval_and_per_day_vectors():
-                _df = accessor.create_per_interval_and_per_day_vectors_df(
-                    realizations=realizations_query
+                vectors_df_list.append(
+                    accessor.create_per_interval_and_per_day_vectors_df(
+                        realizations=realizations_query
+                    )
                 )
-                if _df.shape[0] > 0:
-                    vectors_df_list.append(_df)
             if accessor.has_vector_calculator_expressions():
-                _df = accessor.create_calculated_vectors_df(
-                    realizations=realizations_query
+                vectors_df_list.append(
+                    accessor.create_calculated_vectors_df(
+                        realizations=realizations_query
+                    )
                 )
-                if _df.shape[0] > 0:
-                    vectors_df_list.append(_df)
 
             for vectors_df in vectors_df_list:
+                # Ensure rows of data
+                if vectors_df.shape[0] <= 0:
+                    continue
+
                 if visualization == VisualizationOptions.REALIZATIONS:
                     # Show selected realizations - only filter df if realizations filter
                     # query is not performed

@@ -1,6 +1,5 @@
-from typing import List, Optional, Sequence, Tuple
-
 import datetime
+from typing import List, Optional, Sequence, Tuple
 
 import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
@@ -12,6 +11,7 @@ from webviz_subsurface._utils.vector_calculator import (
     get_selected_expressions,
 )
 
+from ..utils import dataframe_utils
 from ..utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
     get_cumulative_vector_name,
@@ -189,7 +189,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                 self._provider_vectors, self._resampling_frequency, realizations
             )
 
-        return DerivedVectorsAccessor._create_relative_to_date_df(
+        return dataframe_utils.create_relative_to_date_df(
             self.__create_delta_ensemble_vectors_df(
                 self._provider_vectors, self._resampling_frequency, realizations
             ),
@@ -257,7 +257,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                 )
 
         if self._relative_date:
-            return DerivedVectorsAccessor._create_relative_to_date_df(
+            return dataframe_utils.create_relative_to_date_df(
                 per_interval_and_per_day_vectors_df,
                 self._relative_date,
             )
@@ -342,7 +342,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         make_date_column_datetime_object(delta_ensemble_calculated_vectors_df)
 
         if self._relative_date:
-            return DerivedVectorsAccessor._create_relative_to_date_df(
+            return dataframe_utils.create_relative_to_date_df(
                 delta_ensemble_calculated_vectors_df,
                 self._relative_date,
             )

@@ -1,6 +1,5 @@
-from typing import Dict, List, Optional
-
 import datetime
+from typing import Dict, List, Optional
 
 from webviz_subsurface_components import ExpressionInfo
 
