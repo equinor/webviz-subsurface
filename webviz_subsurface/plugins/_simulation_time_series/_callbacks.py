@@ -8,15 +8,19 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
-from webviz_subsurface_components import ExpressionInfo, ExternalParseData
+from webviz_subsurface_components import (
+    ExpressionInfo,
+    ExternalParseData,
+    VectorDefinition,
+)
 
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.formatting import printable_int_list
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
-    get_custom_vector_definitions_from_expressions,
     get_selected_expressions,
+    get_vector_definitions_from_expressions,
 )
 from webviz_subsurface._utils.vector_selector import (
     is_vector_name_in_vector_selector_data,
@@ -43,7 +47,10 @@ from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
-from .utils.from_timeseries_cumulatives import datetime_to_intervalstr
+from .utils.from_timeseries_cumulatives import (
+    datetime_to_intervalstr,
+    is_per_interval_or_per_day_vector,
+)
 from .utils.history_vectors import create_history_vectors_df
 from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from .utils.trace_line_shape import get_simulation_line_shape
@@ -60,7 +67,9 @@ def plugin_callbacks(
     theme: WebvizConfigTheme,
     initial_selected_vectors: List[str],
     vector_selector_base_data: list,
+    custom_vector_definitions_base: dict,
     observations: dict,  # TODO: Improve typehint?
+    user_defined_vector_definitions: Dict[str, VectorDefinition],
     line_shape_fallback: str = "linear",
 ) -> None:
     # TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
@@ -152,7 +161,7 @@ def plugin_callbacks(
 
         NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
         graphs data has changed and re-render of graph is necessary. E.g. when a selected expression
-        from the VectorCalculatorgets edited, without changing the expression name - i.e.
+        from the VectorCalculator gets edited without changing the expression name - i.e.
         VectorSelector selectedNodes remain unchanged.
         """
         if not isinstance(selected_ensembles, list):
@@ -220,7 +229,11 @@ def plugin_callbacks(
             # Create unique colors based on all ensemble names to preserve consistent colors
             ensemble_colors = unique_colors(all_ensemble_names, theme)
             vector_titles = create_vector_plot_titles_from_provider_set(
-                vectors, selected_expressions, input_provider_set
+                vectors,
+                selected_expressions,
+                input_provider_set,
+                user_defined_vector_definitions,
+                resampling_frequency,
             )
             figure_builder = VectorSubplotBuilder(
                 vectors,
@@ -281,9 +294,9 @@ def plugin_callbacks(
                 vectors_df_list.append(
                     accessor.get_provider_vectors_df(realizations=realizations_query)
                 )
-            if accessor.has_interval_and_average_vectors():
+            if accessor.has_per_interval_and_per_day_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df(
+                    accessor.create_per_interval_and_per_day_vectors_df(
                         realizations=realizations_query
                     )
                 )
@@ -533,9 +546,9 @@ def plugin_callbacks(
                 vectors_df_list.append(
                     accessor.get_provider_vectors_df(realizations=realizations_query)
                 )
-            if accessor.has_interval_and_average_vectors():
+            if accessor.has_per_interval_and_per_day_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df(
+                    accessor.create_per_interval_and_per_day_vectors_df(
                         realizations=realizations_query
                     )
                 )
@@ -571,7 +584,7 @@ def plugin_callbacks(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
 
-                        if vector.startswith(("AVG_", "INTVL_")):
+                        if is_per_interval_or_per_day_vector(vector):
                             vector_df["DATE"] = vector_df["DATE"].apply(
                                 datetime_to_intervalstr, freq=resampling_frequency
                             )
@@ -603,12 +616,12 @@ def plugin_callbacks(
 
                         vector_key = vector + "_statistics"
 
-                        if vector.startswith(("AVG_", "INTVL_")):
-                            vector_statistics_df.loc[
-                                :, ("DATE", "")
-                            ] = vector_statistics_df.loc[:, ("DATE", "")].apply(
-                                datetime_to_intervalstr, freq=resampling_frequency
-                            )
+                        if is_per_interval_or_per_day_vector(vector):
+                            # Copy df to prevent SettingWithCopyWarning
+                            vector_statistics_df = vector_statistics_df.copy()
+                            vector_statistics_df["DATE"] = vector_statistics_df[
+                                "DATE"
+                            ].apply(datetime_to_intervalstr, freq=resampling_frequency)
                         if vector_dataframe_dict.get(vector_key) is None:
                             vector_dataframe_dict[vector_key] = vector_statistics_df
                         else:
@@ -837,9 +850,12 @@ def plugin_callbacks(
         )
 
         # Get new custom vector definitions
-        new_custom_vector_definitions = get_custom_vector_definitions_from_expressions(
+        new_custom_vector_definitions = get_vector_definitions_from_expressions(
             new_expressions
         )
+        for key, value in custom_vector_definitions_base.items():
+            if key not in new_custom_vector_definitions:
+                new_custom_vector_definitions[key] = value
 
         # Prevent updates if unchanged
         if new_custom_vector_definitions == current_custom_vector_definitions:

@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import dash
 import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
@@ -18,9 +19,13 @@ from webviz_subsurface._utils.simulation_timeseries import (
     check_and_format_observations,
     set_simulation_line_shape_fallback,
 )
+from webviz_subsurface._utils.user_defined_vector_definitions import (
+    create_user_defined_vector_descriptions_from_config,
+)
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
     expressions_from_config,
+    get_vector_definitions_from_expressions,
     validate_predefined_expression,
 )
 from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
@@ -33,11 +38,15 @@ from .types.provider_set import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
-from .utils.from_timeseries_cumulatives import rename_vector_from_cumulative
+from .utils.from_timeseries_cumulatives import (
+    create_per_day_vector_name,
+    create_per_interval_vector_name,
+)
 
 
+# pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
-    # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
+    # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
     def __init__(
         self,
         app: dash.Dash,
@@ -49,6 +58,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         options: dict = None,
         sampling: str = Frequency.MONTHLY.value,
         predefined_expressions: str = None,
+        user_defined_vector_definitions: str = None,
         line_shape_fallback: str = "linear",
     ) -> None:
         super().__init__()
@@ -61,6 +71,25 @@ class SimulationTimeSeries(WebvizPluginABC):
 
         self._webviz_settings = webviz_settings
         self._obsfile = obsfile
+
+        # Retrieve user defined vector descriptions from configuration and validate
+        self._user_defined_vector_descriptions_path = (
+            None
+            if user_defined_vector_definitions is None
+            else webviz_settings.shared_settings["user_defined_vector_definitions"][
+                user_defined_vector_definitions
+            ]
+        )
+        self._user_defined_vector_definitions: Dict[
+            str, wsc.VectorDefinition
+        ] = create_user_defined_vector_descriptions_from_config(
+            get_path(self._user_defined_vector_descriptions_path)
+            if self._user_defined_vector_descriptions_path
+            else None
+        )
+        self._custom_vector_definitions = copy.deepcopy(
+            self._user_defined_vector_definitions
+        )
 
         self._line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
@@ -76,7 +105,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._presampled_frequency = None
 
         # TODO: Update functionality when allowing raw data and csv file input
-        # NOTE: If csv is implemented-> handle/disable statistics, INTVL_, AVG_, delta
+        # NOTE: If csv is implemented-> handle/disable statistics, PER_INTVL_, PER_DAY_, delta
         # ensemble, etc.
         if ensembles is not None:
             ensemble_paths: Dict[str, Path] = {
@@ -123,16 +152,15 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._vector_selector_base_data: list = []
         self._vector_calculator_data: list = []
         for vector in non_historical_vector_names:
-            split = vector.split(":")
             add_vector_to_vector_selector_data(
                 self._vector_selector_base_data,
                 vector,
-                simulation_vector_description(split[0]),
             )
+
+            # Only vectors from providers are provided to vector calculator
             add_vector_to_vector_selector_data(
                 self._vector_calculator_data,
                 vector,
-                simulation_vector_description(split[0]),
             )
 
             metadata = (
@@ -143,24 +171,43 @@ class SimulationTimeSeries(WebvizPluginABC):
             if metadata and metadata.is_total:
                 # Get the likely name for equivalent rate vector and make dropdown options.
                 # Requires that the time_index was either defined or possible to infer.
-                avgrate_vec = rename_vector_from_cumulative(vector=vector, as_rate=True)
-                interval_vec = rename_vector_from_cumulative(
-                    vector=vector, as_rate=False
-                )
-
-                avgrate_split = avgrate_vec.split(":")
-                interval_split = interval_vec.split(":")
+                per_day_vec = create_per_day_vector_name(vector)
+                per_intvl_vec = create_per_interval_vector_name(vector)
 
                 add_vector_to_vector_selector_data(
                     self._vector_selector_base_data,
-                    avgrate_vec,
-                    f"{simulation_vector_description(avgrate_split[0])} ({avgrate_vec})",
+                    per_day_vec,
                 )
                 add_vector_to_vector_selector_data(
                     self._vector_selector_base_data,
-                    interval_vec,
-                    f"{simulation_vector_description(interval_split[0])} ({interval_vec})",
+                    per_intvl_vec,
                 )
+
+                # Add vector base to custom vector definition if not existing
+                vector_base = vector.split(":")[0]
+                _definition = wsc.VectorDefinitions.get(vector_base, None)
+                _type = _definition["type"] if _definition else "others"
+
+                per_day_vec_base = per_day_vec.split(":")[0]
+                per_intvl_vec_base = per_intvl_vec.split(":")[0]
+                if per_day_vec_base not in self._custom_vector_definitions:
+                    self._custom_vector_definitions[
+                        per_day_vec_base
+                    ] = wsc.VectorDefinition(
+                        type=_type,
+                        description=simulation_vector_description(
+                            per_day_vec_base, self._user_defined_vector_definitions
+                        ),
+                    )
+                if per_intvl_vec_base not in self._custom_vector_definitions:
+                    self._custom_vector_definitions[
+                        per_intvl_vec_base
+                    ] = wsc.VectorDefinition(
+                        type=_type,
+                        description=simulation_vector_description(
+                            per_intvl_vec_base, self._user_defined_vector_definitions
+                        ),
+                    )
 
         # Retreive predefined expressions from configuration and validate
         self._predefined_expressions_path = (
@@ -182,6 +229,17 @@ class SimulationTimeSeries(WebvizPluginABC):
             if not valid:
                 warnings.warn(message)
             expression["isValid"] = valid
+
+        # Add expressions to custom vector definitions
+        self._custom_vector_definitions_base = copy.deepcopy(
+            self._custom_vector_definitions
+        )
+        _custom_vector_definitions_from_expressions = (
+            get_vector_definitions_from_expressions(self._predefined_expressions)
+        )
+        for key, value in _custom_vector_definitions_from_expressions.items():
+            if key not in self._custom_vector_definitions:
+                self._custom_vector_definitions[key] = value
 
         # Create initial vector selector data with predefined expressions
         self._initial_vector_selector_data = copy.deepcopy(
@@ -217,6 +275,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             vector_selector_data=self._initial_vector_selector_data,
             vector_calculator_data=self._vector_calculator_data,
             predefined_expressions=self._predefined_expressions,
+            custom_vector_definitions=self._custom_vector_definitions,
             realizations=self._input_provider_set.all_realizations(),
             disable_resampling_dropdown=self._presampled_frequency is not None,
             selected_resampling_frequency=self._sampling,
@@ -234,7 +293,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             theme=self._theme,
             initial_selected_vectors=self._initial_vectors,
             vector_selector_base_data=self._vector_selector_base_data,
+            custom_vector_definitions_base=self._custom_vector_definitions_base,
             observations=self._observations,
+            user_defined_vector_definitions=self._user_defined_vector_definitions,
             line_shape_fallback=self._line_shape_fallback,
         )
 
@@ -294,7 +355,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "content": (
                     "Display up to three different time series. "
                     "Each time series will be visualized in a separate plot. "
-                    "Vectors prefixed with AVG_ and INTVL_ are calculated in the fly "
+                    "Vectors prefixed with PER_DAY_ and PER_INTVL_ are calculated in the fly "
                     "from cumulative vectors, providing average rates and interval cumulatives "
                     "over a time interval from the selected resampling frequency. Vectors "
                     "categorized as calculated are created using the Vector Calculator below."
@@ -348,4 +409,8 @@ class SimulationTimeSeries(WebvizPluginABC):
             functions.append((get_path, [{"path": self._obsfile}]))
         if self._predefined_expressions_path:
             functions.append((get_path, [{"path": self._predefined_expressions_path}]))
+        if self._user_defined_vector_descriptions_path:
+            functions.append(
+                (get_path, [{"path": self._user_defined_vector_descriptions_path}])
+            )
         return functions

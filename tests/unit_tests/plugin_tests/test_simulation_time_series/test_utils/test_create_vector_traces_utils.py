@@ -233,13 +233,13 @@ def test_render_hovertemplate() -> None:
     template_yearly = "(%{x|%Y}, %{y})<br>"
     template_default = "(%{x}, %{y})<br>"
 
-    # Test interval/average vector names
-    assert template_daily == render_hovertemplate("AVG_a", Frequency.DAILY)
-    assert template_weekly == render_hovertemplate("AVG_a", Frequency.WEEKLY)
-    assert template_monthly == render_hovertemplate("AVG_a", Frequency.MONTHLY)
-    assert template_quarterly == render_hovertemplate("AVG_a", Frequency.QUARTERLY)
-    assert template_yearly == render_hovertemplate("AVG_a", Frequency.YEARLY)
-    assert template_default == render_hovertemplate("AVG_a", None)
+    # Test PER_DAY_/PER_INTVL_ vector names
+    assert template_daily == render_hovertemplate("PER_DAY_a", Frequency.DAILY)
+    assert template_weekly == render_hovertemplate("PER_DAY_a", Frequency.WEEKLY)
+    assert template_monthly == render_hovertemplate("PER_DAY_a", Frequency.MONTHLY)
+    assert template_quarterly == render_hovertemplate("PER_DAY_a", Frequency.QUARTERLY)
+    assert template_yearly == render_hovertemplate("PER_DAY_a", Frequency.YEARLY)
+    assert template_default == render_hovertemplate("PER_DAY_a", None)
 
     # Test other vector names
     assert template_default == render_hovertemplate("Vector_a", Frequency.DAILY)

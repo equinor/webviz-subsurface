@@ -7,9 +7,6 @@ from dash import dash_table, dcc, html
 from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import Frequency
-from webviz_subsurface._utils.vector_calculator import (
-    get_custom_vector_definitions_from_expressions,
-)
 
 from .types import (
     FanchartOptions,
@@ -84,6 +81,7 @@ def main_layout(
     vector_selector_data: list,
     vector_calculator_data: list,
     predefined_expressions: List[ExpressionInfo],
+    custom_vector_definitions: dict,
     realizations: List[int],
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
@@ -104,6 +102,7 @@ def main_layout(
                         vector_selector_data=vector_selector_data,
                         vector_calculator_data=vector_calculator_data,
                         predefined_expressions=predefined_expressions,
+                        custom_vector_definitions=custom_vector_definitions,
                         realizations=realizations,
                         disable_resampling_dropdown=disable_resampling_dropdown,
                         selected_resampling_frequency=selected_resampling_frequency,
@@ -148,6 +147,7 @@ def __settings_layout(
     vector_selector_data: list,
     vector_calculator_data: list,
     predefined_expressions: List[ExpressionInfo],
+    custom_vector_definitions: dict,
     realizations: List[int],
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
@@ -241,9 +241,7 @@ def __settings_layout(
                         else selected_vectors,
                         numSecondsUntilSuggestionsAreShown=0.5,
                         lineBreakAfterTag=True,
-                        customVectorDefinitions=get_custom_vector_definitions_from_expressions(
-                            predefined_expressions
-                        ),
+                        customVectorDefinitions=custom_vector_definitions,
                     ),
                     html.Button(
                         "Vector Calculator",

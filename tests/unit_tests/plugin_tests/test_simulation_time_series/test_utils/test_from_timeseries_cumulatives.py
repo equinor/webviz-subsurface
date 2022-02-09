@@ -8,10 +8,11 @@ from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
+    create_per_day_vector_name,
+    create_per_interval_vector_name,
     datetime_to_intervalstr,
     get_cumulative_vector_name,
-    is_interval_or_average_vector,
-    rename_vector_from_cumulative,
+    is_per_interval_or_per_day_vector,
 )
 
 # *******************************************************************
@@ -38,8 +39,8 @@ INPUT_WEEKLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 1, 15), 4, 1400.0, 1350.0],
     ],
 )
-EXPECTED_INTVL_WEEKLY_DF = pd.DataFrame(
-    columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
+EXPECTED_PER_INTVL_WEEKLY_DF = pd.DataFrame(
+    columns=["DATE", "REAL", "PER_INTVL_A", "PER_INTVL_B"],
     data=[
         [datetime.datetime(2021, 1, 1),  1, 50.0,  250.0],
         [datetime.datetime(2021, 1, 8),  1, 50.0,  250.0],
@@ -52,8 +53,8 @@ EXPECTED_INTVL_WEEKLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 1, 15), 4, 0.0,   0.0  ],
     ],
 )
-EXPECTED_AVG_WEEKLY_DF = pd.DataFrame(
-    columns=["DATE", "REAL", "AVG_A", "AVG_B"],
+EXPECTED_PER_DAY_WEEKLY_DF = pd.DataFrame(
+    columns=["DATE", "REAL", "PER_DAY_A", "PER_DAY_B"],
     data=[
         [datetime.datetime(2021, 1, 1),  1, 50.0/7.0,  250.0/7.0],
         [datetime.datetime(2021, 1, 8),  1, 50.0/7.0,  250.0/7.0],
@@ -68,8 +69,8 @@ EXPECTED_AVG_WEEKLY_DF = pd.DataFrame(
 )
 # Convert date columns to datetime.datetime
 make_date_column_datetime_object(INPUT_WEEKLY_DF)
-make_date_column_datetime_object(EXPECTED_INTVL_WEEKLY_DF)
-make_date_column_datetime_object(EXPECTED_AVG_WEEKLY_DF)
+make_date_column_datetime_object(EXPECTED_PER_INTVL_WEEKLY_DF)
+make_date_column_datetime_object(EXPECTED_PER_DAY_WEEKLY_DF)
 
 # Monthly frequency - rate per day implies divide on days in month
 INPUT_MONTHLY_DF = pd.DataFrame(
@@ -86,8 +87,8 @@ INPUT_MONTHLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 3, 1), 4, 1400.0, 1350.0],
     ],
 )
-EXPECTED_INTVL_MONTHLY_DF = pd.DataFrame(
-    columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
+EXPECTED_PER_INTVL_MONTHLY_DF = pd.DataFrame(
+    columns=["DATE", "REAL", "PER_INTVL_A", "PER_INTVL_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0,  250.0],
         [datetime.datetime(2021, 2, 1), 1, 50.0,  250.0],
@@ -100,8 +101,8 @@ EXPECTED_INTVL_MONTHLY_DF = pd.DataFrame(
         [datetime.datetime(2021, 3, 1), 4, 0.0,   0.0  ],
     ],
 )
-EXPECTED_AVG_MONTHLY_DF = pd.DataFrame(
-    columns=["DATE", "REAL", "AVG_A", "AVG_B"],
+EXPECTED_PER_DAY_MONTHLY_DF = pd.DataFrame(
+    columns=["DATE", "REAL", "PER_DAY_A", "PER_DAY_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0/31.0,  250.0/31.0],
         [datetime.datetime(2021, 2, 1), 1, 50.0/28.0,  250.0/28.0],
@@ -116,8 +117,8 @@ EXPECTED_AVG_MONTHLY_DF = pd.DataFrame(
 )
 # Convert date columns to datetime.datetime
 make_date_column_datetime_object(INPUT_MONTHLY_DF)
-make_date_column_datetime_object(EXPECTED_INTVL_MONTHLY_DF)
-make_date_column_datetime_object(EXPECTED_AVG_MONTHLY_DF)
+make_date_column_datetime_object(EXPECTED_PER_INTVL_MONTHLY_DF)
+make_date_column_datetime_object(EXPECTED_PER_DAY_MONTHLY_DF)
 
 # Yearly frequency - rate per day implies divide on days in year
 INPUT_YEARLY_DF = pd.DataFrame(
@@ -134,8 +135,8 @@ INPUT_YEARLY_DF = pd.DataFrame(
         [datetime.datetime(2023, 1, 1), 4, 1400.0, 1350.0],
     ],
 )
-EXPECTED_INTVL_YEARLY_DF = pd.DataFrame(
-    columns=["DATE", "REAL", "INTVL_A", "INTVL_B"],
+EXPECTED_PER_INTVL_YEARLY_DF = pd.DataFrame(
+    columns=["DATE", "REAL", "PER_INTVL_A", "PER_INTVL_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0,  250.0],
         [datetime.datetime(2022, 1, 1), 1, 50.0,  250.0],
@@ -148,8 +149,8 @@ EXPECTED_INTVL_YEARLY_DF = pd.DataFrame(
         [datetime.datetime(2023, 1, 1), 4, 0.0,   0.0  ],
     ],
 )
-EXPECTED_AVG_YEARLY_DF = pd.DataFrame(
-    columns=["DATE", "REAL", "AVG_A", "AVG_B"],
+EXPECTED_PER_DAY_YEARLY_DF = pd.DataFrame(
+    columns=["DATE", "REAL", "PER_DAY_A", "PER_DAY_B"],
     data=[
         [datetime.datetime(2021, 1, 1), 1, 50.0/365.0,  250.0/365.0],
         [datetime.datetime(2022, 1, 1), 1, 50.0/365.0,  250.0/365.0],
@@ -164,8 +165,8 @@ EXPECTED_AVG_YEARLY_DF = pd.DataFrame(
 )
 # Convert date columns to datetime.datetime
 make_date_column_datetime_object(INPUT_YEARLY_DF)
-make_date_column_datetime_object(EXPECTED_INTVL_YEARLY_DF)
-make_date_column_datetime_object(EXPECTED_AVG_YEARLY_DF)
+make_date_column_datetime_object(EXPECTED_PER_INTVL_YEARLY_DF)
+make_date_column_datetime_object(EXPECTED_PER_DAY_YEARLY_DF)
 
 
 # Monthly frequency after year 2262 - rate per day implies divide on days in month
@@ -185,10 +186,10 @@ AFTER_2262_MONTHLY_DATES = pd.Series(
 # NOTE: datetime.datetime after year 2262 is not converted to pd.Timestamp!
 INPUT_MONTHLY_AFTER_2262_DF = INPUT_MONTHLY_DF.copy()
 INPUT_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
-EXPECTED_INTVL_MONTHLY_AFTER_2262_DF = EXPECTED_INTVL_MONTHLY_DF.copy()
-EXPECTED_INTVL_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
-EXPECTED_AVG_MONTHLY_AFTER_2262_DF = EXPECTED_AVG_MONTHLY_DF.copy()
-EXPECTED_AVG_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
+EXPECTED_PER_INTVL_MONTHLY_AFTER_2262_DF = EXPECTED_PER_INTVL_MONTHLY_DF.copy()
+EXPECTED_PER_INTVL_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
+EXPECTED_PER_DAY_MONTHLY_AFTER_2262_DF = EXPECTED_PER_DAY_MONTHLY_DF.copy()
+EXPECTED_PER_DAY_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
 
 # fmt: on
 
@@ -202,33 +203,43 @@ EXPECTED_AVG_MONTHLY_AFTER_2262_DF["DATE"] = AFTER_2262_MONTHLY_DATES
 # *******************************************************************
 
 TEST_CASES = [
-    pytest.param(INPUT_WEEKLY_DF, EXPECTED_INTVL_WEEKLY_DF, EXPECTED_AVG_WEEKLY_DF),
-    pytest.param(INPUT_MONTHLY_DF, EXPECTED_INTVL_MONTHLY_DF, EXPECTED_AVG_MONTHLY_DF),
-    pytest.param(INPUT_YEARLY_DF, EXPECTED_INTVL_YEARLY_DF, EXPECTED_AVG_YEARLY_DF),
+    pytest.param(
+        INPUT_WEEKLY_DF, EXPECTED_PER_INTVL_WEEKLY_DF, EXPECTED_PER_DAY_WEEKLY_DF
+    ),
+    pytest.param(
+        INPUT_MONTHLY_DF, EXPECTED_PER_INTVL_MONTHLY_DF, EXPECTED_PER_DAY_MONTHLY_DF
+    ),
+    pytest.param(
+        INPUT_YEARLY_DF, EXPECTED_PER_INTVL_YEARLY_DF, EXPECTED_PER_DAY_YEARLY_DF
+    ),
     pytest.param(
         INPUT_MONTHLY_AFTER_2262_DF,
-        EXPECTED_INTVL_MONTHLY_AFTER_2262_DF,
-        EXPECTED_AVG_MONTHLY_AFTER_2262_DF,
+        EXPECTED_PER_INTVL_MONTHLY_AFTER_2262_DF,
+        EXPECTED_PER_DAY_MONTHLY_AFTER_2262_DF,
     ),
 ]
 
 
-@pytest.mark.parametrize("input_df, expected_intvl_df, expected_avg_df", TEST_CASES)
+@pytest.mark.parametrize(
+    "input_df, expected_per_intvl_df, expected_per_day_df", TEST_CASES
+)
 def test_calculate_from_resampled_cumulative_vectors_df(
     input_df: pd.DataFrame,
-    expected_intvl_df: pd.DataFrame,
-    expected_avg_df: pd.DataFrame,
+    expected_per_intvl_df: pd.DataFrame,
+    expected_per_day_df: pd.DataFrame,
 ) -> None:
-    # INTVL_ due to as_rate_per_day = False
-    calculated_intvl_df = calculate_from_resampled_cumulative_vectors_df(
+    # PER_INTVL_ due to as_rate_per_day = False
+    calculated_per_intvl_df = calculate_from_resampled_cumulative_vectors_df(
         input_df, False
     )
 
-    # AVG_ due to as_rate_per_day = True
-    calculated_avg_df = calculate_from_resampled_cumulative_vectors_df(input_df, True)
+    # PER_DAY_ due to as_rate_per_day = True
+    calculated_per_day_df = calculate_from_resampled_cumulative_vectors_df(
+        input_df, True
+    )
 
-    assert_frame_equal(expected_intvl_df, calculated_intvl_df)
-    assert_frame_equal(expected_avg_df, calculated_avg_df)
+    assert_frame_equal(expected_per_intvl_df, calculated_per_intvl_df)
+    assert_frame_equal(expected_per_day_df, calculated_per_day_df)
 
 
 def test_calculate_from_resampled_cumulative_vectors_df_invalid_input() -> None:
@@ -256,22 +267,22 @@ def test_calculate_from_resampled_cumulative_vectors_df_invalid_input() -> None:
     )
 
 
-def test_is_interval_or_average_vector() -> None:
-    assert is_interval_or_average_vector("AVG_Vector")
-    assert is_interval_or_average_vector("INTVL_Vector")
-    assert not is_interval_or_average_vector("avg_Vector")
-    assert not is_interval_or_average_vector("intvl_Vector")
-    assert not is_interval_or_average_vector("vector")
+def test_is_per_interval_or_per_day_vector() -> None:
+    assert is_per_interval_or_per_day_vector("PER_DAY_Vector")
+    assert is_per_interval_or_per_day_vector("PER_INTVL_Vector")
+    assert not is_per_interval_or_per_day_vector("per_day_Vector")
+    assert not is_per_interval_or_per_day_vector("per_intvl_Vector")
+    assert not is_per_interval_or_per_day_vector("vector")
 
 
 def test_get_cumulative_vector_name() -> None:
-    assert get_cumulative_vector_name("AVG_FOPT") == "FOPT"
-    assert get_cumulative_vector_name("INTVL_FOPT") == "FOPT"
+    assert get_cumulative_vector_name("PER_DAY_FOPT") == "FOPT"
+    assert get_cumulative_vector_name("PER_INTVL_FOPT") == "FOPT"
 
-    assert get_cumulative_vector_name("AVG_FOPR") == "FOPT"
-    assert get_cumulative_vector_name("INTVL_FOPR") == "FOPR"
+    assert get_cumulative_vector_name("PER_DAY_FOPR") == "FOPR"
+    assert get_cumulative_vector_name("PER_INTVL_FOPR") == "FOPR"
 
-    # Expect ValueError when verifying vector not starting with "AVG_" or "INTVL_"
+    # Expect ValueError when verifying vector not starting with "PER_DAY_" or "PER_INTVL_"
     try:
         get_cumulative_vector_name("Test_vector")
         pytest.fail('Expected retrieving of cumulative vector name for "Test_vector"')
@@ -282,12 +293,16 @@ def test_get_cumulative_vector_name() -> None:
         )
 
 
-def test_rename_vector_from_cumulative() -> None:
-    assert rename_vector_from_cumulative("Vector", True) == "AVG_Vector"
-    assert rename_vector_from_cumulative("FOPT", True) == "AVG_FOPR"
-    assert rename_vector_from_cumulative("FOPS", True) == "AVG_FOPS"
-    assert rename_vector_from_cumulative("Vector", False) == "INTVL_Vector"
-    assert rename_vector_from_cumulative("FOPT", False) == "INTVL_FOPT"
+def test_create_per_day_vector_name() -> None:
+    assert create_per_day_vector_name("Vector") == "PER_DAY_Vector"
+    assert create_per_day_vector_name("FOPT") == "PER_DAY_FOPT"
+    assert create_per_day_vector_name("FOPS") == "PER_DAY_FOPS"
+
+
+def test_create_per_interval_vector_name() -> None:
+    assert create_per_interval_vector_name("Vector") == "PER_INTVL_Vector"
+    assert create_per_interval_vector_name("FOPT") == "PER_INTVL_FOPT"
+    assert create_per_interval_vector_name("FOPS") == "PER_INTVL_FOPS"
 
 
 def test_datetime_to_intervalstr() -> None:
