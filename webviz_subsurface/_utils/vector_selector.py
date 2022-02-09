@@ -24,7 +24,7 @@ def add_vector_to_vector_selector_data(
             }
             if not description_at_last_node and description and index == 0:
                 node_data["description"] = description
-            if description_at_last_node and description and (index == len(nodes) - 1):
+            elif description_at_last_node and description and (index == len(nodes) - 1):
                 node_data["description"] = description
 
             current_child_list.append(node_data)

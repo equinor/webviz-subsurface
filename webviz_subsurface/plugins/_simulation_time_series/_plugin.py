@@ -72,7 +72,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._webviz_settings = webviz_settings
         self._obsfile = obsfile
 
-        # Retreive user defined vector descriptions from configuration and validate
+        # Retrieve user defined vector descriptions from configuration and validate
         self._user_defined_vector_descriptions_path = (
             None
             if user_defined_vector_definitions is None
