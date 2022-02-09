@@ -19,10 +19,13 @@ def plugin_callbacks(
     @app.callback(
         Output(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
         Input(get_uuid(LayoutElements.MAP_GRAPH), "clickData"),
+        State(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
     )
-    def _get_clicked_well(click_data: Dict[str, List[Dict[str, Any]]]) -> str:
+    def _get_clicked_well(
+        click_data: Dict[str, List[Dict[str, Any]]], well: str
+    ) -> str:
         if not click_data:
-            return datamodel.well_names[0]
+            return well
         for layer in click_data["points"]:
             try:
                 return layer["customdata"]
@@ -65,7 +68,6 @@ def plugin_callbacks(
     def _update_formation_plot(
         well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
     ) -> Union[str, List[wcc.Graph]]:
-
         if not ensembles:
             return "No ensembles selected"
 
