@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+
+- [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Added configurable user defined vector definitions.
+
+### Changed
+
+- [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Changed vector annotation from "AVG_" with suffix "R" and "INTVL_" to "PER_DAY_" and "PER_INTVL_". Retrieve `VectorDefinitions` via Python-API for `webviz-subsurface-components`.
+
 ## [0.2.10] - 2022-02-09
 
 ### Fixed
@@ -17,13 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#932](https://github.com/equinor/webviz-subsurface/pull/932) - `RftPlotter` - Fixed bug related to calculated correlations returning `NaN` if the response variable has constant values.
 - [#937](https://github.com/equinor/webviz-subsurface/pull/937) - `SimulationTimeSeries` - Fixed hover info for observation trace
 
-### Added
-- [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Added configurable user defined vector definitions.
-
-
 ### Changed
 
-- [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Changed vector annotation from "AVG_" with suffix "R" and "INTVL_" to "PER_DAY_" and "PER_INTVL_". Retrieve `VectorDefinitions` via Python-API for `webviz-subsurface-components`.
 - [#924](https://github.com/equinor/webviz-subsurface/pull/924) - Improvements to the `ParameterFilter` functionality, e.g information regarding active filters and which relizatons are filtered out, and better handling of multiple ensembles. Improvements to the `ParameterAnalysis` plugin, e.g. added boxplot, fixed table formatting and update of parameters based on selected ensemble.
 - [#935](https://github.com/equinor/webviz-subsurface/pull/935) - Deprecated plugin `ReservoirSimulationTimeSeries`. This has been replaced by the faster, more flexible and less memory hungry plugin `SimulationTimeSeries`.
 
