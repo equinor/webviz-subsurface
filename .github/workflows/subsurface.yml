@@ -87,6 +87,7 @@ jobs:
         webviz docs --portable ./docs_build --skip-open
 
     - name: 🐳 Build Docker example image
+      if: matrix.python-version != '3.7'  # https://github.com/statsmodels/statsmodels/issues/8110
       run: |
         pip install --pre webviz-config-equinor
         export SOURCE_URL_WEBVIZ_SUBSURFACE=https://github.com/$GITHUB_REPOSITORY
