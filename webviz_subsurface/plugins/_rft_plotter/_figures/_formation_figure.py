@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
@@ -196,9 +195,7 @@ class FormationFigure:
 
     def add_ert_observed(self) -> None:
         df = self.ertdf
-        if df.empty:
-            logging.getLogger(__name__).warning("No observations found.")
-        else:
+        if not df.empty:
             df = filter_frame(
                 df,
                 {

@@ -241,3 +241,14 @@ def paramresp_callbacks(
     def _show_hide_parameter_filter(display_param_filter: list) -> Dict[str, Any]:
         """Display/hide parameter filter"""
         return {"display": "block" if display_param_filter else "none", "flex": 1}
+
+    @app.callback(
+        Output(
+            {"id": get_uuid(LayoutElements.PARAM_FILTER), "type": "ensemble-update"},
+            "data",
+        ),
+        Input(get_uuid(LayoutElements.PARAMRESP_ENSEMBLE), "value"),
+    )
+    def _update_parameter_filter_selection(ensemble: str):
+        """Update ensemble in parameter filter"""
+        return [ensemble]
