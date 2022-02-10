@@ -324,7 +324,7 @@ def plugin_callbacks(
 
             for vectors_df in vectors_df_list:
                 # Ensure rows of data
-                if vectors_df.shape[0] <= 0:
+                if not vectors_df.shape[0]:
                     continue
 
                 if visualization == VisualizationOptions.REALIZATIONS:
