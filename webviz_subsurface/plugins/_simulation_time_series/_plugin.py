@@ -7,6 +7,7 @@ import dash
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
@@ -28,7 +29,10 @@ from webviz_subsurface._utils.vector_calculator import (
     get_vector_definitions_from_expressions,
     validate_predefined_expression,
 )
-from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
+from webviz_subsurface._utils.vector_selector import (
+    add_vector_to_vector_selector_data,
+    is_vector_name_in_vector_selector_data,
+)
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
 from ._callbacks import plugin_callbacks
@@ -44,9 +48,23 @@ from .utils.from_timeseries_cumulatives import (
 )
 
 
+def check_deprecation_argument(options: dict) -> Optional[Tuple[str, str]]:
+    if any(elm in options for elm in ["vector1", "vector2", "vector3"]):
+        return (
+            'The usage of "vector1", "vector2" and "vector3" as user input options are deprecated. '
+            'Please replace options with list named "vectors"',
+            'The usage of "vector1", "vector2" and "vector3" as user input in options for '
+            "initially selected vectors are deprecated. Please replace user input options with "
+            'list named "vectors", where each element represent the corresponding initially '
+            "selected vector.",
+        )
+    return None
+
+
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
     # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
+    @deprecated_plugin_arguments(check_deprecation_argument)
     def __init__(
         self,
         app: dash.Dash,
@@ -253,16 +271,39 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._initial_visualization_selection = VisualizationOptions(
             plot_options.get("visualization", "statistics")
         )
-        self._initial_vectors: List[str] = []
-        if "vectors" not in plot_options:
-            self._initial_vectors = []
-        for vector in [
-            vector
-            for vector in ["vector1", "vector2", "vector3"]
-            if vector in plot_options
-        ]:
-            self._initial_vectors.append(plot_options[vector])
-        self._initial_vectors = self._initial_vectors[:3]
+
+        # Initial selected vectors - NB: {vector1, vector2, vector3} is deprecated!
+        self._initial_vectors: List[str] = plot_options.get("vectors", [])[:3]
+
+        # TODO: Remove when depretaced code is not utilized anymore
+        if "vectors" in plot_options and any(
+            elm in plot_options for elm in ["vector1", "vector2", "vector3"]
+        ):
+            warnings.warn(
+                "Using list of vectors from user input options as initially selected vectors "
+                'when providing deprecated user input options "vector1", "vector2" and "vector3" '
+                'simultaneous with new user input option list "vectors"'
+            )
+        if not self._initial_vectors:
+            self._initial_vectors = [
+                plot_options[elm]
+                for elm in ["vector1", "vector2", "vector3"]
+                if elm in plot_options
+            ][:3]
+
+        # Check if initially selected vectors exist in data, raise ValueError if not
+        missing_vectors = [
+            elm
+            for elm in self._initial_vectors
+            if not is_vector_name_in_vector_selector_data(
+                elm, self._initial_vector_selector_data
+            )
+        ]
+        if missing_vectors:
+            raise ValueError(
+                f"Cannot find: {', '.join(missing_vectors)} to plot initially in "
+                "SimulationTimeSeries. Check that the vector(s) exist in your data."
+            )
 
         # Set callbacks
         self.set_callbacks(app)
