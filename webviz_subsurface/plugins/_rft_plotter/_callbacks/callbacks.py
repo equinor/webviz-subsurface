@@ -84,6 +84,8 @@ def plugin_callbacks(
             simdf=datamodel.simdf,
             obsdf=datamodel.obsdatadf,
         )
+        if figure.ertdf.empty:
+            return ["No data matching the given filter criterias."]
 
         if datamodel.formations is not None:
             figure.add_formation(datamodel.formationdf)
