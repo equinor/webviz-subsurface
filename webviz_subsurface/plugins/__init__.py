@@ -45,7 +45,8 @@ from ._reservoir_simulation_timeseries_onebyone import (
 from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
-from ._rft_plotter import RftPlotter
+from ._resinsight_cross_section import ResInsightSurfaceWithGridCrossSection
+from ._rft_plotter.rft_plotter import RftPlotter
 from ._running_time_analysis_fmu import RunningTimeAnalysisFMU
 from ._segy_viewer import SegyViewer
 from ._seismic_misfit import SeismicMisfit

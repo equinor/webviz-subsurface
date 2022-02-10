@@ -57,6 +57,7 @@ setup(
             "ReservoirSimulationTimeSeries = webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
             "ReservoirSimulationTimeSeriesOneByOne = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
             "ReservoirSimulationTimeSeriesRegional = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
+            "ResInsightSurfaceWithGridCrossSection = webviz_subsurface.plugins:ResInsightSurfaceWithGridCrossSection",
             "RftPlotter = webviz_subsurface.plugins:RftPlotter",
             "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",
             "SegyViewer = webviz_subsurface.plugins:SegyViewer",
