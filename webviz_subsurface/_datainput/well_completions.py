@@ -3,11 +3,12 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from ecl2df import EclFiles, common
-from fmu.ensemble import ScratchEnsemble
+
+from .fmu_input import scratch_ensemble
 
 
 def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -29,22 +30,43 @@ def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
 def read_zone_layer_mapping(
     ensemble_path: str, zone_layer_mapping_file: str
-) -> Tuple[Optional[Dict[int, str]], Optional[Dict[str, str]]]:
-    """Searches for a zone layer mapping file (lyr format) on the scratch disk. \
-    If one file is found it is parsed using functionality from the ecl2df \
-    library.
+) -> pd.DataFrame:
+    """Searches for all zone->layer mapping files for an ensemble. \
+    The files should be on lyr format and can be parsed using functionality \
+    from ecl2df.
+
+    The results are returned as a dataframe with the following columns:
+    * REAL
+    * K1 (layer)
+    * ZONE
+    * COLOR
     """
-    for filename in glob.glob(f"{ensemble_path}/{zone_layer_mapping_file}"):
-        zonelist = common.parse_lyrfile(filename=filename)
+    ens = scratch_ensemble("ens", ensemble_path, filter_file="OK")
+    df_files = ens.find_files(zone_layer_mapping_file)
+    dataframes = []
+
+    if df_files.empty:
+        return pd.DataFrame()
+
+    for _, row in df_files.iterrows():
+        real = row["REAL"]
+        zonelist = common.parse_lyrfile(filename=row["FULLPATH"])
         layer_zone_mapping = common.convert_lyrlist_to_zonemap(zonelist)
+        df_real = pd.DataFrame.from_dict(
+            layer_zone_mapping, orient="index", columns=["ZONE"]
+        )
+        df_real["K1"] = df_real.index
+        df_real["REAL"] = real
         zonelist = remove_invalid_colors(zonelist)
         zone_color_mapping = {
             zonedict["name"]: zonedict["color"]
             for zonedict in zonelist
             if "color" in zonedict
         }
-        return layer_zone_mapping, zone_color_mapping
-    return None, None
+        df_real["COLOR"] = df_real["ZONE"].map(zone_color_mapping)
+        dataframes.append(df_real)
+
+    return pd.concat(dataframes)
 
 
 def read_well_attributes(
@@ -144,7 +166,8 @@ def read_well_connection_status(
     connection is SHUT and >0 if the connection is OPEN. This is independent of
     the status of the well.
     """
-    ens = ScratchEnsemble("ens", ensemble_path)
+
+    ens = scratch_ensemble("ens", ensemble_path, filter_file="OK")
     df_files = ens.find_files(well_connection_status_file)
 
     if df_files.empty:

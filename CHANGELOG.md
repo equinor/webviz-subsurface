@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Added configurable user defined vector definitions.
+- [#944](https://github.com/equinor/webviz-subsurface/pull/940) - `WellCompletions` - Added support for zone to layer mappings that are potentially different across realizations.
 
 ### Changed
 
