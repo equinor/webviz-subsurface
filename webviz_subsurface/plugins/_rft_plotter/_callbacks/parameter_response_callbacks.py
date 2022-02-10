@@ -249,6 +249,6 @@ def paramresp_callbacks(
         ),
         Input(get_uuid(LayoutElements.PARAMRESP_ENSEMBLE), "value"),
     )
-    def _update_parameter_filter_selection(ensemble: str):
+    def _update_parameter_filter_selection(ensemble: str) -> List[str]:
         """Update ensemble in parameter filter"""
         return [ensemble]
