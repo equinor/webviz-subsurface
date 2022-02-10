@@ -31,7 +31,7 @@ def test_extract_stratigraphy():
     correct and that the colors are added following the correct prioritization
     rules
     """
-    layer_zone_mapping = {1: "ZoneA.1", 2: "ZoneA.2", 3: "ZoneB.1"}
+    zone_names = ["ZoneA.1", "ZoneA.2", "ZoneB.1"]
     stratigraphy = [
         {
             "name": "ZoneA",
@@ -50,7 +50,7 @@ def test_extract_stratigraphy():
     theme_colors = ["#FFFFFF"]
 
     result = extract_stratigraphy(
-        layer_zone_mapping, stratigraphy, zone_color_mapping, theme_colors
+        zone_names, stratigraphy, zone_color_mapping, theme_colors
     )
     assert result == [
         {
