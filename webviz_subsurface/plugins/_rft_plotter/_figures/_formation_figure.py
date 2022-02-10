@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional
+import logging
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -27,21 +28,20 @@ class FormationFigure:
         ensembles: List[str],
         simdf: Optional[pd.DataFrame] = None,
         obsdf: Optional[pd.DataFrame] = None,
+        reals: Optional[Sequence] = None,
     ) -> None:
         self.well = well
-        self.simdf = (
-            filter_frame(simdf, {"WELL": well, "DATE": date, "ENSEMBLE": ensembles})
-            if simdf is not None
-            else None
-        )
+        rft_filter = {"WELL": well, "DATE": date, "ENSEMBLE": ensembles}
+        if reals is not None:
+            rft_filter.update({"REAL": reals})
+
+        self.simdf = filter_frame(simdf, rft_filter) if simdf is not None else None
         self.obsdf = (
             filter_frame(obsdf, {"WELL": well, "DATE": date})
             if obsdf is not None
             else None
         )
-        self.ertdf = filter_frame(
-            ertdf, {"WELL": well, "DATE": date, "ENSEMBLE": ensembles}
-        )
+        self.ertdf = filter_frame(ertdf, rft_filter)
         self.depth_option = depth_option
         self.enscolors = enscolors
         self.set_depth_columns()
@@ -195,33 +195,36 @@ class FormationFigure:
             )
 
     def add_ert_observed(self) -> None:
-        df = self.ertdf.copy()
-        df = filter_frame(
-            df,
-            {
-                "REAL": df["REAL"].unique()[0],
-                "ENSEMBLE": df["ENSEMBLE"].unique()[0],
-            },
-        )
-        self.traces.append(
-            {
-                "x": df["OBSERVED"],
-                "y": df["DEPTH"],
-                "type": "scatter",
-                "mode": "markers",
-                "name": "Ert observations",
-                "marker": {
-                    "color": "#2584DE",
-                    "size": 20,
+        df = self.ertdf
+        if df.empty:
+            logging.getLogger(__name__).warning("No observations found.")
+        else:
+            df = filter_frame(
+                df,
+                {
+                    "REAL": df["REAL"].unique()[0],
+                    "ENSEMBLE": df["ENSEMBLE"].unique()[0],
                 },
-                "error_x": {
-                    "type": "data",
-                    "array": df["OBSERVED_ERR"],
-                    "visible": True,
-                    "thickness": 6,
-                },
-            }
-        )
+            )
+            self.traces.append(
+                {
+                    "x": df["OBSERVED"],
+                    "y": df["DEPTH"],
+                    "type": "scatter",
+                    "mode": "markers",
+                    "name": "Ert observations",
+                    "marker": {
+                        "color": "#2584DE",
+                        "size": 20,
+                    },
+                    "error_x": {
+                        "type": "data",
+                        "array": df["OBSERVED_ERR"],
+                        "visible": True,
+                        "thickness": 6,
+                    },
+                }
+            )
 
     def add_simulated_lines(self, linetype: str) -> None:
         if self.use_ertdf:

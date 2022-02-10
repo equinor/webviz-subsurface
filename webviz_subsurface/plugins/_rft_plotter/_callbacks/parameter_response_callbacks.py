@@ -201,6 +201,7 @@ def paramresp_callbacks(
             depth_option=depth_option,
             date=date,
             ensembles=[ensemble],
+            reals=real_filter[ensemble],
             simdf=datamodel.simdf,
             obsdf=datamodel.obsdatadf,
         )
