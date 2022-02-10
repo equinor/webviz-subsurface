@@ -594,7 +594,7 @@ def plugin_callbacks(
             # Append data for each vector
             for vectors_df in vectors_df_list:
                 # Ensure rows of data
-                if vectors_df.shape[0] <= 0:
+                if not vectors_df.shape[0]:
                     continue
 
                 vector_names = [
