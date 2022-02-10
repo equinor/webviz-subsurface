@@ -31,11 +31,15 @@ def remove_invalid_colors(zonelist: List[Dict[str, Any]]) -> List[Dict[str, Any]
 def read_zone_layer_mapping(
     ensemble_path: str, zone_layer_mapping_file: str
 ) -> pd.DataFrame:
-    """Searches for a zone layer mapping file (lyr format) on the scratch disk. \
-    If one file is found it is parsed using functionality from the ecl2df \
-    library.
+    """Searches for all zone->layer mapping files for an ensemble. \
+    The files should be on lyr format and can be parsed using functionality \
+    from ecl2df.
 
-    UPDATE!
+    The results are returned as a dataframe with the following columns:
+    * REAL
+    * K1 (layer)
+    * ZONE
+    * COLOR
     """
     ens = scratch_ensemble("ens", ensemble_path, filter_file="OK")
     df_files = ens.find_files(zone_layer_mapping_file)
