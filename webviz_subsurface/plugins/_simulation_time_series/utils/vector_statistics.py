@@ -35,7 +35,7 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # If no rows of data:
-    if vectors_df.shape[0] <= 0:
+    if not vectors_df.shape[0]:
         columns_tuples = [("DATE", "")]
         for vector in vector_names:
             columns_tuples.extend(
