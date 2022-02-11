@@ -10,10 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Added configurable user defined vector definitions.
-<<<<<<< HEAD
 - [#951](https://github.com/equinor/webviz-subsurface/pull/951) - `SimulationTimeSeries` - Added calculating delta relative to date within ensemble - i.e. subtract realization values on selected date from corresponding realization values for each date in the selected vectors.
-=======
->>>>>>> updated changelog
 - [#944](https://github.com/equinor/webviz-subsurface/pull/940) - `WellCompletions` - Added support for zone to layer mappings that are potentially different across realizations.
 - [#949](https://github.com/equinor/webviz-subsurface/pull/949) - `RftPlotter` - Added zone filter to the map options and parameter filter and some more options to the parameter response tab.
 
