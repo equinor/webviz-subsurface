@@ -273,19 +273,19 @@ class SimulationTimeSeries(WebvizPluginABC):
         )
 
         # Initial selected vectors - NB: {vector1, vector2, vector3} is deprecated!
-        self._initial_vectors: List[str] = plot_options.get("vectors", [])[:3]
+        initial_vectors: List[str] = plot_options.get("vectors", [])
 
         # TODO: Remove when depretaced code is not utilized anymore
         if "vectors" in plot_options and any(
             elm in plot_options for elm in ["vector1", "vector2", "vector3"]
         ):
             warnings.warn(
-                "Using list of vectors from user input options as initially selected vectors "
-                'when providing deprecated user input options "vector1", "vector2" and "vector3" '
-                'simultaneous with new user input option list "vectors"'
+                'Providing new user input option "vectors" and deprecated user input options '
+                '"vector1", "vector2" and "vector3" simultaneously. Initially selected vectors '
+                'for plugin are set equal to new user input option "vectors".'
             )
-        if not self._initial_vectors:
-            self._initial_vectors = [
+        if not initial_vectors:
+            initial_vectors = [
                 plot_options[elm]
                 for elm in ["vector1", "vector2", "vector3"]
                 if elm in plot_options
@@ -294,7 +294,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         # Check if initially selected vectors exist in data, raise ValueError if not
         missing_vectors = [
             elm
-            for elm in self._initial_vectors
+            for elm in initial_vectors
             if not is_vector_name_in_vector_selector_data(
                 elm, self._initial_vector_selector_data
             )
@@ -304,6 +304,13 @@ class SimulationTimeSeries(WebvizPluginABC):
                 f"Cannot find: {', '.join(missing_vectors)} to plot initially in "
                 "SimulationTimeSeries. Check that the vector(s) exist in your data."
             )
+
+        if len(initial_vectors) > 3:
+            warnings.warn(
+                'User input option "vectors" contains more than 3 vectors. Only the first 3 listed '
+                "vectors are kept for initially selected vectors - the remaining are neglected."
+            )
+        self._initial_vectors = initial_vectors[:3]
 
         # Set callbacks
         self.set_callbacks(app)
