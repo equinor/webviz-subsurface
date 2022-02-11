@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Optional, Sequence
 
 import pandas as pd
@@ -9,6 +10,7 @@ from webviz_subsurface._utils.vector_calculator import (
     get_selected_expressions,
 )
 
+from ..utils import dataframe_utils
 from ..utils.from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
     get_cumulative_vector_name,
@@ -40,6 +42,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         vectors: List[str],
         expressions: Optional[List[ExpressionInfo]] = None,
         resampling_frequency: Optional[Frequency] = None,
+        relative_date: Optional[datetime.datetime] = None,
     ) -> None:
         # Initialize base class
         super().__init__(provider.realizations())
@@ -63,6 +66,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         self._resampling_frequency = (
             resampling_frequency if self._provider.supports_resampling() else None
         )
+        self._relative_date = relative_date
 
     def has_provider_vectors(self) -> bool:
         return len(self._provider_vectors) > 0
@@ -80,6 +84,14 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         if not self.has_provider_vectors():
             raise ValueError(
                 f'Vector data handler for provider "{self._name}" has no provider vectors'
+            )
+
+        if self._relative_date:
+            return dataframe_utils.create_relative_to_date_df(
+                self._provider.get_vectors_df(
+                    self._provider_vectors, self._resampling_frequency, realizations
+                ),
+                self._relative_date,
             )
         return self._provider.get_vectors_df(
             self._provider_vectors, self._resampling_frequency, realizations
@@ -145,6 +157,11 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                     how="inner",
                 )
 
+        if self._relative_date:
+            return dataframe_utils.create_relative_to_date_df(
+                per_interval_and_per_day_vectors_df,
+                self._relative_date,
+            )
         return per_interval_and_per_day_vectors_df
 
     def create_calculated_vectors_df(
@@ -184,4 +201,10 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
                     calculated_vector_df,
                     how="inner",
                 )
+
+        if self._relative_date:
+            return dataframe_utils.create_relative_to_date_df(
+                calculated_vectors_df,
+                self._relative_date,
+            )
         return calculated_vectors_df

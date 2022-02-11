@@ -1,4 +1,6 @@
+# pylint: disable=too-many-lines
 import copy
+import datetime
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import dash
@@ -43,6 +45,7 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
+from .utils import datetime_utils
 from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
@@ -114,6 +117,10 @@ def plugin_callbacks(
                 "value",
             ),
             Input(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            ),
+            Input(
                 get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
                 "data",
             ),
@@ -141,6 +148,7 @@ def plugin_callbacks(
         resampling_frequency_value: str,
         selected_realizations: List[int],
         statistics_calculated_from_value: str,
+        relative_date_value: str,
         __graph_data_has_changed_trigger: int,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
@@ -175,7 +183,7 @@ def plugin_callbacks(
             vector_calculator_expressions, vectors
         )
 
-        # Convert from string values to enum types
+        # Convert from string values to strongly typed
         visualization = VisualizationOptions(visualization_value)
         statistics_options = [
             StatisticsOptions(elm) for elm in statistics_option_values
@@ -186,6 +194,12 @@ def plugin_callbacks(
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
+
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
 
         # Prevent update if realization filtering is not affecting pure statistics plot
         # TODO: Refactor code or create utility for getting trigger ID in a "cleaner" way?
@@ -212,6 +226,7 @@ def plugin_callbacks(
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
             resampling_frequency=resampling_frequency,
+            relative_date=relative_date,
         )
 
         # TODO: How to get metadata for calculated vector?
@@ -308,6 +323,10 @@ def plugin_callbacks(
                 )
 
             for vectors_df in vectors_df_list:
+                # Ensure rows of data
+                if not vectors_df.shape[0]:
+                    continue
+
                 if visualization == VisualizationOptions.REALIZATIONS:
                     # Show selected realizations - only filter df if realizations filter
                     # query is not performed
@@ -370,6 +389,7 @@ def plugin_callbacks(
             observations
             and TraceOptions.OBSERVATIONS in trace_options
             and not is_only_delta_ensembles
+            and not relative_date
         ):
             for vector in vectors:
                 vector_observations = observations.get(vector)
@@ -378,7 +398,7 @@ def plugin_callbacks(
 
         # Add history trace
         # TODO: Improve when new history vector input format is in place
-        if TraceOptions.HISTORY in trace_options:
+        if TraceOptions.HISTORY in trace_options and not relative_date:
             if (
                 isinstance(figure_builder, VectorSubplotBuilder)
                 and len(selected_input_providers.names()) > 0
@@ -455,6 +475,10 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
                 "data",
             ),
+            State(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            ),
         ],
     )
     def _user_download_data(
@@ -467,6 +491,7 @@ def plugin_callbacks(
         statistics_calculated_from_value: str,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
+        relative_date_value: str,
     ) -> Union[EncodedFile, str]:
         """Callback to download data based on selections
 
@@ -492,10 +517,16 @@ def plugin_callbacks(
             vector_calculator_expressions, vectors
         )
 
-        # Convert from string values to enum types
+        # Convert from string values to strongly typed
         visualization = VisualizationOptions(visualization_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
+
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
 
         # Create dict of derived vectors accessors for selected ensembles
         derived_vectors_accessors: Dict[
@@ -507,6 +538,7 @@ def plugin_callbacks(
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
             resampling_frequency=resampling_frequency,
+            relative_date=relative_date,
         )
 
         # Dict with vector name as key and dataframe data as value
@@ -561,6 +593,10 @@ def plugin_callbacks(
 
             # Append data for each vector
             for vectors_df in vectors_df_list:
+                # Ensure rows of data
+                if not vectors_df.shape[0]:
+                    continue
+
                 vector_names = [
                     elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
                 ]
@@ -907,6 +943,92 @@ def plugin_callbacks(
         realizations_filter_text = printable_int_list(realizations)
 
         return realizations_filter_text
+
+    @app.callback(
+        [
+            Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+            Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+        ],
+        [
+            Input(
+                get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                "value",
+            ),
+        ],
+        [
+            State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+            State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+        ],
+    )
+    def _update_relative_date_dropdown(
+        resampling_frequency_value: str,
+        current_relative_date_options: List[dict],
+        current_relative_date_value: Optional[str],
+    ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+        """This callback updates dropdown based on selected resampling frequency selection
+
+        If dates are not existing for a provider, the data accessor must handle invalid
+        relative date selection!
+        """
+        resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+        dates_union = input_provider_set.all_dates(resampling_frequency)
+
+        # Create dropdown options:
+        new_relative_date_options: List[Dict[str, str]] = [
+            {
+                "label": datetime_utils.to_str(_date),
+                "value": datetime_utils.to_str(_date),
+            }
+            for _date in dates_union
+        ]
+
+        # Create valid dropdown value:
+        new_relative_date_value = next(
+            (
+                elm["value"]
+                for elm in new_relative_date_options
+                if elm["value"] == current_relative_date_value
+            ),
+            None,
+        )
+
+        # Prevent updates if unchanged
+        if new_relative_date_options == current_relative_date_options:
+            new_relative_date_options = dash.no_update
+        if new_relative_date_value == current_relative_date_value:
+            new_relative_date_value = dash.no_update
+
+        return new_relative_date_options, new_relative_date_value
+
+    @app.callback(
+        [
+            Output(
+                get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
+                "style",
+            ),
+        ],
+        [
+            Input(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            )
+        ],
+    )
+    def _update_trace_options_layout(
+        relative_date_value: str,
+    ) -> List[dict]:
+        """Hide trace options (History and Observation) when relative date is selected"""
+
+        # Convert to Optional[datetime.datime]
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
+
+        if relative_date:
+            return [{"display": "none"}]
+        return [{"display": "block"}]
 
 
 def _create_delta_ensemble_table_column_data(

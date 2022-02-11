@@ -54,6 +54,7 @@ def test_create_derived_vectors_accessor_dict() -> None:
         expressions=[],
         delta_ensembles=delta_ensembles,
         resampling_frequency=None,
+        relative_date=None,
     )
 
     assert len(created_result) == len(ensembles)

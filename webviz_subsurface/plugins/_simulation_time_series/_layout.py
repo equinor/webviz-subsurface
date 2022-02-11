@@ -1,3 +1,4 @@
+import datetime
 from typing import Callable, List, Optional
 
 import dash_bootstrap_components as dbc
@@ -16,6 +17,7 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
+from .utils import datetime_utils
 
 
 # pylint: disable=too-few-public-methods
@@ -50,6 +52,8 @@ class LayoutElements:
     CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN = (
         "created_delta_ensemble_names_table_column"
     )
+
+    RELATIVE_DATE_DROPDOWN = "relative_date_dropdown"
 
     VISUALIZATION_RADIO_ITEMS = "visualization_radio_items"
 
@@ -86,6 +90,7 @@ def main_layout(
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
+    ensembles_dates: List[datetime.datetime],
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return wcc.FlexBox(
@@ -108,6 +113,7 @@ def main_layout(
                         selected_resampling_frequency=selected_resampling_frequency,
                         selected_visualization=selected_visualization,
                         selected_vectors=selected_vectors,
+                        ensembles_dates=ensembles_dates,
                     ),
                 ),
             ),
@@ -152,6 +158,7 @@ def __settings_layout(
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
+    ensembles_dates: List[datetime.datetime],
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return html.Div(
@@ -191,6 +198,27 @@ def __settings_layout(
                             for frequency in Frequency
                         ],
                         value=selected_resampling_frequency,
+                        style={
+                            "margin-bottom": "10px",
+                        },
+                    ),
+                    wcc.Label(
+                        "Data relative to date:",
+                        style={
+                            "font-style": "italic",
+                        },
+                    ),
+                    wcc.Dropdown(
+                        clearable=True,
+                        disabled=disable_resampling_dropdown,
+                        id=get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                        options=[
+                            {
+                                "label": datetime_utils.to_str(_date),
+                                "value": datetime_utils.to_str(_date),
+                            }
+                            for _date in sorted(ensembles_dates)
+                        ],
                     ),
                     wcc.Label(
                         "NB: Disabled for presampled data",
@@ -459,6 +487,7 @@ def __plot_options_layout(
         children=[
             wcc.Checklist(
                 id=get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
+                style={"display": "block"},
                 options=[
                     {"label": "History", "value": TraceOptions.HISTORY.value},
                     {
