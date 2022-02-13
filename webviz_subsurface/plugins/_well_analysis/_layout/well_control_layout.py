@@ -23,10 +23,7 @@ def well_control_tab(
 ) -> wcc.FlexBox:
     return wcc.FlexBox(
         children=[
-            wcc.Frame(
-                style={"flex": 1, "height": "87vh"},
-                children=controls(get_uuid, data_models),
-            ),
+            controls(get_uuid, data_models),
             wcc.Frame(
                 style={"flex": 4, "height": "87vh"},
                 color="white",
@@ -40,7 +37,7 @@ def well_control_tab(
 
 def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Frame:
     return wcc.Frame(
-        style={"height": "87vh"},
+        style={"flex": 1, "height": "87vh"},
         children=[
             wcc.Selectors(
                 label="Selectors",
