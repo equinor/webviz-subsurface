@@ -8,7 +8,8 @@ from webviz_config import WebvizConfigTheme
 
 from .._layout import WellControlLayoutElements
 from .._ensemble_data import EnsembleData
-# from ..figures import create_figure
+from .._figures import create_well_control_figure
+
 # from ..utils.utils import get_node_info
 
 
