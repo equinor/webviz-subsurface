@@ -10,7 +10,7 @@ from ..._providers import (
     Frequency,
 )
 
-from ._callbacks import plugin_callbacks
+from ._callbacks import well_overview_callbacks, well_control_callbacks
 from ._ensemble_data import EnsembleData
 from ._layout import main_layout
 
@@ -66,4 +66,5 @@ class WellAnalysis(WebvizPluginABC):
         return main_layout(self.uuid, self._data_models)
 
     def set_callbacks(self, app: Dash) -> None:
-        plugin_callbacks(app, self.uuid, self._data_models)
+        well_overview_callbacks(app, self.uuid, self._data_models)
+        well_control_callbacks(app, self.uuid, self._data_models)

@@ -4,11 +4,11 @@ import webviz_core_components as wcc
 from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from .._layout import WellControlLayoutElements, WellOverviewLayoutElements
+from .._layout import WellOverviewLayoutElements
 from .._ensemble_data import EnsembleData
 
 
-def plugin_callbacks(
+def well_overview_callbacks(
     app: Dash, get_uuid: Callable, data_models: Dict[str, EnsembleData]
 ) -> None:
     print("do nothing")
