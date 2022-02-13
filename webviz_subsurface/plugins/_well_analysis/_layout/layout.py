@@ -1,9 +1,9 @@
-from typing import Callable, List
+from typing import Callable, Dict, List
 
 import webviz_core_components as wcc
 from dash import html
 
-# from ._business_logic import RftPlotterDataModel
+from .._ensemble_data import EnsembleData
 
 
 # pylint: disable = too-few-public-methods
@@ -11,7 +11,7 @@ class LayoutElements:
     WELL_OVERVIEW_GRAPH = "well-overview-graph"
 
 
-def main_layout(get_uuid: Callable) -> wcc.Tabs:
+def main_layout(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Tabs:
     """Main layout"""
     tabs = [
         wcc.Tab(label="Well Overview", children=well_overview_tab(get_uuid)),
