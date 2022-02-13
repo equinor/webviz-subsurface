@@ -4,7 +4,7 @@ import webviz_core_components as wcc
 from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from .._layout import LayoutElements
+from .._layout import WellControlLayoutElements, WellOverviewLayoutElements
 from .._ensemble_data import EnsembleData
 
 
