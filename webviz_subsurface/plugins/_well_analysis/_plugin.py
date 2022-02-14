@@ -4,13 +4,13 @@ import webviz_core_components as wcc
 from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
 
+from ..._models import GruptreeModel
 from ..._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
     Frequency,
 )
-
-from ._callbacks import well_overview_callbacks, well_control_callbacks
+from ._callbacks import well_control_callbacks, well_overview_callbacks
 from ._ensemble_data import EnsembleData
 from ._layout import main_layout
 
@@ -27,6 +27,7 @@ class WellAnalysis(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: Optional[List[str]] = None,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
+        gruptree_file: str = "share/results/tables/gruptree.csv",
         time_index: str = "yearly",
     ) -> None:
         super().__init__()
@@ -54,7 +55,9 @@ class WellAnalysis(WebvizPluginABC):
                     str(ens_path), rel_file_pattern, sampling
                 )
             )
-            self._data_models[ens_name] = EnsembleData(provider)
+            self._data_models[ens_name] = EnsembleData(
+                provider, GruptreeModel(ens_name, ens_path, gruptree_file)
+            )
 
         self.set_callbacks(app)
 

@@ -5,16 +5,18 @@ import numpy as np
 import pandas as pd
 from webviz_config.common_cache import CACHE
 
+from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
 
 class EnsembleData:
     """This class holds the summary data provider."""
 
-    def __init__(self, provider: EnsembleSummaryProvider):
+    def __init__(
+        self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
+    ):
 
         self._provider = provider
-
 
 
 def get_node_info(
