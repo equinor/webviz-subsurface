@@ -25,7 +25,7 @@ def well_control_tab(
         children=[
             controls(get_uuid, data_models),
             wcc.Frame(
-                style={"flex": 4, "height": "87vh"},
+                style={"flex": 5, "height": "87vh"},
                 color="white",
                 highlight=False,
                 id=get_uuid(WellControlLayoutElements.GRAPH),
@@ -36,6 +36,7 @@ def well_control_tab(
 
 
 def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Frame:
+    ensembles = list(data_models.keys())
     return wcc.Frame(
         style={"flex": 1, "height": "87vh"},
         children=[
@@ -44,14 +45,14 @@ def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Fr
                 children=[
                     wcc.Dropdown(
                         label="Ensemble",
-                        id=WellControlLayoutElements.ENSEMBLE,
-                        # options=[{"label": col, "value": col} for col in ensembles],
-                        # value=ensembles[0],
+                        id=get_uuid(WellControlLayoutElements.ENSEMBLE),
+                        options=[{"label": col, "value": col} for col in ensembles],
+                        value=ensembles[0],
                         multi=False,
                     ),
                     wcc.Dropdown(
                         label="Well",
-                        id=WellControlLayoutElements.WELL,
+                        id=get_uuid(WellControlLayoutElements.WELL),
                         options=[],
                         value=None,
                         multi=False,
@@ -62,13 +63,13 @@ def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Fr
                 label="Pressure Plot Options",
                 children=[
                     wcc.Checklist(
-                        id=WellControlLayoutElements.INCLUDE_BHP,
+                        id=get_uuid(WellControlLayoutElements.INCLUDE_BHP),
                         options=[{"label": "Include BHP", "value": "include_bhp"}],
                         value=["include_bhp"],
                     ),
                     wcc.RadioItems(
                         label="Mean or realization",
-                        id=WellControlLayoutElements.MEAN_OR_REAL,
+                        id=get_uuid(WellControlLayoutElements.MEAN_OR_REAL),
                         options=[
                             {
                                 "label": "Mean of producing real.",
@@ -82,16 +83,16 @@ def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Fr
                         value="plot_mean",
                     ),
                     html.Div(
-                        id=WellControlLayoutElements.SINGLE_REAL_OPTIONS,
+                        id=get_uuid(WellControlLayoutElements.SINGLE_REAL_OPTIONS),
                         children=[
                             wcc.Dropdown(
-                                id=WellControlLayoutElements.REAL,
+                                id=get_uuid(WellControlLayoutElements.REAL),
                                 options=[],
                                 value=None,
                                 multi=False,
                             ),
                             wcc.Checklist(
-                                id=WellControlLayoutElements.CTRLMODE_BAR,
+                                id=get_uuid(WellControlLayoutElements.CTRLMODE_BAR),
                                 options=[
                                     {
                                         "label": "Display ctrl mode bar",

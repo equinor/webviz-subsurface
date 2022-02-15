@@ -11,7 +11,7 @@ from .._ensemble_data import EnsembleData
 def well_overview_callbacks(
     app: Dash, get_uuid: Callable, data_models: Dict[str, EnsembleData]
 ) -> None:
-    print("do nothing")
+    print("well overview callbacks")
     # @app.callback(
     #     Output(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
     #     Input(get_uuid(LayoutElements.MAP_GRAPH), "clickData"),

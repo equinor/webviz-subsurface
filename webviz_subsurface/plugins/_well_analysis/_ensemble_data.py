@@ -15,8 +15,27 @@ class EnsembleData:
     def __init__(
         self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
     ):
-
         self._provider = provider
+        self._vector_names = self._provider.vector_names()
+        self._realizations = self._provider.realizations()
+        self._wells: List[str] = [
+            vec.split(":")[1] for vec in self._vector_names if vec.startswith("WMCTL:")
+        ]
+
+        well_sumvecs = [vec for vec in self._vector_names if vec.startswith("W")]
+        self._smry = provider.get_vectors_df(well_sumvecs, None)
+
+    @property
+    def summary_data(self) -> pd.DataFrame:
+        return self._smry
+
+    @property
+    def realizations(self) -> List[int]:
+        return self._realizations
+
+    @property
+    def wells(self) -> List[str]:
+        return self._wells
 
 
 def get_node_info(
