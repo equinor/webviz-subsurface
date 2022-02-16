@@ -19,7 +19,11 @@ class GruptreeModel:
         self._ens_path = ens_path
         self._gruptree_file = gruptree_file
         self._remove_gruptree_if_branprop = remove_gruptree_if_branprop
-        self._gruptree = self.read_ensemble_gruptree()
+        self._dataframe = self.read_ensemble_gruptree()
+
+    @property
+    def dataframe(self) -> pd.DataFrame:
+        return self._dataframe
 
     # @webvizstore
     def read_ensemble_gruptree(self) -> pd.DataFrame:

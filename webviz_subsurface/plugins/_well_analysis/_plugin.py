@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import webviz_core_components as wcc
 from dash import Dash
@@ -20,7 +20,6 @@ class WellAnalysis(WebvizPluginABC):
     Plugin Description
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: Dash,
@@ -33,6 +32,7 @@ class WellAnalysis(WebvizPluginABC):
         super().__init__()
 
         self._ensembles = ensembles
+        self._theme = webviz_settings.theme
 
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
@@ -70,4 +70,4 @@ class WellAnalysis(WebvizPluginABC):
 
     def set_callbacks(self, app: Dash) -> None:
         well_overview_callbacks(app, self.uuid, self._data_models)
-        well_control_callbacks(app, self.uuid, self._data_models)
+        well_control_callbacks(app, self.uuid, self._data_models, self._theme)

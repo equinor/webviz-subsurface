@@ -4,8 +4,8 @@ import webviz_core_components as wcc
 from dash import Dash, Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from .._layout import WellOverviewLayoutElements
 from .._ensemble_data import EnsembleData
+from .._layout import WellOverviewLayoutElements
 
 
 def well_overview_callbacks(

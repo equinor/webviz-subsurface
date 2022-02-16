@@ -1,20 +1,19 @@
-from typing import Callable, Optional, Any, Tuple, List, Dict
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import pandas as pd
+import webviz_core_components as wcc
 from dash import Dash, Input, Output, State
-from dash.exceptions import PreventUpdate
-import plotly.graph_objects as go
 from webviz_config import WebvizConfigTheme
 
-from .._layout import WellControlLayoutElements
 from .._ensemble_data import EnsembleData
 from .._figures import create_well_control_figure
-
-# from ..utils.utils import get_node_info
+from .._layout import WellControlLayoutElements
 
 
 def well_control_callbacks(
-    app: Dash, get_uuid: Callable, data_models: Dict[str, EnsembleData]
+    app: Dash,
+    get_uuid: Callable,
+    data_models: Dict[str, EnsembleData],
+    theme: WebvizConfigTheme,
 ) -> None:
     @app.callback(
         Output(get_uuid(WellControlLayoutElements.WELL), "options"),
@@ -40,28 +39,38 @@ def well_control_callbacks(
 
     @app.callback(
         Output(get_uuid(WellControlLayoutElements.GRAPH), "children"),
-        # Input(WellControlLayoutElements.ENSEMBLE, "value"),
         Input(get_uuid(WellControlLayoutElements.WELL), "value"),
-        # Input(WellControlLayoutElements.INCLUDE_BHP, "value"),
-        # Input(WellControlLayoutElements.MEAN_OR_REAL, "value"),
-        # Input(WellControlLayoutElements.REAL, "value"),
-        # Input(WellControlLayoutElements.CTRLMODE_BAR, "value"),
-        # Input(WellControlLayoutElements.SHARED_XAXIS, "value"),
+        Input(get_uuid(WellControlLayoutElements.INCLUDE_BHP), "value"),
+        Input(get_uuid(WellControlLayoutElements.MEAN_OR_REAL), "value"),
+        Input(get_uuid(WellControlLayoutElements.REAL), "value"),
+        Input(get_uuid(WellControlLayoutElements.CTRLMODE_BAR), "value"),
+        Input(get_uuid(WellControlLayoutElements.SHARED_XAXES), "value"),
+        State(get_uuid(WellControlLayoutElements.ENSEMBLE), "value"),
         prevent_initial_call=True,
     )
     def _update_figure(
-        # ensemble: str, well: str, include_bhp: bool, mean_or_single_real: bool, real: int, ctrlmode_bar: bool, shared_xaxis: bool
         well: str,
+        include_bhp: List[str],
+        mean_or_single_real: str,
+        real: int,
+        display_ctrlmode_bar: bool,
+        shared_xaxes: List[str],
+        ensemble: str,
     ) -> List[Optional[Any]]:
         print("make wellcontrol graph")
-        # print(ensemble, well, include_bhp, mean_or_single_real, real, ctrlmode_bar, shared_xaxis)
 
-        # smry_ens = smry[smry.ENSEMBLE == ensemble]
-        # gruptree_ens = gruptree[gruptree.ENSEMBLE == ensemble]
-        # node_info = get_node_info(gruptree_ens, node_type, node, smry_ens.DATE.min())
-        return [
-            "Not implemented"
-        ]  # create_well_control_figure(node_info, smry_ens, settings, pr_plot_opts, theme)
+        fig = create_well_control_figure(
+            data_models[ensemble].get_node_info(well),
+            data_models[ensemble].summary_data,
+            mean_or_single_real,
+            real,
+            display_ctrlmode_bar,
+            "shared_xaxes" in shared_xaxes,
+            "include_bhp" in include_bhp,
+            theme,
+        )
+
+        return wcc.Graph(style={"height": "87vh"}, figure=fig)
 
     @app.callback(
         Output(

@@ -1,5 +1,5 @@
-from typing import Dict, Any
 import itertools
+from typing import Any, Dict
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -10,10 +10,14 @@ from webviz_config import WebvizConfigTheme
 def create_well_control_figure(
     node_info: Dict[str, Any],
     smry: pd.DataFrame,
-    settings: dict,
-    pressure_plot_options: dict,
+    mean_or_single_real: str,
+    real: int,
+    display_ctrlmode_bar: bool,
+    shared_xaxes: bool,
+    include_bhp: bool,
     theme: WebvizConfigTheme,
 ) -> Dict:
+    # pylint: disable=too-many-locals
     """Creates the plotly figure consisting of multiple subplots, possibly
     sharing the same x-axis.
     """
@@ -23,12 +27,8 @@ def create_well_control_figure(
         "Network Pressures",
     ]
     rows = 2
-    display_ctrlmode_bar = False
     row_heights = [0.5, 0.5]
-    if (
-        pressure_plot_options["mean_or_single_real"] == "single_real"
-        and "ctrlmode_bar" in pressure_plot_options["ctrlmode_bar"]
-    ):
+    if display_ctrlmode_bar and mean_or_single_real == "single_real":
         rows = 3
         display_ctrlmode_bar = True
         row_heights = [0.46, 0.46, 0.08]
@@ -37,7 +37,7 @@ def create_well_control_figure(
     fig = make_subplots(
         rows=rows,
         cols=1,
-        shared_xaxes=("shared_xaxes" in settings["shared_xaxes"]),
+        shared_xaxes=shared_xaxes,
         vertical_spacing=0.1,
         subplot_titles=titles if titles else ["No vector selected"],
         row_heights=row_heights,
@@ -52,15 +52,15 @@ def create_well_control_figure(
     # Add traces
     add_ctrl_mode_traces(fig, node_info, smry_ctrlmodes)
     add_network_pressure_traces(
-        fig, node_info, smry, pressure_plot_options, theme_colors
+        fig, node_info, smry, mean_or_single_real, real, include_bhp, theme_colors
     )
 
-    if display_ctrlmode_bar:
+    if display_ctrlmode_bar and mean_or_single_real == "single_real":
         add_ctrlmode_bar(
             fig,
             node_info,
             smry_ctrlmodes,
-            pressure_plot_options["realization"],
+            real,
             3,
         )
         fig.update_yaxes(range=[0, 1], row=3, col=1, visible=False)
@@ -106,7 +106,9 @@ def add_network_pressure_traces(
     fig: go.Figure,
     node_info: Dict[str, Any],
     smry: pd.DataFrame,
-    pressure_plot_options: dict,
+    mean_or_single_real: str,
+    real: int,
+    include_bhp: bool,
     theme_colors: list,
 ) -> None:
     """Adding line traces to the network pressures subplot."""
@@ -115,14 +117,11 @@ def add_network_pressure_traces(
 
     for node_network in node_info["networks"]:
         df = get_filtered_smry(
-            node_network, node_info["ctrlmode_sumvec"], pressure_plot_options, smry
+            node_network, node_info["ctrlmode_sumvec"], mean_or_single_real, real, smry
         )
 
         for nodedict in node_network["nodes"]:
-            if (
-                nodedict["type"] == "well_bhp"
-                and "include_bhp" not in pressure_plot_options["include_bhp"]
-            ):
+            if nodedict["type"] == "well_bhp" and not include_bhp:
                 continue
             sumvec = nodedict["pressure"]
             label = nodedict["label"]
@@ -140,8 +139,8 @@ def add_network_pressure_traces(
                     row=2,
                     col=1,
                 )
-            else:
-                print(f"Summary vector {sumvec} not in dataset.")
+            # else:
+            #    print(f"Summary vector {sumvec} not in dataset.")
 
 
 def add_ctrlmode_bar(
@@ -186,7 +185,8 @@ def add_ctrlmode_bar(
 def get_filtered_smry(
     node_network: dict,
     ctrlmode_sumvec: str,
-    pressure_plot_options: dict,
+    mean_or_single_real: str,
+    real: int,
     smry: pd.DataFrame,
 ) -> pd.DataFrame:
     """Filters the summary dataframe according to the valid
@@ -204,13 +204,13 @@ def get_filtered_smry(
     if end_date is not None:
         df = df[df.DATE < end_date]
 
-    if pressure_plot_options["mean_or_single_real"] == "plot_mean":
+    if mean_or_single_real == "plot_mean":
         # Filter out realizations whitout production
         df = df[df[ctrlmode_sumvec] != 0.0]
         # Group by date and take the mean of each group
         df = df.groupby("DATE").mean().reset_index()
-    elif pressure_plot_options["mean_or_single_real"] == "single_real":
-        df = df[df.REAL == pressure_plot_options["realization"]]
+    elif mean_or_single_real == "single_real":
+        df = df[df.REAL == real]
     return df
 
 

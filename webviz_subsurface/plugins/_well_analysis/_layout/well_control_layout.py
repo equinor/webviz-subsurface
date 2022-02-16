@@ -1,9 +1,10 @@
-from typing import Callable, Dict, List
+from typing import Callable, Dict
 
 import webviz_core_components as wcc
 from dash import html
 
 from .._ensemble_data import EnsembleData
+
 
 # pylint: disable = too-few-public-methods
 class WellControlLayoutElements:
@@ -15,7 +16,7 @@ class WellControlLayoutElements:
     SINGLE_REAL_OPTIONS = "well-control-single-real-options"
     REAL = "well-control-real"
     CTRLMODE_BAR = "well-control-ctrlmode-bar"
-    SHARED_XAXIS = "well-control-shared-xaxis"
+    SHARED_XAXES = "well-control-shared-xaxes"
 
 
 def well_control_tab(
@@ -109,7 +110,7 @@ def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Fr
                 label="⚙️ Settings",
                 children=[
                     wcc.Checklist(
-                        id=get_uuid(WellControlLayoutElements.SHARED_XAXIS),
+                        id=get_uuid(WellControlLayoutElements.SHARED_XAXES),
                         options=[{"label": "Shared x-axis", "value": "shared_xaxes"}],
                         value=["shared_xaxes"],
                     ),

@@ -5,6 +5,7 @@ from dash import html
 
 from .._ensemble_data import EnsembleData
 
+
 # pylint: disable = too-few-public-methods
 class WellOverviewLayoutElements:
     GRAPH = "well-overview-graph"

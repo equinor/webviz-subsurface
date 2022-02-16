@@ -1,9 +1,7 @@
-import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
-from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
@@ -15,6 +13,7 @@ class EnsembleData:
     def __init__(
         self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
     ):
+        self._gruptree_model = gruptree_model
         self._provider = provider
         self._vector_names = self._provider.vector_names()
         self._realizations = self._provider.realizations()
@@ -37,76 +36,74 @@ class EnsembleData:
     def wells(self) -> List[str]:
         return self._wells
 
-
-def get_node_info(
-    gruptree: pd.DataFrame, node_type: str, node: str, start_date: str
-) -> Dict[str, Any]:
-    """Returns a list of dictionaries containing the network nodes
-    ending in the input node, with from_date and end_date. If end_date
-    is None it means that the network is valid for the rest of the
-    simulations.
-    Dict[str, Any]
-    The output has the form:
-    {
-        "name": "A1",
-        "type: "well",
-        "ctrlmode_sumvec": "WMCTL:A1",
-        "networks: [
-            {
-                "start_date": "2018-01-01",
-                "end_date": "2018-05-01",
-                "nodes": [
+    def get_node_info(self, node: str, node_type: str = "well") -> Dict[str, Any]:
+        """Returns a list of dictionaries containing the network nodes
+        ending in the input node, with from_date and end_date. If end_date
+        is None it means that the network is valid for the rest of the
+        simulations.
+        Dict[str, Any]
+        The output has the form:
+        {
+            "name": "A1",
+            "type: "well",
+            "ctrlmode_sumvec": "WMCTL:A1",
+            "networks: [
+                {
+                    "start_date": "2018-01-01",
+                    "end_date": "2018-05-01",
+                    "nodes": [
+                        {
+                            "name": "A1",
+                            "label": "THP"
+                            "pressure_sumvec": "WTHP:A1"
+                            "type": "well"
+                        },
+                        ...
+                    ],
+                },
+                ...
+            ]
+        }
+        """
+        gruptree_df = self._gruptree_model.dataframe
+        if gruptree_df.empty:
+            return {
+                "name": node,
+                "type": node_type,
+                "ctrlmode_sumvec": _get_ctrlmode_sumvec(node_type, node),
+                "networks": [
                     {
-                        "name": "A1",
-                        "label": "THP"
-                        "pressure_sumvec": "WTHP:A1"
-                        "type": "well
-                    },
-                    ...
+                        "start_date": self._smry["DATE"].min(),
+                        "end_date": None,
+                        "nodes": [_get_node_field(node_type, node)],
+                    }
                 ],
-            },
-            ...
-        ]
-    }
-    """
-    if gruptree.empty:
+            }
+
+        node_networks: List[Dict[str, Any]] = []
+        prev_nodelist: List[Dict[str, Any]] = []
+        for date, df in gruptree_df.groupby("DATE"):
+            nodelist = _get_nodelist(df, node_type, node)
+            remaining_dates = gruptree_df[gruptree_df["DATE"] > date].DATE
+            if remaining_dates.empty:
+                next_date = None
+            else:
+                next_date = remaining_dates.min()
+
+            if nodelist != prev_nodelist:
+                node_networks.append(
+                    {"start_date": date, "end_date": next_date, "nodes": nodelist}
+                )
+                prev_nodelist = nodelist
+            else:
+                if node_networks:
+                    node_networks[-1]["end_date"] = next_date
         return {
             "name": node,
             "type": node_type,
             "ctrlmode_sumvec": _get_ctrlmode_sumvec(node_type, node),
-            "networks": [
-                {
-                    "start_date": start_date,
-                    "end_date": None,
-                    "nodes": [_get_node_field(node_type, node)],
-                }
-            ],
+            "networks": node_networks,
         }
-
-    node_networks: List[Dict[str, Any]] = []
-    prev_nodelist: List[Dict[str, Any]] = []
-    for date, df in gruptree.groupby("DATE"):
-        nodelist = _get_nodelist(df, node_type, node)
-        remaining_dates = gruptree[gruptree.DATE > date].DATE
-        if remaining_dates.empty:
-            next_date = None
-        else:
-            next_date = remaining_dates.min()
-
-        if nodelist != prev_nodelist:
-            node_networks.append(
-                {"start_date": date, "end_date": next_date, "nodes": nodelist}
-            )
-            prev_nodelist = nodelist
-        else:
-            if node_networks:
-                node_networks[-1]["end_date"] = next_date
-    return {
-        "name": node,
-        "type": node_type,
-        "ctrlmode_sumvec": _get_ctrlmode_sumvec(node_type, node),
-        "networks": node_networks,
-    }
 
 
 def _get_nodelist(df: pd.DataFrame, node_type: str, node: str) -> List[Dict[str, str]]:

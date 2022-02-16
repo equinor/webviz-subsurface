@@ -1,2 +1,2 @@
-from .well_overview_callbacks import well_overview_callbacks
 from .well_control_callbacks import well_control_callbacks
+from .well_overview_callbacks import well_overview_callbacks
