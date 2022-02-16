@@ -793,13 +793,15 @@ def plugin_callbacks(
         return (new_delta_ensembles, table_data, ensemble_options)
 
     @app.callback(
-        Output(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open"),
+        Output(get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG), "open"),
         [
             Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON), "n_clicks"),
         ],
-        [State(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open")],
+        [State(get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG), "open")],
     )
-    def _toggle_vector_calculator_modal(n_open_clicks: int, is_open: bool) -> bool:
+    def _toggle_vector_calculator_dialog_open(
+        n_open_clicks: int, is_open: bool
+    ) -> bool:
         if n_open_clicks:
             return not is_open
         raise PreventUpdate
@@ -829,10 +831,10 @@ def plugin_callbacks(
                 "data",
             ),
         ],
-        Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open"),
+        Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG), "open"),
         [
             State(
-                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG),
                 "data",
             ),
             State(
@@ -847,8 +849,8 @@ def plugin_callbacks(
             ),
         ],
     )
-    def _update_vector_calculator_expressions_on_modal_close(
-        is_modal_open: bool,
+    def _update_vector_calculator_expressions_on_dialog_close(
+        is_dialog_open: bool,
         new_expressions: List[ExpressionInfo],
         current_expressions: List[ExpressionInfo],
         current_selected_vectors: List[str],
@@ -858,7 +860,7 @@ def plugin_callbacks(
         """Update vector calculator expressions, propagate expressions to VectorSelectors,
         update current selections and trigger re-rendering of graphing if necessary
         """
-        if is_modal_open or (new_expressions == current_expressions):
+        if is_dialog_open or (new_expressions == current_expressions):
             raise PreventUpdate
 
         # Create current selected expressions for comparison - Deep copy!
@@ -919,12 +921,12 @@ def plugin_callbacks(
 
     @app.callback(
         Output(
-            get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+            get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG),
             "data",
         ),
         Input(get_uuid(LayoutElements.VECTOR_CALCULATOR), "expressions"),
     )
-    def _update_vector_calculator_expressions_when_modal_open(
+    def _update_vector_calculator_expressions_when_dialog_open(
         expressions: List[ExpressionInfo],
     ) -> list:
         new_expressions: List[ExpressionInfo] = [
