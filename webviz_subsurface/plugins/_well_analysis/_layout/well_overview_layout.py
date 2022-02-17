@@ -34,14 +34,15 @@ def well_overview_tab(
 
 
 def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Frame:
+    ensembles = list(data_models.keys())
     return wcc.Selectors(
         label="Selectors",
         children=[
             wcc.Dropdown(
                 label="Ensembles",
-                id=WellOverviewLayoutElements.ENSEMBLES,
-                # options=[{"label": col, "value": col} for col in ensembles],
-                # value=ensembles[0],
+                id=get_uuid(WellOverviewLayoutElements.ENSEMBLES),
+                options=[{"label": col, "value": col} for col in ensembles],
+                value=ensembles[0],
                 multi=True,
             ),
         ],
