@@ -42,7 +42,7 @@ def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Fr
                 label="Ensembles",
                 id=get_uuid(WellOverviewLayoutElements.ENSEMBLES),
                 options=[{"label": col, "value": col} for col in ensembles],
-                value=ensembles[0],
+                value=ensembles,
                 multi=True,
             ),
         ],

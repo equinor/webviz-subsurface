@@ -20,8 +20,9 @@ def well_overview_callbacks(
     )
     def _update_graph(ensembles: List[str]) -> str:
 
-        print(ensembles)
-        figure = WellProdBarChart(ensembles)
+        sumvec = "WOPT"
+        filter_out_startswith = "R_"
+        figure = WellProdBarChart(ensembles, data_models, sumvec, filter_out_startswith)
         return [
             wcc.Graph(
                 style={"height": "87vh"},

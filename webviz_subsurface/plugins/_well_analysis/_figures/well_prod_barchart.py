@@ -2,14 +2,52 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
+from .._ensemble_data import EnsembleData
+
 
 class WellProdBarChart:
-    def __init__(self, ensembles: str) -> None:
+    def __init__(
+        self,
+        ensembles: str,
+        data_models: Dict[str, EnsembleData],
+        sumvec: str,
+        filter_out_startswith: str,
+    ) -> None:
 
         self._traces: List[Dict[str, Any]] = []
-        self._layout = {
-            "title": "Some title",
-        }
+        self._layout = {"title": "Some title", "barmode": "overlay"}
+
+        for ensemble in ensembles:
+            data_model = data_models[ensemble]
+            sumvecs = [
+                f"{sumvec}:{well}"
+                for well in data_model.wells
+                if not well.startswith(filter_out_startswith)
+            ]
+            df = data_models[ensemble].summary_data
+            df = df[df["DATE"] == df["DATE"].max()]
+            df_long = pd.melt(
+                df, value_vars=sumvecs, var_name="WELL", value_name=sumvec
+            )
+            df_long["WELL"] = df_long.agg(
+                lambda x: f"{x['WELL'].split(':')[1]}", axis=1
+            )
+
+            df_mean = df_long.groupby("WELL").mean().reset_index()
+            df_mean = df_mean[df_mean[sumvec] > 0]
+
+            self._traces.append(
+                {
+                    "x": df_mean["WELL"],
+                    "y": df_mean[sumvec],
+                    # "text": df_mean["TEXT"],
+                    "orientation": "v",
+                    "type": "bar",
+                    "name": ensemble,
+                    # "marker": {"color": color},
+                    # "textposition": textposition,
+                }
+            )
 
     @property
     def traces(self) -> List[Dict[str, Any]]:
