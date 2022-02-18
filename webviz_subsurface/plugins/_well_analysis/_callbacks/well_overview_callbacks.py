@@ -1,8 +1,7 @@
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List
 
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, State
-from dash.exceptions import PreventUpdate
+from dash import Dash, Input, Output
 
 from .._ensemble_data import EnsembleData
 from .._figures import WellProdBarChart
@@ -18,7 +17,7 @@ def well_overview_callbacks(
         Output(get_uuid(WellOverviewLayoutElements.GRAPH), "children"),
         Input(get_uuid(WellOverviewLayoutElements.ENSEMBLES), "value"),
     )
-    def _update_graph(ensembles: List[str]) -> str:
+    def _update_graph(ensembles: List[str]) -> List[wcc.Graph]:
 
         sumvec = "WOPT"
         filter_out_startswith = "R_"

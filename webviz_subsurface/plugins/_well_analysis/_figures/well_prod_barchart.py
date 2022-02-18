@@ -8,7 +8,7 @@ from .._ensemble_data import EnsembleData
 class WellProdBarChart:
     def __init__(
         self,
-        ensembles: str,
+        ensembles: List[str],
         data_models: Dict[str, EnsembleData],
         sumvec: str,
         filter_out_startswith: str,

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 
 import pandas as pd
@@ -11,7 +12,7 @@ class GruptreeModel:
     def __init__(
         self,
         ens_name: str,
-        ens_path: str,
+        ens_path: Path,
         gruptree_file: str,
         remove_gruptree_if_branprop: bool = True,
     ):

@@ -1,7 +1,6 @@
-from typing import Callable, Dict, List
+from typing import Callable, Dict
 
 import webviz_core_components as wcc
-from dash import html
 
 from .._ensemble_data import EnsembleData
 from .well_control_layout import well_control_tab
