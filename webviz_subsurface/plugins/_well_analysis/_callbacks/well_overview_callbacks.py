@@ -16,12 +16,21 @@ def well_overview_callbacks(
     @app.callback(
         Output(get_uuid(WellOverviewLayoutElements.GRAPH), "children"),
         Input(get_uuid(WellOverviewLayoutElements.ENSEMBLES), "value"),
+        Input(get_uuid(WellOverviewLayoutElements.OVERLAY_BARS), "value"),
+        Input(get_uuid(WellOverviewLayoutElements.SUMVEC), "value"),
     )
-    def _update_graph(ensembles: List[str]) -> List[wcc.Graph]:
+    def _update_graph(
+        ensembles: List[str], overlay_bars: str, sumvec: str
+    ) -> List[wcc.Graph]:
 
-        sumvec = "WOPT"
         filter_out_startswith = "R_"
-        figure = WellProdBarChart(ensembles, data_models, sumvec, filter_out_startswith)
+        figure = WellProdBarChart(
+            ensembles,
+            data_models,
+            sumvec,
+            "overlay_bars" in overlay_bars,
+            filter_out_startswith,
+        )
         return [
             wcc.Graph(
                 style={"height": "87vh"},

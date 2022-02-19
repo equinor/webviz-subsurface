@@ -11,11 +11,15 @@ class WellProdBarChart:
         ensembles: List[str],
         data_models: Dict[str, EnsembleData],
         sumvec: str,
+        overlay_bars: bool,
         filter_out_startswith: str,
     ) -> None:
 
         self._traces: List[Dict[str, Any]] = []
-        self._layout = {"title": "Some title", "barmode": "overlay"}
+        self._layout = {
+            "title": sumvec,
+            "barmode": "overlay" if overlay_bars else "group",
+        }
 
         for ensemble in ensembles:
             data_model = data_models[ensemble]

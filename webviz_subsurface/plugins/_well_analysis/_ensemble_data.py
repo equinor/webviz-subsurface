@@ -126,10 +126,7 @@ def _get_nodelist(df: pd.DataFrame, node_type: str, node: str) -> List[Dict[str,
         raise ValueError(
             f"There can be maximum one row per child per date: {child_row}"
         )
-    if node == "FIELD" or (
-        "TERMINAL_PRESSURE" in df.columns
-        and not np.isnan(child_row["TERMINAL_PRESSURE"].values[0])
-    ):
+    if is_terminal_node(node, child_row):
         return [_get_node_field("terminal_node", node)]
 
     parent = child_row.PARENT.values[0]
@@ -137,6 +134,15 @@ def _get_nodelist(df: pd.DataFrame, node_type: str, node: str) -> List[Dict[str,
     if node_type == "well":
         nodelist.append(_get_node_field("well_bhp", node))
     return nodelist + _get_nodelist(df, "field_group", parent)
+
+
+def is_terminal_node(node: str, row: pd.Series) -> bool:
+    """Desc"""
+    if node == "FIELD":
+        return True
+    if "TERMINAL_PRESSURE" and row["TERMINAL_PRESSURE"] is not None:
+        return True
+    return False
 
 
 def _get_node_field(node_type: str, node: str) -> Dict[str, str]:
