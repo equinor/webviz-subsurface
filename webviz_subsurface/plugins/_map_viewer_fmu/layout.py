@@ -11,6 +11,7 @@ from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     DrawingLayer,
     Hillshading2DLayer,
     WellsLayer,
+    Map3DLayer,
 )
 from .providers.ensemble_surface_provider import SurfaceMode
 from webviz_subsurface._models import WellSetModel
@@ -50,6 +51,7 @@ class LayoutElements(str, Enum):
     COLORMAP_LAYER = "deckglcolormaplayer"
     HILLSHADING_LAYER = "deckglhillshadinglayer"
     WELLS_LAYER = "deckglwelllayer"
+    MAP3D_LAYER = "deckglmap3dlayer"
 
 
 class LayoutLabels(str, Enum):
@@ -152,7 +154,7 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
 
 def main_layout(
     get_uuid: Callable,
-    well_set_model: Optional[WellSetModel],
+    well_names: List[str],
     show_fault_polygons: bool = True,
 ) -> None:
 
@@ -165,35 +167,35 @@ def main_layout(
                 label=TabsLabels.CUSTOM,
                 value=Tabs.CUSTOM,
                 children=view_layout(
-                    Tabs.CUSTOM, get_uuid, well_set_model, show_fault_polygons
+                    Tabs.CUSTOM, get_uuid, well_names, show_fault_polygons
                 ),
             ),
             wcc.Tab(
                 label=TabsLabels.DIFF,
                 value=Tabs.DIFF,
                 children=view_layout(
-                    Tabs.DIFF, get_uuid, well_set_model, show_fault_polygons
+                    Tabs.DIFF, get_uuid, well_names, show_fault_polygons
                 ),
             ),
             wcc.Tab(
                 label=TabsLabels.STATS,
                 value=Tabs.STATS,
                 children=view_layout(
-                    Tabs.STATS, get_uuid, well_set_model, show_fault_polygons
+                    Tabs.STATS, get_uuid, well_names, show_fault_polygons
                 ),
             ),
             wcc.Tab(
                 label=TabsLabels.SPLIT,
                 value=Tabs.SPLIT,
                 children=view_layout(
-                    Tabs.SPLIT, get_uuid, well_set_model, show_fault_polygons
+                    Tabs.SPLIT, get_uuid, well_names, show_fault_polygons
                 ),
             ),
         ],
     )
 
 
-def view_layout(tab, get_uuid, well_set_model, show_fault_polygons):
+def view_layout(tab, get_uuid, well_names, show_fault_polygons):
     selector_labels = {
         "ensemble": LayoutLabels.ENSEMBLE,
         "attribute": LayoutLabels.ATTRIBUTE,
@@ -219,7 +221,7 @@ def view_layout(tab, get_uuid, well_set_model, show_fault_polygons):
                             WellsSelector(
                                 tab,
                                 get_uuid=get_uuid,
-                                well_set_model=well_set_model,
+                                well_names=well_names,
                             ),
                             show_fault_polygons
                             and FaultPolygonsSelector(tab, get_uuid=get_uuid),
@@ -241,8 +243,7 @@ def view_layout(tab, get_uuid, well_set_model, show_fault_polygons):
                                     "id": get_uuid(LayoutElements.DECKGLMAP),
                                     "tab": tab,
                                 },
-                                layers=update_map_layers(1, well_set_model),
-                                bounds=[456063.6875, 5926551, 467483.6875, 5939431],
+                                layers=update_map_layers(1, well_names),
                             )
                         ],
                         style={"height": LayoutStyle.MAPHEIGHT},
@@ -443,12 +444,10 @@ class MapSelector(html.Div):
 
 
 class WellsSelector(html.Div):
-    def __init__(self, tab, get_uuid: Callable, well_set_model):
-        value = options = (
-            well_set_model.well_names if well_set_model is not None else []
-        )
+    def __init__(self, tab, get_uuid: Callable, well_names):
+        value = options = well_names
         super().__init__(
-            style={"display": "none" if well_set_model is None else "block"},
+            style={"display": "none" if well_names else "block"},
             children=wcc.Selectors(
                 label=LayoutLabels.WELLS,
                 open_details=False,
@@ -587,7 +586,7 @@ def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_i
     )
 
 
-def update_map_layers(views, well_set_model):
+def update_map_layers(views, well_names):
     layers = []
     for idx in range(views):
         layers.extend(
@@ -595,12 +594,13 @@ def update_map_layers(views, well_set_model):
                 filter(
                     None,
                     [
+                        well_names
+                        and WellsLayer(uuid=f"{LayoutElements.WELLS_LAYER}-{idx}"),
+                        # Map3DLayer(uuid=f"{LayoutElements.MAP3D_LAYER}-{idx}"),
                         ColormapLayer(uuid=f"{LayoutElements.COLORMAP_LAYER}-{idx}"),
                         Hillshading2DLayer(
                             uuid=f"{LayoutElements.HILLSHADING_LAYER}-{idx}"
                         ),
-                        well_set_model
-                        and WellsLayer(uuid=f"{LayoutElements.WELLS_LAYER}-{idx}"),
                     ],
                 )
             )

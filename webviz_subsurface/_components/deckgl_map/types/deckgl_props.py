@@ -9,6 +9,7 @@ from typing_extensions import Literal
 
 class LayerTypes(str, Enum):
     HILLSHADING = "Hillshading2DLayer"
+    MAP3D = "Map3DLayer"
     COLORMAP = "ColormapLayer"
     WELL = "WellsLayer"
     DRAWING = "DrawingLayer"
@@ -16,6 +17,7 @@ class LayerTypes(str, Enum):
 
 class LayerIds(str, Enum):
     HILLSHADING = "hillshading-layer"
+    MAP3D = "map3d-layer"
     COLORMAP = "colormap-layer"
     WELL = "wells-layer"
     DRAWING = "drawing-layer"
@@ -23,6 +25,7 @@ class LayerIds(str, Enum):
 
 class LayerNames(str, Enum):
     HILLSHADING = "Hillshading"
+    MAP3D = "Map"
     COLORMAP = "Colormap"
     WELL = "Wells"
     DRAWING = "Drawings"
@@ -64,6 +67,41 @@ class Hillshading2DLayer(pydeck.Layer):
             name=String(name),
             bounds=bounds,
             valueRange=value_range,
+            **kwargs,
+        )
+
+
+class Map3DLayer(pydeck.Layer):
+    def __init__(
+        self,
+        mesh: str = DeckGLMapProps.image,
+        property_texture: str = DeckGLMapProps.image,
+        color_map_name: str = DeckGLMapProps.colormap,
+        name: str = LayerNames.MAP3D,
+        bounds: List[float] = DeckGLMapProps.bounds,
+        mesh_value_range: List[float] = [0, 1],
+        mesh_max_error: int = 5,
+        property_value_range: List[float] = [0, 1],
+        color_map_range: List[float] = [0, 1],
+        contours: List[float] = [0, 100],
+        rot_deg: float = 0.0,
+        uuid: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            type=LayerTypes.MAP3D,
+            id=uuid if uuid is not None else LayerIds.MAP3D,
+            mesh=String(mesh),
+            propertyTexture=String(property_texture),
+            colorMapName=String(color_map_name),
+            name=String(name),
+            bounds=bounds,
+            meshValueRange=mesh_value_range,
+            propertyValueRange=property_value_range,
+            colorMapRange=color_map_range,
+            meshMaxError=mesh_max_error,
+            contours=contours,
+            rotDeg=rot_deg,
             **kwargs,
         )
 

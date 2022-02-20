@@ -13,11 +13,12 @@ from .callbacks import plugin_callbacks
 from .layout import main_layout
 from webviz_subsurface._providers import (
     EnsembleSurfaceProviderFactory,
-    EnsembleSurfaceProvider,
+    WellProviderFactory,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
     SurfaceServer,
 )
+from webviz_subsurface._providers.well_provider.well_server import WellServer
 from .routes import deckgl_map_routes  # type: ignore
 from .webviz_store import webviz_store_functions
 
@@ -42,7 +43,7 @@ class MapViewerFMU(WebvizPluginABC):
 
         # Find surfaces
         provider_factory = EnsembleSurfaceProviderFactory.instance()
-        self.provider: EnsembleSurfaceProvider = ()
+
         self._ensemble_surface_providers = {
             ens: provider_factory.create_from_ensemble_surface_files(
                 webviz_settings.shared_settings["scratch_ensembles"][ens]
@@ -50,6 +51,15 @@ class MapViewerFMU(WebvizPluginABC):
             for ens in ensembles
         }
         self.surface_server = SurfaceServer.instance(app)
+
+        provider_factory = WellProviderFactory.instance()
+
+        self.well_provider = provider_factory.create_from_well_files(
+            well_folder=wellfolder, well_suffix=wellsuffix, md_logname=mdlog
+        )
+        self.well_server = WellServer.instance(app)
+        self.well_server.add_provider(self.well_provider)
+
         # Initialize surface set
         # if attributes is not None:
         #     self._surface_table = self._surface_table[
@@ -61,35 +71,14 @@ class MapViewerFMU(WebvizPluginABC):
         # Find fault polygons
         # self._fault_polygons_table = scrape_scratch_disk_for_fault_polygons
 
-        # Find wells
-        self._wellfolder = wellfolder
-        self._wellsuffix = wellsuffix
-        self._wellfiles: List = (
-            json.load(find_files(folder=self._wellfolder, suffix=self._wellsuffix))
-            if self._wellfolder is not None
-            else None
-        )
-
-        # Initialize well set
-        self._well_set_model = (
-            WellSetModel(
-                self._wellfiles,
-                mdlog=mdlog,
-                downsample_interval=well_downsample_interval,
-            )
-            if self._wellfiles
-            else None
-        )
-
-        self._well_set_model = None
-
         self.set_callbacks()
-        self.set_routes(app)
 
     @property
     def layout(self) -> html.Div:
 
-        return main_layout(get_uuid=self.uuid, well_set_model=self._well_set_model)
+        return main_layout(
+            get_uuid=self.uuid, well_names=self.well_provider.well_names()
+        )
 
     def set_callbacks(self) -> None:
 
@@ -97,24 +86,6 @@ class MapViewerFMU(WebvizPluginABC):
             get_uuid=self.uuid,
             ensemble_surface_providers=self._ensemble_surface_providers,
             surface_server=self.surface_server,
-            well_set_model=self._well_set_model,
+            well_provider=self.well_provider,
+            well_server=self.well_server,
         )
-
-    def set_routes(self, app: Dash) -> None:
-        deckgl_map_routes(
-            app=app,
-            ensemble_surface_providers=self._ensemble_surface_providers,
-            well_set_model=self._well_set_model,
-        )
-
-    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-
-        store_functions = []
-        if self._wellfolder is not None:
-            store_functions.append(
-                (find_files, [{"folder": self._wellfolder, "suffix": self._wellsuffix}])
-            )
-            store_functions.extend(
-                [(get_path, [{"path": fn}]) for fn in self._wellfiles]
-            )
-        return store_functions

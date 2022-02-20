@@ -43,7 +43,8 @@ def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     surface_server: SurfaceServer,
-    well_set_model: Optional[WellSetModel],
+    well_provider,
+    well_server,
 ) -> None:
     def selections(tab, colorselector=False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -123,7 +124,6 @@ def plugin_callbacks(
             raise PreventUpdate
         import time
 
-        time.sleep(5)
         ctx = callback_context.triggered[0]["prop_id"]
 
         linked_selector_names = [l[0] for l in selectorlinks if l]
@@ -307,7 +307,7 @@ def plugin_callbacks(
 
         number_of_views = len(values) if values else 1
 
-        layers = update_map_layers(number_of_views, well_set_model)
+        layers = update_map_layers(number_of_views, well_provider.well_names())
         layers = [json.loads(x.to_json()) for x in layers]
         layer_model = DeckGLMapLayersModel(layers)
 
@@ -341,6 +341,21 @@ def plugin_callbacks(
                 surf_meta.y_max,
             ]
 
+            # layer_data = {
+            #     "mesh": img_url,
+            #     "propertyTexture": img_url,
+            #     "bounds": surf_meta.deckgl_bounds,
+            #     "rotDeg": surf_meta.deckgl_rot_deg,
+            #     "meshValueRange": [surf_meta.val_min, surf_meta.val_max],
+            #     "propertyValueRange": [surf_meta.val_min, surf_meta.val_max],
+            #     "colorMapName": data["colormap"],
+            #     "colorMapRange": data["color_range"],
+            # }
+
+            # layer_model.update_layer_by_id(
+            #     layer_id=f"{LayoutElements.MAP3D_LAYER}-{idx}",
+            #     layer_data=layer_data,
+            # )
             layer_data = {
                 "image": img_url,
                 "bounds": surf_meta.deckgl_bounds,
@@ -363,17 +378,19 @@ def plugin_callbacks(
                     "colorMapRange": data["color_range"],
                 },
             )
-            if well_set_model is not None:
+            if well_provider.well_names():
                 layer_model.update_layer_by_id(
                     layer_id=f"{LayoutElements.WELLS_LAYER}-{idx}",
                     layer_data={
-                        "data": url_for(
-                            "_send_well_data_as_json",
-                            wells_context=WellsContext(well_names=data["wells"]),
+                        "data": well_server.encode_partial_url(
+                            provider_id=well_provider.provider_id(),
+                            well_names=[well_provider.well_names()[0]],
                         )
                     },
                 )
-
+        print(
+            viewport_bounds if values else no_update,
+        )
         return (
             layer_model.layers,
             viewport_bounds if values else no_update,
@@ -384,6 +401,7 @@ def plugin_callbacks(
                         "id": f"{view}_view",
                         "show3D": False,
                         "layerIds": [
+                            # f"{LayoutElements.MAP3D_LAYER}-{view}",
                             f"{LayoutElements.COLORMAP_LAYER}-{view}",
                             f"{LayoutElements.HILLSHADING_LAYER}-{view}",
                             f"{LayoutElements.WELLS_LAYER}-{view}",
