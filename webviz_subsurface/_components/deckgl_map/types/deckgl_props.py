@@ -58,8 +58,8 @@ class Hillshading2DLayer(pydeck.Layer):
         self,
         image: str = DeckGLMapProps.image,
         name: str = LayerNames.HILLSHADING,
-        bounds: List[float] = DeckGLMapProps.bounds,
-        value_range: List[float] = [0, 1],
+        bounds: List[float] = None,
+        value_range: List[float] = None,
         uuid: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -68,8 +68,8 @@ class Hillshading2DLayer(pydeck.Layer):
             id=uuid if uuid is not None else LayerIds.HILLSHADING,
             image=String(image),
             name=String(name),
-            bounds=bounds,
-            valueRange=value_range,
+            bounds=bounds if bounds is not None else DeckGLMapProps.bounds,
+            valueRange=value_range if value_range is not None else [0, 1],
             **kwargs,
         )
 
@@ -81,12 +81,12 @@ class Map3DLayer(pydeck.Layer):
         property_texture: str = DeckGLMapProps.image,
         color_map_name: str = DeckGLMapProps.colormap,
         name: str = LayerNames.MAP3D,
-        bounds: List[float] = DeckGLMapProps.bounds,
-        mesh_value_range: List[float] = [0, 1],
+        bounds: List[float] = None,
+        mesh_value_range: List[float] = None,
         mesh_max_error: int = 5,
-        property_value_range: List[float] = [0, 1],
-        color_map_range: List[float] = [0, 1],
-        contours: List[float] = [0, 100],
+        property_value_range: List[float] = None,
+        color_map_range: List[float] = None,
+        contours: List[float] = None,
         rot_deg: float = 0.0,
         uuid: Optional[str] = None,
         **kwargs: Any,
@@ -98,12 +98,14 @@ class Map3DLayer(pydeck.Layer):
             propertyTexture=String(property_texture),
             colorMapName=String(color_map_name),
             name=String(name),
-            bounds=bounds,
-            meshValueRange=mesh_value_range,
-            propertyValueRange=property_value_range,
-            colorMapRange=color_map_range,
+            bounds=bounds if bounds is not None else DeckGLMapProps.bounds,
+            meshValueRange=mesh_value_range if mesh_value_range is not None else [0, 1],
+            propertyValueRange=property_value_range
+            if property_value_range is not None
+            else [0, 1],
+            colorMapRange=color_map_range if color_map_range is not None else [0, 1],
             meshMaxError=mesh_max_error,
-            contours=contours,
+            contours=contours if contours is not None else [0, 100],
             rotDeg=rot_deg,
             **kwargs,
         )
@@ -115,9 +117,9 @@ class ColormapLayer(pydeck.Layer):
         image: str = DeckGLMapProps.image,
         colormap: str = DeckGLMapProps.colormap,
         name: str = LayerNames.COLORMAP,
-        bounds: List[float] = DeckGLMapProps.bounds,
-        value_range: List[float] = [0, 1],
-        color_map_range: List[float] = [0, 1],
+        bounds: List[float] = None,
+        value_range: List[float] = None,
+        color_map_range: List[float] = None,
         uuid: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -127,9 +129,9 @@ class ColormapLayer(pydeck.Layer):
             image=String(image),
             colorMapName=String(colormap),
             name=String(name),
-            bounds=bounds,
-            valueRange=value_range,
-            colorMapRange=color_map_range,
+            bounds=bounds if bounds is not None else DeckGLMapProps.bounds,
+            valueRange=value_range if value_range is not None else [0, 1],
+            colorMapRange=color_map_range if color_map_range is not None else [0, 1],
             **kwargs,
         )
 
@@ -142,7 +144,6 @@ class WellsLayer(pydeck.Layer):
         log_run: str = None,
         log_name: str = None,
         name: str = LayerNames.WELL,
-        selected_well: str = "@@#editedData.selectedWell",
         uuid: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -162,20 +163,18 @@ class WellsLayer(pydeck.Layer):
 class DrawingLayer(pydeck.Layer):
     def __init__(
         self,
-        data: str = "@@#editedData.data",
-        selectedFeatureIndexes: str = "@@#editedData.selectedFeatureIndexes",
         mode: Literal[  # Use Enum?
             "view", "modify", "transform", "drawPoint", "drawLineString", "drawPolygon"
         ] = "view",
         uuid: Optional[str] = None,
+        **kwargs: Any,
     ):
         super().__init__(
             type=LayerTypes.DRAWING,
             id=uuid if uuid is not None else LayerIds.DRAWING,
             name=LayerNames.DRAWING,
-            data=String(data),
             mode=String(mode),
-            selectedFeatureIndexes=String(selectedFeatureIndexes),
+            **kwargs,
         )
 
 
