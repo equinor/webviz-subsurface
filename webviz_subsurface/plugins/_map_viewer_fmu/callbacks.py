@@ -37,8 +37,7 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SurfaceAddress,
 )
 from webviz_subsurface._providers import EnsembleSurfaceProvider
-from .providers.ensemble_surface_provider import SurfaceMode
-from .types import WellsContext
+from ._types import ViewSetting, SurfaceMode
 from .utils.formatting import format_date  # , update_nested_dict
 from .layout import (
     LayoutElements,
@@ -57,6 +56,7 @@ def plugin_callbacks(
     well_server,
     ensemble_fault_polygons_providers,
     fault_polygons_server,
+    map_surface_names_to_fault_polygons,
 ) -> None:
     def selections(tab, colorselector=False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -312,20 +312,23 @@ def plugin_callbacks(
         Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": MATCH}, "value"),
         State(get_uuid("tabs"), "value"),
     )
-    def _update_map(values: dict, view_columns, tab_name):
+    def _update_map(surface_elements: List, view_columns, tab_name):
         """Updates the map component with the stored, validated selections"""
-        if values is None:
+        if surface_elements is None:
             raise PreventUpdate
-
-        number_of_views = len(values) if values else 1
+        view_settings: List[ViewSetting] = []
+        print(json.dumps(surface_elements, indent=4))
+        number_of_views = len(surface_elements)
 
         layers = update_map_layers(number_of_views, well_provider.well_names())
         layers = [json.loads(x.to_json()) for x in layers]
         layer_model = DeckGLMapLayersModel(layers)
 
-        for idx, data in enumerate(values):
-            if data.get("surf_type") != "diff":
+        for idx, data in enumerate(surface_elements):
 
+            if data.get("surf_type") != "diff":
+                view_setting = ViewSetting(**data)
+                view_settings.append(ViewSetting(**data))
                 surface_address = get_surface_context_from_data(data)
 
                 provider = ensemble_surface_providers[data["ensemble"][0]]
@@ -333,12 +336,17 @@ def plugin_callbacks(
                     surface_provider=provider, surface_address=surface_address
                 )
             else:
+
                 # Calculate and add layers for difference map.
                 # Mostly duplicate code to the above. Should be improved.
-                surface_address = get_surface_context_from_data(values[0])
-                subsurface_address = get_surface_context_from_data(values[1])
-                provider = ensemble_surface_providers[values[0]["ensemble"][0]]
-                subprovider = ensemble_surface_providers[values[1]["ensemble"][0]]
+                surface_address = get_surface_context_from_data(surface_elements[0])
+                subsurface_address = get_surface_context_from_data(surface_elements[1])
+                provider = ensemble_surface_providers[
+                    surface_elements[0]["ensemble"][0]
+                ]
+                subprovider = ensemble_surface_providers[
+                    surface_elements[1]["ensemble"][0]
+                ]
                 surf_meta, img_url = publish_and_get_diff_surface_metadata(
                     surface_provider=provider,
                     surface_address=surface_address,
@@ -354,16 +362,16 @@ def plugin_callbacks(
             ]
 
             fault_polygons_provider = ensemble_fault_polygons_providers[
-                values[0]["ensemble"][0]
+                surface_elements[0]["ensemble"][0]
             ]
-            horion_name = values[0]["name"][0]
+            horion_name = surface_elements[0]["name"][0]
             fault_polygons_address = SimulatedFaultPolygonsAddress(
-                # attribute=values[0]["attribute"][0],
                 attribute=fault_polygons_provider.attributes()[0],
-                name=horion_name,
-                realization=int(values[0]["realizations"][0]),
+                name=map_surface_names_to_fault_polygons.get(horion_name, horion_name),
+                realization=int(surface_elements[0]["realizations"][0]),
             )
-
+            # Map3DLayer currently not implemented. Will replace
+            # ColormapLayer and HillshadingLayer
             # layer_data = {
             #     "mesh": img_url,
             #     "propertyTexture": img_url,
@@ -420,11 +428,13 @@ def plugin_callbacks(
                         )
                     },
                 )
+        print(view_settings)
         return (
             layer_model.layers,
-            viewport_bounds if values else no_update,
+            viewport_bounds if surface_elements else no_update,
             {
                 "layout": view_layout(number_of_views, view_columns),
+                "showLabel": True,
                 "viewports": [
                     {
                         "id": f"{view}_view",
@@ -436,6 +446,7 @@ def plugin_callbacks(
                             f"{LayoutElements.FAULTPOLYGONS_LAYER}-{view}",
                             f"{LayoutElements.WELLS_LAYER}-{view}",
                         ],
+                        "name": f"{tab_name}view",
                     }
                     for view in range(number_of_views)
                 ],
@@ -762,6 +773,8 @@ def plugin_callbacks(
             }
         )
         return selector_values
+
+    # def get_view_label(tab_name):
 
 
 def view_layout(views, columns):

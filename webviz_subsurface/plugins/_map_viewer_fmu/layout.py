@@ -1,11 +1,11 @@
 from enum import Enum, auto, unique
 from typing import Callable, List, Dict, Any, Optional
-
+import json
 import webviz_core_components as wcc
 from dash import dcc, html
 
 
-from webviz_subsurface._components.deckgl_map import DeckGLMap  # type: ignore
+from webviz_subsurface_components import DeckGLMap  # type: ignore
 from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     ColormapLayer,
     DrawingLayer,
@@ -14,7 +14,7 @@ from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     Map3DLayer,
     FaultPolygonsLayer,
 )
-from .providers.ensemble_surface_provider import SurfaceMode
+from ._types import SurfaceMode
 from webviz_subsurface._models import WellSetModel
 
 from .utils.formatting import format_date
@@ -247,7 +247,11 @@ def view_layout(tab, get_uuid, well_names, show_fault_polygons):
                                     "id": get_uuid(LayoutElements.DECKGLMAP),
                                     "tab": tab,
                                 },
-                                layers=update_map_layers(1, well_names),
+                                layers=[
+                                    json.loads(layer.to_json())
+                                    for layer in update_map_layers(1, well_names)
+                                ],
+                                zoom=-4,
                             )
                         ],
                         style={"height": LayoutStyle.MAPHEIGHT},

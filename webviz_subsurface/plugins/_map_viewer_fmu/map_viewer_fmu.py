@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Dict
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -40,6 +40,7 @@ class MapViewerFMU(WebvizPluginABC):
         well_downsample_interval: int = None,
         mdlog: str = None,
         fault_polygon_attribute: str = None,
+        map_surface_names_to_fault_polygons: Dict[str, List[str]] = None,
     ):
 
         super().__init__()
@@ -75,6 +76,11 @@ class MapViewerFMU(WebvizPluginABC):
         for fault_polygons_provider in self._ensemble_fault_polygons_providers.values():
             self._fault_polygons_server.add_provider(fault_polygons_provider)
 
+        self.map_surface_names_to_fault_polygons = (
+            map_surface_names_to_fault_polygons
+            if map_surface_names_to_fault_polygons is not None
+            else {}
+        )
         self.set_callbacks()
 
     @property
@@ -94,4 +100,5 @@ class MapViewerFMU(WebvizPluginABC):
             well_server=self._well_server,
             ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,
             fault_polygons_server=self._fault_polygons_server,
+            map_surface_names_to_fault_polygons=self.map_surface_names_to_fault_polygons,
         )

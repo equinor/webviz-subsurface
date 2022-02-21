@@ -40,7 +40,7 @@ class DeckGLMapProps:
     bounds: List[float] = [0, 0, 10000, 10000]
     value_range: List[float] = [0, 1]
     image: str = "/surface/UNDEF.png"
-    colormap: str = "/colormaps/viridis_r.png"
+    color_map_name: str = "Physics"
     edited_data: Dict[str, Any] = {
         "data": {"type": "FeatureCollection", "features": []},
         "selectedWell": "",
@@ -79,7 +79,7 @@ class Map3DLayer(pydeck.Layer):
         self,
         mesh: str = DeckGLMapProps.image,
         property_texture: str = DeckGLMapProps.image,
-        color_map_name: str = DeckGLMapProps.colormap,
+        color_map_name: str = DeckGLMapProps.color_map_name,
         name: str = LayerNames.MAP3D,
         bounds: List[float] = None,
         mesh_value_range: List[float] = None,
@@ -115,7 +115,7 @@ class ColormapLayer(pydeck.Layer):
     def __init__(
         self,
         image: str = DeckGLMapProps.image,
-        colormap: str = DeckGLMapProps.colormap,
+        color_map_name: str = DeckGLMapProps.color_map_name,
         name: str = LayerNames.COLORMAP,
         bounds: List[float] = None,
         value_range: List[float] = None,
@@ -127,7 +127,7 @@ class ColormapLayer(pydeck.Layer):
             type=LayerTypes.COLORMAP,
             id=uuid if uuid is not None else LayerIds.COLORMAP,
             image=String(image),
-            colorMapName=String(colormap),
+            colorMapName=String(color_map_name),
             name=String(name),
             bounds=bounds if bounds is not None else DeckGLMapProps.bounds,
             valueRange=value_range if value_range is not None else [0, 1],
