@@ -12,6 +12,7 @@ from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     Hillshading2DLayer,
     WellsLayer,
     Map3DLayer,
+    FaultPolygonsLayer,
 )
 from .providers.ensemble_surface_provider import SurfaceMode
 from webviz_subsurface._models import WellSetModel
@@ -52,6 +53,7 @@ class LayoutElements(str, Enum):
     HILLSHADING_LAYER = "deckglhillshadinglayer"
     WELLS_LAYER = "deckglwelllayer"
     MAP3D_LAYER = "deckglmap3dlayer"
+    FAULTPOLYGONS_LAYER = "deckglfaultpolygonslayer"
 
 
 class LayoutLabels(str, Enum):
@@ -156,42 +158,44 @@ def main_layout(
     get_uuid: Callable,
     well_names: List[str],
     show_fault_polygons: bool = True,
-) -> None:
+) -> html.Div:
 
-    return wcc.Tabs(
-        id=get_uuid("tabs"),
-        style={"width": "100%"},
-        value=Tabs.CUSTOM,
-        children=[
-            wcc.Tab(
-                label=TabsLabels.CUSTOM,
-                value=Tabs.CUSTOM,
-                children=view_layout(
-                    Tabs.CUSTOM, get_uuid, well_names, show_fault_polygons
+    return html.Div(
+        wcc.Tabs(
+            id=get_uuid("tabs"),
+            style={"width": "100%"},
+            value=Tabs.CUSTOM,
+            children=[
+                wcc.Tab(
+                    label=TabsLabels.CUSTOM,
+                    value=Tabs.CUSTOM,
+                    children=view_layout(
+                        Tabs.CUSTOM, get_uuid, well_names, show_fault_polygons
+                    ),
                 ),
-            ),
-            wcc.Tab(
-                label=TabsLabels.DIFF,
-                value=Tabs.DIFF,
-                children=view_layout(
-                    Tabs.DIFF, get_uuid, well_names, show_fault_polygons
+                wcc.Tab(
+                    label=TabsLabels.DIFF,
+                    value=Tabs.DIFF,
+                    children=view_layout(
+                        Tabs.DIFF, get_uuid, well_names, show_fault_polygons
+                    ),
                 ),
-            ),
-            wcc.Tab(
-                label=TabsLabels.STATS,
-                value=Tabs.STATS,
-                children=view_layout(
-                    Tabs.STATS, get_uuid, well_names, show_fault_polygons
+                wcc.Tab(
+                    label=TabsLabels.STATS,
+                    value=Tabs.STATS,
+                    children=view_layout(
+                        Tabs.STATS, get_uuid, well_names, show_fault_polygons
+                    ),
                 ),
-            ),
-            wcc.Tab(
-                label=TabsLabels.SPLIT,
-                value=Tabs.SPLIT,
-                children=view_layout(
-                    Tabs.SPLIT, get_uuid, well_names, show_fault_polygons
+                wcc.Tab(
+                    label=TabsLabels.SPLIT,
+                    value=Tabs.SPLIT,
+                    children=view_layout(
+                        Tabs.SPLIT, get_uuid, well_names, show_fault_polygons
+                    ),
                 ),
-            ),
-        ],
+            ],
+        )
     )
 
 
@@ -594,13 +598,16 @@ def update_map_layers(views, well_names):
                 filter(
                     None,
                     [
-                        well_names
-                        and WellsLayer(uuid=f"{LayoutElements.WELLS_LAYER}-{idx}"),
                         # Map3DLayer(uuid=f"{LayoutElements.MAP3D_LAYER}-{idx}"),
                         ColormapLayer(uuid=f"{LayoutElements.COLORMAP_LAYER}-{idx}"),
                         Hillshading2DLayer(
                             uuid=f"{LayoutElements.HILLSHADING_LAYER}-{idx}"
                         ),
+                        FaultPolygonsLayer(
+                            uuid=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}"
+                        ),
+                        well_names
+                        and WellsLayer(uuid=f"{LayoutElements.WELLS_LAYER}-{idx}"),
                     ],
                 )
             )

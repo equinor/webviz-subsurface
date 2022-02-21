@@ -20,6 +20,16 @@ from webviz_subsurface._providers.ensemble_surface_provider.surface_server impor
     QualifiedAddress,
     QualifiedDiffAddress,
 )
+from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
+    FaultPolygonsServer,
+    QualifiedAddress as QualifiedFaultAddress,
+)
+
+from webviz_subsurface._providers.ensemble_fault_polygons_provider.ensemble_fault_polygons_provider import (
+    SimulatedFaultPolygonsAddress,
+    FaultPolygonsAddress,
+)
+
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
@@ -45,6 +55,8 @@ def plugin_callbacks(
     surface_server: SurfaceServer,
     well_provider,
     well_server,
+    ensemble_fault_polygons_providers,
+    fault_polygons_server,
 ) -> None:
     def selections(tab, colorselector=False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -341,6 +353,17 @@ def plugin_callbacks(
                 surf_meta.y_max,
             ]
 
+            fault_polygons_provider = ensemble_fault_polygons_providers[
+                values[0]["ensemble"][0]
+            ]
+            horion_name = values[0]["name"][0]
+            fault_polygons_address = SimulatedFaultPolygonsAddress(
+                # attribute=values[0]["attribute"][0],
+                attribute=fault_polygons_provider.attributes()[0],
+                name=horion_name,
+                realization=int(values[0]["realizations"][0]),
+            )
+
             # layer_data = {
             #     "mesh": img_url,
             #     "propertyTexture": img_url,
@@ -378,6 +401,15 @@ def plugin_callbacks(
                     "colorMapRange": data["color_range"],
                 },
             )
+            layer_model.update_layer_by_id(
+                layer_id=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
+                layer_data={
+                    "data": fault_polygons_server.encode_partial_url(
+                        provider_id=fault_polygons_provider.provider_id(),
+                        fault_polygons_address=fault_polygons_address,
+                    ),
+                },
+            )
             if well_provider.well_names():
                 layer_model.update_layer_by_id(
                     layer_id=f"{LayoutElements.WELLS_LAYER}-{idx}",
@@ -388,9 +420,6 @@ def plugin_callbacks(
                         )
                     },
                 )
-        print(
-            viewport_bounds if values else no_update,
-        )
         return (
             layer_model.layers,
             viewport_bounds if values else no_update,
@@ -404,6 +433,7 @@ def plugin_callbacks(
                             # f"{LayoutElements.MAP3D_LAYER}-{view}",
                             f"{LayoutElements.COLORMAP_LAYER}-{view}",
                             f"{LayoutElements.HILLSHADING_LAYER}-{view}",
+                            f"{LayoutElements.FAULTPOLYGONS_LAYER}-{view}",
                             f"{LayoutElements.WELLS_LAYER}-{view}",
                         ],
                     }

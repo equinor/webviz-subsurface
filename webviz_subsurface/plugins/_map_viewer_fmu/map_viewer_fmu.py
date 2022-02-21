@@ -7,6 +7,9 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 
 from webviz_subsurface._models.well_set_model import WellSetModel
+from webviz_subsurface._providers.ensemble_fault_polygons_provider import (
+    fault_polygons_server,
+)
 from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
 from .callbacks import plugin_callbacks
@@ -14,13 +17,15 @@ from .layout import main_layout
 from webviz_subsurface._providers import (
     EnsembleSurfaceProviderFactory,
     WellProviderFactory,
+    EnsembleFaultPolygonsProviderFactory,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
     SurfaceServer,
 )
 from webviz_subsurface._providers.well_provider.well_server import WellServer
-from .routes import deckgl_map_routes  # type: ignore
-from .webviz_store import webviz_store_functions
+from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
+    FaultPolygonsServer,
+)
 
 
 class MapViewerFMU(WebvizPluginABC):
@@ -38,38 +43,36 @@ class MapViewerFMU(WebvizPluginABC):
     ):
 
         super().__init__()
-        # with open("/tmp/drogon_well_picks.json", "r") as f:
-        #     self.jsondata = json.load(f)
 
-        # Find surfaces
-        provider_factory = EnsembleSurfaceProviderFactory.instance()
+        surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
+        well_provider_factory = WellProviderFactory.instance()
+        fault_polygons_provider_factory = (
+            EnsembleFaultPolygonsProviderFactory.instance()
+        )
 
         self._ensemble_surface_providers = {
-            ens: provider_factory.create_from_ensemble_surface_files(
+            ens: surface_provider_factory.create_from_ensemble_surface_files(
                 webviz_settings.shared_settings["scratch_ensembles"][ens]
             )
             for ens in ensembles
         }
-        self.surface_server = SurfaceServer.instance(app)
+        self._surface_server = SurfaceServer.instance(app)
 
-        provider_factory = WellProviderFactory.instance()
-
-        self.well_provider = provider_factory.create_from_well_files(
+        self.well_provider = well_provider_factory.create_from_well_files(
             well_folder=wellfolder, well_suffix=wellsuffix, md_logname=mdlog
         )
-        self.well_server = WellServer.instance(app)
-        self.well_server.add_provider(self.well_provider)
+        self._well_server = WellServer.instance(app)
+        self._well_server.add_provider(self.well_provider)
 
-        # Initialize surface set
-        # if attributes is not None:
-        #     self._surface_table = self._surface_table[
-        #         self._surface_table["attribute"].isin(attributes)
-        #     ]
-        #     if self._surface_table.empty:
-        #         raise ValueError("No surfaces found with the given attributes")
-
-        # Find fault polygons
-        # self._fault_polygons_table = scrape_scratch_disk_for_fault_polygons
+        self._ensemble_fault_polygons_providers = {
+            ens: fault_polygons_provider_factory.create_from_ensemble_fault_polygons_files(
+                webviz_settings.shared_settings["scratch_ensembles"][ens]
+            )
+            for ens in ensembles
+        }
+        self._fault_polygons_server = FaultPolygonsServer.instance(app)
+        for fault_polygons_provider in self._ensemble_fault_polygons_providers.values():
+            self._fault_polygons_server.add_provider(fault_polygons_provider)
 
         self.set_callbacks()
 
@@ -85,7 +88,9 @@ class MapViewerFMU(WebvizPluginABC):
         plugin_callbacks(
             get_uuid=self.uuid,
             ensemble_surface_providers=self._ensemble_surface_providers,
-            surface_server=self.surface_server,
+            surface_server=self._surface_server,
             well_provider=self.well_provider,
-            well_server=self.well_server,
+            well_server=self._well_server,
+            ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,
+            fault_polygons_server=self._fault_polygons_server,
         )
