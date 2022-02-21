@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 from pathlib import Path
+from typing import List
 
 from webviz_config.webviz_factory import WebvizFactory
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
@@ -49,7 +50,7 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
         return factory
 
     def create_from_ensemble_surface_files(
-        self, ens_path: str
+        self, ens_path: str, attribute_filter: List[str] = None
     ) -> EnsembleSurfaceProvider:
         timer = PerfTimer()
 
@@ -69,8 +70,10 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing/copying surface data for: {ens_path}")
 
         timer.lap_s()
-        sim_surface_files = discover_per_realization_surface_files(ens_path)
-        obs_surface_files = discover_observed_surface_files(ens_path)
+        sim_surface_files = discover_per_realization_surface_files(
+            ens_path, attribute_filter
+        )
+        obs_surface_files = discover_observed_surface_files(ens_path, attribute_filter)
         et_discover_s = timer.lap_s()
 
         ProviderImplFile.write_backing_store(

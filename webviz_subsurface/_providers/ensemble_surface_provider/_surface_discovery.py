@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
+from attr import attr
 
 from fmu.ensemble import ScratchEnsemble
 
@@ -65,7 +66,9 @@ def _surface_ident_from_filename(filename: str) -> Optional[SurfaceIdent]:
     )
 
 
-def discover_per_realization_surface_files(ens_path: str) -> List[SurfaceFileInfo]:
+def discover_per_realization_surface_files(
+    ens_path: str, attribute_filter: List[str] = None
+) -> List[SurfaceFileInfo]:
     rel_surface_folder: str = "share/results/maps"
     suffix: str = "*.gri"
 
@@ -77,6 +80,11 @@ def discover_per_realization_surface_files(ens_path: str) -> List[SurfaceFileInf
         for surf_filename in sorted(globbed_filenames):
             surf_ident = _surface_ident_from_filename(surf_filename)
             if surf_ident:
+                if (
+                    attribute_filter is not None
+                    and surf_ident.attribute not in attribute_filter
+                ):
+                    continue
                 surface_files.append(
                     SurfaceFileInfo(
                         path=surf_filename,
@@ -90,7 +98,9 @@ def discover_per_realization_surface_files(ens_path: str) -> List[SurfaceFileInf
     return surface_files
 
 
-def discover_observed_surface_files(ens_path: str) -> List[SurfaceFileInfo]:
+def discover_observed_surface_files(
+    ens_path: str, attribute_filter: List[str] = None
+) -> List[SurfaceFileInfo]:
     observed_surface_folder: str = "share/observations/maps"
     suffix: str = "*.gri"
 
@@ -103,6 +113,11 @@ def discover_observed_surface_files(ens_path: str) -> List[SurfaceFileInfo]:
     for surf_filename in sorted(globbed_filenames):
         surf_ident = _surface_ident_from_filename(surf_filename)
         if surf_ident:
+            if (
+                attribute_filter is not None
+                and surf_ident.attribute not in attribute_filter
+            ):
+                continue
             surface_files.append(
                 SurfaceFileInfo(
                     path=surf_filename,

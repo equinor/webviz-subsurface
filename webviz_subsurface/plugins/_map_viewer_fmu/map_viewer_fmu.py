@@ -52,7 +52,8 @@ class MapViewerFMU(WebvizPluginABC):
 
         self._ensemble_surface_providers = {
             ens: surface_provider_factory.create_from_ensemble_surface_files(
-                webviz_settings.shared_settings["scratch_ensembles"][ens]
+                webviz_settings.shared_settings["scratch_ensembles"][ens],
+                attribute_filter=attributes,
             )
             for ens in ensembles
         }
