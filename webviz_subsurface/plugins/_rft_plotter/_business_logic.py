@@ -205,7 +205,13 @@ class RftPlotterDataModel:
         return df.reset_index(drop=True)
 
     def create_rft_and_param_pivot_table(
-        self, ensemble: str, well: str, date: str, zone: str, keep_all_rfts: bool
+        self,
+        ensemble: str,
+        well: str,
+        date: str,
+        zone: str,
+        reals: List[int],
+        keep_all_rfts: bool,
     ) -> Tuple[Optional[pd.DataFrame], float, float, List[str], List[str],]:
         """This method merges rft observations and parameters.
 
@@ -225,8 +231,8 @@ class RftPlotterDataModel:
         * list with ensemble parameters
         * list with rft names
         """
-
-        rft_filter = {"ENSEMBLE": ensemble}
+        # pylint: disable = too-many-locals
+        rft_filter = {"ENSEMBLE": ensemble, "REAL": reals}
         if not keep_all_rfts:
             rft_filter.update({"WELL": well, "DATE": date, "ZONE": zone})
 
@@ -251,7 +257,9 @@ class RftPlotterDataModel:
         ).reset_index()
 
         param_df = (
-            filter_frame(self.param_model.dataframe, {"ENSEMBLE": ensemble})
+            filter_frame(
+                self.param_model.dataframe, {"ENSEMBLE": ensemble, "REAL": reals}
+            )
             .drop("ENSEMBLE", axis=1)
             .dropna(axis=1)  # Removes parameters not used in this ensemble
         )
