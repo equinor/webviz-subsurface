@@ -89,19 +89,18 @@ class WellServer:
             validate_geometry = True
             feature_arr = []
             for wname in well_names_arr:
-                print(f"getting data for wname={wname}")
                 wp = provider.get_well_path(wname)
 
                 coords = list(zip(wp.x_arr, wp.y_arr, wp.z_arr))
                 # coords = coords[0::20]
                 point = geojson.Point(coordinates=coords[0], validate=validate_geometry)
                 line = geojson.LineString(
-                    coordinates=coords, validate=validate_geometry
+                    coordinates=coords[:2], validate=validate_geometry
                 )
                 geocoll = geojson.GeometryCollection(geometries=[point, line])
 
                 # Why is there an extra array nesting level for the md property?????
-                properties = {"name": wname, "md": [list(wp.md_arr)]}
+                properties = {"name": wname, "md": [list(wp.md_arr[:2])]}
 
                 feature = geojson.Feature(
                     id=wname, geometry=geocoll, properties=properties
