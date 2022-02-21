@@ -32,7 +32,6 @@ setup(
             "_abbreviations/abbreviation_data/*.json",
             "_assets/css/*.css",
             "_assets/js/*.js",
-            "_assets/colormaps/*.png",
             "ert_jobs/config_jobs/*",
         ]
     },
@@ -88,8 +87,6 @@ setup(
         "ecl2df>=0.15.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
         "fmu-tools>=1.8",
-        "geojson",
-        "jsonpatch",
         "jsonschema>=3.2.0",
         "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5",
