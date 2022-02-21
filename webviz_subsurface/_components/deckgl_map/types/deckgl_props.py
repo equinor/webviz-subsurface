@@ -13,6 +13,7 @@ class LayerTypes(str, Enum):
     COLORMAP = "ColormapLayer"
     WELL = "WellsLayer"
     DRAWING = "DrawingLayer"
+    FAULTPOLYGONS = "FaultPolygonsLayer"
 
 
 class LayerIds(str, Enum):
@@ -21,6 +22,7 @@ class LayerIds(str, Enum):
     COLORMAP = "colormap-layer"
     WELL = "wells-layer"
     DRAWING = "drawing-layer"
+    FAULTPOLYGONS = "fault-polygons-layer"
 
 
 class LayerNames(str, Enum):
@@ -29,6 +31,7 @@ class LayerNames(str, Enum):
     COLORMAP = "Colormap"
     WELL = "Wells"
     DRAWING = "Drawings"
+    FAULTPOLYGONS = "Fault polygons"
 
 
 class DeckGLMapProps:
@@ -151,7 +154,7 @@ class WellsLayer(pydeck.Layer):
             logData=log_data,
             logrunName=log_run,
             logName=log_name,
-            selectedWell=String(selected_well),
+            # selectedWell=String(selected_well),
             **kwargs,
         )
 
@@ -173,6 +176,28 @@ class DrawingLayer(pydeck.Layer):
             data=String(data),
             mode=String(mode),
             selectedFeatureIndexes=String(selectedFeatureIndexes),
+        )
+
+
+class FaultPolygonsLayer(pydeck.Layer):
+    def __init__(
+        self,
+        data: FeatureCollection = None,
+        name: str = LayerNames.FAULTPOLYGONS,
+        uuid: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            type=LayerTypes.FAULTPOLYGONS,
+            id=uuid if uuid is not None else LayerIds.FAULTPOLYGONS,
+            name=String(name),
+            data={
+                "type": "FeatureCollection",
+                "features": [],
+            }
+            if data is None
+            else data,
+            **kwargs,
         )
 
 
