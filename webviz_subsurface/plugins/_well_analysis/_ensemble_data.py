@@ -18,11 +18,12 @@ class EnsembleData:
         self._vector_names = self._provider.vector_names()
         self._realizations = self._provider.realizations()
         self._wells: List[str] = [
-            vec.split(":")[1] for vec in self._vector_names if vec.startswith("WMCTL:")
+            vec.split(":")[1] for vec in self._vector_names if vec.startswith("WOPT:")
         ]
 
         well_sumvecs = [vec for vec in self._vector_names if vec.startswith("W")]
-        self._smry = provider.get_vectors_df(well_sumvecs, None)
+        group_sumvecs = [vec for vec in self._vector_names if vec.startswith("GPR:")]
+        self._smry = provider.get_vectors_df(well_sumvecs + group_sumvecs, None)
 
     @property
     def summary_data(self) -> pd.DataFrame:
@@ -128,7 +129,6 @@ def _get_nodelist(df: pd.DataFrame, node_type: str, node: str) -> List[Dict[str,
         )
     if is_terminal_node(node, child_row):
         return [_get_node_field("terminal_node", node)]
-
     parent = child_row.PARENT.values[0]
     nodelist = [_get_node_field(node_type, node)]
     if node_type == "well":
@@ -140,7 +140,7 @@ def is_terminal_node(node: str, row: pd.Series) -> bool:
     """Desc"""
     if node == "FIELD":
         return True
-    if "TERMINAL_PRESSURE" and row["TERMINAL_PRESSURE"] is not None:
+    if "TERMINAL_PRESSURE" in row and row["TERMINAL_PRESSURE"].values[0] is not None:
         return True
     return False
 
