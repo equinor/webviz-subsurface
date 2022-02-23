@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Changed vector annotation from "AVG_" with suffix "R" and "INTVL_" to "PER_DAY_" and "PER_INTVL_". Retrieve `VectorDefinitions` via Python-API for `webviz-subsurface-components`.
 - [#956](https://github.com/equinor/webviz-subsurface/pull/956) - `SimulationTimeSeries` - Deprecate usage of user input options {vector1, vector2, vector3}. Add list of vectors as user input options for initially selected vectors.
+- [#961](https://github.com/equinor/webviz-subsurface/pull/961) - Improved error message when there are none valid realizations in an ensemble.
 
 ## [0.2.10] - 2022-02-09
 
