@@ -148,14 +148,21 @@ class WellsLayer(pydeck.Layer):
         **kwargs: Any,
     ) -> None:
         super().__init__(
-            type=LayerTypes.WELL,
+            type="GeoJsonLayer",
             id=uuid if uuid is not None else LayerIds.WELL,
             name=String(name),
-            data={} if data is None else data,
-            logData=log_data,
-            logrunName=log_run,
-            logName=log_name,
+            data=String("/WellServer"),
+            get_text="properties.name",
+            get_text_size=12,
+            get_text_anchor=String("start"),
+            # logData=log_data,
+            # logrunName=log_run,
+            # logName=log_name,
             # selectedWell=String(selected_well),
+            pointType=String("circle+text"),
+            lineWidthMinPixels=2,
+            pointRadiusMinPixels=2,
+            pickable=True,
             **kwargs,
         )
 

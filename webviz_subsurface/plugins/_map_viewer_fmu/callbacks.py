@@ -440,7 +440,7 @@ def plugin_callbacks(
                     layer_data={
                         "data": well_server.encode_partial_url(
                             provider_id=well_provider.provider_id(),
-                            well_names=[well_provider.well_names()[0]],
+                            well_names=well_provider.well_names(),
                         )
                     },
                 )

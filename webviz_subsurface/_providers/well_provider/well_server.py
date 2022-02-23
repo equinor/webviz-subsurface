@@ -93,14 +93,14 @@ class WellServer:
 
                 coords = list(zip(wp.x_arr, wp.y_arr, wp.z_arr))
                 # coords = coords[0::20]
-                point = geojson.Point(coordinates=coords[0], validate=validate_geometry)
-                line = geojson.LineString(
-                    coordinates=coords[:2], validate=validate_geometry
+                point = geojson.Point(
+                    coordinates=[coords[0][0], coords[0][1]], validate=validate_geometry
                 )
-                geocoll = geojson.GeometryCollection(geometries=[point, line])
+
+                geocoll = geojson.GeometryCollection(geometries=[point])
 
                 # Why is there an extra array nesting level for the md property?????
-                properties = {"name": wname, "md": [list(wp.md_arr[:2])]}
+                properties = {"name": wname}
 
                 feature = geojson.Feature(
                     id=wname, geometry=geocoll, properties=properties
