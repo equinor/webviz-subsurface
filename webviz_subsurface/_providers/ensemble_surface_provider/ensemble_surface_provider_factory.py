@@ -53,8 +53,13 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
         self, ens_path: str, attribute_filter: List[str] = None
     ) -> EnsembleSurfaceProvider:
         timer = PerfTimer()
-
-        storage_key = f"ens__{_make_hash_string(ens_path)}"
+        string_to_hash = (
+            f"{ens_path}"
+            if attribute_filter is None
+            else f"{ens_path}_{'_'.join([str(attr) for attr in attribute_filter])}"
+        )
+        storage_key = f"ens__{_make_hash_string(string_to_hash)}"
+        print(self._storage_dir, storage_key)
         provider = ProviderImplFile.from_backing_store(self._storage_dir, storage_key)
         if provider:
             LOGGER.info(
