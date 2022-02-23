@@ -40,9 +40,9 @@ def subscribe_scratch_ensembles(
                         " but that wildcard path does not give any matches."
                     )
                 raise ValueError(
-                    f"No realizations with a valid target file ('OK') found for ensemble "
-                    f"{ensemble_name} located at {ensemble_path}. This can occur when running "
-                    "ERT if no simulations are finished, or all simulations have failed."
+                    f"No realizations with a valid ERT 'OK' file found for ensemble "
+                    f"{ensemble_name} located at {ensemble_path}. This can occur if an ERT job "
+                    "has failed in all realizations, or none of the realizations have finished yet."
                 )
 
     return scratch_ensembles
