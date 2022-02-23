@@ -188,28 +188,30 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
             for ens in ensembles
         }
+
+        # Create a table of surface files
         surface_table = find_surfaces(self._ensemble_paths)
+        # Filter on provided surface attributes
         surface_table = surface_table[surface_table["attribute"].isin(self._surf_attrs)]
+        # Filter on provided surface names
+        self._surfacenames = (
+            list(surface_table["name"].unique())
+            if surface_name_filter is None
+            else surface_name_filter
+        )
+        surface_table = surface_table[surface_table["name"].isin(surface_name_filter)]
+
         if surface_table.empty:
             raise ValueError("No surfaces found with the given attributes")
-        self._surfacenames = list(surface_table["name"].unique())
+
         self.ensembles = list(surface_table["ENSEMBLE"].unique())
         for _, attr_df in surface_table.groupby("attribute"):
+
             if set(attr_df["name"].unique()) != set(self._surfacenames):
                 raise ValueError(
                     "Surface attributes has different surfaces. This is not supported!"
                 )
-        if surface_name_filter is not None:
-            self._surfacenames = [
-                name for name in surface_name_filter if name in self._surfacenames
-            ]
-            if not self._surfacenames:
-                raise ValueError(
-                    "No surfaces found with the provided surface name filter!"
-                )
-            surface_table = surface_table[
-                surface_table["name"].isin(surface_name_filter)
-            ]
+
         self._surface_ensemble_set_model = {
             ens: SurfaceSetModel(surf_ens_df)
             for ens, surf_ens_df in surface_table.groupby("ENSEMBLE")
