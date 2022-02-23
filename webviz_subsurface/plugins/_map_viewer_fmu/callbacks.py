@@ -139,9 +139,10 @@ def plugin_callbacks(
             filtered_reals,
         )
 
-        for idx, data in enumerate(test):
-            for key, val in data.items():
-                selector_values[idx][key] = val["value"]
+        selector_values = [
+            {key: val["value"] for key, val in data.items()}
+            for idx, data in enumerate(test)
+        ]
 
         if multi_selector is not None:
             selector_values = update_selections_with_multi(
@@ -160,7 +161,7 @@ def plugin_callbacks(
                     selector=id_val["selector"],
                     view_data=[data[id_val["selector"]] for data in test],
                     link=id_val["selector"] in linked_selector_names,
-                    dropdown=id_val["selector"] in ["ensemble", "mode", "colormap"],
+                    dropdown=id_val["selector"] in ["ensemble", "mode"],
                 )
                 for id_val in wrapper_ids
             ],
@@ -303,8 +304,9 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.VIEW_COLUMNS), "value"),
         Input(get_uuid(LayoutElements.OPTIONS), "value"),
         State(get_uuid("tabs"), "value"),
+        State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
     )
-    def _update_map(surface_elements: List, view_columns, options, tab_name):
+    def _update_map(surface_elements: List, view_columns, options, tab_name, multi):
         """Updates the map component with the stored, validated selections"""
         if surface_elements is None:
             raise PreventUpdate
@@ -462,14 +464,16 @@ def plugin_callbacks(
                             f"{LayoutElements.FAULTPOLYGONS_LAYER}-{view}",
                             f"{LayoutElements.WELLS_LAYER}-{view}",
                         ],
-                        "name": make_viewport_label(surface_elements[view], tab_name),
+                        "name": make_viewport_label(
+                            surface_elements[view], tab_name, multi
+                        ),
                     }
                     for view in range(number_of_views)
                 ],
             },
         )
 
-    def make_viewport_label(data, tab):
+    def make_viewport_label(data, tab, multi):
         """Return text-label for each viewport based on which tab is selected"""
         # For the difference view
         if tab == Tabs.DIFF and data.get("surf_type") == "diff":
@@ -483,7 +487,6 @@ def plugin_callbacks(
 
         # For the "map per selector" the chosen multi selector is used as label
         if tab == Tabs.SPLIT:
-            multi = data["multi"]
             if multi == "realizations":
                 return f"REAL {data['realizations'][0]}"
             return data[multi][0] if multi == "mode" else data[multi]
@@ -588,6 +591,7 @@ def plugin_callbacks(
                     "mode": {"value": mode, "options": modes},
                     "realizations": {
                         "value": real,
+                        "disabled": mode != SurfaceMode.REALIZATION,
                         "options": filtered_realizations,
                         "multi": mode != SurfaceMode.REALIZATION
                         or multi == "realizations",
