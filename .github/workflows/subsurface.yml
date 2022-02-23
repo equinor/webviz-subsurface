@@ -62,29 +62,29 @@ jobs:
     - name: 🧾 List all installed packages
       run: pip freeze
 
-    - name: 🕵️ Check code style & linting
-      run: |
-        black --check webviz_subsurface tests setup.py
-        pylint webviz_subsurface tests setup.py
-        bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
-        isort --check-only webviz_subsurface tests setup.py
-        mypy --package webviz_subsurface
+    # - name: 🕵️ Check code style & linting
+      # run: |
+        # black --check webviz_subsurface tests setup.py
+        # pylint webviz_subsurface tests setup.py
+        # bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
+        # isort --check-only webviz_subsurface tests setup.py
+        # mypy --package webviz_subsurface
 
     - name: 🤖 Run tests
       env:
         # If you want the CI to (temporarily) run against your fork of the testdada,
         # change the value her from "equinor" to your username.
-        TESTDATA_REPO_OWNER: equinor
+        TESTDATA_REPO_OWNER: hanskallekleiv
         # If you want the CI to (temporarily) run against another branch than master,
         # change the value her from "master" to the relevant branch name.
-        TESTDATA_REPO_BRANCH: master
+        TESTDATA_REPO_BRANCH: large-surface-test
       run: |
         git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
-        # Copy any clientside script to the test folder before running tests
-        mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
-        pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
-        rm -rf ./tests/assets
-        webviz docs --portable ./docs_build --skip-open
+        # # Copy any clientside script to the test folder before running tests
+        # mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
+        # pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
+        # rm -rf ./tests/assets
+        # webviz docs --portable ./docs_build --skip-open
 
     - name: 🐳 Build Docker example image
       if: matrix.python-version != '3.7'  # https://github.com/statsmodels/statsmodels/issues/8110
@@ -92,7 +92,7 @@ jobs:
         pip install --pre webviz-config-equinor
         export SOURCE_URL_WEBVIZ_SUBSURFACE=https://github.com/$GITHUB_REPOSITORY
         export GIT_POINTER_WEBVIZ_SUBSURFACE=$GITHUB_REF
-        webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
+        webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor --logconfig ./webviz-subsurface-testdata/webviz_examples/debug.yml
         rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
         docker build -t webviz/example_subsurface_image:equinor-theme .

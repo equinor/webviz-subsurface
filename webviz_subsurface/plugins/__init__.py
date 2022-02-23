@@ -19,7 +19,7 @@ pages:
           - iter-1
 ```
 """
-
+from ._map_long_callback_spike import MapLongCallbackSpike
 from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
 from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
@@ -29,6 +29,7 @@ from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
 from ._inplace_volumes import InplaceVolumes
 from ._inplace_volumes_onebyone import InplaceVolumesOneByOne
 from ._line_plotter_fmu.line_plotter_fmu import LinePlotterFMU
+from ._map_viewer_fmu import MapViewerFMU
 from ._morris_plot import MorrisPlot
 from ._parameter_analysis import ParameterAnalysis
 from ._parameter_correlation import ParameterCorrelation
