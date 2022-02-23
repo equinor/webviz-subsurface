@@ -56,6 +56,7 @@ class LayoutElements(str, Enum):
     MAP3D_LAYER = "deckglmap3dlayer"
     FAULTPOLYGONS_LAYER = "deckglfaultpolygonslayer"
     REALIZATIONS_FILTER = "realization-filter-selector"
+    OPTIONS_DIALOG = "options-dialog"
 
 
 class LayoutLabels(str, Enum):
@@ -183,39 +184,66 @@ def main_layout(
     realizations,
     show_fault_polygons: bool = True,
 ):
-    return wcc.Tabs(
-        id=get_uuid("tabs"),
-        style={"width": "100%"},
-        value=Tabs.CUSTOM,
+    return html.Div(
         children=[
-            wcc.Tab(
-                label=TabsLabels[tab.name],
-                value=tab,
-                children=wcc.FlexBox(
-                    children=[
-                        wcc.Frame(
-                            style=LayoutStyle.SIDEBAR,
-                            children=TabSidebarLayout(
-                                tab,
-                                get_uuid,
-                                well_names,
-                                realizations,
-                                show_fault_polygons,
-                            ),
+            wcc.Tabs(
+                id=get_uuid("tabs"),
+                style={"width": "100%"},
+                value=Tabs.CUSTOM,
+                children=[
+                    wcc.Tab(
+                        label=TabsLabels[tab.name],
+                        value=tab,
+                        children=wcc.FlexBox(
+                            children=[
+                                wcc.Frame(
+                                    style=LayoutStyle.SIDEBAR,
+                                    children=[
+                                        DataStores(tab, get_uuid),
+                                        NumberOfViewsSelector(tab, get_uuid),
+                                        MultiSelectorSelector(tab, get_uuid),
+                                        html.Button(
+                                            LayoutLabels.COMMON_SELECTIONS,
+                                            id={"id": get_uuid("Button"), "tab": tab},
+                                        ),
+                                        html.Div(
+                                            [
+                                                MapSelectorLayout(
+                                                    tab=tab,
+                                                    get_uuid=get_uuid,
+                                                    selector=selector,
+                                                    label=LayoutLabels[selector.name],
+                                                )
+                                                for selector in MapSelector
+                                            ]
+                                        ),
+                                        SurfaceColorSelector(tab, get_uuid),
+                                    ],
+                                ),
+                                wcc.Frame(
+                                    id=get_uuid(LayoutElements.MAINVIEW),
+                                    style=LayoutStyle.MAINVIEW,
+                                    color="white",
+                                    highlight=False,
+                                    children=MapViewLayout(tab, get_uuid, well_names),
+                                ),
+                            ]
                         ),
-                        wcc.Frame(
-                            id=get_uuid(LayoutElements.MAINVIEW),
-                            style=LayoutStyle.MAINVIEW,
-                            color="white",
-                            highlight=False,
-                            children=MapViewLayout(tab, get_uuid, well_names),
-                        ),
-                    ]
-                ),
-            )
-            for tab in Tabs
-        ],
+                    )
+                    for tab in Tabs
+                ],
+            ),
+            OptionsLayout(get_uuid, show_fault_polygons, well_names, realizations),
+        ]
     )
+
+
+class OpenDialogButton(html.Button):
+    def __init__(self, tab, get_uuid):
+        super().__init__(
+            LayoutLabels.COMMON_SELECTIONS,
+            id={"id": get_uuid("Button"), "tab": tab},
+        )
 
 
 class MapViewLayout(FullScreen):
@@ -252,45 +280,10 @@ class DataStores(html.Div):
         )
 
 
-class TabSidebarLayout(html.Div):
-    """Class containing the layout for the individual tab"""
-
-    def __init__(
-        self,
-        tab,
-        get_uuid: Callable,
-        well_names: List[str],
-        realizations,
-        show_fault_polygons: bool = True,
-    ) -> None:
-        super().__init__(
-            children=[
-                DataStores(tab, get_uuid),
-                NumberOfViewsSelector(tab, get_uuid),
-                MultiSelectorSelector(tab, get_uuid),
-                OptionsLayout(
-                    tab, get_uuid, show_fault_polygons, well_names, realizations
-                ),
-                html.Div(
-                    [
-                        MapSelectorLayout(
-                            tab=tab,
-                            get_uuid=get_uuid,
-                            selector=selector,
-                            label=LayoutLabels[selector.name],
-                        )
-                        for selector in MapSelector
-                    ]
-                ),
-                SurfaceColorSelector(tab, get_uuid),
-            ]
-        )
-
-
-class OptionsLayout(wcc.Selectors):
+class OptionsLayout(wcc.Dialog):
     """Layout for the options in the sidebar"""
 
-    def __init__(self, tab, get_uuid, show_fault_polygons, well_names, realizations):
+    def __init__(self, get_uuid, show_fault_polygons, well_names, realizations):
 
         checklist_options = [LayoutLabels.SHOW_HILLSHADING]
         if show_fault_polygons:
@@ -299,12 +292,14 @@ class OptionsLayout(wcc.Selectors):
             checklist_options.append(LayoutLabels.SHOW_WELLS)
 
         super().__init__(
-            label=LayoutLabels.COMMON_SELECTIONS,
-            open_details=False,
+            title=LayoutLabels.COMMON_SELECTIONS,
+            id=get_uuid(LayoutElements.OPTIONS_DIALOG),
+            draggable=True,
+            open=False,
             children=[
-                ViewsInRowSelector(tab, get_uuid),
+                ViewsInRowSelector(get_uuid),
                 wcc.Checklist(
-                    id={"id": get_uuid(LayoutElements.OPTIONS), "tab": tab},
+                    id=get_uuid(LayoutElements.OPTIONS),
                     options=[{"label": opt, "value": opt} for opt in checklist_options],
                     value=checklist_options,
                 ),
@@ -312,12 +307,12 @@ class OptionsLayout(wcc.Selectors):
                     [
                         html.Div(
                             style={"flex": 3, "minWidth": "20px"},
-                            children=WellFilter(tab, get_uuid, well_names)
+                            children=WellFilter(get_uuid, well_names)
                             if well_names
                             else [],
                         ),
                         html.Div(
-                            RealizationFilter(tab, get_uuid, realizations),
+                            RealizationFilter(get_uuid, realizations),
                             style={"flex": 2, "minWidth": "20px"},
                         ),
                     ]
@@ -444,21 +439,17 @@ class NumberOfViewsSelector(html.Div):
 
 
 class ViewsInRowSelector(html.Div):
-    def __init__(self, tab, get_uuid: Callable):
+    def __init__(self, get_uuid: Callable):
         super().__init__(
             children=[
                 "Views in row (optional)",
                 html.Div(
                     dcc.Input(
-                        id={
-                            "id": get_uuid(LayoutElements.VIEW_COLUMNS),
-                            "tab": tab,
-                        },
+                        id=get_uuid(LayoutElements.VIEW_COLUMNS),
                         type="number",
                         min=1,
                         max=9,
                         step=1,
-                        value=DefaultSettings.VIEWS_IN_ROW.get(tab),
                     ),
                     style={"float": "right"},
                 ),
@@ -467,10 +458,10 @@ class ViewsInRowSelector(html.Div):
 
 
 class RealizationFilter(wcc.SelectWithLabel):
-    def __init__(self, tab, get_uuid: Callable, realizations):
+    def __init__(self, get_uuid: Callable, realizations):
         super().__init__(
             label=LayoutLabels.REAL_FILTER,
-            id={"id": get_uuid(LayoutElements.REALIZATIONS_FILTER), "tab": tab},
+            id=get_uuid(LayoutElements.REALIZATIONS_FILTER),
             options=[{"label": i, "value": i} for i in realizations],
             value=realizations,
             size=min(6, len(realizations)),
@@ -478,10 +469,10 @@ class RealizationFilter(wcc.SelectWithLabel):
 
 
 class WellFilter(wcc.SelectWithLabel):
-    def __init__(self, tab, get_uuid: Callable, well_names):
+    def __init__(self, get_uuid: Callable, well_names):
         super().__init__(
             label=LayoutLabels.WELL_FILTER,
-            id={"id": get_uuid(LayoutElements.WELLS), "tab": tab},
+            id=get_uuid(LayoutElements.WELLS),
             options=[{"label": i, "value": i} for i in well_names],
             value=well_names,
             size=min(6, len(well_names)),

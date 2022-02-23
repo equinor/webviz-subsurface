@@ -81,9 +81,22 @@ def plugin_callbacks(
 
     # 1st callback
     @callback(
+        Output(get_uuid(LayoutElements.OPTIONS_DIALOG), "open"),
+        Input({"id": get_uuid("Button"), "tab": ALL}, "n_clicks"),
+        State(get_uuid(LayoutElements.OPTIONS_DIALOG), "open"),
+    )
+    def open_options_dialog(_n_click: list, is_open: bool):
+        print(_n_click)
+        if any(click is not None for click in _n_click):
+            print(not is_open)
+            return not is_open
+        return no_update
+
+    # 1st callback
+    @callback(
         Output({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
         Input(selections(MATCH), "value"),
-        Input({"id": get_uuid(LayoutElements.WELLS), "tab": MATCH}, "value"),
+        Input(get_uuid(LayoutElements.WELLS), "value"),
         Input({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
         Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
         Input(get_uuid("tabs"), "value"),
@@ -128,6 +141,7 @@ def plugin_callbacks(
         Input({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
         State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
         Input(links(MATCH), "value"),
+        Input(get_uuid(LayoutElements.REALIZATIONS_FILTER), "value"),
         State(selector_wrapper(MATCH), "id"),
         State(get_uuid("tabs"), "value"),
     )
@@ -135,6 +149,7 @@ def plugin_callbacks(
         selector_values: List[Dict[str, Any]],
         selectors_with_multi,
         selectorlinks,
+        filtered_reals,
         wrapper_ids,
         tab_name,
     ):
@@ -149,7 +164,11 @@ def plugin_callbacks(
 
         multi_in_ctx = get_uuid(LayoutElements.MULTI) in ctx
         test = _update_selector_values_from_provider(
-            selector_values, linked_selector_names, selectors_with_multi, multi_in_ctx
+            selector_values,
+            linked_selector_names,
+            selectors_with_multi,
+            multi_in_ctx,
+            filtered_reals,
         )
 
         for idx, data in enumerate(test):
@@ -313,8 +332,8 @@ def plugin_callbacks(
         Input(
             {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": MATCH}, "data"
         ),
-        Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": MATCH}, "value"),
-        Input({"id": get_uuid(LayoutElements.OPTIONS), "tab": MATCH}, "value"),
+        Input(get_uuid(LayoutElements.VIEW_COLUMNS), "value"),
+        Input(get_uuid(LayoutElements.OPTIONS), "value"),
         State(get_uuid("tabs"), "value"),
     )
     def _update_map(surface_elements: List, view_columns, options, tab_name):
@@ -322,7 +341,7 @@ def plugin_callbacks(
         if surface_elements is None:
             raise PreventUpdate
         view_settings: List[ViewSetting] = []
-        print(json.dumps(surface_elements, indent=4))
+
         number_of_views = len(surface_elements)
 
         layers = update_map_layers(
@@ -331,7 +350,7 @@ def plugin_callbacks(
             visible_fault_polygons_layer=LayoutLabels.SHOW_FAULTPOLYGONS in options,
             visible_hillshading_layer=LayoutLabels.SHOW_HILLSHADING in options,
         )
-        print(layers)
+
         layer_model = DeckGLMapLayersModel(layers)
 
         for idx, data in enumerate(surface_elements):
@@ -510,7 +529,7 @@ def plugin_callbacks(
         return " ".join(surfaceid)
 
     def _update_selector_values_from_provider(
-        values, links, multi, multi_in_ctx
+        values, links, multi, multi_in_ctx, filtered_realizations
     ) -> None:
         view_data = []
         for idx, data in enumerate(values):
@@ -573,22 +592,22 @@ def plugin_callbacks(
                 mode = data.get("mode", SurfaceMode.REALIZATION)
 
             if not ("realizations" in links and idx > 0):
-                reals = []
-                for ens in ensembles:
-                    provider = ensemble_surface_providers[ens]
-                    reals.extend([x for x in provider.realizations() if x not in reals])
-
-                if mode == SurfaceMode.REALIZATION and multi != "realizations":
-                    real = [data.get("realizations", reals)[0]]
+                reals = filtered_realizations
+                valid_selected_reals = [
+                    x for x in data.get("realizations", reals) if x in reals
+                ]
+                if (
+                    valid_selected_reals
+                    and mode == SurfaceMode.REALIZATION
+                    and multi != "realizations"
+                ):
+                    real = [valid_selected_reals[0]]
                 else:
                     real = (
-                        data["realizations"]
-                        if "realizations" in data and len(data["realizations"]) > 1
-                        else reals
+                        valid_selected_reals if len(valid_selected_reals) > 1 else reals
                     )
-                # FIX THIS
-                if multi_in_ctx:
-                    # real = [x for x in data.get("realizations", [])]
+
+                if not real or multi_in_ctx:
                     real = reals if multi == "realizations" else reals[:1]
 
             view_data.append(
