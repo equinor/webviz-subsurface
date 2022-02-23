@@ -86,7 +86,7 @@ class LayoutStyle:
     """CSS styling"""
 
     MAPHEIGHT = "87vh"
-    SIDEBAR = {"flex": 1, "height": "90vh"}
+    SIDEBAR = {"flex": 1, "height": "90vh", "overflow-x": "auto"}
     MAINVIEW = {"flex": 3, "height": "90vh"}
     RESET_BUTTON = {
         "marginTop": "5px",
@@ -353,8 +353,7 @@ class SideBySideSelectorFlex(wcc.FlexBox):
     ):
         super().__init__(
             style={
-                "overflow-x": "auto",
-                "overflow-y": "visible",
+                #       "overflow-y": "visible",
                 "flex-wrap": "nowrap",
             },
             children=[
