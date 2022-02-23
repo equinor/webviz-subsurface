@@ -1,4 +1,4 @@
-from enum import Enum, auto, unique
+from enum import Enum, unique
 from typing import Callable, List, Dict, Any, Optional
 import json
 import webviz_core_components as wcc
@@ -15,9 +15,6 @@ from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     FaultPolygonsLayer,
 )
 from ._types import SurfaceMode
-from webviz_subsurface._models import WellSetModel
-
-from .utils.formatting import format_date
 
 
 @unique
@@ -80,7 +77,7 @@ class LayoutLabels(str, Enum):
     SHOW_FAULTPOLYGONS = "Show fault polygons"
     SHOW_WELLS = "Show wells"
     SHOW_HILLSHADING = "Hillshading"
-    COMMON_SELECTIONS = "Options"
+    COMMON_SELECTIONS = "Options and global filters"
     REAL_FILTER = "Realization filter"
     WELL_FILTER = "Well filter"
 
@@ -98,6 +95,13 @@ class LayoutStyle:
         "line-height": "20px",
         "background-color": "#7393B3",
         "color": "#fff",
+    }
+    OPTIONS_BUTTON = {
+        "marginBottom": "10px",
+        "width": "100%",
+        "height": "30px",
+        "line-height": "30px",
+        "background-color": "lightgrey",
     }
 
 
@@ -132,7 +136,6 @@ class ColorSelector(str, Enum):
 class DefaultSettings:
 
     NUMBER_OF_VIEWS = {Tabs.STATS: 4, Tabs.DIFF: 2, Tabs.SPLIT: 1}
-    VIEWS_IN_ROW = {Tabs.DIFF: 3}
     LINKED_SELECTORS = {
         Tabs.STATS: [
             MapSelector.ENSEMBLE,
@@ -200,12 +203,9 @@ def main_layout(
                                     style=LayoutStyle.SIDEBAR,
                                     children=[
                                         DataStores(tab, get_uuid),
+                                        OpenDialogButton(tab, get_uuid),
                                         NumberOfViewsSelector(tab, get_uuid),
                                         MultiSelectorSelector(tab, get_uuid),
-                                        html.Button(
-                                            LayoutLabels.COMMON_SELECTIONS,
-                                            id={"id": get_uuid("Button"), "tab": tab},
-                                        ),
                                         html.Div(
                                             [
                                                 MapSelectorLayout(
@@ -233,7 +233,7 @@ def main_layout(
                     for tab in Tabs
                 ],
             ),
-            OptionsLayout(get_uuid, show_fault_polygons, well_names, realizations),
+            DialogLayout(get_uuid, show_fault_polygons, well_names, realizations),
         ]
     )
 
@@ -241,8 +241,9 @@ def main_layout(
 class OpenDialogButton(html.Button):
     def __init__(self, tab, get_uuid):
         super().__init__(
-            LayoutLabels.COMMON_SELECTIONS,
+            children=LayoutLabels.COMMON_SELECTIONS,
             id={"id": get_uuid("Button"), "tab": tab},
+            style=LayoutStyle.OPTIONS_BUTTON,
         )
 
 
@@ -254,7 +255,7 @@ class MapViewLayout(FullScreen):
             children=html.Div(
                 DeckGLMap(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
-                    layers=update_map_layers(1, bool(well_names)),
+                    layers=update_map_layers(1, include_well_layer=bool(well_names)),
                     zoom=-4,
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
@@ -280,8 +281,8 @@ class DataStores(html.Div):
         )
 
 
-class OptionsLayout(wcc.Dialog):
-    """Layout for the options in the sidebar"""
+class DialogLayout(wcc.Dialog):
+    """Layout for the options and filters dialog"""
 
     def __init__(self, get_uuid, show_fault_polygons, well_names, realizations):
 
@@ -306,10 +307,12 @@ class OptionsLayout(wcc.Dialog):
                 wcc.FlexBox(
                     [
                         html.Div(
-                            style={"flex": 3, "minWidth": "20px"},
-                            children=WellFilter(get_uuid, well_names)
-                            if well_names
-                            else [],
+                            style={
+                                "flex": 3,
+                                "minWidth": "20px",
+                                "display": "block" if well_names else "none",
+                            },
+                            children=WellFilter(get_uuid, well_names),
                         ),
                         html.Div(
                             RealizationFilter(get_uuid, realizations),
@@ -464,18 +467,21 @@ class RealizationFilter(wcc.SelectWithLabel):
             id=get_uuid(LayoutElements.REALIZATIONS_FILTER),
             options=[{"label": i, "value": i} for i in realizations],
             value=realizations,
-            size=min(6, len(realizations)),
+            size=min(20, len(realizations)),
         )
 
 
-class WellFilter(wcc.SelectWithLabel):
+class WellFilter(html.Div):
     def __init__(self, get_uuid: Callable, well_names):
         super().__init__(
-            label=LayoutLabels.WELL_FILTER,
-            id=get_uuid(LayoutElements.WELLS),
-            options=[{"label": i, "value": i} for i in well_names],
-            value=well_names,
-            size=min(6, len(well_names)),
+            style={"display": "block" if well_names else "none"},
+            children=wcc.SelectWithLabel(
+                label=LayoutLabels.WELL_FILTER,
+                id=get_uuid(LayoutElements.WELLS),
+                options=[{"label": i, "value": i} for i in well_names],
+                value=well_names,
+                size=min(20, len(well_names)),
+            ),
         )
 
 

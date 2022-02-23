@@ -1,16 +1,9 @@
-import json
 from pathlib import Path
 from typing import Callable, List, Tuple, Dict
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-
-from webviz_subsurface._models.well_set_model import WellSetModel
-from webviz_subsurface._providers.ensemble_fault_polygons_provider import (
-    fault_polygons_server,
-)
-from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
 from .callbacks import plugin_callbacks
 from .layout import main_layout
@@ -60,11 +53,15 @@ class MapViewerFMU(WebvizPluginABC):
         }
         self._surface_server = SurfaceServer.instance(app)
 
-        self.well_provider = well_provider_factory.create_from_well_files(
-            well_folder=wellfolder, well_suffix=wellsuffix, md_logname=mdlog
-        )
-        self._well_server = WellServer.instance(app)
-        self._well_server.add_provider(self.well_provider)
+        if wellfolder is not None:
+            self.well_provider = well_provider_factory.create_from_well_files(
+                well_folder=wellfolder, well_suffix=wellsuffix, md_logname=mdlog
+            )
+            self._well_server = WellServer.instance(app)
+            self._well_server.add_provider(self.well_provider)
+        else:
+            self.well_provider = None
+            self._well_server = None
 
         self._ensemble_fault_polygons_providers = {
             ens: fault_polygons_provider_factory.create_from_ensemble_fault_polygons_files(
@@ -91,7 +88,9 @@ class MapViewerFMU(WebvizPluginABC):
             reals.extend([x for x in provider.realizations() if x not in reals])
         return main_layout(
             get_uuid=self.uuid,
-            well_names=self.well_provider.well_names(),
+            well_names=self.well_provider.well_names()
+            if self.well_provider is not None
+            else [],
             realizations=reals,
         )
 

@@ -1,4 +1,3 @@
-import statistics
 from typing import Callable, Dict, List, Optional, Tuple, Any, Union
 from copy import deepcopy
 import json
@@ -7,29 +6,22 @@ import math
 import numpy as np
 from dash import Input, Output, State, callback, callback_context, no_update, ALL, MATCH
 from dash.exceptions import PreventUpdate
-from flask import url_for
+
 
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
 )
-from webviz_subsurface._models.well_set_model import WellSetModel
 from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
     SurfaceServer,
     QualifiedAddress,
     QualifiedDiffAddress,
 )
-from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
-    FaultPolygonsServer,
-    QualifiedAddress as QualifiedFaultAddress,
-)
 
 from webviz_subsurface._providers.ensemble_fault_polygons_provider.ensemble_fault_polygons_provider import (
     SimulatedFaultPolygonsAddress,
-    FaultPolygonsAddress,
 )
-
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
@@ -38,7 +30,6 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
 )
 from webviz_subsurface._providers import EnsembleSurfaceProvider
 from ._types import ViewSetting, SurfaceMode
-from .utils.formatting import format_date  # , update_nested_dict
 from .layout import (
     LayoutElements,
     SideBySideSelectorFlex,
@@ -79,95 +70,72 @@ def plugin_callbacks(
         )
         return {"id": uuid, "tab": tab, "selector": ALL}
 
-    # 1st callback
     @callback(
         Output(get_uuid(LayoutElements.OPTIONS_DIALOG), "open"),
         Input({"id": get_uuid("Button"), "tab": ALL}, "n_clicks"),
         State(get_uuid(LayoutElements.OPTIONS_DIALOG), "open"),
     )
-    def open_options_dialog(_n_click: list, is_open: bool):
-        print(_n_click)
+    def open_close_options_dialog(_n_click: list, is_open: bool):
         if any(click is not None for click in _n_click):
-            print(not is_open)
             return not is_open
         return no_update
-
-    # 1st callback
-    @callback(
-        Output({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
-        Input(selections(MATCH), "value"),
-        Input(get_uuid(LayoutElements.WELLS), "value"),
-        Input({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
-        Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
-        Input(get_uuid("tabs"), "value"),
-        State(selections(MATCH), "id"),
-        State(links(MATCH), "id"),
-    )
-    def collect_selector_values(
-        selector_values: list,
-        selected_wells,
-        number_of_views,
-        multi,
-        tab,
-        selector_ids,
-        link_ids,
-    ):
-        """Collects raw selections from layout and stores as a dcc.Store"""
-        datatab = link_ids[0]["tab"]
-        if datatab != tab or number_of_views is None:
-            raise PreventUpdate
-
-        selections = []
-        for idx in range(number_of_views):
-            view_selections = {
-                id_values["selector"]: values
-                for values, id_values in zip(selector_values, selector_ids)
-                if id_values["view"] == idx
-            }
-            view_selections["wells"] = selected_wells
-            view_selections["multi"] = multi
-            if tab == Tabs.STATS:
-                view_selections["mode"] = DefaultSettings.VIEW_LAYOUT_STATISTICS_TAB[
-                    idx
-                ]
-            selections.append(view_selections)
-
-        return selections
 
     # 2nd callback
     @callback(
         Output({"id": get_uuid(LayoutElements.LINKED_VIEW_DATA), "tab": MATCH}, "data"),
         Output(selector_wrapper(MATCH), "children"),
-        Input({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
-        State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
+        Input(selections(MATCH), "value"),
+        Input(get_uuid(LayoutElements.WELLS), "value"),
+        Input({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
+        Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
         Input(links(MATCH), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONS_FILTER), "value"),
+        Input(get_uuid("tabs"), "value"),
+        State(selections(MATCH), "id"),
         State(selector_wrapper(MATCH), "id"),
-        State(get_uuid("tabs"), "value"),
     )
     def _update_components_and_selected_data(
-        selector_values: List[Dict[str, Any]],
-        selectors_with_multi,
+        mapselector_values: List[Dict[str, Any]],
+        selected_wells,
+        number_of_views,
+        multi_selector,
         selectorlinks,
         filtered_reals,
-        wrapper_ids,
         tab_name,
+        selector_ids,
+        wrapper_ids,
     ):
         """Reads stored raw selections, stores valid selections as a dcc.Store
         and updates visible and valid selections in layout"""
-        if selector_values is None:
+
+        datatab = wrapper_ids[0]["tab"]
+        if datatab != tab_name or number_of_views is None:
             raise PreventUpdate
 
         ctx = callback_context.triggered[0]["prop_id"]
 
+        selector_values = []
+        for idx in range(number_of_views):
+            view_selections = {
+                id_values["selector"]: values
+                for values, id_values in zip(mapselector_values, selector_ids)
+                if id_values["view"] == idx
+            }
+            view_selections["wells"] = selected_wells
+            view_selections["multi"] = multi_selector
+            if tab_name == Tabs.STATS:
+                view_selections["mode"] = DefaultSettings.VIEW_LAYOUT_STATISTICS_TAB[
+                    idx
+                ]
+            selector_values.append(view_selections)
+
         linked_selector_names = [l[0] for l in selectorlinks if l]
 
-        multi_in_ctx = get_uuid(LayoutElements.MULTI) in ctx
         test = _update_selector_values_from_provider(
             selector_values,
             linked_selector_names,
-            selectors_with_multi,
-            multi_in_ctx,
+            multi_selector,
+            get_uuid(LayoutElements.MULTI) in ctx,
             filtered_reals,
         )
 
@@ -175,11 +143,11 @@ def plugin_callbacks(
             for key, val in data.items():
                 selector_values[idx][key] = val["value"]
 
-        if selectors_with_multi is not None:
+        if multi_selector is not None:
             selector_values = update_selections_with_multi(
-                selector_values, selectors_with_multi
+                selector_values, multi_selector
             )
-        selector_values = remove_data_if_not_valid(selector_values, tab_name)
+        selector_values = remove_data_if_not_valid(selector_values)
         if tab_name == Tabs.DIFF and len(selector_values) == 2:
             selector_values = add_diff_surface_to_values(selector_values)
 
@@ -340,12 +308,16 @@ def plugin_callbacks(
         """Updates the map component with the stored, validated selections"""
         if surface_elements is None:
             raise PreventUpdate
-        view_settings: List[ViewSetting] = []
+        if tab_name == Tabs.DIFF:
+            view_columns = 3 if view_columns is None else view_columns
+
+        #  view_settings: List[ViewSetting] = []
 
         number_of_views = len(surface_elements)
 
         layers = update_map_layers(
             number_of_views,
+            include_well_layer=well_provider is not None,
             visible_well_layer=LayoutLabels.SHOW_WELLS in options,
             visible_fault_polygons_layer=LayoutLabels.SHOW_FAULTPOLYGONS in options,
             visible_hillshading_layer=LayoutLabels.SHOW_HILLSHADING in options,
@@ -592,23 +564,12 @@ def plugin_callbacks(
                 mode = data.get("mode", SurfaceMode.REALIZATION)
 
             if not ("realizations" in links and idx > 0):
-                reals = filtered_realizations
-                valid_selected_reals = [
-                    x for x in data.get("realizations", reals) if x in reals
-                ]
-                if (
-                    valid_selected_reals
-                    and mode == SurfaceMode.REALIZATION
-                    and multi != "realizations"
-                ):
-                    real = [valid_selected_reals[0]]
+                if mode == SurfaceMode.REALIZATION:
+                    real = data.get("realizations", [])
+                    if not real or real[0] not in filtered_realizations:
+                        real = filtered_realizations[:1]
                 else:
-                    real = (
-                        valid_selected_reals if len(valid_selected_reals) > 1 else reals
-                    )
-
-                if not real or multi_in_ctx:
-                    real = reals if multi == "realizations" else reals[:1]
+                    real = filtered_realizations
 
             view_data.append(
                 {
@@ -627,7 +588,7 @@ def plugin_callbacks(
                     "mode": {"value": mode, "options": modes},
                     "realizations": {
                         "value": real,
-                        "options": reals,
+                        "options": filtered_realizations,
                         "multi": mode != SurfaceMode.REALIZATION
                         or multi == "realizations",
                     },
@@ -806,7 +767,7 @@ def plugin_callbacks(
     def attribute_has_date(attribute, provider):
         return bool(provider.surface_dates_for_attribute(attribute)[0])
 
-    def remove_data_if_not_valid(values, tab):
+    def remove_data_if_not_valid(values):
         """Checks if surfaces can be provided from the selections.
         Any invalid selections are removed."""
         updated_values = []
@@ -814,7 +775,6 @@ def plugin_callbacks(
             surface_address = get_surface_context_from_data(data)
             try:
                 provider = ensemble_surface_providers[data["ensemble"][0]]
-
                 surf_meta, _ = publish_and_get_surface_metadata(
                     surface_address=surface_address,
                     surface_provider=provider,
@@ -854,6 +814,7 @@ def plugin_callbacks(
 
 def view_layout(views, columns):
     """Convert a list of figures into a matrix for display"""
+    print(views, columns)
     columns = (
         columns
         if columns is not None
