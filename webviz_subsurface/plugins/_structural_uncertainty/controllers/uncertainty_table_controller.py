@@ -15,34 +15,6 @@ def update_uncertainty_table(
     well_set_model: WellSetModel,
 ) -> None:
     @app.callback(
-        Output({"id": get_uuid("uncertainty-table"), "element": "wrapper"}, "style"),
-        Output(get_uuid("all-maps-wrapper"), "style"),
-        Output(
-            get_uuid("uncertainty-table-display-button"),
-            "children",
-        ),
-        Input(
-            get_uuid("uncertainty-table-display-button"),
-            "n_clicks",
-        ),
-    )
-    def _display_uncertainty_table(n_clicks: Optional[int]) -> Tuple[Dict, Dict, str]:
-        if not n_clicks:
-            raise PreventUpdate
-        if n_clicks % 2 == 0:
-
-            return (
-                {"height": "40vh", "display": "none"},
-                {"height": "40vh", "display": "flex"},
-                "Show uncertainty table",
-            )
-        return (
-            {"height": "40vh", "display": "block"},
-            {"height": "40vh", "display": "none"},
-            "Hide uncertainty table",
-        )
-
-    @app.callback(
         Output({"id": get_uuid("uncertainty-table"), "element": "table"}, "data"),
         Output({"id": get_uuid("uncertainty-table"), "element": "label"}, "children"),
         Input(

@@ -59,7 +59,7 @@ def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     dash_duo.start_server(app)
 
     intersection_data_id = plugin.uuid("intersection-data")
-    modal_id = plugin.uuid("modal")
+    dialog_id = plugin.uuid("dialog")
     # Check some initialization
     # Check dropdowns
     for element, return_val in zip(
@@ -102,8 +102,8 @@ def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     # Check realizations
     real_filter_btn_uuid = stringify_object_id(
         {
-            "id": modal_id,
-            "modal_id": "realization-filter",
+            "id": dialog_id,
+            "dialog_id": "realization-filter",
             "element": "button-open",
         }
     )
