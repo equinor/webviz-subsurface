@@ -351,41 +351,49 @@ class SideBySideSelectorFlex(wcc.FlexBox):
         view_data: list = None,
         dropdown=False,
     ):
-
         super().__init__(
+            style={
+                "overflow-x": "auto",
+                "overflow-y": "visible",
+                "flex-wrap": "nowrap",
+            },
             children=[
                 html.Div(
                     style={
                         "flex": 1,
-                        "minWidth": "20px",
+                        "minWidth": "33%",
                         "display": "none" if link and idx != 0 else "block",
                     },
-                    children=dropdown_vs_select(
-                        value=data["value"],
-                        options=data["options"],
-                        component_id={
-                            "view": idx,
-                            "id": get_uuid(LayoutElements.COLORSELECTIONS)
-                            if selector in ["colormap", "color_range"]
-                            else get_uuid(LayoutElements.SELECTIONS),
-                            "tab": tab,
-                            "selector": selector,
-                        },
-                        multi=data.get("multi", False),
-                        dropdown=dropdown,
-                    )
-                    if selector != "color_range"
-                    else color_range_selection_layout(
-                        tab,
-                        get_uuid,
-                        value=data["value"],
-                        value_range=data["range"],
-                        step=data["step"],
-                        view_idx=idx,
-                    ),
+                    children=[
+                        dropdown_vs_select(
+                            value=data["value"],
+                            options=data["options"],
+                            component_id={
+                                "view": idx,
+                                "id": get_uuid(LayoutElements.COLORSELECTIONS)
+                                if selector in ["colormap", "color_range"]
+                                else get_uuid(LayoutElements.SELECTIONS),
+                                "tab": tab,
+                                "selector": selector,
+                            },
+                            multi=data.get("multi", False),
+                            dropdown=dropdown,
+                        )
+                        if selector != "color_range"
+                        else color_range_selection_layout(
+                            tab,
+                            get_uuid,
+                            value=data["value"],
+                            value_range=data["range"],
+                            step=data["step"],
+                            view_idx=idx,
+                        )
+                    ]
+                    if not data.get("disabled", False)
+                    else [],
                 )
                 for idx, data in enumerate(view_data)
-            ]
+            ],
         )
 
 
