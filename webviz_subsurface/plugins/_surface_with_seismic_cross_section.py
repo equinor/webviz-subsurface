@@ -228,7 +228,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 wcc.RangeSlider(
                                     label="Set color range",
                                     id=self.ids("color-values"),
-                                    tooltip={"always_visible": False},
+                                    tooltip={
+                                        "placement": "bottom",
+                                        "always_visible": True,
+                                    },
+                                    marks=None,
                                 ),
                                 html.Button(
                                     id=self.ids("color-range-btn"),
