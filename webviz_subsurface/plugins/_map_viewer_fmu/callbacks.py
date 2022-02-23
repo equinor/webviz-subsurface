@@ -622,10 +622,15 @@ def plugin_callbacks(
                 if data.get("surf_type") == "diff"
                 else get_surface_id_from_data(data)
             )
+            from copy import deepcopy
+
             if surfaceid in surfids:
                 index_of_first = surfids.index(surfaceid)
                 surfids.append(surfaceid)
-                color_data.append(color_data[index_of_first].copy())
+                view_data = deepcopy(color_data[index_of_first])
+                view_data["colormap"].update(disabled=True)
+                view_data["color_range"].update(disabled=True)
+                color_data.append(view_data)
                 continue
 
             surfids.append(surfaceid)
