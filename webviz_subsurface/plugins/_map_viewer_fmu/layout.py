@@ -48,12 +48,14 @@ class LayoutElements(str, Enum):
     FAULTPOLYGONS = "fault-polygon-toggle"
     WRAPPER = "wrapper-for-selector-component"
     COLORWRAPPER = "wrapper-for-color-selector-component"
+    OPTIONS = "options"
 
     COLORMAP_LAYER = "deckglcolormaplayer"
     HILLSHADING_LAYER = "deckglhillshadinglayer"
     WELLS_LAYER = "deckglwelllayer"
     MAP3D_LAYER = "deckglmap3dlayer"
     FAULTPOLYGONS_LAYER = "deckglfaultpolygonslayer"
+    REALIZATIONS_FILTER = "realization-filter-selector"
 
 
 class LayoutLabels(str, Enum):
@@ -74,7 +76,12 @@ class LayoutLabels(str, Enum):
     COLORMAP_KEEP_RANGE = "Lock range"
     LINK = "🔗 Link"
     FAULTPOLYGONS = "Fault polygons"
-    FAULTPOLYGONS_OPTIONS = "Show fault polygons"
+    SHOW_FAULTPOLYGONS = "Show fault polygons"
+    SHOW_WELLS = "Show wells"
+    SHOW_HILLSHADING = "Hillshading"
+    COMMON_SELECTIONS = "Options"
+    REAL_FILTER = "Realization filter"
+    WELL_FILTER = "Well filter"
 
 
 class LayoutStyle:
@@ -107,32 +114,48 @@ class TabsLabels(str, Enum):
     SPLIT = "Maps per selector"
 
 
+class MapSelector(str, Enum):
+    ENSEMBLE = "ensemble"
+    ATTRIBUTE = "attribute"
+    NAME = "name"
+    DATE = "date"
+    MODE = "mode"
+    REALIZATIONS = "realizations"
+
+
+class ColorSelector(str, Enum):
+    COLORMAP = "colormap"
+    COLOR_RANGE = "color_range"
+
+
 class DefaultSettings:
 
     NUMBER_OF_VIEWS = {Tabs.STATS: 4, Tabs.DIFF: 2, Tabs.SPLIT: 1}
     VIEWS_IN_ROW = {Tabs.DIFF: 3}
     LINKED_SELECTORS = {
-        Tabs.STATS: ["ensemble", "attribute", "name", "date", "colormap"],
+        Tabs.STATS: [
+            MapSelector.ENSEMBLE,
+            MapSelector.ATTRIBUTE,
+            MapSelector.NAME,
+            MapSelector.DATE,
+            ColorSelector.COLORMAP,
+        ],
         Tabs.SPLIT: [
-            "ensemble",
-            "attribute",
-            "name",
-            "date",
-            "mode",
-            "realizations",
-            "colormap",
+            MapSelector.ENSEMBLE,
+            MapSelector.ATTRIBUTE,
+            MapSelector.NAME,
+            MapSelector.DATE,
+            MapSelector.MODE,
+            MapSelector.REALIZATIONS,
+            ColorSelector.COLORMAP,
         ],
     }
-    SELECTOR_DEFAULTS = {
-        Tabs.STATS: {
-            "mode": [
-                SurfaceMode.MEAN,
-                SurfaceMode.REALIZATION,
-                SurfaceMode.STDDEV,
-                SurfaceMode.OBSERVED,
-            ]
-        },
-    }
+    VIEW_LAYOUT_STATISTICS_TAB = [
+        SurfaceMode.MEAN,
+        SurfaceMode.REALIZATION,
+        SurfaceMode.STDDEV,
+        SurfaceMode.OBSERVED,
+    ]
     COLORMAP_OPTIONS = [
         "Physics",
         "Rainbow",
@@ -157,130 +180,149 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
 def main_layout(
     get_uuid: Callable,
     well_names: List[str],
+    realizations,
     show_fault_polygons: bool = True,
-) -> html.Div:
-
-    return html.Div(
-        wcc.Tabs(
-            id=get_uuid("tabs"),
-            style={"width": "100%"},
-            value=Tabs.CUSTOM,
-            children=[
-                wcc.Tab(
-                    label=TabsLabels.CUSTOM,
-                    value=Tabs.CUSTOM,
-                    children=view_layout(
-                        Tabs.CUSTOM, get_uuid, well_names, show_fault_polygons
-                    ),
-                ),
-                wcc.Tab(
-                    label=TabsLabels.DIFF,
-                    value=Tabs.DIFF,
-                    children=view_layout(
-                        Tabs.DIFF, get_uuid, well_names, show_fault_polygons
-                    ),
-                ),
-                wcc.Tab(
-                    label=TabsLabels.STATS,
-                    value=Tabs.STATS,
-                    children=view_layout(
-                        Tabs.STATS, get_uuid, well_names, show_fault_polygons
-                    ),
-                ),
-                wcc.Tab(
-                    label=TabsLabels.SPLIT,
-                    value=Tabs.SPLIT,
-                    children=view_layout(
-                        Tabs.SPLIT, get_uuid, well_names, show_fault_polygons
-                    ),
-                ),
-            ],
-        )
-    )
-
-
-def view_layout(tab, get_uuid, well_names, show_fault_polygons):
-    selector_labels = {
-        "ensemble": LayoutLabels.ENSEMBLE,
-        "attribute": LayoutLabels.ATTRIBUTE,
-        "name": LayoutLabels.NAME,
-        "date": LayoutLabels.DATE,
-        "mode": LayoutLabels.MODE,
-    }
-    return wcc.FlexBox(
+):
+    return wcc.Tabs(
+        id=get_uuid("tabs"),
+        style={"width": "100%"},
+        value=Tabs.CUSTOM,
         children=[
-            wcc.Frame(
-                style=LayoutStyle.SIDEBAR,
-                children=list(
-                    filter(
-                        None,
-                        [
-                            DataStores(tab, get_uuid=get_uuid),
-                            ViewSelector(tab, get_uuid=get_uuid),
-                            *[
-                                MapSelector(tab, get_uuid, selector, label=label)
-                                for selector, label in selector_labels.items()
-                            ],
-                            RealizationSelector(tab, get_uuid=get_uuid),
-                            WellsSelector(
+            wcc.Tab(
+                label=TabsLabels[tab.name],
+                value=tab,
+                children=wcc.FlexBox(
+                    children=[
+                        wcc.Frame(
+                            style=LayoutStyle.SIDEBAR,
+                            children=TabSidebarLayout(
                                 tab,
-                                get_uuid=get_uuid,
-                                well_names=well_names,
+                                get_uuid,
+                                well_names,
+                                realizations,
+                                show_fault_polygons,
                             ),
-                            show_fault_polygons
-                            and FaultPolygonsSelector(tab, get_uuid=get_uuid),
-                            SurfaceColorSelector(tab, get_uuid=get_uuid),
-                        ],
-                    )
+                        ),
+                        wcc.Frame(
+                            id=get_uuid(LayoutElements.MAINVIEW),
+                            style=LayoutStyle.MAINVIEW,
+                            color="white",
+                            highlight=False,
+                            children=MapViewLayout(tab, get_uuid, well_names),
+                        ),
+                    ]
                 ),
-            ),
-            wcc.Frame(
-                id=get_uuid(LayoutElements.MAINVIEW),
-                style=LayoutStyle.MAINVIEW,
-                color="white",
-                highlight=False,
-                children=FullScreen(
-                    html.Div(
-                        [
-                            DeckGLMap(
-                                id={
-                                    "id": get_uuid(LayoutElements.DECKGLMAP),
-                                    "tab": tab,
-                                },
-                                layers=[
-                                    json.loads(layer.to_json())
-                                    for layer in update_map_layers(1, well_names)
-                                ],
-                                zoom=-4,
-                            )
-                        ],
-                        style={"height": LayoutStyle.MAPHEIGHT},
-                    ),
-                ),
-            ),
-        ]
+            )
+            for tab in Tabs
+        ],
     )
+
+
+class MapViewLayout(FullScreen):
+    """Layout for the main view containing the map"""
+
+    def __init__(self, tab, get_uuid, well_names):
+        super().__init__(
+            children=html.Div(
+                DeckGLMap(
+                    id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
+                    layers=update_map_layers(1, bool(well_names)),
+                    zoom=-4,
+                ),
+                style={"height": LayoutStyle.MAPHEIGHT},
+            ),
+        )
 
 
 class DataStores(html.Div):
-    def __init__(self, tab, get_uuid: Callable) -> None:
+    """Layout for the options in the sidebar"""
+
+    def __init__(self, tab, get_uuid):
         super().__init__(
             children=[
-                dcc.Store(
-                    id={
-                        "id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA_WITH_COLORS),
-                        "tab": tab,
-                    }
-                ),
-                dcc.Store(
-                    id={"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": tab}
-                ),
-                dcc.Store(
-                    id={"id": get_uuid(LayoutElements.LINKED_VIEW_DATA), "tab": tab}
-                ),
-                dcc.Store(id=get_uuid(LayoutElements.STORED_COLOR_SETTINGS)),
-                dcc.Store(id={"id": get_uuid(LayoutElements.VIEW_DATA), "tab": tab}),
+                dcc.Store(id={"id": get_uuid(element), "tab": tab})
+                for element in [
+                    LayoutElements.VERIFIED_VIEW_DATA_WITH_COLORS,
+                    LayoutElements.VERIFIED_VIEW_DATA,
+                    LayoutElements.LINKED_VIEW_DATA,
+                    LayoutElements.VIEW_DATA,
+                ]
             ]
+            + [dcc.Store(id=get_uuid(LayoutElements.STORED_COLOR_SETTINGS))]
+        )
+
+
+class TabSidebarLayout(html.Div):
+    """Class containing the layout for the individual tab"""
+
+    def __init__(
+        self,
+        tab,
+        get_uuid: Callable,
+        well_names: List[str],
+        realizations,
+        show_fault_polygons: bool = True,
+    ) -> None:
+        super().__init__(
+            children=[
+                DataStores(tab, get_uuid),
+                NumberOfViewsSelector(tab, get_uuid),
+                MultiSelectorSelector(tab, get_uuid),
+                OptionsLayout(
+                    tab, get_uuid, show_fault_polygons, well_names, realizations
+                ),
+                html.Div(
+                    [
+                        MapSelectorLayout(
+                            tab=tab,
+                            get_uuid=get_uuid,
+                            selector=selector,
+                            label=LayoutLabels[selector.name],
+                        )
+                        for selector in MapSelector
+                    ]
+                ),
+                SurfaceColorSelector(tab, get_uuid),
+            ]
+        )
+
+
+class OptionsLayout(wcc.Selectors):
+    """Layout for the options in the sidebar"""
+
+    def __init__(self, tab, get_uuid, show_fault_polygons, well_names, realizations):
+
+        checklist_options = [LayoutLabels.SHOW_HILLSHADING]
+        if show_fault_polygons:
+            checklist_options.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+        if well_names:
+            checklist_options.append(LayoutLabels.SHOW_WELLS)
+
+        super().__init__(
+            label=LayoutLabels.COMMON_SELECTIONS,
+            open_details=False,
+            children=[
+                ViewsInRowSelector(tab, get_uuid),
+                wcc.Checklist(
+                    id={"id": get_uuid(LayoutElements.OPTIONS), "tab": tab},
+                    options=[{"label": opt, "value": opt} for opt in checklist_options],
+                    value=checklist_options,
+                ),
+                wcc.FlexBox(
+                    [
+                        html.Div(
+                            style={"flex": 3, "minWidth": "20px"},
+                            children=WellFilter(tab, get_uuid, well_names)
+                            if well_names
+                            else [],
+                        ),
+                        html.Div(
+                            RealizationFilter(tab, get_uuid, realizations),
+                            style={"flex": 2, "minWidth": "20px"},
+                        ),
+                    ]
+                ),
+            ],
         )
 
 
@@ -349,158 +391,130 @@ class SideBySideSelectorFlex(wcc.FlexBox):
         )
 
 
-class ViewSelector(html.Div):
+class MultiSelectorSelector(html.Div):
     def __init__(self, tab, get_uuid: Callable):
-
-        children = [
-            html.Div(
-                [
-                    "Number of views",
-                    html.Div(
-                        dcc.Input(
-                            id={"id": get_uuid(LayoutElements.VIEWS), "tab": tab},
-                            type="number",
-                            min=1,
-                            max=9,
-                            step=1,
-                            value=DefaultSettings.NUMBER_OF_VIEWS.get(tab, 1),
-                        ),
-                        style={"float": "right"},
-                    ),
+        super().__init__(
+            style={
+                "margin-bottom": "15px",
+                "display": "block" if tab == Tabs.SPLIT else "none",
+            },
+            children=wcc.Dropdown(
+                label="Create map for each:",
+                id={"id": get_uuid(LayoutElements.MULTI), "tab": tab},
+                options=[
+                    {
+                        "label": LayoutLabels[selector.name],
+                        "value": selector,
+                    }
+                    for selector in [
+                        MapSelector.NAME,
+                        MapSelector.DATE,
+                        MapSelector.ENSEMBLE,
+                        MapSelector.ATTRIBUTE,
+                        MapSelector.REALIZATIONS,
+                    ]
                 ],
-                style={
-                    "display": "none"
-                    if tab in DefaultSettings.NUMBER_OF_VIEWS
-                    else "block"
-                },
+                value=MapSelector.NAME if tab == Tabs.SPLIT else None,
+                clearable=False,
             ),
-            html.Div(
-                wcc.Dropdown(
-                    label="Create map for each:",
-                    id={"id": get_uuid(LayoutElements.MULTI), "tab": tab},
-                    options=[
-                        {"label": LayoutLabels.NAME, "value": "name"},
-                        {"label": LayoutLabels.DATE, "value": "date"},
-                        {"label": LayoutLabels.ENSEMBLE, "value": "ensemble"},
-                        {"label": LayoutLabels.ATTRIBUTE, "value": "attribute"},
-                        {"label": LayoutLabels.REALIZATIONS, "value": "realizations"},
-                    ],
-                    value="name" if tab == Tabs.SPLIT else None,
-                    clearable=False,
-                ),
-                style={
-                    "margin-bottom": "10px",
-                    "display": "block" if tab == Tabs.SPLIT else "none",
-                },
-            ),
-            html.Div(
-                [
-                    "Views in row (optional)",
-                    html.Div(
-                        dcc.Input(
-                            id={
-                                "id": get_uuid(LayoutElements.VIEW_COLUMNS),
-                                "tab": tab,
-                            },
-                            type="number",
-                            min=1,
-                            max=9,
-                            step=1,
-                            value=DefaultSettings.VIEWS_IN_ROW.get(tab),
-                        ),
-                        style={"float": "right"},
+        )
+
+
+class NumberOfViewsSelector(html.Div):
+    def __init__(self, tab, get_uuid: Callable):
+        super().__init__(
+            children=[
+                "Number of views",
+                html.Div(
+                    dcc.Input(
+                        id={"id": get_uuid(LayoutElements.VIEWS), "tab": tab},
+                        type="number",
+                        min=1,
+                        max=9,
+                        step=1,
+                        value=DefaultSettings.NUMBER_OF_VIEWS.get(tab, 1),
                     ),
-                ]
-            ),
-        ]
+                    style={"float": "right"},
+                ),
+            ],
+            style={
+                "display": "none" if tab in DefaultSettings.NUMBER_OF_VIEWS else "block"
+            },
+        )
 
-        super().__init__(style={"font-size": "15px"}, children=children)
+
+class ViewsInRowSelector(html.Div):
+    def __init__(self, tab, get_uuid: Callable):
+        super().__init__(
+            children=[
+                "Views in row (optional)",
+                html.Div(
+                    dcc.Input(
+                        id={
+                            "id": get_uuid(LayoutElements.VIEW_COLUMNS),
+                            "tab": tab,
+                        },
+                        type="number",
+                        min=1,
+                        max=9,
+                        step=1,
+                        value=DefaultSettings.VIEWS_IN_ROW.get(tab),
+                    ),
+                    style={"float": "right"},
+                ),
+            ]
+        )
 
 
-class MapSelector(html.Div):
+class RealizationFilter(wcc.SelectWithLabel):
+    def __init__(self, tab, get_uuid: Callable, realizations):
+        super().__init__(
+            label=LayoutLabels.REAL_FILTER,
+            id={"id": get_uuid(LayoutElements.REALIZATIONS_FILTER), "tab": tab},
+            options=[{"label": i, "value": i} for i in realizations],
+            value=realizations,
+            size=min(6, len(realizations)),
+        )
+
+
+class WellFilter(wcc.SelectWithLabel):
+    def __init__(self, tab, get_uuid: Callable, well_names):
+        super().__init__(
+            label=LayoutLabels.WELL_FILTER,
+            id={"id": get_uuid(LayoutElements.WELLS), "tab": tab},
+            options=[{"label": i, "value": i} for i in well_names],
+            value=well_names,
+            size=min(6, len(well_names)),
+        )
+
+
+class MapSelectorLayout(html.Div):
     def __init__(
         self,
         tab,
         get_uuid: Callable,
         selector,
         label,
-        open_details=True,
-        info_text=None,
     ):
         super().__init__(
             style={
                 "display": "none"
-                if selector in DefaultSettings.SELECTOR_DEFAULTS.get(tab, {})
+                if tab == Tabs.STATS and selector == MapSelector.MODE
                 else "block"
             },
             children=wcc.Selectors(
                 label=label,
-                open_details=open_details,
                 children=[
-                    wcc.Label(info_text) if info_text is not None else (),
                     LinkCheckBox(tab, get_uuid, selector=selector),
                     html.Div(
                         id={
                             "id": get_uuid(LayoutElements.WRAPPER),
                             "tab": tab,
                             "selector": selector,
-                        },
+                        }
                     ),
                 ],
             ),
-        )
-
-
-class WellsSelector(html.Div):
-    def __init__(self, tab, get_uuid: Callable, well_names):
-        value = options = well_names
-        super().__init__(
-            style={"display": "none" if well_names else "block"},
-            children=wcc.Selectors(
-                label=LayoutLabels.WELLS,
-                open_details=False,
-                children=dropdown_vs_select(
-                    value=value,
-                    options=options,
-                    component_id={"id": get_uuid(LayoutElements.WELLS), "tab": tab},
-                    multi=True,
-                ),
-            ),
-        )
-
-
-class RealizationSelector(MapSelector):
-    def __init__(self, tab, get_uuid: Callable):
-        super().__init__(
-            tab,
-            get_uuid=get_uuid,
-            selector="realizations",
-            label=LayoutLabels.REALIZATIONS,
-            open_details=False,
-            info_text=(
-                "Single selection or subset "
-                "for statistics dependent on aggregation mode."
-            ),
-        )
-
-
-class FaultPolygonsSelector(wcc.Selectors):
-    def __init__(self, tab, get_uuid: Callable):
-        super().__init__(
-            label=LayoutLabels.FAULTPOLYGONS,
-            open_details=False,
-            children=[
-                wcc.Checklist(
-                    id=get_uuid(LayoutElements.FAULTPOLYGONS),
-                    options=[
-                        {
-                            "label": LayoutLabels.FAULTPOLYGONS_OPTIONS,
-                            "value": LayoutLabels.FAULTPOLYGONS_OPTIONS,
-                        }
-                    ],
-                    value=LayoutLabels.FAULTPOLYGONS_OPTIONS,
-                )
-            ],
         )
 
 
@@ -523,29 +537,9 @@ class SurfaceColorSelector(wcc.Selectors):
                         ),
                     ],
                 )
-                for selector in ["colormap", "color_range"]
+                for selector in ColorSelector
             ],
         )
-
-
-def dropdown_vs_select(value, options, component_id, dropdown=False, multi=False):
-    if dropdown:
-        if isinstance(value, list) and not multi:
-            value = value[0]
-        return wcc.Dropdown(
-            id=component_id,
-            options=[{"label": opt, "value": opt} for opt in options],
-            value=value,
-            clearable=False,
-            multi=multi,
-        )
-    return wcc.SelectWithLabel(
-        id=component_id,
-        options=[{"label": opt, "value": opt} for opt in options],
-        size=5,
-        value=value,
-        multi=multi,
-    )
 
 
 def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_idx):
@@ -556,7 +550,7 @@ def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_i
                 id={
                     "view": view_idx,
                     "id": get_uuid(LayoutElements.COLORSELECTIONS),
-                    "selector": "color_range",
+                    "selector": ColorSelector.COLOR_RANGE,
                     "tab": tab,
                 },
                 tooltip={"placement": "bottomLeft"},
@@ -594,27 +588,60 @@ def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_i
     )
 
 
-def update_map_layers(views, well_names):
+def dropdown_vs_select(value, options, component_id, dropdown=False, multi=False):
+    if dropdown:
+        if isinstance(value, list) and not multi:
+            value = value[0]
+        return wcc.Dropdown(
+            id=component_id,
+            options=[{"label": opt, "value": opt} for opt in options],
+            value=value,
+            clearable=False,
+            multi=multi,
+        )
+    return wcc.SelectWithLabel(
+        id=component_id,
+        options=[{"label": opt, "value": opt} for opt in options],
+        size=5,
+        value=value,
+        multi=multi,
+    )
+
+
+def update_map_layers(
+    views,
+    include_well_layer=True,
+    include_faultpolygon_layer=True,
+    visible_well_layer=True,
+    visible_fault_polygons_layer=True,
+    visible_hillshading_layer=True,
+):
     layers = []
     for idx in range(views):
         layers.extend(
-            list(
-                filter(
-                    None,
-                    [
-                        # Map3DLayer(uuid=f"{LayoutElements.MAP3D_LAYER}-{idx}"),
-                        ColormapLayer(uuid=f"{LayoutElements.COLORMAP_LAYER}-{idx}"),
-                        Hillshading2DLayer(
-                            uuid=f"{LayoutElements.HILLSHADING_LAYER}-{idx}"
-                        ),
-                        FaultPolygonsLayer(
-                            uuid=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}"
-                        ),
-                        well_names
-                        and WellsLayer(uuid=f"{LayoutElements.WELLS_LAYER}-{idx}"),
-                    ],
-                )
-            )
+            [
+                # Map3DLayer(uuid=f"{LayoutElements.MAP3D_LAYER}-{idx}"),
+                ColormapLayer(uuid=f"{LayoutElements.COLORMAP_LAYER}-{idx}"),
+                Hillshading2DLayer(
+                    uuid=f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
+                    visible=visible_hillshading_layer,
+                ),
+            ]
         )
 
-    return layers
+        if include_faultpolygon_layer:
+            layers.append(
+                FaultPolygonsLayer(
+                    uuid=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
+                    visible=visible_fault_polygons_layer,
+                )
+            )
+        if include_well_layer:
+            layers.append(
+                WellsLayer(
+                    uuid=f"{LayoutElements.WELLS_LAYER}-{idx}",
+                    visible=visible_well_layer,
+                )
+            )
+
+    return [json.loads(layer.to_json()) for layer in layers]

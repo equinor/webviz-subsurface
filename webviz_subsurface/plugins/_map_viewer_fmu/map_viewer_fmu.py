@@ -81,13 +81,18 @@ class MapViewerFMU(WebvizPluginABC):
             if map_surface_names_to_fault_polygons is not None
             else {}
         )
+
         self.set_callbacks()
 
     @property
     def layout(self) -> html.Div:
-
+        reals = []
+        for provider in self._ensemble_surface_providers.values():
+            reals.extend([x for x in provider.realizations() if x not in reals])
         return main_layout(
-            get_uuid=self.uuid, well_names=self.well_provider.well_names()
+            get_uuid=self.uuid,
+            well_names=self.well_provider.well_names(),
+            realizations=reals,
         )
 
     def set_callbacks(self) -> None:

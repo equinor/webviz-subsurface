@@ -45,6 +45,7 @@ from .layout import (
     update_map_layers,
     DefaultSettings,
     Tabs,
+    LayoutLabels,
 )
 
 
@@ -84,6 +85,7 @@ def plugin_callbacks(
         Input(selections(MATCH), "value"),
         Input({"id": get_uuid(LayoutElements.WELLS), "tab": MATCH}, "value"),
         Input({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
+        Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
         Input(get_uuid("tabs"), "value"),
         State(selections(MATCH), "id"),
         State(links(MATCH), "id"),
@@ -92,6 +94,7 @@ def plugin_callbacks(
         selector_values: list,
         selected_wells,
         number_of_views,
+        multi,
         tab,
         selector_ids,
         link_ids,
@@ -109,6 +112,11 @@ def plugin_callbacks(
                 if id_values["view"] == idx
             }
             view_selections["wells"] = selected_wells
+            view_selections["multi"] = multi
+            if tab == Tabs.STATS:
+                view_selections["mode"] = DefaultSettings.VIEW_LAYOUT_STATISTICS_TAB[
+                    idx
+                ]
             selections.append(view_selections)
 
         return selections
@@ -118,7 +126,7 @@ def plugin_callbacks(
         Output({"id": get_uuid(LayoutElements.LINKED_VIEW_DATA), "tab": MATCH}, "data"),
         Output(selector_wrapper(MATCH), "children"),
         Input({"id": get_uuid(LayoutElements.VIEW_DATA), "tab": MATCH}, "data"),
-        Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
+        State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
         Input(links(MATCH), "value"),
         State(selector_wrapper(MATCH), "id"),
         State(get_uuid("tabs"), "value"),
@@ -134,15 +142,10 @@ def plugin_callbacks(
         and updates visible and valid selections in layout"""
         if selector_values is None:
             raise PreventUpdate
-        import time
 
         ctx = callback_context.triggered[0]["prop_id"]
 
         linked_selector_names = [l[0] for l in selectorlinks if l]
-
-        if "mode" in DefaultSettings.SELECTOR_DEFAULTS.get(tab_name, {}):
-            for idx, data in enumerate(selector_values):
-                data["mode"] = DefaultSettings.SELECTOR_DEFAULTS[tab_name]["mode"][idx]
 
         multi_in_ctx = get_uuid(LayoutElements.MULTI) in ctx
         test = _update_selector_values_from_provider(
@@ -160,6 +163,7 @@ def plugin_callbacks(
         selector_values = remove_data_if_not_valid(selector_values, tab_name)
         if tab_name == Tabs.DIFF and len(selector_values) == 2:
             selector_values = add_diff_surface_to_values(selector_values)
+
         return (
             selector_values,
             [
@@ -310,9 +314,10 @@ def plugin_callbacks(
             {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": MATCH}, "data"
         ),
         Input({"id": get_uuid(LayoutElements.VIEW_COLUMNS), "tab": MATCH}, "value"),
+        Input({"id": get_uuid(LayoutElements.OPTIONS), "tab": MATCH}, "value"),
         State(get_uuid("tabs"), "value"),
     )
-    def _update_map(surface_elements: List, view_columns, tab_name):
+    def _update_map(surface_elements: List, view_columns, options, tab_name):
         """Updates the map component with the stored, validated selections"""
         if surface_elements is None:
             raise PreventUpdate
@@ -320,20 +325,36 @@ def plugin_callbacks(
         print(json.dumps(surface_elements, indent=4))
         number_of_views = len(surface_elements)
 
-        layers = update_map_layers(number_of_views, well_provider.well_names())
-        layers = [json.loads(x.to_json()) for x in layers]
+        layers = update_map_layers(
+            number_of_views,
+            visible_well_layer=LayoutLabels.SHOW_WELLS in options,
+            visible_fault_polygons_layer=LayoutLabels.SHOW_FAULTPOLYGONS in options,
+            visible_hillshading_layer=LayoutLabels.SHOW_HILLSHADING in options,
+        )
+        print(layers)
         layer_model = DeckGLMapLayersModel(layers)
 
         for idx, data in enumerate(surface_elements):
 
             if data.get("surf_type") != "diff":
-                view_setting = ViewSetting(**data)
-                view_settings.append(ViewSetting(**data))
+                # view_setting = ViewSetting(**data)
+                #  view_settings.append(ViewSetting(**data))
                 surface_address = get_surface_context_from_data(data)
 
                 provider = ensemble_surface_providers[data["ensemble"][0]]
                 surf_meta, img_url = publish_and_get_surface_metadata(
                     surface_provider=provider, surface_address=surface_address
+                )
+                fault_polygons_provider = ensemble_fault_polygons_providers[
+                    data["ensemble"][0]
+                ]
+                horion_name = data["name"][0]
+                fault_polygons_address = SimulatedFaultPolygonsAddress(
+                    attribute=fault_polygons_provider.attributes()[0],
+                    name=map_surface_names_to_fault_polygons.get(
+                        horion_name, horion_name
+                    ),
+                    realization=int(data["realizations"][0]),
                 )
             else:
 
@@ -353,6 +374,17 @@ def plugin_callbacks(
                     sub_surface_provider=subprovider,
                     sub_surface_address=subsurface_address,
                 )
+                fault_polygons_provider = ensemble_fault_polygons_providers[
+                    surface_elements[0]["ensemble"][0]
+                ]
+                horion_name = surface_elements[0]["name"][0]
+                fault_polygons_address = SimulatedFaultPolygonsAddress(
+                    attribute=fault_polygons_provider.attributes()[0],
+                    name=map_surface_names_to_fault_polygons.get(
+                        horion_name, horion_name
+                    ),
+                    realization=int(surface_elements[0]["realizations"][0]),
+                )
 
             viewport_bounds = [
                 surf_meta.x_min,
@@ -361,15 +393,6 @@ def plugin_callbacks(
                 surf_meta.y_max,
             ]
 
-            fault_polygons_provider = ensemble_fault_polygons_providers[
-                surface_elements[0]["ensemble"][0]
-            ]
-            horion_name = surface_elements[0]["name"][0]
-            fault_polygons_address = SimulatedFaultPolygonsAddress(
-                attribute=fault_polygons_provider.attributes()[0],
-                name=map_surface_names_to_fault_polygons.get(horion_name, horion_name),
-                realization=int(surface_elements[0]["realizations"][0]),
-            )
             # Map3DLayer currently not implemented. Will replace
             # ColormapLayer and HillshadingLayer
             # layer_data = {
@@ -398,6 +421,7 @@ def plugin_callbacks(
                 layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                 layer_data=layer_data,
             )
+
             layer_model.update_layer_by_id(
                 layer_id=f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
                 layer_data=layer_data,
@@ -409,6 +433,7 @@ def plugin_callbacks(
                     "colorMapRange": data["color_range"],
                 },
             )
+
             layer_model.update_layer_by_id(
                 layer_id=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
                 layer_data={
@@ -418,7 +443,7 @@ def plugin_callbacks(
                     ),
                 },
             )
-            if well_provider.well_names():
+            if LayoutLabels.SHOW_WELLS in options:
                 layer_model.update_layer_by_id(
                     layer_id=f"{LayoutElements.WELLS_LAYER}-{idx}",
                     layer_data={
@@ -428,7 +453,7 @@ def plugin_callbacks(
                         )
                     },
                 )
-        print(view_settings)
+
         return (
             layer_model.layers,
             viewport_bounds if surface_elements else no_update,
@@ -446,12 +471,43 @@ def plugin_callbacks(
                             f"{LayoutElements.FAULTPOLYGONS_LAYER}-{view}",
                             f"{LayoutElements.WELLS_LAYER}-{view}",
                         ],
-                        "name": f"{tab_name}view",
+                        "name": make_viewport_label(surface_elements[view], tab_name),
                     }
                     for view in range(number_of_views)
                 ],
             },
         )
+
+    def make_viewport_label(data, tab):
+        """Return text-label for each viewport based on which tab is selected"""
+        # For the difference view
+        if tab == Tabs.DIFF and data.get("surf_type") == "diff":
+            return "Difference Map (View1 - View2)"
+
+        # For the statistics view 'mode' is used as label
+        if tab == Tabs.STATS:
+            if data["mode"] == SurfaceMode.REALIZATION:
+                return f"REAL {data['realizations'][0]}"
+            return data["mode"]
+
+        # For the "map per selector" the chosen multi selector is used as label
+        if tab == Tabs.SPLIT:
+            multi = data["multi"]
+            if multi == "realizations":
+                return f"REAL {data['realizations'][0]}"
+            return data[multi][0] if multi == "mode" else data[multi]
+
+        return general_label(data)
+
+    def general_label(data):
+        surfaceid = [data["ensemble"][0], data["attribute"][0], data["name"][0]]
+        if data["date"]:
+            surfaceid.append(data["date"][0])
+        if data["mode"] != SurfaceMode.REALIZATION:
+            surfaceid.append(data["mode"])
+        else:
+            surfaceid.append(f"REAL {data['realizations'][0]}")
+        return " ".join(surfaceid)
 
     def _update_selector_values_from_provider(
         values, links, multi, multi_in_ctx
