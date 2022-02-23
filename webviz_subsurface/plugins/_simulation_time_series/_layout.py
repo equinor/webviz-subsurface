@@ -1,7 +1,6 @@
 import datetime
 from typing import Callable, List, Optional
 
-import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import dash_table, dcc, html
@@ -37,11 +36,11 @@ class LayoutElements:
     VECTOR_SELECTOR = "vector_selector"
 
     VECTOR_CALCULATOR = "vector_calculator"
-    VECTOR_CALCULATOR_MODAL = "vector_calculator_modal"
+    VECTOR_CALCULATOR_DIALOG = "vector_calculator_dialog"
     VECTOR_CALCULATOR_OPEN_BUTTON = "vector_calculator_open_button"
     VECTOR_CALCULATOR_EXPRESSIONS = "vector_calculator_expressions"
-    VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL = (
-        "vector_calculator_expressions_open_modal"
+    VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG = (
+        "vector_calculator_expressions_open_dialog"
     )
 
     DELTA_ENSEMBLE_A_DROPDOWN = "delta_ensemble_A_dropdown"
@@ -320,7 +319,7 @@ def __settings_layout(
                 label="Filter Realizations",
                 children=__realization_filters(get_uuid, realizations),
             ),
-            __vector_calculator_modal_layout(
+            __vector_calculator_dialog_layout(
                 get_uuid=get_uuid,
                 vector_data=vector_calculator_data,
                 predefined_expressions=predefined_expressions,
@@ -330,37 +329,28 @@ def __settings_layout(
                 data=predefined_expressions,
             ),
             dcc.Store(
-                id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+                id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG),
                 data=predefined_expressions,
             ),
         ]
     )
 
 
-def __vector_calculator_modal_layout(
-    get_uuid: Callable,
-    vector_data: list,
-    predefined_expressions: List[ExpressionInfo],
-) -> dbc.Modal:
-    return dbc.Modal(
-        style={"marginTop": "20vh", "width": "1300px"},
+def __vector_calculator_dialog_layout(
+    get_uuid: Callable, vector_data: list, predefined_expressions: List[ExpressionInfo]
+) -> wcc.Dialog:
+    return wcc.Dialog(
+        title="Vector Calculator",
+        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG),
+        draggable=True,
+        max_width="lg",
         children=[
-            dbc.ModalHeader("Vector Calculator"),
-            dbc.ModalBody(
-                html.Div(
-                    children=[
-                        wsc.VectorCalculator(
-                            id=get_uuid(LayoutElements.VECTOR_CALCULATOR),
-                            vectors=vector_data,
-                            expressions=predefined_expressions,
-                        )
-                    ],
-                ),
-            ),
+            wsc.VectorCalculator(
+                id=get_uuid(LayoutElements.VECTOR_CALCULATOR),
+                vectors=vector_data,
+                expressions=predefined_expressions,
+            )
         ],
-        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL),
-        size="lg",
-        centered=True,
     )
 
 

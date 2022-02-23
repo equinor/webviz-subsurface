@@ -103,6 +103,10 @@ def paramresp_callbacks(
         Input(get_uuid(LayoutElements.PARAMRESP_ZONE), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_PARAM), "value"),
         Input(get_uuid(LayoutElements.PARAMRESP_CORRTYPE), "value"),
+        Input(
+            {"id": get_uuid(LayoutElements.PARAM_FILTER), "type": "data-store"}, "data"
+        ),
+        Input(get_uuid(LayoutElements.PARAMRESP_DEPTHOPTION), "value"),
     )
     # pylint: disable=too-many-locals
     def _update_paramresp_graphs(
@@ -112,6 +116,8 @@ def paramresp_callbacks(
         zone: str,
         param: Optional[str],
         corrtype: str,
+        real_filter: Dict[str, List[int]],
+        depth_option: str,
     ) -> List[Optional[Any]]:
         """Main callback to update the graphs:
 
@@ -130,6 +136,7 @@ def paramresp_callbacks(
             well=well,
             date=date,
             zone=zone,
+            reals=real_filter[ensemble],
             keep_all_rfts=(corrtype == "param_vs_sim"),
         )
         current_key = f"{well} {date} {zone}"
@@ -161,6 +168,12 @@ def paramresp_callbacks(
         # Correlation bar chart
         corrfig = BarChart(corrseries, n_rows=15, title=corr_title, orientation="h")
         corrfig.color_bars(highlight_bar, "#007079", 0.5)
+        corr_graph = wcc.Graph(
+            style={"height": "40vh"},
+            config={"displayModeBar": False},
+            figure=corrfig.figure,
+            id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
+        )
 
         # Scatter plot
         scatterplot = ScatterPlot(
@@ -172,18 +185,33 @@ def paramresp_callbacks(
             df[param].min(),
             df[param].max(),
         )
+        scatter_graph = (
+            wcc.Graph(
+                style={"height": "40vh"},
+                config={"displayModeBar": False},
+                figure=scatterplot.figure,
+            ),
+        )
 
         # Formations plot
         formations_figure = FormationFigure(
             well=well,
             ertdf=datamodel.ertdatadf,
             enscolors=datamodel.enscolors,
-            depth_option="TVD",
+            depth_option=depth_option,
             date=date,
             ensembles=[ensemble],
+            reals=real_filter[ensemble],
             simdf=datamodel.simdf,
             obsdf=datamodel.obsdatadf,
         )
+
+        if formations_figure.use_ertdf:
+            return [
+                corr_graph,
+                scatter_graph,
+                f"Realization lines not available for depth option {depth_option}",
+            ]
 
         if datamodel.formations is not None:
             formations_figure.add_formation(datamodel.formationdf, fill_color=False)
@@ -198,19 +226,29 @@ def paramresp_callbacks(
         formations_figure.color_by_param_value(df_value_norm, param)
 
         return [
-            wcc.Graph(
-                style={"height": "40vh"},
-                config={"displayModeBar": False},
-                figure=corrfig.figure,
-                id=get_uuid(LayoutElements.PARAMRESP_CORR_BARCHART_FIGURE),
-            ),
-            wcc.Graph(
-                style={"height": "40vh"},
-                config={"displayModeBar": False},
-                figure=scatterplot.figure,
-            ),
+            corr_graph,
+            scatter_graph,
             wcc.Graph(
                 style={"height": "87vh"},
                 figure=formations_figure.figure,
             ),
         ]
+
+    @app.callback(
+        Output(get_uuid(LayoutElements.PARAM_FILTER_WRAPPER), "style"),
+        Input(get_uuid(LayoutElements.DISPLAY_PARAM_FILTER), "value"),
+    )
+    def _show_hide_parameter_filter(display_param_filter: list) -> Dict[str, Any]:
+        """Display/hide parameter filter"""
+        return {"display": "block" if display_param_filter else "none", "flex": 1}
+
+    @app.callback(
+        Output(
+            {"id": get_uuid(LayoutElements.PARAM_FILTER), "type": "ensemble-update"},
+            "data",
+        ),
+        Input(get_uuid(LayoutElements.PARAMRESP_ENSEMBLE), "value"),
+    )
+    def _update_parameter_filter_selection(ensemble: str) -> List[str]:
+        """Update ensemble in parameter filter"""
+        return [ensemble]
