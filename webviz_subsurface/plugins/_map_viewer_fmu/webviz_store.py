@@ -4,7 +4,7 @@ from webviz_subsurface.plugins._map_viewer_fmu.providers.ensemble_surface_provid
     scrape_scratch_disk_for_surfaces,
 )
 
-from .providers.ensemble_surface_provider import SurfaceMode, EnsembleSurfaceProvider
+from .providers.ensemble_surface_provider import EnsembleSurfaceProvider, SurfaceMode
 from .types import SurfaceContext
 
 # def get_surface_contexts(

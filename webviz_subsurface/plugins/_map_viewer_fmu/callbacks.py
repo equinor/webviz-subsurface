@@ -1,42 +1,40 @@
-from typing import Callable, Dict, List, Optional, Tuple, Any, Union
-from copy import deepcopy
 import json
 import math
+from copy import deepcopy
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from dash import Input, Output, State, callback, callback_context, no_update, ALL, MATCH
+from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
-
-
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
 )
-from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
-    SurfaceServer,
-    QualifiedAddress,
-    QualifiedDiffAddress,
-)
-
+from webviz_subsurface._providers import EnsembleSurfaceProvider
 from webviz_subsurface._providers.ensemble_fault_polygons_provider.ensemble_fault_polygons_provider import (
     SimulatedFaultPolygonsAddress,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    ObservedSurfaceAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
-    ObservedSurfaceAddress,
     SurfaceAddress,
 )
-from webviz_subsurface._providers import EnsembleSurfaceProvider
-from ._types import ViewSetting, SurfaceMode
+from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
+    QualifiedAddress,
+    QualifiedDiffAddress,
+    SurfaceServer,
+)
+
+from ._types import SurfaceMode
 from .layout import (
-    LayoutElements,
-    SideBySideSelectorFlex,
-    update_map_layers,
     DefaultSettings,
-    Tabs,
+    LayoutElements,
     LayoutLabels,
+    SideBySideSelectorFlex,
+    Tabs,
+    update_map_layers,
 )
 
 
@@ -44,11 +42,11 @@ def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     surface_server: SurfaceServer,
-    well_provider,
-    well_server,
     ensemble_fault_polygons_providers,
     fault_polygons_server,
+    fault_polygon_attribute: str,
     map_surface_names_to_fault_polygons,
+    well_picks_provider,
 ) -> None:
     def selections(tab, colorselector=False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -106,6 +104,7 @@ def plugin_callbacks(
         """Reads stored raw selections, stores valid selections as a dcc.Store
         and updates visible and valid selections in layout"""
 
+        # Prevent update if the pattern matched components does not match the current tab
         datatab = wrapper_ids[0]["tab"]
         if datatab != tab_name or number_of_views is None:
             raise PreventUpdate
@@ -304,20 +303,25 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.WELLS), "value"),
         Input(get_uuid(LayoutElements.VIEW_COLUMNS), "value"),
         Input(get_uuid(LayoutElements.OPTIONS), "value"),
+        Input(get_uuid(LayoutElements.WELLS), "value"),
         State(get_uuid("tabs"), "value"),
         State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
     )
     def _update_map(
         surface_elements: List[dict],
-        wells: List[str],
+        selected_wells: List[str],
         view_columns: Optional[int],
         options: List[str],
         tab_name: str,
         multi: str,
     ):
         """Updates the map component with the stored, validated selections"""
-        if surface_elements is None:
+
+        # Prevent update if the pattern matched components does not match the current tab
+        state_list = callback_context.states_list
+        if state_list[1]["id"]["tab"] != tab_name or surface_elements is None:
             raise PreventUpdate
+
         if tab_name == Tabs.DIFF:
             view_columns = 3 if view_columns is None else view_columns
 
@@ -327,7 +331,7 @@ def plugin_callbacks(
 
         layers = update_map_layers(
             number_of_views,
-            include_well_layer=well_provider is not None,
+            include_well_layer=well_picks_provider is not None,
             visible_well_layer=LayoutLabels.SHOW_WELLS in options,
             visible_fault_polygons_layer=LayoutLabels.SHOW_FAULTPOLYGONS in options,
             visible_hillshading_layer=LayoutLabels.SHOW_HILLSHADING in options,
@@ -349,7 +353,7 @@ def plugin_callbacks(
             ]
             horizon_name = data_for_faultpolygons["name"][0]
             fault_polygons_address = SimulatedFaultPolygonsAddress(
-                attribute=fault_polygons_provider.attributes()[0],
+                attribute=fault_polygon_attribute,
                 name=map_surface_names_to_fault_polygons.get(
                     horizon_name, horizon_name
                 ),
@@ -412,16 +416,15 @@ def plugin_callbacks(
                     ),
                 },
             )
-            if LayoutLabels.SHOW_WELLS in options:
+            if LayoutLabels.SHOW_WELLS in options and well_picks_provider is not None:
                 layer_model.update_layer_by_id(
                     layer_id=f"{LayoutElements.WELLS_LAYER}-{idx}",
                     layer_data={
-                        "data": well_server.encode_partial_url(
-                            provider_id=well_provider.provider_id(), well_names=wells
+                        "data": well_picks_provider.get_geojson(
+                            selected_wells, data["name"][0]
                         )
                     },
                 )
-
         return (
             layer_model.layers,
             viewport_bounds if surface_elements else no_update,

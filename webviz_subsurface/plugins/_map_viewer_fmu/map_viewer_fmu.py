@@ -1,24 +1,24 @@
 from pathlib import Path
-from typing import Callable, List, Tuple, Dict
+from typing import Dict
 
+import pandas as pd
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-
-from .callbacks import plugin_callbacks
-from .layout import main_layout
 from webviz_subsurface._providers import (
-    EnsembleSurfaceProviderFactory,
-    WellProviderFactory,
     EnsembleFaultPolygonsProviderFactory,
+    EnsembleSurfaceProviderFactory,
+)
+from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
+    FaultPolygonsServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
     SurfaceServer,
 )
-from webviz_subsurface._providers.well_provider.well_server import WellServer
-from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
-    FaultPolygonsServer,
-)
+
+from ._tmp_well_pick_provider import WellPickProvider
+from .callbacks import plugin_callbacks
+from .layout import main_layout
 
 
 class MapViewerFMU(WebvizPluginABC):
@@ -28,18 +28,15 @@ class MapViewerFMU(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         attributes: list = None,
-        wellfolder: Path = None,
-        wellsuffix: str = ".w",
-        well_downsample_interval: int = None,
-        mdlog: str = None,
+        well_pick_file: Path = None,
         fault_polygon_attribute: str = None,
-        map_surface_names_to_fault_polygons: Dict[str, List[str]] = None,
+        map_surface_names_to_fault_polygons: Dict[str, str] = None,
+        map_surface_names_to_well_pick_names: Dict[str, str] = None,
     ):
 
         super().__init__()
 
         surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
-        well_provider_factory = WellProviderFactory.instance()
         fault_polygons_provider_factory = (
             EnsembleFaultPolygonsProviderFactory.instance()
         )
@@ -53,15 +50,16 @@ class MapViewerFMU(WebvizPluginABC):
         }
         self._surface_server = SurfaceServer.instance(app)
 
-        if wellfolder is not None:
-            self.well_provider = well_provider_factory.create_from_well_files(
-                well_folder=wellfolder, well_suffix=wellsuffix, md_logname=mdlog
+        self.well_pick_provider = None
+        if well_pick_file is not None:
+            well_pick_table = pd.read_csv(well_pick_file)
+            self.well_pick_provider = WellPickProvider(
+                dframe=well_pick_table,
+                map_surface_names_to_well_pick_names=map_surface_names_to_well_pick_names,
             )
-            self._well_server = WellServer.instance(app)
-            self._well_server.add_provider(self.well_provider)
-        else:
-            self.well_provider = None
-            self._well_server = None
+            self.well_pick_provider.get_geojson(
+                self.well_pick_provider.well_names(), "TopVolantis"
+            )
 
         self._ensemble_fault_polygons_providers = {
             ens: fault_polygons_provider_factory.create_from_ensemble_fault_polygons_files(
@@ -69,8 +67,22 @@ class MapViewerFMU(WebvizPluginABC):
             )
             for ens in ensembles
         }
+        all_fault_polygon_attributes = self._ensemble_fault_polygons_providers[
+            ensembles[0]
+        ].attributes()
+        if (
+            fault_polygon_attribute is not None
+            and fault_polygon_attribute in all_fault_polygon_attributes
+        ):
+            self.fault_polygon_attribute = fault_polygon_attribute
+        elif all_fault_polygon_attributes:
+            self.fault_polygon_attribute = all_fault_polygon_attributes[0]
+        else:
+            self.fault_polygon_attribute = None
+
         self._fault_polygons_server = FaultPolygonsServer.instance(app)
         for fault_polygons_provider in self._ensemble_fault_polygons_providers.values():
+
             self._fault_polygons_server.add_provider(fault_polygons_provider)
 
         self.map_surface_names_to_fault_polygons = (
@@ -88,8 +100,8 @@ class MapViewerFMU(WebvizPluginABC):
             reals.extend([x for x in provider.realizations() if x not in reals])
         return main_layout(
             get_uuid=self.uuid,
-            well_names=self.well_provider.well_names()
-            if self.well_provider is not None
+            well_names=self.well_pick_provider.well_names()
+            if self.well_pick_provider is not None
             else [],
             realizations=reals,
         )
@@ -100,9 +112,9 @@ class MapViewerFMU(WebvizPluginABC):
             get_uuid=self.uuid,
             ensemble_surface_providers=self._ensemble_surface_providers,
             surface_server=self._surface_server,
-            well_provider=self.well_provider,
-            well_server=self._well_server,
             ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,
+            fault_polygon_attribute=self.fault_polygon_attribute,
             fault_polygons_server=self._fault_polygons_server,
             map_surface_names_to_fault_polygons=self.map_surface_names_to_fault_polygons,
+            well_picks_provider=self.well_pick_provider,
         )

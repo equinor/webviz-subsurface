@@ -1,19 +1,20 @@
-from enum import Enum, unique
-from typing import Callable, List, Dict, Any, Optional
 import json
+from enum import Enum, unique
+from typing import Any, Callable, Dict, List, Optional
+
 import webviz_core_components as wcc
 from dash import dcc, html
-
-
 from webviz_subsurface_components import DeckGLMap  # type: ignore
+
 from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     ColormapLayer,
     DrawingLayer,
-    Hillshading2DLayer,
-    WellsLayer,
-    Map3DLayer,
     FaultPolygonsLayer,
+    Hillshading2DLayer,
+    Map3DLayer,
+    WellsLayer,
 )
+
 from ._types import SurfaceMode
 
 

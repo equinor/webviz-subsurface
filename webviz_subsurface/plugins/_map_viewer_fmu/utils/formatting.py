@@ -1,5 +1,5 @@
-from datetime import datetime
 import collections.abc
+from datetime import datetime
 
 
 def format_date(date_string: str) -> str:
