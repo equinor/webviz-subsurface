@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#961](https://github.com/equinor/webviz-subsurface/pull/961) - Improved error message when there are none valid realizations in an ensemble.
 
 ### Fixed
-
+- [#965](https://github.com/equinor/webviz-subsurface/pull/965) - Allow a filtered subset of surface names for multiple attributes in `StructuralUncertainty`.
 - [#972](https://github.com/equinor/webviz-subsurface/pull/972) - FIxed bug occuring when ensembles had different PORE/PORV naming standards in the volumetric input files. Also fixed bug occuring if only BO and/or BG was selected in the table.
 - [#958](https://github.com/equinor/webviz-subsurface/pull/958) - Disable unwanted calculation of `marks` in some `RangeSlider` components.
 
