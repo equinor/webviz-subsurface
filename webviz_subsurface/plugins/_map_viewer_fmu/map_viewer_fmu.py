@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Dict, Optional, List, Tuple, Callable
 
-import pandas as pd
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
