@@ -1,8 +1,7 @@
 from typing import List
 
-import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
-from dash import html
+from dash import dcc, html
 
 
 def map_data_layout(
@@ -13,7 +12,7 @@ def map_data_layout(
     realizations: List[int],
     use_wells: bool,
 ) -> html.Div:
-    """Layout for the map data modal"""
+    """Layout for the map data dialog"""
     return html.Div(
         children=[
             wcc.Selectors(
@@ -153,7 +152,7 @@ def color_range_layout(uuid: str, map_id: str) -> wcc.FlexBox:
                 "Surface A" if map_id == "map1" else "Surface B",
                 style={"flex": 1, "minWidth": "40px"},
             ),
-            dbc.Input(
+            dcc.Input(
                 id={
                     "id": uuid,
                     "colors": f"{map_id}_clip_min",
@@ -166,7 +165,7 @@ def color_range_layout(uuid: str, map_id: str) -> wcc.FlexBox:
                 persistence=True,
                 persistence_type="session",
             ),
-            dbc.Input(
+            dcc.Input(
                 id={
                     "id": uuid,
                     "colors": f"{map_id}_clip_max",

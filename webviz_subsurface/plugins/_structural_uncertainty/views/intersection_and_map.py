@@ -4,8 +4,6 @@ import webviz_core_components as wcc
 from dash import html
 from webviz_subsurface_components import LeafletMap
 
-from .uncertainty_table import uncertainty_table_layout
-
 
 def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
     """Layout for the intersection graph and maps"""
@@ -66,16 +64,6 @@ def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
                                 ),
                             ),
                         ],
-                    ),
-                    wcc.Frame(
-                        id={
-                            "id": get_uuid("uncertainty-table"),
-                            "element": "wrapper",
-                        },
-                        style={"height": "40vh", "display": "none"},
-                        children=uncertainty_table_layout(
-                            uuid=get_uuid("uncertainty-table"),
-                        ),
                     ),
                 ],
             ),

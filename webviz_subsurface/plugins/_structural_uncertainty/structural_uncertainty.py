@@ -16,7 +16,7 @@ from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
 from ._tour_steps import generate_tour_steps
 from .controllers import (
-    open_modals,
+    open_dialogs,
     update_intersection,
     update_intersection_source,
     update_maps,
@@ -25,11 +25,12 @@ from .controllers import (
 )
 from .views import (
     clientside_stores,
+    dialog,
     intersection_and_map_layout,
     intersection_data_layout,
     map_data_layout,
-    modal,
     realization_layout,
+    uncertainty_table_layout,
 )
 
 
@@ -150,9 +151,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             / "_assets"
             / "css"
             / "structural_uncertainty.css"
-        )
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
         )
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
@@ -316,9 +314,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                             wcc.Selectors(
                                                 label="Filters",
                                                 children=[
-                                                    modal.open_modal_layout(
-                                                        uuid=self.uuid("modal"),
-                                                        modal_id="realization-filter",
+                                                    dialog.open_dialog_layout(
+                                                        uuid=self.uuid("dialog"),
+                                                        dialog_id="realization-filter",
                                                         title="Realization filter",
                                                     ),
                                                 ],
@@ -334,22 +332,22 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         ),
                     ]
                 ),
-                modal.modal_layout(
-                    uuid=self.uuid("modal"),
-                    modal_id="color",
+                dialog.dialog_layout(
+                    uuid=self.uuid("dialog"),
+                    dialog_id="color",
                     title="Color settings",
                     size="lg",
-                    body_children=[
+                    children=[
                         html.Div(
                             children=[self._color_picker.layout],
                         ),
                     ],
                 ),
-                modal.modal_layout(
-                    uuid=self.uuid("modal"),
-                    modal_id="realization-filter",
+                dialog.dialog_layout(
+                    uuid=self.uuid("dialog"),
+                    dialog_id="realization-filter",
                     title="Filter realizations",
-                    body_children=[
+                    children=[
                         realization_layout(
                             uuid=self.uuid("intersection-data"),
                             realizations=self._realizations,
@@ -357,16 +355,26 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 "intersection_data", {}
                             ).get("realizations", self._realizations),
                         ),
+                        dialog.clear_all_apply_dialog_buttons(
+                            uuid=self.uuid("dialog"), dialog_id="realization-filter"
+                        ),
                     ],
-                    footer=modal.clear_all_apply_modal_buttons(
-                        uuid=self.uuid("modal"), modal_id="realization-filter"
-                    ),
+                ),
+                dialog.dialog_layout(
+                    uuid=self.uuid("dialog"),
+                    dialog_id="uncertainty-table",
+                    title="Uncertainty table",
+                    children=[
+                        uncertainty_table_layout(
+                            uuid=self.uuid("uncertainty-table"),
+                        )
+                    ],
                 ),
             ],
         )
 
     def set_callbacks(self, app: Dash) -> None:
-        open_modals(app=app, get_uuid=self.uuid)
+        open_dialogs(app=app, get_uuid=self.uuid)
         update_realizations(app=app, get_uuid=self.uuid)
         update_intersection(
             app=app,

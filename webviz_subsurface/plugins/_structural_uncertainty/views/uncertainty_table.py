@@ -5,9 +5,8 @@ from dash import dash_table, html
 def uncertainty_table_layout(
     uuid: str,
 ) -> html.Div:
-    """Layout for the uncertainty table modal"""
+    """Layout for the uncertainty table dialog"""
     return html.Div(
-        className="webviz-structunc-uncertainty-table-wrapper",
         children=[
             wcc.FlexBox(
                 children=[
@@ -72,15 +71,4 @@ def uncertainty_table_layout(
                 filter_action="native",
             ),
         ],
-    )
-
-
-def uncertainty_table_btn(uuid: str, disabled: bool = False) -> html.Button:
-    return html.Div(
-        children=html.Button(
-            "Show uncertainty table",
-            className="webviz-structunc-open-modal-btn",
-            id=uuid,
-            disabled=disabled,
-        ),
     )
