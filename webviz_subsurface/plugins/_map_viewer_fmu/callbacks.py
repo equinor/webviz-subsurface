@@ -1,56 +1,57 @@
-from typing import Callable, Dict, List, Optional, Tuple, Any, Union
-from copy import deepcopy
 import json
 import math
+from copy import deepcopy
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from dash import Input, Output, State, callback, callback_context, no_update, ALL, MATCH
+from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
-
-
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
 )
-from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
-    SurfaceServer,
-    QualifiedAddress,
-    QualifiedDiffAddress,
-)
-
+from webviz_subsurface._providers import EnsembleSurfaceProvider
 from webviz_subsurface._providers.ensemble_fault_polygons_provider.ensemble_fault_polygons_provider import (
     SimulatedFaultPolygonsAddress,
 )
+from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
+    FaultPolygonsServer,
+)
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    ObservedSurfaceAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
-    ObservedSurfaceAddress,
     SurfaceAddress,
 )
-from webviz_subsurface._providers import EnsembleSurfaceProvider
+from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
+    QualifiedAddress,
+    QualifiedDiffAddress,
+    SurfaceServer,
+)
+
 from ._types import SurfaceMode
 from .layout import (
-    LayoutElements,
-    SideBySideSelectorFlex,
-    update_map_layers,
     DefaultSettings,
-    Tabs,
+    LayoutElements,
     LayoutLabels,
+    SideBySideSelectorFlex,
+    Tabs,
+    update_map_layers,
 )
 
 
 def plugin_callbacks(
     get_uuid: Callable,
-    ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
+    ensemble_surface_providers: dict,
     surface_server: SurfaceServer,
     ensemble_fault_polygons_providers,
-    fault_polygons_server,
+    fault_polygons_server: FaultPolygonsServer,
     fault_polygon_attribute: str,
-    map_surface_names_to_fault_polygons,
+    map_surface_names_to_fault_polygons: Dict[str, str],
     well_picks_provider,
 ) -> None:
-    def selections(tab, colorselector=False) -> Dict[str, str]:
+    def selections(tab: str, colorselector: bool = False) -> Dict[str, str]:
         uuid = get_uuid(
             LayoutElements.SELECTIONS
             if not colorselector
@@ -58,13 +59,13 @@ def plugin_callbacks(
         )
         return {"view": ALL, "id": uuid, "tab": tab, "selector": ALL}
 
-    def selector_wrapper(tab, colorselector=False) -> Dict[str, str]:
+    def selector_wrapper(tab: str, colorselector: bool = False) -> Dict[str, str]:
         uuid = get_uuid(
             LayoutElements.WRAPPER if not colorselector else LayoutElements.COLORWRAPPER
         )
         return {"id": uuid, "tab": tab, "selector": ALL}
 
-    def links(tab, colorselector=False) -> Dict[str, str]:
+    def links(tab: str, colorselector: bool = False) -> Dict[str, str]:
         uuid = get_uuid(
             LayoutElements.LINK if not colorselector else LayoutElements.COLORLINK
         )
@@ -75,10 +76,10 @@ def plugin_callbacks(
         Input({"id": get_uuid("Button"), "tab": ALL}, "n_clicks"),
         State(get_uuid(LayoutElements.OPTIONS_DIALOG), "open"),
     )
-    def open_close_options_dialog(_n_click: list, is_open: bool):
+    def open_close_options_dialog(_n_click: list, is_open: bool) -> bool:
         if any(click is not None for click in _n_click):
             return not is_open
-        return no_update
+        raise PreventUpdate
 
     # 2nd callback
     @callback(
@@ -95,14 +96,14 @@ def plugin_callbacks(
     )
     def _update_components_and_selected_data(
         mapselector_values: List[Dict[str, Any]],
-        number_of_views,
-        multi_selector,
-        selectorlinks,
-        filtered_reals,
-        tab_name,
-        selector_ids,
-        wrapper_ids,
-    ):
+        number_of_views: int,
+        multi_selector: str,
+        selectorlinks: List[List[str]],
+        filtered_reals: List[int],
+        tab_name: str,
+        selector_ids: List[dict],
+        wrapper_ids: List[dict],
+    ) -> Tuple[List[dict], list]:
         """Reads stored raw selections, stores valid selections as a dcc.Store
         and updates visible and valid selections in layout"""
 
@@ -115,11 +116,9 @@ def plugin_callbacks(
 
         selector_values = []
         for idx in range(number_of_views):
-            view_selections = {
-                id_values["selector"]: values
-                for values, id_values in zip(mapselector_values, selector_ids)
-                if id_values["view"] == idx
-            }
+            view_selections = combine_selector_values_and_name(
+                mapselector_values, selector_ids, view=idx
+            )
             view_selections["multi"] = multi_selector
             if tab_name == Tabs.STATS:
                 view_selections["mode"] = DefaultSettings.VIEW_LAYOUT_STATISTICS_TAB[
@@ -129,17 +128,17 @@ def plugin_callbacks(
 
         linked_selector_names = [l[0] for l in selectorlinks if l]
 
-        test = _update_selector_values_from_provider(
-            selector_values,
-            linked_selector_names,
-            multi_selector,
-            get_uuid(LayoutElements.MULTI) in ctx,
-            filtered_reals,
+        component_properties = _update_selector_component_properties_from_provider(
+            selector_values=selector_values,
+            linked_selectors=linked_selector_names,
+            multi=multi_selector,
+            multi_in_ctx=get_uuid(LayoutElements.MULTI) in ctx,
+            filtered_realizations=filtered_reals,
         )
-
+        # retrive the updated selector values from the component properties
         selector_values = [
             {key: val["value"] for key, val in data.items()}
-            for idx, data in enumerate(test)
+            for idx, data in enumerate(component_properties)
         ]
 
         if multi_selector is not None:
@@ -157,7 +156,9 @@ def plugin_callbacks(
                     tab_name,
                     get_uuid,
                     selector=id_val["selector"],
-                    view_data=[data[id_val["selector"]] for data in test],
+                    view_data=[
+                        data[id_val["selector"]] for data in component_properties
+                    ],
                     link=id_val["selector"] in linked_selector_names,
                     dropdown=id_val["selector"] in ["ensemble", "mode"],
                 )
@@ -185,21 +186,21 @@ def plugin_callbacks(
         State(selections(MATCH, colorselector=True), "id"),
     )
     def _update_color_components_and_value(
-        values,
-        colorvalues,
-        _n_click,
-        colorlinks,
-        multi,
-        color_wrapper_ids,
-        stored_color_settings,
-        tab,
-        colorval_ids,
-    ):
+        selector_values: List[dict],
+        colorvalues: List[Dict[str, Any]],
+        _n_click: int,
+        colorlinks: List[List[str]],
+        multi: str,
+        color_wrapper_ids: List[dict],
+        stored_color_settings: Dict,
+        tab: str,
+        colorval_ids: List[dict],
+    ) -> Tuple[List[dict], list]:
         """Adds color settings to validated stored selections, updates color component in layout
         and writes validated selectors with colors to a dcc.Store"""
         ctx = callback_context.triggered[0]["prop_id"]
 
-        if values is None:
+        if selector_values is None:
             raise PreventUpdate
 
         reset_color_index = (
@@ -213,46 +214,49 @@ def plugin_callbacks(
             else None
         )
 
+        # if a selector is set as multi in the "Maps per Selector" tab
+        # color_range should be linked and the min and max surface ranges
+        # from all the views should be used as range
+        use_range_from_all = tab == Tabs.SPLIT and multi != "attribute"
+
         links = [l[0] for l in colorlinks if l]
+        links = links if not use_range_from_all else links + ["color_range"]
 
-        for idx, data in enumerate(values):
+        # update selector_values with current values from the color components
+        for idx, data in enumerate(selector_values):
             data.update(
-                {
-                    id_values["selector"]: values
-                    for values, id_values in zip(colorvalues, colorval_ids)
-                    if id_values["view"] == idx
-                }
+                combine_selector_values_and_name(colorvalues, colorval_ids, view=idx)
             )
-
-        if multi is not None and multi != "attribute":
-            links.append("color_range")
-            ranges = [data["surface_range"] for data in values]
-            if ranges:
-                min_max_for_all = [min(r[0] for r in ranges), max(r[1] for r in ranges)]
-        color_test = _update_colors(
-            values,
-            links,
-            stored_color_settings,
-            reset_color_index,
-            color_update=color_update_index,
+        color_component_properties = _update_color_component_properties(
+            values=selector_values,
+            links=links if not use_range_from_all else links + ["color_range"],
+            stored_color_settings=stored_color_settings,
+            reset_color_index=reset_color_index,
+            color_update_index=color_update_index,
         )
 
-        for idx, data in enumerate(color_test):
-            if multi is not None and multi != "attribute":
+        if use_range_from_all:
+            ranges = [data["surface_range"] for data in selector_values]
+            min_max_for_all = [min(r[0] for r in ranges), max(r[1] for r in ranges)]
+            for data in color_component_properties:
                 data["color_range"]["range"] = min_max_for_all
                 if reset_color_index is not None:
                     data["color_range"]["value"] = min_max_for_all
+
+        for idx, data in enumerate(color_component_properties):
             for key, val in data.items():
-                values[idx][key] = val["value"]
+                selector_values[idx][key] = val["value"]
 
         return (
-            values,
+            selector_values,
             [
                 SideBySideSelectorFlex(
                     tab,
                     get_uuid,
                     selector=id_val["selector"],
-                    view_data=[data[id_val["selector"]] for data in color_test],
+                    view_data=[
+                        data[id_val["selector"]] for data in color_component_properties
+                    ],
                     link=id_val["selector"] in links,
                     dropdown=id_val["selector"] in ["colormap"],
                 )
@@ -269,8 +273,12 @@ def plugin_callbacks(
         State({"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": ALL}, "id"),
     )
     def _update_color_store(
-        selector_values, tab, stored_color_settings, data_id
-    ) -> dict:
+        selector_values: List[List[dict]],
+        tab: str,
+        stored_color_settings: Dict[str, dict],
+        data_id: List[dict],
+    ) -> Dict[str, dict]:
+        """Update the color store with chosen color range and colormap for surfaces"""
         if selector_values is None:
             raise PreventUpdate
         index = [x["tab"] for x in data_id].index(tab)
@@ -299,93 +307,46 @@ def plugin_callbacks(
         Input(
             {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": MATCH}, "data"
         ),
+        Input(get_uuid(LayoutElements.WELLS), "value"),
         Input(get_uuid(LayoutElements.VIEW_COLUMNS), "value"),
         Input(get_uuid(LayoutElements.OPTIONS), "value"),
-        Input(get_uuid(LayoutElements.WELLS), "value"),
         State(get_uuid("tabs"), "value"),
         State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
     )
     def _update_map(
-        surface_elements: List, view_columns, options, selected_wells, tab_name, multi
-    ):
+        surface_elements: List[dict],
+        selected_wells: List[str],
+        view_columns: Optional[int],
+        options: List[str],
+        tab_name: str,
+        multi: str,
+    ) -> tuple:
         """Updates the map component with the stored, validated selections"""
 
         # Prevent update if the pattern matched components does not match the current tab
         state_list = callback_context.states_list
-        if state_list[1]["id"]["tab"] != tab_name:
+        if state_list[1]["id"]["tab"] != tab_name or surface_elements is None:
             raise PreventUpdate
 
-        if surface_elements is None:
-            raise PreventUpdate
         if tab_name == Tabs.DIFF:
             view_columns = 3 if view_columns is None else view_columns
 
-        #  view_settings: List[ViewSetting] = []
-
-        number_of_views = len(surface_elements)
-
         layers = update_map_layers(
-            number_of_views,
+            views=len(surface_elements),
             include_well_layer=well_picks_provider is not None,
             visible_well_layer=LayoutLabels.SHOW_WELLS in options,
             visible_fault_polygons_layer=LayoutLabels.SHOW_FAULTPOLYGONS in options,
             visible_hillshading_layer=LayoutLabels.SHOW_HILLSHADING in options,
         )
-
         layer_model = DeckGLMapLayersModel(layers)
 
         for idx, data in enumerate(surface_elements):
-
-            if data.get("surf_type") != "diff":
-                # view_setting = ViewSetting(**data)
-                #  view_settings.append(ViewSetting(**data))
-                surface_address = get_surface_context_from_data(data)
-
-                provider = ensemble_surface_providers[data["ensemble"][0]]
-                surf_meta, img_url = publish_and_get_surface_metadata(
-                    surface_provider=provider, surface_address=surface_address
-                )
-                fault_polygons_provider = ensemble_fault_polygons_providers[
-                    data["ensemble"][0]
-                ]
-                horion_name = data["name"][0]
-                fault_polygons_address = SimulatedFaultPolygonsAddress(
-                    attribute=fault_polygon_attribute,
-                    name=map_surface_names_to_fault_polygons.get(
-                        horion_name, horion_name
-                    ),
-                    realization=int(data["realizations"][0]),
-                )
-            else:
-
-                # Calculate and add layers for difference map.
-                # Mostly duplicate code to the above. Should be improved.
-                surface_address = get_surface_context_from_data(surface_elements[0])
-                subsurface_address = get_surface_context_from_data(surface_elements[1])
-                provider = ensemble_surface_providers[
-                    surface_elements[0]["ensemble"][0]
-                ]
-                subprovider = ensemble_surface_providers[
-                    surface_elements[1]["ensemble"][0]
-                ]
-                surf_meta, img_url = publish_and_get_diff_surface_metadata(
-                    surface_provider=provider,
-                    surface_address=surface_address,
-                    sub_surface_provider=subprovider,
-                    sub_surface_address=subsurface_address,
-                )
-                fault_polygons_provider = ensemble_fault_polygons_providers[
-                    surface_elements[0]["ensemble"][0]
-                ]
-                horion_name = surface_elements[0]["name"][0]
-                fault_polygons_address = SimulatedFaultPolygonsAddress(
-                    attribute=fault_polygon_attribute,
-                    name=map_surface_names_to_fault_polygons.get(
-                        horion_name, horion_name
-                    ),
-                    realization=int(surface_elements[0]["realizations"][0]),
-                )
-
+            diff_surf = data.get("surf_type") == "diff"
+            surf_meta, img_url = (
+                get_surface_metadata_and_image(data)
+                if not diff_surf
+                else get_surface_metadata_and_image_for_diff_surface(surface_elements)
+            )
             viewport_bounds = [
                 surf_meta.x_min,
                 surf_meta.y_min,
@@ -416,7 +377,6 @@ def plugin_callbacks(
                 "rotDeg": surf_meta.deckgl_rot_deg,
                 "valueRange": [surf_meta.val_min, surf_meta.val_max],
             }
-
             layer_model.update_layer_by_id(
                 layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                 layer_data=layer_data,
@@ -433,16 +393,29 @@ def plugin_callbacks(
                     "colorMapRange": data["color_range"],
                 },
             )
-
-            layer_model.update_layer_by_id(
-                layer_id=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
-                layer_data={
-                    "data": fault_polygons_server.encode_partial_url(
-                        provider_id=fault_polygons_provider.provider_id(),
-                        fault_polygons_address=fault_polygons_address,
+            if LayoutLabels.SHOW_FAULTPOLYGONS in options:
+                # if diff surface use polygons from first view
+                data_for_faultpolygons = data if not diff_surf else surface_elements[0]
+                fault_polygons_provider = ensemble_fault_polygons_providers[
+                    data_for_faultpolygons["ensemble"][0]
+                ]
+                horizon_name = data_for_faultpolygons["name"][0]
+                fault_polygons_address = SimulatedFaultPolygonsAddress(
+                    attribute=fault_polygon_attribute,
+                    name=map_surface_names_to_fault_polygons.get(
+                        horizon_name, horizon_name
                     ),
-                },
-            )
+                    realization=int(data_for_faultpolygons["realizations"][0]),
+                )
+                layer_model.update_layer_by_id(
+                    layer_id=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
+                    layer_data={
+                        "data": fault_polygons_server.encode_partial_url(
+                            provider_id=fault_polygons_provider.provider_id(),
+                            fault_polygons_address=fault_polygons_address,
+                        ),
+                    },
+                )
             if LayoutLabels.SHOW_WELLS in options and well_picks_provider is not None:
                 layer_model.update_layer_by_id(
                     layer_id=f"{LayoutElements.WELLS_LAYER}-{idx}",
@@ -456,7 +429,7 @@ def plugin_callbacks(
             layer_model.layers,
             viewport_bounds if surface_elements else no_update,
             {
-                "layout": view_layout(number_of_views, view_columns),
+                "layout": view_layout(len(surface_elements), view_columns),
                 "showLabel": True,
                 "viewports": [
                     {
@@ -473,12 +446,12 @@ def plugin_callbacks(
                             surface_elements[view], tab_name, multi
                         ),
                     }
-                    for view in range(number_of_views)
+                    for view in range(len(surface_elements))
                 ],
             },
         )
 
-    def make_viewport_label(data, tab, multi):
+    def make_viewport_label(data: dict, tab: str, multi: Optional[str]) -> str:
         """Return text-label for each viewport based on which tab is selected"""
         # For the difference view
         if tab == Tabs.DIFF and data.get("surf_type") == "diff":
@@ -498,7 +471,8 @@ def plugin_callbacks(
 
         return general_label(data)
 
-    def general_label(data):
+    def general_label(data: dict) -> str:
+        """Create a general map label with all available information"""
         surfaceid = [data["ensemble"][0], data["attribute"][0], data["name"][0]]
         if data["date"]:
             surfaceid.append(data["date"][0])
@@ -508,20 +482,27 @@ def plugin_callbacks(
             surfaceid.append(f"REAL {data['realizations'][0]}")
         return " ".join(surfaceid)
 
-    def _update_selector_values_from_provider(
-        values, links, multi, multi_in_ctx, filtered_realizations
-    ) -> None:
+    def _update_selector_component_properties_from_provider(
+        selector_values: List[dict],
+        linked_selectors: List[str],
+        multi: str,
+        multi_in_ctx: bool,
+        filtered_realizations: List[int],
+    ) -> List[Dict[str, dict]]:
+        """Return updated options and values for the different selector components using
+        the provider. If current selected value for a selector is in the options it will
+        be used as the new value"""
         view_data = []
-        for idx, data in enumerate(values):
+        for idx, data in enumerate(selector_values):
 
-            if not ("ensemble" in links and idx > 0):
+            if not ("ensemble" in linked_selectors and idx > 0):
                 ensembles = list(ensemble_surface_providers.keys())
                 ensemble = data.get("ensemble", [])
                 ensemble = [ensemble] if isinstance(ensemble, str) else ensemble
                 if not ensemble or multi_in_ctx:
                     ensemble = ensembles if multi == "ensemble" else ensembles[:1]
 
-            if not ("attribute" in links and idx > 0):
+            if not ("attribute" in linked_selectors and idx > 0):
                 attributes = []
                 for ens in ensemble:
                     provider = ensemble_surface_providers[ens]
@@ -538,7 +519,7 @@ def plugin_callbacks(
                 if not attribute or multi_in_ctx:
                     attribute = attributes if multi == "attribute" else attributes[:1]
 
-            if not ("name" in links and idx > 0):
+            if not ("name" in linked_selectors and idx > 0):
                 names = []
                 for ens in ensemble:
                     provider = ensemble_surface_providers[ens]
@@ -550,7 +531,7 @@ def plugin_callbacks(
                 if not name or multi_in_ctx:
                     name = names if multi == "name" else names[:1]
 
-            if not ("date" in links and idx > 0):
+            if not ("date" in linked_selectors and idx > 0):
                 dates = []
                 for ens in ensemble:
                     provider = ensemble_surface_providers[ens]
@@ -567,11 +548,11 @@ def plugin_callbacks(
                 if not date or multi_in_ctx:
                     date = dates if multi == "date" else dates[:1]
 
-            if not ("mode" in links and idx > 0):
+            if not ("mode" in linked_selectors and idx > 0):
                 modes = [mode for mode in SurfaceMode]
                 mode = data.get("mode", SurfaceMode.REALIZATION)
 
-            if not ("realizations" in links and idx > 0):
+            if not ("realizations" in linked_selectors and idx > 0):
                 if mode == SurfaceMode.REALIZATION:
                     real = data.get("realizations", [])
                     if not real or real[0] not in filtered_realizations:
@@ -606,27 +587,31 @@ def plugin_callbacks(
 
         return view_data
 
-    def _update_colors(
-        values,
-        links,
-        stored_color_settings,
-        reset_color_index=None,
-        color_update=False,
-    ) -> None:
+    def _update_color_component_properties(
+        values: List[dict],
+        links: List[str],
+        stored_color_settings: dict,
+        reset_color_index: Optional[int],
+        color_update_index: Optional[int],
+    ) -> List[dict]:
+        """Return updated options and values for the different color selector components.
+        If previous color settings are found it will be used, or set value to min and max
+        surface range unless the user has updated the component through interaction."""
         stored_color_settings = (
             stored_color_settings if stored_color_settings is not None else {}
         )
-
         colormaps = DefaultSettings.COLORMAP_OPTIONS
 
-        surfids = []
-        color_data = []
+        surfids: List[str] = []
+        color_data: List[dict] = []
         for idx, data in enumerate(values):
             surfaceid = (
                 get_surface_id_for_diff_surf(values)
                 if data.get("surf_type") == "diff"
                 else get_surface_id_from_data(data)
             )
+            # if surfaceid exist in another view use the color settings
+            # from that view and disable the color component
             if surfaceid in surfids:
                 index_of_first = surfids.index(surfaceid)
                 surfids.append(surfaceid)
@@ -639,7 +624,7 @@ def plugin_callbacks(
             surfids.append(surfaceid)
 
             use_stored_color = (
-                surfaceid in stored_color_settings and not color_update == idx
+                surfaceid in stored_color_settings and not color_update_index == idx
             )
             if not ("colormap" in links and idx > 0):
                 colormap = (
@@ -680,11 +665,16 @@ def plugin_callbacks(
 
         return color_data
 
-    def get_surface_context_from_data(data):
+    def get_surface_address_from_data(
+        data: dict,
+    ) -> Union[
+        SimulatedSurfaceAddress, ObservedSurfaceAddress, StatisticalSurfaceAddress
+    ]:
+        """Return the SurfaceAddress based on view selection"""
         has_date = bool(
-            ensemble_surface_providers.get(
-                data["ensemble"][0]
-            ).surface_dates_for_attribute(data["attribute"][0])[0]
+            ensemble_surface_providers[data["ensemble"][0]].surface_dates_for_attribute(
+                data["attribute"][0]
+            )[0]
         )
 
         if data["mode"] == SurfaceMode.REALIZATION:
@@ -710,7 +700,7 @@ def plugin_callbacks(
 
     def publish_and_get_surface_metadata(
         surface_provider: EnsembleSurfaceProvider, surface_address: SurfaceAddress
-    ) -> Dict:
+    ) -> Tuple:
         provider_id: str = surface_provider.provider_id()
         qualified_address = QualifiedAddress(provider_id, surface_address)
         surf_meta = surface_server.get_surface_metadata(qualified_address)
@@ -734,7 +724,6 @@ def plugin_callbacks(
         provider_id: str = surface_provider.provider_id()
         subprovider_id = sub_surface_provider.provider_id()
         qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
-
         qualified_address = QualifiedDiffAddress(
             provider_id, surface_address, subprovider_id, sub_surface_address
         )
@@ -743,13 +732,14 @@ def plugin_callbacks(
         if not surf_meta:
             surface_a = surface_provider.get_surface(address=surface_address)
             surface_b = sub_surface_provider.get_surface(address=sub_surface_address)
-            surface = surface_a - surface_b
-
+            if surface_a is not None and surface_b is not None:
+                surface = surface_a - surface_b
             surface_server.publish_surface(qualified_address, surface)
             surf_meta = surface_server.get_surface_metadata(qualified_address)
         return surf_meta, surface_server.encode_partial_url(qualified_address)
 
-    def get_surface_id_from_data(data):
+    def get_surface_id_from_data(data: dict) -> str:
+        """Retrieve surfaceid used for the colorstore"""
         surfaceid = data["attribute"][0] + data["name"][0]
         if data["date"]:
             surfaceid += data["date"][0]
@@ -757,17 +747,14 @@ def plugin_callbacks(
             surfaceid += data["mode"]
         return surfaceid
 
-    def get_surface_id_for_diff_surf(values):
-        surfaceid = ""
-        for data in values[:2]:
-            surfaceid += data["attribute"][0] + data["name"][0]
-            if data["date"]:
-                surfaceid += data["date"][0]
-            if data["mode"] == SurfaceMode.STDDEV:
-                surfaceid += data["mode"]
-        return surfaceid
+    def get_surface_id_for_diff_surf(values: List[dict]) -> str:
+        """Retrieve surfaceid used for the colorstore, for the diff surface
+        this needs to be a combination of the two surfaces subtracted"""
+        return get_surface_id_from_data(values[0]) + get_surface_id_from_data(values[1])
 
-    def update_selections_with_multi(values, multi):
+    def update_selections_with_multi(values: List[dict], multi: str) -> List[dict]:
+        """If a selector has been set as multi, the values selected in that component needs
+        to be divided between the views so that there is only one unique value in each"""
         multi_values = values[0][multi]
         new_values = []
         for val in multi_values:
@@ -776,15 +763,16 @@ def plugin_callbacks(
             new_values.append(updated_values)
         return new_values
 
-    def attribute_has_date(attribute, provider):
+    def attribute_has_date(attribute: str, provider: EnsembleSurfaceProvider) -> bool:
+        """Check if an attribute has any dates"""
         return bool(provider.surface_dates_for_attribute(attribute)[0])
 
-    def remove_data_if_not_valid(values):
+    def remove_data_if_not_valid(values: List[dict]) -> List[dict]:
         """Checks if surfaces can be provided from the selections.
         Any invalid selections are removed."""
         updated_values = []
         for data in values:
-            surface_address = get_surface_context_from_data(data)
+            surface_address = get_surface_address_from_data(data)
             try:
                 provider = ensemble_surface_providers[data["ensemble"][0]]
                 surf_meta, _ = publish_and_get_surface_metadata(
@@ -801,18 +789,29 @@ def plugin_callbacks(
 
         return updated_values
 
-    def add_diff_surface_to_values(selector_values):
+    def get_surface_metadata_and_image(data: dict) -> Tuple:
+        surface_address = get_surface_address_from_data(data)
+        provider = ensemble_surface_providers[data["ensemble"][0]]
+        return publish_and_get_surface_metadata(
+            surface_address=surface_address, surface_provider=provider
+        )
 
-        surface_address = get_surface_context_from_data(selector_values[0])
-        sub_surface_address = get_surface_context_from_data(selector_values[1])
+    def get_surface_metadata_and_image_for_diff_surface(
+        selector_values: List[dict],
+    ) -> Tuple:
+        surface_address = get_surface_address_from_data(selector_values[0])
+        sub_surface_address = get_surface_address_from_data(selector_values[1])
         provider = ensemble_surface_providers[selector_values[0]["ensemble"][0]]
         sub_provider = ensemble_surface_providers[selector_values[1]["ensemble"][0]]
-        surf_meta, _ = publish_and_get_diff_surface_metadata(
+        return publish_and_get_diff_surface_metadata(
             surface_address=surface_address,
             surface_provider=provider,
             sub_surface_address=sub_surface_address,
             sub_surface_provider=sub_provider,
         )
+
+    def add_diff_surface_to_values(selector_values: List[dict]) -> List[dict]:
+        surf_meta, _ = get_surface_metadata_and_image_for_diff_surface(selector_values)
         selector_values.append(
             {
                 "surface_range": [surf_meta.val_min, surf_meta.val_max],
@@ -821,11 +820,20 @@ def plugin_callbacks(
         )
         return selector_values
 
-    # def get_view_label(tab_name):
+    def combine_selector_values_and_name(
+        values: list, id_list: list, view: int
+    ) -> dict:
+        """Combine selector values with selector name for given view"""
+        return {
+            id_values["selector"]: values
+            for values, id_values in zip(values, id_list)
+            if id_values["view"] == view
+        }
 
 
-def view_layout(views, columns):
-    """Convert a list of figures into a matrix for display"""
+def view_layout(views: int, columns: Optional[int] = None) -> List[int]:
+    """Function to set number of rows and columns for the map, if number
+    of columns is not specified, a square matrix layout is used"""
     columns = (
         columns
         if columns is not None

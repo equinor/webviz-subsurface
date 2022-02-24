@@ -1,8 +1,8 @@
-from typing import Optional, List, Dict
 from enum import Enum
+from typing import Dict, List, Optional
 
-import pandas as pd
 import geojson
+import pandas as pd
 from webviz_config.common_cache import CACHE
 
 

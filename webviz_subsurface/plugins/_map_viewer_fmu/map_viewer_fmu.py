@@ -1,25 +1,24 @@
 from pathlib import Path
-from typing import Callable, List, Tuple, Dict
+from typing import Dict, Optional
 
 import pandas as pd
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-
-from .callbacks import plugin_callbacks
-from .layout import main_layout
-from ._tmp_well_pick_provider import WellPickProvider
-
 from webviz_subsurface._providers import (
-    EnsembleSurfaceProviderFactory,
     EnsembleFaultPolygonsProviderFactory,
-)
-from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
-    SurfaceServer,
+    EnsembleSurfaceProviderFactory,
 )
 from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
     FaultPolygonsServer,
 )
+from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
+    SurfaceServer,
+)
+
+from ._tmp_well_pick_provider import WellPickProvider
+from .callbacks import plugin_callbacks
+from .layout import main_layout
 
 
 class MapViewerFMU(WebvizPluginABC):
@@ -30,7 +29,7 @@ class MapViewerFMU(WebvizPluginABC):
         ensembles: list,
         attributes: list = None,
         well_pick_file: Path = None,
-        fault_polygon_attribute: str = None,
+        fault_polygon_attribute: Optional[str] = None,
         map_surface_names_to_fault_polygons: Dict[str, str] = None,
         map_surface_names_to_well_pick_names: Dict[str, str] = None,
     ):
@@ -71,19 +70,18 @@ class MapViewerFMU(WebvizPluginABC):
         all_fault_polygon_attributes = self._ensemble_fault_polygons_providers[
             ensembles[0]
         ].attributes()
-        if (
-            fault_polygon_attribute is not None
-            and fault_polygon_attribute in all_fault_polygon_attributes
-        ):
-            self.fault_polygon_attribute = fault_polygon_attribute
-        elif all_fault_polygon_attributes:
-            self.fault_polygon_attribute = all_fault_polygon_attributes[0]
-        else:
-            self.fault_polygon_attribute = None
+
+        self.fault_polygon_attribute = (
+            fault_polygon_attribute
+            if (
+                fault_polygon_attribute is not None
+                and fault_polygon_attribute in all_fault_polygon_attributes
+            )
+            else all_fault_polygon_attributes[0]
+        )
 
         self._fault_polygons_server = FaultPolygonsServer.instance(app)
         for fault_polygons_provider in self._ensemble_fault_polygons_providers.values():
-
             self._fault_polygons_server.add_provider(fault_polygons_provider)
 
         self.map_surface_names_to_fault_polygons = (
