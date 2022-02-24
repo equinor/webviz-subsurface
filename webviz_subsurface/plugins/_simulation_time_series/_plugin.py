@@ -48,7 +48,9 @@ from .utils.from_timeseries_cumulatives import (
 )
 
 
-def check_deprecation_argument(options: dict) -> Optional[Tuple[str, str]]:
+def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, str]]:
+    if options is None:
+        return None
     if any(elm in options for elm in ["vector1", "vector2", "vector3"]):
         return (
             'The usage of "vector1", "vector2" and "vector3" as user input options are deprecated. '
