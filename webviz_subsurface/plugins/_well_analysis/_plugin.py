@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import webviz_core_components as wcc
-from dash import Dash
+from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
+
+import webviz_subsurface
 
 from ..._models import GruptreeModel
 from ..._providers import (
@@ -13,7 +15,7 @@ from ..._providers import (
 )
 from ._callbacks import well_control_callbacks, well_overview_callbacks
 from ._ensemble_data import EnsembleData
-from ._layout import main_layout
+from ._layout import clientside_stores, main_layout
 
 
 class WellAnalysis(WebvizPluginABC):
@@ -31,6 +33,12 @@ class WellAnalysis(WebvizPluginABC):
         time_index: str = "yearly",
     ) -> None:
         super().__init__()
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "inplace_volumes.css"
+        )
 
         self._ensembles = ensembles
         self._theme = webviz_settings.theme
@@ -66,8 +74,13 @@ class WellAnalysis(WebvizPluginABC):
     #     return self._datamodel.webviz_store
 
     @property
-    def layout(self) -> wcc.Tabs:
-        return main_layout(self.uuid, self._data_models)
+    def layout(self) -> html.Div:
+        return html.Div(
+            children=[
+                clientside_stores(get_uuid=self.uuid),
+                main_layout(self.uuid, self._data_models),
+            ]
+        )
 
     def set_callbacks(self, app: Dash) -> None:
         well_overview_callbacks(app, self.uuid, self._data_models)

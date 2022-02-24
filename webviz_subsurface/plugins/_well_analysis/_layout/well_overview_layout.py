@@ -1,6 +1,7 @@
 from typing import Callable, Dict
 
 import webviz_core_components as wcc
+from dash import html
 
 from .._ensemble_data import EnsembleData
 
@@ -11,6 +12,7 @@ class WellOverviewLayoutElements:
     ENSEMBLES = "well-overview-ensembles"
     OVERLAY_BARS = "well-overview-overlay-bars"
     SUMVEC = "well-overview-sumvec"
+    CHARTTYPE_BUTTON = "well-overview-charttype-button"
 
 
 def well_overview_tab(
@@ -22,8 +24,9 @@ def well_overview_tab(
             wcc.Frame(
                 style={"flex": 1, "height": "87vh"},
                 children=[
+                    buttons(get_uuid),
                     controls(get_uuid, data_models),
-                    options(get_uuid, data_models),
+                    plot_settings(get_uuid, data_models),
                 ],
             ),
             wcc.Frame(
@@ -34,6 +37,30 @@ def well_overview_tab(
                 children=[],
             ),
         ]
+    )
+
+
+def buttons(get_uuid: Callable) -> html.Div:
+    uuid = get_uuid(WellOverviewLayoutElements.CHARTTYPE_BUTTON)
+    return html.Div(
+        style={"margin-bottom": "20px"},
+        children=[
+            html.Button(
+                "Bar Chart",
+                className="webviz-inplace-vol-btn",
+                id={"id": uuid, "button": "barchart"},
+            ),
+            html.Button(
+                "Pie Chart",
+                className="webviz-inplace-vol-btn",
+                id={"id": uuid, "button": "piechart"},
+            ),
+            html.Button(
+                "Stacked Area Chart",
+                className="webviz-inplace-vol-btn",
+                id={"id": uuid, "button": "areachart"},
+            ),
+        ],
     )
 
 
@@ -64,9 +91,11 @@ def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Fr
     )
 
 
-def options(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Frame:
+def plot_settings(
+    get_uuid: Callable, data_models: Dict[str, EnsembleData]
+) -> wcc.Frame:
     return wcc.Selectors(
-        label="Options",
+        label="Plot Settings",
         children=[
             wcc.Checklist(
                 id=get_uuid(WellOverviewLayoutElements.OVERLAY_BARS),
