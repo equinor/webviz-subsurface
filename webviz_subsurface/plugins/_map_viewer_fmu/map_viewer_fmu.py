@@ -69,8 +69,17 @@ class MapViewerFMU(WebvizPluginABC):
             )
             for ens in ensembles
         }
+        all_fault_polygon_attributes = self._ensemble_fault_polygons_providers[ensembles[0]].attributes()
+        if fault_polygon_attribute is not None and fault_polygon_attribute in all_fault_polygon_attributes:
+            self.fault_polygon_attribute = fault_polygon_attribute
+        elif all_fault_polygon_attributes:
+            self.fault_polygon_attribute = all_fault_polygon_attributes[0]
+        else:
+            self.fault_polygon_attribute = None
+
         self._fault_polygons_server = FaultPolygonsServer.instance(app)
         for fault_polygons_provider in self._ensemble_fault_polygons_providers.values():
+            
             self._fault_polygons_server.add_provider(fault_polygons_provider)
 
         self.map_surface_names_to_fault_polygons = (
@@ -103,6 +112,7 @@ class MapViewerFMU(WebvizPluginABC):
             well_provider=self.well_provider,
             well_server=self._well_server,
             ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,
+            fault_polygon_attribute=self.fault_polygon_attribute,
             fault_polygons_server=self._fault_polygons_server,
             map_surface_names_to_fault_polygons=self.map_surface_names_to_fault_polygons,
         )

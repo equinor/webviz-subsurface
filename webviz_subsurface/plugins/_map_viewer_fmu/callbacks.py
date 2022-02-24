@@ -48,6 +48,7 @@ def plugin_callbacks(
     well_server,
     ensemble_fault_polygons_providers,
     fault_polygons_server,
+    fault_polygon_attribute:str,
     map_surface_names_to_fault_polygons,
 ) -> None:
     def selections(tab, colorselector=False) -> Dict[str, str]:
@@ -343,7 +344,7 @@ def plugin_callbacks(
                 ]
                 horion_name = data["name"][0]
                 fault_polygons_address = SimulatedFaultPolygonsAddress(
-                    attribute=fault_polygons_provider.attributes()[0],
+                    attribute=fault_polygon_attribute,
                     name=map_surface_names_to_fault_polygons.get(
                         horion_name, horion_name
                     ),
@@ -372,7 +373,7 @@ def plugin_callbacks(
                 ]
                 horion_name = surface_elements[0]["name"][0]
                 fault_polygons_address = SimulatedFaultPolygonsAddress(
-                    attribute=fault_polygons_provider.attributes()[0],
+                    attribute=fault_polygon_attribute,
                     name=map_surface_names_to_fault_polygons.get(
                         horion_name, horion_name
                     ),
