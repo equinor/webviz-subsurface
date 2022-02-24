@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple, Callable
 
 import pandas as pd
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
+from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProviderFactory,
     EnsembleSurfaceProviderFactory,
@@ -52,8 +53,9 @@ class MapViewerFMU(WebvizPluginABC):
         self._surface_server = SurfaceServer.instance(app)
 
         self.well_pick_provider = None
-        if well_pick_file is not None:
-            well_pick_table = pd.read_csv(well_pick_file)
+        self.well_pick_file = well_pick_file
+        if self.well_pick_file is not None:
+            well_pick_table = read_csv(self.well_pick_file)
             self.well_pick_provider = WellPickProvider(
                 dframe=well_pick_table,
                 map_surface_names_to_well_pick_names=map_surface_names_to_well_pick_names,
@@ -119,3 +121,9 @@ class MapViewerFMU(WebvizPluginABC):
             map_surface_names_to_fault_polygons=self.map_surface_names_to_fault_polygons,
             well_picks_provider=self.well_pick_provider,
         )
+
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        store_functions = []
+        if self.well_pick_file is not None:
+            store_functions.append((read_csv, [{"csv_file": self.well_pick_file}]))
+        return store_functions
