@@ -96,6 +96,7 @@ def filter_correlated_parameter(get_uuid: Callable, labels: List[str]) -> html.D
             wcc.RangeSlider(
                 id=get_uuid("property-response-correlated-slider"),
                 disabled=True,
+                marks=None,
             ),
         ]
     )
