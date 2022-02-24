@@ -3,6 +3,7 @@ from enum import Enum
 
 import pandas as pd
 import geojson
+from webviz_config.common_cache import CACHE
 
 
 class WellPickTableColumns(str, Enum):

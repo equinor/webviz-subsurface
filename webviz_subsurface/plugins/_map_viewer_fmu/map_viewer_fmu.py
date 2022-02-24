@@ -12,13 +12,11 @@ from ._tmp_well_pick_provider import WellPickProvider
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProviderFactory,
-    WellProviderFactory,
     EnsembleFaultPolygonsProviderFactory,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
     SurfaceServer,
 )
-from webviz_subsurface._providers.well_provider.well_server import WellServer
 from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
     FaultPolygonsServer,
 )
@@ -31,11 +29,7 @@ class MapViewerFMU(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         attributes: list = None,
-        wellfolder: Path = None,
-        wellsuffix: str = ".w",
-        well_downsample_interval: int = None,
         well_pick_file: Path = None,
-        mdlog: str = None,
         fault_polygon_attribute: str = None,
         map_surface_names_to_fault_polygons: Dict[str, str] = None,
         map_surface_names_to_well_pick_names: Dict[str, str] = None,
@@ -44,7 +38,6 @@ class MapViewerFMU(WebvizPluginABC):
         super().__init__()
 
         surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
-        well_provider_factory = WellProviderFactory.instance()
         fault_polygons_provider_factory = (
             EnsembleFaultPolygonsProviderFactory.instance()
         )
@@ -58,15 +51,6 @@ class MapViewerFMU(WebvizPluginABC):
         }
         self._surface_server = SurfaceServer.instance(app)
 
-        if wellfolder is not None:
-            self.well_provider = well_provider_factory.create_from_well_files(
-                well_folder=wellfolder, well_suffix=wellsuffix, md_logname=mdlog
-            )
-            self._well_server = WellServer.instance(app)
-            self._well_server.add_provider(self.well_provider)
-        else:
-            self.well_provider = None
-            self._well_server = None
         self.well_pick_provider = None
         if well_pick_file is not None:
             well_pick_table = pd.read_csv(well_pick_file)
@@ -129,8 +113,6 @@ class MapViewerFMU(WebvizPluginABC):
             get_uuid=self.uuid,
             ensemble_surface_providers=self._ensemble_surface_providers,
             surface_server=self._surface_server,
-            well_provider=self.well_provider,
-            well_server=self._well_server,
             ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,
             fault_polygon_attribute=self.fault_polygon_attribute,
             fault_polygons_server=self._fault_polygons_server,

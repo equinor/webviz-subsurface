@@ -29,7 +29,7 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SurfaceAddress,
 )
 from webviz_subsurface._providers import EnsembleSurfaceProvider
-from ._types import ViewSetting, SurfaceMode
+from ._types import SurfaceMode
 from .layout import (
     LayoutElements,
     SideBySideSelectorFlex,
@@ -44,8 +44,6 @@ def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     surface_server: SurfaceServer,
-    well_provider,
-    well_server,
     ensemble_fault_polygons_providers,
     fault_polygons_server,
     fault_polygon_attribute: str,
@@ -454,7 +452,6 @@ def plugin_callbacks(
                         )
                     },
                 )
-            print(layer_model.layers)
         return (
             layer_model.layers,
             viewport_bounds if surface_elements else no_update,
