@@ -2,7 +2,7 @@ import datetime
 import hashlib
 import logging
 import os
-import pickle
+import pickle  # nosec
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -81,7 +81,7 @@ def _compose_stat_surf_file_name(
     # And further, handling of missing realizations...
 
     pickled = pickle.dumps(address.realizations, pickle.HIGHEST_PROTOCOL)
-    real_hash = hashlib.md5(pickled).hexdigest()
+    real_hash = hashlib.md5(pickled).hexdigest()  # nosec
     return "--".join(
         [
             f"{address.statistic}",

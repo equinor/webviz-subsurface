@@ -244,9 +244,9 @@ def _address_to_str(
     elif isinstance(address, ObservedSurfaceAddress):
         addr_type_str = "obs"
 
-    addr_hash = hashlib.md5(
+    addr_hash = hashlib.md5(  # nosec
         json.dumps(asdict(address), sort_keys=True).encode()
-    ).hexdigest()  # nosec
+    ).hexdigest()
 
     return f"{provider_id}___{addr_type_str}___{address.name}___{address.attribute}___{addr_hash}"
 
