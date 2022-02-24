@@ -91,7 +91,7 @@ jobs:
         pip install --pre webviz-config-equinor
         export SOURCE_URL_WEBVIZ_SUBSURFACE=https://github.com/$GITHUB_REPOSITORY
         export GIT_POINTER_WEBVIZ_SUBSURFACE=$GITHUB_REF
-        webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor --logconfig ./webviz-subsurface-testdata/webviz_examples/debug.yml
+        webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
         rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
         docker build -t webviz/example_subsurface_image:equinor-theme .
