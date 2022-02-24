@@ -1,25 +1,15 @@
-import hashlib
-import io
 import json
 import logging
-import math
 from dataclasses import asdict, dataclass
-from typing import List, Optional, Tuple, Union, Dict
-from urllib.parse import quote, quote_plus
-from uuid import uuid4
-
+from typing import Optional, Dict
+from urllib.parse import quote
 
 import flask
-import flask_caching
 import xtgeo
 import geojson
 from dash import Dash
-from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
-
-from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from .ensemble_fault_polygons_provider import (
-    SimulatedFaultPolygonsAddress,
     FaultPolygonsAddress,
     EnsembleFaultPolygonsProvider,
 )
@@ -45,6 +35,7 @@ class FaultPolygonsServer:
 
     @staticmethod
     def instance(app: Dash) -> "FaultPolygonsServer":
+        # pylint: disable=global-statement
         global _FAULT_POLYGONS_SERVER_INSTANCE
         if not _FAULT_POLYGONS_SERVER_INSTANCE:
             LOGGER.debug("Initializing FaultPolygonsServer instance")
@@ -79,7 +70,10 @@ class FaultPolygonsServer:
         if not provider_id in self._id_to_provider_dict:
             raise ValueError("Could not find provider")
 
-        url_path: str = f"{_ROOT_URL_PATH}/{quote(provider_id)}/{quote(json.dumps(asdict(fault_polygons_address)))}"
+        url_path: str = (
+            f"{_ROOT_URL_PATH}/{quote(provider_id)}"
+            f"/{quote(json.dumps(asdict(fault_polygons_address)))}"
+        )
 
         return url_path
 
@@ -94,7 +88,6 @@ class FaultPolygonsServer:
                 f"full_fault_polygons_address={fault_polygons_address} "
             )
 
-            timer = PerfTimer()
             fault_polygons_geojson = None
             # try:
 

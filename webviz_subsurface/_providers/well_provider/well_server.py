@@ -23,6 +23,7 @@ class WellServer:
 
     @staticmethod
     def instance(app: Dash) -> "WellServer":
+        # pylint: disable=global-statement
         global _WELL_SERVER_INSTANCE
         if not _WELL_SERVER_INSTANCE:
             LOGGER.debug("Initializing SurfaceServer instance")
@@ -82,6 +83,7 @@ class WellServer:
             try:
                 provider = self._id_to_provider_dict[provider_id]
                 well_names_arr = well_names_str.split("~")
+            # pylint: disable=bare-except
             except:
                 LOGGER.error("Error decoding wells address")
                 flask.abort(404)
@@ -89,9 +91,9 @@ class WellServer:
             validate_geometry = True
             feature_arr = []
             for wname in well_names_arr:
-                wp = provider.get_well_path(wname)
+                well_path = provider.get_well_path(wname)
 
-                coords = list(zip(wp.x_arr, wp.y_arr, wp.z_arr))
+                coords = list(zip(well_path.x_arr, well_path.y_arr, well_path.z_arr))
                 # coords = coords[0::20]
                 point = geojson.Point(
                     coordinates=[coords[0][0], coords[0][1]], validate=validate_geometry
@@ -99,11 +101,8 @@ class WellServer:
 
                 geocoll = geojson.GeometryCollection(geometries=[point])
 
-                # Why is there an extra array nesting level for the md property?????
-                properties = {"name": wname}
-
                 feature = geojson.Feature(
-                    id=wname, geometry=geocoll, properties=properties
+                    id=wname, geometry=geocoll, properties={"name": wname}
                 )
                 feature_arr.append(feature)
 

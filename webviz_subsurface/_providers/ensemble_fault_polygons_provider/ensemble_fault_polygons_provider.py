@@ -38,13 +38,6 @@ class EnsembleFaultPolygonsProvider(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def fault_polygons_names_for_attribute(
-        self, fault_polygons_attribute: str
-    ) -> Optional[List[str]]:
-        """Returns list of all available fault polygons dates for a given attribute."""
-        ...
-
-    @abc.abstractmethod
     def realizations(self) -> List[int]:
         """Returns list of all available realizations."""
         ...

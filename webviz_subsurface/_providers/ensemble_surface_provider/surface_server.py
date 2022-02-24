@@ -16,7 +16,7 @@ from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from ._surface_to_image import surface_to_png_bytes_OPTIMIZED
+from ._surface_to_image import surface_to_png_bytes_optimized
 from .ensemble_surface_provider import (
     ObservedSurfaceAddress,
     SimulatedSurfaceAddress,
@@ -76,6 +76,7 @@ class SurfaceServer:
 
     @staticmethod
     def instance(app: Dash) -> "SurfaceServer":
+        # pylint: disable=global-statement
         global _SURFACE_SERVER_INSTANCE
         if not _SURFACE_SERVER_INSTANCE:
             LOGGER.debug("Initializing SurfaceServer instance")
@@ -139,8 +140,8 @@ class SurfaceServer:
 
         return meta
 
+    @staticmethod
     def encode_partial_url(
-        self,
         qualified_address: Union[QualifiedAddress, QualifiedDiffAddress],
     ) -> str:
 
@@ -196,8 +197,7 @@ class SurfaceServer:
         timer = PerfTimer()
 
         LOGGER.debug("Converting surface to PNG image...")
-        # png_bytes: bytes = surface_to_png_bytes(surface)
-        png_bytes: bytes = surface_to_png_bytes_OPTIMIZED(surface)
+        png_bytes: bytes = surface_to_png_bytes_optimized(surface)
         LOGGER.debug(f"Got PNG image, size={(len(png_bytes) / (1024 * 1024)):.2f}MB")
         et_to_image_s = timer.lap_s()
 
@@ -275,12 +275,16 @@ def _calc_map_component_bounds_and_rot(
     max_x = -math.inf
     min_y = math.inf
     max_y = -math.inf
-    a = -surface.rotation * math.pi / 180
-    for c in surf_corners:
-        x = c[0]
-        y = c[1]
-        x_rotated = rptx + ((x - rptx) * math.cos(a)) - ((y - rpty) * math.sin(a))
-        y_rotated = rpty + ((x - rptx) * math.sin(a)) + ((y - rpty) * math.cos(a))
+    angle = -surface.rotation * math.pi / 180
+    for coord in surf_corners:
+        xpos = coord[0]
+        ypos = coord[1]
+        x_rotated = (
+            rptx + ((xpos - rptx) * math.cos(angle)) - ((ypos - rpty) * math.sin(angle))
+        )
+        y_rotated = (
+            rpty + ((xpos - rptx) * math.sin(angle)) + ((ypos - rpty) * math.cos(angle))
+        )
         min_x = min(min_x, x_rotated)
         max_x = max(max_x, x_rotated)
         min_y = min(min_y, y_rotated)

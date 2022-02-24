@@ -71,37 +71,21 @@ def surface_to_png_bytes(surface: xtgeo.RegularSurface) -> bytes:
     byte_io = io.BytesIO()
     # Huge speed benefit from reducing compression level
     image.save(byte_io, format="png", compress_level=1)
-    # image.save(byte_io, format="png")
     LOGGER.debug(f"save png to bytes: {timer.lap_s():.2f}s")
 
     byte_io.seek(0)
     ret_bytes = byte_io.read()
     LOGGER.debug(f"read bytes: {timer.lap_s():.2f}s")
 
-    # image.save(
-    #     "/home/sigurdp/gitRoot/hk-webviz-subsurface/SIG-old.png",
-    #     format="png",
-    #     compress_level=1,
-    # )
-
     LOGGER.debug(f"Total time: {timer.elapsed_s():.2f}s")
 
     return ret_bytes
 
 
-def surface_to_png_bytes_OPTIMIZED(surface: xtgeo.RegularSurface) -> bytes:
+# pylint: disable=too-many-locals
+def surface_to_png_bytes_optimized(surface: xtgeo.RegularSurface) -> bytes:
 
     timer = PerfTimer()
-
-    # BEWARE!!!!!!!
-    # Mutates input surface!!!!!!
-    # !!!!!!!!!!!!!!!!!!!!!!
-    # !!!!!!!!!!!!!!!!!!!!!!
-    # Removed for testing new rotation hack
-    # !!!!!!!!!!!!!!!!!!!!!!
-    # surface.unrotate()
-    # LOGGER.debug(f"unrotate: {timer.lap_s():.2f}s")
-
     # Note that returned values array is a 2d masked array
     surf_values_ma: np.ma.MaskedArray = surface.values
 
@@ -130,32 +114,14 @@ def surface_to_png_bytes_OPTIMIZED(surface: xtgeo.RegularSurface) -> bytes:
 
     LOGGER.debug(f"scale and fill: {timer.lap_s():.2f}s")
 
-    # print("type(scaled_values)", type(scaled_values))
-    # print("scaled_values.dtype", scaled_values.dtype)
-    # print("type(valid_arr)", type(valid_arr))
-    # print("valid_arr.dtype", valid_arr.dtype)
-
     val_arr = scaled_values.astype(np.uint32).ravel()
     LOGGER.debug(f"cast and flatten: {timer.lap_s():.2f}s")
 
-    """
-    r_arr = np.right_shift(val_arr, 16).astype(np.uint8)
-    g_arr = np.right_shift(val_arr, 8).astype(np.uint8)
-    b_arr = np.bitwise_and(val_arr, 0xFF).astype(np.uint8)
-    a_arr = np.multiply(valid_arr, 255).astype(np.uint8)
-
+    val = val_arr.view(dtype=np.uint8)
     rgba_arr = np.empty(4 * len(val_arr), dtype=np.uint8)
-    rgba_arr[0::4] = r_arr
-    rgba_arr[1::4] = g_arr
-    rgba_arr[2::4] = b_arr
-    rgba_arr[3::4] = a_arr
-    """
-
-    v = val_arr.view(dtype=np.uint8)
-    rgba_arr = np.empty(4 * len(val_arr), dtype=np.uint8)
-    rgba_arr[0::4] = v[2::4]
-    rgba_arr[1::4] = v[1::4]
-    rgba_arr[2::4] = v[0::4]
+    rgba_arr[0::4] = val[2::4]
+    rgba_arr[1::4] = val[1::4]
+    rgba_arr[2::4] = val[0::4]
     rgba_arr[3::4] = np.multiply(valid_arr, 255).astype(np.uint8)
 
     LOGGER.debug(f"rgba combine: {timer.lap_s():.2f}s")

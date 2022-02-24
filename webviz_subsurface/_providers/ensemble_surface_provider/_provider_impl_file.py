@@ -1,7 +1,6 @@
 import logging
 import shutil
 import warnings
-from concurrent.futures import ProcessPoolExecutor
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Set
@@ -56,6 +55,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         self._stat_surf_cache = StatSurfCache(self._provider_dir / REL_STAT_CACHE_DIR)
 
     @staticmethod
+    # pylint: disable=too-many-locals
     def write_backing_store(
         storage_dir: Path,
         storage_key: str,

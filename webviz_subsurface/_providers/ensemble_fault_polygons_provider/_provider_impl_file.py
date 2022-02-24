@@ -1,12 +1,9 @@
 import logging
 import shutil
-import warnings
-from concurrent.futures import ProcessPoolExecutor
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import List, Optional
 
-import numpy as np
 import pandas as pd
 import xtgeo
 
@@ -51,6 +48,7 @@ class ProviderImplFile(EnsembleFaultPolygonsProvider):
         self._inventory_df = fault_polygons_inventory_df
 
     @staticmethod
+    # pylint: disable=too-many-locals
     def write_backing_store(
         storage_dir: Path,
         storage_key: str,

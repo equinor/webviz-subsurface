@@ -1,9 +1,6 @@
 import logging
 from pathlib import Path
 
-from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
-from webviz_config.webviz_instance_info import WebvizInstanceInfo, WebvizRunMode
-
 from .ensemble_surface_provider import (
     EnsembleSurfaceProvider,
     ObservedSurfaceAddress,

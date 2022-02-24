@@ -45,6 +45,7 @@ class StatSurfCache:
         try:
             surf = xtgeo.surface_from_file(full_surf_path, fformat=FILE_FORMAT_READ)
             return surf
+        # pylint: disable=bare-except
         except:
             return None
 
@@ -64,6 +65,7 @@ class StatSurfCache:
         try:
             surface.to_file(tmp_surf_path, fformat=FILE_FORMAT_WRITE)
             os.replace(tmp_surf_path, full_surf_path)
+        # pylint: disable=bare-except
         except:
             os.remove(tmp_surf_path)
 
@@ -80,5 +82,12 @@ def _compose_stat_surf_file_name(
 
     pickled = pickle.dumps(address.realizations, pickle.HIGHEST_PROTOCOL)
     real_hash = hashlib.md5(pickled).hexdigest()
-
-    return f"{address.statistic}--{address.name}--{address.attribute}--{address.datestr}--{real_hash}{extension}"
+    return "--".join(
+        [
+            f"{address.statistic}",
+            f"{address.name}",
+            f"{address.attribute}",
+            f"{address.datestr}",
+            f"{real_hash}{extension}",
+        ]
+    )

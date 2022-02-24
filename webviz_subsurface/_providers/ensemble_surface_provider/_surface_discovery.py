@@ -4,7 +4,6 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
-from attr import attr
 
 from fmu.ensemble import ScratchEnsemble
 

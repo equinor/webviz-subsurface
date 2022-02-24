@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from geojson.feature import FeatureCollection
+from dataclasses import dataclass
 
+from geojson.feature import FeatureCollection
 import pydeck
 from pydeck.types import String
 from typing_extensions import Literal
@@ -32,6 +33,14 @@ class LayerNames(str, Enum):
     WELL = "Wells"
     DRAWING = "Drawings"
     FAULTPOLYGONS = "Fault polygons"
+
+
+@dataclass
+class Bounds:
+    x_min: int = 0
+    y_min: int = 0
+    x_max: int = 10
+    y_max: int = 10
 
 
 class DeckGLMapProps:
@@ -75,6 +84,7 @@ class Hillshading2DLayer(pydeck.Layer):
 
 
 class Map3DLayer(pydeck.Layer):
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         mesh: str = DeckGLMapProps.image,
@@ -140,9 +150,6 @@ class WellsLayer(pydeck.Layer):
     def __init__(
         self,
         data: FeatureCollection = None,
-        log_data: dict = None,
-        log_run: str = None,
-        log_name: str = None,
         name: str = LayerNames.WELL,
         uuid: Optional[str] = None,
         **kwargs: Any,
@@ -151,7 +158,9 @@ class WellsLayer(pydeck.Layer):
             type="GeoJsonLayer",
             id=uuid if uuid is not None else LayerIds.WELL,
             name=String(name),
-            data={"type": "FeatureCollection", "features": []},
+            data={"type": "FeatureCollection", "features": []}
+            if data is None
+            else data,
             get_text="properties.attribute",
             get_text_size=12,
             get_text_anchor=String("start"),
@@ -208,5 +217,5 @@ class FaultPolygonsLayer(pydeck.Layer):
 
 
 class CustomLayer(pydeck.Layer):
-    def __init__(self, type: str, id: str, name: str, **kwargs: Any) -> None:
-        super().__init__(type=type, id=String(id), name=String(name), **kwargs)
+    def __init__(self, layer_type: str, uuid: str, name: str, **kwargs: Any) -> None:
+        super().__init__(type=layer_type, id=String(uuid), name=String(name), **kwargs)
