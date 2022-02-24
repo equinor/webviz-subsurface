@@ -43,6 +43,7 @@ class Bounds:
     y_max: int = 10
 
 
+# pylint: disable=too-few-public-methods
 class DeckGLMapProps:
     """Default prop settings for DeckGLMap"""
 
@@ -56,10 +57,6 @@ class DeckGLMapProps:
         "selectedFeatureIndexes": [],
     }
     resources: Dict[str, Any] = {}
-
-
-class WellJsonFormat:
-    pass
 
 
 class Hillshading2DLayer(pydeck.Layer):

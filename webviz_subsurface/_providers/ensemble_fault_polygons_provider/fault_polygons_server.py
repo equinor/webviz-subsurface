@@ -103,14 +103,17 @@ class FaultPolygonsServer:
             #     LOGGER.error("Error decoding fault polygons address")
             #     print(e)
             #     # flask.abort(404)
-
-            return (
+            featurecoll = (
                 fault_polygons_geojson
                 if fault_polygons_geojson is not None
                 else {
                     "type": "FeatureCollection",
                     "features": [],
                 }
+            )
+
+            return flask.Response(
+                geojson.dumps(featurecoll), mimetype="application/geo+json"
             )
 
 

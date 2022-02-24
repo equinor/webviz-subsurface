@@ -3,7 +3,6 @@ from typing import Dict, List, Optional
 
 import geojson
 import pandas as pd
-from webviz_config.common_cache import CACHE
 
 
 class WellPickTableColumns(str, Enum):
@@ -18,7 +17,7 @@ class WellPickTableColumns(str, Enum):
 class WellPickProvider:
     def __init__(
         self,
-        dframe: pd.DataFrame = None,
+        dframe: pd.DataFrame,
         map_surface_names_to_well_pick_names: Optional[Dict[str, str]] = None,
     ):
         self.dframe = dframe.copy()
@@ -29,12 +28,12 @@ class WellPickProvider:
         )
         self._validate()
 
-    def _validate(self):
+    def _validate(self) -> None:
         for column in WellPickTableColumns:
             if column not in self.dframe.columns:
                 raise KeyError(f"Well picks table is missing required column: {column}")
 
-    def well_names(self):
+    def well_names(self) -> List[str]:
         return list(self.dframe[WellPickTableColumns.WELL].unique())
 
     def get_geojson(
@@ -42,7 +41,7 @@ class WellPickProvider:
         well_names: List[str],
         surface_name: str,
         attribute: str = WellPickTableColumns.WELL,
-    ):
+    ) -> geojson.FeatureCollection:
         dframe = self.dframe.loc[
             (self.dframe[WellPickTableColumns.WELL].isin(well_names))
             & (

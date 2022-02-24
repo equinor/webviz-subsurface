@@ -1,14 +1,15 @@
+# pylint: skip-file
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
 
-
+# To be implemented
 @dataclass
 class ViewSetting:
     ensemble: str
     attribute: str
     name: str
-    date: str
+    date: Optional[str]
     mode: str
     realizations: List[int]
     wells: List[str]
@@ -18,7 +19,7 @@ class ViewSetting:
     colormap_keep_range: bool = False
     surf_type: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.ensemble = self.ensemble[0]
         self.attribute = self.attribute[0]
         self.name = self.name[0]

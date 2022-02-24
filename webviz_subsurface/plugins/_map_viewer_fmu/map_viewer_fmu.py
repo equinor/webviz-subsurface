@@ -22,6 +22,7 @@ from .layout import main_layout
 
 
 class MapViewerFMU(WebvizPluginABC):
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: Dash,
@@ -70,15 +71,16 @@ class MapViewerFMU(WebvizPluginABC):
         all_fault_polygon_attributes = self._ensemble_fault_polygons_providers[
             ensembles[0]
         ].attributes()
-
-        self.fault_polygon_attribute = (
-            fault_polygon_attribute
-            if (
-                fault_polygon_attribute is not None
-                and fault_polygon_attribute in all_fault_polygon_attributes
-            )
-            else all_fault_polygon_attributes[0]
-        )
+        self.fault_polygon_attribute: Optional[str] = None
+        if (
+            fault_polygon_attribute is not None
+            and fault_polygon_attribute in all_fault_polygon_attributes
+        ):
+            self.fault_polygon_attribute = fault_polygon_attribute
+        elif all_fault_polygon_attributes:
+            self.fault_polygon_attribute = all_fault_polygon_attributes[0]
+        else:
+            self.fault_polygon_attribute = None
 
         self._fault_polygons_server = FaultPolygonsServer.instance(app)
         for fault_polygons_provider in self._ensemble_fault_polygons_providers.values():

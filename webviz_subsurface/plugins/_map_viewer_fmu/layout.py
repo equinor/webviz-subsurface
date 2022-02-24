@@ -2,16 +2,15 @@ import json
 from enum import Enum, unique
 from typing import Any, Callable, List, Union
 
+import pydeck
 import webviz_core_components as wcc
 from dash import dcc, html
 from webviz_subsurface_components import DeckGLMap  # type: ignore
 
 from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     ColormapLayer,
-    DrawingLayer,
     FaultPolygonsLayer,
     Hillshading2DLayer,
-    Map3DLayer,
     WellsLayer,
 )
 
@@ -83,6 +82,7 @@ class LayoutLabels(str, Enum):
     WELL_FILTER = "Well filter"
 
 
+# pylint: disable=too-few-public-methods
 class LayoutStyle:
     """CSS styling"""
 
@@ -135,6 +135,7 @@ class ColorSelector(str, Enum):
     COLOR_RANGE = "color_range"
 
 
+# pylint: disable=too-few-public-methods
 class DefaultSettings:
 
     NUMBER_OF_VIEWS = {Tabs.STATS: 4, Tabs.DIFF: 2, Tabs.SPLIT: 1}
@@ -638,7 +639,7 @@ def update_map_layers(
     visible_fault_polygons_layer: bool = True,
     visible_hillshading_layer: bool = True,
 ) -> List[dict]:
-    layers = []
+    layers: List[pydeck.Layer] = []
     for idx in range(views):
         layers.extend(
             [

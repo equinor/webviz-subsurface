@@ -11,25 +11,22 @@ from webviz_config.utils._dash_component_utils import calculate_slider_step
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
 )
-from webviz_subsurface._providers import EnsembleSurfaceProvider
-from webviz_subsurface._providers.ensemble_fault_polygons_provider.ensemble_fault_polygons_provider import (
-    SimulatedFaultPolygonsAddress,
-)
-from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygons_server import (
-    FaultPolygonsServer,
-)
-from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+
+from webviz_subsurface._providers import (
     ObservedSurfaceAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-)
-from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
-    QualifiedAddress,
-    QualifiedDiffAddress,
+    QualifiedSurfaceAddress,
+    QualifiedDiffSurfaceAddress,
     SurfaceServer,
+    FaultPolygonsServer,
+    SimulatedFaultPolygonsAddress,
+    EnsembleSurfaceProvider,
+    EnsembleFaultPolygonsProvider,
 )
 
+from ._tmp_well_pick_provider import WellPickProvider
 from ._types import SurfaceMode
 from .layout import (
     DefaultSettings,
@@ -40,16 +37,16 @@ from .layout import (
     update_map_layers,
 )
 
-
+# pylint: disable=too-many-locals,too-many-statements
 def plugin_callbacks(
     get_uuid: Callable,
-    ensemble_surface_providers: dict,
+    ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     surface_server: SurfaceServer,
-    ensemble_fault_polygons_providers,
+    ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
-    fault_polygon_attribute: str,
     map_surface_names_to_fault_polygons: Dict[str, str],
-    well_picks_provider,
+    well_picks_provider: Optional[WellPickProvider],
+    fault_polygon_attribute: Optional[str],
 ) -> None:
     def selections(tab: str, colorselector: bool = False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -393,7 +390,10 @@ def plugin_callbacks(
                     "colorMapRange": data["color_range"],
                 },
             )
-            if LayoutLabels.SHOW_FAULTPOLYGONS in options:
+            if (
+                LayoutLabels.SHOW_FAULTPOLYGONS in options
+                and fault_polygon_attribute is not None
+            ):
                 # if diff surface use polygons from first view
                 data_for_faultpolygons = data if not diff_surf else surface_elements[0]
                 fault_polygons_provider = ensemble_fault_polygons_providers[
@@ -482,6 +482,7 @@ def plugin_callbacks(
             surfaceid.append(f"REAL {data['realizations'][0]}")
         return " ".join(surfaceid)
 
+    # pylint: disable=too-many-branches
     def _update_selector_component_properties_from_provider(
         selector_values: List[dict],
         linked_selectors: List[str],
@@ -537,8 +538,8 @@ def plugin_callbacks(
                     provider = ensemble_surface_providers[ens]
                     for attr in attribute:
                         attr_dates = provider.surface_dates_for_attribute(attr)
-                        # EMPTY STRING returned ... not None anymore?
-                        if bool(attr_dates[0]):
+
+                        if attr_dates is not None:
                             dates.extend([x for x in attr_dates if x not in dates])
 
                 interval_dates = [x for x in dates if "_" in x]
@@ -549,7 +550,7 @@ def plugin_callbacks(
                     date = dates if multi == "date" else dates[:1]
 
             if not ("mode" in linked_selectors and idx > 0):
-                modes = [mode for mode in SurfaceMode]
+                modes = list(SurfaceMode)
                 mode = data.get("mode", SurfaceMode.REALIZATION)
 
             if not ("realizations" in linked_selectors and idx > 0):
@@ -671,10 +672,11 @@ def plugin_callbacks(
         SimulatedSurfaceAddress, ObservedSurfaceAddress, StatisticalSurfaceAddress
     ]:
         """Return the SurfaceAddress based on view selection"""
-        has_date = bool(
+        has_date = (
             ensemble_surface_providers[data["ensemble"][0]].surface_dates_for_attribute(
                 data["attribute"][0]
-            )[0]
+            )
+            is not None
         )
 
         if data["mode"] == SurfaceMode.REALIZATION:
@@ -702,7 +704,7 @@ def plugin_callbacks(
         surface_provider: EnsembleSurfaceProvider, surface_address: SurfaceAddress
     ) -> Tuple:
         provider_id: str = surface_provider.provider_id()
-        qualified_address = QualifiedAddress(provider_id, surface_address)
+        qualified_address = QualifiedSurfaceAddress(provider_id, surface_address)
         surf_meta = surface_server.get_surface_metadata(qualified_address)
         if not surf_meta:
             # This means we need to compute the surface
@@ -723,8 +725,8 @@ def plugin_callbacks(
     ) -> Tuple:
         provider_id: str = surface_provider.provider_id()
         subprovider_id = sub_surface_provider.provider_id()
-        qualified_address: Union[QualifiedAddress, QualifiedDiffAddress]
-        qualified_address = QualifiedDiffAddress(
+        qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress]
+        qualified_address = QualifiedDiffSurfaceAddress(
             provider_id, surface_address, subprovider_id, sub_surface_address
         )
 
@@ -765,7 +767,7 @@ def plugin_callbacks(
 
     def attribute_has_date(attribute: str, provider: EnsembleSurfaceProvider) -> bool:
         """Check if an attribute has any dates"""
-        return bool(provider.surface_dates_for_attribute(attribute)[0])
+        return provider.surface_dates_for_attribute(attribute) is not None
 
     def remove_data_if_not_valid(values: List[dict]) -> List[dict]:
         """Checks if surfaces can be provided from the selections.

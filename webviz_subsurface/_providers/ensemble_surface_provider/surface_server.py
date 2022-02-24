@@ -32,13 +32,13 @@ _SURFACE_SERVER_INSTANCE: Optional["SurfaceServer"] = None
 
 
 @dataclass(frozen=True)
-class QualifiedAddress:
+class QualifiedSurfaceAddress:
     provider_id: str
     address: SurfaceAddress
 
 
 @dataclass(frozen=True)
-class QualifiedDiffAddress:
+class QualifiedDiffSurfaceAddress:
     provider_id_a: str
     address_a: SurfaceAddress
     provider_id_b: str
@@ -86,12 +86,12 @@ class SurfaceServer:
 
     def publish_surface(
         self,
-        qualified_address: Union[QualifiedAddress, QualifiedDiffAddress],
+        qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
         surface: xtgeo.RegularSurface,
     ) -> None:
         timer = PerfTimer()
 
-        if isinstance(qualified_address, QualifiedAddress):
+        if isinstance(qualified_address, QualifiedSurfaceAddress):
             base_cache_key = _address_to_str(
                 qualified_address.provider_id, qualified_address.address
             )
@@ -114,10 +114,10 @@ class SurfaceServer:
 
     def get_surface_metadata(
         self,
-        qualified_address: Union[QualifiedAddress, QualifiedDiffAddress],
+        qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
     ) -> Optional[SurfaceMeta]:
 
-        if isinstance(qualified_address, QualifiedAddress):
+        if isinstance(qualified_address, QualifiedSurfaceAddress):
             base_cache_key = _address_to_str(
                 qualified_address.provider_id, qualified_address.address
             )
@@ -142,10 +142,10 @@ class SurfaceServer:
 
     @staticmethod
     def encode_partial_url(
-        qualified_address: Union[QualifiedAddress, QualifiedDiffAddress],
+        qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
     ) -> str:
 
-        if isinstance(qualified_address, QualifiedAddress):
+        if isinstance(qualified_address, QualifiedSurfaceAddress):
             address_str = _address_to_str(
                 qualified_address.provider_id, qualified_address.address
             )

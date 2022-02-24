@@ -109,8 +109,7 @@ class ProviderImplFile(WellProvider):
         well = self.get_well_xtgeo_obj(well_name)
         df = well.dataframe
         md_logname = well.mdlogname
-        if md_logname is None:
-            return None
+
         x_arr = df["X_UTME"].to_numpy()
         y_arr = df["Y_UTMN"].to_numpy()
         z_arr = df["Z_TVDSS"].to_numpy()
