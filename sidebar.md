@@ -4,3 +4,5 @@
 
 * [Deprecated plugins](plugin_deprecations.md)
 
+
+* [Deprecated arguments](argument_deprecations.md)
