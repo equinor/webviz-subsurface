@@ -1,17 +1,17 @@
 import json
 import logging
 from dataclasses import asdict, dataclass
-from typing import Optional, Dict
+from typing import Dict, Optional
 from urllib.parse import quote
 
 import flask
-import xtgeo
 import geojson
+import xtgeo
 from dash import Dash
 
 from .ensemble_fault_polygons_provider import (
-    FaultPolygonsAddress,
     EnsembleFaultPolygonsProvider,
+    FaultPolygonsAddress,
 )
 
 LOGGER = logging.getLogger(__name__)

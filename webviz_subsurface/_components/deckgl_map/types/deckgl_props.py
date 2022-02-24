@@ -1,9 +1,9 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass
 
-from geojson.feature import FeatureCollection
 import pydeck
+from geojson.feature import FeatureCollection
 from pydeck.types import String
 from typing_extensions import Literal
 

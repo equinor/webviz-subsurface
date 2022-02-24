@@ -11,19 +11,18 @@ from webviz_config.utils._dash_component_utils import calculate_slider_step
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
 )
-
 from webviz_subsurface._providers import (
+    EnsembleFaultPolygonsProvider,
+    EnsembleSurfaceProvider,
+    FaultPolygonsServer,
     ObservedSurfaceAddress,
+    QualifiedDiffSurfaceAddress,
+    QualifiedSurfaceAddress,
+    SimulatedFaultPolygonsAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-    QualifiedSurfaceAddress,
-    QualifiedDiffSurfaceAddress,
     SurfaceServer,
-    FaultPolygonsServer,
-    SimulatedFaultPolygonsAddress,
-    EnsembleSurfaceProvider,
-    EnsembleFaultPolygonsProvider,
 )
 
 from ._tmp_well_pick_provider import WellPickProvider
@@ -36,6 +35,7 @@ from .layout import (
     Tabs,
     update_map_layers,
 )
+
 
 # pylint: disable=too-many-locals,too-many-statements
 def plugin_callbacks(

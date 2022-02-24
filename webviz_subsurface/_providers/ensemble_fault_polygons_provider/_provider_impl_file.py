@@ -9,12 +9,11 @@ import xtgeo
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-
 from ._fault_polygons_discovery import FaultPolygonsFileInfo
 from .ensemble_fault_polygons_provider import (
     EnsembleFaultPolygonsProvider,
-    SimulatedFaultPolygonsAddress,
     FaultPolygonsAddress,
+    SimulatedFaultPolygonsAddress,
 )
 
 LOGGER = logging.getLogger(__name__)

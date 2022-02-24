@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 import pandas as pd
-
 from webviz_config.webviz_store import webvizstore
 
 

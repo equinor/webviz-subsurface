@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import logging
 import os
@@ -5,7 +6,6 @@ import pickle
 import uuid
 from pathlib import Path
 from typing import Optional
-import datetime
 
 import xtgeo
 

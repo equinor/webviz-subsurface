@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Dict, Optional, List, Tuple, Callable
+from typing import Callable, Dict, List, Optional, Tuple
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProviderFactory,
     EnsembleSurfaceProviderFactory,
@@ -15,6 +14,7 @@ from webviz_subsurface._providers.ensemble_fault_polygons_provider.fault_polygon
 from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
     SurfaceServer,
 )
+from webviz_subsurface._utils.webvizstore_functions import read_csv
 
 from ._tmp_well_pick_provider import WellPickProvider
 from .callbacks import plugin_callbacks

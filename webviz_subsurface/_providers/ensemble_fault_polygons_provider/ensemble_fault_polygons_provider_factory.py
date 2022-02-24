@@ -9,10 +9,8 @@ from webviz_config.webviz_instance_info import WebvizRunMode
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
+from ._fault_polygons_discovery import discover_per_realization_fault_polygons_files
 from ._provider_impl_file import ProviderImplFile
-from ._fault_polygons_discovery import (
-    discover_per_realization_fault_polygons_files,
-)
 from .ensemble_fault_polygons_provider import EnsembleFaultPolygonsProvider
 
 LOGGER = logging.getLogger(__name__)
