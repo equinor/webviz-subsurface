@@ -48,8 +48,9 @@ def plugin_callbacks(
     well_server,
     ensemble_fault_polygons_providers,
     fault_polygons_server,
-    fault_polygon_attribute:str,
+    fault_polygon_attribute: str,
     map_surface_names_to_fault_polygons,
+    well_picks_provider,
 ) -> None:
     def selections(tab, colorselector=False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -86,7 +87,6 @@ def plugin_callbacks(
         Output({"id": get_uuid(LayoutElements.LINKED_VIEW_DATA), "tab": MATCH}, "data"),
         Output(selector_wrapper(MATCH), "children"),
         Input(selections(MATCH), "value"),
-        Input(get_uuid(LayoutElements.WELLS), "value"),
         Input({"id": get_uuid(LayoutElements.VIEWS), "tab": MATCH}, "value"),
         Input({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
         Input(links(MATCH), "value"),
@@ -97,7 +97,6 @@ def plugin_callbacks(
     )
     def _update_components_and_selected_data(
         mapselector_values: List[Dict[str, Any]],
-        selected_wells,
         number_of_views,
         multi_selector,
         selectorlinks,
@@ -109,6 +108,7 @@ def plugin_callbacks(
         """Reads stored raw selections, stores valid selections as a dcc.Store
         and updates visible and valid selections in layout"""
 
+        # Prevent update if the pattern matched components does not match the current tab
         datatab = wrapper_ids[0]["tab"]
         if datatab != tab_name or number_of_views is None:
             raise PreventUpdate
@@ -122,7 +122,6 @@ def plugin_callbacks(
                 for values, id_values in zip(mapselector_values, selector_ids)
                 if id_values["view"] == idx
             }
-            view_selections["wells"] = selected_wells
             view_selections["multi"] = multi_selector
             if tab_name == Tabs.STATS:
                 view_selections["mode"] = DefaultSettings.VIEW_LAYOUT_STATISTICS_TAB[
@@ -304,11 +303,20 @@ def plugin_callbacks(
         ),
         Input(get_uuid(LayoutElements.VIEW_COLUMNS), "value"),
         Input(get_uuid(LayoutElements.OPTIONS), "value"),
+        Input(get_uuid(LayoutElements.WELLS), "value"),
         State(get_uuid("tabs"), "value"),
         State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
     )
-    def _update_map(surface_elements: List, view_columns, options, tab_name, multi):
+    def _update_map(
+        surface_elements: List, view_columns, options, selected_wells, tab_name, multi
+    ):
         """Updates the map component with the stored, validated selections"""
+
+        # Prevent update if the pattern matched components does not match the current tab
+        state_list = callback_context.states_list
+        if state_list[1]["id"]["tab"] != tab_name:
+            raise PreventUpdate
+
         if surface_elements is None:
             raise PreventUpdate
         if tab_name == Tabs.DIFF:
@@ -320,7 +328,7 @@ def plugin_callbacks(
 
         layers = update_map_layers(
             number_of_views,
-            include_well_layer=well_provider is not None,
+            include_well_layer=well_picks_provider is not None,
             visible_well_layer=LayoutLabels.SHOW_WELLS in options,
             visible_fault_polygons_layer=LayoutLabels.SHOW_FAULTPOLYGONS in options,
             visible_hillshading_layer=LayoutLabels.SHOW_HILLSHADING in options,
@@ -437,17 +445,16 @@ def plugin_callbacks(
                     ),
                 },
             )
-            if LayoutLabels.SHOW_WELLS in options:
+            if LayoutLabels.SHOW_WELLS in options and well_picks_provider is not None:
                 layer_model.update_layer_by_id(
                     layer_id=f"{LayoutElements.WELLS_LAYER}-{idx}",
                     layer_data={
-                        "data": well_server.encode_partial_url(
-                            provider_id=well_provider.provider_id(),
-                            well_names=well_provider.well_names(),
+                        "data": well_picks_provider.get_geojson(
+                            selected_wells, data["name"][0]
                         )
                     },
                 )
-
+            print(layer_model.layers)
         return (
             layer_model.layers,
             viewport_bounds if surface_elements else no_update,
