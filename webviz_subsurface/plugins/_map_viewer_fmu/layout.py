@@ -88,6 +88,7 @@ class LayoutStyle:
     MAPHEIGHT = "87vh"
     SIDEBAR = {"flex": 1, "height": "90vh", "overflow-x": "auto"}
     MAINVIEW = {"flex": 3, "height": "90vh"}
+    DISABLED = {"opacity": 0.5, "pointerEvents": "none"}
     RESET_BUTTON = {
         "marginTop": "5px",
         "width": "100%",
@@ -352,16 +353,14 @@ class SideBySideSelectorFlex(wcc.FlexBox):
         dropdown=False,
     ):
         super().__init__(
-            style={
-                #       "overflow-y": "visible",
-                "flex-wrap": "nowrap",
-            },
+            style={"flex-wrap": "nowrap"},
             children=[
                 html.Div(
                     style={
                         "flex": 1,
                         "minWidth": "33%",
                         "display": "none" if link and idx != 0 else "block",
+                        **(LayoutStyle.DISABLED if data.get("disabled", False) else {}),
                     },
                     children=[
                         dropdown_vs_select(
@@ -387,9 +386,7 @@ class SideBySideSelectorFlex(wcc.FlexBox):
                             step=data["step"],
                             view_idx=idx,
                         )
-                    ]
-                    if not data.get("disabled", False)
-                    else [],
+                    ],
                 )
                 for idx, data in enumerate(view_data)
             ],

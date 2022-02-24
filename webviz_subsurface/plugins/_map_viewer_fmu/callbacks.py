@@ -622,8 +622,6 @@ def plugin_callbacks(
                 if data.get("surf_type") == "diff"
                 else get_surface_id_from_data(data)
             )
-            from copy import deepcopy
-
             if surfaceid in surfids:
                 index_of_first = surfids.index(surfaceid)
                 surfids.append(surfaceid)
@@ -823,7 +821,6 @@ def plugin_callbacks(
 
 def view_layout(views, columns):
     """Convert a list of figures into a matrix for display"""
-    print(views, columns)
     columns = (
         columns
         if columns is not None
