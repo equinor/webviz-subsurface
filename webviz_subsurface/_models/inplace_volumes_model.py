@@ -60,7 +60,7 @@ class InplaceVolumesModel:
                     volumes_table, selectors
                 )
 
-            # stack dataframe on fluid zone and add fluid as column istead of a column suffix
+            # stack dataframe on fluid zone and add fluid as column instead of a column suffix
             dfs = []
             for fluid in ["OIL", "GAS", "WATER"]:
                 fluid_columns = [
@@ -311,16 +311,16 @@ class InplaceVolumesModel:
         dframe = self.compute_property_columns(dframe, properties)
         if "FLUID_ZONE" not in groups:
             if not filters.get("FLUID_ZONE") == ["oil"]:
-                dframe["BO"] = "NA"
+                dframe["BO"] = np.nan
             if not filters.get("FLUID_ZONE") == ["gas"]:
-                dframe["BG"] = "NA"
+                dframe["BG"] = np.nan
         return dframe
 
 
 def filter_df(dframe: pd.DataFrame, filters: dict) -> pd.DataFrame:
     """
     Filter dataframe using dictionary with form
-    'column_name': [list ov values to keep]
+    'column_name': [list of values to keep]
     """
     for filt, values in filters.items():
         dframe = dframe.loc[dframe[filt].isin(values)]

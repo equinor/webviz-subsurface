@@ -58,6 +58,16 @@ def distribution_controllers(
             if item in volumemodel.parameters and item not in parameters:
                 parameters.append(item)
 
+        # for bo/bg the data should be grouped on fluid zone
+        if any(x in selected_data for x in ["BO", "BG"]) and "FLUID_ZONE" not in groups:
+            if "BO" in selected_data and "BG" in selected_data:
+                return html.Div(
+                    "Can't plot BO against BG", style={"margin-top": "40px"}
+                )
+            selections["filters"]["FLUID_ZONE"] = [
+                "oil" if "BO" in selected_data else "gas"
+            ]
+
         dframe = volumemodel.get_df(
             filters=selections["filters"], groups=groups, parameters=parameters
         )
