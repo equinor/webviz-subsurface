@@ -306,7 +306,7 @@ class DialogLayout(wcc.Dialog):
                     value=checklist_options,
                 ),
                 wcc.FlexBox(
-                    [
+                    children=[
                         html.Div(
                             style={
                                 "flex": 3,
@@ -319,7 +319,8 @@ class DialogLayout(wcc.Dialog):
                             RealizationFilter(get_uuid, realizations),
                             style={"flex": 2, "minWidth": "20px"},
                         ),
-                    ]
+                    ],
+                    style={"width": "450px"},
                 ),
             ],
         )
