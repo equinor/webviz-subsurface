@@ -152,7 +152,7 @@ class WellsLayer(pydeck.Layer):
             id=uuid if uuid is not None else LayerIds.WELL,
             name=String(name),
             data={"type": "FeatureCollection", "features": []},
-            get_text="properties.md",
+            get_text="properties.attribute",
             get_text_size=12,
             get_text_anchor=String("start"),
             # logData=log_data,

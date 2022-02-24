@@ -37,7 +37,12 @@ class WellPickProvider:
     def well_names(self):
         return list(self.dframe[WellPickTableColumns.WELL].unique())
 
-    def get_geojson(self, well_names: List[str], surface_name: str):
+    def get_geojson(
+        self,
+        well_names: List[str],
+        surface_name: str,
+        attribute: str = WellPickTableColumns.WELL,
+    ):
         dframe = self.dframe.loc[
             (self.dframe[WellPickTableColumns.WELL].isin(well_names))
             & (
@@ -63,8 +68,7 @@ class WellPickProvider:
 
             properties = {
                 "name": row[WellPickTableColumns.WELL],
-                "md": str(row[WellPickTableColumns.MD]),
-                "tvd_msl": row[WellPickTableColumns.Z_TVDSS],
+                "attribute": str(row[attribute]),
             }
 
             feature = geojson.Feature(
