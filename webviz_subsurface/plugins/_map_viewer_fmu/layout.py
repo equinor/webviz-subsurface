@@ -1,6 +1,6 @@
 import json
 from enum import Enum, unique
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, List, Union
 
 import webviz_core_components as wcc
 from dash import dcc, html
@@ -186,9 +186,9 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
 def main_layout(
     get_uuid: Callable,
     well_names: List[str],
-    realizations,
+    realizations: List[int],
     show_fault_polygons: bool = True,
-):
+) -> html.Div:
     return html.Div(
         children=[
             wcc.Tabs(
@@ -227,7 +227,7 @@ def main_layout(
                                     style=LayoutStyle.MAINVIEW,
                                     color="white",
                                     highlight=False,
-                                    children=MapViewLayout(tab, get_uuid, well_names),
+                                    children=MapViewLayout(tab, get_uuid),
                                 ),
                             ]
                         ),
@@ -241,7 +241,7 @@ def main_layout(
 
 
 class OpenDialogButton(html.Button):
-    def __init__(self, tab, get_uuid):
+    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
         super().__init__(
             children=LayoutLabels.COMMON_SELECTIONS,
             id={"id": get_uuid("Button"), "tab": tab},
@@ -252,12 +252,12 @@ class OpenDialogButton(html.Button):
 class MapViewLayout(FullScreen):
     """Layout for the main view containing the map"""
 
-    def __init__(self, tab, get_uuid, well_names):
+    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
         super().__init__(
             children=html.Div(
                 DeckGLMap(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
-                    layers=update_map_layers(1, include_well_layer=bool(well_names)),
+                    layers=update_map_layers(1),
                     zoom=-4,
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
@@ -268,7 +268,7 @@ class MapViewLayout(FullScreen):
 class DataStores(html.Div):
     """Layout for the options in the sidebar"""
 
-    def __init__(self, tab, get_uuid):
+    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
         super().__init__(
             children=[
                 dcc.Store(id={"id": get_uuid(element), "tab": tab})
@@ -286,7 +286,13 @@ class DataStores(html.Div):
 class DialogLayout(wcc.Dialog):
     """Layout for the options and filters dialog"""
 
-    def __init__(self, get_uuid, show_fault_polygons, well_names, realizations):
+    def __init__(
+        self,
+        get_uuid: Callable,
+        show_fault_polygons: bool,
+        well_names: List[str],
+        realizations: List[int],
+    ) -> None:
 
         checklist_options = [LayoutLabels.SHOW_HILLSHADING]
         if show_fault_polygons:
@@ -321,14 +327,14 @@ class DialogLayout(wcc.Dialog):
                             style={"flex": 2, "minWidth": "20px"},
                         ),
                     ],
-                    style={"width": "450px"},
+                    style={"width": "20vw"},
                 ),
             ],
         )
 
 
 class LinkCheckBox(wcc.Checklist):
-    def __init__(self, tab, get_uuid, selector: str):
+    def __init__(self, tab: Tabs, get_uuid: Callable, selector: str) -> None:
         clicked = selector in DefaultSettings.LINKED_SELECTORS.get(tab, [])
         super().__init__(
             id={
@@ -347,13 +353,13 @@ class LinkCheckBox(wcc.Checklist):
 class SideBySideSelectorFlex(wcc.FlexBox):
     def __init__(
         self,
-        tab,
+        tab: str,
         get_uuid: Callable,
+        view_data: List[dict],
         selector: str,
         link: bool = False,
-        view_data: list = None,
-        dropdown=False,
-    ):
+        dropdown: bool = False,
+    ) -> None:
         super().__init__(
             style={"flex-wrap": "nowrap"},
             children=[
@@ -396,7 +402,7 @@ class SideBySideSelectorFlex(wcc.FlexBox):
 
 
 class MultiSelectorSelector(html.Div):
-    def __init__(self, tab, get_uuid: Callable):
+    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
         super().__init__(
             style={
                 "margin-bottom": "15px",
@@ -425,7 +431,7 @@ class MultiSelectorSelector(html.Div):
 
 
 class NumberOfViewsSelector(html.Div):
-    def __init__(self, tab, get_uuid: Callable):
+    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
         super().__init__(
             children=[
                 "Number of views",
@@ -448,7 +454,7 @@ class NumberOfViewsSelector(html.Div):
 
 
 class ViewsInRowSelector(html.Div):
-    def __init__(self, get_uuid: Callable):
+    def __init__(self, get_uuid: Callable) -> None:
         super().__init__(
             children=[
                 "Views in row (optional)",
@@ -467,7 +473,7 @@ class ViewsInRowSelector(html.Div):
 
 
 class RealizationFilter(wcc.SelectWithLabel):
-    def __init__(self, get_uuid: Callable, realizations):
+    def __init__(self, get_uuid: Callable, realizations: List[int]) -> None:
         super().__init__(
             label=LayoutLabels.REAL_FILTER,
             id=get_uuid(LayoutElements.REALIZATIONS_FILTER),
@@ -478,7 +484,7 @@ class RealizationFilter(wcc.SelectWithLabel):
 
 
 class WellFilter(html.Div):
-    def __init__(self, get_uuid: Callable, well_names):
+    def __init__(self, get_uuid: Callable, well_names: List[str]) -> None:
         super().__init__(
             style={"display": "block" if well_names else "none"},
             children=wcc.SelectWithLabel(
@@ -494,11 +500,11 @@ class WellFilter(html.Div):
 class MapSelectorLayout(html.Div):
     def __init__(
         self,
-        tab,
+        tab: Tabs,
         get_uuid: Callable,
-        selector,
-        label,
-    ):
+        selector: MapSelector,
+        label: str,
+    ) -> None:
         super().__init__(
             style={
                 "display": "none"
@@ -522,7 +528,7 @@ class MapSelectorLayout(html.Div):
 
 
 class SurfaceColorSelector(wcc.Selectors):
-    def __init__(self, tab, get_uuid: Callable):
+    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
         super().__init__(
             label=LayoutLabels.COLORMAP_WRAPPER,
             open_details=False,
@@ -545,7 +551,14 @@ class SurfaceColorSelector(wcc.Selectors):
         )
 
 
-def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_idx):
+def color_range_selection_layout(
+    tab: str,
+    get_uuid: Callable,
+    value: List[float],
+    value_range: List[float],
+    step: float,
+    view_idx: int,
+) -> html.Div:
     return html.Div(
         children=[
             f"{LayoutLabels.COLORMAP_RANGE}",
@@ -591,7 +604,13 @@ def color_range_selection_layout(tab, get_uuid, value, value_range, step, view_i
     )
 
 
-def dropdown_vs_select(value, options, component_id, dropdown=False, multi=False):
+def dropdown_vs_select(
+    value: Union[List[str], str],
+    options: List[str],
+    component_id: dict,
+    dropdown: bool = False,
+    multi: bool = False,
+) -> Union[wcc.Dropdown, wcc.SelectWithLabel]:
     if dropdown:
         if isinstance(value, list) and not multi:
             value = value[0]
@@ -612,13 +631,13 @@ def dropdown_vs_select(value, options, component_id, dropdown=False, multi=False
 
 
 def update_map_layers(
-    views,
-    include_well_layer=True,
-    include_faultpolygon_layer=True,
-    visible_well_layer=True,
-    visible_fault_polygons_layer=True,
-    visible_hillshading_layer=True,
-):
+    views: int,
+    include_well_layer: bool = True,
+    include_faultpolygon_layer: bool = True,
+    visible_well_layer: bool = True,
+    visible_fault_polygons_layer: bool = True,
+    visible_hillshading_layer: bool = True,
+) -> List[dict]:
     layers = []
     for idx in range(views):
         layers.extend(
