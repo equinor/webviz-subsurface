@@ -3,7 +3,7 @@ from typing import Callable, Dict
 import webviz_core_components as wcc
 from dash import html
 
-from .._ensemble_data import EnsembleData
+from .._ensemble_data import EnsembleWellAnalysisData
 
 
 # pylint: disable = too-few-public-methods
@@ -16,7 +16,7 @@ class WellOverviewLayoutElements:
 
 
 def well_overview_tab(
-    get_uuid: Callable, data_models: Dict[str, EnsembleData]
+    get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
 ) -> wcc.FlexBox:
     """Well overview tab"""
     return wcc.FlexBox(
@@ -64,7 +64,9 @@ def buttons(get_uuid: Callable) -> html.Div:
     )
 
 
-def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Frame:
+def controls(
+    get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
+) -> wcc.Frame:
     ensembles = list(data_models.keys())
     return wcc.Selectors(
         label="Selectors",
@@ -92,7 +94,7 @@ def controls(get_uuid: Callable, data_models: Dict[str, EnsembleData]) -> wcc.Fr
 
 
 def plot_settings(
-    get_uuid: Callable, data_models: Dict[str, EnsembleData]
+    get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
 ) -> wcc.Frame:
     return wcc.Selectors(
         label="Plot Settings",

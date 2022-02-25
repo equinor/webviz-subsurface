@@ -2,17 +2,16 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from .._ensemble_data import EnsembleData
+from .._ensemble_data import EnsembleWellAnalysisData
 
 
 class WellProdBarChart:
     def __init__(
         self,
         ensembles: List[str],
-        data_models: Dict[str, EnsembleData],
+        data_models: Dict[str, EnsembleWellAnalysisData],
         sumvec: str,
         overlay_bars: bool,
-        filter_out_startswith: str,
     ) -> None:
 
         self._traces: List[Dict[str, Any]] = []
@@ -23,11 +22,7 @@ class WellProdBarChart:
 
         for ensemble in ensembles:
             data_model = data_models[ensemble]
-            sumvecs = [
-                f"{sumvec}:{well}"
-                for well in data_model.wells
-                if not well.startswith(filter_out_startswith)
-            ]
+            sumvecs = [f"{sumvec}:{well}" for well in data_model.wells]
             df = data_models[ensemble].summary_data
             df = df[df["DATE"] == df["DATE"].max()]
             df_long = pd.melt(

@@ -14,7 +14,7 @@ from ..._providers import (
     Frequency,
 )
 from ._callbacks import well_control_callbacks, well_overview_callbacks
-from ._ensemble_data import EnsembleData
+from ._ensemble_data import EnsembleWellAnalysisData
 from ._layout import clientside_stores, main_layout
 
 
@@ -31,6 +31,7 @@ class WellAnalysis(WebvizPluginABC):
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         gruptree_file: str = "share/results/tables/gruptree.csv",
         time_index: str = "yearly",
+        filter_out_startswith: Optional[str] = None,
     ) -> None:
         super().__init__()
         WEBVIZ_ASSETS.add(
@@ -55,7 +56,7 @@ class WellAnalysis(WebvizPluginABC):
 
         provider_factory = EnsembleSummaryProviderFactory.instance()
 
-        self._data_models: Dict[str, EnsembleData] = {}
+        self._data_models: Dict[str, EnsembleWellAnalysisData] = {}
 
         sampling = Frequency(time_index)
         for ens_name, ens_path in self._ensemble_paths.items():
@@ -64,8 +65,15 @@ class WellAnalysis(WebvizPluginABC):
                     str(ens_path), rel_file_pattern, sampling
                 )
             )
-            self._data_models[ens_name] = EnsembleData(
-                provider, GruptreeModel(ens_name, ens_path, gruptree_file)
+            self._data_models[ens_name] = EnsembleWellAnalysisData(
+                ens_name,
+                provider,
+                GruptreeModel(
+                    ens_name,
+                    ens_path,
+                    gruptree_file,
+                ),
+                filter_out_startswith=filter_out_startswith,
             )
 
         self.set_callbacks(app)

@@ -1,18 +1,22 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pandas as pd
 
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
 
-class EnsembleData:
+class EnsembleWellAnalysisData:
     """This class holds the summary data provider."""
 
     def __init__(
-        self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
+        self,
+        ensemble_name: str,
+        provider: EnsembleSummaryProvider,
+        gruptree_model: GruptreeModel,
+        filter_out_startswith: Optional[str] = None,
     ):
+        self._ensemble_name = ensemble_name
         self._gruptree_model = gruptree_model
         self._provider = provider
         self._vector_names = self._provider.vector_names()
@@ -20,6 +24,12 @@ class EnsembleData:
         self._wells: List[str] = [
             vec.split(":")[1] for vec in self._vector_names if vec.startswith("WOPT:")
         ]
+        if filter_out_startswith is not None:
+            self._wells = [
+                well
+                for well in self._wells
+                if not well.startswith(filter_out_startswith)
+            ]
 
         well_sumvecs = [vec for vec in self._vector_names if vec.startswith("W")]
         group_sumvecs = [vec for vec in self._vector_names if vec.startswith("GPR:")]
@@ -36,6 +46,24 @@ class EnsembleData:
     @property
     def wells(self) -> List[str]:
         return self._wells
+
+    def get_dataframe_melted(self, well_sumvec: str) -> pd.DataFrame:
+        """Returns a dataframe on long form consisting of these columns:
+        * WELL
+        * well_sumvec (f.ex WOPT)
+        * ENSEMBLE
+        """
+        sumvecs = [f"{well_sumvec}:{well}" for well in self._wells]
+        df = self._smry[["REAL", "DATE"] + sumvecs]
+        df = df[df["DATE"] == df["DATE"].max()]
+        df_melted = pd.melt(
+            df, value_vars=sumvecs, var_name="WELL", value_name=well_sumvec
+        )
+        df_melted["WELL"] = df_melted.agg(
+            lambda x: f"{x['WELL'].split(':')[1]}", axis=1
+        )
+        df_melted["ENSEMBLE"] = self._ensemble_name
+        return df_melted
 
     def get_node_info(self, node: str, node_type: str = "well") -> Dict[str, Any]:
         """Returns a list of dictionaries containing the network nodes

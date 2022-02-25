@@ -4,7 +4,7 @@ import webviz_core_components as wcc
 from dash import Dash, Input, Output, State
 from webviz_config import WebvizConfigTheme
 
-from .._ensemble_data import EnsembleData
+from .._ensemble_data import EnsembleWellAnalysisData
 from .._figures import create_well_control_figure
 from .._layout import WellControlLayoutElements
 
@@ -12,7 +12,7 @@ from .._layout import WellControlLayoutElements
 def well_control_callbacks(
     app: Dash,
     get_uuid: Callable,
-    data_models: Dict[str, EnsembleData],
+    data_models: Dict[str, EnsembleWellAnalysisData],
     theme: WebvizConfigTheme,
 ) -> None:
     @app.callback(
