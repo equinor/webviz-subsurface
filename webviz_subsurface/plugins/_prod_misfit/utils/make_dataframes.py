@@ -6,6 +6,7 @@ import pandas as pd
 
 from ..types.provider_set import ProviderSet
 
+
 # -------------------
 def get_df_smry(
     input_provider_set: ProviderSet,

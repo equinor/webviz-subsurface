@@ -1,18 +1,11 @@
 import logging
 import time
 from pathlib import Path
-from .types.provider_set import (
-    # create_lazy_provider_set_from_paths,
-    create_presampled_provider_set_from_paths,
-)
 from typing import Dict, List, Optional, Tuple
 
 import dash
 import pandas as pd
 import webviz_core_components as wcc
-
-from ._callbacks import plugin_callbacks
-from ._layout import main_layout
 
 # import webviz_subsurface_components as wsc
 from dash import Input, Output  # , html  # Dash, State, dcc,
@@ -25,11 +18,16 @@ from webviz_config import WebvizPluginABC, WebvizSettings  # EncodedFile,
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._models import (
+from webviz_subsurface._models import (  # caching_ensemble_set_model_factory,
     EnsembleSetModel,
-    # caching_ensemble_set_model_factory,
 )
 from webviz_subsurface._providers import Frequency
+
+from ._callbacks import plugin_callbacks
+from ._layout import main_layout
+from .types.provider_set import (  # create_lazy_provider_set_from_paths,
+    create_presampled_provider_set_from_paths,
+)
 
 
 class ProdMisfit(WebvizPluginABC):
@@ -168,19 +166,6 @@ class ProdMisfit(WebvizPluginABC):
             weight_reduction_factor_wat=self.weight_reduction_factor_wat,
             weight_reduction_factor_gas=self.weight_reduction_factor_gas,
         )
-
-
-# -----------------------------------
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-@webvizstore
-def read_csv(csv_file: Path) -> pd.DataFrame:
-    return pd.read_csv(csv_file, index_col=False)
-
-
-# -----------------------------------
-@webvizstore
-def get_path(path: Path) -> Path:
-    return Path(path)
 
 
 # ------------------------------------------------------------------------

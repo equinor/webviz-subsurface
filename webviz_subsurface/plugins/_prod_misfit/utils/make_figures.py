@@ -8,10 +8,10 @@ import plotly.express as px
 import plotly.graph_objs as go
 import webviz_core_components as wcc
 
-
 # Color scales
-SYMMETRIC = [
-    [0, "gold"],
+HEATMAP_COLOR = [
+    # [0, "gold"],
+    [0, "#FF5500"],
     [0.1, "red"],
     [0.3, "darkred"],
     [0.4, "dimgrey"],
@@ -21,7 +21,8 @@ SYMMETRIC = [
     [0.6, "dimgrey"],
     [0.7, "darkblue"],
     [0.9, "blue"],
-    [1, "cyan"],
+    [1, "#00AFFF"],
+    # [1, "cyan"],
 ]
 
 # -------------------------------
@@ -209,6 +210,10 @@ def coverage_diffplot(
 
     logging.debug("--- Updating coverage box plot ---")
     figures = []
+
+    if df_diff.empty:
+        fig = px.box(title="No data to plot for current selections.")
+        return [wcc.Graph(figure=fig, style={"height": figheight})]
 
     # --- drop columns (realizations) with no data
     ensdf = df_diff.dropna(axis="columns")
@@ -439,7 +444,7 @@ def heatmap_plot(
 
             fig_phase = px.imshow(
                 df_pivot,
-                color_continuous_scale=SYMMETRIC,
+                color_continuous_scale=HEATMAP_COLOR,
                 zmin=zmin,
                 zmax=zmax,
             )
