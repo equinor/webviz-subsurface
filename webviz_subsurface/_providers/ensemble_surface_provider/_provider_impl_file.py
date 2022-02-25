@@ -182,8 +182,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
                 ][Col.DATESTR].unique()
             )
         )
-
-        if len(dates) == 1 and dates[0] is None:
+        if len(dates) == 1 and not bool(dates[0]):
             return None
 
         return dates
