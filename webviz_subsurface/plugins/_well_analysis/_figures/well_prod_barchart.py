@@ -13,7 +13,8 @@ class WellProdBarChart:
         sumvec: str,
         overlay_bars: bool,
     ) -> None:
-
+        self._ensembles = ensembles
+        self._sumvec = sumvec
         self._traces: List[Dict[str, Any]] = []
         self._layout = {
             "title": sumvec,
@@ -21,18 +22,8 @@ class WellProdBarChart:
         }
 
         for ensemble in ensembles:
-            data_model = data_models[ensemble]
-            sumvecs = [f"{sumvec}:{well}" for well in data_model.wells]
-            df = data_models[ensemble].summary_data
-            df = df[df["DATE"] == df["DATE"].max()]
-            df_long = pd.melt(
-                df, value_vars=sumvecs, var_name="WELL", value_name=sumvec
-            )
-            df_long["WELL"] = df_long.agg(
-                lambda x: f"{x['WELL'].split(':')[1]}", axis=1
-            )
-
-            df_mean = df_long.groupby("WELL").mean().reset_index()
+            df = data_models[ensemble].get_dataframe_melted(self._sumvec)
+            df_mean = df.groupby("WELL").mean().reset_index()
             df_mean = df_mean[df_mean[sumvec] > 0]
 
             self._traces.append(

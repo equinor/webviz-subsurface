@@ -7,7 +7,7 @@ from dash import ALL, Dash, Input, Output, State, callback, callback_context, no
 from webviz_subsurface._figures import create_figure
 
 from .._ensemble_data import EnsembleWellAnalysisData
-from .._figures import WellProdBarChart
+from .._figures import WellProdBarChart, WellProdPieChart
 from .._layout import ClientsideStoreElements, WellOverviewLayoutElements
 
 
@@ -92,11 +92,11 @@ def well_overview_callbacks(
     ) -> List[wcc.Graph]:
         """Updates the graph according to the selected chart type"""
         print(f"update_graph: {chart_selected}")
-        dataframes = []
-        for _, data_model in data_models.items():
-            dataframes.append(data_model.get_dataframe_melted(sumvec))
-        df = pd.concat(dataframes)
-        df.to_csv("/private/olind/webviz/melted.csv")
+        # dataframes = []
+        # for _, data_model in data_models.items():
+        #     dataframes.append(data_model.get_dataframe_melted(sumvec))
+        # df = pd.concat(dataframes)
+        # df.to_csv("/private/olind/webviz/melted.csv")
 
         if chart_selected == "barchart":
             figure = WellProdBarChart(
@@ -108,16 +108,12 @@ def well_overview_callbacks(
             return [wcc.Graph(figure={"data": figure.traces, "layout": figure.layout})]
 
         if chart_selected == "piechart":
-            piefig = create_figure(
-                plot_type="pie",
-                data_frame=df,
-                values=sumvec,
-                names="WELL",
-                title=sumvec
-                # color_discrete_sequence=self.colorway,
+            piefig = WellProdPieChart(
+                ensembles,
+                data_models,
+                sumvec,
             )
-            print(piefig)
-            return [wcc.Graph(figure=piefig)]
+            return [wcc.Graph(style={"height": "87vh"}, figure=piefig.figure())]
             # return ["Pie chart not implemented"]
         if chart_selected == "areachart":
             return ["Stacked area chart not implemented"]
