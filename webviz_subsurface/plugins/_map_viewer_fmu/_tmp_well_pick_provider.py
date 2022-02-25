@@ -50,7 +50,7 @@ class WellPickProvider:
             )
         ]
         if dframe.empty:
-            return {}
+            return {"type": "FeatureCollection", "features": []}
         validate_geometry = True
         feature_arr = []
         for _, row in dframe.iterrows():
