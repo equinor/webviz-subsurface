@@ -91,5 +91,5 @@ class WellAnalysis(WebvizPluginABC):
         )
 
     def set_callbacks(self, app: Dash) -> None:
-        well_overview_callbacks(app, self.uuid, self._data_models)
+        well_overview_callbacks(app, self.uuid, self._data_models, self._theme)
         well_control_callbacks(app, self.uuid, self._data_models, self._theme)

@@ -10,7 +10,7 @@ from .._ensemble_data import EnsembleWellAnalysisData
 class WellOverviewLayoutElements:
     GRAPH = "well-overview-graph"
     ENSEMBLES = "well-overview-ensembles"
-    OVERLAY_BARS = "well-overview-overlay-bars"
+    SETTINGS = "well-overview-settings"
     SUMVEC = "well-overview-sumvec"
     CHARTTYPE_BUTTON = "well-overview-charttype-button"
 
@@ -100,9 +100,12 @@ def plot_settings(
         label="Plot Settings",
         children=[
             wcc.Checklist(
-                id=get_uuid(WellOverviewLayoutElements.OVERLAY_BARS),
-                options=[{"label": "Overlay bars", "value": "overlay_bars"}],
-                value=[],
+                id=get_uuid(WellOverviewLayoutElements.SETTINGS),
+                options=[
+                    {"label": "Show legend", "value": "legend"},
+                    {"label": "Overlay bars", "value": "overlay_bars"},
+                ],
+                value=["legend"],
             ),
         ],
     )

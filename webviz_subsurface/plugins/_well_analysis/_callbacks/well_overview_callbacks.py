@@ -1,10 +1,8 @@
 from typing import Callable, Dict, List
 
-import pandas as pd
 import webviz_core_components as wcc
 from dash import ALL, Dash, Input, Output, State, callback, callback_context, no_update
-
-from webviz_subsurface._figures import create_figure
+from webviz_config import WebvizConfigTheme
 
 from .._ensemble_data import EnsembleWellAnalysisData
 from .._figures import WellOverviewChart
@@ -12,10 +10,11 @@ from .._layout import ClientsideStoreElements, WellOverviewLayoutElements
 
 
 def well_overview_callbacks(
-    app: Dash, get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
+    app: Dash,
+    get_uuid: Callable,
+    data_models: Dict[str, EnsembleWellAnalysisData],
+    theme: WebvizConfigTheme,
 ) -> None:
-    print("well overview callbacks")
-
     @app.callback(
         Output(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
         Input(
@@ -83,17 +82,19 @@ def well_overview_callbacks(
     @app.callback(
         Output(get_uuid(WellOverviewLayoutElements.GRAPH), "children"),
         Input(get_uuid(WellOverviewLayoutElements.ENSEMBLES), "value"),
-        Input(get_uuid(WellOverviewLayoutElements.OVERLAY_BARS), "value"),
+        Input(get_uuid(WellOverviewLayoutElements.SETTINGS), "value"),
         Input(get_uuid(WellOverviewLayoutElements.SUMVEC), "value"),
         Input(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
     )
     def _update_graph(
-        ensembles: List[str], overlay_bars: str, sumvec: str, chart_selected: str
+        ensembles: List[str], settings: List[str], sumvec: str, chart_selected: str
     ) -> List[wcc.Graph]:
         """Updates the graph according to the selected chart type"""
         print(f"update_graph: {chart_selected}")
 
-        figure = WellOverviewChart(ensembles, data_models, sumvec, chart_selected, {})
+        figure = WellOverviewChart(
+            ensembles, data_models, sumvec, chart_selected, settings, theme
+        )
 
         if chart_selected == "area":
             return ["Stacked area chart not implemented"]
