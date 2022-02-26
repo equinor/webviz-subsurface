@@ -7,7 +7,7 @@ from dash import ALL, Dash, Input, Output, State, callback, callback_context, no
 from webviz_subsurface._figures import create_figure
 
 from .._ensemble_data import EnsembleWellAnalysisData
-from .._figures import WellProdBarChart, WellProdPieChart
+from .._figures import WellOverviewChart
 from .._layout import ClientsideStoreElements, WellOverviewLayoutElements
 
 
@@ -39,7 +39,7 @@ def well_overview_callbacks(
 
         # handle initial callback
         if ctx["prop_id"] == ".":
-            return "barchart"
+            return "bar"
 
         for button_id in button_ids:
             if button_id["button"] in ctx["prop_id"]:
@@ -92,33 +92,13 @@ def well_overview_callbacks(
     ) -> List[wcc.Graph]:
         """Updates the graph according to the selected chart type"""
         print(f"update_graph: {chart_selected}")
-        # dataframes = []
-        # for _, data_model in data_models.items():
-        #     dataframes.append(data_model.get_dataframe_melted(sumvec))
-        # df = pd.concat(dataframes)
-        # df.to_csv("/private/olind/webviz/melted.csv")
 
-        if chart_selected == "barchart":
-            figure = WellProdBarChart(
-                ensembles,
-                data_models,
-                sumvec,
-                "overlay_bars" in overlay_bars,
-            )
-            return [wcc.Graph(figure={"data": figure.traces, "layout": figure.layout})]
+        figure = WellOverviewChart(ensembles, data_models, sumvec, chart_selected, {})
 
-        if chart_selected == "piechart":
-            piefig = WellProdPieChart(
-                ensembles,
-                data_models,
-                sumvec,
-            )
-            return [wcc.Graph(style={"height": "87vh"}, figure=piefig.figure())]
-            # return ["Pie chart not implemented"]
-        if chart_selected == "areachart":
+        if chart_selected == "area":
             return ["Stacked area chart not implemented"]
 
-        raise ValueError(f"Chart type {chart_selected} does not exist")
+        return [wcc.Graph(style={"height": "87vh"}, figure=figure.figure)]
 
 
 def update_relevant_components(id_list: list, update_info: List[dict]) -> list:

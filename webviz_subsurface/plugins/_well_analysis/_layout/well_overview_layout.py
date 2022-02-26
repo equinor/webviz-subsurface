@@ -48,17 +48,17 @@ def buttons(get_uuid: Callable) -> html.Div:
             html.Button(
                 "Bar Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "barchart"},
+                id={"id": uuid, "button": "bar"},
             ),
             html.Button(
                 "Pie Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "piechart"},
+                id={"id": uuid, "button": "pie"},
             ),
             html.Button(
                 "Stacked Area Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "areachart"},
+                id={"id": uuid, "button": "area"},
             ),
         ],
     )

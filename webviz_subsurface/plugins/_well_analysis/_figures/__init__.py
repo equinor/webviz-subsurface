@@ -1,3 +1,2 @@
 from .well_control_figure import create_well_control_figure
-from .well_prod_barchart import WellProdBarChart
-from .well_prod_piechart import WellProdPieChart
+from .well_overview_chart import WellOverviewChart
