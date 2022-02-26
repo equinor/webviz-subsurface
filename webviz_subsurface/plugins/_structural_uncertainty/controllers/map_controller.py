@@ -1,3 +1,4 @@
+from audioop import add
 import warnings
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -11,7 +12,16 @@ from webviz_subsurface._datainput.well import (
     make_well_layer,
 )
 from webviz_subsurface._models import SurfaceLeafletModel, SurfaceSetModel, WellSetModel
+from webviz_subsurface._providers import (
+    SimulatedSurfaceAddress,
+    StatisticalSurfaceAddress,
+    QualifiedSurfaceAddress,
+    QualifiedDiffSurfaceAddress,
+)
 
+from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
+    DeckGLMapLayersModel,
+)
 
 # pylint: disable=too-many-statements
 def update_maps(
@@ -19,13 +29,89 @@ def update_maps(
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
     well_set_model: WellSetModel,
+    surface_providers,
+    surface_server,
 ) -> None:
     @app.callback(
         Output({"id": get_uuid("map"), "element": "label"}, "children"),
-        Output(get_uuid("leaflet-map1"), "layers"),
         Output({"id": get_uuid("map2"), "element": "label"}, "children"),
-        Output(get_uuid("leaflet-map2"), "layers"),
         Output({"id": get_uuid("map3"), "element": "label"}, "children"),
+        Input(
+            {
+                "id": get_uuid("map-settings"),
+                "map_id": "map1",
+                "element": "surfaceattribute",
+            },
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid("map-settings"),
+                "map_id": "map2",
+                "element": "surfaceattribute",
+            },
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid("map-settings"),
+                "map_id": "map1",
+                "element": "surfacename",
+            },
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid("map-settings"),
+                "map_id": "map2",
+                "element": "surfacename",
+            },
+            "value",
+        ),
+        Input(
+            {"id": get_uuid("map-settings"), "map_id": "map1", "element": "ensemble"},
+            "value",
+        ),
+        Input(
+            {"id": get_uuid("map-settings"), "map_id": "map2", "element": "ensemble"},
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid("map-settings"),
+                "map_id": "map1",
+                "element": "calculation",
+            },
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid("map-settings"),
+                "map_id": "map2",
+                "element": "calculation",
+            },
+            "value",
+        ),
+    )
+    def _update_map_labels(
+        surfattr_map: str,
+        surfattr_map2: str,
+        surfname_map: str,
+        surfname_map2: str,
+        ensemble_map: str,
+        ensemble_map2: str,
+        calc_map: str,
+        calc_map2: str,
+    ):
+        return (
+            f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
+            f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
+            "Surface A-B",
+        )
+
+    @app.callback(
+        Output(get_uuid("leaflet-map1"), "layers"),
+        Output(get_uuid("leaflet-map2"), "layers"),
         Output(get_uuid("leaflet-map3"), "layers"),
         Input(
             {
@@ -145,9 +231,6 @@ def update_maps(
                     no_update,
                     no_update,
                     no_update,
-                    no_update,
-                    no_update,
-                    [],
                 )
 
         # Check if map is already generated and should just be updated with polylines
@@ -182,11 +265,8 @@ def update_maps(
         # If callback is triggered by polyline drawing, only update polyline
         if update_poly_only:
             return (
-                f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
                 current_map,
-                f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
                 no_update,
-                "Surface A-B",
                 no_update,
             )
 
@@ -203,112 +283,107 @@ def update_maps(
                         map_layers, "Well", well_layer
                     )
                 return (
-                    f"Surface A: {surfattr_map} - {surfname_map} - "
-                    f"{ensemble_map} - {calc_map}",
                     current_map,
-                    f"Surface B: {surfattr_map2} - {surfname_map2} - "
-                    f"{ensemble_map2} - {calc_map2}",
                     current_map2,
-                    "Surface A-B",
                     no_update,
                 )
 
         # Calculate maps
         if calc_map in ["Mean", "StdDev", "Max", "Min", "P90", "P10"]:
-            surface = surface_set_models[ensemble_map].calculate_statistical_surface(
+            surface_address = StatisticalSurfaceAddress(
                 name=surfname_map,
                 attribute=surfattr_map,
-                calculation=calc_map,
                 realizations=realizations,
+                datestr=None,
+                statistic=calc_map,
             )
+
         else:
-            surface = surface_set_models[ensemble_map].get_realization_surface(
-                name=surfname_map, attribute=surfattr_map, realization=int(calc_map)
+            surface_address = SimulatedSurfaceAddress(
+                name=surfname_map,
+                attribute=surfattr_map,
+                realization=int(calc_map),
+                datestr=None,
             )
+
+        surface = surface_providers[ensemble_map].get_surface(surface_address)
         if calc_map2 in ["Mean", "StdDev", "Max", "Min", "P90", "P10"]:
-            surface2 = surface_set_models[ensemble_map2].calculate_statistical_surface(
+            surface_address2 = StatisticalSurfaceAddress(
                 name=surfname_map2,
                 attribute=surfattr_map2,
-                calculation=calc_map2,
                 realizations=realizations,
+                datestr=None,
+                statistic=calc_map2,
             )
+
         else:
-            surface2 = surface_set_models[ensemble_map2].get_realization_surface(
-                name=surfname_map2, attribute=surfattr_map2, realization=int(calc_map2)
+            surface_address2 = SimulatedSurfaceAddress(
+                name=surfname_map2,
+                attribute=surfattr_map2,
+                realization=int(calc_map2),
+                datestr=None,
             )
-
-        # Generate Leaflet layers
-        update_controls = check_if_update_needed(
-            ctx=ctx,
-            current_maps=[current_map, current_map2],
-            compute_diff=compute_diff,
-            color_range_settings=color_range_settings,
+        qualified_address = QualifiedSurfaceAddress(
+            provider_id=surface_providers[ensemble_map].provider_id(),
+            address=surface_address,
+        )
+        qualified_address2 = QualifiedSurfaceAddress(
+            provider_id=surface_providers[ensemble_map2].provider_id(),
+            address=surface_address2,
         )
 
-        surface_layers = create_or_return_base_layer(
-            update_controls,
-            surface,
-            current_map,
-            shade_map,
-            color_range_settings,
-            map_id="map1",
+        surf_spec = get_surface_specification(
+            provider=surface_providers[ensemble_map],
+            qualified_address=qualified_address,
+            surface_server=surface_server,
         )
-        surface_layers2 = create_or_return_base_layer(
-            update_controls,
-            surface2,
-            current_map2,
-            shade_map2,
-            color_range_settings,
-            map_id="map2",
+        surf_spec2 = get_surface_specification(
+            provider=surface_providers[ensemble_map2],
+            qualified_address=qualified_address2,
+            surface_server=surface_server,
         )
 
-        try:
-            surface3 = surface.copy()
-            surface3.values = surface3.values - surface2.values
+        surface2 = surface_providers[ensemble_map2].get_surface(surface_address2)
+        qualified_diff_address = QualifiedDiffSurfaceAddress(
+            provider_id_a=qualified_address.provider_id,
+            address_a=qualified_address.address,
+            provider_id_b=qualified_address2.provider_id,
+            address_b=qualified_address2.address,
+        )
 
-            diff_layers = (
-                [
-                    SurfaceLeafletModel(
-                        surface3,
-                        name="surface3",
-                        apply_shading=shade_map3.get("value", False),
-                    ).layer
-                ]
-                if update_controls["diff_map"]["update"]
-                else []
-            )
-        except ValueError:
-            diff_layers = []
+        diff_surf_spec = get_diff_surface_specification(
+            provider_a=surface_providers[ensemble_map],
+            provider_b=surface_providers[ensemble_map2],
+            qualified_address=qualified_diff_address,
+            surface_server=surface_server,
+        )
 
-        if wellname is not None:
-            surface_layers.append(well_layer)
-            surface_layers2.append(well_layer)
-        if polyline is not None:
-            surface_layers.append(poly_layer)
-        if xline is not None and source == "xline":
-            surface_layers.append(xline_layer)
-        if yline is not None and source == "yline":
-            surface_layers.append(yline_layer)
-        if well_set_model is not None:
-            if options is not None or options2 is not None:
-                if "intersect_well" in options or "intersect_well" in options2:
-                    ### This is potentially a heavy task as it loads all wells into memory
-                    wells: List[xtgeo.Well] = list(well_set_model.wells.values())
-                if "intersect_well" in options and update_controls["map1"]["update"]:
-                    surface_layers.append(
-                        create_leaflet_well_marker_layer(wells, surface)
-                    )
-                if "intersect_well" in options2 and update_controls["map2"]["update"]:
-                    surface_layers2.append(
-                        create_leaflet_well_marker_layer(wells, surface2)
-                    )
-
+        # if wellname is not None:
+        #     surface_layers.append(well_layer)
+        #     surface_layers2.append(well_layer)
+        # if polyline is not None:
+        #     surface_layers.append(poly_layer)
+        # if xline is not None and source == "xline":
+        #     surface_layers.append(xline_layer)
+        # if yline is not None and source == "yline":
+        #     surface_layers.append(yline_layer)
+        # if well_set_model is not None:
+        #     if options is not None or options2 is not None:
+        #         if "intersect_well" in options or "intersect_well" in options2:
+        #             ### This is potentially a heavy task as it loads all wells into memory
+        #             wells: List[xtgeo.Well] = list(well_set_model.wells.values())
+        #         if "intersect_well" in options and update_controls["map1"]["update"]:
+        #             surface_layers.append(
+        #                 create_leaflet_well_marker_layer(wells, surface)
+        #             )
+        #         if "intersect_well" in options2 and update_controls["map2"]["update"]:
+        #             surface_layers2.append(
+        #                 create_leaflet_well_marker_layer(wells, surface2)
+        #             )
+        raise PreventUpdate
         return (
-            f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
             surface_layers if update_controls["map1"]["update"] else no_update,
-            f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
             surface_layers2 if update_controls["map2"]["update"] else no_update,
-            "Surface A-B",
             diff_layers if update_controls["diff_map"]["update"] else no_update,
         )
 
@@ -550,3 +625,56 @@ def create_or_return_base_layer(
             ).layer
         ]
     return surface_layers
+
+
+def get_surface_specification(provider, qualified_address, surface_server):
+    surf_meta = surface_server.get_surface_metadata(qualified_address)
+    if not surf_meta:
+        # This means we need to compute the surface
+        surface = provider.get_surface(qualified_address.address)
+        if not surface:
+            raise ValueError(
+                f"Could not get surface for address: {qualified_address.address}"
+            )
+        surface_server.publish_surface(qualified_address, surface)
+        surf_meta = surface_server.get_surface_metadata(qualified_address)
+
+    return {
+        "bounds": surf_meta.deckgl_bounds,
+        "viewport_bounds": [
+            surf_meta.x_min,
+            surf_meta.y_min,
+            surf_meta.x_max,
+            surf_meta.y_max,
+        ],
+        "image": surface_server.encode_partial_url(qualified_address),
+        "rotDeg": surf_meta.deckgl_rot_deg,
+        "valueRange": [surf_meta.val_min, surf_meta.val_max],
+    }
+
+
+def get_diff_surface_specification(
+    provider_a, provider_b, qualified_address, surface_server
+):
+    surf_meta = surface_server.get_surface_metadata(qualified_address)
+    if not surf_meta:
+        # This means we need to compute the surface
+        surface_a = provider_a.get_surface(qualified_address.address_a)
+        surface_b = provider_b.get_surface(qualified_address.address_b)
+        if surface_a is not None and surface_b is not None:
+            surface = surface_a - surface_b
+        surface_server.publish_surface(qualified_address, surface)
+        surf_meta = surface_server.get_surface_metadata(qualified_address)
+
+    return {
+        "bounds": surf_meta.deckgl_bounds,
+        "viewport_bounds": [
+            surf_meta.x_min,
+            surf_meta.y_min,
+            surf_meta.x_max,
+            surf_meta.y_max,
+        ],
+        "image": surface_server.encode_partial_url(qualified_address),
+        "rotDeg": surf_meta.deckgl_rot_deg,
+        "valueRange": [surf_meta.val_min, surf_meta.val_max],
+    }

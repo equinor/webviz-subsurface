@@ -14,6 +14,8 @@ from webviz_subsurface._datainput.fmu_input import find_surfaces, get_realizatio
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
+from webviz_subsurface._providers import EnsembleSurfaceProviderFactory, SurfaceServer
+
 from ._tour_steps import generate_tour_steps
 from .controllers import (
     open_dialogs,
@@ -248,6 +250,17 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.first_surface_geometry = self._surface_ensemble_set_model[
             self.ensembles[0]
         ].first_surface_geometry
+
+        surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
+        self._ensemble_surface_providers = {
+            ens: surface_provider_factory.create_from_ensemble_surface_files(
+                webviz_settings.shared_settings["scratch_ensembles"][ens],
+                attribute_filter=self._surf_attrs,
+            )
+            for ens in ensembles
+        }
+        self._surface_server = SurfaceServer.instance(app)
+
         self.set_callbacks(app)
 
     @property
@@ -388,6 +401,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             app=app,
             get_uuid=self.uuid,
             surface_set_models=self._surface_ensemble_set_model,
+            surface_providers=self._ensemble_surface_providers,
+            surface_server=self._surface_server,
             well_set_model=self._well_set_model,
         )
         update_uncertainty_table(
