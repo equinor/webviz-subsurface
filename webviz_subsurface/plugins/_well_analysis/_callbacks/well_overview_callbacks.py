@@ -79,10 +79,43 @@ def well_overview_callbacks(
             ],
         )
 
+    @callback(
+        Output(
+            {
+                "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_SETTINGS),
+                "charttype": ALL,
+            },
+            "style",
+        ),
+        Input(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
+        State(
+            {
+                "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_SETTINGS),
+                "charttype": ALL,
+            },
+            "id",
+        ),
+    )
+    def _display_charttype_settings(
+        chart_selected: str, charttype_settings_ids: list
+    ) -> list:
+        return [
+            {"display": "block"}
+            if settings_id["charttype"] == chart_selected
+            else {"display": "none"}
+            for settings_id in charttype_settings_ids
+        ]
+
     @app.callback(
         Output(get_uuid(WellOverviewLayoutElements.GRAPH), "children"),
         Input(get_uuid(WellOverviewLayoutElements.ENSEMBLES), "value"),
-        Input(get_uuid(WellOverviewLayoutElements.SETTINGS), "value"),
+        Input(
+            {
+                "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_SETTINGS),
+                "chartype": ALL,
+            },
+            "value",
+        ),
         Input(get_uuid(WellOverviewLayoutElements.SUMVEC), "value"),
         Input(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
     )
@@ -91,9 +124,9 @@ def well_overview_callbacks(
     ) -> List[wcc.Graph]:
         """Updates the graph according to the selected chart type"""
         print(f"update_graph: {chart_selected}")
-
+        print(settings)
         figure = WellOverviewChart(
-            ensembles, data_models, sumvec, chart_selected, settings, theme
+            ensembles, data_models, sumvec, chart_selected, [], theme
         )
 
         if chart_selected == "area":

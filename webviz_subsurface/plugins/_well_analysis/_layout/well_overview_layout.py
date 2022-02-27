@@ -10,9 +10,10 @@ from .._ensemble_data import EnsembleWellAnalysisData
 class WellOverviewLayoutElements:
     GRAPH = "well-overview-graph"
     ENSEMBLES = "well-overview-ensembles"
-    SETTINGS = "well-overview-settings"
     SUMVEC = "well-overview-sumvec"
     CHARTTYPE_BUTTON = "well-overview-charttype-button"
+    CHARTTYPE_SETTINGS = "well-overview-charttype-settings"
+    CHARTTYPE_CHECKLIST = "well-overview-charttype-checklist"
 
 
 def well_overview_tab(
@@ -96,16 +97,41 @@ def controls(
 def plot_settings(
     get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
 ) -> wcc.Frame:
+    settings_uuid = get_uuid(WellOverviewLayoutElements.CHARTTYPE_SETTINGS)
+    checklist_uuid = get_uuid(WellOverviewLayoutElements.CHARTTYPE_CHECKLIST)
     return wcc.Selectors(
         label="Plot Settings",
         children=[
-            wcc.Checklist(
-                id=get_uuid(WellOverviewLayoutElements.SETTINGS),
-                options=[
-                    {"label": "Show legend", "value": "legend"},
-                    {"label": "Overlay bars", "value": "overlay_bars"},
-                ],
-                value=["legend"],
+            html.Div(
+                id={"id": settings_uuid, "charttype": "bar"},
+                children=wcc.Checklist(
+                    id={"id": checklist_uuid, "charttype": "bar"},
+                    options=[
+                        {"label": "Show legend", "value": "legend"},
+                        {"label": "Overlay bars", "value": "overlay_bars"},
+                    ],
+                    value=["legend"],
+                ),
+            ),
+            html.Div(
+                id={"id": settings_uuid, "charttype": "pie"},
+                children=wcc.Checklist(
+                    id={"id": checklist_uuid, "charttype": "pie"},
+                    options=[
+                        {"label": "Show legend", "value": "legend"},
+                    ],
+                    value=[],
+                ),
+            ),
+            html.Div(
+                id={"id": settings_uuid, "charttype": "area"},
+                children=wcc.Checklist(
+                    id={"id": checklist_uuid, "charttype": "area"},
+                    options=[
+                        {"label": "Show legend", "value": "legend"},
+                    ],
+                    value=["legend"],
+                ),
             ),
         ],
     )
