@@ -75,7 +75,7 @@ class WellSetModel:
         """Returns list of well names"""
         return list(self._wells.keys())
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    # @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def get_fence(
         self,
         well_name: str,
@@ -84,13 +84,15 @@ class WellSetModel:
         nextend: int = 2,
     ) -> np.ndarray:
         """Creates a fence specification from a well"""
+        print(self._is_vertical(well_name))
+        print(self.wells[well_name].dataframe.size)
         if not self._is_vertical(well_name):
             return self.wells[well_name].get_fence_polyline(
                 nextend=nextend, sampling=distance, asnumpy=True
             )
         # If well is completely vertical extend well fence
         poly = self.wells[well_name].get_fence_polyline(
-            nextend=0.1, sampling=distance, asnumpy=False
+            nextend=1, sampling=distance, asnumpy=False
         )
 
         return poly.get_fence(

@@ -38,6 +38,12 @@ class DeckGLMapLayersModel:
             layer_idx = self._layers.index(layers[0])
             self._layers[layer_idx].update(layer_data)
 
+    def layer_exist(self, layer_id: str):
+        layers = list(filter(lambda x: x["id"] == layer_id, self._layers))
+        if not layers:
+            return False
+        return True
+
     def set_propertymap(
         self,
         image_url: str,

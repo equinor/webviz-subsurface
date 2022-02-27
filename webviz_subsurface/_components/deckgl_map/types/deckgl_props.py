@@ -173,6 +173,33 @@ class WellsLayer(pydeck.Layer):
         )
 
 
+class GeoJsonLayer(pydeck.Layer):
+    def __init__(
+        self,
+        name: str,
+        uuid: str,
+        data: FeatureCollection = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            type="GeoJsonLayer",
+            id=String(uuid),
+            name=String(name),
+            data={"type": "FeatureCollection", "features": []}
+            if data is None
+            else data,
+            # get_text="properties.attribute",
+            # get_text_size=12,
+            # get_text_anchor=String("start"),
+            # pointType=String("circle+text"),
+            lineWidthMinPixels=2,
+            pointRadiusMinPixels=2,
+            pickable=True,
+            get_radius=1000,
+            **kwargs,
+        )
+
+
 class DrawingLayer(pydeck.Layer):
     def __init__(
         self,

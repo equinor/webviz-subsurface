@@ -12,9 +12,16 @@ import webviz_subsurface
 from webviz_subsurface._components import ColorPicker
 from webviz_subsurface._datainput.fmu_input import find_surfaces, get_realizations
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
+from webviz_subsurface._providers.well_provider import well_server
 from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
-from webviz_subsurface._providers import EnsembleSurfaceProviderFactory, SurfaceServer
+from webviz_subsurface._providers import (
+    EnsembleSurfaceProviderFactory,
+    SurfaceServer,
+    WellProviderFactory,
+    WellServer,
+    well_provider,
+)
 
 from ._tour_steps import generate_tour_steps
 from .controllers import (
@@ -261,6 +268,14 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         }
         self._surface_server = SurfaceServer.instance(app)
 
+        provider_factory = WellProviderFactory.instance()
+
+        self.well_provider = provider_factory.create_from_well_files(
+            well_folder=wellfolder, well_suffix=wellsuffix, md_logname=mdlog
+        )
+        self.well_server = WellServer.instance(app)
+        self.well_server.add_provider(self.well_provider)
+
         self.set_callbacks(app)
 
     @property
@@ -404,6 +419,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             surface_providers=self._ensemble_surface_providers,
             surface_server=self._surface_server,
             well_set_model=self._well_set_model,
+            well_provider=self.well_provider,
+            well_server=self.well_server,
         )
         update_uncertainty_table(
             app=app,

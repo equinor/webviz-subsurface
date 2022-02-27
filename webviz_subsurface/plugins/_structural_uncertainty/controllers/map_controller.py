@@ -1,6 +1,11 @@
-from audioop import add
-import warnings
+import json
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    EnsembleSurfaceProvider,
+)
+from webviz_subsurface._providers.ensemble_surface_provider.surface_server import (
+    SurfaceServer,
+)
 
 import xtgeo
 from dash import Dash, Input, Output, State, callback_context, no_update
@@ -17,10 +22,16 @@ from webviz_subsurface._providers import (
     StatisticalSurfaceAddress,
     QualifiedSurfaceAddress,
     QualifiedDiffSurfaceAddress,
+    WellProvider,
+    WellServer,
 )
 
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
+)
+from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
+    GeoJsonLayer,
+    WellsLayer,
 )
 
 # pylint: disable=too-many-statements
@@ -29,13 +40,15 @@ def update_maps(
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
     well_set_model: WellSetModel,
-    surface_providers,
-    surface_server,
+    surface_providers: Dict[str, EnsembleSurfaceProvider],
+    surface_server: SurfaceServer,
+    well_provider: WellProvider,
+    well_server: WellServer,
 ) -> None:
     @app.callback(
-        Output({"id": get_uuid("map"), "element": "label"}, "children"),
-        Output({"id": get_uuid("map2"), "element": "label"}, "children"),
-        Output({"id": get_uuid("map3"), "element": "label"}, "children"),
+        Output(get_uuid("deckgl"), "layers"),
+        Output(get_uuid("deckgl"), "bounds"),
+        Output(get_uuid("deckgl"), "views"),
         Input(
             {
                 "id": get_uuid("map-settings"),
@@ -92,86 +105,6 @@ def update_maps(
             },
             "value",
         ),
-    )
-    def _update_map_labels(
-        surfattr_map: str,
-        surfattr_map2: str,
-        surfname_map: str,
-        surfname_map2: str,
-        ensemble_map: str,
-        ensemble_map2: str,
-        calc_map: str,
-        calc_map2: str,
-    ):
-        return (
-            f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
-            f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
-            "Surface A-B",
-        )
-
-    @app.callback(
-        Output(get_uuid("leaflet-map1"), "layers"),
-        Output(get_uuid("leaflet-map2"), "layers"),
-        Output(get_uuid("leaflet-map3"), "layers"),
-        Input(
-            {
-                "id": get_uuid("map-settings"),
-                "map_id": "map1",
-                "element": "surfaceattribute",
-            },
-            "value",
-        ),
-        Input(
-            {
-                "id": get_uuid("map-settings"),
-                "map_id": "map2",
-                "element": "surfaceattribute",
-            },
-            "value",
-        ),
-        Input(
-            {
-                "id": get_uuid("map-settings"),
-                "map_id": "map1",
-                "element": "surfacename",
-            },
-            "value",
-        ),
-        Input(
-            {
-                "id": get_uuid("map-settings"),
-                "map_id": "map2",
-                "element": "surfacename",
-            },
-            "value",
-        ),
-        Input(
-            {"id": get_uuid("map-settings"), "map_id": "map1", "element": "ensemble"},
-            "value",
-        ),
-        Input(
-            {"id": get_uuid("map-settings"), "map_id": "map2", "element": "ensemble"},
-            "value",
-        ),
-        Input(
-            {
-                "id": get_uuid("map-settings"),
-                "map_id": "map1",
-                "element": "calculation",
-            },
-            "value",
-        ),
-        Input(
-            {
-                "id": get_uuid("map-settings"),
-                "map_id": "map2",
-                "element": "calculation",
-            },
-            "value",
-        ),
-        Input(get_uuid("leaflet-map1"), "switch"),
-        Input(get_uuid("leaflet-map2"), "switch"),
-        Input(get_uuid("leaflet-map3"), "switch"),
         Input(
             {"id": get_uuid("map-settings"), "map_id": "map1", "element": "options"},
             "value",
@@ -191,9 +124,7 @@ def update_maps(
         Input({"id": get_uuid("map"), "element": "stored_xline"}, "data"),
         Input({"id": get_uuid("map"), "element": "stored_yline"}, "data"),
         Input({"id": get_uuid("intersection-data"), "element": "source"}, "value"),
-        State(get_uuid("leaflet-map1"), "layers"),
-        State(get_uuid("leaflet-map2"), "layers"),
-        State(get_uuid("leaflet-map3"), "layers"),
+        State(get_uuid("deckgl"), "layers"),
     )
     # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
     def _update_maps(
@@ -205,9 +136,6 @@ def update_maps(
         ensemble_map2: str,
         calc_map: str,
         calc_map2: str,
-        shade_map: Dict[str, bool],
-        shade_map2: Dict[str, bool],
-        shade_map3: Dict[str, bool],
         options: List[str],
         options2: List[str],
         color_range_settings: Dict,
@@ -218,75 +146,49 @@ def update_maps(
         xline: Optional[List],
         yline: Optional[List],
         source: str,
-        current_map: List,
-        current_map2: List,
-        current_map3: List,
+        current_layers: List,
     ) -> Tuple[str, List, str, List, str, List]:
         """Generate Leaflet layers for the three map views"""
         realizations = [int(real) for real in real_list]
         ctx = callback_context.triggered[0]
         if "compute_diff" in ctx["prop_id"]:
             if not compute_diff:
-                return (
-                    no_update,
-                    no_update,
-                    no_update,
-                )
+                return no_update
 
-        # Check if map is already generated and should just be updated with polylines
-        update_poly_only = bool(
-            current_map
-            and (
-                "stored_polyline" in ctx["prop_id"]
-                or "stored_yline" in ctx["prop_id"]
-                or "stored_xline" in ctx["prop_id"]
-            )
-        )
-        if polyline is not None:
-            poly_layer = create_leaflet_polyline_layer(
-                polyline, name="Polyline", poly_id="random_line"
-            )
-            for map_layers in [current_map, current_map2, current_map3]:
-                map_layers = replace_or_add_map_layer(
-                    map_layers, "Polyline", poly_layer
-                )
-        if xline is not None and source == "xline":
-            xline_layer = create_leaflet_polyline_layer(
-                xline, name="Xline", poly_id="x_line"
-            )
-            for map_layers in [current_map, current_map2, current_map3]:
-                map_layers = replace_or_add_map_layer(map_layers, "Xline", xline_layer)
-        if yline is not None and source == "yline":
-            yline_layer = create_leaflet_polyline_layer(
-                yline, name="Yline", poly_id="y_line"
-            )
-            for map_layers in [current_map, current_map2, current_map3]:
-                map_layers = replace_or_add_map_layer(map_layers, "Yline", yline_layer)
-        # If callback is triggered by polyline drawing, only update polyline
-        if update_poly_only:
-            return (
-                current_map,
-                no_update,
-                no_update,
-            )
+        # if polyline is not None:
+        #     poly_layer = create_leaflet_polyline_layer(
+        #         polyline, name="Polyline", poly_id="random_line"
+        #     )
+        #     for map_layers in [current_map, current_map2, current_map3]:
+        #         map_layers = replace_or_add_map_layer(
+        #             map_layers, "Polyline", poly_layer
+        #         )
+        # if xline is not None and source == "xline":
+        #     xline_layer = create_leaflet_polyline_layer(
+        #         xline, name="Xline", poly_id="x_line"
+        #     )
+        #     for map_layers in [current_map, current_map2, current_map3]:
+        #         map_layers = replace_or_add_map_layer(map_layers, "Xline", xline_layer)
+        # if yline is not None and source == "yline":
+        #     yline_layer = create_leaflet_polyline_layer(
+        #         yline, name="Yline", poly_id="y_line"
+        #     )
+        #     for map_layers in [current_map, current_map2, current_map3]:
+        #         map_layers = replace_or_add_map_layer(map_layers, "Yline", yline_layer)
+        # # If callback is triggered by polyline drawing, only update polyline
 
-        if wellname is not None:
-            well = well_set_model.get_well(wellname)
-            well_layer = make_well_layer(well, name=well.name)
+        # if wellname is not None:
+        #     well = well_set_model.get_well(wellname)
+        #     well_layer = make_well_layer(well, name=well.name)
 
-            # If callback is triggered by well change, only update well layer
-            if "well" in ctx["prop_id"] or (
-                "source" in ctx["prop_id"] and source == "well"
-            ):
-                for map_layers in [current_map, current_map2, current_map3]:
-                    map_layers = replace_or_add_map_layer(
-                        map_layers, "Well", well_layer
-                    )
-                return (
-                    current_map,
-                    current_map2,
-                    no_update,
-                )
+        #     # If callback is triggered by well change, only update well layer
+        #     if "well" in ctx["prop_id"] or (
+        #         "source" in ctx["prop_id"] and source == "well"
+        #     ):
+        #         for map_layers in [current_map, current_map2, current_map3]:
+        #             map_layers = replace_or_add_map_layer(
+        #                 map_layers, "Well", well_layer
+        #             )
 
         # Calculate maps
         if calc_map in ["Mean", "StdDev", "Max", "Min", "P90", "P10"]:
@@ -306,7 +208,6 @@ def update_maps(
                 datestr=None,
             )
 
-        surface = surface_providers[ensemble_map].get_surface(surface_address)
         if calc_map2 in ["Mean", "StdDev", "Max", "Min", "P90", "P10"]:
             surface_address2 = StatisticalSurfaceAddress(
                 name=surfname_map2,
@@ -332,12 +233,12 @@ def update_maps(
             address=surface_address2,
         )
 
-        surf_spec = get_surface_specification(
+        surf_spec, viewport_bounds = get_surface_specification(
             provider=surface_providers[ensemble_map],
             qualified_address=qualified_address,
             surface_server=surface_server,
         )
-        surf_spec2 = get_surface_specification(
+        surf_spec2, _ = get_surface_specification(
             provider=surface_providers[ensemble_map2],
             qualified_address=qualified_address2,
             surface_server=surface_server,
@@ -351,17 +252,81 @@ def update_maps(
             address_b=qualified_address2.address,
         )
 
-        diff_surf_spec = get_diff_surface_specification(
+        diff_surf_spec, _ = get_diff_surface_specification(
             provider_a=surface_providers[ensemble_map],
             provider_b=surface_providers[ensemble_map2],
             qualified_address=qualified_diff_address,
             surface_server=surface_server,
         )
+        layer_model = DeckGLMapLayersModel(layers=current_layers)
 
-        # if wellname is not None:
+        layer_model.update_layer_by_id(
+            layer_id="colormap",
+            layer_data=surf_spec,
+        )
+
+        layer_model.update_layer_by_id(
+            layer_id="hillshading",
+            layer_data=surf_spec,
+        )
+        layer_model.update_layer_by_id(
+            layer_id="colormap",
+            layer_data={
+                "colorMapName": "Physics",
+                "colorMapRange": surf_spec["valueRange"],
+            },
+        )
+        layer_model.update_layer_by_id(
+            layer_id="colormap2",
+            layer_data=surf_spec2,
+        )
+
+        layer_model.update_layer_by_id(
+            layer_id="hillshading2",
+            layer_data=surf_spec2,
+        )
+        layer_model.update_layer_by_id(
+            layer_id="colormap2",
+            layer_data={
+                "colorMapName": "Physics",
+                "colorMapRange": surf_spec2["valueRange"],
+            },
+        )
+        layer_model.update_layer_by_id(
+            layer_id="colormap3",
+            layer_data=diff_surf_spec,
+        )
+
+        layer_model.update_layer_by_id(
+            layer_id="colormap3",
+            layer_data={
+                "colorMapName": "Physics",
+                "colorMapRange": diff_surf_spec["valueRange"],
+            },
+        )
+
+        if wellname is not None:
+            well = well_provider.get_well_xtgeo_obj(wellname)
         #     surface_layers.append(well_layer)
         #     surface_layers2.append(well_layer)
-        # if polyline is not None:
+        if polyline is not None:
+            layer_model.update_layer_by_id(
+                layer_id="polyline",
+                layer_data={"data": make_geojson_polyline(polyline)},
+            )
+        if xline is not None:  # and source == "xline":
+            layer_model.update_layer_by_id(
+                layer_id="x_line", layer_data={"data": make_geojson_polyline(xline)}
+            )
+        if polyline is not None:
+            layer_model.update_layer_by_id(
+                layer_id="polline", layer_data={"data": make_geojson_polyline(polyline)}
+            )
+        if yline is not None:  # and source == "yline":
+            layer_model.update_layer_by_id(
+                layer_id="y_line", layer_data={"data": make_geojson_polyline(yline)}
+            )
+
         #     surface_layers.append(poly_layer)
         # if xline is not None and source == "xline":
         #     surface_layers.append(xline_layer)
@@ -380,58 +345,87 @@ def update_maps(
         #             surface_layers2.append(
         #                 create_leaflet_well_marker_layer(wells, surface2)
         #             )
-        raise PreventUpdate
+
         return (
-            surface_layers if update_controls["map1"]["update"] else no_update,
-            surface_layers2 if update_controls["map2"]["update"] else no_update,
-            diff_layers if update_controls["diff_map"]["update"] else no_update,
+            layer_model.layers,
+            viewport_bounds,
+            {
+                "layout": [1, 3],
+                "showLabel": True,
+                "viewports": [
+                    {
+                        "id": "1_view",
+                        "show3D": False,
+                        "layerIds": [
+                            "colormap",
+                            "hillshading",
+                            "drawinglayer",
+                            "x_line",
+                            "y_line",
+                        ],
+                        "name": f"{surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
+                    },
+                    {
+                        "id": "2_view",
+                        "show3D": False,
+                        "layerIds": ["colormap2", "hillshading2", "x_line", "y_line"],
+                        "name": f"{surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
+                    },
+                    {
+                        "id": "3_view",
+                        "show3D": False,
+                        "layerIds": ["colormap3", "x_line", "y_line"],
+                        "name": "Difference between A and B",
+                    },
+                ],
+            },
         )
 
-    @app.callback(
-        Output({"id": get_uuid("map"), "element": "stored_polyline"}, "data"),
-        Input(get_uuid("leaflet-map1"), "polyline_points"),
-    )
-    def _store_polyline_points(
-        positions_yx: List[List[float]],
-    ) -> Optional[List[List[float]]]:
-        """Stores drawn in polyline in a dcc.Store. Reversing elements to reflect
-        normal behaviour"""
-        if positions_yx is not None:
-            try:
-                return [[pos[1], pos[0]] for pos in positions_yx]
-            except TypeError:
-                warnings.warn("Polyline for map is not valid format")
-                return None
-        raise PreventUpdate
+    # @app.callback(
+    #     Output({"id": get_uuid("map"), "element": "stored_polyline"}, "data"),
+    #     Input(get_uuid("leaflet-map1"), "polyline_points"),
+    # )
+    # def _store_polyline_points(
+    #     positions_yx: List[List[float]],
+    # ) -> Optional[List[List[float]]]:
+    #     """Stores drawn in polyline in a dcc.Store. Reversing elements to reflect
+    #     normal behaviour"""
+    #     if positions_yx is not None:
+    #         try:
+    #             return [[pos[1], pos[0]] for pos in positions_yx]
+    #         except TypeError:
+    #             warnings.warn("Polyline for map is not valid format")
+    #             return None
+    #     raise PreventUpdate
 
-    @app.callback(
-        Output(
-            {"id": get_uuid("intersection-data"), "element": "source"},
-            "value",
-        ),
-        Output(
-            {"id": get_uuid("intersection-data"), "element": "well"},
-            "value",
-        ),
-        Input(get_uuid("leaflet-map1"), "clicked_shape"),
-        Input(get_uuid("leaflet-map1"), "polyline_points"),
-    )
-    def _update_from_map_click(
-        clicked_shape: Optional[Dict],
-        _polyline: List[List[float]],
-    ) -> Tuple[str, Union[_NoUpdate, str]]:
-        """Update intersection source and optionally selected well when
-        user clicks a shape in map"""
-        ctx = callback_context.triggered[0]
-        if "polyline_points" in ctx["prop_id"]:
-            return "polyline", no_update
-        if clicked_shape is None:
-            raise PreventUpdate
-        if clicked_shape.get("id") == "random_line":
-            return "polyline", no_update
-        if clicked_shape.get("id") in well_set_model.well_names:
-            return "well", clicked_shape.get("id")
-        raise PreventUpdate
+    # @app.callback(
+    #     Output(
+    #         {"id": get_uuid("intersection-data"), "element": "source"},
+    #         "value",
+    #     ),
+    #     Output(
+    #         {"id": get_uuid("intersection-data"), "element": "well"},
+    #         "value",
+    #     ),
+    #     Input(get_uuid("leaflet-map1"), "clicked_shape"),
+    #     Input(get_uuid("leaflet-map1"), "polyline_points"),
+    # )
+    # def _update_from_map_click(
+    #     clicked_shape: Optional[Dict],
+    #     _polyline: List[List[float]],
+    # ) -> Tuple[str, Union[_NoUpdate, str]]:
+    #     """Update intersection source and optionally selected well when
+    #     user clicks a shape in map"""
+    #     ctx = callback_context.triggered[0]
+    #     if "polyline_points" in ctx["prop_id"]:
+    #         return "polyline", no_update
+    #     if clicked_shape is None:
+    #         raise PreventUpdate
+    #     if clicked_shape.get("id") == "random_line":
+    #         return "polyline", no_update
+    #     if clicked_shape.get("id") in well_set_model.well_names:
+    #         return "well", clicked_shape.get("id")
+    #     raise PreventUpdate
 
     @app.callback(
         Output(get_uuid("map-color-ranges"), "data"),
@@ -497,134 +491,49 @@ def update_maps(
         )
 
 
-def create_leaflet_polyline_layer(
-    positions: List[List[float]], name: str, poly_id: str
-) -> Dict:
+def make_geojson_polyline(positions: List[List[float]]) -> Dict:
+
     return {
-        "id": name,
-        "name": name,
-        "baseLayer": False,
-        "checked": True,
-        "action": "update",
-        "data": [
+        "type": "FeatureCollection",
+        "features": [
             {
-                "type": "polyline",
-                "id": poly_id,
-                "positions": positions,
-                "color": "blue",
-                "tooltip": "polyline",
-            },
-            {
-                "type": "circle",
-                "center": positions[0],
-                "radius": 60,
-                "color": "blue",
-                "tooltip": "B",
-            },
-            {
-                "type": "circle",
-                "center": positions[-1],
-                "radius": 60,
-                "color": "blue",
-                "tooltip": "B'",
-            },
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": positions},
+                "properties": {"name": "X-line"},
+            }
         ],
     }
 
-
-def replace_or_add_map_layer(
-    layers: List[Dict], uuid: str, new_layer: Dict
-) -> List[Dict]:
-    for idx, layer in enumerate(layers):
-        if layer.get("id") == uuid:
-            layers[idx] = new_layer
-            return layers
-    layers.append(new_layer)
-    return layers
-
-
-def check_if_update_needed(
-    ctx: Dict,
-    current_maps: List[List[Dict]],
-    compute_diff: List,
-    color_range_settings: Dict,
-) -> Dict[str, Any]:
-
-    update_controls = {}
-    for map_id, current_map in zip(["map1", "map2"], current_maps):
-        map_controllers_clicked = f'"map_id":"{map_id}"' in ctx["prop_id"]
-        change_calculate_well_intersections = (
-            map_controllers_clicked and "options" in ctx["prop_id"]
-        )
-        change_shade_map = (
-            f"leaflet-{map_id}" in ctx["prop_id"] and "switch" in ctx["prop_id"]
-        )
-        change_color_clip = (
-            "map-color-ranges" in ctx["prop_id"]
-            and color_range_settings[map_id]["update"]
-        )
-        initial_loading = not current_map or all(
-            layer.get("id") != map_id for layer in current_map
-        )
-        update_controls[map_id] = {
-            "update": (
-                map_controllers_clicked
-                or change_shade_map
-                or change_color_clip
-                or initial_loading
-            ),
-            "use_base_layer": (change_shade_map or change_calculate_well_intersections),
-        }
-
-    change_diffmap_from_options = (
-        "leaflet-map3" in ctx["prop_id"] and "switch" in ctx["prop_id"]
-    ) or "compute_diff" in ctx["prop_id"]
-
-    update_controls["diff_map"] = {
-        "update": compute_diff
-        and (
-            (
-                update_controls["map1"]["update"]
-                and not update_controls["map1"]["use_base_layer"]
-            )
-            or (
-                update_controls["map2"]["update"]
-                and not update_controls["map2"]["use_base_layer"]
-            )
-            or change_diffmap_from_options
-        )
-        and not "map-color-ranges" in ctx["prop_id"]
-    }
-
-    return update_controls
-
-
-def create_or_return_base_layer(
-    update_controls: Dict,
-    surface: xtgeo.RegularSurface,
-    current_map: List[Dict],
-    shade_map: Dict[str, bool],
-    color_range_settings: Dict,
-    map_id: str,
-) -> List[Dict]:
-
-    surface_layers = []
-    if update_controls[map_id]["use_base_layer"]:
-        for layer in current_map:
-            if layer["baseLayer"]:
-                layer["data"][0]["shader"]["applyHillshading"] = shade_map.get("value")
-                surface_layers = [layer]
-    else:
-        surface_layers = [
-            SurfaceLeafletModel(
-                surface,
-                clip_min=color_range_settings[map_id]["color_range"][0],
-                clip_max=color_range_settings[map_id]["color_range"][1],
-                name=map_id,
-                apply_shading=shade_map.get("value", False),
-            ).layer
-        ]
-    return surface_layers
+    # {
+    #     "id": name,
+    #     "name": name,
+    #     "baseLayer": False,
+    #     "checked": True,
+    #     "action": "update",
+    #     "data": [
+    #         {
+    #             "type": "polyline",
+    #             "id": poly_id,
+    #             "positions": positions,
+    #             "color": "blue",
+    #             "tooltip": "polyline",
+    #         },
+    #         {
+    #             "type": "circle",
+    #             "center": positions[0],
+    #             "radius": 60,
+    #             "color": "blue",
+    #             "tooltip": "B",
+    #         },
+    #         {
+    #             "type": "circle",
+    #             "center": positions[-1],
+    #             "radius": 60,
+    #             "color": "blue",
+    #             "tooltip": "B'",
+    #         },
+    #     ],
+    # }
 
 
 def get_surface_specification(provider, qualified_address, surface_server):
@@ -641,16 +550,15 @@ def get_surface_specification(provider, qualified_address, surface_server):
 
     return {
         "bounds": surf_meta.deckgl_bounds,
-        "viewport_bounds": [
-            surf_meta.x_min,
-            surf_meta.y_min,
-            surf_meta.x_max,
-            surf_meta.y_max,
-        ],
         "image": surface_server.encode_partial_url(qualified_address),
         "rotDeg": surf_meta.deckgl_rot_deg,
         "valueRange": [surf_meta.val_min, surf_meta.val_max],
-    }
+    }, [
+        surf_meta.x_min,
+        surf_meta.y_min,
+        surf_meta.x_max,
+        surf_meta.y_max,
+    ]
 
 
 def get_diff_surface_specification(
@@ -668,13 +576,12 @@ def get_diff_surface_specification(
 
     return {
         "bounds": surf_meta.deckgl_bounds,
-        "viewport_bounds": [
-            surf_meta.x_min,
-            surf_meta.y_min,
-            surf_meta.x_max,
-            surf_meta.y_max,
-        ],
         "image": surface_server.encode_partial_url(qualified_address),
         "rotDeg": surf_meta.deckgl_rot_deg,
         "valueRange": [surf_meta.val_min, surf_meta.val_max],
-    }
+    }, [
+        surf_meta.x_min,
+        surf_meta.y_min,
+        surf_meta.x_max,
+        surf_meta.y_max,
+    ]

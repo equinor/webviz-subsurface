@@ -55,14 +55,12 @@ class ProviderImplFile(WellProvider):
                     LOGGER.debug(f"Ignoring {well.name} as MD cannot be calculated")
                     continue
 
-            print("well.mdlogname=", well.mdlogname)
-
             well_name = well.name
             rel_path = f"{well_name}.rmswell"
             # rel_path = f"{well_name}.hdf"
 
             dst_file = provider_dir / rel_path
-            print("dst_file=", dst_file)
+
             well.to_file(wfile=dst_file, fformat="rmswell")
             # well.to_hdf(wfile=dst_file)
 

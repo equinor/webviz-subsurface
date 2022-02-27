@@ -1,4 +1,5 @@
 from typing import Callable, Dict, List, Optional
+import json
 
 import webviz_core_components as wcc
 from dash import html
@@ -6,6 +7,8 @@ from dash import html
 from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     ColormapLayer,
     Hillshading2DLayer,
+    DrawingLayer,
+    GeoJsonLayer,
 )
 from webviz_subsurface_components import DeckGLMap
 
@@ -35,8 +38,17 @@ def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
                         children=DeckGLMap(
                             id=get_uuid("deckgl"),
                             layers=[
-                                ColormapLayer(uuid="colormap"),
-                                Hillshading2DLayer(uuid="hillshading"),
+                                json.loads(layer.to_json())
+                                for layer in [
+                                    ColormapLayer(uuid="colormap"),
+                                    DrawingLayer(uuid="drawinglayer"),
+                                    Hillshading2DLayer(uuid="hillshading"),
+                                    ColormapLayer(uuid="colormap2"),
+                                    Hillshading2DLayer(uuid="hillshading2"),
+                                    ColormapLayer(uuid="colormap3"),
+                                    GeoJsonLayer(name="X-line", uuid="x_line"),
+                                    GeoJsonLayer(name="Y-line", uuid="y_line"),
+                                ]
                             ],
                             zoom=-4,
                         ),
