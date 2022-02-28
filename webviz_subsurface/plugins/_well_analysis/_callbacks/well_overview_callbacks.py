@@ -111,26 +111,43 @@ def well_overview_callbacks(
         Input(get_uuid(WellOverviewLayoutElements.ENSEMBLES), "value"),
         Input(
             {
-                "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_SETTINGS),
-                "chartype": ALL,
+                "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_CHECKLIST),
+                "charttype": ALL,
             },
             "value",
         ),
         Input(get_uuid(WellOverviewLayoutElements.SUMVEC), "value"),
         Input(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
+        State(
+            {
+                "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_CHECKLIST),
+                "charttype": ALL,
+            },
+            "id",
+        ),
     )
     def _update_graph(
-        ensembles: List[str], settings: List[str], sumvec: str, chart_selected: str
+        ensembles: List[str],
+        checklist_values: List[str],
+        sumvec: str,
+        chart_selected: str,
+        checklist_ids: List[Dict[str, str]],
     ) -> List[wcc.Graph]:
         """Updates the graph according to the selected chart type"""
         print(f"update_graph: {chart_selected}")
-        print(settings)
-        figure = WellOverviewChart(
-            ensembles, data_models, sumvec, chart_selected, [], theme
-        )
+        settings = {
+            checklist_id["charttype"]: checklist_values[i]
+            for i, checklist_id in enumerate(checklist_ids)
+        }
 
-        if chart_selected == "area":
-            return ["Stacked area chart not implemented"]
+        figure = WellOverviewChart(
+            ensembles,
+            data_models,
+            sumvec,
+            chart_selected,
+            settings[chart_selected],
+            theme,
+        )
 
         return [wcc.Graph(style={"height": "87vh"}, figure=figure.figure)]
 

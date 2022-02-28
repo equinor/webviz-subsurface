@@ -1,5 +1,6 @@
+import itertools
 import math
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -25,15 +26,18 @@ class WellOverviewChart:
         self._charttype = charttype
         self._settings = settings
         self._colors = theme.plotly_theme["layout"]["colorway"]
-        self._cols = min(len(ensembles), 2) if charttype == "pie" else 1
-        self._rows = max(math.ceil(len(ensembles) / self._cols), 2)
+        self._rows, self._cols = self.get_subplot_dim()
+        spec_type = "scatter" if self._charttype == "area" else self._charttype
+        subplot_titles = None if self._charttype == "bar" else self._ensembles
+
         self._figure = make_subplots(
             rows=self._rows,
             cols=self._cols,
             specs=[
-                [{"type": self._charttype} for _ in range(self._cols)]
+                [{"type": spec_type} for _ in range(self._cols)]
                 for _ in range(self._rows)
             ],
+            subplot_titles=subplot_titles,
         )
 
         self._add_traces()
@@ -42,6 +46,16 @@ class WellOverviewChart:
     @property
     def figure(self) -> go.Figure:
         return self._figure
+
+    def get_subplot_dim(self) -> Tuple[int, int]:
+        """descr"""
+        number_of_ens = len(self._ensembles)
+        if self._charttype == "bar":
+            return 2, 1
+        if self._charttype == "pie":
+            return max(math.ceil(number_of_ens / 2), 2), 2
+        if self._charttype == "area":
+            return number_of_ens, 1
 
     def _update_figure(self) -> None:
         """descr"""
@@ -60,22 +74,27 @@ class WellOverviewChart:
         """descr"""
 
         for i, ensemble in enumerate(self._ensembles):
-            df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
-            df_mean = df.groupby("WELL").mean().reset_index()
-            df_mean = df_mean[df_mean[self._sumvec] > 0]
 
             if self._charttype == "pie":
+                df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
+                df_mean = df.groupby("WELL").mean().reset_index()
+                df_mean = df_mean[df_mean[self._sumvec] > 0]
+
                 self._figure.add_trace(
                     go.Pie(
                         values=df[self._sumvec],
                         labels=df["WELL"],
-                        title=f"{ensemble}",
+                        # title=f"{ensemble}",
                         marker_colors=self._colors,
                     ),
                     row=i // 2 + 1,
                     col=i % 2 + 1,
                 )
             elif self._charttype == "bar":
+                df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
+                df_mean = df.groupby("WELL").mean().reset_index()
+                df_mean = df_mean[df_mean[self._sumvec] > 0]
+
                 self._figure.add_trace(
                     {
                         "x": df_mean["WELL"],
@@ -90,3 +109,23 @@ class WellOverviewChart:
                     row=1,
                     col=1,
                 )
+            elif self._charttype == "area":
+                color_iterator = itertools.cycle(self._colors)
+                df = self._data_models[ensemble].summary_data
+                df_mean = df.groupby("DATE").mean().reset_index()
+                for well in self._data_models[ensemble].wells:
+
+                    self._figure.add_trace(
+                        go.Scatter(
+                            x=df_mean["DATE"],
+                            y=df_mean[f"{self._sumvec}:{well}"],
+                            hoverinfo="text+x+y",
+                            hoveron="fills",
+                            mode="lines",
+                            stackgroup="one",
+                            name=well,
+                            line=dict(width=0.1, color=next(color_iterator)),
+                        ),
+                        row=i + 1,
+                        col=1,
+                    )
