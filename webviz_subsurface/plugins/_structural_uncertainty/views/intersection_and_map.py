@@ -37,11 +37,12 @@ def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
                         id=get_uuid("all-maps-wrapper"),
                         children=DeckGLMap(
                             id=get_uuid("deckgl"),
+                            # editedData={"drawing": {}},
                             layers=[
                                 json.loads(layer.to_json())
                                 for layer in [
                                     ColormapLayer(uuid="colormap"),
-                                    DrawingLayer(uuid="drawinglayer"),
+                                    DrawingLayer(),
                                     Hillshading2DLayer(uuid="hillshading"),
                                     ColormapLayer(uuid="colormap2"),
                                     Hillshading2DLayer(uuid="hillshading2"),
@@ -50,7 +51,7 @@ def intersection_and_map_layout(get_uuid: Callable) -> html.Div:
                                     GeoJsonLayer(name="Y-line", uuid="y_line"),
                                 ]
                             ],
-                            zoom=-4,
+                            zoom=-5,
                         ),
                     ),
                 ],

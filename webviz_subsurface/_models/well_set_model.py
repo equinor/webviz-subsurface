@@ -7,6 +7,7 @@ import xtgeo
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._utils.webvizstore_functions import get_path
+from webviz_subsurface._utils.perf_timer import PerfTimer
 
 
 class WellSetModel:
@@ -85,15 +86,25 @@ class WellSetModel:
     ) -> np.ndarray:
         """Creates a fence specification from a well"""
         print(self._is_vertical(well_name))
+
+        self.wells[well_name].downsample(4)
         print(self.wells[well_name].dataframe.size)
+        timer = PerfTimer()
         if not self._is_vertical(well_name):
-            return self.wells[well_name].get_fence_polyline(
+            fence = self.wells[well_name].get_fence_polyline(
                 nextend=nextend, sampling=distance, asnumpy=True
             )
+            print(f"non-vertical fence: {timer.lap_s()}")
+            return fence
         # If well is completely vertical extend well fence
-        poly = self.wells[well_name].get_fence_polyline(
-            nextend=1, sampling=distance, asnumpy=False
-        )
+        self.wells[well_name].dataframe = self.wells[well_name].dataframe.iloc[[0, -1]]
+        # for n, s in zip([0.1, 1, 10, 20], [1, 10, 50, 100]):
+        for n, s in zip([0.1], [2]):
+            poly = self.wells[well_name].get_fence_polyline(
+                nextend=n, sampling=s, asnumpy=False
+            )
+            print(poly.dataframe)
+            print(f"vertical fence, nextend={n}, sampling={s}: {timer.lap_s()}")
 
         return poly.get_fence(
             distance=distance, atleast=atleast, nextend=nextend, asnumpy=True

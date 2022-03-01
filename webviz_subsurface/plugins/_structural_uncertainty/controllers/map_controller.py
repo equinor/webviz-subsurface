@@ -359,7 +359,7 @@ def update_maps(
                         "layerIds": [
                             "colormap",
                             "hillshading",
-                            "drawinglayer",
+                            "drawing-layer",
                             "x_line",
                             "y_line",
                         ],
@@ -381,22 +381,33 @@ def update_maps(
             },
         )
 
-    # @app.callback(
-    #     Output({"id": get_uuid("map"), "element": "stored_polyline"}, "data"),
-    #     Input(get_uuid("leaflet-map1"), "polyline_points"),
-    # )
-    # def _store_polyline_points(
-    #     positions_yx: List[List[float]],
-    # ) -> Optional[List[List[float]]]:
-    #     """Stores drawn in polyline in a dcc.Store. Reversing elements to reflect
-    #     normal behaviour"""
-    #     if positions_yx is not None:
-    #         try:
-    #             return [[pos[1], pos[0]] for pos in positions_yx]
-    #         except TypeError:
-    #             warnings.warn("Polyline for map is not valid format")
-    #             return None
-    #     raise PreventUpdate
+    @app.callback(
+        Output({"id": get_uuid("map"), "element": "stored_polyline"}, "data"),
+        Input(get_uuid("deckgl"), "editedData"),
+    )
+    def _store_polyline_points(
+        edited_data: List[List[float]],
+    ) -> Optional[List[List[float]]]:
+        if edited_data is not None:
+            # try:
+            print(edited_data)
+            selected_index = edited_data.get("selectedFeatureIndexes")[0]
+            feature = edited_data.get("data", {}).get("features")[selected_index]
+            geometry = feature.get("geometry", {})
+            if geometry.get("type") == "LineString":
+                print(geometry.get("coordinates"))
+                return geometry.get("coordinates", [[]])
+
+        raise PreventUpdate
+        """Stores drawn in polyline in a dcc.Store. Reversing elements to reflect
+        normal behaviour"""
+        if positions_yx is not None:
+            try:
+                return [[pos[1], pos[0]] for pos in positions_yx]
+            except TypeError:
+                warnings.warn("Polyline for map is not valid format")
+                return None
+        raise PreventUpdate
 
     # @app.callback(
     #     Output(
@@ -407,12 +418,11 @@ def update_maps(
     #         {"id": get_uuid("intersection-data"), "element": "well"},
     #         "value",
     #     ),
-    #     Input(get_uuid("leaflet-map1"), "clicked_shape"),
-    #     Input(get_uuid("leaflet-map1"), "polyline_points"),
+    #     # Input(get_uuid("leaflet-map1"), "clicked_shape"),
+    #     Input(get_uuid("deckgl"), "editedData"),
     # )
     # def _update_from_map_click(
-    #     clicked_shape: Optional[Dict],
-    #     _polyline: List[List[float]],
+    #     edited_data: List[List[float]],
     # ) -> Tuple[str, Union[_NoUpdate, str]]:
     #     """Update intersection source and optionally selected well when
     #     user clicks a shape in map"""

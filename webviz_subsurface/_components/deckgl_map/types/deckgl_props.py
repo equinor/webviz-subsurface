@@ -35,14 +35,6 @@ class LayerNames(str, Enum):
     FAULTPOLYGONS = "Fault polygons"
 
 
-@dataclass
-class Bounds:
-    x_min: int = 0
-    y_min: int = 0
-    x_max: int = 10
-    y_max: int = 10
-
-
 # pylint: disable=too-few-public-methods
 class DeckGLMapProps:
     """Default prop settings for DeckGLMap"""
@@ -214,6 +206,7 @@ class DrawingLayer(pydeck.Layer):
             id=uuid if uuid is not None else LayerIds.DRAWING,
             name=LayerNames.DRAWING,
             mode=String(mode),
+            # data=String("@@#editedData.drawing"),
             **kwargs,
         )
 
