@@ -16,6 +16,7 @@ class WellOverviewChart:
         data_models: Dict[str, EnsembleWellAnalysisData],
         sumvec: str,
         charttype: str,  # bar, pie, area
+        wells_selected: List[str],
         settings: List[str],
         theme: WebvizConfigTheme,
     ) -> None:
@@ -24,6 +25,7 @@ class WellOverviewChart:
         self._data_models = data_models
         self._sumvec = sumvec
         self._charttype = charttype
+        self._wells_selected = wells_selected
         self._settings = settings
         self._colors = theme.plotly_theme["layout"]["colorway"]
         self._rows, self._cols = self.get_subplot_dim()
@@ -56,6 +58,7 @@ class WellOverviewChart:
             return max(math.ceil(number_of_ens / 2), 2), 2
         if self._charttype == "area":
             return number_of_ens, 1
+        raise ValueError(f"Chart type: {self._charttype} not implemented")
 
     def _update_figure(self) -> None:
         """descr"""
@@ -77,6 +80,7 @@ class WellOverviewChart:
 
             if self._charttype == "pie":
                 df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
+                df = df[df["WELL"].isin(self._wells_selected)]
                 df_mean = df.groupby("WELL").mean().reset_index()
                 df_mean = df_mean[df_mean[self._sumvec] > 0]
 
@@ -92,6 +96,7 @@ class WellOverviewChart:
                 )
             elif self._charttype == "bar":
                 df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
+                df = df[df["WELL"].isin(self._wells_selected)]
                 df_mean = df.groupby("WELL").mean().reset_index()
                 df_mean = df_mean[df_mean[self._sumvec] > 0]
 
@@ -114,18 +119,18 @@ class WellOverviewChart:
                 df = self._data_models[ensemble].summary_data
                 df_mean = df.groupby("DATE").mean().reset_index()
                 for well in self._data_models[ensemble].wells:
-
-                    self._figure.add_trace(
-                        go.Scatter(
-                            x=df_mean["DATE"],
-                            y=df_mean[f"{self._sumvec}:{well}"],
-                            hoverinfo="text+x+y",
-                            hoveron="fills",
-                            mode="lines",
-                            stackgroup="one",
-                            name=well,
-                            line=dict(width=0.1, color=next(color_iterator)),
-                        ),
-                        row=i + 1,
-                        col=1,
-                    )
+                    if well in self._wells_selected:
+                        self._figure.add_trace(
+                            go.Scatter(
+                                x=df_mean["DATE"],
+                                y=df_mean[f"{self._sumvec}:{well}"],
+                                hoverinfo="text+x+y",
+                                hoveron="fills",
+                                mode="lines",
+                                stackgroup="one",
+                                name=well,
+                                line=dict(width=0.1, color=next(color_iterator)),
+                            ),
+                            row=i + 1,
+                            col=1,
+                        )

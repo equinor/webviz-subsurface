@@ -14,6 +14,7 @@ class WellOverviewLayoutElements:
     CHARTTYPE_BUTTON = "well-overview-charttype-button"
     CHARTTYPE_SETTINGS = "well-overview-charttype-settings"
     CHARTTYPE_CHECKLIST = "well-overview-charttype-checklist"
+    WELL_FILTER = "well-overview-well-filter"
 
 
 def well_overview_tab(
@@ -27,7 +28,8 @@ def well_overview_tab(
                 children=[
                     buttons(get_uuid),
                     controls(get_uuid, data_models),
-                    plot_settings(get_uuid, data_models),
+                    filters(get_uuid, data_models),
+                    plot_settings(get_uuid),
                 ],
             ),
             wcc.Frame(
@@ -67,7 +69,7 @@ def buttons(get_uuid: Callable) -> html.Div:
 
 def controls(
     get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
-) -> wcc.Frame:
+) -> wcc.Selectors:
     ensembles = list(data_models.keys())
     return wcc.Selectors(
         label="Selectors",
@@ -94,9 +96,31 @@ def controls(
     )
 
 
-def plot_settings(
+def filters(
     get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
-) -> wcc.Frame:
+) -> wcc.Selectors:
+    wells = [
+        well
+        for _, ens_data_model in data_models.items()
+        for well in ens_data_model.wells
+    ]
+
+    return wcc.Selectors(
+        label="Filters",
+        children=[
+            wcc.SelectWithLabel(
+                label="Well",
+                size=min(10, len(wells)),
+                id=get_uuid(WellOverviewLayoutElements.WELL_FILTER),
+                options=[{"label": well, "value": well} for well in wells],
+                value=wells,
+                multi=True,
+            ),
+        ],
+    )
+
+
+def plot_settings(get_uuid: Callable) -> wcc.Frame:
     settings_uuid = get_uuid(WellOverviewLayoutElements.CHARTTYPE_SETTINGS)
     checklist_uuid = get_uuid(WellOverviewLayoutElements.CHARTTYPE_CHECKLIST)
     return wcc.Selectors(

@@ -43,6 +43,7 @@ def well_overview_callbacks(
         for button_id in button_ids:
             if button_id["button"] in ctx["prop_id"]:
                 return button_id["button"]
+        raise ValueError("Id not found")
 
     @callback(
         Output(
@@ -118,6 +119,7 @@ def well_overview_callbacks(
         ),
         Input(get_uuid(WellOverviewLayoutElements.SUMVEC), "value"),
         Input(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
+        Input(get_uuid(WellOverviewLayoutElements.WELL_FILTER), "value"),
         State(
             {
                 "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_CHECKLIST),
@@ -131,6 +133,7 @@ def well_overview_callbacks(
         checklist_values: List[str],
         sumvec: str,
         chart_selected: str,
+        wells_selected: List[str],
         checklist_ids: List[Dict[str, str]],
     ) -> List[wcc.Graph]:
         """Updates the graph according to the selected chart type"""
@@ -145,6 +148,7 @@ def well_overview_callbacks(
             data_models,
             sumvec,
             chart_selected,
+            wells_selected,
             settings[chart_selected],
             theme,
         )
