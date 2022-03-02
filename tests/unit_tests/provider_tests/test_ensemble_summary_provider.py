@@ -9,6 +9,7 @@ from fmu.ensemble import ScratchEnsemble
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
     Frequency,
+    ResamplingOptions,
     VectorMetadata,
 )
 
@@ -80,7 +81,9 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
     assert realizations[0] == 0
     assert realizations[-1] == 99
 
-    vecdf = provider.get_vectors_df(["FOPR"], Frequency.MONTHLY)
+    vecdf = provider.get_vectors_df(
+        ["FOPR"], ResamplingOptions(frequency=Frequency.MONTHLY)
+    )
     assert vecdf.shape == (3100, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "FOPR"]
     assert vecdf["DATE"].nunique() == 31
@@ -88,7 +91,9 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
     sampleddate = vecdf["DATE"][0]
     assert isinstance(sampleddate, datetime.datetime)
 
-    vecdf = provider.get_vectors_df(["FOPR"], Frequency.MONTHLY, [5])
+    vecdf = provider.get_vectors_df(
+        ["FOPR"], ResamplingOptions(frequency=Frequency.MONTHLY), [5]
+    )
     assert vecdf.shape == (31, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "FOPR"]
     assert vecdf["DATE"].nunique() == 31

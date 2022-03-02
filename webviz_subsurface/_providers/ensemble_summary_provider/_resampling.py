@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pyarrow as pa
 
 from ._field_metadata import is_rate_from_field_meta
-from .ensemble_summary_provider import Frequency
+from ._table_utils import find_min_max_date_per_realization
+from .ensemble_summary_provider import DateSpan, Frequency
 
 
 def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:
@@ -21,54 +22,169 @@ def _quarter_start_month(datetime_day: np.datetime64) -> np.datetime64:
     return datetime_month - (datetime_month.astype(int) % 3)
 
 
-def generate_normalized_sample_dates(
-    min_date: np.datetime64, max_date: np.datetime64, freq: Frequency
+def _generate_normalized_sample_date_range_or_minmax(
+    min_date: np.datetime64,
+    max_date: np.datetime64,
+    freq: Frequency,
+    generate_full_range: bool,
 ) -> np.ndarray:
-    """Returns array of normalized sample dates to cover the min_date to max_date
-    range with the specified frequency.
+    """Worker function to determine the normalized sample dates that will cover the
+    min_date to max_date interval with the specified frequency.
+    If generate_full_range is True, an array containing the full range of sample dates
+    will be returned. If False, only the min and max sample dates will be returned.
     The return numpy array will have sample dates with dtype datetime64[ms]
     """
 
     if freq == Frequency.DAILY:
         start = np.datetime64(min_date, "D")
         stop = np.datetime64(max_date, "D")
+        step = 1
         if stop < max_date:
             stop += 1
-        sampledates = np.arange(start, stop + 1)
+
     elif freq == Frequency.WEEKLY:
         start = _truncate_day_to_monday(np.datetime64(min_date, "D"))
         stop = _truncate_day_to_monday(np.datetime64(max_date, "D"))
+        step = 7
         if start > min_date:
             start -= 7
         if stop < max_date:
             stop += 7
-        sampledates = np.arange(start, stop + 1, 7)
+
     elif freq == Frequency.MONTHLY:
         start = np.datetime64(min_date, "M")
         stop = np.datetime64(max_date, "M")
+        step = 1
         if stop < max_date:
             stop += 1
-        sampledates = np.arange(start, stop + 1)
+
     elif freq == Frequency.QUARTERLY:
         start = _quarter_start_month(min_date)
         stop = _quarter_start_month(max_date)
+        step = 3
         if stop < max_date:
             stop += 3
-        sampledates = np.arange(start, stop + 1, 3)
+
     elif freq == Frequency.YEARLY:
         start = np.datetime64(min_date, "Y")
         stop = np.datetime64(max_date, "Y")
+        step = 1
         if stop < max_date:
             stop += 1
-        sampledates = np.arange(start, stop + 1)
+
     else:
         raise NotImplementedError(
             f"Currently not supporting resampling to frequency {freq}."
         )
 
-    sampledates = sampledates.astype("datetime64[ms]")
+    if generate_full_range:
+        sampledates: np.ndarray = np.arange(start, stop + 1, step)
+    else:
+        sampledates = np.array([start, stop])
 
-    return sampledates
+    return sampledates.astype("datetime64[ms]")
+
+
+def generate_normalized_sample_dates(
+    min_raw_date: np.datetime64, max_raw_date: np.datetime64, freq: Frequency
+) -> np.ndarray:
+    """Returns array of normalized sample dates to cover the min_raw_date to
+    max_raw_date interval with the specified frequency.
+    The return numpy array will have sample dates with dtype datetime64[ms]
+    """
+    return _generate_normalized_sample_date_range_or_minmax(
+        min_date=min_raw_date,
+        max_date=max_raw_date,
+        freq=freq,
+        generate_full_range=True,
+    )
+
+
+def get_normalized_min_max_sample_date(
+    min_raw_date: np.datetime64, max_raw_date: np.datetime64, freq: Frequency
+) -> Tuple[np.datetime64, np.datetime64]:
+    """Returns min and max normalized sample dates to cover the min_raw_date to
+    max_raw_date range with the specified frequency.
+    The return tuple will have min and max dates with dtype datetime64[ms]
+    """
+    minmax_arr = _generate_normalized_sample_date_range_or_minmax(
+        min_date=min_raw_date,
+        max_date=max_raw_date,
+        freq=freq,
+        generate_full_range=False,
+    )
+
+    if len(minmax_arr) != 2:
+        raise ValueError("Wrong number of array elements in minmax_arr")
+
+    return (minmax_arr[0], minmax_arr[1])
+
+
+def calc_intersection_of_normalized_date_intervals(
+    raw_date_intervals: List[Tuple[np.datetime64, np.datetime64]], freq: Frequency
+) -> Optional[Tuple[np.datetime64, np.datetime64]]:
+    """Returns the intersection of the normalized version of all the intervals specified
+    in raw_date_intervals.
+    Note that each interval in raw_date_intervals will be normalized using the specified
+    frequency before being used to calculate the intersection.
+    """
+
+    if not raw_date_intervals:
+        return None
+
+    first_raw_interval = raw_date_intervals[0]
+    res_start, res_end = get_normalized_min_max_sample_date(
+        first_raw_interval[0], first_raw_interval[1], freq
+    )
+
+    for raw_interval in raw_date_intervals[1:]:
+        start, end = get_normalized_min_max_sample_date(
+            raw_interval[0], raw_interval[1], freq
+        )
+
+        if start > res_end or end < res_start:
+            return None
+
+        res_start = max(res_start, start)
+        res_end = min(res_end, end)
+
+    return (res_start, res_end)
+
+
+def find_union_of_normalized_dates(table: pa.Table, frequency: Frequency) -> np.ndarray:
+    """Generates list of normalized sample dates, with the specified frequency, that
+    covers the union of all dates in the table.
+    """
+    unique_dates_np = table.column("DATE").unique().to_numpy()
+    if len(unique_dates_np) == 0:
+        return np.empty(0, dtype=np.datetime64)
+
+    min_raw_date = np.min(unique_dates_np)
+    max_raw_date = np.max(unique_dates_np)
+    return generate_normalized_sample_dates(min_raw_date, max_raw_date, frequency)
+
+
+def find_intersection_of_normalized_dates(
+    table: pa.Table, frequency: Frequency
+) -> np.ndarray:
+    """Generates list of normalized sample dates, with the specified frequency, that
+    is the intersection of all the the normalized per-realization sample intervals.
+    """
+    # First find the raw date intervals for each realization.
+    per_real_raw_intervals = find_min_max_date_per_realization(table)
+
+    # Then calculate the intersection between the normalized versions of these intervals
+    intersection_interval = calc_intersection_of_normalized_date_intervals(
+        per_real_raw_intervals, frequency
+    )
+    if not intersection_interval:
+        return np.empty(0, dtype=np.datetime64)
+
+    return generate_normalized_sample_dates(
+        intersection_interval[0],
+        intersection_interval[1],
+        frequency,
+    )
 
 
 def interpolate_backfill(
@@ -144,51 +260,117 @@ def resample_single_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
     return ret_table
 
 
-@dataclass
-class RealInterpolationInfo:
-    raw_dates_np: np.ndarray
-    raw_dates_np_as_uint: np.ndarray
-    sample_dates_np: np.ndarray
-    sample_dates_np_as_uint: np.ndarray
+class InterpolationHelper:
+    """Helper class for tracking and caching of intermediate data needed when doing
+    resampling of multi-realization table data.
+    Assumes that table contains both a REAL and a DATE column.
+    Also assumes that the table is segmented on REAL (so that all rows from a single
+    realization are contiguous) and within each REAL segment, it must be sorted on DATE.
+    """
+
+    @dataclass(frozen=True)
+    class RowSegment:
+        start_row: int
+        row_count: int
+
+    @dataclass(frozen=True)
+    class DateInfo:
+        raw_dates_np_as_uint: np.ndarray
+        sample_dates_np: np.ndarray
+        sample_dates_np_as_uint: np.ndarray
+
+    def __init__(
+        self, table: pa.Table, freq: Frequency, common_date_span: Optional[DateSpan]
+    ) -> None:
+        real_arr_np = table.column("REAL").to_numpy()
+        unique_reals, first_occurrence_idx, real_counts = np.unique(
+            real_arr_np, return_index=True, return_counts=True
+        )
+
+        self._table = table
+        self._frequency = freq
+
+        self._real_row_segment_dict: Dict[int, InterpolationHelper.RowSegment] = {
+            real: InterpolationHelper.RowSegment(
+                start_row=first_occurrence_idx[idx], row_count=real_counts[idx]
+            )
+            for idx, real in enumerate(unique_reals)
+        }
+
+        self._real_date_info_dict: Dict[int, InterpolationHelper.DateInfo] = {}
+
+        self.shared_sample_dates_np: Optional[np.ndarray] = None
+        self.shared_sample_dates_np_as_uint: Optional[np.ndarray] = None
+        if common_date_span is not None:
+            if common_date_span == DateSpan.INTERSECTION:
+                shared_dates = find_intersection_of_normalized_dates(table, freq)
+            else:
+                shared_dates = find_union_of_normalized_dates(table, freq)
+
+            self.shared_sample_dates_np = shared_dates
+            self.shared_sample_dates_np_as_uint = shared_dates.astype(np.uint64)
+
+        # Try and prime the cache up front
+        # for real in unique_reals:
+        #     self.real_date_arrays(real)
+
+    def unique_reals(self) -> List[int]:
+        return list(self._real_row_segment_dict)
+
+    def date_info(self, real: int) -> DateInfo:
+        dateinfo = self._real_date_info_dict.get(real)
+        if not dateinfo:
+            seg = self._real_row_segment_dict[real]
+            dates = self._table["DATE"].slice(seg.start_row, seg.row_count).to_numpy()
+
+            if (
+                self.shared_sample_dates_np is not None
+                and self.shared_sample_dates_np_as_uint is not None
+            ):
+                dateinfo = InterpolationHelper.DateInfo(
+                    raw_dates_np_as_uint=dates.astype(np.uint64),
+                    sample_dates_np=self.shared_sample_dates_np,
+                    sample_dates_np_as_uint=self.shared_sample_dates_np_as_uint,
+                )
+            else:
+                min_raw_date = np.min(dates)
+                max_raw_date = np.max(dates)
+                sample_dates = generate_normalized_sample_dates(
+                    min_raw_date, max_raw_date, self._frequency
+                )
+
+                dateinfo = InterpolationHelper.DateInfo(
+                    raw_dates_np_as_uint=dates.astype(np.uint64),
+                    sample_dates_np=sample_dates,
+                    sample_dates_np_as_uint=sample_dates.astype(np.uint64),
+                )
+
+            self._real_date_info_dict[real] = dateinfo
+
+        return dateinfo
+
+    def row_segment(self, real: int) -> Tuple[int, int]:
+        segment = self._real_row_segment_dict[real]
+        return (segment.start_row, segment.row_count)
 
 
-def _extract_real_interpolation_info(
-    table: pa.Table, start_row_idx: int, row_count: int, freq: Frequency
-) -> RealInterpolationInfo:
-
-    real_dates = table["DATE"].slice(start_row_idx, row_count).to_numpy()
-
-    min_raw_date = np.min(real_dates)
-    max_raw_date = np.max(real_dates)
-    sample_dates = generate_normalized_sample_dates(min_raw_date, max_raw_date, freq)
-
-    return RealInterpolationInfo(
-        raw_dates_np=real_dates,
-        raw_dates_np_as_uint=real_dates.astype(np.uint64),
-        sample_dates_np=sample_dates,
-        sample_dates_np_as_uint=sample_dates.astype(np.uint64),
-    )
-
-
-def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.Table:
+def resample_segmented_multi_real_table(
+    table: pa.Table, freq: Frequency, common_date_span: Optional[DateSpan]
+) -> pa.Table:
     """Resample table containing multiple realizations.
     The table must contain both a REAL and a DATE column.
-    The table must be segmented on REAL (so that all rows from a single
-    realization are contiguous) and within each REAL segment, it must be
-    sorted on DATE.
+    The table must be segmented on REAL (so that all rows from a single realization are
+    contiguous) and within each REAL segment, it must be sorted on DATE.
     The segmentation is needed since interpolations must be done per realization
     and we utilize slicing on rows for speed.
     """
+
     # pylint: disable=too-many-locals
 
-    real_arr_np = table.column("REAL").to_numpy()
-    unique_reals, first_occurrence_idx, real_counts = np.unique(
-        real_arr_np, return_index=True, return_counts=True
-    )
+    helper = InterpolationHelper(table, freq, common_date_span)
+    unique_reals = helper.unique_reals()
 
     output_columns_dict: Dict[str, pa.ChunkedArray] = {}
-
-    real_interpolation_info_dict: Dict[int, RealInterpolationInfo] = {}
 
     for colname in table.schema.names:
         if colname in ["DATE", "REAL"]:
@@ -198,16 +380,9 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
         raw_whole_numpy_arr = table.column(colname).to_numpy()
 
         vec_arr_list = []
-        for i, real in enumerate(unique_reals):
-            start_row_idx = first_occurrence_idx[i]
-            row_count = real_counts[i]
-
-            rii = real_interpolation_info_dict.get(real)
-            if not rii:
-                rii = _extract_real_interpolation_info(
-                    table, start_row_idx, row_count, freq
-                )
-                real_interpolation_info_dict[real] = rii
+        for real in unique_reals:
+            start_row_idx, row_count = helper.row_segment(real)
+            dateinfo = helper.date_info(real)
 
             raw_numpy_arr = raw_whole_numpy_arr[
                 start_row_idx : start_row_idx + row_count
@@ -215,20 +390,20 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
 
             if is_rate:
                 inter = interpolate_backfill(
-                    rii.sample_dates_np_as_uint,
-                    rii.raw_dates_np_as_uint,
+                    dateinfo.sample_dates_np_as_uint,
+                    dateinfo.raw_dates_np_as_uint,
                     raw_numpy_arr,
                     0,
                     0,
                 )
             else:
                 inter = np.interp(
-                    rii.sample_dates_np_as_uint,
-                    rii.raw_dates_np_as_uint,
+                    dateinfo.sample_dates_np_as_uint,
+                    dateinfo.raw_dates_np_as_uint,
                     raw_numpy_arr,
                 )
 
-            arr_length = len(rii.sample_dates_np_as_uint)
+            arr_length = len(dateinfo.sample_dates_np_as_uint)
             assert arr_length == len(inter)
 
             vec_arr_list.append(inter)
@@ -238,9 +413,9 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
     date_arr_list = []
     real_arr_list = []
     for real in unique_reals:
-        rii = real_interpolation_info_dict[real]
-        arr_length = len(rii.sample_dates_np)
-        date_arr_list.append(rii.sample_dates_np)
+        dateinfo = helper.date_info(real)
+        arr_length = len(dateinfo.sample_dates_np)
+        date_arr_list.append(dateinfo.sample_dates_np)
         real_arr_list.append(np.full(arr_length, real))
 
     output_columns_dict["DATE"] = pa.chunked_array(date_arr_list)

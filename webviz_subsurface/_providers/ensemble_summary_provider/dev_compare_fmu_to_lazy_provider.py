@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
 
-from .ensemble_summary_provider import Frequency
+from .ensemble_summary_provider import DateSpan, Frequency, ResamplingOptions
 from .ensemble_summary_provider_factory import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
@@ -150,14 +150,14 @@ def _load_smry_dataframe_using_ecl2df(
 def _compare_reference_df_to_provider_get_vectors_df(
     reference_df: pd.DataFrame,
     provider: EnsembleSummaryProvider,
-    frequency: Optional[Frequency],
+    resampling_options: Optional[ResamplingOptions],
 ) -> None:
 
     reference_df = reference_df.reset_index(drop=True)
     # print(ref_df)
 
     print("## Getting data for all vectors from provider...")
-    provider_df = provider.get_vectors_df(provider.vector_names(), frequency)
+    provider_df = provider.get_vectors_df(provider.vector_names(), resampling_options)
     provider_df.sort_values(by=["REAL", "DATE"], inplace=True)
     provider_df.reset_index(drop=True, inplace=True)
     # print(provider_df)
@@ -252,6 +252,7 @@ def main() -> None:
 
     root_storage_dir = Path("/home/sigurdp/buf/webviz_storage_dir")
 
+    rel_file_pattern = "share/results/unsmry/*.arrow"
     ensemble_path = "../webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
     # ensemble_path = (
     #     "../webviz-subsurface-testdata/01_drogon_design/realization-*/iter-0"
@@ -274,10 +275,10 @@ def main() -> None:
     factory = EnsembleSummaryProviderFactory(
         root_storage_dir, allow_storage_writes=True
     )
-    provider = factory.create_from_arrow_unsmry_lazy(
-        ens_path=ensemble_path, rel_file_pattern="share/results/unsmry/*.arrow"
-    )
-    # provider = factory.create_from_arrow_unsmry_presampled(ensemble_path, frequency)
+    provider = factory.create_from_arrow_unsmry_lazy(ensemble_path, rel_file_pattern)
+    # provider = factory.create_from_arrow_unsmry_presampled(
+    #     ensemble_path, rel_file_pattern, frequency
+    # )
 
     print("## Loading data into reference DataFrame...")
     # Note that for version 2.13.0 and earlier of ecl, loading via FMU will not give the
@@ -286,9 +287,15 @@ def main() -> None:
     reference_df = _load_smry_dataframe_using_fmu(ensemble_path, frequency)
 
     print("## Comparing get_vectors()...")
-    resampling_frequency = frequency if provider.supports_resampling() else None
+
+    resampling_options: Optional[ResamplingOptions] = None
+    if provider.supports_resampling():
+        resampling_options = ResamplingOptions(
+            frequency=frequency, common_date_span=DateSpan.UNION
+        )
+
     _compare_reference_df_to_provider_get_vectors_df(
-        reference_df, provider, resampling_frequency
+        reference_df, provider, resampling_options
     )
 
     print("## Comparing get_vectors_for date()...")
