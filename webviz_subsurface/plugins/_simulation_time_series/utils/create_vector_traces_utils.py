@@ -18,7 +18,7 @@ from webviz_subsurface._utils.statistics_plotting import (
 )
 
 from ..types import FanchartOptions, StatisticsOptions
-from ..utils.from_timeseries_cumulatives import is_interval_or_average_vector
+from ..utils.from_timeseries_cumulatives import is_per_interval_or_per_day_vector
 
 
 def create_vector_observation_traces(
@@ -363,7 +363,7 @@ def render_hovertemplate(vector: str, sampling_frequency: Optional[Frequency]) -
     * vector: str - name of vector
     * sampling_frequency: Optional[Frequency] - sampling frequency for hovering data info
     """
-    if is_interval_or_average_vector(vector) and sampling_frequency:
+    if is_per_interval_or_per_day_vector(vector) and sampling_frequency:
         if sampling_frequency in [Frequency.DAILY, Frequency.WEEKLY]:
             return "(%{x|%b} %{x|%-d}, %{x|%Y}, %{y})<br>"
         if sampling_frequency == Frequency.MONTHLY:

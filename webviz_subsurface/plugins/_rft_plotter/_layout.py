@@ -3,6 +3,7 @@ from typing import Callable, List
 import webviz_core_components as wcc
 from dash import html
 
+from ..._components.parameter_filter import ParameterFilter
 from ._business_logic import RftPlotterDataModel
 
 
@@ -23,6 +24,7 @@ class LayoutElements:
     MAP_SIZE_BY = "map-size-by"
     MAP_COLOR_BY = "map-color-by"
     MAP_DATE_RANGE = "map-date-range"
+    MAP_ZONES = "map-zones"
     FILTER_ENSEMBLES = {
         "misfitplot": "ensembles-misfit",
         "crossplot": "ensembles-crossplot",
@@ -57,6 +59,10 @@ class LayoutElements:
     PARAMRESP_FORMATIONS = "paramresp-formations"
     PARAMRESP_DATE_DROPDOWN = "paramresp-well-dropdown"
     PARAMRESP_ZONE_DROPDOWN = "paramresp-zone-dropdown"
+    PARAMRESP_DEPTHOPTION = "paramresp-depthoption"
+    PARAM_FILTER = "param-filter"
+    PARAM_FILTER_WRAPPER = "param-filter-wrapper"
+    DISPLAY_PARAM_FILTER = "display-param-filter"
 
 
 def main_layout(get_uuid: Callable, datamodel: RftPlotterDataModel) -> wcc.Tabs:
@@ -234,6 +240,11 @@ def parameter_response_selector_layout(
             wcc.Selectors(
                 label="Options",
                 children=[
+                    wcc.Checklist(
+                        id=get_uuid(LayoutElements.DISPLAY_PARAM_FILTER),
+                        options=[{"label": "Show parameter filter", "value": "Show"}],
+                        value=[],
+                    ),
                     wcc.RadioItems(
                         label="Correlation options",
                         id=get_uuid(LayoutElements.PARAMRESP_CORRTYPE),
@@ -249,6 +260,21 @@ def parameter_response_selector_layout(
                         ],
                         value="sim_vs_param",
                     ),
+                    wcc.RadioItems(
+                        label="Depth option",
+                        id=get_uuid(LayoutElements.PARAMRESP_DEPTHOPTION),
+                        options=[
+                            {
+                                "label": "TVD",
+                                "value": "TVD",
+                            },
+                            {
+                                "label": "MD",
+                                "value": "MD",
+                            },
+                        ],
+                        value="TVD",
+                    ),
                 ],
             ),
         ],
@@ -258,6 +284,12 @@ def parameter_response_selector_layout(
 def parameter_response_layout(
     get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> wcc.FlexBox:
+    df = datamodel.param_model.dataframe
+    parameter_filter = ParameterFilter(
+        uuid=get_uuid(LayoutElements.PARAM_FILTER),
+        dframe=df[df["ENSEMBLE"].isin(datamodel.param_model.mc_ensembles)].copy(),
+        reset_on_ensemble_update=True,
+    )
     return wcc.FlexBox(
         children=[
             wcc.FlexColumn(
@@ -299,6 +331,15 @@ def parameter_response_layout(
                             ],
                         ),
                     ],
+                ),
+            ),
+            wcc.FlexColumn(
+                id=get_uuid(LayoutElements.PARAM_FILTER_WRAPPER),
+                style={"display": "none"},
+                flex=1,
+                children=wcc.Frame(
+                    style={"height": "87vh"},
+                    children=parameter_filter.layout,
                 ),
             ),
         ]
@@ -377,6 +418,7 @@ def map_plot_selectors(
     get_uuid: Callable, datamodel: RftPlotterDataModel
 ) -> List[html.Div]:
     ensembles = datamodel.ensembles
+    zone_names = datamodel.zone_names
     return wcc.Selectors(
         label="Map plot settings",
         children=[
@@ -433,6 +475,19 @@ def map_plot_selectors(
                     datamodel.ertdatadf["DATE_IDX"].max(),
                 ],
                 marks=datamodel.date_marks,
+            ),
+            wcc.Selectors(
+                label="Zone filter",
+                open_details=False,
+                children=[
+                    wcc.SelectWithLabel(
+                        size=min(10, len(zone_names)),
+                        id=get_uuid(LayoutElements.MAP_ZONES),
+                        options=[{"label": name, "value": name} for name in zone_names],
+                        value=zone_names,
+                        multi=True,
+                    ),
+                ],
             ),
         ],
     )

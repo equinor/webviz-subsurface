@@ -8,16 +8,16 @@ def update_realizations(app: Dash, get_uuid: Callable) -> None:
     @app.callback(
         Output(
             {
-                "id": get_uuid("modal"),
-                "modal_id": "realization-filter",
+                "id": get_uuid("dialog"),
+                "dialog_id": "realization-filter",
                 "element": "apply",
             },
             "disabled",
         ),
         Output(
             {
-                "id": get_uuid("modal"),
-                "modal_id": "realization-filter",
+                "id": get_uuid("dialog"),
+                "dialog_id": "realization-filter",
                 "element": "apply",
             },
             "style",
@@ -47,8 +47,8 @@ def update_realizations(app: Dash, get_uuid: Callable) -> None:
         ),
         Input(
             {
-                "id": get_uuid("modal"),
-                "modal_id": "realization-filter",
+                "id": get_uuid("dialog"),
+                "dialog_id": "realization-filter",
                 "element": "apply",
             },
             "n_clicks",
@@ -70,16 +70,16 @@ def update_realizations(app: Dash, get_uuid: Callable) -> None:
         ),
         Input(
             {
-                "id": get_uuid("modal"),
-                "modal_id": "realization-filter",
+                "id": get_uuid("dialog"),
+                "dialog_id": "realization-filter",
                 "element": "clear",
             },
             "n_clicks",
         ),
         Input(
             {
-                "id": get_uuid("modal"),
-                "modal_id": "realization-filter",
+                "id": get_uuid("dialog"),
+                "dialog_id": "realization-filter",
                 "element": "all",
             },
             "n_clicks",

@@ -43,9 +43,9 @@ INPUT_DF = pd.DataFrame(
     ]
 )
 
-# INTVL_ calc for col "B" input df
-EXPECTED_INTVL_DF = pd.DataFrame(
-    columns = ["DATE", "REAL",  "INTVL_B"],
+# PER_INTVL_ calc for col "B" input df
+EXPECTED_PER_INTVL_DF = pd.DataFrame(
+    columns = ["DATE", "REAL",  "PER_INTVL_B"],
     data = [
         [datetime.datetime(2000,1,1),  1, 50.0 ],
         [datetime.datetime(2000,2,1),  1, 50.0 ],
@@ -75,7 +75,7 @@ EXPECTED_SUM_A_AND_B_DF = pd.DataFrame(
     ]
 )
 make_date_column_datetime_object(INPUT_DF)
-make_date_column_datetime_object(EXPECTED_INTVL_DF)
+make_date_column_datetime_object(EXPECTED_PER_INTVL_DF)
 make_date_column_datetime_object(EXPECTED_SUM_A_AND_B_DF)
 
 # Dates AFTER year 2262!
@@ -96,7 +96,7 @@ AFTER_2262_DATES = pd.Series(
 # no need to make date column datetime object
 INPUT_AFTER_2262_DF = INPUT_DF.copy()
 INPUT_AFTER_2262_DF["DATE"] = AFTER_2262_DATES
-EXPECTED_INVTL_AFTER_2262_DF = EXPECTED_INTVL_DF.copy()
+EXPECTED_INVTL_AFTER_2262_DF = EXPECTED_PER_INTVL_DF.copy()
 EXPECTED_INVTL_AFTER_2262_DF["DATE"] = AFTER_2262_DATES
 EXPECTED_SUM_A_AND_B_AFTER_2262_DF = EXPECTED_SUM_A_AND_B_DF.copy()
 EXPECTED_SUM_A_AND_B_AFTER_2262_DF["DATE"] = AFTER_2262_DATES
@@ -117,7 +117,7 @@ TEST_EXPRESSION = ExpressionInfo(
 TEST_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
     name="Test accessor",
     provider=EnsembleSummaryProviderMock(INPUT_DF),
-    vectors=["A", "B", "INTVL_B", "Sum A and B"],
+    vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
     resampling_frequency=None,
 )
@@ -125,7 +125,7 @@ TEST_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
 TEST_AFTER_2262_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
     name="Test after 2262 accessor",
     provider=EnsembleSummaryProviderMock(INPUT_AFTER_2262_DF),
-    vectors=["A", "B", "INTVL_B", "Sum A and B"],
+    vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
     resampling_frequency=None,
 )
@@ -133,7 +133,7 @@ TEST_AFTER_2262_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
 TEST_EMPTY_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
     name="Empty provider accessor",
     provider=EnsembleSummaryProviderMock(pd.DataFrame()),
-    vectors=["A", "B", "INTVL_B", "Sum A and B"],
+    vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=None,
     resampling_frequency=None,
 )
@@ -156,8 +156,8 @@ TEST_GET_VECTOR_CASES = [
     pytest.param(TEST_ACCESSOR, INPUT_DF),
     pytest.param(TEST_AFTER_2262_ACCESSOR, INPUT_AFTER_2262_DF),
 ]
-TEST_CREATE_INTVL_AVG_VECTOR_CASES = [
-    pytest.param(TEST_ACCESSOR, EXPECTED_INTVL_DF),
+TEST_CREATE_PER_INTVL_PER_DAY_VECTOR_CASES = [
+    pytest.param(TEST_ACCESSOR, EXPECTED_PER_INTVL_DF),
     pytest.param(TEST_AFTER_2262_ACCESSOR, EXPECTED_INVTL_AFTER_2262_DF),
 ]
 TEST_CREATE_CALCULATED_VECTOR_CASES = [
@@ -174,10 +174,10 @@ def test_has_provider_vectors(
 
 
 @pytest.mark.parametrize("test_accessor, expected_state", TEST_STATUS_CASES)
-def test_has_interval_and_average_vectors(
+def test_has_per_interval_and_per_day_vectors(
     test_accessor: DerivedEnsembleVectorsAccessorImpl, expected_state: bool
 ) -> None:
-    assert test_accessor.has_interval_and_average_vectors() == expected_state
+    assert test_accessor.has_per_interval_and_per_day_vectors() == expected_state
 
 
 @pytest.mark.parametrize("test_accessor, expected_state", TEST_STATUS_CASES)
@@ -212,20 +212,20 @@ def test_get_provider_vectors_filter_realizations(
 
 
 @pytest.mark.parametrize(
-    "test_accessor, expected_df", TEST_CREATE_INTVL_AVG_VECTOR_CASES
+    "test_accessor, expected_df", TEST_CREATE_PER_INTVL_PER_DAY_VECTOR_CASES
 )
-def test_create_interval_and_average_vectors_df(
+def test_create_per_interval_and_per_day_vectors_df(
     test_accessor: DerivedEnsembleVectorsAccessorImpl, expected_df: pd.DataFrame
 ) -> None:
     assert_frame_equal(
-        expected_df, test_accessor.create_interval_and_average_vectors_df()
+        expected_df, test_accessor.create_per_interval_and_per_day_vectors_df()
     )
 
 
 @pytest.mark.parametrize(
-    "test_accessor, expected_df", TEST_CREATE_INTVL_AVG_VECTOR_CASES
+    "test_accessor, expected_df", TEST_CREATE_PER_INTVL_PER_DAY_VECTOR_CASES
 )
-def test_create_interval_and_average_vectors_df_filter_realizations(
+def test_create_per_interval_and_per_day_vectors_df_filter_realizations(
     test_accessor: DerivedEnsembleVectorsAccessorImpl, expected_df: pd.DataFrame
 ) -> None:
     # Filter realizations
@@ -235,7 +235,9 @@ def test_create_interval_and_average_vectors_df_filter_realizations(
         .drop("index", axis=1)
     )
 
-    test_df = test_accessor.create_interval_and_average_vectors_df(realizations=[1, 2])
+    test_df = test_accessor.create_per_interval_and_per_day_vectors_df(
+        realizations=[1, 2]
+    )
 
     assert_frame_equal(expected_reals_df, test_df)
     assert list(set(test_df["REAL"].values)) == [1, 2]

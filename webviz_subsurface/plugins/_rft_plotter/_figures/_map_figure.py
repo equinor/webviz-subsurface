@@ -4,10 +4,10 @@ import pandas as pd
 
 
 class MapFigure:
-    def __init__(self, ertdf: pd.DataFrame, ensemble: str) -> None:
+    def __init__(self, ertdf: pd.DataFrame, ensemble: str, zones: List[str]) -> None:
 
         self.ertdf = (
-            ertdf.loc[ertdf["ENSEMBLE"] == ensemble]
+            ertdf.loc[(ertdf["ENSEMBLE"] == ensemble) & (ertdf["ZONE"].isin(zones))]
             .groupby(["WELL", "DATE", "ENSEMBLE"])
             .aggregate("mean")
             .reset_index()

@@ -1,6 +1,10 @@
 from typing import List, Optional
 
-from webviz_subsurface_components import ExpressionInfo, VariableVectorMapInfo
+from webviz_subsurface_components import (
+    ExpressionInfo,
+    VariableVectorMapInfo,
+    VectorDefinition,
+)
 
 from webviz_subsurface._providers import VectorMetadata
 from webviz_subsurface.plugins._simulation_time_series.types.provider_set import (
@@ -36,13 +40,14 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     ########################################
     def vector_names(self) -> List[str]:
         """Return empty list only to allow constructing ProviderSet object"""
-        return ["FGIT", "WGOR:A1", "WBHP:A1"]
+        return ["FGIT", "WGOR:A1", "WBHP:A1", "WOPT:A1"]
 
     def realizations(self) -> List[int]:
         """Return empty list only to allow constructing ProviderSet object"""
         return []
 
     def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
+        # NOTE: All vector names below must be defined in vector_names() method as well!
         if vector_name == "FGIT":
             return VectorMetadata(
                 unit="unit_1",
@@ -66,6 +71,16 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
         if vector_name == "WBHP:A1":
             return VectorMetadata(
                 unit="unit_3",
+                is_total=False,
+                is_rate=False,
+                is_historical=False,
+                keyword="A1",
+                wgname=None,
+                get_num=None,
+            )
+        if vector_name == "WOPT:A1":
+            return VectorMetadata(
+                unit="unit_4",
                 is_total=False,
                 is_rate=False,
                 is_historical=False,
@@ -163,15 +178,32 @@ def test_create_calculated_unit_from_provider_set() -> None:
 
 
 def test_create_vector_plot_titles_from_provider_set() -> None:
-    vector_names = ["FGIT", "WGOR:A1", "First Expression"]
+    vector_names = ["FGIT", "WGOR:A1", "PER_DAY_WOPT:A1", "First Expression"]
     expressions = [FIRST_TEST_EXPRESSION]
 
+    # Test WITHOUT user defined vector definitions
     expected_titles = {
         "FGIT": "Gas Injection Total [unit_1]",
         "WGOR:A1": "Gas-Oil Ratio, well A1 [unit_2]",
+        "PER_DAY_WOPT:A1": "Average Oil Production Total Per day, well A1 [unit_4/DAY]",
+        "First Expression": "First Expression [unit_1+unit_2]",
+    }
+    assert expected_titles == create_vector_plot_titles_from_provider_set(
+        vector_names, expressions, TEST_PROVIDER_SET, {}
+    )
+
+    # Test WITH user defined vector definitions
+    user_defined_definitions = {
+        "FGIT": VectorDefinition(description="First Test title", type="field"),
+        "WOPT": VectorDefinition(description="Second Test title", type="well"),
+    }
+    expected_titles = {
+        "FGIT": "First Test title [unit_1]",
+        "WGOR:A1": "Gas-Oil Ratio, well A1 [unit_2]",
+        "PER_DAY_WOPT:A1": "Average Second Test title Per day, well A1 [unit_4/DAY]",
         "First Expression": "First Expression [unit_1+unit_2]",
     }
 
     assert expected_titles == create_vector_plot_titles_from_provider_set(
-        vector_names, expressions, TEST_PROVIDER_SET
+        vector_names, expressions, TEST_PROVIDER_SET, user_defined_definitions
     )

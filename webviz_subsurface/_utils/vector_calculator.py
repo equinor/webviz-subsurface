@@ -11,6 +11,7 @@ from webviz_subsurface_components import (
     ExternalParseData,
     VariableVectorMapInfo,
     VectorCalculator,
+    VectorDefinition,
 )
 
 from webviz_subsurface._providers import (
@@ -209,11 +210,11 @@ def get_expression_from_name(
     return None
 
 
-def get_custom_vector_definitions_from_expressions(
+def get_vector_definitions_from_expressions(
     expressions: List[ExpressionInfo],
-) -> dict:
+) -> Dict[str, VectorDefinition]:
     """
-    Get custom vector definitions for vector selector from list of calculated expressions.
+    Get vector definitions for vector selector from list of calculated expressions.
 
     VectorSelector has VectorDefinitions which is utilized for calculated expressions.
 
@@ -228,7 +229,7 @@ def get_custom_vector_definitions_from_expressions(
     Uses expression str as description if optional expression description str does not exist.
     """
 
-    output = {}
+    output: Dict[str, VectorDefinition] = {}
     for expression in expressions:
         name = expression["name"]
         key = name.split(":")[0]
@@ -238,7 +239,7 @@ def get_custom_vector_definitions_from_expressions(
             if not "description" in expression
             else expression["description"]
         )
-        output[key] = {"type": vector_type, "description": description}
+        output[key] = VectorDefinition(type=vector_type, description=description)
     return output
 
 

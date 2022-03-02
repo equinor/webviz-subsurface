@@ -19,10 +19,13 @@ def plugin_callbacks(
     @app.callback(
         Output(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
         Input(get_uuid(LayoutElements.MAP_GRAPH), "clickData"),
+        State(get_uuid(LayoutElements.FORMATIONS_WELL), "value"),
     )
-    def _get_clicked_well(click_data: Dict[str, List[Dict[str, Any]]]) -> str:
+    def _get_clicked_well(
+        click_data: Dict[str, List[Dict[str, Any]]], well: str
+    ) -> str:
         if not click_data:
-            return datamodel.well_names[0]
+            return well
         for layer in click_data["points"]:
             try:
                 return layer["customdata"]
@@ -36,12 +39,12 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.MAP_SIZE_BY), "value"),
         Input(get_uuid(LayoutElements.MAP_COLOR_BY), "value"),
         Input(get_uuid(LayoutElements.MAP_DATE_RANGE), "value"),
+        Input(get_uuid(LayoutElements.MAP_ZONES), "value"),
     )
     def _update_map(
-        ensemble: str, sizeby: str, colorby: str, dates: List[float]
+        ensemble: str, sizeby: str, colorby: str, dates: List[float], zones: List[str]
     ) -> Union[str, List[wcc.Graph]]:
-
-        figure = MapFigure(datamodel.ertdatadf, ensemble)
+        figure = MapFigure(datamodel.ertdatadf, ensemble, zones)
         if datamodel.faultlinesdf is not None:
             figure.add_fault_lines(datamodel.faultlinesdf)
         figure.add_misfit_plot(sizeby, colorby, dates)
@@ -65,7 +68,6 @@ def plugin_callbacks(
     def _update_formation_plot(
         well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
     ) -> Union[str, List[wcc.Graph]]:
-
         if not ensembles:
             return "No ensembles selected"
 
@@ -82,6 +84,8 @@ def plugin_callbacks(
             simdf=datamodel.simdf,
             obsdf=datamodel.obsdatadf,
         )
+        if figure.ertdf.empty:
+            return ["No data matching the given filter criterias."]
 
         if datamodel.formations is not None:
             figure.add_formation(datamodel.formationdf)

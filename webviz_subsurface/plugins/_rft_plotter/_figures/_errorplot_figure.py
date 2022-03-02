@@ -6,10 +6,10 @@ import webviz_core_components as wcc
 
 def update_errorplot(df: pd.DataFrame, enscolors: Dict[str, str]) -> wcc.Graph:
     df["RFT_NAME"] = df.agg(
-        lambda x: f"{x['WELL']} {int(x['YEAR'])} {x['ZONE']} ({int(x['TVD'])} TVD)",
+        lambda x: f"{x['WELL']} {int(x['YEAR'])} {x['ZONE']} ({int(x['MD'])} MD)",
         axis=1,
     )
-    df["DIFFMEAN"] = df.groupby(["WELL", "DATE", "ZONE", "TVD", "ENSEMBLE"])[
+    df["DIFFMEAN"] = df.groupby(["WELL", "DATE", "ZONE", "MD", "ENSEMBLE"])[
         "ABSDIFF"
     ].transform("median")
     traces = []

@@ -2,7 +2,7 @@ from typing import Optional
 
 from webviz_subsurface._providers import VectorMetadata
 
-from .from_timeseries_cumulatives import is_interval_or_average_vector
+from .from_timeseries_cumulatives import is_per_interval_or_per_day_vector
 
 
 def get_simulation_line_shape(
@@ -11,7 +11,7 @@ def get_simulation_line_shape(
     vector_metadata: Optional[VectorMetadata] = None,
 ) -> str:
     """Get simulation time series line shape based on vector metadata"""
-    if is_interval_or_average_vector(vector):
+    if is_per_interval_or_per_day_vector(vector):
         # These custom calculated vectors are valid forwards in time.
         return "hv"
 

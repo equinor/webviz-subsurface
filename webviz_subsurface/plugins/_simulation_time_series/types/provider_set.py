@@ -1,3 +1,4 @@
+import datetime
 from pathlib import Path
 from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
@@ -6,6 +7,7 @@ from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
     Frequency,
     VectorMetadata,
+    DateSpan,
 )
 
 
@@ -18,6 +20,7 @@ class ProviderSet:
 
     def __init__(self, provider_dict: Dict[str, EnsembleSummaryProvider]) -> None:
         self._provider_dict = provider_dict.copy()
+        self._names = list(self._provider_dict.keys())
         self._all_vector_names = self._create_union_of_vector_names_from_providers(
             list(self._provider_dict.values())
         )
@@ -90,7 +93,7 @@ class ProviderSet:
         return self._provider_dict.items()
 
     def names(self) -> List[str]:
-        return list(self._provider_dict.keys())
+        return self._names
 
     def provider(self, name: str) -> EnsembleSummaryProvider:
         if name not in self._provider_dict.keys():
@@ -99,6 +102,18 @@ class ProviderSet:
 
     def all_providers(self) -> List[EnsembleSummaryProvider]:
         return list(self._provider_dict.values())
+
+    def all_dates(
+        self,
+        resampling_frequency: Optional[Frequency],
+    ) -> List[datetime.datetime]:
+        """List with the union of dates among providers"""
+        # TODO: Adjust when providers are updated!
+        dates_union: Set[datetime.datetime] = set()
+        for provider in self.all_providers():
+            _dates = set(provider.dates(resampling_frequency, DateSpan.UNION, None))
+            dates_union.update(_dates)
+        return list(sorted(dates_union))
 
     def all_realizations(self) -> List[int]:
         """List with the union of realizations among providers"""

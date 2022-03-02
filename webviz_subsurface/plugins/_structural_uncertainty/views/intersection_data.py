@@ -1,11 +1,9 @@
 from typing import Callable, Dict, List, Optional
 
-import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 from dash import dcc, html
 
-from .modal import open_modal_layout
-from .uncertainty_table import uncertainty_table_btn
+from .dialog import open_dialog_layout
 
 
 def intersection_data_layout(
@@ -79,9 +77,10 @@ def intersection_data_layout(
                 uuid=get_uuid("apply-intersection-data-selections"),
                 title="Update intersection",
             ),
-            uncertainty_table_btn(
-                uuid=get_uuid("uncertainty-table-display-button"),
-                disabled=not use_wells,
+            open_dialog_layout(
+                dialog_id="uncertainty-table",
+                uuid=get_uuid("dialog"),
+                title="Uncertainty table",
             ),
             settings_layout(get_uuid, initial_settings=initial_settings),
         ],
@@ -136,7 +135,7 @@ def xline_layout(uuid: str, surface_geometry: Dict) -> html.Div:
             wcc.FlexBox(
                 style={"fontSize": "0.8em"},
                 children=[
-                    dbc.Input(
+                    dcc.Input(
                         id={"id": uuid, "cross-section": "xline", "element": "value"},
                         style={"flex": 3, "minWidth": "100px"},
                         type="number",
@@ -147,11 +146,11 @@ def xline_layout(uuid: str, surface_geometry: Dict) -> html.Div:
                         persistence=True,
                         persistence_type="session",
                     ),
-                    dbc.Label(
+                    wcc.Label(
                         style={"flex": 1, "marginLeft": "10px", "minWidth": "20px"},
                         children="Step:",
                     ),
-                    dbc.Input(
+                    dcc.Input(
                         id={"id": uuid, "cross-section": "xline", "element": "step"},
                         style={"flex": 2, "minWidth": "20px"},
                         value=500,
@@ -179,7 +178,7 @@ def yline_layout(uuid: str, surface_geometry: Dict) -> html.Div:
             wcc.FlexBox(
                 style={"fontSize": "0.8em"},
                 children=[
-                    dbc.Input(
+                    dcc.Input(
                         id={"id": uuid, "cross-section": "yline", "element": "value"},
                         style={"flex": 3, "minWidth": "100px"},
                         type="number",
@@ -190,11 +189,11 @@ def yline_layout(uuid: str, surface_geometry: Dict) -> html.Div:
                         persistence=True,
                         persistence_type="session",
                     ),
-                    dbc.Label(
+                    wcc.Label(
                         style={"flex": 1, "marginLeft": "10px", "minWidth": "20px"},
                         children="Step:",
                     ),
-                    dbc.Input(
+                    dcc.Input(
                         id={"id": uuid, "cross-section": "yline", "element": "step"},
                         style={"flex": 2, "minWidth": "20px"},
                         value=50,
@@ -333,7 +332,7 @@ def options_layout(
                     wcc.FlexBox(
                         style={"display": "flex"},
                         children=[
-                            dbc.Input(
+                            dcc.Input(
                                 id={
                                     "id": uuid,
                                     "settings": "zrange_min",
@@ -346,7 +345,7 @@ def options_layout(
                                 persistence=True,
                                 persistence_type="session",
                             ),
-                            dbc.Input(
+                            dcc.Input(
                                 id={
                                     "id": uuid,
                                     "settings": "zrange_max",
@@ -406,9 +405,9 @@ def settings_layout(get_uuid: Callable, initial_settings: Dict) -> html.Div:
                 extension=initial_settings.get("extension", 500),
                 initial_layout=initial_settings.get("intersection_layout", {}),
             ),
-            open_modal_layout(
-                modal_id="color",
-                uuid=get_uuid("modal"),
+            open_dialog_layout(
+                dialog_id="color",
+                uuid=get_uuid("dialog"),
                 title="Intersection colors",
             ),
         ],

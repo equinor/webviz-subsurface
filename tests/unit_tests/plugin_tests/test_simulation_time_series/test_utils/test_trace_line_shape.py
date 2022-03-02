@@ -35,8 +35,8 @@ def test_get_simulation_line_shape() -> None:
         get_num=None,
     )
 
-    assert get_simulation_line_shape("Fallback", "INTVL_vector", None) == "hv"
-    assert get_simulation_line_shape("Fallback", "AVG_vector", None) == "hv"
+    assert get_simulation_line_shape("Fallback", "PER_INTVL_vector", None) == "hv"
+    assert get_simulation_line_shape("Fallback", "PER_DAY_vector", None) == "hv"
     assert get_simulation_line_shape("Fallback", "test_vector", None) == "Fallback"
     assert (
         get_simulation_line_shape("Fallback", "test_vector", total_vector_metadata)

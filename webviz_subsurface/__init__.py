@@ -1,13 +1,15 @@
 import glob
-import json
 import pathlib
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import jsonschema
 import webviz_config
 import yaml
 from pkg_resources import DistributionNotFound, get_distribution
 
+from webviz_subsurface._utils.user_defined_vector_definitions import (
+    USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
+)
 from webviz_subsurface._utils.vector_calculator import (
     PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
     ConfigExpressionData,
@@ -38,16 +40,16 @@ def subscribe_scratch_ensembles(
                         " but that wildcard path does not give any matches."
                     )
                 raise ValueError(
-                    f"No realizations with a valid target file ('OK') found for ensemble "
-                    f"{ensemble_name} located at {ensemble_path}. This can occur when running "
-                    "ERT if no simulations are finished, or all simulations have failed."
+                    f"No realizations with a valid ERT 'OK' file found for ensemble "
+                    f"{ensemble_name} located at {ensemble_path}. This can occur if an ERT job "
+                    "has failed in all realizations, or none of the realizations have finished yet."
                 )
 
     return scratch_ensembles
 
 
 @webviz_config.SHARED_SETTINGS_SUBSCRIPTIONS.subscribe("predefined_expressions")
-def subcribe_predefined_expressions(
+def subscribe_predefined_expressions(
     predefined_expressions: Optional[Dict[str, str]],
     config_folder: pathlib.Path,
     portable: bool,
@@ -72,6 +74,39 @@ def subcribe_predefined_expressions(
                 jsonschema.validate(
                     instance=predefined_expressions_data,
                     schema=PREDEFINED_EXPRESSIONS_JSON_SCHEMA,
+                )
+            except jsonschema.exceptions.ValidationError as err:
+                raise ValueError from err
+
+    return output
+
+
+@webviz_config.SHARED_SETTINGS_SUBSCRIPTIONS.subscribe(
+    "user_defined_vector_definitions"
+)
+def subscribe_user_defined_vector_definitions(
+    user_defined_vector_definitions: Optional[Dict[str, str]],
+    config_folder: pathlib.Path,
+    portable: bool,
+) -> Dict[str, pathlib.Path]:
+
+    output: Dict[str, pathlib.Path] = {}
+
+    if user_defined_vector_definitions is None:
+        return output
+
+    for key, path in user_defined_vector_definitions.items():
+
+        if not pathlib.Path(path).is_absolute():
+            output[key] = config_folder / path
+
+        if not portable:
+            vector_definitions: Dict[str, str] = yaml.safe_load(output[key].read_text())
+
+            try:
+                jsonschema.validate(
+                    instance=vector_definitions,
+                    schema=USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
                 )
             except jsonschema.exceptions.ValidationError as err:
                 raise ValueError from err

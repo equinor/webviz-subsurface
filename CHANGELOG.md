@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+- [#971](https://github.com/equinor/webviz-subsurface/pull/971) - `MapViewerFMU` - New plugin for visualizing surface from FMU.
+- [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Added configurable user defined vector definitions.
+- [#951](https://github.com/equinor/webviz-subsurface/pull/951) - `SimulationTimeSeries` - Added calculating delta relative to date within ensemble - i.e. subtract realization values on selected date from corresponding realization values for each date in the selected vectors.
+- [#944](https://github.com/equinor/webviz-subsurface/pull/940) - `WellCompletions` - Added support for zone to layer mappings that are potentially different across realizations.
+- [#949](https://github.com/equinor/webviz-subsurface/pull/949) - `RftPlotter` - Added zone filter to the map options and parameter filter and some more options to the parameter response tab.
+
+### Changed
+
+- [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Changed vector annotation from "AVG_" with suffix "R" and "INTVL_" to "PER_DAY_" and "PER_INTVL_". Retrieve `VectorDefinitions` via Python-API for `webviz-subsurface-components`.
+- [#956](https://github.com/equinor/webviz-subsurface/pull/956) - `SimulationTimeSeries` - Deprecate usage of user input options {vector1, vector2, vector3}. Add list of vectors as user input options for initially selected vectors.
+- [#961](https://github.com/equinor/webviz-subsurface/pull/961) - Improved error message when there are none valid realizations in an ensemble.
+- [#970](https://github.com/equinor/webviz-subsurface/pull/970) - Replaced modals with new Dialog component in `StructuralUncertainty`. Changed display of uncertainty table to be a Dialog.
+
+### Fixed
+- [#965](https://github.com/equinor/webviz-subsurface/pull/965) - Allow a filtered subset of surface names for multiple attributes in `StructuralUncertainty`.
+
+### Fixed
+- [#965](https://github.com/equinor/webviz-subsurface/pull/965) - Allow a filtered subset of surface names for multiple attributes in `StructuralUncertainty`.
+- [#972](https://github.com/equinor/webviz-subsurface/pull/972) - FIxed bug occuring when ensembles had different PORE/PORV naming standards in the volumetric input files. Also fixed bug occuring if only BO and/or BG was selected in the table.
+- [#958](https://github.com/equinor/webviz-subsurface/pull/958) - Disable unwanted calculation of `marks` in some `RangeSlider` components.
+
+## [0.2.10] - 2022-02-09
+
 ### Fixed
 
 - [#921](https://github.com/equinor/webviz-subsurface/pull/921) - Fixed bug with History Vectors in new `SimulationTimeSeries` plugin. Replaced hard coded realization number of 0, with first valid realization in provider.
@@ -17,11 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- [#935](https://github.com/equinor/webviz-subsurface/pull/935) - Deprecated plugin `ReservoirSimulationTimeSeries`. This has been replaced by the faster, more flexible and less memory hungry plugin `SimulationTimeSeries`.
-
-### Changed
-
 - [#924](https://github.com/equinor/webviz-subsurface/pull/924) - Improvements to the `ParameterFilter` functionality, e.g information regarding active filters and which relizatons are filtered out, and better handling of multiple ensembles. Improvements to the `ParameterAnalysis` plugin, e.g. added boxplot, fixed table formatting and update of parameters based on selected ensemble.
+- [#935](https://github.com/equinor/webviz-subsurface/pull/935) - Deprecated plugin `ReservoirSimulationTimeSeries`. This has been replaced by the faster, more flexible and less memory hungry plugin `SimulationTimeSeries`.
 
 ## [0.2.9] - 2022-01-06
 

@@ -1,4 +1,6 @@
+# pylint: disable=too-many-lines
 import copy
+import datetime
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import dash
@@ -8,15 +10,19 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
-from webviz_subsurface_components import ExpressionInfo, ExternalParseData
+from webviz_subsurface_components import (
+    ExpressionInfo,
+    ExternalParseData,
+    VectorDefinition,
+)
 
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.formatting import printable_int_list
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
-    get_custom_vector_definitions_from_expressions,
     get_selected_expressions,
+    get_vector_definitions_from_expressions,
 )
 from webviz_subsurface._utils.vector_selector import (
     is_vector_name_in_vector_selector_data,
@@ -39,11 +45,15 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
+from .utils import datetime_utils
 from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
-from .utils.from_timeseries_cumulatives import datetime_to_intervalstr
+from .utils.from_timeseries_cumulatives import (
+    datetime_to_intervalstr,
+    is_per_interval_or_per_day_vector,
+)
 from .utils.history_vectors import create_history_vectors_df
 from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from .utils.trace_line_shape import get_simulation_line_shape
@@ -60,7 +70,9 @@ def plugin_callbacks(
     theme: WebvizConfigTheme,
     initial_selected_vectors: List[str],
     vector_selector_base_data: list,
+    custom_vector_definitions_base: dict,
     observations: dict,  # TODO: Improve typehint?
+    user_defined_vector_definitions: Dict[str, VectorDefinition],
     line_shape_fallback: str = "linear",
 ) -> None:
     # TODO: Consider adding: presampled_frequency: Optional[Frequency] argument for use when
@@ -105,6 +117,10 @@ def plugin_callbacks(
                 "value",
             ),
             Input(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            ),
+            Input(
                 get_uuid(LayoutElements.GRAPH_DATA_HAS_CHANGED_TRIGGER),
                 "data",
             ),
@@ -132,6 +148,7 @@ def plugin_callbacks(
         resampling_frequency_value: str,
         selected_realizations: List[int],
         statistics_calculated_from_value: str,
+        relative_date_value: str,
         __graph_data_has_changed_trigger: int,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
@@ -152,7 +169,7 @@ def plugin_callbacks(
 
         NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
         graphs data has changed and re-render of graph is necessary. E.g. when a selected expression
-        from the VectorCalculatorgets edited, without changing the expression name - i.e.
+        from the VectorCalculator gets edited without changing the expression name - i.e.
         VectorSelector selectedNodes remain unchanged.
         """
         if not isinstance(selected_ensembles, list):
@@ -166,7 +183,7 @@ def plugin_callbacks(
             vector_calculator_expressions, vectors
         )
 
-        # Convert from string values to enum types
+        # Convert from string values to strongly typed
         visualization = VisualizationOptions(visualization_value)
         statistics_options = [
             StatisticsOptions(elm) for elm in statistics_option_values
@@ -177,6 +194,12 @@ def plugin_callbacks(
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
+
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
 
         # Prevent update if realization filtering is not affecting pure statistics plot
         # TODO: Refactor code or create utility for getting trigger ID in a "cleaner" way?
@@ -203,6 +226,7 @@ def plugin_callbacks(
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
             resampling_frequency=resampling_frequency,
+            relative_date=relative_date,
         )
 
         # TODO: How to get metadata for calculated vector?
@@ -220,7 +244,11 @@ def plugin_callbacks(
             # Create unique colors based on all ensemble names to preserve consistent colors
             ensemble_colors = unique_colors(all_ensemble_names, theme)
             vector_titles = create_vector_plot_titles_from_provider_set(
-                vectors, selected_expressions, input_provider_set
+                vectors,
+                selected_expressions,
+                input_provider_set,
+                user_defined_vector_definitions,
+                resampling_frequency,
             )
             figure_builder = VectorSubplotBuilder(
                 vectors,
@@ -281,9 +309,9 @@ def plugin_callbacks(
                 vectors_df_list.append(
                     accessor.get_provider_vectors_df(realizations=realizations_query)
                 )
-            if accessor.has_interval_and_average_vectors():
+            if accessor.has_per_interval_and_per_day_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df(
+                    accessor.create_per_interval_and_per_day_vectors_df(
                         realizations=realizations_query
                     )
                 )
@@ -295,6 +323,10 @@ def plugin_callbacks(
                 )
 
             for vectors_df in vectors_df_list:
+                # Ensure rows of data
+                if not vectors_df.shape[0]:
+                    continue
+
                 if visualization == VisualizationOptions.REALIZATIONS:
                     # Show selected realizations - only filter df if realizations filter
                     # query is not performed
@@ -357,6 +389,7 @@ def plugin_callbacks(
             observations
             and TraceOptions.OBSERVATIONS in trace_options
             and not is_only_delta_ensembles
+            and not relative_date
         ):
             for vector in vectors:
                 vector_observations = observations.get(vector)
@@ -365,7 +398,7 @@ def plugin_callbacks(
 
         # Add history trace
         # TODO: Improve when new history vector input format is in place
-        if TraceOptions.HISTORY in trace_options:
+        if TraceOptions.HISTORY in trace_options and not relative_date:
             if (
                 isinstance(figure_builder, VectorSubplotBuilder)
                 and len(selected_input_providers.names()) > 0
@@ -442,6 +475,10 @@ def plugin_callbacks(
                 get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS),
                 "data",
             ),
+            State(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            ),
         ],
     )
     def _user_download_data(
@@ -454,6 +491,7 @@ def plugin_callbacks(
         statistics_calculated_from_value: str,
         delta_ensembles: List[DeltaEnsemble],
         vector_calculator_expressions: List[ExpressionInfo],
+        relative_date_value: str,
     ) -> Union[EncodedFile, str]:
         """Callback to download data based on selections
 
@@ -479,10 +517,16 @@ def plugin_callbacks(
             vector_calculator_expressions, vectors
         )
 
-        # Convert from string values to enum types
+        # Convert from string values to strongly typed
         visualization = VisualizationOptions(visualization_value)
         resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
         statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
+
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
 
         # Create dict of derived vectors accessors for selected ensembles
         derived_vectors_accessors: Dict[
@@ -494,6 +538,7 @@ def plugin_callbacks(
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
             resampling_frequency=resampling_frequency,
+            relative_date=relative_date,
         )
 
         # Dict with vector name as key and dataframe data as value
@@ -533,9 +578,9 @@ def plugin_callbacks(
                 vectors_df_list.append(
                     accessor.get_provider_vectors_df(realizations=realizations_query)
                 )
-            if accessor.has_interval_and_average_vectors():
+            if accessor.has_per_interval_and_per_day_vectors():
                 vectors_df_list.append(
-                    accessor.create_interval_and_average_vectors_df(
+                    accessor.create_per_interval_and_per_day_vectors_df(
                         realizations=realizations_query
                     )
                 )
@@ -548,6 +593,10 @@ def plugin_callbacks(
 
             # Append data for each vector
             for vectors_df in vectors_df_list:
+                # Ensure rows of data
+                if not vectors_df.shape[0]:
+                    continue
+
                 vector_names = [
                     elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
                 ]
@@ -571,7 +620,7 @@ def plugin_callbacks(
                             loc=0, column="ENSEMBLE", value=ensemble_name_list
                         )
 
-                        if vector.startswith(("AVG_", "INTVL_")):
+                        if is_per_interval_or_per_day_vector(vector):
                             vector_df["DATE"] = vector_df["DATE"].apply(
                                 datetime_to_intervalstr, freq=resampling_frequency
                             )
@@ -603,12 +652,12 @@ def plugin_callbacks(
 
                         vector_key = vector + "_statistics"
 
-                        if vector.startswith(("AVG_", "INTVL_")):
-                            vector_statistics_df.loc[
-                                :, ("DATE", "")
-                            ] = vector_statistics_df.loc[:, ("DATE", "")].apply(
-                                datetime_to_intervalstr, freq=resampling_frequency
-                            )
+                        if is_per_interval_or_per_day_vector(vector):
+                            # Copy df to prevent SettingWithCopyWarning
+                            vector_statistics_df = vector_statistics_df.copy()
+                            vector_statistics_df["DATE"] = vector_statistics_df[
+                                "DATE"
+                            ].apply(datetime_to_intervalstr, freq=resampling_frequency)
                         if vector_dataframe_dict.get(vector_key) is None:
                             vector_dataframe_dict[vector_key] = vector_statistics_df
                         else:
@@ -744,13 +793,15 @@ def plugin_callbacks(
         return (new_delta_ensembles, table_data, ensemble_options)
 
     @app.callback(
-        Output(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open"),
+        Output(get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG), "open"),
         [
             Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON), "n_clicks"),
         ],
-        [State(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open")],
+        [State(get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG), "open")],
     )
-    def _toggle_vector_calculator_modal(n_open_clicks: int, is_open: bool) -> bool:
+    def _toggle_vector_calculator_dialog_open(
+        n_open_clicks: int, is_open: bool
+    ) -> bool:
         if n_open_clicks:
             return not is_open
         raise PreventUpdate
@@ -780,10 +831,10 @@ def plugin_callbacks(
                 "data",
             ),
         ],
-        Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL), "is_open"),
+        Input(get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG), "open"),
         [
             State(
-                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+                get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG),
                 "data",
             ),
             State(
@@ -798,8 +849,8 @@ def plugin_callbacks(
             ),
         ],
     )
-    def _update_vector_calculator_expressions_on_modal_close(
-        is_modal_open: bool,
+    def _update_vector_calculator_expressions_on_dialog_close(
+        is_dialog_open: bool,
         new_expressions: List[ExpressionInfo],
         current_expressions: List[ExpressionInfo],
         current_selected_vectors: List[str],
@@ -809,7 +860,7 @@ def plugin_callbacks(
         """Update vector calculator expressions, propagate expressions to VectorSelectors,
         update current selections and trigger re-rendering of graphing if necessary
         """
-        if is_modal_open or (new_expressions == current_expressions):
+        if is_dialog_open or (new_expressions == current_expressions):
             raise PreventUpdate
 
         # Create current selected expressions for comparison - Deep copy!
@@ -837,9 +888,12 @@ def plugin_callbacks(
         )
 
         # Get new custom vector definitions
-        new_custom_vector_definitions = get_custom_vector_definitions_from_expressions(
+        new_custom_vector_definitions = get_vector_definitions_from_expressions(
             new_expressions
         )
+        for key, value in custom_vector_definitions_base.items():
+            if key not in new_custom_vector_definitions:
+                new_custom_vector_definitions[key] = value
 
         # Prevent updates if unchanged
         if new_custom_vector_definitions == current_custom_vector_definitions:
@@ -867,12 +921,12 @@ def plugin_callbacks(
 
     @app.callback(
         Output(
-            get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+            get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG),
             "data",
         ),
         Input(get_uuid(LayoutElements.VECTOR_CALCULATOR), "expressions"),
     )
-    def _update_vector_calculator_expressions_when_modal_open(
+    def _update_vector_calculator_expressions_when_dialog_open(
         expressions: List[ExpressionInfo],
     ) -> list:
         new_expressions: List[ExpressionInfo] = [
@@ -891,6 +945,92 @@ def plugin_callbacks(
         realizations_filter_text = printable_int_list(realizations)
 
         return realizations_filter_text
+
+    @app.callback(
+        [
+            Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+            Output(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+        ],
+        [
+            Input(
+                get_uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
+                "value",
+            ),
+        ],
+        [
+            State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "options"),
+            State(get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN), "value"),
+        ],
+    )
+    def _update_relative_date_dropdown(
+        resampling_frequency_value: str,
+        current_relative_date_options: List[dict],
+        current_relative_date_value: Optional[str],
+    ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+        """This callback updates dropdown based on selected resampling frequency selection
+
+        If dates are not existing for a provider, the data accessor must handle invalid
+        relative date selection!
+        """
+        resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+        dates_union = input_provider_set.all_dates(resampling_frequency)
+
+        # Create dropdown options:
+        new_relative_date_options: List[Dict[str, str]] = [
+            {
+                "label": datetime_utils.to_str(_date),
+                "value": datetime_utils.to_str(_date),
+            }
+            for _date in dates_union
+        ]
+
+        # Create valid dropdown value:
+        new_relative_date_value = next(
+            (
+                elm["value"]
+                for elm in new_relative_date_options
+                if elm["value"] == current_relative_date_value
+            ),
+            None,
+        )
+
+        # Prevent updates if unchanged
+        if new_relative_date_options == current_relative_date_options:
+            new_relative_date_options = dash.no_update
+        if new_relative_date_value == current_relative_date_value:
+            new_relative_date_value = dash.no_update
+
+        return new_relative_date_options, new_relative_date_value
+
+    @app.callback(
+        [
+            Output(
+                get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
+                "style",
+            ),
+        ],
+        [
+            Input(
+                get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                "value",
+            )
+        ],
+    )
+    def _update_trace_options_layout(
+        relative_date_value: str,
+    ) -> List[dict]:
+        """Hide trace options (History and Observation) when relative date is selected"""
+
+        # Convert to Optional[datetime.datime]
+        relative_date: Optional[datetime.datetime] = (
+            None
+            if relative_date_value is None
+            else datetime_utils.from_str(relative_date_value)
+        )
+
+        if relative_date:
+            return [{"display": "none"}]
+        return [{"display": "block"}]
 
 
 def _create_delta_ensemble_table_column_data(

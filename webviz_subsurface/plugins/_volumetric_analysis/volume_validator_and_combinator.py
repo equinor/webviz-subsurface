@@ -66,11 +66,24 @@ class VolumeValidatorAndCombinator:
         return possible_static_columns
 
     def pore_to_porv_mapping(self, dframe: pd.DataFrame) -> pd.DataFrame:
-        """Rename PORE columns to PORV (PORE will be deprecated..)"""
-        return dframe.rename(
-            columns={f"PORE_{fluid}": f"PORV_{fluid}" for fluid in self.FLUID_TYPES},
-            errors="ignore",
-        )
+        """
+        Check if any columns startswith "PORE", if found rename to standard "PORV".
+        Needs to be done on ensemble level to avoid issue with duplicate columns.
+        """
+        if any(col.startswith("PORE_") for col in dframe):
+            dfs = []
+            for _, df in dframe.groupby("ENSEMBLE"):
+                dfs.append(
+                    df.dropna(axis=1, how="all").rename(
+                        columns={
+                            f"PORE_{fluid}": f"PORV_{fluid}"
+                            for fluid in self.FLUID_TYPES
+                        },
+                        errors="ignore",
+                    )
+                )
+            dframe = pd.concat(dfs)
+        return dframe
 
     def validate_and_combine_sources(self, volumes_table: pd.DataFrame) -> pd.DataFrame:
         """

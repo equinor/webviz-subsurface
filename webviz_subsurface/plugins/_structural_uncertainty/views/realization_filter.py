@@ -7,7 +7,7 @@ from dash import html
 def realization_layout(
     uuid: str, realizations: List[int], value: List[int]
 ) -> html.Div:
-    """Layout for the realization filter modal"""
+    """Layout for the realization filter dialog"""
     return html.Div(
         style={"marginTop": "10px"},
         children=html.Label(

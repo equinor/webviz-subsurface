@@ -1,15 +1,12 @@
+import datetime
 from typing import Callable, List, Optional
 
-import dash_bootstrap_components as dbc
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import dash_table, dcc, html
 from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import Frequency
-from webviz_subsurface._utils.vector_calculator import (
-    get_custom_vector_definitions_from_expressions,
-)
 
 from .types import (
     FanchartOptions,
@@ -19,6 +16,7 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
+from .utils import datetime_utils
 
 
 # pylint: disable=too-few-public-methods
@@ -38,11 +36,11 @@ class LayoutElements:
     VECTOR_SELECTOR = "vector_selector"
 
     VECTOR_CALCULATOR = "vector_calculator"
-    VECTOR_CALCULATOR_MODAL = "vector_calculator_modal"
+    VECTOR_CALCULATOR_DIALOG = "vector_calculator_dialog"
     VECTOR_CALCULATOR_OPEN_BUTTON = "vector_calculator_open_button"
     VECTOR_CALCULATOR_EXPRESSIONS = "vector_calculator_expressions"
-    VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL = (
-        "vector_calculator_expressions_open_modal"
+    VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG = (
+        "vector_calculator_expressions_open_dialog"
     )
 
     DELTA_ENSEMBLE_A_DROPDOWN = "delta_ensemble_A_dropdown"
@@ -53,6 +51,8 @@ class LayoutElements:
     CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN = (
         "created_delta_ensemble_names_table_column"
     )
+
+    RELATIVE_DATE_DROPDOWN = "relative_date_dropdown"
 
     VISUALIZATION_RADIO_ITEMS = "visualization_radio_items"
 
@@ -84,10 +84,12 @@ def main_layout(
     vector_selector_data: list,
     vector_calculator_data: list,
     predefined_expressions: List[ExpressionInfo],
+    custom_vector_definitions: dict,
     realizations: List[int],
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
+    ensembles_dates: List[datetime.datetime],
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return wcc.FlexBox(
@@ -104,11 +106,13 @@ def main_layout(
                         vector_selector_data=vector_selector_data,
                         vector_calculator_data=vector_calculator_data,
                         predefined_expressions=predefined_expressions,
+                        custom_vector_definitions=custom_vector_definitions,
                         realizations=realizations,
                         disable_resampling_dropdown=disable_resampling_dropdown,
                         selected_resampling_frequency=selected_resampling_frequency,
                         selected_visualization=selected_visualization,
                         selected_vectors=selected_vectors,
+                        ensembles_dates=ensembles_dates,
                     ),
                 ),
             ),
@@ -148,10 +152,12 @@ def __settings_layout(
     vector_selector_data: list,
     vector_calculator_data: list,
     predefined_expressions: List[ExpressionInfo],
+    custom_vector_definitions: dict,
     realizations: List[int],
     disable_resampling_dropdown: bool,
     selected_resampling_frequency: Frequency,
     selected_visualization: VisualizationOptions,
+    ensembles_dates: List[datetime.datetime],
     selected_vectors: Optional[List[str]] = None,
 ) -> html.Div:
     return html.Div(
@@ -191,6 +197,27 @@ def __settings_layout(
                             for frequency in Frequency
                         ],
                         value=selected_resampling_frequency,
+                        style={
+                            "margin-bottom": "10px",
+                        },
+                    ),
+                    wcc.Label(
+                        "Data relative to date:",
+                        style={
+                            "font-style": "italic",
+                        },
+                    ),
+                    wcc.Dropdown(
+                        clearable=True,
+                        disabled=disable_resampling_dropdown,
+                        id=get_uuid(LayoutElements.RELATIVE_DATE_DROPDOWN),
+                        options=[
+                            {
+                                "label": datetime_utils.to_str(_date),
+                                "value": datetime_utils.to_str(_date),
+                            }
+                            for _date in sorted(ensembles_dates)
+                        ],
                     ),
                     wcc.Label(
                         "NB: Disabled for presampled data",
@@ -241,9 +268,7 @@ def __settings_layout(
                         else selected_vectors,
                         numSecondsUntilSuggestionsAreShown=0.5,
                         lineBreakAfterTag=True,
-                        customVectorDefinitions=get_custom_vector_definitions_from_expressions(
-                            predefined_expressions
-                        ),
+                        customVectorDefinitions=custom_vector_definitions,
                     ),
                     html.Button(
                         "Vector Calculator",
@@ -294,7 +319,7 @@ def __settings_layout(
                 label="Filter Realizations",
                 children=__realization_filters(get_uuid, realizations),
             ),
-            __vector_calculator_modal_layout(
+            __vector_calculator_dialog_layout(
                 get_uuid=get_uuid,
                 vector_data=vector_calculator_data,
                 predefined_expressions=predefined_expressions,
@@ -304,37 +329,28 @@ def __settings_layout(
                 data=predefined_expressions,
             ),
             dcc.Store(
-                id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_MODAL),
+                id=get_uuid(LayoutElements.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG),
                 data=predefined_expressions,
             ),
         ]
     )
 
 
-def __vector_calculator_modal_layout(
-    get_uuid: Callable,
-    vector_data: list,
-    predefined_expressions: List[ExpressionInfo],
-) -> dbc.Modal:
-    return dbc.Modal(
-        style={"marginTop": "20vh", "width": "1300px"},
+def __vector_calculator_dialog_layout(
+    get_uuid: Callable, vector_data: list, predefined_expressions: List[ExpressionInfo]
+) -> wcc.Dialog:
+    return wcc.Dialog(
+        title="Vector Calculator",
+        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_DIALOG),
+        draggable=True,
+        max_width="lg",
         children=[
-            dbc.ModalHeader("Vector Calculator"),
-            dbc.ModalBody(
-                html.Div(
-                    children=[
-                        wsc.VectorCalculator(
-                            id=get_uuid(LayoutElements.VECTOR_CALCULATOR),
-                            vectors=vector_data,
-                            expressions=predefined_expressions,
-                        )
-                    ],
-                ),
-            ),
+            wsc.VectorCalculator(
+                id=get_uuid(LayoutElements.VECTOR_CALCULATOR),
+                vectors=vector_data,
+                expressions=predefined_expressions,
+            )
         ],
-        id=get_uuid(LayoutElements.VECTOR_CALCULATOR_MODAL),
-        size="lg",
-        centered=True,
     )
 
 
@@ -461,6 +477,7 @@ def __plot_options_layout(
         children=[
             wcc.Checklist(
                 id=get_uuid(LayoutElements.PLOT_TRACE_OPTIONS_CHECKLIST),
+                style={"display": "block"},
                 options=[
                     {"label": "History", "value": TraceOptions.HISTORY.value},
                     {
