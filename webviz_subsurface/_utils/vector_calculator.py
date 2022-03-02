@@ -13,7 +13,11 @@ from webviz_subsurface_components import (
     VectorCalculator,
 )
 
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import (
+    EnsembleSummaryProvider,
+    Frequency,
+    ResamplingOptions,
+)
 
 from .vector_selector import (
     add_vector_to_vector_selector_data,
@@ -303,9 +307,11 @@ def create_calculated_vector_df(
     vector_names = list(variable_vector_dict.values())
 
     # Retrieve data for vectors in expression
-    vectors_df = provider.get_vectors_df(
-        vector_names, resampling_frequency, realizations
+    # TODO(JH): Implement proper use of resampling options
+    resampling_options = (
+        ResamplingOptions(resampling_frequency) if resampling_frequency else None
     )
+    vectors_df = provider.get_vectors_df(vector_names, resampling_options, realizations)
 
     values: Dict[str, np.ndarray] = {}
     for variable, vector in variable_vector_dict.items():

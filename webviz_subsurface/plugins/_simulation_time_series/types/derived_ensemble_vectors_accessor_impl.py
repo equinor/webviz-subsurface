@@ -3,7 +3,11 @@ from typing import List, Optional, Sequence
 import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import (
+    EnsembleSummaryProvider,
+    Frequency,
+    ResamplingOptions,
+)
 from webviz_subsurface._utils.vector_calculator import (
     create_calculated_vector_df,
     get_selected_expressions,
@@ -81,8 +85,14 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             raise ValueError(
                 f'Vector data handler for provider "{self._name}" has no provider vectors'
             )
+        # TODO(JH): Implement proper use of resampling options
+        resampling_options = (
+            ResamplingOptions(self._resampling_frequency)
+            if self._resampling_frequency
+            else None
+        )
         return self._provider.get_vectors_df(
-            self._provider_vectors, self._resampling_frequency, realizations
+            self._provider_vectors, resampling_options, realizations
         )
 
     def create_interval_and_average_vectors_df(
@@ -123,8 +133,15 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         ]
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
+        # TODO(JH): Implement proper use of resampling options
+        resampling_options = (
+            ResamplingOptions(self._resampling_frequency)
+            if self._resampling_frequency
+            else None
+        )
+
         vectors_df = self._provider.get_vectors_df(
-            cumulative_vector_names, self._resampling_frequency, realizations
+            cumulative_vector_names, resampling_options, realizations
         )
 
         interval_and_average_vectors_df = pd.DataFrame()

@@ -3,7 +3,11 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import (
+    EnsembleSummaryProvider,
+    Frequency,
+    ResamplingOptions,
+)
 
 
 def create_history_vectors_df(
@@ -60,7 +64,11 @@ def create_history_vectors_df(
         return pd.DataFrame()
 
     historical_vector_names = list(historical_vector_and_vector_name_dict.keys())
+    # TODO(JH): Implement proper use of resampling options
+    resampling_options = (
+        ResamplingOptions(resampling_frequency) if resampling_frequency else None
+    )
     historical_vectors_df = provider.get_vectors_df(
-        historical_vector_names, resampling_frequency, realizations=[realization]
+        historical_vector_names, resampling_options, realizations=[realization]
     )
     return historical_vectors_df.rename(columns=historical_vector_and_vector_name_dict)

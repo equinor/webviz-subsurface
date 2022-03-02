@@ -3,7 +3,11 @@ from typing import List, Optional, Sequence, Tuple
 import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import (
+    EnsembleSummaryProvider,
+    Frequency,
+    ResamplingOptions,
+)
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface._utils.vector_calculator import (
     create_calculated_vector_df,
@@ -130,13 +134,18 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         if not vector_names:
             raise ValueError("List of requested vector names is empty")
 
+        # TODO(JH): Implement proper use of resampling options
+        resampling_options = (
+            ResamplingOptions(resampling_frequency) if resampling_frequency else None
+        )
+
         # NOTE: index order ["DATE","REAL"] to obtain column order when
         # performing reset_index() later
         ensemble_a_vectors_df = self._provider_a.get_vectors_df(
-            vector_names, resampling_frequency, realizations
+            vector_names, resampling_options, realizations
         ).set_index(["DATE", "REAL"])
         ensemble_b_vectors_df = self._provider_b.get_vectors_df(
-            vector_names, resampling_frequency, realizations
+            vector_names, resampling_options, realizations
         ).set_index(["DATE", "REAL"])
 
         # Reset index, sort values by "REAL" and thereafter by "DATE" to
