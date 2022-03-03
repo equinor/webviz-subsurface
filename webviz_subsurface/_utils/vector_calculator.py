@@ -14,10 +14,7 @@ from webviz_subsurface_components import (
     VectorDefinition,
 )
 
-from webviz_subsurface._providers import (
-    EnsembleSummaryProvider,
-    ResamplingOptions,
-)
+from webviz_subsurface._providers import EnsembleSummaryProvider, ResamplingOptions
 
 from .vector_selector import (
     add_vector_to_vector_selector_data,
