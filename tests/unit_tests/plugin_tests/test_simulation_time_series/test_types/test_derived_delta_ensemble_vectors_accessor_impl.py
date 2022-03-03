@@ -162,7 +162,7 @@ TEST_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
     ),
     vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
-    resampling_frequency=None,
+    resampling_options=None,
 )
 
 TEST_AFTER_2262_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
@@ -173,7 +173,7 @@ TEST_AFTER_2262_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
     ),
     vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
-    resampling_frequency=None,
+    resampling_options=None,
 )
 
 TEST_EMPTY_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
@@ -184,7 +184,7 @@ TEST_EMPTY_ACCESSOR = DerivedDeltaEnsembleVectorsAccessorImpl(
     ),
     vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=None,
-    resampling_frequency=None,
+    resampling_options=None,
 )
 
 # *******************************************************************

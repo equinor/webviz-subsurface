@@ -64,9 +64,12 @@ def create_history_vectors_df(
         return pd.DataFrame()
 
     historical_vector_names = list(historical_vector_and_vector_name_dict.keys())
-    # TODO(JH): Implement proper use of resampling options
+
+    # NOTE: DateSpane = None
     resampling_options = (
-        ResamplingOptions(resampling_frequency) if resampling_frequency else None
+        ResamplingOptions(resampling_frequency, common_date_span=None)
+        if resampling_frequency
+        else None
     )
     historical_vectors_df = provider.get_vectors_df(
         historical_vector_names, resampling_options, realizations=[realization]

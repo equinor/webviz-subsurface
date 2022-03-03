@@ -16,7 +16,7 @@ from webviz_subsurface_components import (
     VectorDefinition,
 )
 
-from webviz_subsurface._providers import Frequency
+from webviz_subsurface._providers import DateSpan, Frequency, ResamplingOptions
 from webviz_subsurface._utils.formatting import printable_int_list
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import (
@@ -216,6 +216,24 @@ def plugin_callbacks(
         ):
             raise PreventUpdate
 
+        # Create resampling options
+        date_span = (
+            DateSpan.UNION
+            if visualization
+            in [
+                VisualizationOptions.FANCHART,
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+            or relative_date
+            else None
+        )
+        resampling_options = (
+            ResamplingOptions(resampling_frequency, date_span)
+            if resampling_frequency
+            else None
+        )
+
         # Create dict of derived vectors accessors for selected ensembles
         derived_vectors_accessors: Dict[
             str, DerivedVectorsAccessor
@@ -225,7 +243,7 @@ def plugin_callbacks(
             provider_set=input_provider_set,
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
-            resampling_frequency=resampling_frequency,
+            resampling_options=resampling_options,
             relative_date=relative_date,
         )
 
@@ -528,6 +546,24 @@ def plugin_callbacks(
             else datetime_utils.from_str(relative_date_value)
         )
 
+        # Create resampling options
+        date_span = (
+            DateSpan.UNION
+            if visualization
+            in [
+                VisualizationOptions.FANCHART,
+                VisualizationOptions.STATISTICS,
+                VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+            ]
+            or relative_date
+            else None
+        )
+        resampling_options = (
+            ResamplingOptions(resampling_frequency, date_span)
+            if resampling_frequency
+            else None
+        )
+
         # Create dict of derived vectors accessors for selected ensembles
         derived_vectors_accessors: Dict[
             str, DerivedVectorsAccessor
@@ -537,7 +573,7 @@ def plugin_callbacks(
             provider_set=input_provider_set,
             expressions=selected_expressions,
             delta_ensembles=delta_ensembles,
-            resampling_frequency=resampling_frequency,
+            resampling_options=resampling_options,
             relative_date=relative_date,
         )
 

@@ -41,7 +41,7 @@ class ResamplingOptions:
         be extrapolated.
       * None - each returned realization will contain dates according to the requested
         frequency, but no effort will be made to truncate or expand the total date range
-        in order to align stert and end dates between realizations.
+        in order to align start and end dates between realizations.
     """
 
     frequency: Frequency
