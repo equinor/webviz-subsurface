@@ -72,7 +72,7 @@ def controls(
 ) -> wcc.Selectors:
     ensembles = list(data_models.keys())
     return wcc.Selectors(
-        label="Selectors",
+        label="Selections",
         children=[
             wcc.Dropdown(
                 label="Ensembles",
@@ -115,7 +115,7 @@ def filters(
                 options=[{"label": well, "value": well} for well in wells],
                 value=wells,
                 multi=True,
-            ),
+            )
         ],
     )
 
@@ -133,6 +133,8 @@ def plot_settings(get_uuid: Callable) -> wcc.Frame:
                     options=[
                         {"label": "Show legend", "value": "legend"},
                         {"label": "Overlay bars", "value": "overlay_bars"},
+                        {"label": "Show prod as text", "value": "show_prod_text"},
+                        {"label": "White background", "value": "white_background"},
                     ],
                     value=["legend"],
                 ),
@@ -143,6 +145,7 @@ def plot_settings(get_uuid: Callable) -> wcc.Frame:
                     id={"id": checklist_uuid, "charttype": "pie"},
                     options=[
                         {"label": "Show legend", "value": "legend"},
+                        {"label": "Show prod as text", "value": "show_prod_text"},
                     ],
                     value=[],
                 ),
@@ -153,6 +156,7 @@ def plot_settings(get_uuid: Callable) -> wcc.Frame:
                     id={"id": checklist_uuid, "charttype": "area"},
                     options=[
                         {"label": "Show legend", "value": "legend"},
+                        {"label": "White background", "value": "white_background"},
                     ],
                     value=["legend"],
                 ),

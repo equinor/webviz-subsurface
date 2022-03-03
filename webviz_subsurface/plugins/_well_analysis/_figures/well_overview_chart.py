@@ -9,7 +9,7 @@ from webviz_config import WebvizConfigTheme
 from .._ensemble_data import EnsembleWellAnalysisData
 
 
-class WellOverviewChart:
+class WellOverviewFigure:
     def __init__(
         self,
         ensembles: List[str],
@@ -63,18 +63,29 @@ class WellOverviewChart:
     def _update_figure(self) -> None:
         """descr"""
         if self._charttype == "pie":
-            self._figure.update_traces(textinfo="label", textposition="inside")
+            if "show_prod_text" in self._settings:
+                self._figure.update_traces(
+                    texttemplate="%{label}<br>%{value:.2s}", textposition="inside"
+                )
+            else:
+                self._figure.update_traces(
+                    texttemplate="%{label}", textposition="inside"
+                )
         elif self._charttype == "bar":
-            barmode = "overlay" if "overlay" in self._settings else "group"
+            barmode = "overlay" if "overlay_bars" in self._settings else "group"
             self._figure.update_layout(barmode=barmode)
 
+        if "white_background" in self._settings:
+            self._figure.update_layout(plot_bgcolor="white")
+
         self._figure.update(
-            layout_title_text="Cumulative Well Production",
+            layout_title_text="Cumulative Well Production (Sm3)",
             layout_showlegend=("legend" in self._settings),
         )
 
     def _add_traces(self) -> None:
         """descr"""
+        wells_in_legend = []
 
         for i, ensemble in enumerate(self._ensembles):
 
@@ -100,17 +111,26 @@ class WellOverviewChart:
                 df_mean = df.groupby("WELL").mean().reset_index()
                 df_mean = df_mean[df_mean[self._sumvec] > 0]
 
+                trace = {
+                    "x": df_mean["WELL"],
+                    "y": df_mean[self._sumvec],
+                    "orientation": "v",
+                    "type": "bar",
+                    "name": ensemble,
+                    "marker": {"color": self._colors[i]},
+                }
+
+                if "show_prod_text" in self._settings:
+                    trace.update(
+                        {
+                            "text": df_mean[self._sumvec],
+                            "texttemplate": "%{text:.2s}",
+                            "textposition": "auto",
+                        }
+                    )
+
                 self._figure.add_trace(
-                    {
-                        "x": df_mean["WELL"],
-                        "y": df_mean[self._sumvec],
-                        # "text": df_mean["TEXT"],
-                        "orientation": "v",
-                        "type": "bar",
-                        "name": ensemble,
-                        "marker": {"color": self._colors[i]},
-                        # "textposition": textposition,
-                    },
+                    trace,
                     row=1,
                     col=1,
                 )
@@ -118,8 +138,14 @@ class WellOverviewChart:
                 color_iterator = itertools.cycle(self._colors)
                 df = self._data_models[ensemble].summary_data
                 df_mean = df.groupby("DATE").mean().reset_index()
+
                 for well in self._data_models[ensemble].wells:
                     if well in self._wells_selected:
+                        showlegend = False
+                        if well not in wells_in_legend:
+                            showlegend = True
+                            wells_in_legend.append(well)
+
                         self._figure.add_trace(
                             go.Scatter(
                                 x=df_mean["DATE"],
@@ -130,6 +156,8 @@ class WellOverviewChart:
                                 stackgroup="one",
                                 name=well,
                                 line=dict(width=0.1, color=next(color_iterator)),
+                                legendgroup="Wells",
+                                showlegend=showlegend,
                             ),
                             row=i + 1,
                             col=1,

@@ -5,7 +5,7 @@ from dash import ALL, Dash, Input, Output, State, callback, callback_context, no
 from webviz_config import WebvizConfigTheme
 
 from .._ensemble_data import EnsembleWellAnalysisData
-from .._figures import WellOverviewChart
+from .._figures import WellOverviewFigure
 from .._layout import ClientsideStoreElements, WellOverviewLayoutElements
 
 
@@ -143,7 +143,7 @@ def well_overview_callbacks(
             for i, checklist_id in enumerate(checklist_ids)
         }
 
-        figure = WellOverviewChart(
+        figure = WellOverviewFigure(
             ensembles,
             data_models,
             sumvec,
