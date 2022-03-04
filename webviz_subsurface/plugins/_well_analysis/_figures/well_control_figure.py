@@ -114,7 +114,7 @@ def add_network_pressure_traces(
     """Adding line traces to the network pressures subplot."""
 
     color_iterator = itertools.cycle(theme_colors)
-
+    traces = {}
     for node_network in node_info["networks"]:
         df = get_filtered_smry(
             node_network, node_info["ctrlmode_sumvec"], mean_or_single_real, real, smry
@@ -126,21 +126,26 @@ def add_network_pressure_traces(
             sumvec = nodedict["pressure"]
             label = nodedict["label"]
             if sumvec in df.columns:
-                fig.add_trace(
-                    go.Scatter(
-                        x=list(df["DATE"]),
-                        y=list(df[sumvec]),
-                        line=dict(color=next(color_iterator)),
-                        name=label,
-                        showlegend=True,
-                        hovertext=(f"{label}"),
-                        legendgroup="Nodes",
-                    ),
-                    row=2,
-                    col=1,
-                )
-            # else:
-            #    print(f"Summary vector {sumvec} not in dataset.")
+                if label not in traces:
+                    traces[label] = {
+                        "type": "scatter",
+                        "x": [],
+                        "y": [],
+                        "line": dict(color=next(color_iterator)),
+                        "name": label,
+                        "showlegend": True,
+                        "hovertext": (f"{label}"),
+                        "legendgroup": "Nodes",
+                        "mode": "lines",
+                    }
+                traces[label]["x"].extend(list(df["DATE"]))
+                traces[label]["y"].extend(list(df[sumvec]))
+
+    for trace in traces.values():
+        fig.add_trace(trace, row=2, col=1)
+
+        # else:
+        #    print(f"Summary vector {sumvec} not in dataset.")
 
 
 def add_ctrlmode_bar(
