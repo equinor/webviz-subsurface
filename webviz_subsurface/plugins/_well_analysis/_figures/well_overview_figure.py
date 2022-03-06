@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
-from .._ensemble_data import EnsembleWellAnalysisData
+from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 
 
 class WellOverviewFigure:

@@ -3,7 +3,7 @@ from typing import Callable, Dict
 import webviz_core_components as wcc
 from dash import html
 
-from .._ensemble_data import EnsembleWellAnalysisData
+from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 
 
 # pylint: disable = too-few-public-methods

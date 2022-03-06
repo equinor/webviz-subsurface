@@ -14,13 +14,47 @@ from ..._providers import (
     Frequency,
 )
 from ._callbacks import well_control_callbacks, well_overview_callbacks
-from ._ensemble_data import EnsembleWellAnalysisData
+from ._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from ._layout import clientside_stores, main_layout
 
 
 class WellAnalysis(WebvizPluginABC):
-    """
-    Plugin Description
+    """This plugin is for visualizing and analysing well data. There are different tabs
+    for visualizing:
+
+    * Well Production
+    * Well control modes and network pressures
+
+    ---
+    * **`ensembles`:** Which ensembles in `shared_settings` to include.
+    * **`rel_file_pattern`:** path to `.arrow` files with summary data.
+    * **`gruptree_file`:** `.csv` with gruptree information.
+    * **`time_index`:** Frequency for the data sampling.
+    * **`filter_out_startswith`:** Filter out wells that starts with this string
+    ---
+
+    **Summary data**
+
+    This plugin needs the following summary vectors to be exported:
+    * WOPT, WGPT and WWPT for all wells for the well overview plots
+    * WMCTL, WTHP and WBHP for all wells for the well control plots
+    * GPR for all network nodes downstream/upstream the wells
+
+    **GRUPTREE input**
+
+    `gruptree_file` is a path to a file stored per realization (e.g. in \
+    `share/results/tables/gruptree.csv"`).
+
+    The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
+    model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
+    representation of the Eclipse network:
+    [Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+
+    **time_index**
+
+    This is the sampling interval of the summary data. It is `yearly` by default, but can be set
+    to f.ex `monthly` if needed.
+
     """
 
     def __init__(
@@ -34,6 +68,8 @@ class WellAnalysis(WebvizPluginABC):
         filter_out_startswith: Optional[str] = None,
     ) -> None:
         super().__init__()
+
+        # This is used to format the buttons in the well overview tab
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
             / "_assets"

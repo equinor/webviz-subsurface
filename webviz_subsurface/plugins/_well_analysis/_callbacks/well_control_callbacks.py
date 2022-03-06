@@ -4,7 +4,7 @@ import webviz_core_components as wcc
 from dash import Dash, Input, Output, State
 from webviz_config import WebvizConfigTheme
 
-from .._ensemble_data import EnsembleWellAnalysisData
+from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import create_well_control_figure
 from .._layout import WellControlLayoutElements
 

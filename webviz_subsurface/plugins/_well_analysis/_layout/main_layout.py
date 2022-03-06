@@ -2,7 +2,7 @@ from typing import Callable, Dict
 
 import webviz_core_components as wcc
 
-from .._ensemble_data import EnsembleWellAnalysisData
+from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .well_control_layout import well_control_tab
 from .well_overview_layout import well_overview_tab
 
