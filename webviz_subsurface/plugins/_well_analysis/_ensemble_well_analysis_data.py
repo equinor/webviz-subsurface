@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 
 from webviz_subsurface._models import GruptreeModel
@@ -34,6 +35,10 @@ class EnsembleWellAnalysisData:
         well_sumvecs = [vec for vec in self._vector_names if vec.startswith("W")]
         group_sumvecs = [vec for vec in self._vector_names if vec.startswith("GPR:")]
         self._smry = provider.get_vectors_df(well_sumvecs + group_sumvecs, None)
+
+    @property
+    def webviz_store(self) -> Tuple[Callable, List[Dict]]:
+        return self._gruptree_model.webviz_store
 
     @property
     def summary_data(self) -> pd.DataFrame:
@@ -168,7 +173,11 @@ def is_terminal_node(node: str, row: pd.Series) -> bool:
     """Desc"""
     if node == "FIELD":
         return True
-    if "TERMINAL_PRESSURE" in row and row["TERMINAL_PRESSURE"].values[0] is not None:
+    if (
+        "TERMINAL_PRESSURE" in row
+        and row["TERMINAL_PRESSURE"].values[0] is not None
+        and not np.isnan(row["TERMINAL_PRESSURE"].values[0])
+    ):
         return True
     return False
 

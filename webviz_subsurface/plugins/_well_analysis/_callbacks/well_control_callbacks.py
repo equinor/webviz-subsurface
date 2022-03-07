@@ -27,7 +27,6 @@ def well_control_callbacks(
     ) -> Tuple[
         List[Dict[str, str]], Optional[str], List[Dict[str, Any]], Optional[int]
     ]:
-        print("well control - update dropdowns")
         wells = data_models[ensemble].wells
         reals = data_models[ensemble].realizations
         return (
@@ -57,7 +56,6 @@ def well_control_callbacks(
         shared_xaxes: List[str],
         ensemble: str,
     ) -> List[Optional[Any]]:
-        print("make wellcontrol graph")
 
         fig = create_well_control_figure(
             data_models[ensemble].get_node_info(well),

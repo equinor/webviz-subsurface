@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -114,8 +114,11 @@ class WellAnalysis(WebvizPluginABC):
 
         self.set_callbacks(app)
 
-    # def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
-    #     return self._datamodel.webviz_store
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        return [
+            ens_data_model.webviz_store
+            for _, ens_data_model in self._data_models.items()
+        ]
 
     @property
     def layout(self) -> html.Div:
