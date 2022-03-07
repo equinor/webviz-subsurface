@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import List
+from typing import Callable, Dict, List, Tuple
 
 import pandas as pd
+from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._datainput.fmu_input import scratch_ensemble
 
@@ -26,7 +27,24 @@ class GruptreeModel:
     def dataframe(self) -> pd.DataFrame:
         return self._dataframe
 
-    # @webvizstore
+    def __repr__(self) -> str:
+        """This is necessary for webvizstore to work on objects"""
+        return f"""
+GruptreeDataModel {self._ens_name} {self._ens_path} {self._gruptree_file}
+        """
+
+    @property
+    def webviz_store(self) -> Tuple[Callable, List[Dict]]:
+        return (
+            self.read_ensemble_gruptree,
+            [
+                {
+                    "self": self,
+                }
+            ],
+        )
+
+    @webvizstore
     def read_ensemble_gruptree(self) -> pd.DataFrame:
         """Reads the gruptree files for an ensemble from the scratch disk. These
         files can be exported in the FMU workflow using the ECL2CSV
