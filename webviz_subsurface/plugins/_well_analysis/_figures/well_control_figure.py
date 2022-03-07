@@ -6,6 +6,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
+from ...._utils.colors import StandardColors
+
 
 def create_well_control_figure(
     node_info: Dict[str, Any],
@@ -256,9 +258,9 @@ def get_ctrlmode_categories(node_type: str) -> dict:
     if node_type == "well":
         return {
             "0.0": {"name": "SHUT/STOP", "color": "#302f2f"},  # grey
-            "1.0": {"name": "ORAT", "color": "#044a2e"},  # green
-            "2.0": {"name": "WRAT", "color": "#10026b"},  # blue
-            "3.0": {"name": "GRAT", "color": "#7a0202"},  # red
+            "1.0": {"name": "ORAT", "color": StandardColors.OIL_GREEN.value},  # green
+            "2.0": {"name": "WRAT", "color": StandardColors.WATER_BLUE.value},  # blue
+            "3.0": {"name": "GRAT", "color": StandardColors.GAS_RED.value},  # red
             "4.0": {"name": "LRAT", "color": "#b06d15"},  # muted purple
             "5.0": {"name": "RESV", "color": "#67ab99"},  # green/blue
             "6.0": {"name": "THP", "color": "#7e5980"},  # purple
@@ -269,9 +271,9 @@ def get_ctrlmode_categories(node_type: str) -> dict:
     if node_type == "field_group":
         return {
             "0.0": {"name": "NONE", "color": "#302f2f"},  # grey
-            "1.0": {"name": "ORAT", "color": "#044a2e"},  # green
-            "2.0": {"name": "WRAT", "color": "#10026b"},  # blue
-            "3.0": {"name": "GRAT", "color": "#7a0202"},  # red
+            "1.0": {"name": "ORAT", "color": StandardColors.OIL_GREEN.value},  # green
+            "2.0": {"name": "WRAT", "color": StandardColors.WATER_BLUE.value},  # blue
+            "3.0": {"name": "GRAT", "color": StandardColors.GAS_RED.value},  # red
             "4.0": {"name": "LRAT", "color": "#b06d15"},  # muted purple
             "5.0": {"name": "RESV", "color": "#67ab99"},  # green/blue
             "6.0": {"name": "PRBL", "color": "#7e5980"},  # purple
