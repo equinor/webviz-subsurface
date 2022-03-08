@@ -2,6 +2,7 @@ import itertools
 import math
 from typing import Dict, List, Tuple
 
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
@@ -50,7 +51,10 @@ class WellOverviewFigure:
         return self._figure
 
     def get_subplot_dim(self) -> Tuple[int, int]:
-        """descr"""
+        """Returns the subplot dimensions of the currently selected chart type.
+        Pie charts have two columns, while the other has one. Area charts have one
+        row per ensemble.
+        """
         number_of_ens = len(self._ensembles)
         if self._charttype == "bar":
             return 2, 1
@@ -61,7 +65,7 @@ class WellOverviewFigure:
         raise ValueError(f"Chart type: {self._charttype} not implemented")
 
     def _update_figure(self) -> None:
-        """descr"""
+        """Update figure layout"""
         if self._charttype == "pie":
             if "show_prod_text" in self._settings:
                 self._figure.update_traces(
@@ -83,37 +87,46 @@ class WellOverviewFigure:
             layout_showlegend=("legend" in self._settings),
         )
 
+    def _get_ensemble_charttype_data(self, ensemble: str) -> pd.DataFrame:
+        """Returns a dataframe with summary data on the form needed for the
+        different chart types.
+        """
+        if self._charttype in ["pie", "bar"]:
+            df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
+            df = df[df["WELL"].isin(self._wells_selected)]
+            df_mean = df.groupby("WELL").mean().reset_index()
+            return df_mean[df_mean[self._sumvec] > 0]
+
+        # else chart type = are
+        return (
+            self._data_models[ensemble]
+            .summary_data.groupby("DATE")
+            .mean()
+            .reset_index()
+        )
+
     def _add_traces(self) -> None:
-        """descr"""
+        """Add all traces for the currently selected chart type."""
         wells_in_legend = []
 
         for i, ensemble in enumerate(self._ensembles):
+            df = self._get_ensemble_charttype_data(ensemble)
 
             if self._charttype == "pie":
-                df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
-                df = df[df["WELL"].isin(self._wells_selected)]
-                df_mean = df.groupby("WELL").mean().reset_index()
-                df_mean = df_mean[df_mean[self._sumvec] > 0]
-
                 self._figure.add_trace(
                     go.Pie(
                         values=df[self._sumvec],
                         labels=df["WELL"],
-                        # title=f"{ensemble}",
                         marker_colors=self._colors,
                     ),
                     row=i // 2 + 1,
                     col=i % 2 + 1,
                 )
-            elif self._charttype == "bar":
-                df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
-                df = df[df["WELL"].isin(self._wells_selected)]
-                df_mean = df.groupby("WELL").mean().reset_index()
-                df_mean = df_mean[df_mean[self._sumvec] > 0]
 
+            elif self._charttype == "bar":
                 trace = {
-                    "x": df_mean["WELL"],
-                    "y": df_mean[self._sumvec],
+                    "x": df["WELL"],
+                    "y": df[self._sumvec],
                     "orientation": "v",
                     "type": "bar",
                     "name": ensemble,
@@ -123,7 +136,7 @@ class WellOverviewFigure:
                 if "show_prod_text" in self._settings:
                     trace.update(
                         {
-                            "text": df_mean[self._sumvec],
+                            "text": df[self._sumvec],
                             "texttemplate": "%{text:.2s}",
                             "textposition": "auto",
                         }
@@ -136,8 +149,6 @@ class WellOverviewFigure:
                 )
             elif self._charttype == "area":
                 color_iterator = itertools.cycle(self._colors)
-                df = self._data_models[ensemble].summary_data
-                df_mean = df.groupby("DATE").mean().reset_index()
 
                 for well in self._data_models[ensemble].wells:
                     if well in self._wells_selected:
@@ -148,8 +159,8 @@ class WellOverviewFigure:
 
                         self._figure.add_trace(
                             go.Scatter(
-                                x=df_mean["DATE"],
-                                y=df_mean[f"{self._sumvec}:{well}"],
+                                x=df["DATE"],
+                                y=df[f"{self._sumvec}:{well}"],
                                 hoverinfo="text+x+y",
                                 hoveron="fills",
                                 mode="lines",

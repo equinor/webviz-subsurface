@@ -27,6 +27,7 @@ def well_control_callbacks(
     ) -> Tuple[
         List[Dict[str, str]], Optional[str], List[Dict[str, Any]], Optional[int]
     ]:
+        """Updates the well and realization dropdowns with ensemble values"""
         wells = data_models[ensemble].wells
         reals = data_models[ensemble].realizations
         return (
@@ -56,7 +57,7 @@ def well_control_callbacks(
         shared_xaxes: List[str],
         ensemble: str,
     ) -> List[Optional[Any]]:
-
+        """Updates the well control figure"""
         fig = create_well_control_figure(
             data_models[ensemble].get_node_info(well),
             data_models[ensemble].summary_data,
@@ -78,6 +79,9 @@ def well_control_callbacks(
         Input(get_uuid(WellControlLayoutElements.MEAN_OR_REAL), "value"),
     )
     def _show_hide_single_real_options(mean_or_single_real: str) -> Dict[str, str]:
+        """Hides or unhides the realization dropdown according to whether mean
+        or single realization is selected.
+        """
         if mean_or_single_real == "plot_mean":
             return {"display": "none"}
         return {"display": "block"}

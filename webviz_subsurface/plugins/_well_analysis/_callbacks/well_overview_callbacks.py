@@ -63,7 +63,9 @@ def well_overview_callbacks(
         ),
     )
     def _update_button_style(chart_selected: str, button_ids: list) -> list:
-
+        """Updates the styling of the chart type buttons, showing which chart type
+        is currently selected.
+        """
         button_styles = {
             button["button"]: {"background-color": "#E8E8E8"} for button in button_ids
         }
@@ -100,6 +102,7 @@ def well_overview_callbacks(
     def _display_charttype_settings(
         chart_selected: str, charttype_settings_ids: list
     ) -> list:
+        """Display only the settings relevant for the currently selected chart type."""
         return [
             {"display": "block"}
             if settings_id["charttype"] == chart_selected
@@ -130,14 +133,13 @@ def well_overview_callbacks(
     )
     def _update_graph(
         ensembles: List[str],
-        checklist_values: List[str],
+        checklist_values: List[List[str]],
         sumvec: str,
         chart_selected: str,
         wells_selected: List[str],
         checklist_ids: List[Dict[str, str]],
     ) -> List[wcc.Graph]:
-        """Updates the graph according to the selected chart type"""
-        print(f"update_graph: {chart_selected}")
+        """Updates the well overview graph with selected input (f.ex chart type)"""
         settings = {
             checklist_id["charttype"]: checklist_values[i]
             for i, checklist_id in enumerate(checklist_ids)

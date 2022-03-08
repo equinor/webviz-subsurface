@@ -113,7 +113,11 @@ def add_network_pressure_traces(
     include_bhp: bool,
     theme_colors: list,
 ) -> None:
-    """Adding line traces to the network pressures subplot."""
+    """Adding line traces to the network pressures subplot.
+
+    Missing summary vectors is currently just ignored, but it is possible
+    to show a warning or even raise an exception.
+    """
 
     color_iterator = itertools.cycle(theme_colors)
     traces = {}
@@ -127,6 +131,8 @@ def add_network_pressure_traces(
                 continue
             sumvec = nodedict["pressure"]
             label = nodedict["label"]
+
+            # It the summary vector is not found, do nothing.
             if sumvec in df.columns:
                 if label not in traces:
                     traces[label] = {
@@ -145,9 +151,6 @@ def add_network_pressure_traces(
 
     for trace in traces.values():
         fig.add_trace(trace, row=2, col=1)
-
-        # else:
-        #    print(f"Summary vector {sumvec} not in dataset.")
 
 
 def add_ctrlmode_bar(
