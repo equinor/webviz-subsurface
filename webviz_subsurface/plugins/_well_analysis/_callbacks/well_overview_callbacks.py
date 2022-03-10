@@ -140,7 +140,7 @@ def well_overview_callbacks(
         chart_selected: str,
         wells_selected: List[str],
         checklist_ids: List[Dict[str, str]],
-        current_figure: dict,
+        current_fig_dict: dict,
     ) -> List[wcc.Graph]:
         """Updates the well overview graph with selected input (f.ex chart type)"""
         ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
@@ -152,9 +152,12 @@ def well_overview_callbacks(
 
         # If the event is a plot settings event, then we only update the formatting
         # and not the figure data
-        if current_figure is not None and is_plot_settings_event(ctx, get_uuid):
-            figure = format_well_overview_figure(
-                go.Figure(current_figure), chart_selected, settings[chart_selected]
+        if current_fig_dict is not None and is_plot_settings_event(ctx, get_uuid):
+            fig_dict = format_well_overview_figure(
+                go.Figure(current_fig_dict),
+                chart_selected,
+                settings[chart_selected],
+                sumvec,
             )
         else:
             figure = WellOverviewFigure(
@@ -166,15 +169,15 @@ def well_overview_callbacks(
                 theme,
             )
 
-            figure = format_well_overview_figure(
-                figure.figure, chart_selected, settings[chart_selected]
+            fig_dict = format_well_overview_figure(
+                figure.figure, chart_selected, settings[chart_selected], sumvec
             )
 
         return [
             wcc.Graph(
                 id=get_uuid(WellOverviewLayoutElements.GRAPH),
                 style={"height": "87vh"},
-                figure=figure,
+                figure=fig_dict,
             )
         ]
 

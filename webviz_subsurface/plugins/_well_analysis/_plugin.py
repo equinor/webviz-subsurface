@@ -55,6 +55,11 @@ class WellAnalysis(WebvizPluginABC):
     This is the sampling interval of the summary data. It is `yearly` by default, but can be set
     to f.ex `monthly` if needed.
 
+    **filter_out_startswith**
+
+    Filter out well names that starts with this. Can f.ex be "R_" in order to filter out RFT wells
+    without production.
+
     """
 
     def __init__(

@@ -146,7 +146,7 @@ class WellOverviewFigure:
 
 
 def format_well_overview_figure(
-    figure: go.Figure, charttype: str, settings: List[str]
+    figure: go.Figure, charttype: str, settings: List[str], sumvec: str
 ) -> go.Figure:
     """This function formate the well overview figure. The reason for keeping this
     function outside the figure class is that we can update the figure formatting
@@ -177,8 +177,10 @@ def format_well_overview_figure(
         template=("plotly_white" if "white_background" in settings else "plotly")
     )
 
+    phase = {"WOPT": "Oil", "WGPT": "Gas", "WWPT": "Water"}[sumvec]
+
     figure.update(
-        layout_title_text="Cumulative Well Production (Sm3)",
+        layout_title_text=f"Cumulative Well {phase} Production (Sm3)",
         layout_showlegend=("legend" in settings),
     )
     return figure
