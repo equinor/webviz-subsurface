@@ -1,14 +1,7 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List
 
-import dash_bootstrap_components as dbc
 import dash_html_components as html
 import webviz_core_components as wcc
-import webviz_subsurface_components as wsc
-from dash import dash_table, dcc
-from webviz_subsurface_components import ExpressionInfo
-
-from ..._providers import Frequency
-from ..._utils.vector_calculator import get_custom_vector_definitions_from_expressions
 
 
 # pylint: disable=too-few-public-methods
@@ -70,10 +63,7 @@ def main_layout(
     well_collections: Dict[str, List[str]],
 ) -> wcc.Tabs:
 
-    all_dates = []
-    all_phases = []
-    all_wells = []
-    all_realizations = []
+    all_dates, all_phases, all_wells, all_realizations = [], [], [], []
     for ens_name in ensemble_names:
         all_dates.extend(dates[ens_name])
         all_phases.extend(phases[ens_name])

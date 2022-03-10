@@ -8,6 +8,8 @@ import plotly.express as px
 import plotly.graph_objs as go
 import webviz_core_components as wcc
 
+from ..utils import make_dataframes as makedf
+
 # Color scales
 HEATMAP_COLOR = [
     # [0, "gold"],
@@ -279,22 +281,6 @@ def coverage_crossplot(
     logging.debug("--- Updating coverage box plot ---")
     figures = []
 
-    # --- drop columns (realizations) with no data
-    # ensdf = df_smry.dropna(axis="columns")
-
-    ensdf = df_smry
-    ensdf.DATE = ensdf.DATE.str[:10]
-    ensdf["id"] = ensdf.reset_index().index
-    ensdf = pd.wide_to_long(
-        ensdf,
-        ["WOPT", "WWPT", "WGPT", "WOPTH", "WWPTH", "WGPTH"],
-        i="id",
-        j="WELL",
-        sep=":",
-        # suffix=r"\w+|\d+",
-        suffix=r".+",
-    )
-
     prefix = "W" if vector_type == "well" else "G"
     phase_vector, phase_hvector = {}, {}
     phase_vector["Oil"] = prefix + "OPT"
@@ -303,6 +289,29 @@ def coverage_crossplot(
     phase_hvector["Oil"] = prefix + "OPTH"
     phase_hvector["Water"] = prefix + "WPTH"
     phase_hvector["Gas"] = prefix + "GPTH"
+
+    vectorlist = []
+    for phase in phases:
+        vectorlist.append(phase_vector[phase])
+        vectorlist.append(phase_hvector[phase])
+
+    # --- drop columns (realizations) with no data
+    # ensdf = df_smry.dropna(axis="columns")
+
+    ensdf = df_smry
+    ensdf.DATE = ensdf.DATE.str[:10]
+    ensdf["id"] = ensdf.reset_index().index
+    ensdf = pd.wide_to_long(
+        ensdf,
+        vectorlist,
+        i="id",
+        j="WELL",
+        sep=":",
+        suffix=r".+",
+        # suffix=r"\w+|\d+",
+    )
+    # use hist avg values as x-values
+    ensdf = makedf.get_df_hist_avg(ensdf)
 
     facet_name = "DATE"
     if colorby == "DATE":

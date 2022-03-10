@@ -104,7 +104,6 @@ def plugin_callbacks(
             weight_reduction_factor_gas,
             misfit_exponent,
         )
-        print(dframe)
 
         figures = makefigs.prod_misfit_plot(
             dframe,
@@ -176,7 +175,6 @@ def plugin_callbacks(
                 ),
                 relative_diff=relative_diff,
             )
-            print(boxmode, dframe)
             figures = makefigs.coverage_diffplot(
                 dframe,
                 selector_phases,

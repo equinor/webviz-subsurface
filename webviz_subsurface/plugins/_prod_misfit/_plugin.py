@@ -121,21 +121,21 @@ class ProdMisfit(WebvizPluginABC):
         # TODO: Consider option to read hist vectors from seperate file
         # defined in config file
 
-        # Make dataframe of hist vectors mean values (over all realizations)
-        self.df_hist_mean = {}
-        for ens_name in self.ensemble_names:
-            hvectors = []
-            for vector in self.vectors[ens_name]:
-                hvectors.append(vector.split(":")[0] + "H:" + vector.split(":")[1])
+        # # Make dataframe of hist vectors mean values (over all realizations)
+        # self.df_hist_mean = {}
+        # for ens_name in self.ensemble_names:
+        #     hvectors = []
+        #     for vector in self.vectors[ens_name]:
+        #         hvectors.append(vector.split(":")[0] + "H:" + vector.split(":")[1])
 
-            df_hist = self._input_provider_set.provider(ens_name).get_vectors_df(
-                hvectors,
-                None,
-                None,
-            )
-            self.df_hist_mean[ens_name] = df_hist.groupby("DATE", as_index=False).mean()
-            self.df_hist_mean[ens_name].drop(columns=["REAL"], inplace=True)
-            # print(ens_name, "df_hist_mean:\n", df_hist_mean[ens_name])
+        #     df_hist = self._input_provider_set.provider(ens_name).get_vectors_df(
+        #         hvectors,
+        #         None,
+        #         None,
+        #     )
+        #     self.df_hist_mean[ens_name] = df_hist.groupby("DATE", as_index=False).mean()
+        #     self.df_hist_mean[ens_name].drop(columns=["REAL"], inplace=True)
+        #     # print(ens_name, "df_hist_mean:\n", self.df_hist_mean[ens_name])
 
         self.set_callbacks(app)
 

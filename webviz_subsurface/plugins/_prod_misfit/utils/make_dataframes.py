@@ -188,3 +188,19 @@ def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
     )
     # df_stat = df_stat.astype({"DATE": "string"})
     return df_stat
+
+
+# --------------------------------
+def get_df_hist_avg(df_long: pd.DataFrame) -> pd.DataFrame:
+    """Read long format dataframe and replace hist vectors (WOPTH, etc) column
+    values for each realization with it's average value grouped by WELL, DATE and
+    ENSEMBLE columns. The three groupby columns must be part of df_long.
+    This function will only have an effect in cases where the history rates
+    have uncertainty (varies per realization)."""
+
+    for col in df_long.columns:
+        if "PTH" in col:
+            df_long[col] = df_long.groupby(["WELL", "ENSEMBLE", "DATE"])[col].transform(
+                "mean"
+            )
+    return df_long
