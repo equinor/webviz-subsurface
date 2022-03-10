@@ -1,11 +1,12 @@
 from typing import Callable, Dict, List
 
+import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import ALL, Dash, Input, Output, State, callback, callback_context, no_update
 from webviz_config import WebvizConfigTheme
 
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
-from .._figures import WellOverviewFigure
+from .._figures import WellOverviewFigure, format_well_overview_figure
 from .._layout import ClientsideStoreElements, WellOverviewLayoutElements
 
 
@@ -111,7 +112,7 @@ def well_overview_callbacks(
         ]
 
     @app.callback(
-        Output(get_uuid(WellOverviewLayoutElements.GRAPH), "children"),
+        Output(get_uuid(WellOverviewLayoutElements.GRAPH_FRAME), "children"),
         Input(get_uuid(WellOverviewLayoutElements.ENSEMBLES), "value"),
         Input(
             {
@@ -130,6 +131,7 @@ def well_overview_callbacks(
             },
             "id",
         ),
+        State(get_uuid(WellOverviewLayoutElements.GRAPH), "figure"),
     )
     def _update_graph(
         ensembles: List[str],
@@ -138,24 +140,49 @@ def well_overview_callbacks(
         chart_selected: str,
         wells_selected: List[str],
         checklist_ids: List[Dict[str, str]],
+        current_figure: dict,
     ) -> List[wcc.Graph]:
         """Updates the well overview graph with selected input (f.ex chart type)"""
+        ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
+
         settings = {
             checklist_id["charttype"]: checklist_values[i]
             for i, checklist_id in enumerate(checklist_ids)
         }
 
-        figure = WellOverviewFigure(
-            ensembles,
-            data_models,
-            sumvec,
-            chart_selected,
-            wells_selected,
-            settings[chart_selected],
-            theme,
-        )
+        # If the event is a plot settings event, then we only update the formatting
+        # and not the figure data
+        if current_figure is not None and is_plot_settings_event(ctx, get_uuid):
+            figure = format_well_overview_figure(
+                go.Figure(current_figure), chart_selected, settings[chart_selected]
+            )
+        else:
+            figure = WellOverviewFigure(
+                ensembles,
+                data_models,
+                sumvec,
+                chart_selected,
+                wells_selected,
+                theme,
+            )
 
-        return [wcc.Graph(style={"height": "87vh"}, figure=figure.figure)]
+            figure = format_well_overview_figure(
+                figure.figure, chart_selected, settings[chart_selected]
+            )
+
+        return [
+            wcc.Graph(
+                id=get_uuid(WellOverviewLayoutElements.GRAPH),
+                style={"height": "87vh"},
+                figure=figure,
+            )
+        ]
+
+
+def is_plot_settings_event(ctx: str, get_uuid: Callable) -> bool:
+    if get_uuid(WellOverviewLayoutElements.CHARTTYPE_CHECKLIST) in ctx:
+        return True
+    return False
 
 
 def update_relevant_components(id_list: list, update_info: List[dict]) -> list:

@@ -8,6 +8,7 @@ from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 
 # pylint: disable = too-few-public-methods
 class WellOverviewLayoutElements:
+    GRAPH_FRAME = "well-overview-graph-frame"
     GRAPH = "well-overview-graph"
     ENSEMBLES = "well-overview-ensembles"
     SUMVEC = "well-overview-sumvec"
@@ -36,8 +37,12 @@ def well_overview_tab(
                 style={"flex": 4, "height": "87vh"},
                 color="white",
                 highlight=False,
-                id=get_uuid(WellOverviewLayoutElements.GRAPH),
-                children=[],
+                id=get_uuid(WellOverviewLayoutElements.GRAPH_FRAME),
+                children=[
+                    wcc.Graph(
+                        id=get_uuid(WellOverviewLayoutElements.GRAPH),
+                    )
+                ],
             ),
         ]
     )

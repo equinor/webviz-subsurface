@@ -18,7 +18,6 @@ class WellOverviewFigure:
         sumvec: str,
         charttype: str,  # bar, pie, area
         wells_selected: List[str],
-        settings: List[str],
         theme: WebvizConfigTheme,
     ) -> None:
 
@@ -27,7 +26,6 @@ class WellOverviewFigure:
         self._sumvec = sumvec
         self._charttype = charttype
         self._wells_selected = wells_selected
-        self._settings = settings
         self._colors = theme.plotly_theme["layout"]["colorway"]
         self._rows, self._cols = self.get_subplot_dim()
         spec_type = "scatter" if self._charttype == "area" else self._charttype
@@ -44,7 +42,6 @@ class WellOverviewFigure:
         )
 
         self._add_traces()
-        self._update_figure()
 
     @property
     def figure(self) -> go.Figure:
@@ -63,29 +60,6 @@ class WellOverviewFigure:
         if self._charttype == "area":
             return number_of_ens, 1
         raise ValueError(f"Chart type: {self._charttype} not implemented")
-
-    def _update_figure(self) -> None:
-        """Update figure layout"""
-        if self._charttype == "pie":
-            if "show_prod_text" in self._settings:
-                self._figure.update_traces(
-                    texttemplate="%{label}<br>%{value:.2s}", textposition="inside"
-                )
-            else:
-                self._figure.update_traces(
-                    texttemplate="%{label}", textposition="inside"
-                )
-        elif self._charttype == "bar":
-            barmode = "overlay" if "overlay_bars" in self._settings else "group"
-            self._figure.update_layout(barmode=barmode)
-
-        if "white_background" in self._settings:
-            self._figure.update_layout(plot_bgcolor="white")
-
-        self._figure.update(
-            layout_title_text="Cumulative Well Production (Sm3)",
-            layout_showlegend=("legend" in self._settings),
-        )
 
     def _get_ensemble_charttype_data(self, ensemble: str) -> pd.DataFrame:
         """Returns a dataframe with summary data on the form needed for the
@@ -118,6 +92,8 @@ class WellOverviewFigure:
                         values=df[self._sumvec],
                         labels=df["WELL"],
                         marker_colors=self._colors,
+                        textposition="inside",
+                        texttemplate="%{label}",
                     ),
                     row=i // 2 + 1,
                     col=i % 2 + 1,
@@ -131,16 +107,10 @@ class WellOverviewFigure:
                     "type": "bar",
                     "name": ensemble,
                     "marker": {"color": self._colors[i]},
+                    "text": df[self._sumvec],
+                    "textposition": "none",
+                    "texttemplate": "%{text:.2s}",
                 }
-
-                if "show_prod_text" in self._settings:
-                    trace.update(
-                        {
-                            "text": df[self._sumvec],
-                            "texttemplate": "%{text:.2s}",
-                            "textposition": "auto",
-                        }
-                    )
 
                 self._figure.add_trace(
                     trace,
@@ -173,3 +143,42 @@ class WellOverviewFigure:
                             row=i + 1,
                             col=1,
                         )
+
+
+def format_well_overview_figure(
+    figure: go.Figure, charttype: str, settings: List[str]
+) -> go.Figure:
+    """This function formate the well overview figure. The reason for keeping this
+    function outside the figure class is that we can update the figure formatting
+    without generating a new WellOverviewFigure object and reloading the data. It can
+    be applied directly to the current state of the figure dict if only formatting
+    settings are changed. See in the well_overview_callbacks how it is used.
+    """
+
+    if charttype == "pie":
+        figure.update_traces(
+            texttemplate=(
+                "%{label}<br>%{value:.2s}"
+                if "show_prod_text" in settings
+                else "%{label}"
+            )
+        )
+
+    elif charttype == "bar":
+        figure.update_layout(
+            barmode=("overlay" if "overlay_bars" in settings else "group")
+        )
+        figure.update_traces(
+            textposition=("auto" if "show_prod_text" in settings else "none")
+        )
+
+    # These are valid for all chart types
+    figure.update_layout(
+        template=("plotly_white" if "white_background" in settings else "plotly")
+    )
+
+    figure.update(
+        layout_title_text="Cumulative Well Production (Sm3)",
+        layout_showlegend=("legend" in settings),
+    )
+    return figure
