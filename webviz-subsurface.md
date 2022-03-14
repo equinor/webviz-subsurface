@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.11rc0` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.11` of `webviz-subsurface`.
 
 
 
@@ -728,21 +728,23 @@ How to use in YAML config file:
 The available maps are gathered from the `share/results/maps/` folder
 for each realization. Subfolders are not supported.
 
-Observed maps are gathered from the `share/observations/maps/` folder in the case folder.
+Observed maps are gathered from the `share/observations/maps/` folder in the case folder.<br>
 The filenames need to follow a fairly strict convention, as the filenames are used as metadata:
-`horizon_name--attribute--date` (`--date` is optional). The files should be on `irap binary`
-format with the suffix `.gri`. The date is of the form `YYYYMMDD` or
-`YYYYMMDD_YYYYMMDD`, the latter would be for a delta surface between two dates.
+`horizon_name--attribute--date` (`--date` is optional).<br> The files should be on `irap binary`
+format with the suffix `.gri`.
 
+The date is of the form `YYYYMMDD` or `YYYYMMDD_YYYYMMDD`, the latter would be for a delta
+surface between two dates.<br>
 See [this folder](https://github.com/equinor/webviz-subsurface-testdata/tree/master/01_drogon_ahm/realization-0/iter-0/share/results/maps) for examples of file naming conventions.
 
-Fault polygons are gathered from the `share/results/polygons` folder for each realization.
-Same file naming convention as for surfaces must be folloewed and the suffix should be `.pol`,
-representing XYZ format usable by xtgeo.
+Fault polygons are gathered from the `share/results/polygons` folder for each realization.<br>
+Same file naming convention as for surfaces must be followed and the suffix should be `.pol`,
+representing XYZ format usable by xtgeo.<br>
+See [this file](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/polygons/toptherys--gl_faultlines_extract_postprocess.pol) for an example.
 
 Well picks are provided as a csv file with columns `X_UTME,Y_UTMN,Z_TVDSS,MD,WELL,HORIZON`.
-See [wellpicks.csv](https://github.com/equinor/webviz-subsurface-testdata/tree/master/    observed_data/drogon_well_picks/wellpicks.csv) for an example.
-Well picks can be exported from RMS using this script: [extract_well_picks_from_rms.py]    (https://github.com/equinor/webviz-subsurface-testdata/tree/master/observed_data/        drogon_well_picks/extract_well_picks_from_rms.py)
+See [wellpicks.csv](https://github.com/equinor/webviz-subsurface-testdata/tree/master/observed_data/drogon_well_picks/wellpicks.csv) for an example.<br>
+Well picks can be exported from RMS using this script: [extract_well_picks_from_rms.py](https://github.com/equinor/webviz-subsurface-testdata/tree/master/observed_data/drogon_well_picks/extract_well_picks_from_rms.py)
 
 
 
@@ -2602,6 +2604,12 @@ data deck for flow fields like `FLOWAT` and `FLOOIL` to be included in the data.
 <div class="plugin-doc">
 
 #### SurfaceViewerFMU
+
+<details>
+  <summary markdown="span"> :warning: Plugin 'SurfaceViewerFMU' has been deprecated.</summary>
+
+  Relevant functionality is implemented in the MapViewerFMU plugin.
+</details>
 
 
 <!-- tabs:start -->
