@@ -16,13 +16,16 @@ from ._dataframe_utils import make_date_column_datetime_object
 from ._field_metadata import create_vector_metadata_from_field_meta
 from ._table_utils import (
     add_per_vector_min_max_to_table_schema_metadata,
-    find_intersected_dates_between_realizations,
+    find_intersection_of_realization_dates,
     find_min_max_for_numeric_table_columns,
+    find_union_of_realization_dates,
     get_per_vector_min_max_from_schema_metadata,
 )
 from .ensemble_summary_provider import (
+    DateSpan,
     EnsembleSummaryProvider,
     Frequency,
+    ResamplingOptions,
     VectorMetadata,
 )
 
@@ -351,6 +354,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
     def dates(
         self,
         resampling_frequency: Optional[Frequency],
+        date_span: DateSpan = DateSpan.UNION,
         realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
 
@@ -367,26 +371,30 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             table = table.filter(mask)
         et_filter_ms = timer.lap_ms()
 
-        intersected_dates = find_intersected_dates_between_realizations(table)
-        et_find_unique_ms = timer.lap_ms()
+        if date_span == DateSpan.INTERSECTION:
+            found_dates = find_intersection_of_realization_dates(table)
+        else:
+            found_dates = find_union_of_realization_dates(table)
+
+        et_find_dates_ms = timer.lap_ms()
 
         LOGGER.debug(
             f"dates() took: {timer.elapsed_ms()}ms ("
             f"read={et_read_ms}ms, "
             f"filter={et_filter_ms}ms, "
-            f"find_unique={et_find_unique_ms}ms)"
+            f"find_dates={et_find_dates_ms}ms)"
         )
 
-        return intersected_dates.astype(datetime.datetime).tolist()
+        return found_dates.astype(datetime.datetime).tolist()
 
     def get_vectors_df(
         self,
         vector_names: Sequence[str],
-        resampling_frequency: Optional[Frequency],
+        resampling_options: Optional[ResamplingOptions],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
 
-        if resampling_frequency is not None:
+        if resampling_options is not None:
             raise ValueError("Resampling is not supported by this provider")
 
         timer = PerfTimer()

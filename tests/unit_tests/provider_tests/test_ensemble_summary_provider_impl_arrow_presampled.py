@@ -9,6 +9,7 @@ from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow
     ProviderImplArrowPresampled,
 )
 from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
+    DateSpan,
     EnsembleSummaryProvider,
 )
 
@@ -97,14 +98,26 @@ def test_get_realizations(provider: EnsembleSummaryProvider) -> None:
     assert len(all_realizations) == 2
 
 
-def test_get_dates(provider: EnsembleSummaryProvider) -> None:
+def test_get_dates_intersection(provider: EnsembleSummaryProvider) -> None:
 
-    intersection_of_dates = provider.dates(resampling_frequency=None)
+    intersection_of_dates = provider.dates(None, DateSpan.INTERSECTION)
     assert len(intersection_of_dates) == 1
     assert isinstance(intersection_of_dates[0], datetime)
 
-    r0_dates = provider.dates(resampling_frequency=None, realizations=[0])
-    r1_dates = provider.dates(resampling_frequency=None, realizations=[1])
+    r0_dates = provider.dates(None, DateSpan.INTERSECTION, realizations=[0])
+    r1_dates = provider.dates(None, DateSpan.INTERSECTION, realizations=[1])
+    assert len(r0_dates) == 1
+    assert len(r1_dates) == 2
+
+
+def test_get_dates_union(provider: EnsembleSummaryProvider) -> None:
+
+    union_of_dates = provider.dates(None, DateSpan.UNION)
+    assert len(union_of_dates) == 2
+    assert isinstance(union_of_dates[0], datetime)
+
+    r0_dates = provider.dates(None, DateSpan.UNION, realizations=[0])
+    r1_dates = provider.dates(None, DateSpan.UNION, realizations=[1])
     assert len(r0_dates) == 1
     assert len(r1_dates) == 2
 
@@ -114,19 +127,19 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
     all_vecnames = provider.vector_names()
     assert len(all_vecnames) == 3
 
-    vecdf = provider.get_vectors_df(["A"], resampling_frequency=None)
+    vecdf = provider.get_vectors_df(["A"], resampling_options=None)
     assert vecdf.shape == (3, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "A"]
 
     sampleddate = vecdf["DATE"][0]
     assert isinstance(sampleddate, datetime)
 
-    vecdf = provider.get_vectors_df(["A"], resampling_frequency=None, realizations=[1])
+    vecdf = provider.get_vectors_df(["A"], resampling_options=None, realizations=[1])
     assert vecdf.shape == (2, 3)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "A"]
 
     vecdf = provider.get_vectors_df(
-        ["C", "A"], resampling_frequency=None, realizations=[0]
+        ["C", "A"], resampling_options=None, realizations=[0]
     )
     assert vecdf.shape == (1, 4)
     assert vecdf.columns.tolist() == ["DATE", "REAL", "C", "A"]
@@ -134,7 +147,7 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
 
 def test_get_vectors_for_date(provider: EnsembleSummaryProvider) -> None:
 
-    intersection_of_dates = provider.dates(resampling_frequency=None)
+    intersection_of_dates = provider.dates(None, DateSpan.INTERSECTION)
     assert len(intersection_of_dates) == 1
 
     date_to_get = intersection_of_dates[0]

@@ -3,7 +3,9 @@ import pyarrow as pa
 
 from webviz_subsurface._providers.ensemble_summary_provider._resampling import (
     Frequency,
+    calc_intersection_of_normalized_date_intervals,
     generate_normalized_sample_dates,
+    get_normalized_min_max_sample_date,
     interpolate_backfill,
     sample_segmented_multi_real_table_at_date,
 )
@@ -44,6 +46,23 @@ def test_generate_sample_dates_daily() -> None:
     assert dates[0] == np.datetime64("2020-12-30")
     assert dates[-1] == np.datetime64("2021-01-06")
 
+    # Same min and max raw date
+    dates = generate_normalized_sample_dates(
+        np.datetime64("2020-01-20"), np.datetime64("2020-01-20"), Frequency.DAILY
+    )
+    assert len(dates) == 1
+    assert dates[0] == np.datetime64("2020-01-20")
+
+    # Same min and max raw date
+    dates = generate_normalized_sample_dates(
+        np.datetime64("2020-01-20T01:30"),
+        np.datetime64("2020-01-20T01:30"),
+        Frequency.DAILY,
+    )
+    assert len(dates) == 2
+    assert dates[0] == np.datetime64("2020-01-20")
+    assert dates[1] == np.datetime64("2020-01-21")
+
 
 def test_generate_sample_dates_weekly() -> None:
 
@@ -69,6 +88,23 @@ def test_generate_sample_dates_weekly() -> None:
     assert dates[0] == np.datetime64("2020-12-21")
     assert dates[-1] == np.datetime64("2021-01-11")
 
+    # Same min and max raw date
+    dates = generate_normalized_sample_dates(
+        np.datetime64("2020-12-21"), np.datetime64("2020-12-21"), Frequency.WEEKLY
+    )
+    assert len(dates) == 1
+    assert dates[0] == np.datetime64("2020-12-21")
+
+    # Same min and max raw date
+    dates = generate_normalized_sample_dates(
+        np.datetime64("2020-12-22"),
+        np.datetime64("2020-12-22"),
+        Frequency.WEEKLY,
+    )
+    assert len(dates) == 2
+    assert dates[0] == np.datetime64("2020-12-21")
+    assert dates[1] == np.datetime64("2020-12-28")
+
 
 def test_generate_sample_dates_monthly() -> None:
 
@@ -87,6 +123,13 @@ def test_generate_sample_dates_monthly() -> None:
     assert len(dates) == 15
     assert dates[0] == np.datetime64("2020-12-01")
     assert dates[-1] == np.datetime64("2022-02-01")
+
+    # Same min and max raw date
+    dates = generate_normalized_sample_dates(
+        np.datetime64("2020-12-01"), np.datetime64("2020-12-01"), Frequency.MONTHLY
+    )
+    assert len(dates) == 1
+    assert dates[0] == np.datetime64("2020-12-01")
 
 
 def test_generate_sample_dates_yearly() -> None:
@@ -113,6 +156,104 @@ def test_generate_sample_dates_yearly() -> None:
     assert len(dates) == 4
     assert dates[0] == np.datetime64("2020-01-01")
     assert dates[-1] == np.datetime64("2023-01-01")
+
+    # Same min and max raw date
+    dates = generate_normalized_sample_dates(
+        np.datetime64("2020-01-01"), np.datetime64("2020-01-01"), Frequency.YEARLY
+    )
+    assert len(dates) == 1
+    assert dates[0] == np.datetime64("2020-01-01")
+
+
+def test_get_normalized_min_max_sample_dates() -> None:
+
+    # Daily
+    min_date, max_date = get_normalized_min_max_sample_date(
+        np.datetime64("2020-12-30"), np.datetime64("2020-12-30"), Frequency.DAILY
+    )
+    assert min_date == np.datetime64("2020-12-30")
+    assert max_date == np.datetime64("2020-12-30")
+
+    min_date, max_date = get_normalized_min_max_sample_date(
+        np.datetime64("2020-12-30"), np.datetime64("2021-01-05"), Frequency.DAILY
+    )
+    assert min_date == np.datetime64("2020-12-30")
+    assert max_date == np.datetime64("2021-01-05")
+
+    min_date, max_date = get_normalized_min_max_sample_date(
+        np.datetime64("2020-12-30T01:30"),
+        np.datetime64("2021-01-05T02:30"),
+        Frequency.DAILY,
+    )
+    assert min_date == np.datetime64("2020-12-30")
+    assert max_date == np.datetime64("2021-01-06")
+
+    # Weekly
+    min_date, max_date = get_normalized_min_max_sample_date(
+        np.datetime64("2020-12-20"),
+        np.datetime64("2021-01-21"),
+        Frequency.WEEKLY,
+    )
+    assert min_date == np.datetime64("2020-12-14")
+    assert max_date == np.datetime64("2021-01-25")
+
+    min_date, max_date = get_normalized_min_max_sample_date(
+        np.datetime64("2021-01-25"),
+        np.datetime64("2021-01-26"),
+        Frequency.WEEKLY,
+    )
+    assert min_date == np.datetime64("2021-01-25")
+    assert max_date == np.datetime64("2021-02-01")
+
+    # Monthly
+    min_date, max_date = get_normalized_min_max_sample_date(
+        np.datetime64("2021-02-01"),
+        np.datetime64("2021-02-02"),
+        Frequency.MONTHLY,
+    )
+    assert min_date == np.datetime64("2021-02-01")
+    assert max_date == np.datetime64("2021-03-01")
+
+    # TODO: Test for the rest of the frequencies
+    # :
+
+
+def test_find_normalized_intersection_of_date_intervals() -> None:
+    intervals = [
+        (np.datetime64("2020-01-20"), np.datetime64("2020-01-22")),
+        (np.datetime64("2020-01-22"), np.datetime64("2020-01-29")),
+    ]
+    isect = calc_intersection_of_normalized_date_intervals(intervals, Frequency.DAILY)
+    assert isect is not None
+    assert isect[0] == np.datetime64("2020-01-22")
+    assert isect[1] == np.datetime64("2020-01-22")
+
+    intervals = [
+        (np.datetime64("2020-01-20"), np.datetime64("2020-01-22")),
+        (np.datetime64("2029-01-31"), np.datetime64("2029-01-31")),
+    ]
+    isect = calc_intersection_of_normalized_date_intervals(intervals, Frequency.DAILY)
+    assert isect is None
+
+    intervals = [
+        (np.datetime64("2020-12-20"), np.datetime64("2021-01-21")),
+        (np.datetime64("2021-02-01"), np.datetime64("2021-02-02")),
+    ]
+    isect = calc_intersection_of_normalized_date_intervals(intervals, Frequency.DAILY)
+    assert isect is None
+
+    isect = calc_intersection_of_normalized_date_intervals(intervals, Frequency.WEEKLY)
+    assert isect is None
+
+    isect = calc_intersection_of_normalized_date_intervals(intervals, Frequency.MONTHLY)
+    assert isect is not None
+    assert isect[0] == np.datetime64("2021-02-01")
+    assert isect[1] == np.datetime64("2021-02-01")
+
+    isect = calc_intersection_of_normalized_date_intervals(intervals, Frequency.YEARLY)
+    assert isect is not None
+    assert isect[0] == np.datetime64("2021-01-01")
+    assert isect[1] == np.datetime64("2022-01-01")
 
 
 def test_interpolate_backfill() -> None:

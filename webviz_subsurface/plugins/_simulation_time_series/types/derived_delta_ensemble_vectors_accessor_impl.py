@@ -4,7 +4,11 @@ from typing import List, Optional, Sequence, Tuple
 import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import (
+    DateSpan,
+    EnsembleSummaryProvider,
+    ResamplingOptions,
+)
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface._utils.vector_calculator import (
     create_calculated_vector_df,
@@ -42,7 +46,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         provider_pair: Tuple[EnsembleSummaryProvider, EnsembleSummaryProvider],
         vectors: List[str],
         expressions: Optional[List[ExpressionInfo]] = None,
-        resampling_frequency: Optional[Frequency] = None,
+        resampling_options: Optional[ResamplingOptions] = None,
         relative_date: Optional[datetime.datetime] = None,
     ) -> None:
         if len(provider_pair) != 2:
@@ -95,20 +99,25 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             else []
         )
 
-        # Set resampling frequency
-        self._resampling_frequency = (
-            resampling_frequency
+        self._relative_date = relative_date
+
+        # Set resampling options
+        self._resampling_options = (
+            resampling_options
             if self._provider_a.supports_resampling()
             and self._provider_b.supports_resampling()
             else None
         )
 
-        self._relative_date = relative_date
+        # Make date span union if calculating data relative to date
+        if self._relative_date and self._resampling_options:
+            self._resampling_options = ResamplingOptions(
+                self._resampling_options.frequency, common_date_span=DateSpan.UNION
+            )
 
     def __create_delta_ensemble_vectors_df(
         self,
         vector_names: List[str],
-        resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
         """
@@ -122,7 +131,6 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
 
         `Input:`
         * vector_names: List[str] - List of vector names to get data for
-        * resampling_frequency: Optional[Frequency] - Optional resampling frequency
         * realizations: Optional[Sequence[int]] - Optional sequence of realization numbers for
         vectors
 
@@ -138,10 +146,10 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         # NOTE: index order ["DATE","REAL"] to obtain column order when
         # performing reset_index() later
         ensemble_a_vectors_df = self._provider_a.get_vectors_df(
-            vector_names, resampling_frequency, realizations
+            vector_names, self._resampling_options, realizations
         ).set_index(["DATE", "REAL"])
         ensemble_b_vectors_df = self._provider_b.get_vectors_df(
-            vector_names, resampling_frequency, realizations
+            vector_names, self._resampling_options, realizations
         ).set_index(["DATE", "REAL"])
 
         # Reset index, sort values by "REAL" and thereafter by "DATE" to
@@ -187,12 +195,12 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         if self._relative_date:
             return dataframe_utils.create_relative_to_date_df(
                 self.__create_delta_ensemble_vectors_df(
-                    self._provider_vectors, self._resampling_frequency, realizations
+                    self._provider_vectors, realizations
                 ),
                 self._relative_date,
             )
         return self.__create_delta_ensemble_vectors_df(
-            self._provider_vectors, self._resampling_frequency, realizations
+            self._provider_vectors, realizations
         )
 
     def create_per_interval_and_per_day_vectors_df(
@@ -234,7 +242,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
         vectors_df = self.__create_delta_ensemble_vectors_df(
-            cumulative_vector_names, self._resampling_frequency, realizations
+            cumulative_vector_names, realizations
         )
 
         per_interval_and_per_day_vectors_df = pd.DataFrame()
@@ -296,10 +304,10 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         provider_b_calculated_vectors_df = pd.DataFrame()
         for expression in self._vector_calculator_expressions:
             provider_a_calculated_vector_df = create_calculated_vector_df(
-                expression, self._provider_a, realizations, self._resampling_frequency
+                expression, self._provider_a, realizations, self._resampling_options
             )
             provider_b_calculated_vector_df = create_calculated_vector_df(
-                expression, self._provider_b, realizations, self._resampling_frequency
+                expression, self._provider_b, realizations, self._resampling_options
             )
 
             if (

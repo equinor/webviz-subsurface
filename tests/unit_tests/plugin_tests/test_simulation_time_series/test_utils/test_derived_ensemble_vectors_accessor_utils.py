@@ -53,7 +53,7 @@ def test_create_derived_vectors_accessor_dict() -> None:
         provider_set=provider_set,
         expressions=[],
         delta_ensembles=delta_ensembles,
-        resampling_frequency=None,
+        resampling_options=None,
         relative_date=None,
     )
 

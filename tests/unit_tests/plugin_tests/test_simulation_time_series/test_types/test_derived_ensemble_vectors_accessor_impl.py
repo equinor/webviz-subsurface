@@ -119,7 +119,7 @@ TEST_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
     provider=EnsembleSummaryProviderMock(INPUT_DF),
     vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
-    resampling_frequency=None,
+    resampling_options=None,
 )
 
 TEST_AFTER_2262_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
@@ -127,7 +127,7 @@ TEST_AFTER_2262_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
     provider=EnsembleSummaryProviderMock(INPUT_AFTER_2262_DF),
     vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=[TEST_EXPRESSION],
-    resampling_frequency=None,
+    resampling_options=None,
 )
 
 TEST_EMPTY_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
@@ -135,7 +135,7 @@ TEST_EMPTY_ACCESSOR = DerivedEnsembleVectorsAccessorImpl(
     provider=EnsembleSummaryProviderMock(pd.DataFrame()),
     vectors=["A", "B", "PER_INTVL_B", "Sum A and B"],
     expressions=None,
-    resampling_frequency=None,
+    resampling_options=None,
 )
 
 

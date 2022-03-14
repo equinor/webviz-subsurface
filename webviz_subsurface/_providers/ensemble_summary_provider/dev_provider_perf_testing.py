@@ -4,13 +4,17 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from .ensemble_summary_provider import EnsembleSummaryProvider, Frequency
+from .ensemble_summary_provider import (
+    EnsembleSummaryProvider,
+    Frequency,
+    ResamplingOptions,
+)
 from .ensemble_summary_provider_factory import EnsembleSummaryProviderFactory
 
 
 def _get_n_vectors_one_by_one_all_realizations(
     provider: EnsembleSummaryProvider,
-    resampling_frequency: Optional[Frequency],
+    resampling_options: Optional[ResamplingOptions],
     num_vectors: int,
 ) -> None:
 
@@ -18,10 +22,12 @@ def _get_n_vectors_one_by_one_all_realizations(
     num_vectors = min(num_vectors, len(all_vectors))
     vectors_to_get = all_vectors[0:num_vectors]
 
+    freq_in_use = resampling_options.frequency if resampling_options else None
+
     print("## ------------------")
     print(
         f"## entering _get_n_vectors_one_by_one_all_realizations("
-        f"{resampling_frequency}, {num_vectors}) ..."
+        f"{freq_in_use}, {num_vectors}) ..."
     )
 
     start_tim = time.perf_counter()
@@ -29,7 +35,7 @@ def _get_n_vectors_one_by_one_all_realizations(
     accum_rows = 0
     accum_cols = 0
     for vec_name in vectors_to_get:
-        df = provider.get_vectors_df([vec_name], resampling_frequency)
+        df = provider.get_vectors_df([vec_name], resampling_options)
         accum_rows += df.shape[0]
         accum_cols += df.shape[1]
 
@@ -52,7 +58,7 @@ def _get_n_vectors_one_by_one_all_realizations(
 
 def _get_n_vectors_in_batch_all_realizations(
     provider: EnsembleSummaryProvider,
-    resampling_frequency: Optional[Frequency],
+    resampling_options: Optional[ResamplingOptions],
     num_vectors: int,
 ) -> None:
 
@@ -60,15 +66,17 @@ def _get_n_vectors_in_batch_all_realizations(
     num_vectors = min(num_vectors, len(all_vectors))
     vectors_to_get = all_vectors[0:num_vectors]
 
+    freq_in_use = resampling_options.frequency if resampling_options else None
+
     print("## ------------------")
     print(
         f"## entering _get_n_vectors_in_batch_all_realizations("
-        f"{resampling_frequency}, {num_vectors}) ..."
+        f"{freq_in_use}, {num_vectors}) ..."
     )
 
     start_tim = time.perf_counter()
 
-    df = provider.get_vectors_df(vectors_to_get, resampling_frequency)
+    df = provider.get_vectors_df(vectors_to_get, resampling_options)
 
     elapsed_time_ms = 1000 * (time.perf_counter() - start_tim)
 
@@ -176,15 +184,21 @@ def _run_perf_tests(
 
     print()
 
+    resampling_options: Optional[ResamplingOptions] = None
+    if resampling_frequency:
+        resampling_options = ResamplingOptions(
+            frequency=resampling_frequency, common_date_span=None
+        )
+
     _get_meta_for_n_vectors_one_by_one(provider, 10)
 
     _get_vector_names_filtered_by_value(provider)
 
-    _get_n_vectors_one_by_one_all_realizations(provider, resampling_frequency, 1)
-    _get_n_vectors_one_by_one_all_realizations(provider, resampling_frequency, 50)
+    _get_n_vectors_one_by_one_all_realizations(provider, resampling_options, 1)
+    _get_n_vectors_one_by_one_all_realizations(provider, resampling_options, 50)
 
-    _get_n_vectors_in_batch_all_realizations(provider, resampling_frequency, 50)
-    _get_n_vectors_in_batch_all_realizations(provider, resampling_frequency, 99999)
+    _get_n_vectors_in_batch_all_realizations(provider, resampling_options, 50)
+    _get_n_vectors_in_batch_all_realizations(provider, resampling_options, 99999)
 
     num_vecs = 100
     _get_n_vectors_for_date_all_realizations(

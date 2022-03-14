@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
 from webviz_subsurface._providers import (
+    DateSpan,
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
     Frequency,
@@ -110,7 +111,7 @@ class ProviderSet:
         # TODO: Adjust when providers are updated!
         dates_union: Set[datetime.datetime] = set()
         for provider in self.all_providers():
-            _dates = set(provider.dates(resampling_frequency, None))
+            _dates = set(provider.dates(resampling_frequency, DateSpan.UNION, None))
             dates_union.update(_dates)
         return list(sorted(dates_union))
 

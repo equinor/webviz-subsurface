@@ -4,7 +4,11 @@ from typing import List, Optional, Sequence
 import pandas as pd
 from webviz_subsurface_components import ExpressionInfo
 
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import (
+    DateSpan,
+    EnsembleSummaryProvider,
+    ResamplingOptions,
+)
 from webviz_subsurface._utils.vector_calculator import (
     create_calculated_vector_df,
     get_selected_expressions,
@@ -41,7 +45,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         provider: EnsembleSummaryProvider,
         vectors: List[str],
         expressions: Optional[List[ExpressionInfo]] = None,
-        resampling_frequency: Optional[Frequency] = None,
+        resampling_options: Optional[ResamplingOptions] = None,
         relative_date: Optional[datetime.datetime] = None,
     ) -> None:
         # Initialize base class
@@ -63,10 +67,17 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
             if expressions is not None
             else []
         )
-        self._resampling_frequency = (
-            resampling_frequency if self._provider.supports_resampling() else None
-        )
+
         self._relative_date = relative_date
+        self._resampling_options = (
+            resampling_options if self._provider.supports_resampling() else None
+        )
+
+        # Make date span union if calculating data relative to date
+        if self._relative_date and self._resampling_options:
+            self._resampling_options = ResamplingOptions(
+                self._resampling_options.frequency, common_date_span=DateSpan.UNION
+            )
 
     def has_provider_vectors(self) -> bool:
         return len(self._provider_vectors) > 0
@@ -89,12 +100,12 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         if self._relative_date:
             return dataframe_utils.create_relative_to_date_df(
                 self._provider.get_vectors_df(
-                    self._provider_vectors, self._resampling_frequency, realizations
+                    self._provider_vectors, self._resampling_options, realizations
                 ),
                 self._relative_date,
             )
         return self._provider.get_vectors_df(
-            self._provider_vectors, self._resampling_frequency, realizations
+            self._provider_vectors, self._resampling_options, realizations
         )
 
     def create_per_interval_and_per_day_vectors_df(
@@ -136,7 +147,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         cumulative_vector_names = list(sorted(set(cumulative_vector_names)))
 
         vectors_df = self._provider.get_vectors_df(
-            cumulative_vector_names, self._resampling_frequency, realizations
+            cumulative_vector_names, self._resampling_options, realizations
         )
 
         per_interval_and_per_day_vectors_df = pd.DataFrame()
@@ -191,7 +202,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
         calculated_vectors_df = pd.DataFrame()
         for expression in self._vector_calculator_expressions:
             calculated_vector_df = create_calculated_vector_df(
-                expression, self._provider, realizations, self._resampling_frequency
+                expression, self._provider, realizations, self._resampling_options
             )
             if calculated_vectors_df.empty:
                 calculated_vectors_df = calculated_vector_df

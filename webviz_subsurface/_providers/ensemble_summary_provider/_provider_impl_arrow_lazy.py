@@ -13,19 +13,23 @@ from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._field_metadata import create_vector_metadata_from_field_meta
 from ._resampling import (
-    generate_normalized_sample_dates,
+    find_intersection_of_normalized_dates,
+    find_union_of_normalized_dates,
     resample_segmented_multi_real_table,
     sample_segmented_multi_real_table_at_date,
 )
 from ._table_utils import (
     add_per_vector_min_max_to_table_schema_metadata,
-    find_intersected_dates_between_realizations,
+    find_intersection_of_realization_dates,
     find_min_max_for_numeric_table_columns,
+    find_union_of_realization_dates,
     get_per_vector_min_max_from_schema_metadata,
 )
 from .ensemble_summary_provider import (
+    DateSpan,
     EnsembleSummaryProvider,
     Frequency,
+    ResamplingOptions,
     VectorMetadata,
 )
 
@@ -264,6 +268,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
     def dates(
         self,
         resampling_frequency: Optional[Frequency],
+        date_span: DateSpan = DateSpan.UNION,
         realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
 
@@ -278,14 +283,17 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         et_filter_ms = timer.lap_ms()
 
         if resampling_frequency is not None:
-            unique_dates_np = table.column("DATE").unique().to_numpy()
-            min_raw_date = np.min(unique_dates_np)
-            max_raw_date = np.max(unique_dates_np)
-            intersected_dates = generate_normalized_sample_dates(
-                min_raw_date, max_raw_date, resampling_frequency
-            )
+            if date_span == DateSpan.INTERSECTION:
+                date_list = find_intersection_of_normalized_dates(
+                    table, resampling_frequency
+                )
+            else:
+                date_list = find_union_of_normalized_dates(table, resampling_frequency)
         else:
-            intersected_dates = find_intersected_dates_between_realizations(table)
+            if date_span == DateSpan.INTERSECTION:
+                date_list = find_intersection_of_realization_dates(table)
+            else:
+                date_list = find_union_of_realization_dates(table)
 
         et_find_unique_ms = timer.lap_ms()
 
@@ -296,12 +304,12 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             f"find_unique={et_find_unique_ms}ms)"
         )
 
-        return intersected_dates.astype(datetime.datetime).tolist()
+        return date_list.astype(datetime.datetime).tolist()
 
     def get_vectors_df(
         self,
         vector_names: Sequence[str],
-        resampling_frequency: Optional[Frequency],
+        resampling_options: Optional[ResamplingOptions],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
 
@@ -320,15 +328,22 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             table = table.filter(mask)
         et_filter_ms = timer.lap_ms()
 
-        if resampling_frequency is not None:
-            table = resample_segmented_multi_real_table(table, resampling_frequency)
+        if resampling_options is not None:
+            table = resample_segmented_multi_real_table(
+                table, resampling_options.frequency, resampling_options.common_date_span
+            )
+
         et_resample_ms = timer.lap_ms()
 
         df = table.to_pandas(timestamp_as_object=True)
         et_to_pandas_ms = timer.lap_ms()
 
+        actual_resampling_freq = (
+            resampling_options.frequency if resampling_options else None
+        )
+
         LOGGER.debug(
-            f"get_vectors_df({resampling_frequency}) took: {timer.elapsed_ms()}ms ("
+            f"get_vectors_df({actual_resampling_freq}) took: {timer.elapsed_ms()}ms ("
             f"read={et_read_ms}ms, "
             f"filter={et_filter_ms}ms, "
             f"resample={et_resample_ms}ms, "

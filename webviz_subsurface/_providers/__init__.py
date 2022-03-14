@@ -6,8 +6,10 @@ from .ensemble_fault_polygons_provider import (
     SimulatedFaultPolygonsAddress,
 )
 from .ensemble_summary_provider.ensemble_summary_provider import (
+    DateSpan,
     EnsembleSummaryProvider,
     Frequency,
+    ResamplingOptions,
     VectorMetadata,
 )
 from .ensemble_summary_provider.ensemble_summary_provider_factory import (

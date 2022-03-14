@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from webviz_subsurface_components import ExpressionInfo
 
-from webviz_subsurface._providers import Frequency
+from webviz_subsurface._providers import ResamplingOptions
 
 from ..types import (
     DeltaEnsemble,
@@ -25,7 +25,7 @@ def create_derived_vectors_accessor_dict(
     provider_set: ProviderSet,
     expressions: List[ExpressionInfo],
     delta_ensembles: List[DeltaEnsemble],
-    resampling_frequency: Optional[Frequency],
+    resampling_options: Optional[ResamplingOptions],
     relative_date: Optional[datetime.datetime],
 ) -> Dict[str, DerivedVectorsAccessor]:
     """Create dictionary with ensemble name as key and derived vectors accessor
@@ -44,8 +44,10 @@ def create_derived_vectors_accessor_dict(
     * provider_set: ProviderSet - set of EnsembleSummaryProviders to obtain vector data
     * expressions: List[ExpressionInfo] - list of expressions for calculating vectors
     * delta_ensembles: List[DeltaEnsemble] - list of created delta ensembles
-    * resampling_frequency: Optional[Frequency] - Resampling frequency setting for
+    * resampling_options: Optional[ResamplingOptions] - Resampling options setting for
     EnsembleSummaryProviders
+    * relative_data: Optional[datetime.datetime] - Relative date to subtracted from respective
+    vector data.
 
     `Return:`
     * Dict[str, DerivedVectorsAccessor] - dictionary with ensemble name as key and
@@ -64,7 +66,7 @@ def create_derived_vectors_accessor_dict(
                 provider=provider_set.provider(ensemble),
                 vectors=vectors,
                 expressions=expressions,
-                resampling_frequency=resampling_frequency,
+                resampling_options=resampling_options,
                 relative_date=relative_date,
             )
         elif (
@@ -83,7 +85,7 @@ def create_derived_vectors_accessor_dict(
                 provider_pair=provider_pair,
                 vectors=vectors,
                 expressions=expressions,
-                resampling_frequency=resampling_frequency,
+                resampling_options=resampling_options,
                 relative_date=relative_date,
             )
 

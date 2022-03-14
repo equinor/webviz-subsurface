@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Changed
+
+- [#950](https://github.com/equinor/webviz-subsurface/pull/950) - Revised `EnsembleSummaryProvider` to support finer control of which range of dates get returned when using lazy resampling and requesting data for multiple realizations. Note that this is a breaking change in the `EnsembleSummaryProvider` interface, see PR for more details.
+
 ## [0.2.11] - 2022-03-14
 
 ### Added

@@ -14,7 +14,7 @@ from webviz_subsurface_components import (
     VectorDefinition,
 )
 
-from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
+from webviz_subsurface._providers import EnsembleSummaryProvider, ResamplingOptions
 
 from .vector_selector import (
     add_vector_to_vector_selector_data,
@@ -187,7 +187,7 @@ def expressions_from_config(
             "variableVectorMap": variable_vector_map_from_dict(
                 expressions[expression]["variableVectorMap"]
             ),
-            "isValid": False,  # Set False and validate in seperate operation
+            "isValid": False,  # Set False and validate in separate operation
             "isDeletable": False,
         }
         if "description" in expressions[expression]:
@@ -284,7 +284,7 @@ def create_calculated_vector_df(
     expression: ExpressionInfo,
     provider: EnsembleSummaryProvider,
     realizations: Optional[Sequence[int]],
-    resampling_frequency: Optional[Frequency],
+    resampling_options: Optional[ResamplingOptions],
 ) -> pd.DataFrame:
     """Create dataframe with calculated vector from expression
 
@@ -304,9 +304,7 @@ def create_calculated_vector_df(
     vector_names = list(variable_vector_dict.values())
 
     # Retrieve data for vectors in expression
-    vectors_df = provider.get_vectors_df(
-        vector_names, resampling_frequency, realizations
-    )
+    vectors_df = provider.get_vectors_df(vector_names, resampling_options, realizations)
 
     values: Dict[str, np.ndarray] = {}
     for variable, vector in variable_vector_dict.items():

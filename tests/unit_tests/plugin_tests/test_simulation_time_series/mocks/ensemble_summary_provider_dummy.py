@@ -4,8 +4,10 @@ from typing import List, Optional, Sequence
 import pandas as pd
 
 from webviz_subsurface._providers import (
+    DateSpan,
     EnsembleSummaryProvider,
     Frequency,
+    ResamplingOptions,
     VectorMetadata,
 )
 
@@ -43,6 +45,7 @@ class EnsembleSummaryProviderDummy(EnsembleSummaryProvider):
     def dates(
         self,
         resampling_frequency: Optional[Frequency],
+        date_span: DateSpan = DateSpan.UNION,
         realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
         raise NotImplementedError("Method not implemented for mock!")
@@ -53,7 +56,7 @@ class EnsembleSummaryProviderDummy(EnsembleSummaryProvider):
     def get_vectors_df(
         self,
         vector_names: Sequence[str],
-        resampling_frequency: Optional[Frequency],
+        resampling_options: Optional[ResamplingOptions],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
         raise NotImplementedError("Method not implemented for mock!")
