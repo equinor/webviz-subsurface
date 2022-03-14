@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.11] - 2022-03-14
+
 ### Added
+
 - [#971](https://github.com/equinor/webviz-subsurface/pull/971) - `MapViewerFMU` - New plugin for visualizing surface from FMU.
 - [#940](https://github.com/equinor/webviz-subsurface/pull/940) - `SimulationTimeSeries` - Added configurable user defined vector definitions.
 - [#951](https://github.com/equinor/webviz-subsurface/pull/951) - `SimulationTimeSeries` - Added calculating delta relative to date within ensemble - i.e. subtract realization values on selected date from corresponding realization values for each date in the selected vectors.
@@ -20,9 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#956](https://github.com/equinor/webviz-subsurface/pull/956) - `SimulationTimeSeries` - Deprecate usage of user input options {vector1, vector2, vector3}. Add list of vectors as user input options for initially selected vectors.
 - [#961](https://github.com/equinor/webviz-subsurface/pull/961) - Improved error message when there are none valid realizations in an ensemble.
 - [#970](https://github.com/equinor/webviz-subsurface/pull/970) - Replaced modals with new Dialog component in `StructuralUncertainty`. Changed display of uncertainty table to be a Dialog.
-
-### Fixed
-- [#965](https://github.com/equinor/webviz-subsurface/pull/965) - Allow a filtered subset of surface names for multiple attributes in `StructuralUncertainty`.
+- [#980](https://github.com/equinor/webviz-subsurface/pull/980) - Deprecated plugin `SurfaceViewerFMU`. This has been replaced by the faster, and more
+feature-rich plugin `MapViewerFMU`.
 
 ### Fixed
 - [#965](https://github.com/equinor/webviz-subsurface/pull/965) - Allow a filtered subset of surface names for multiple attributes in `StructuralUncertainty`.
