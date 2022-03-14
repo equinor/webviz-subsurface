@@ -9,6 +9,7 @@ import xtgeo
 from dash import Dash, Input, Output, State, callback_context, dcc, html
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.deprecation_decorators import deprecated_plugin
 from webviz_config.webviz_store import webvizstore
 from webviz_subsurface_components import LeafletMap
 
@@ -18,6 +19,7 @@ from webviz_subsurface._models import SurfaceLeafletModel, SurfaceSetModel
 from webviz_subsurface._private_plugins.surface_selector import SurfaceSelector
 
 
+@deprecated_plugin("Relevant functionality is implemented in the MapViewerFMU plugin.")
 class SurfaceViewerFMU(WebvizPluginABC):
     """Covisualize surfaces from an ensemble.
 
