@@ -61,9 +61,17 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         storage_key: str,
         sim_surfaces: List[SurfaceFileInfo],
         obs_surfaces: List[SurfaceFileInfo],
+        avoid_copying_surfaces: bool,
     ) -> None:
+        """If avoid_copying_surfaces if True, the specified surfaces wil NOT be copied
+        into the backing store, but will be referenced from their source locations.
+        Note that this is only useful when running in non-portable mode and will fail
+        in portable mode.
+        """
 
         timer = PerfTimer()
+
+        do_copy_surfs_into_store = not avoid_copying_surfaces
 
         # All data for this provider will be stored inside a sub-directory
         # given by the storage key
@@ -82,20 +90,23 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         original_path_arr: List[str] = []
 
         for surfinfo in sim_surfaces:
-            rel_path_in_store = _compose_rel_sim_surf_path(
-                real=surfinfo.real,
-                attribute=surfinfo.attribute,
-                name=surfinfo.name,
-                datestr=surfinfo.datestr,
-                extension=Path(surfinfo.path).suffix,
-            )
             type_arr.append(SurfaceType.SIMULATED)
             real_arr.append(surfinfo.real)
             attribute_arr.append(surfinfo.attribute)
             name_arr.append(surfinfo.name)
             datestr_arr.append(surfinfo.datestr if surfinfo.datestr else "")
-            rel_path_arr.append(str(rel_path_in_store))
             original_path_arr.append(surfinfo.path)
+
+            rel_path_in_store = ""
+            if do_copy_surfs_into_store:
+                rel_path_in_store = _compose_rel_sim_surf_pathstr(
+                    real=surfinfo.real,
+                    attribute=surfinfo.attribute,
+                    name=surfinfo.name,
+                    datestr=surfinfo.datestr,
+                    extension=Path(surfinfo.path).suffix,
+                )
+            rel_path_arr.append(rel_path_in_store)
 
         # We want to strip out observed surfaces without a matching simulated surface
         valid_obs_surfaces = _find_observed_surfaces_corresponding_to_simulated(
@@ -103,23 +114,31 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         )
 
         for surfinfo in valid_obs_surfaces:
-            rel_path_in_store = _compose_rel_obs_surf_path(
-                attribute=surfinfo.attribute,
-                name=surfinfo.name,
-                datestr=surfinfo.datestr,
-                extension=Path(surfinfo.path).suffix,
-            )
             type_arr.append(SurfaceType.OBSERVED)
             real_arr.append(-1)
             attribute_arr.append(surfinfo.attribute)
             name_arr.append(surfinfo.name)
             datestr_arr.append(surfinfo.datestr if surfinfo.datestr else "")
-            rel_path_arr.append(str(rel_path_in_store))
             original_path_arr.append(surfinfo.path)
 
-        LOGGER.debug(f"Copying {len(original_path_arr)} surfaces into backing store...")
+            rel_path_in_store = ""
+            if do_copy_surfs_into_store:
+                rel_path_in_store = _compose_rel_obs_surf_pathstr(
+                    attribute=surfinfo.attribute,
+                    name=surfinfo.name,
+                    datestr=surfinfo.datestr,
+                    extension=Path(surfinfo.path).suffix,
+                )
+            rel_path_arr.append(rel_path_in_store)
+
         timer.lap_s()
-        _copy_surfaces_into_provider_dir(original_path_arr, rel_path_arr, provider_dir)
+        if do_copy_surfs_into_store:
+            LOGGER.debug(
+                f"Copying {len(original_path_arr)} surfaces into backing store..."
+            )
+            _copy_surfaces_into_provider_dir(
+                original_path_arr, rel_path_arr, provider_dir
+            )
         et_copy_s = timer.lap_s()
 
         surface_inventory_df = pd.DataFrame(
@@ -137,10 +156,16 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         parquet_file_name = provider_dir / "surface_inventory.parquet"
         surface_inventory_df.to_parquet(path=parquet_file_name)
 
-        LOGGER.debug(
-            f"Wrote surface backing store in: {timer.elapsed_s():.2f}s ("
-            f"copy={et_copy_s:.2f}s)"
-        )
+        if do_copy_surfs_into_store:
+            LOGGER.debug(
+                f"Wrote surface backing store in: {timer.elapsed_s():.2f}s ("
+                f"copy={et_copy_s:.2f}s)"
+            )
+        else:
+            LOGGER.debug(
+                f"Wrote surface backing store without copying surfaces in: "
+                f"{timer.elapsed_s():.2f}s"
+            )
 
     @staticmethod
     def from_backing_store(
@@ -365,7 +390,18 @@ class ProviderImplFile(EnsembleSurfaceProvider):
             & (df[Col.REAL].isin(realizations))
         ]
 
-        return [self._provider_dir / rel_path for rel_path in df[Col.REL_PATH]]
+        df = df[[Col.REL_PATH, Col.ORIGINAL_PATH]]
+
+        # Return file name within backing store if the surface was copied there,
+        # otherwise return the original source file name
+        fn_list: List[str] = []
+        for _index, row in df.iterrows():
+            if row[Col.REL_PATH]:
+                fn_list.append(self._provider_dir / row[Col.REL_PATH])
+            else:
+                fn_list.append(row[Col.ORIGINAL_PATH])
+
+        return fn_list
 
     def _locate_observed_surfaces(
         self, attribute: str, name: str, datestr: str
@@ -381,7 +417,18 @@ class ProviderImplFile(EnsembleSurfaceProvider):
             & (df[Col.DATESTR] == datestr)
         ]
 
-        return [self._provider_dir / rel_path for rel_path in df[Col.REL_PATH]]
+        df = df[[Col.REL_PATH, Col.ORIGINAL_PATH]]
+
+        # Return file name within backing store if the surface was copied there,
+        # otherwise return the original source file name
+        fn_list: List[str] = []
+        for _index, row in df.iterrows():
+            if row[Col.REL_PATH]:
+                fn_list.append(self._provider_dir / row[Col.REL_PATH])
+            else:
+                fn_list.append(row[Col.ORIGINAL_PATH])
+
+        return fn_list
 
 
 def _find_observed_surfaces_corresponding_to_simulated(
@@ -421,33 +468,33 @@ def _copy_surfaces_into_provider_dir(
     #     executor.map(shutil.copyfile, original_path_arr, full_dst_path_arr)
 
 
-def _compose_rel_sim_surf_path(
+def _compose_rel_sim_surf_pathstr(
     real: int,
     attribute: str,
     name: str,
     datestr: Optional[str],
     extension: str,
-) -> Path:
+) -> str:
     """Compose path to simulated surface file, relative to provider's directory"""
     if datestr:
         fname = f"{real}--{name}--{attribute}--{datestr}{extension}"
     else:
         fname = f"{real}--{name}--{attribute}{extension}"
-    return Path(REL_SIM_DIR) / fname
+    return str(Path(REL_SIM_DIR) / fname)
 
 
-def _compose_rel_obs_surf_path(
+def _compose_rel_obs_surf_pathstr(
     attribute: str,
     name: str,
     datestr: Optional[str],
     extension: str,
-) -> Path:
+) -> str:
     """Compose path to observed surface file, relative to provider's directory"""
     if datestr:
         fname = f"{name}--{attribute}--{datestr}{extension}"
     else:
         fname = f"{name}--{attribute}{extension}"
-    return Path(REL_OBS_DIR) / fname
+    return str(Path(REL_OBS_DIR) / fname)
 
 
 def _calc_statistic_across_surfaces(
