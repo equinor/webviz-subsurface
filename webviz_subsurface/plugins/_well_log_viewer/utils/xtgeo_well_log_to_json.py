@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import xtgeo
 
 
-def xtgeo_well_logs_to_json_format(well: xtgeo.Well) -> List[Dict]:
+def xtgeo_well_logs_to_json_format(well: xtgeo.Well) -> Dict:
 
     header = generate_header(well_name=well.name)
     curves = []
@@ -31,26 +31,13 @@ def xtgeo_well_logs_to_json_format(well: xtgeo.Well) -> List[Dict]:
     dframe = well.dataframe[curve_names]
     dframe = dframe.reindex(curve_names, axis=1)
 
-    return [{"header": header, "curves": curves, "data": dframe.values.tolist()}]
+    return {"header": header, "curves": curves, "data": dframe.values.tolist()}
 
 
 def generate_header(well_name: str, logrun_name: str = "log") -> Dict[str, Any]:
     return {
         "name": logrun_name,
         "well": well_name,
-        "wellbore": None,
-        "field": None,
-        "country": None,
-        "date": None,
-        "operator": None,
-        "serviceCompany": None,
-        "runNumber": None,
-        "elevation": None,
-        "source": None,
-        "startIndex": None,
-        "endIndex": None,
-        "step": None,
-        "dataUri": None,
     }
 
 
