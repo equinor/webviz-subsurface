@@ -22,6 +22,7 @@ pages:
 
 from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
 from ._bhp_qc import BhpQc
+from ._co2_migration import CO2Migration
 from ._disk_usage import DiskUsage
 from ._group_tree import GroupTree
 from ._history_match import HistoryMatch
