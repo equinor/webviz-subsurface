@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Fixed
-- [#985](https://github.com/equinor/webviz-subsurface/pull/985) - 'WellLogViewer' - Updated data format to latest version. Requires no changes in input data.
+- [#985](https://github.com/equinor/webviz-subsurface/pull/985) - `WellLogViewer` - Updated data format to latest version. Requires no changes in input data.
 
 ## [0.2.11] - 2022-03-14
 
