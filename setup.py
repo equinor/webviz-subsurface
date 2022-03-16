@@ -68,6 +68,7 @@ setup(
             "SurfaceViewerFMU = webviz_subsurface.plugins:SurfaceViewerFMU",
             "SurfaceWithGridCrossSection = webviz_subsurface.plugins:SurfaceWithGridCrossSection",
             "SurfaceWithSeismicCrossSection = webviz_subsurface.plugins:SurfaceWithSeismicCrossSection",
+            "SwatinitQC = webviz_subsurface.plugins:SwatinitQC",
             "TornadoPlotterFMU = webviz_subsurface.plugins:TornadoPlotterFMU",
             "VolumetricAnalysis = webviz_subsurface.plugins:VolumetricAnalysis",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
