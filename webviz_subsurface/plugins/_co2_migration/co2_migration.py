@@ -1,7 +1,7 @@
 import pathlib
 from dash import Dash
 from typing import Dict, List
-from webviz_config import WebvizPluginABC
+from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProviderFactory,
     EnsembleSurfaceProviderFactory,
@@ -14,25 +14,31 @@ from ._utils import MapAttribute
 
 
 class CO2Migration(WebvizPluginABC):
-    def __init__(self, app: Dash, ensemble_paths: List[str]):
-        # TODO: ensemble_paths should be replaced by "shared_settings"?
+    def __init__(
+        self,
+        app: Dash,
+        webviz_settings: WebvizSettings,
+        ensembles: List[str]
+    ):
         super().__init__()
         # Surfaces
         surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
         attributes = [m.value for m in MapAttribute]
         self._ensemble_surface_providers = {
-            pathlib.Path(ens).name: surface_provider_factory.create_from_ensemble_surface_files(
-                ens,
+            ens: surface_provider_factory.create_from_ensemble_surface_files(
+                webviz_settings.shared_settings["scratch_ensembles"][ens],
                 attribute_filter=attributes,
             )
-            for ens in ensemble_paths
+            for ens in ensembles
         }
         self._surface_server = SurfaceServer.instance(app)
         # Polygons
         polygon_provider_factory = EnsembleFaultPolygonsProviderFactory.instance()
         self._ensemble_fault_polygons_providers = {
-            pathlib.Path(ens).name: polygon_provider_factory.create_from_ensemble_fault_polygons_files(ens)
-            for ens in ensemble_paths
+            ens: polygon_provider_factory.create_from_ensemble_fault_polygons_files(
+                webviz_settings.shared_settings["scratch_ensembles"][ens],
+            )
+            for ens in ensembles
         }
         self._polygons_server = FaultPolygonsServer.instance(app)
         for provider in self._ensemble_fault_polygons_providers.values():
