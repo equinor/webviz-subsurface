@@ -8,7 +8,10 @@ from webviz_subsurface._datainput.fmu_input import scratch_ensemble
 
 
 class GruptreeModel:
-    """Class to load gruptree tables"""
+    """Facilitates loading of gruptree tables. Can be reused in all
+    plugins that are using grouptree data and extended with additional
+    functionality and filtering options if necessary.
+    """
 
     def __init__(
         self,
