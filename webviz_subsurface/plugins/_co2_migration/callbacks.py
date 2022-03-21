@@ -4,9 +4,13 @@ from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 from typing import Callable, Dict, List
 from ._utils import MapAttribute
-from .layout import LayoutElements, generate_map_layers
+from .layout import LayoutElements
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
+)
+from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
+    ColormapLayer,
+    FaultPolygonsLayer,
 )
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProvider,
@@ -18,6 +22,8 @@ from webviz_subsurface._providers import (
     SurfaceAddress,
     SurfaceServer,
 )
+
+_FAULT_POLYGON_ATTRIBUTE = "dl_extracted_faultlines"
 
 def plugin_callbacks(
     get_uuid: Callable,
@@ -45,9 +51,8 @@ def plugin_callbacks(
         ]
         # Fault Polygon
         polygon_provider = ensemble_fault_polygons_providers[ensemble]
-        # TODO: dl_extracted_faultlines should not be hard-coded
         # TODO: probably want horizons/zones in stratigraphic order
-        polygons = polygon_provider.fault_polygons_names_for_attribute("dl_extracted_faultlines")
+        polygons = polygon_provider.fault_polygons_names_for_attribute(_FAULT_POLYGON_ATTRIBUTE)
         polygons = [
             dict(label=p, value=p)
             for p in polygons
@@ -85,9 +90,6 @@ def plugin_callbacks(
                 "bounds": surf_meta.deckgl_bounds,
                 "rotDeg": surf_meta.deckgl_rot_deg,
                 "valueRange": [surf_meta.val_min, surf_meta.val_max],
-                # "colormap": "https://cdn.jsdelivr.net/gh/kylebarron/deck.gl-raster/assets/colormaps/plasma.png",
-                # TODO:
-                # "colorMapName": "",
                 "colorMapRange": [surf_meta.val_min, surf_meta.val_max],
             }
         )
@@ -133,7 +135,7 @@ def find_colormap_address(attribute: str, date):
 
 def find_fault_polygon_address(polygon_name):
     return SimulatedFaultPolygonsAddress(
-        attribute="dl_extracted_faultlines",  # TODO
+        attribute=_FAULT_POLYGON_ATTRIBUTE,
         name=polygon_name,
         realization=0,
     )
@@ -145,7 +147,7 @@ def publish_and_get_surface_metadata(
     surface_address: SurfaceAddress,
 ) -> Dict:
     """
-    TODO: Nearly direct copy from HK repo
+    Nearly direct copy from MapViewerFMU
     """
     provider_id: str = surface_provider.provider_id()
     qualified_address = QualifiedSurfaceAddress(provider_id, surface_address)
@@ -160,3 +162,11 @@ def publish_and_get_surface_metadata(
         surface_server.publish_surface(qualified_address, surface)
         surf_meta = surface_server.get_surface_metadata(qualified_address)
     return surf_meta, surface_server.encode_partial_url(qualified_address)
+
+
+def generate_map_layers():
+    layers = [
+        ColormapLayer(uuid=LayoutElements.COLORMAPLAYER).to_json(),
+        FaultPolygonsLayer(uuid=LayoutElements.FAULTPOLYGONSLAYER).to_json(),
+    ]
+    return layers

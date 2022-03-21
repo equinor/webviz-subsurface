@@ -3,10 +3,6 @@ from typing import Callable, List, Any
 from dash import html
 import webviz_core_components as wcc
 from webviz_subsurface_components import DeckGLMap
-from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
-    ColormapLayer,
-    FaultPolygonsLayer,
-)
 from enum import unique, Enum
 from ._utils import MapAttribute
 
@@ -45,10 +41,10 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
             wcc.Frame(
                 style=LayoutStyle.SIDEBAR,
                 children=[
-                    PropertySelector(get_uuid),
-                    EnsembleSelector(get_uuid, ensembles),
-                    DateSelector(get_uuid),
-                    FaultPolygonSelector(get_uuid),
+                    PropertySelectorLayout(get_uuid),
+                    EnsembleSelectorLayout(get_uuid, ensembles),
+                    DateSelectorLayout(get_uuid),
+                    FaultPolygonSelectorLayout(get_uuid),
                 ]
             ),
             wcc.Frame(
@@ -63,10 +59,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                 # Version 1:
                                 DeckGLMap(
                                     id=get_uuid(LayoutElements.DECKGLMAP),
-                                    layers=[
-                                        json.loads(lay)
-                                        for lay in generate_map_layers()
-                                    ],
+                                    layers=[],
                                     coords={"visible": True},
                                     scale={"visible": True},
                                     coordinateUnit="m",
@@ -88,7 +81,7 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
         super().__init__(buttons=["expand"], children=children)
 
 
-class PropertySelector(html.Div):
+class PropertySelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable):
         super().__init__(children=[
             html.Div(
@@ -108,8 +101,7 @@ class PropertySelector(html.Div):
         ])
 
 
-class EnsembleSelector(html.Div):
-    # TODO: This is directly inspired by MapSelector and RealizationSelector
+class EnsembleSelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable, ensembles: List[str]):
         super().__init__(children=wcc.Selectors(
             label="Ensemble",
@@ -127,7 +119,7 @@ class EnsembleSelector(html.Div):
         ))
 
 
-class DateSelector(html.Div):
+class DateSelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable):
         super().__init__(children=wcc.Selectors(
             label="Dates",
@@ -140,7 +132,7 @@ class DateSelector(html.Div):
         ))
 
 
-class FaultPolygonSelector(html.Div):
+class FaultPolygonSelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable):
         super().__init__(
             children=wcc.Selectors(
@@ -152,12 +144,3 @@ class FaultPolygonSelector(html.Div):
                 ]
             )
         )
-
-
-def generate_map_layers():
-    # TODO: Move to _utils.py?
-    layers = [
-        ColormapLayer(uuid=LayoutElements.COLORMAPLAYER).to_json(),
-        FaultPolygonsLayer(uuid=LayoutElements.FAULTPOLYGONSLAYER).to_json(),
-    ]
-    return layers
