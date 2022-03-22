@@ -3,7 +3,7 @@ import dash
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 from typing import Callable, Dict, List
-from ._utils import MapAttribute
+from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE
 from .layout import LayoutElements
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
@@ -23,7 +23,6 @@ from webviz_subsurface._providers import (
     SurfaceServer,
 )
 
-_FAULT_POLYGON_ATTRIBUTE = "dl_extracted_faultlines"
 
 def plugin_callbacks(
     get_uuid: Callable,
@@ -39,20 +38,20 @@ def plugin_callbacks(
     )
     def set_ensemble(ensemble):
         if ensemble is None:
-            return []
+            return [], []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
         dates = surface_provider.surface_dates_for_attribute(MapAttribute.MaxSaturation.value)
         if dates is None:
-            raise NotImplementedError
+            dates = []
         dates = [
             dict(label=d, value=d)
             for d in dates
         ]
         # Fault Polygon
         polygon_provider = ensemble_fault_polygons_providers[ensemble]
-        # TODO: probably want horizons/zones in stratigraphic order
-        polygons = polygon_provider.fault_polygons_names_for_attribute(_FAULT_POLYGON_ATTRIBUTE)
+        # TODO: ideally want horizons/zones in stratigraphic order?
+        polygons = polygon_provider.fault_polygons_names_for_attribute(FAULT_POLYGON_ATTRIBUTE)
         polygons = [
             dict(label=p, value=p)
             for p in polygons
@@ -72,36 +71,14 @@ def plugin_callbacks(
             raise PreventUpdate
         if MapAttribute(attribute) == MapAttribute.MaxSaturation and date is None:
             raise PreventUpdate
-        colormap_address = find_colormap_address(attribute, date)
-        polygon_address = find_fault_polygon_address(polygon_name)
-        
-        surface_provider = ensemble_surface_providers[ensemble]
-        polygon_provider = ensemble_fault_polygons_providers[ensemble]
 
-        layers = generate_map_layers()
-        layers = [json.loads(lay) for lay in layers]
-        layer_model = DeckGLMapLayersModel(layers)
-        # Update ColormapLayer
-        surf_meta, img_url  = publish_and_get_surface_metadata(surface_server, surface_provider, colormap_address)
-        layer_model.update_layer_by_id(
-            layer_id=LayoutElements.COLORMAPLAYER,
-            layer_data={
-                "image": img_url,
-                "bounds": surf_meta.deckgl_bounds,
-                "rotDeg": surf_meta.deckgl_rot_deg,
-                "valueRange": [surf_meta.val_min, surf_meta.val_max],
-                "colorMapRange": [surf_meta.val_min, surf_meta.val_max],
-            }
-        )
-        # Update FaultPolygonLayer
-        layer_model.update_layer_by_id(
-            layer_id=LayoutElements.FAULTPOLYGONSLAYER,
-            layer_data={
-                "data": fault_polygons_server.encode_partial_url(
-                    provider_id=polygon_provider.provider_id(),
-                    fault_polygons_address=polygon_address,
-                ),
-            },
+        layer_model = create_layer_model(
+            surface_server=surface_server,
+            surface_provider=ensemble_surface_providers[ensemble],
+            colormap_address=derive_colormap_address(attribute, date),
+            fault_polygons_server=fault_polygons_server,
+            polygon_provider=ensemble_fault_polygons_providers[ensemble],
+            polygon_address=derive_fault_polygon_address(polygon_name),
         )
         # View
         viewport_bounds = [
@@ -113,7 +90,43 @@ def plugin_callbacks(
         return layer_model.layers, viewport_bounds
 
 
-def find_colormap_address(attribute: str, date):
+def create_layer_model(
+    surface_server: SurfaceServer,
+    surface_provider: EnsembleSurfaceProvider,
+    colormap_address: SimulatedSurfaceAddress,
+    fault_polygons_server: FaultPolygonsServer,
+    polygon_provider: EnsembleFaultPolygonsProvider,
+    polygon_address: SimulatedFaultPolygonsAddress,
+) -> DeckGLMapLayersModel:
+    layers = generate_map_layers()
+    layers = [json.loads(lay) for lay in layers]
+    layer_model = DeckGLMapLayersModel(layers)
+    # Update ColormapLayer
+    surf_meta, img_url  = publish_and_get_surface_metadata(surface_server, surface_provider, colormap_address)
+    layer_model.update_layer_by_id(
+        layer_id=LayoutElements.COLORMAPLAYER,
+        layer_data={
+            "image": img_url,
+            "bounds": surf_meta.deckgl_bounds,
+            "rotDeg": surf_meta.deckgl_rot_deg,
+            "valueRange": [surf_meta.val_min, surf_meta.val_max],
+            "colorMapRange": [surf_meta.val_min, surf_meta.val_max],
+        }
+    )
+    # Update FaultPolygonLayer
+    layer_model.update_layer_by_id(
+        layer_id=LayoutElements.FAULTPOLYGONSLAYER,
+        layer_data={
+            "data": fault_polygons_server.encode_partial_url(
+                provider_id=polygon_provider.provider_id(),
+                fault_polygons_address=polygon_address,
+            ),
+        },
+    )
+    return layer_model
+
+
+def derive_colormap_address(attribute: str, date):
     attribute = MapAttribute(attribute)
     if attribute == MapAttribute.MigrationTime:
         return SimulatedSurfaceAddress(
@@ -133,9 +146,9 @@ def find_colormap_address(attribute: str, date):
         raise NotImplementedError
 
 
-def find_fault_polygon_address(polygon_name):
+def derive_fault_polygon_address(polygon_name):
     return SimulatedFaultPolygonsAddress(
-        attribute=_FAULT_POLYGON_ATTRIBUTE,
+        attribute=FAULT_POLYGON_ATTRIBUTE,
         name=polygon_name,
         realization=0,
     )
