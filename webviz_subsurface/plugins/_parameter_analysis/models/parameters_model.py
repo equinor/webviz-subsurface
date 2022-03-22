@@ -13,24 +13,26 @@ class ParametersModel:
 
     REQUIRED_COLUMNS = ["ENSEMBLE", "REAL"]
 
-    def __init__(
-        self, dataframe: pd.DataFrame, theme: dict, drop_constants: bool = True
-    ) -> None:
+    def __init__(self, provider, theme: dict, drop_constants: bool = True) -> None:
         self.pmodel = Pmodel(
-            dataframe=dataframe, drop_constants=drop_constants, keep_numeric_only=True
+            dataframe=self.create_df_from_provider(provider),
+            drop_constants=drop_constants,
+            keep_numeric_only=True,
         )
         self._dataframe = self.pmodel.dataframe
+        self._dataframe["REAL"] = self._dataframe["REAL"].astype(int)
         self._parameters = self.pmodel.parameters
         self.theme = theme
         self.colorway = self.theme.plotly_theme.get("layout", {}).get("colorway", None)
         self._statframe = self._aggregate_ensemble_data(self._dataframe)
         self._statframe_normalized = self._normalize_and_aggregate()
+        self._dataframe_melted = self.dataframe.melt(
+            id_vars=["ENSEMBLE", "REAL"], var_name="PARAMETER", value_name="VALUE"
+        )
 
     @property
     def dataframe_melted(self) -> pd.DataFrame:
-        return self.dataframe.melt(
-            id_vars=["ENSEMBLE", "REAL"], var_name="PARAMETER", value_name="VALUE"
-        )
+        return self._dataframe_melted
 
     @property
     def dataframe(self) -> pd.DataFrame:
@@ -77,6 +79,17 @@ class ParametersModel:
             .reset_index()
         )
 
+    @staticmethod
+    def create_df_from_provider(provider) -> pd.DataFrame:
+        dfs = []
+        for ens in provider.ensemble_names():
+            df = provider.ensemble_provider(ens).get_column_data(
+                column_names=provider.ensemble_provider(ens).column_names()
+            )
+            df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+            dfs.append(df)
+        return pd.concat(dfs)
+
     def _normalize_and_aggregate(self):
         """
         Normalize parameter values to be able to compare distribution updates
@@ -121,7 +134,7 @@ class ParametersModel:
                 "id": col,
                 "name": [col.split("|")[0], col.split("|")[1]],
                 "type": "numeric",
-                "format": {"specifier": ".3~r"},
+                "format": {"specifier": ".5~r"},
             }
             for col in df.columns
         ]
@@ -201,3 +214,9 @@ class ParametersModel:
                 df["VALUE"].max() - df["VALUE"].min()
             )
         return df.reset_index(drop=True)
+
+    def get_parameter_df_for_ensemble(self, ensemble: str, reals: list):
+        return self._dataframe[
+            (self._dataframe["ENSEMBLE"] == ensemble)
+            & (self._dataframe["REAL"].isin(reals))
+        ]

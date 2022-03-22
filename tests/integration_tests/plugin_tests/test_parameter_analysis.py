@@ -11,7 +11,6 @@ def test_parameter_analysis(dash_duo, app, shared_settings) -> None:
         shared_settings["HM_SETTINGS"],
         ensembles=shared_settings["HM_ENSEMBLES"],
         time_index="monthly",
-        column_keys=["WWCT:*"],
         drop_constants=True,
     )
     app.layout = plugin.layout

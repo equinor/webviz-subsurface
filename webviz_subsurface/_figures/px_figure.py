@@ -69,8 +69,8 @@ def update_xaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
     facet_col = kwargs.get("facet_col")
     return figure.update_xaxes(
         gridwidth=1,
-        gridcolor="lightgrey",
-        showline=True,
+        gridcolor="#ECECEC",
+        showline=kwargs.get("framed", True),
         linewidth=2,
         linecolor="black",
         mirror=True,
@@ -90,12 +90,12 @@ def update_xaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
 
 def update_yaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
     return figure.update_yaxes(
-        showline=True,
+        showline=kwargs.get("framed", True),
         linewidth=2,
         linecolor="black",
         mirror=True,
         gridwidth=1,
-        gridcolor="lightgrey",
+        gridcolor="#ECECEC",
         fixedrange=plot_type == "distribution",
         showticklabels=plot_type != "distribution",
     ).update_yaxes(**kwargs.get("yaxis", {}))

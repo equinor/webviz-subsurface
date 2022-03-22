@@ -1,9 +1,30 @@
 from typing import Callable, List, Union
 
 import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from dash import html
 
-from ..models import PropertyStatisticsModel
+from ..models import (
+    PropertyStatisticsModel,
+    ProviderTimeSeriesDataModel,
+    SimulationTimeSeriesModel,
+)
+
+
+def vector_selector(
+    get_uuid: Callable,
+    vector_model: Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel],
+) -> wsc.VectorSelector:
+    return wsc.VectorSelector(
+        id=get_uuid("property-response-vector-select"),
+        maxNumSelectedNodes=1,
+        data=vector_model.vector_selector_data,
+        persistence=True,
+        persistence_type="session",
+        selectedTags=vector_model.vectors[:1],
+        numSecondsUntilSuggestionsAreShown=0.5,
+        lineBreakAfterTag=True,
+    )
 
 
 def ensemble_selector(

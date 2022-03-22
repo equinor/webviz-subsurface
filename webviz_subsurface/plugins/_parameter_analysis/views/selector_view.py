@@ -1,7 +1,10 @@
 from typing import Callable, Optional, Union
 
 import webviz_core_components as wcc
+import webviz_subsurface_components as wsc
 from dash import dcc, html
+
+from webviz_subsurface._utils.datetime_utils import to_str
 
 from ..figures.color_figure import color_figure
 from ..models import ParametersModel, SimulationTimeSeriesModel
@@ -26,60 +29,18 @@ def ensemble_selector(
     )
 
 
-def vector_selector(
-    get_uuid: Callable, vectormodel: SimulationTimeSeriesModel
-) -> html.Div:
-    first_vector_group: str = (
-        "Field"
-        if "Field" in list(vectormodel.vector_groups.keys())
-        else list(vectormodel.vector_groups.keys())[0]
-    )
-    return html.Div(
-        style={"margin": "10px 0px"},
-        children=[
-            html.Span(wcc.Label("Vector type")),
-            html.Div(
-                id=get_uuid("vtype-container"),
-                children=[
-                    wcc.RadioItems(
-                        id={"id": get_uuid("vtype-select"), "state": "initial"},
-                        options=[
-                            {"label": i, "value": i} for i in vectormodel.vector_groups
-                        ],
-                        value=first_vector_group,
-                        labelStyle={"display": "inline-block", "margin-right": "10px"},
-                    )
-                ],
-            ),
-            html.Div(
-                style={"margin-top": "5px"},
-                children=[
-                    html.Span(wcc.Label("Vector")),
-                    html.Div(
-                        id=get_uuid("vshort-container"),
-                        children=[
-                            wcc.Dropdown(
-                                id=get_uuid("vshort-select"),
-                                options=[
-                                    {"label": i, "value": i}
-                                    for i in vectormodel.vector_groups[
-                                        first_vector_group
-                                    ]["shortnames"]
-                                ],
-                                value=vectormodel.vector_groups[first_vector_group][
-                                    "shortnames"
-                                ][0],
-                                placeholder="Select a vector...",
-                                clearable=False,
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-            html.Div(id=get_uuid("vitems-container"), children=[]),
-            html.Div(id=get_uuid("vector-select"), style={"display": "none"}),
-            html.Div(id=get_uuid("clickdata-store"), style={"display": "none"}),
-        ],
+def vector_selector(get_uuid: Callable, vectormodel: SimulationTimeSeriesModel):
+    return wsc.VectorSelector(
+        id=get_uuid("vector-selector"),
+        maxNumSelectedNodes=1,
+        data=vectormodel.vector_selector_data,
+        persistence=True,
+        persistence_type="session",
+        selectedTags=["FOPT"]
+        if "FOPT" in vectormodel.vectors
+        else vectormodel.vectors[:1],
+        numSecondsUntilSuggestionsAreShown=0.5,
+        lineBreakAfterTag=True,
     )
 
 
@@ -150,14 +111,14 @@ def date_selector(
                 children=[
                     wcc.Label("Date:"),
                     wcc.Label(
-                        dates[len(dates) - 1],
+                        to_str(dates[-1]),
                         id=get_uuid("date-selected-text"),
                         style={"margin-left": "10px"},
                     ),
                     dcc.Store(
                         id=get_uuid("date-selected"),
                         storage_type="session",
-                        data=dates[len(dates) - 1],
+                        data=to_str(dates[-1]),
                     ),
                 ],
             ),
@@ -166,10 +127,11 @@ def date_selector(
                 value=len(dates) - 1,
                 min=0,
                 max=len(dates) - 1,
+                step=1,
                 included=False,
                 marks={
                     idx: {
-                        "label": dates[idx],
+                        "label": to_str(dates[idx]),
                         "style": {
                             "white-space": "nowrap",
                         },
@@ -241,50 +203,33 @@ def make_filter(
     )
 
 
-def filter_vector_selector(
-    get_uuid: Callable,
-    vectormodel: SimulationTimeSeriesModel,
-    tab: str,
-    multi: bool = True,
-    value: Union[str, float] = None,
-    open_details: bool = False,
-) -> html.Div:
+def button(uuid, label, height="30px"):
+    return html.Button(
+        label,
+        id=uuid,
+        style={
+            "marginBottom": "5px",
+            "width": "100%",
+            "height": height,
+            "line-height": height,
+            "background-color": "#E8E8E8",
+        },
+    )
+
+
+def filter_vector_selector(get_uuid: Callable) -> html.Div:
     return html.Div(
-        style={"margin-top": "10px"},
         children=[
-            wcc.Dropdown(
-                label="Vector type",
-                id={
-                    "id": get_uuid("vtype-filter"),
-                    "tab": tab,
-                },
-                options=[{"label": i, "value": i} for i in vectormodel.vector_groups],
-                value=list(vectormodel.vector_groups),
-                clearable=False,
-                style={"background-color": "white"},
-                multi=True,
+            dcc.Textarea(
+                id=get_uuid("vector-filter"),
+                style={"width": "95%", "height": "60px", "resize": "none"},
+                placeholder="\nenter comma separated input\n* is used as wildcard",
+                persistence=True,
+                persistence_type="session",
             ),
-            html.Div(
-                style={"margin-top": "10px"},
-                children=[
-                    make_filter(
-                        get_uuid=get_uuid,
-                        tab=tab,
-                        vtype=f"{vtype}s",
-                        column_values=vlist["items"],
-                        multi=multi,
-                        value=value,
-                        open_details=open_details,
-                    )
-                    for vtype, vlist in vectormodel.vector_groups.items()
-                    if vlist["items"]
-                ],
-            ),
-            html.Div(
-                id={"id": get_uuid("filter-select"), "tab": tab},
-                style={"display": "none"},
-            ),
-        ],
+            button(get_uuid("submit-vector-filter"), "Submit", height="20px"),
+            dcc.Store(id=get_uuid("vector-filter-store")),
+        ]
     )
 
 
@@ -300,6 +245,7 @@ def color_selector(
         children=[
             wcc.Label("Colors"),
             wcc.Graph(
+                style={"height": height},
                 id={"id": get_uuid("color-selector"), "tab": tab},
                 config={"displayModeBar": False},
                 figure=color_figure(
@@ -327,32 +273,4 @@ def color_opacity_selector(get_uuid: Callable, tab: str, value: float):
                 style={"margin-left": "10px"},
             ),
         ],
-    )
-
-
-def html_details(
-    summary: str,
-    children: list,
-    open_details: bool = False,
-) -> html.Div:
-    return html.Div(
-        html.Details(
-            style={"margin-bottom": "25px"},
-            open=open_details,
-            children=[
-                html.Summary(
-                    children=summary,
-                    style={
-                        "color": "#ff1243",
-                        "border-bottom-style": "solid",
-                        "border-width": "thin",
-                        "border-color": "#ff1243",
-                        "font-weight": "bold",
-                        "font-size": "20px",
-                        "margin-bottom": "15px",
-                    },
-                )
-            ]
-            + children,
-        )
     )

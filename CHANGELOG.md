@@ -11,9 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#981](https://github.com/equinor/webviz-subsurface/pull/981) - `WellAnalysis` - New plugin well analysis. One tab for well production overview plots and one for well control mode and network analysis.
 - [#987](https://github.com/equinor/webviz-subsurface/pull/987) - `SwatinitQC` - New plugin for QC of Water Initialization in Eclipse runs where the `SWATINIT` keyword has been used. 
+- [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics` - Switched to the VectorSelector component, and other various improvements.
 
 ### Fixed
 - [#985](https://github.com/equinor/webviz-subsurface/pull/985) - `WellLogViewer` - Updated data format to latest version. Requires no changes in input data.
+
+### Changed
+
+- [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics`- Changed to reading unsmry data from `.arrow` files and deprecated the usage of aggregated csvfiles as input. 
 
 ## [0.2.11] - 2022-03-14
 
