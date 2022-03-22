@@ -2,7 +2,7 @@ import json
 import dash
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE
 from .layout import LayoutElements
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
@@ -30,9 +30,10 @@ def plugin_callbacks(
     surface_server: SurfaceServer,
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
+    license_boundary_file: Optional[str],
 ):
     @callback(
-        Output(get_uuid(LayoutElements.DATEINPUT), 'options'),
+        Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
         Output(get_uuid(LayoutElements.FAULTPOLYGONINPUT), 'options'),
         Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
     )
@@ -44,10 +45,12 @@ def plugin_callbacks(
         dates = surface_provider.surface_dates_for_attribute(MapAttribute.MaxSaturation.value)
         if dates is None:
             dates = []
-        dates = [
-            dict(label=d, value=d)
-            for d in dates
-        ]
+        dates = {
+            # TODO: handle dates using some utility tool instead?
+            # TODO: using date as value is convenient, but won't reflect the correct position of the mark
+            int(d): '' if i > 0 and i < len(dates) - 1 else f"{d[:4]}.{d[4:6]}.{d[6:]}"
+            for i, d in enumerate(dates)
+        }
         # Fault Polygon
         polygon_provider = ensemble_fault_polygons_providers[ensemble]
         # TODO: ideally want horizons/zones in stratigraphic order?
@@ -71,22 +74,17 @@ def plugin_callbacks(
             raise PreventUpdate
         if MapAttribute(attribute) == MapAttribute.MaxSaturation and date is None:
             raise PreventUpdate
+        date = str(date)
 
-        layer_model = create_layer_model(
+        layer_model, viewport_bounds = create_layer_model(
             surface_server=surface_server,
             surface_provider=ensemble_surface_providers[ensemble],
             colormap_address=derive_colormap_address(attribute, date),
             fault_polygons_server=fault_polygons_server,
             polygon_provider=ensemble_fault_polygons_providers[ensemble],
             polygon_address=derive_fault_polygon_address(polygon_name),
+            license_boundary_file=license_boundary_file,
         )
-        # View
-        viewport_bounds = [
-            surf_meta.x_min,
-            surf_meta.y_min,
-            surf_meta.x_max,
-            surf_meta.y_max,
-        ]
         return layer_model.layers, viewport_bounds
 
 
@@ -97,8 +95,11 @@ def create_layer_model(
     fault_polygons_server: FaultPolygonsServer,
     polygon_provider: EnsembleFaultPolygonsProvider,
     polygon_address: SimulatedFaultPolygonsAddress,
+    license_boundary_file: Optional[str],
 ) -> DeckGLMapLayersModel:
-    layers = generate_map_layers()
+    # TODO: Using DeckGLMapLayersModel seems a bit unnecessary here,
+    #  but we might want to use it for consistency with other plugins
+    layers = generate_map_layers(include_license_boundary=license_boundary_file is not None)
     layers = [json.loads(lay) for lay in layers]
     layer_model = DeckGLMapLayersModel(layers)
     # Update ColormapLayer
@@ -123,7 +124,41 @@ def create_layer_model(
             ),
         },
     )
-    return layer_model
+    # Update License boundary
+    if license_boundary_file is not None:
+        layer_model.update_layer_by_id(
+            layer_id=LayoutElements.LICENSEBOUNDARYLAYER,
+            layer_data={
+                "data": parse_polygon_file(license_boundary_file)
+            }
+        )
+    # View-port
+    viewport_bounds = [
+        surf_meta.x_min,
+        surf_meta.y_min,
+        surf_meta.x_max,
+        surf_meta.y_max,
+    ]
+    return layer_model, viewport_bounds
+
+
+def parse_polygon_file(filename: str):
+    import numpy as np
+    xyz = np.genfromtxt(filename, skip_header=1, delimiter=",")
+    as_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {},
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": xyz[:, :2].tolist(),
+                }
+            }
+        ]
+    }
+    return as_geojson
 
 
 def derive_colormap_address(attribute: str, date):
@@ -177,9 +212,18 @@ def publish_and_get_surface_metadata(
     return surf_meta, surface_server.encode_partial_url(qualified_address)
 
 
-def generate_map_layers():
+def generate_map_layers(include_license_boundary: bool):
     layers = [
         ColormapLayer(uuid=LayoutElements.COLORMAPLAYER).to_json(),
         FaultPolygonsLayer(uuid=LayoutElements.FAULTPOLYGONSLAYER).to_json(),
     ]
+    if include_license_boundary:
+        layers.append(
+            # TODO: May want a new class for license boundary, even though
+            #  it will be similar/identical to FaultPolygonsLayer
+            FaultPolygonsLayer(
+                uuid=LayoutElements.LICENSEBOUNDARYLAYER,
+                name="License boundary",  # TODO: name definition in layout.py or something
+            ).to_json()
+        )
     return layers

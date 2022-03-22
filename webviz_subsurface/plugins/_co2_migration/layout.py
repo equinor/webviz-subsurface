@@ -1,6 +1,6 @@
 import json
 from typing import Callable, List, Any
-from dash import html
+from dash import html, dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import DeckGLMap
 from enum import unique, Enum
@@ -13,6 +13,7 @@ class LayoutElements(str, Enum):
     DECKGLMAP = "deckglmap"
     COLORMAPLAYER = "colormaplayer"
     FAULTPOLYGONSLAYER = "faultpolygonslayer"
+    LICENSEBOUNDARYLAYER = "licenseboundarylayer"
 
     PROPERTY = "property"
     ENSEMBLEINPUT = "ensembleinput"
@@ -44,7 +45,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                     PropertySelectorLayout(get_uuid),
                     EnsembleSelectorLayout(get_uuid, ensembles),
                     DateSelectorLayout(get_uuid),
-                    FaultPolygonSelectorLayout(get_uuid),
+                    PolygonSelectorLayout(get_uuid),
                 ]
             ),
             wcc.Frame(
@@ -56,7 +57,6 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                     FullScreen(
                         html.Div(
                             [
-                                # Version 1:
                                 DeckGLMap(
                                     id=get_uuid(LayoutElements.DECKGLMAP),
                                     layers=[],
@@ -125,22 +125,28 @@ class DateSelectorLayout(html.Div):
             label="Dates",
             open_details=True,
             children=[
-                wcc.Dropdown(
+                dcc.Slider(
                     id=get_uuid(LayoutElements.DATEINPUT),
+                    step=None,
+                    marks={0: ''},
+                    value=0,
+                    tooltip={"placement": "bottom", "always_visible": False},
+                    # TODO: add arrows for next/previous date?
                 )
             ]
         ))
 
 
-class FaultPolygonSelectorLayout(html.Div):
+class PolygonSelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable):
         super().__init__(
             children=wcc.Selectors(
-                label="Fault Polygons",
+                label="Polygons",
                 children=[
+                    'Fault Polygons',
                     wcc.Dropdown(
                         id=get_uuid(LayoutElements.FAULTPOLYGONINPUT),
-                    )
+                    ),
                 ]
             )
         )

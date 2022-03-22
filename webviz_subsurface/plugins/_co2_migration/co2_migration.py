@@ -1,6 +1,6 @@
 import pathlib
 from dash import Dash
-from typing import Dict, List
+from typing import Dict, List, Optional
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProviderFactory,
@@ -18,8 +18,11 @@ class CO2Migration(WebvizPluginABC):
         self,
         app: Dash,
         webviz_settings: WebvizSettings,
-        ensembles: List[str]
+        ensembles: List[str],
+        license_boundary_file: Optional[str] = None,
     ):
+        # TODO: license boundary file should be incorporated into fault
+        #  polygon provider, or get its own provider?
         super().__init__()
         # Surfaces
         surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
@@ -43,6 +46,7 @@ class CO2Migration(WebvizPluginABC):
         self._polygons_server = FaultPolygonsServer.instance(app)
         for provider in self._ensemble_fault_polygons_providers.values():
             self._polygons_server.add_provider(provider)
+        self._license_boundary_file = license_boundary_file
         self.set_callbacks()
 
     @property
@@ -59,4 +63,5 @@ class CO2Migration(WebvizPluginABC):
             surface_server=self._surface_server,
             ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,
             fault_polygons_server=self._polygons_server,
+            license_boundary_file=self._license_boundary_file,
         )
