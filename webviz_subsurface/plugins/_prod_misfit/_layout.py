@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Callable, Dict, List
 
-import dash_html_components as html
 import webviz_core_components as wcc
+from dash import html
 
 
 # pylint: disable=too-few-public-methods
@@ -45,18 +46,36 @@ class LayoutElements:
     HEATMAP_DATES = "heatmap_dates"
     HEATMAP_PHASES = "heatmap_phases"
     HEATMAP_WELL_NAMES = "heatmap_well_names"
+    HEATMAP_WELL_COLLECTIONS = "heatmap_well_collections"
+    HEATMAP_WELL_COMBINE_TYPE = "heatmap_well_combine_type"
     HEATMAP_REALIZATIONS = "heatmap_realizations"
     HEATMAP_FILTER_LARGEST = "heatmap_filter_largest"
     HEATMAP_FIGHEIGHT = "heatmap_figheight"
     HEATMAP_SCALE_COL_RANGE = "heatmap_scale_col_range"
     HEATMAP_GRAPH = "heatmap_graph"
 
+    TABS_STYLES = {"height": "60px", "width": "100%"}
+
+    TAB_STYLE = {
+        "borderBottom": "1px solid #d6d6d6",
+        "padding": "6px",
+        "fontWeight": "bold",
+    }
+
+    TAB_SELECTED_STYLE = {
+        "borderTop": "1px solid #d6d6d6",
+        "borderBottom": "1px solid #d6d6d6",
+        "backgroundColor": "#007079",
+        "color": "white",
+        "padding": "6px",
+    }
+
 
 # --- layout ---
 def main_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
-    dates: Dict[str, List[str]],
+    dates: Dict[str, List[datetime]],
     phases: Dict[str, List[str]],
     wells: Dict[str, List[str]],
     realizations: Dict[str, List[int]],
@@ -77,29 +96,13 @@ def main_layout(
     for collection_name in well_collections.keys():
         all_well_collection_names.append(collection_name)
 
-    tabs_styles = {"height": "60px", "width": "100%"}
-
-    tab_style = {
-        "borderBottom": "1px solid #d6d6d6",
-        "padding": "6px",
-        "fontWeight": "bold",
-    }
-
-    tab_selected_style = {
-        "borderTop": "1px solid #d6d6d6",
-        "borderBottom": "1px solid #d6d6d6",
-        "backgroundColor": "#007079",
-        "color": "white",
-        "padding": "6px",
-    }
-
     return wcc.Tabs(
-        style=tabs_styles,
+        style=LayoutElements.TABS_STYLES,
         children=[
             wcc.Tab(
                 label="Production misfit per real",
-                style=tab_style,
-                selected_style=tab_selected_style,
+                style=LayoutElements.TAB_STYLE,
+                selected_style=LayoutElements.TAB_SELECTED_STYLE,
                 children=_misfit_per_real_layout(
                     get_uuid,
                     ensemble_names,
@@ -112,9 +115,9 @@ def main_layout(
             ),
             wcc.Tab(
                 label="Well production coverage",
-                style=tab_style,
-                selected_style=tab_selected_style,
-                children=_well_prod_coverage(
+                style=LayoutElements.TAB_STYLE,
+                selected_style=LayoutElements.TAB_SELECTED_STYLE,
+                children=_well_prod_coverage_layout(
                     get_uuid,
                     ensemble_names,
                     all_dates,
@@ -124,17 +127,11 @@ def main_layout(
                     all_realizations,
                 ),
             ),
-            # wcc.Tab(
-            #     label="Group production coverage",
-            #     style=tab_style,
-            #     selected_style=tab_selected_style,
-            #     children=_group_prod_coverage(),
-            # ),
             wcc.Tab(
                 label="Well production heatmap",
-                style=tab_style,
-                selected_style=tab_selected_style,
-                children=_heatmap(
+                style=LayoutElements.TAB_STYLE,
+                selected_style=LayoutElements.TAB_SELECTED_STYLE,
+                children=_heatmap_layout(
                     get_uuid,
                     ensemble_names,
                     all_dates,
@@ -152,7 +149,7 @@ def main_layout(
 def _misfit_per_real_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
-    dates: List[str],
+    dates: List[datetime],
     phases: List[str],
     wells: List[str],
     all_well_collection_names: List[str],
@@ -276,11 +273,11 @@ def _misfit_per_real_layout(
                                             "label": "Total misfit",
                                             "value": "misfit",
                                         },
-                                        {"label": "Phases", "value": "Phases"},
-                                        {"label": "Date", "value": "Date"},
+                                        {"label": "Phases", "value": "phases"},
+                                        {"label": "Date", "value": "date"},
                                         {"label": "None", "value": None},
                                     ],
-                                    value="misfit",
+                                    value="phases",
                                     multi=False,
                                     clearable=False,
                                     persistence=True,
@@ -352,7 +349,7 @@ def _misfit_per_real_layout(
                                     ),
                                     options=[
                                         {
-                                            "label": "Config weight reduction factors",
+                                            "label": "Phase weights",
                                             "value": -1.0,
                                         },
                                         {"label": "None", "value": 0.0},
@@ -422,10 +419,10 @@ def _misfit_per_real_layout(
     return children
 
 
-def _well_prod_coverage(
+def _well_prod_coverage_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
-    dates: List[str],
+    dates: List[datetime],
     phases: List[str],
     wells: List[str],
     all_well_collection_names: List[str],
@@ -749,10 +746,10 @@ def _well_prod_coverage(
 #     return children
 
 
-def _heatmap(
+def _heatmap_layout(
     get_uuid: Callable,
     ensemble_names: List[str],
-    dates: List[str],
+    dates: List[datetime],
     phases: List[str],
     wells: List[str],
     all_well_collection_names: List[str],
@@ -788,7 +785,7 @@ def _heatmap(
                             ],
                         ),
                         wcc.Selectors(
-                            label="Filter settings",
+                            label="Filter settings - dates and phases",
                             children=[
                                 wcc.SelectWithLabel(
                                     label="Date selector",
@@ -813,6 +810,11 @@ def _heatmap(
                                     value=phases,
                                     size=min([len(phases), 3]),
                                 ),
+                            ],
+                        ),
+                        wcc.Selectors(
+                            label="Filter settings - wells",
+                            children=[
                                 wcc.SelectWithLabel(
                                     label="Well selector",
                                     id=get_uuid(LayoutElements.HEATMAP_WELL_NAMES),
@@ -822,46 +824,73 @@ def _heatmap(
                                     value=wells,
                                     size=min([len(wells), 9]),
                                 ),
-                                wcc.Selectors(
-                                    label="Filter settings - realizations",
-                                    open_details=False,
-                                    children=[
-                                        wcc.SelectWithLabel(
-                                            label="Realization selector",
-                                            id=get_uuid(
-                                                LayoutElements.HEATMAP_REALIZATIONS
-                                            ),
-                                            options=[
-                                                {"label": real, "value": real}
-                                                for real in realizations
-                                            ],
-                                            value=realizations,
-                                            size=min([len(wells), 5]),
-                                        ),
-                                    ],
-                                ),
-                                wcc.Dropdown(
-                                    label="Show wells with largest misfit",
-                                    id=get_uuid(LayoutElements.HEATMAP_FILTER_LARGEST),
+                                wcc.RadioItems(
+                                    label="Combine wells and collections as",
+                                    id=get_uuid(
+                                        LayoutElements.HEATMAP_WELL_COMBINE_TYPE
+                                    ),
                                     options=[
-                                        {"label": "Show all", "value": 0},
-                                        {"label": "2", "value": 2},
-                                        {"label": "4", "value": 4},
-                                        {"label": "6", "value": 6},
-                                        {"label": "8", "value": 8},
-                                        {"label": "10", "value": 10},
-                                        {"label": "12", "value": 12},
-                                        {"label": "15", "value": 15},
-                                        {"label": "20", "value": 20},
-                                        {"label": "25", "value": 25},
+                                        {
+                                            "label": "Intersection",
+                                            "value": "intersection",
+                                        },
+                                        {"label": "Union", "value": "union"},
                                     ],
-                                    value=0,
-                                    multi=False,
-                                    clearable=False,
-                                    persistence=True,
-                                    persistence_type="memory",
+                                    value="intersection",
+                                ),
+                                wcc.SelectWithLabel(
+                                    label="Well collection selector",
+                                    id=get_uuid(
+                                        LayoutElements.HEATMAP_WELL_COLLECTIONS
+                                    ),
+                                    options=[
+                                        {
+                                            "label": collection,
+                                            "value": collection,
+                                        }
+                                        for collection in all_well_collection_names
+                                    ],
+                                    value=all_well_collection_names,
+                                    size=min([len(wells), 5]),
                                 ),
                             ],
+                        ),
+                        wcc.Selectors(
+                            label="Filter settings - realizations",
+                            open_details=False,
+                            children=[
+                                wcc.SelectWithLabel(
+                                    label="Realization selector",
+                                    id=get_uuid(LayoutElements.HEATMAP_REALIZATIONS),
+                                    options=[
+                                        {"label": real, "value": real}
+                                        for real in realizations
+                                    ],
+                                    value=realizations,
+                                    size=min([len(wells), 5]),
+                                ),
+                            ],
+                        ),
+                        wcc.Dropdown(
+                            label="Show wells with largest misfit",
+                            id=get_uuid(LayoutElements.HEATMAP_FILTER_LARGEST),
+                            options=[
+                                {"label": "Show all", "value": 0},
+                                {"label": "2", "value": 2},
+                                {"label": "4", "value": 4},
+                                {"label": "6", "value": 6},
+                                {"label": "8", "value": 8},
+                                {"label": "10", "value": 10},
+                                {"label": "12", "value": 12},
+                                {"label": "15", "value": 15},
+                                {"label": "20", "value": 20},
+                                {"label": "25", "value": 25},
+                            ],
+                            value=0,
+                            multi=False,
+                            clearable=False,
+                            persistence=True,
+                            persistence_type="memory",
                         ),
                         wcc.Selectors(
                             label="Plot settings and layout",

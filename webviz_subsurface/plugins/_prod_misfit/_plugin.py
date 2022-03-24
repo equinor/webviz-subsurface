@@ -1,3 +1,4 @@
+# pylint: disable=too-many-arguments
 import logging
 import time
 from pathlib import Path
@@ -6,32 +7,17 @@ from typing import Dict, List, Optional, Tuple
 import dash
 import pandas as pd
 import webviz_core_components as wcc
+from webviz_config import WebvizPluginABC, WebvizSettings
 
-# import webviz_subsurface_components as wsc
-from dash import Input, Output  # , html  # Dash, State, dcc,
-
-# from dash.exceptions import PreventUpdate
-from fmu import ensemble
-
-# from plotly.subplots import make_subplots
-from webviz_config import WebvizPluginABC, WebvizSettings  # EncodedFile,
-from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
-
-from webviz_subsurface._models import (  # caching_ensemble_set_model_factory,
-    EnsembleSetModel,
-)
 from webviz_subsurface._providers import Frequency
 
 from ._callbacks import plugin_callbacks
 from ._layout import main_layout
-from .types.provider_set import (  # create_lazy_provider_set_from_paths,
-    create_presampled_provider_set_from_paths,
-)
+from .types.provider_set import create_presampled_provider_set_from_paths
 
 
 class ProdMisfit(WebvizPluginABC):
-    """Visualizes production data misfit at selected date.
+    """Visualizes production data misfit at selected date(s).
 
     When not dealing with absolute value of differences, difference plots are
     represented as: (simulated - observed),
@@ -40,11 +26,27 @@ class ProdMisfit(WebvizPluginABC):
     **Features**
     * Visualization of prod misfit at selected time.
     * Visualization of prod coverage at selected time.
+    * Heatmap representation of ensemble mean misfit for selected dates.
 
     ---
-    xxx
+    * **`ensembles`:** Which ensembles in `shared_settings` to include.
+    * **`rel_file_pattern`:** path to `.arrow` files with summary data.
+    * **`gruptree_file`:** `.csv` with gruptree information.
+    * **`sampling`:** Frequency for the data sampling.
+    * **`excl_name_startswith`:** Filter out wells that starts with this string
+    * **`excl_name_contains`:** Filter out wells that contains this string
+    * **`phase_weights`:** Dict of "Oil", "Water" and "Gas" (inverse) weight factors that
+    are included as weight option for misfit per real calculation.
+    * **`well_groups_file`:** Path to csv file containing info of well name and its
+    corresponding group name. Must contain the column names 'PARENT' and 'CHILD'.
     ---
-    yyy
+
+    **Summary data**
+
+    This plugin needs the following summary vectors to be stored with arrow format:
+    * WOPT+WOPTH and/or WWPT+WWPTH and/or WGPT+WGPTH
+
+    Summary files can be converted to arrow format with the `ECL2CSV` forward model.
     """
 
     def __init__(
@@ -52,24 +54,24 @@ class ProdMisfit(WebvizPluginABC):
         app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
-        # sampling: Union[str, list] # make it possible to add user specified date list?
+        rel_file_pattern: str = "share/results/unsmry/*.arrow",
         sampling: str = Frequency.YEARLY.value,  # "yearly"
-        # perform_presampling: bool = True,
+        # sampling: Union[str, list] # make it possible to add user specified date list?
         excl_name_startswith: list = None,
         excl_name_contains: list = None,
-        weight_reduction_factor_oil: float = 1.0,
-        weight_reduction_factor_wat: float = 1.0,
-        weight_reduction_factor_gas: float = 300.0,
-        well_collections: dict = None,
+        phase_weights: dict = None,
+        well_groups_file: str = None,
     ):
 
         super().__init__()
 
         start = time.time()
 
-        self.weight_reduction_factor_oil = weight_reduction_factor_oil
-        self.weight_reduction_factor_wat = weight_reduction_factor_wat
-        self.weight_reduction_factor_gas = weight_reduction_factor_gas
+        if phase_weights is None:
+            phase_weights = {"Oil": 1.0, "Water": 1.0, "Gas": 300.0}
+        self.weight_reduction_factor_oil = phase_weights["Oil"]
+        self.weight_reduction_factor_wat = phase_weights["Water"]
+        self.weight_reduction_factor_gas = phase_weights["Gas"]
 
         # Must define valid freqency
         self._sampling = Frequency(sampling)
@@ -82,9 +84,8 @@ class ProdMisfit(WebvizPluginABC):
         }
 
         self._input_provider_set = create_presampled_provider_set_from_paths(
-            ensemble_paths, "share/results/unsmry/*.arrow", self._sampling
+            ensemble_paths, rel_file_pattern, self._sampling
         )
-        # self._input_provider_set.verify_consistent_vector_metadata()
 
         logging.debug(
             f"Created presampled provider_set. "
@@ -115,7 +116,7 @@ class ProdMisfit(WebvizPluginABC):
                 ens_provider.vector_names(), excl_name_startswith, excl_name_contains
             )
 
-        self.well_collections = _check_well_collections(well_collections, self.wells)
+        self.well_collections = _get_well_collections(well_groups_file, self.wells)
 
         # -----------------------------------------
         # TODO: Consider option to read hist vectors from seperate file
@@ -172,69 +173,6 @@ class ProdMisfit(WebvizPluginABC):
 # support functions below here
 # ------------------------------------------------------------------------
 
-# --------------------------------
-def _get_wells_vectors_phases(
-    vector_names: list,
-    excl_name_startswith: Optional[list],
-    excl_name_contains: Optional[list],
-) -> Tuple[List, List, List]:
-    """Return lists of wells, vectors and phases."""
-
-    if excl_name_startswith is None:
-        excl_name_startswith = []
-    if excl_name_contains is None:
-        excl_name_contains = []
-
-    drop_list = []
-    wells, vectors = [], []
-    oil_phase, wat_phase, gas_phase = False, False, False
-    for vector in vector_names:
-        if vector.startswith(("WOPT:", "WWPT:", "WGPT:")):
-            well = vector.split(":")[1]
-            vector_type = vector.split(":")[0]
-            if well.startswith(tuple(excl_name_startswith)):
-                drop_list.append(well)
-                continue
-            for excl in excl_name_contains:
-                if excl in well:
-                    drop_list.append(well)
-                    continue
-            if well not in wells:
-                wells.append(well)
-            if vector not in vectors:
-                vectors.append(vector)
-                if vector_type == "WOPT":
-                    oil_phase = True
-                elif vector_type == "WWPT":
-                    wat_phase = True
-                elif vector_type == "WGPT":
-                    gas_phase = True
-    wells, vectors = sorted(wells), sorted(vectors)
-
-    if len(drop_list) > 0:
-        logging.debug(
-            "\nWells dropped based on config excl lists:\n"
-            f"{list(sorted(set(drop_list)))}"
-        )
-
-    if len(vectors) == 0:
-        RuntimeError("No WOPT, WWPT or WGPT vectors found.")
-
-    phases = ["Oil", "Water", "Gas"]
-    # remove phases not present
-    if not oil_phase:
-        phases.remove("Oil")
-    if not wat_phase:
-        phases.remove("Water")
-    if not gas_phase:
-        phases.remove("Gas")
-
-    logging.debug(f"\nWells: {wells}")
-    logging.debug(f"\nPhases: {phases}")
-    logging.debug(f"\nVectors: {vectors}")
-
-    return wells, vectors, phases
-
 
 # --------------------------------
 def _check_well_collections(
@@ -256,14 +194,122 @@ def _check_well_collections(
         all_collection_wells = []
         for collection_wells in well_collections.values():
             all_collection_wells.extend(collection_wells)
-        all_collection_wells = set(all_collection_wells)
+        all_collection_wells = list(set(all_collection_wells))
         for well in all_wells:
             if well not in all_collection_wells:
                 undefined_wells.append(well)
         if len(undefined_wells) > 0:
             well_collections["Undefined"] = undefined_wells
             logging.warning(
-                "\nWells not included in any well collection:" f"\n{undefined_wells}\n"
+                "\nWells not included in any well collection ('Undefined'):"
+                f"\n{undefined_wells}\n"
             )
 
     return well_collections
+
+
+# --------------------------------
+def _get_well_collections(
+    well_groups_file: Optional[str], wells: dict
+) -> Dict[str, List[str]]:
+    """Read csv file and create well_collections dictionary. Then check well collections
+    vs well lists. Any well not included in well collections is returned as Undefined."""
+
+    all_wells = []
+    for ens_wells in wells.values():
+        all_wells.extend(ens_wells)
+    all_wells = list(sorted(set(all_wells)))
+
+    well_collections = {}
+
+    if well_groups_file is None:
+        well_collections["Undefined"] = all_wells
+    else:
+
+        # create well_collections dictionary from csv file
+        df_well_groups = pd.read_csv(well_groups_file).dropna()
+        df_cols = df_well_groups.columns
+        if "PARENT" not in df_cols or "CHILD" not in df_cols:
+            RuntimeError(
+                "If included, the csv file 'well_groups_file' must contain the columns"
+                " 'PARENT' and 'CHILD'"
+            )
+        if "KEYWORD" in df_cols:
+            df_well_groups = df_well_groups[df_well_groups["KEYWORD"] == "WELSPECS"]
+        for group in df_well_groups.groupby("PARENT"):
+            well_collections[group[0]] = sorted(list(set(group[1].CHILD.to_list())))
+
+        undefined_wells = []
+        all_collection_wells = []
+
+        for collection_wells in well_collections.values():
+            all_collection_wells.extend(collection_wells)
+        all_collection_wells = list(set(all_collection_wells))
+        for well in all_wells:
+            if well not in all_collection_wells:
+                undefined_wells.append(well)
+        if len(undefined_wells) > 0:
+            well_collections["Undefined"] = undefined_wells
+            logging.warning(
+                "\nWells not included in any well collection ('Undefined'):"
+                f"\n{undefined_wells}\n"
+            )
+
+    return well_collections
+
+
+# ---------------------------
+def _get_wells_vectors_phases(
+    vector_names: list,
+    excl_name_startswith: Optional[list],
+    excl_name_contains: Optional[list],
+) -> Tuple[List, List, List]:
+    """Return lists of wells, vectors and phases."""
+
+    if excl_name_startswith is None:
+        excl_name_startswith = []
+    if excl_name_contains is None:
+        excl_name_contains = []
+
+    wells, vectors, drop_list = [], [], []
+    phases = set()
+
+    for vector in vector_names:
+        if vector.startswith("WOPT:"):
+            phases.add("Oil")
+        elif vector.startswith("WWPT:"):
+            phases.add("Water")
+        elif vector.startswith("WGPT:"):
+            phases.add("Gas")
+        else:
+            continue
+
+        well = vector.split(":")[1]
+        if well.startswith(tuple(excl_name_startswith)):
+            drop_list.append(well)
+            continue
+        for excl in excl_name_contains:
+            if excl in well:
+                drop_list.append(well)
+                continue
+        if well not in wells:
+            wells.append(well)
+        if vector not in vectors:
+            vectors.append(vector)
+
+    wells, vectors = sorted(wells), sorted(vectors)
+
+    if len(vectors) == 0:
+        RuntimeError("No WOPT, WWPT or WGPT vectors found.")
+
+    if len(drop_list) > 0:
+        logging.debug(
+            "\nWells dropped based on config excl lists:\n"
+            f"{list(sorted(set(drop_list)))}"
+        )
+
+    logging.debug(f"\nWells: {wells}")
+    logging.debug(f"\nPhases: {phases}")
+    logging.debug(f"\nVectors: {vectors}")
+
+    return wells, vectors, list(phases)

@@ -1,5 +1,6 @@
+import datetime
 from pathlib import Path
-from typing import Dict, ItemsView, List, Optional
+from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
@@ -9,17 +10,15 @@ from webviz_subsurface._providers import (
 )
 
 
-# TODO: Consider if "ensemble" should be a part of names in class (Both class name,
-# function names and attribute names).
 class ProviderSet:
     """
     Class to create a set of ensemble summary providers with unique names
-
     Provides interface for read-only fetching of provider data
     """
 
     def __init__(self, provider_dict: Dict[str, EnsembleSummaryProvider]) -> None:
         self._provider_dict = provider_dict.copy()
+        self._names = list(self._provider_dict.keys())
         self._all_vector_names = self._create_union_of_vector_names_from_providers(
             list(self._provider_dict.values())
         )
@@ -31,7 +30,6 @@ class ProviderSet:
         """
         Verify that vector metadata is consistent across providers, raise exception
         if inconsistency occur.
-
         TODO:
         * Improve print of inconsistent metadata info - store all inconsistencies
         and print, do not raise ValueError on first.
@@ -79,20 +77,20 @@ class ProviderSet:
 
     @staticmethod
     def _create_union_of_realizations_from_providers(
-        providers: List[EnsembleSummaryProvider],
+        providers: Sequence[EnsembleSummaryProvider],
     ) -> List[int]:
         """Create list with the union of realizations among providers"""
-        reals = []
+        realizations: Set[int] = set()
         for provider in providers:
-            reals.extend(provider.realizations())
-        reals = list(sorted(set(reals)))
-        return reals
+            realizations.update(provider.realizations())
+        output = list(sorted(realizations))
+        return output
 
     def items(self) -> ItemsView[str, EnsembleSummaryProvider]:
         return self._provider_dict.items()
 
     def names(self) -> List[str]:
-        return list(self._provider_dict.keys())
+        return self._names
 
     def provider(self, name: str) -> EnsembleSummaryProvider:
         if name not in self._provider_dict.keys():
@@ -102,17 +100,28 @@ class ProviderSet:
     def all_providers(self) -> List[EnsembleSummaryProvider]:
         return list(self._provider_dict.values())
 
-    def all_vector_names(self) -> List[str]:
-        """Create list with the union of vector names among providers"""
-        return self._all_vector_names
+    def all_dates(
+        self,
+        resampling_frequency: Optional[Frequency],
+    ) -> List[datetime.datetime]:
+        """List with the union of dates among providers"""
+        # TODO: Adjust when providers are updated!
+        dates_union: Set[datetime.datetime] = set()
+        for provider in self.all_providers():
+            _dates = set(provider.dates(resampling_frequency, None))
+            dates_union.update(_dates)
+        return list(sorted(dates_union))
 
-    def all_realizations(self) -> List[str]:
-        """Create list with the union of realizations among providers"""
+    def all_realizations(self) -> List[int]:
+        """List with the union of realizations among providers"""
         return self._all_realizations
+
+    def all_vector_names(self) -> List[str]:
+        """List with the union of vector names among providers"""
+        return self._all_vector_names
 
     def vector_metadata(self, vector: str) -> Optional[VectorMetadata]:
         """Get vector metadata from first occurrence among providers,
-
         `return:`
         Vector metadata from first occurrence among providers, None if not existing
         """
@@ -130,20 +139,23 @@ class ProviderSet:
 
 def create_lazy_provider_set_from_paths(
     name_path_dict: Dict[str, Path],
+    rel_file_pattern: str,
 ) -> ProviderSet:
     """Create set of providers with lazy (on-demand) resampling/interpolation, from
     dictionary of ensemble name and corresponding arrow file paths
-
     `Input:`
     * name_path_dict: Dict[str, Path] - ensemble name as key and arrow file path as value
-
+    * rel_file_pattern: str - specify a relative (per realization) file pattern to find the
+    wanted .arrow files within each realization
     `Return:`
     Provider set with ensemble summary providers with lazy (on-demand) resampling/interpolation
     """
     provider_factory = EnsembleSummaryProviderFactory.instance()
     provider_dict: Dict[str, EnsembleSummaryProvider] = {}
     for name, path in name_path_dict.items():
-        provider_dict[name] = provider_factory.create_from_arrow_unsmry_lazy(str(path))
+        provider_dict[name] = provider_factory.create_from_arrow_unsmry_lazy(
+            str(path), rel_file_pattern
+        )
     return ProviderSet(provider_dict)
 
 
@@ -152,17 +164,19 @@ def create_presampled_provider_set_from_paths(
     rel_file_pattern: str,
     presampling_frequency: Frequency,
 ) -> ProviderSet:
-    """Create set of providers without lazy resampling, but with specified frequency, from
-    dictionary of ensemble name and corresponding arrow file paths
+    """Create set of providers without lazy resampling, but with specified frequency,
+    from dictionary of ensemble name and corresponding arrow file paths
 
     `Input:`
     * name_path_dict: Dict[str, Path] - ensemble name as key and arrow file path as value
-    * presampling_frequency: Frequency - Frequency to sample input data in factory with, during
-    import.
+    * rel_file_pattern: str - specify a relative (per realization) file pattern to find
+    the wanted .arrow files within each realization
+    * presampling_frequency: Frequency - Frequency to sample input data in factory with,
+    during import.
 
     `Return:`
-    Provider set with ensemble summary providers with presampled data according to specified
-    presampling frequency.
+    Provider set with ensemble summary providers with presampled data according to
+    specified presampling frequency.
     """
     # TODO: Make presampling_frequency: Optional[Frequency] when allowing raw data for plugin
     provider_factory = EnsembleSummaryProviderFactory.instance()

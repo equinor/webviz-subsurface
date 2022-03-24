@@ -1,25 +1,10 @@
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List
 
 import dash
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objs as go
 import webviz_core_components as wcc
-import webviz_subsurface_components as wsc
-from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
-from webviz_config import EncodedFile, WebvizPluginABC
-from webviz_config._theme_class import WebvizConfigTheme
-from webviz_subsurface_components import ExpressionInfo, ExternalParseData
-
-from webviz_subsurface._providers import Frequency
-from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
-    EnsembleSummaryProvider,
-)
-from webviz_subsurface._utils.unique_theming import unique_colors
+from dash.dependencies import Input, Output
 
 from ._layout import LayoutElements
 from .types.provider_set import ProviderSet
@@ -29,7 +14,7 @@ from .utils import make_figures as makefigs
 # from ._property_serialization import GraphFigureBuilder
 
 
-# pylint: disable = too-many-arguments, too-many-branches, too-many-locals, too-many-statements
+# pylint: disable = too-many-arguments, too-many-locals
 def plugin_callbacks(
     app: dash.Dash,
     get_uuid: Callable,
@@ -267,6 +252,8 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.HEATMAP_DATES), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_PHASES), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_WELL_NAMES), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_WELL_COLLECTIONS), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_WELL_COMBINE_TYPE), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_FILTER_LARGEST), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_FIGHEIGHT), "value"),
@@ -278,11 +265,20 @@ def plugin_callbacks(
         selector_dates: list,
         selector_phases: list,
         selector_well_names: list,
+        selector_well_collection_names: list,
+        selector_well_combine_type: str,
         selector_realizations: list,
         selector_filter_largest: int,
         selector_figheight: int,
         selector_scale_col_range: float,
     ) -> List[wcc.Graph]:
+
+        well_names = _get_well_names_combined(
+            well_collections,
+            selector_well_collection_names,
+            selector_well_names,
+            selector_well_combine_type,
+        )
 
         # if plot_type in ["diffplot", "rel_diffplot"]:
         plot_type = "diffplot"
@@ -295,7 +291,7 @@ def plugin_callbacks(
                     ens_vectors,
                     ens_realizations,
                     selector_realizations,
-                    selector_well_names,
+                    well_names,
                     selector_phases,
                     selector_dates,
                 ),
@@ -341,7 +337,7 @@ def _get_well_names_combined(
     selected_collection_wells = []
     for collection_name in selected_collection_names:
         selected_collection_wells.extend(well_collections[collection_name])
-    selected_collection_wells = set(selected_collection_wells)
+    selected_collection_wells = list(set(selected_collection_wells))
 
     if combine_type == "intersection":
         # find intersection of selector wells and selector well collections
