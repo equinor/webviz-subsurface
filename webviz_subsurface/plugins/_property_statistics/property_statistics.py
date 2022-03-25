@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple, Union
 
+import pandas as pd
 from dash import Dash, dcc
 from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
@@ -10,11 +11,13 @@ from webviz_subsurface._providers import (
     EnsembleTableProviderFactory,
     Frequency,
 )
+from webviz_subsurface._providers.ensemble_table_provider import (
+    EnsembleTableProviderSet,
+)
 
 from .controllers.property_delta_controller import property_delta_controller
 from .controllers.property_qc_controller import property_qc_controller
 from .controllers.property_response_controller import property_response_controller
-from .data_loaders import read_csv
 from .models import (
     PropertyStatisticsModel,
     ProviderTimeSeriesDataModel,
@@ -92,14 +95,11 @@ differ between individual realizations of an ensemble.
     ):
         super().__init__()
         self.theme: WebvizConfigTheme = webviz_settings.theme
-        self.statistics_file = statistics_file
         self.ensembles = ensembles
-        self.csvfile_statistics = csvfile_statistics
-        self.csvfile_smry = csvfile_smry
         self._surface_folders: Union[dict, None]
         self._vmodel: Optional[
             Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel]
-        ]
+        ] = None
 
         table_provider = EnsembleTableProviderFactory.instance()
 
@@ -133,7 +133,7 @@ differ between individual realizations of an ensemble.
 
             propertyproviderset = (
                 table_provider.create_provider_set_from_per_realization_csv_file(
-                    ensemble_paths, self.statistics_file
+                    ensemble_paths, statistics_file
                 )
             )
             self._surface_folders = {
@@ -142,24 +142,29 @@ differ between individual realizations of an ensemble.
             }
 
         else:
-            if self.csvfile_statistics is None:
+            if csvfile_statistics is None:
                 raise ValueError(
                     "If not 'ensembles', then csvfile_statistics must be provided"
                 )
             propertyproviderset = (
                 table_provider.create_provider_set_from_aggregated_csv_file(
-                    self.csvfile_statistics
+                    csvfile_statistics
                 )
             )
-            self._vmodel = (
-                SimulationTimeSeriesModel(dataframe=read_csv(csvfile_smry))
-                if csvfile_smry is not None
-                else None
-            )
+            if csvfile_smry is not None:
+                smryprovider = (
+                    table_provider.create_provider_set_from_aggregated_csv_file(
+                        csvfile_smry
+                    )
+                )
+                self._vmodel = SimulationTimeSeriesModel(
+                    dataframe=create_df_from_table_provider(smryprovider)
+                )
             self._surface_folders = None
 
         self._pmodel = PropertyStatisticsModel(
-            provider=propertyproviderset, theme=self.theme
+            dataframe=create_df_from_table_provider(propertyproviderset),
+            theme=self.theme,
         )
 
         self._surface_renaming = surface_renaming if surface_renaming else {}
@@ -199,11 +204,7 @@ differ between individual realizations of an ensemble.
             )
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        store: List[Tuple[Callable, list]] = []
-        if self.ensembles is None and self.csvfile_smry is not None:
-            store.append((read_csv, [{"csv_file": self.csvfile_smry}]))
-
-        store.append(
+        store: List[Tuple[Callable, list]] = [
             (
                 generate_surface_table,
                 [
@@ -215,8 +216,19 @@ differ between individual realizations of an ensemble.
                     }
                 ],
             )
-        )
+        ]
         if self._surface_folders is not None:
             for path in self._surface_table["path"].unique():
                 store.append((get_path, [{"path": Path(path)}]))
         return store
+
+
+def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.DataFrame:
+    dfs = []
+    for ens in provider.ensemble_names():
+        df = provider.ensemble_provider(ens).get_column_data(
+            column_names=provider.ensemble_provider(ens).column_names()
+        )
+        df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+        dfs.append(df)
+    return pd.concat(dfs)

@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, Tuple
 
+import pandas as pd
 from dash import dcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
@@ -12,7 +13,6 @@ from webviz_subsurface._providers import (
 )
 
 from .controllers import parameter_qc_controller, parameter_response_controller
-from .data_loaders import read_csv
 from .models import (
     ParametersModel,
     ProviderTimeSeriesDataModel,
@@ -86,8 +86,6 @@ realizations if you have defined `ensembles`.
 
         self.theme = webviz_settings.theme
         self.ensembles = ensembles
-        self.csvfile_parameters = csvfile_parameters
-        self.csvfile_smry = csvfile_smry
 
         table_provider = EnsembleTableProviderFactory.instance()
 
@@ -125,7 +123,7 @@ realizations if you have defined `ensembles`.
                 )
             )
 
-        elif self.csvfile_parameters is None:
+        elif csvfile_parameters is None:
             raise ValueError("Either ensembles or csvfile_parameters must be specified")
         else:
             parameterproviderset = (
@@ -133,15 +131,20 @@ realizations if you have defined `ensembles`.
                     csvfile_parameters
                 )
             )
-            if self.csvfile_smry is not None:
+            if csvfile_smry is not None:
+                smryprovider = (
+                    table_provider.create_provider_set_from_aggregated_csv_file(
+                        csvfile_smry
+                    )
+                )
                 self.vmodel = SimulationTimeSeriesModel(
-                    dataframe=read_csv(csvfile_smry)
+                    dataframe=create_df_from_table_provider(smryprovider)
                 )
             else:
                 self.vmodel = None
 
         self.pmodel = ParametersModel(
-            provider=parameterproviderset,
+            dataframe=create_df_from_table_provider(parameterproviderset),
             theme=self.theme,
             drop_constants=drop_constants,
         )
@@ -167,25 +170,13 @@ realizations if you have defined `ensembles`.
                 vectormodel=self.vmodel,
             )
 
-    def add_webvizstore(self):
-        store = []
-        if self.ensembles is None:
-            store.append(
-                (
-                    read_csv,
-                    [
-                        {"csv_file": self.csvfile_parameters},
-                    ],
-                )
-            )
-            if self.csvfile_smry is not None:
-                store.append(
-                    (
-                        read_csv,
-                        [
-                            {"csv_file": self.csvfile_smry},
-                        ],
-                    )
-                )
 
-        return store
+def create_df_from_table_provider(provider) -> pd.DataFrame:
+    dfs = []
+    for ens in provider.ensemble_names():
+        df = provider.ensemble_provider(ens).get_column_data(
+            column_names=provider.ensemble_provider(ens).column_names()
+        )
+        df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+        dfs.append(df)
+    return pd.concat(dfs)

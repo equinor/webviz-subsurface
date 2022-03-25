@@ -29,8 +29,8 @@ class PropertyStatisticsModel:
     REQUIRED_SELECTORS = ["ZONE"]
     SKIPPED_COLUMNS = ["Count"]
 
-    def __init__(self, provider: Any, theme: WebvizConfigTheme) -> None:
-        self._dataframe = self.create_df_from_provider(provider)
+    def __init__(self, dataframe: pd.DataFrame, theme: WebvizConfigTheme) -> None:
+        self._dataframe = dataframe
         self._dataframe["REAL"] = self._dataframe["REAL"].astype(int)
         self._prepare_and_validate_data()
         self._dataframe["label"] = self._dataframe.agg(
@@ -46,17 +46,6 @@ class PropertyStatisticsModel:
     @property
     def dataframe(self) -> pd.DataFrame:
         return self._dataframe
-
-    @staticmethod
-    def create_df_from_provider(provider: Any) -> pd.DataFrame:
-        dfs = []
-        for ens in provider.ensemble_names():
-            df = provider.ensemble_provider(ens).get_column_data(
-                column_names=provider.ensemble_provider(ens).column_names()
-            )
-            df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
-            dfs.append(df)
-        return pd.concat(dfs)
 
     def _prepare_and_validate_data(self) -> None:
         for column in self.REQUIRED_COLUMNS + self.REQUIRED_SELECTORS:

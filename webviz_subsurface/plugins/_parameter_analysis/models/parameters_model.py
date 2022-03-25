@@ -13,11 +13,11 @@ class ParametersModel:
 
     REQUIRED_COLUMNS = ["ENSEMBLE", "REAL"]
 
-    def __init__(self, provider, theme: dict, drop_constants: bool = True) -> None:
+    def __init__(
+        self, dataframe: pd.DataFrame, theme: dict, drop_constants: bool = True
+    ) -> None:
         self.pmodel = Pmodel(
-            dataframe=self.create_df_from_provider(provider),
-            drop_constants=drop_constants,
-            keep_numeric_only=True,
+            dataframe=dataframe, drop_constants=drop_constants, keep_numeric_only=True
         )
         self._dataframe = self.pmodel.dataframe
         self._dataframe["REAL"] = self._dataframe["REAL"].astype(int)
@@ -78,17 +78,6 @@ class ParametersModel:
             .rename_axis(["ENSEMBLE", "PARAMETER"])
             .reset_index()
         )
-
-    @staticmethod
-    def create_df_from_provider(provider) -> pd.DataFrame:
-        dfs = []
-        for ens in provider.ensemble_names():
-            df = provider.ensemble_provider(ens).get_column_data(
-                column_names=provider.ensemble_provider(ens).column_names()
-            )
-            df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
-            dfs.append(df)
-        return pd.concat(dfs)
 
     def _normalize_and_aggregate(self):
         """
