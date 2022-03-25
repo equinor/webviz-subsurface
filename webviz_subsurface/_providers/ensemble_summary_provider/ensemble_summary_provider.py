@@ -38,7 +38,6 @@ class EnsembleSummaryProvider(abc.ABC):
     @abc.abstractmethod
     def vector_names(self) -> List[str]:
         """Returns list of all available vector names."""
-        ...
 
     @abc.abstractmethod
     def vector_names_filtered_by_value(
@@ -49,19 +48,16 @@ class EnsembleSummaryProvider(abc.ABC):
         """Returns list vector names with the option of excluding vectors that have only
         0-values and/or vectors where all the values are equal.
         """
-        ...
 
     @abc.abstractmethod
     def realizations(self) -> List[int]:
         """Returns list of all available realization numbers."""
-        ...
 
     @abc.abstractmethod
     def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
         """Returns metadata for the specified vector. Returns None if no metadata
         exists or if any of the non-optional properties of `VectorMetadata` are missing.
         """
-        ...
 
     @abc.abstractmethod
     def supports_resampling(self) -> bool:
@@ -69,7 +65,6 @@ class EnsembleSummaryProvider(abc.ABC):
         A provider that doesn't support resampling will only accept None as value for
         the resampling_frequency parameter in `dates()` and `get_vectors_df()`.
         """
-        ...
 
     @abc.abstractmethod
     def dates(
@@ -84,7 +79,6 @@ class EnsembleSummaryProvider(abc.ABC):
         For other resampling frequencies, the date range will be expanded to cover the entire
         time range of all the requested realizations before computing the resampled dates.
         """
-        ...
 
     @abc.abstractmethod
     def get_vectors_df(
@@ -104,7 +98,6 @@ class EnsembleSummaryProvider(abc.ABC):
         The returned DataFrame will always contain a 'DATE' and 'REAL' column in addition
         to columns for all the requested vectors.
         """
-        ...
 
     @abc.abstractmethod
     def get_vectors_for_date_df(
@@ -123,4 +116,3 @@ class EnsembleSummaryProvider(abc.ABC):
         The returned DataFrame will always contain a 'REAL' column in addition to
         columns for all the requested vectors.
         """
-        ...

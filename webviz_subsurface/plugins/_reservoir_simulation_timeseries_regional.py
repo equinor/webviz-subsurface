@@ -628,8 +628,10 @@ folder, to avoid risk of not extracting the right data.
             [Input(self.uuid("date"), "data")]
             + [Input({"page": self.uuid("selectors"), "value": ALL}, "value")],
             [State(self.uuid("fip"), "value")],
-        )  # pylint: disable=too-many-locals
-        def _render_charts(date: str, _: Any, fip_array: str):
+        )
+        def _render_charts(  # pylint: disable=too-many-locals
+            date: str, _: Any, fip_array: str
+        ):
             # TODO(Sigurd) Currently giving up on deciding on the return type for
             # _render_charts() above. Some of the mypy errors indicate that there
             # are some errors in the structure of the return values of this function
