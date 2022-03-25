@@ -63,7 +63,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         obs_surfaces: List[SurfaceFileInfo],
         avoid_copying_surfaces: bool,
     ) -> None:
-        """If avoid_copying_surfaces if True, the specified surfaces wil NOT be copied
+        """If avoid_copying_surfaces if True, the specified surfaces will NOT be copied
         into the backing store, but will be referenced from their source locations.
         Note that this is only useful when running in non-portable mode and will fail
         in portable mode.
