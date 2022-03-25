@@ -1,5 +1,6 @@
 from .ensemble_model import EnsembleModel
 from .ensemble_set_model import EnsembleSetModel
+from .gruptree_model import GruptreeModel
 from .inplace_volumes_model import InplaceVolumesModel
 from .observation_model import ObservationModel
 from .parameter_model import ParametersModel

@@ -19,17 +19,14 @@ class WellProvider(abc.ABC):
     @abc.abstractmethod
     def provider_id(self) -> str:
         """Returns string ID of the provider."""
-        ...
 
     @abc.abstractmethod
     def well_names(self) -> List[str]:
         """Returns list of all available well names."""
-        ...
 
     @abc.abstractmethod
     def get_well_path(self, well_name: str) -> WellPath:
         """Returns the coordinates for the well path along with MD for the well."""
-        ...
 
     @abc.abstractmethod
     def get_well_xtgeo_obj(self, well_name: str) -> xtgeo.Well:

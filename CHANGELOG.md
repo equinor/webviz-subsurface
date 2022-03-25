@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+
+- [#981](https://github.com/equinor/webviz-subsurface/pull/981) - `WellAnalysis` - New plugin well analysis. One tab for well production overview plots and one for well control mode and network analysis.
+
 ### Changed
 
 - [#986](https://github.com/equinor/webviz-subsurface/pull/986) - Avoid copying surfaces when using `MapViewerFMU` in non-portable mode.
+
+### Fixed
+- [#985](https://github.com/equinor/webviz-subsurface/pull/985) - `WellLogViewer` - Updated data format to latest version. Requires no changes in input data.
 
 ## [0.2.11] - 2022-03-14
 

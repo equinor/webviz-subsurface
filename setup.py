@@ -75,6 +75,7 @@ setup(
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
             "WellLogViewer = webviz_subsurface.plugins:WellLogViewer",
+            "WellAnalysis = webviz_subsurface.plugins:WellAnalysis",
         ],
         "console_scripts": ["smry2arrow_batch=webviz_subsurface.smry2arrow_batch:main"],
     },

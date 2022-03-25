@@ -830,8 +830,8 @@ def plugin_callbacks(
     ) -> dict:
         """Combine selector values with selector name for given view"""
         return {
-            id_values["selector"]: values
-            for values, id_values in zip(values, id_list)
+            id_values["selector"]: val
+            for val, id_values in zip(values, id_list)
             if id_values["view"] == view
         }
 
