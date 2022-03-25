@@ -55,29 +55,24 @@ class EnsembleSurfaceProvider(abc.ABC):
     @abc.abstractmethod
     def provider_id(self) -> str:
         """Returns string ID of the provider."""
-        ...
 
     @abc.abstractmethod
     def attributes(self) -> List[str]:
         """Returns list of all available attributes."""
-        ...
 
     @abc.abstractmethod
     def surface_names_for_attribute(self, surface_attribute: str) -> List[str]:
         """Returns list of all available surface names for a given attribute."""
-        ...
 
     @abc.abstractmethod
     def surface_dates_for_attribute(
         self, surface_attribute: str
     ) -> Optional[List[str]]:
         """Returns list of all available surface dates for a given attribute."""
-        ...
 
     @abc.abstractmethod
     def realizations(self) -> List[int]:
         """Returns list of all available realizations."""
-        ...
 
     @abc.abstractmethod
     def get_surface(
@@ -85,20 +80,16 @@ class EnsembleSurfaceProvider(abc.ABC):
         address: SurfaceAddress,
     ) -> Optional[xtgeo.RegularSurface]:
         """Returns a surface for a given surface address"""
-        ...
 
     # @abc.abstractmethod
     # def get_surface_bounds(self, surface: EnsembleSurfaceContext) -> List[float]:
     #     """Returns the bounds for a surface [xmin,ymin, xmax,ymax]"""
-    #     ...
 
     # @abc.abstractmethod
     # def get_surface_value_range(self, surface: EnsembleSurfaceContext) -> List[float]:
     #     """Returns the value range for a given surface context [zmin, zmax]"""
-    #     ...
 
     # @abc.abstractmethod
     # def get_surface_as_rgba(self, surface: EnsembleSurfaceContext) -> io.BytesIO:
     #     """Returns surface as a greyscale png RGBA with encoded elevation values
     #     in a bytestream"""
-    #     ...
