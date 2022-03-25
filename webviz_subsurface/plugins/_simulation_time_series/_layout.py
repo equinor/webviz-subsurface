@@ -345,10 +345,15 @@ def __vector_calculator_dialog_layout(
         draggable=True,
         max_width="lg",
         children=[
-            wsc.VectorCalculator(
-                id=get_uuid(LayoutElements.VECTOR_CALCULATOR),
-                vectors=vector_data,
-                expressions=predefined_expressions,
+            html.Div(
+                style={"height": "40vh"},
+                children=[
+                    wsc.VectorCalculator(
+                        id=get_uuid(LayoutElements.VECTOR_CALCULATOR),
+                        vectors=vector_data,
+                        expressions=predefined_expressions,
+                    )
+                ],
             )
         ],
     )
