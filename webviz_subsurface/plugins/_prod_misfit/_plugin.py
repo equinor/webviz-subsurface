@@ -13,7 +13,11 @@ from webviz_subsurface._providers import Frequency
 
 from ._callbacks import plugin_callbacks
 from ._layout import main_layout
-from .types.provider_set import create_presampled_provider_set_from_paths
+
+# from .types.provider_set import create_presampled_provider_set_from_paths
+from .._simulation_time_series.types.provider_set import (
+    create_presampled_provider_set_from_paths,
+)
 
 
 class ProdMisfit(WebvizPluginABC):

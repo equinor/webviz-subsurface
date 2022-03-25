@@ -4,7 +4,8 @@ from typing import Dict, List
 
 import pandas as pd
 
-from ..types.provider_set import ProviderSet
+# from ..types.provider_set import ProviderSet
+from ..._simulation_time_series.types.provider_set import ProviderSet
 
 
 # -------------------
