@@ -104,12 +104,16 @@ def update_intersection(
                 yline, distance=resolution, atleast=5, nextend=extension / resolution
             )
         else:
+            from timeit import default_timer
+
+            start = default_timer()
             fence_spec = well_set_model.get_fence(
                 well_name=wellname,
                 distance=resolution,
                 atleast=5,
                 nextend=extension / resolution,
             )
+            print("time", default_timer() - start)
 
         realizations = [int(real) for real in realizations]
         for ensemble in ensembles:
@@ -199,7 +203,7 @@ def update_intersection(
             {"id": get_uuid("intersection-data"), "settings": "ui_options"},
             "value",
         ),
-        State(get_uuid("leaflet-map1"), "polyline_points"),
+        # State(get_uuid("leaflet-map1"), "polyline_points"),
         State({"id": get_uuid("intersection-data"), "element": "well"}, "value"),
     )
     # pylint: disable=too-many-arguments, too-many-branches
@@ -211,7 +215,7 @@ def update_intersection(
         zmin: Optional[float],
         zmax: Optional[float],
         ui_options: List[str],
-        polyline: Optional[List],
+        # polyline: Optional[List],
         wellname: str,
     ) -> Dict:
         """Store intersection layout configuration clientside"""
@@ -276,13 +280,13 @@ def update_intersection(
             layout.update(initial_layout)
 
         # Return emptly plot layout if surface is source but no polyline is drawn
-        if intersection_source == "polyline" and polyline is None:
-            layout.update(
-                {
-                    "title": "Draw a random line from the toolbar on Surface A",
-                }
-            )
-            return layout
+        # if intersection_source == "polyline" and polyline is None:
+        #     layout.update(
+        #         {
+        #             "title": "Draw a random line from the toolbar on Surface A",
+        #         }
+        #     )
+        #     return layout
 
         # Add any interactivily set range options
         if ui_options:
