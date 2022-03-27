@@ -47,6 +47,9 @@ def plugin_callbacks(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> None
             filters=filters,
             range_filters=zip_filters(continous_filters, continous_filters_ids),
         )
+        if df.empty:
+            return ["No data left after filtering"]
+
         qc_volumes = datamodel.compute_qc_volumes(df)
 
         df = datamodel.filter_dframe_on_depth(df)
@@ -102,7 +105,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> None
         return mainfig, mapfig
 
     def get_point_indexes_from_selected(selected: Optional[dict]) -> Union[list, dict]:
-        if selected is None or not selected:
+        if not (isinstance(selected, dict) and "points" in selected):
             return []
 
         continous_color = "marker.color" in selected["points"][0]
@@ -177,6 +180,16 @@ def plugin_callbacks(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> None
             selectors=datamodel.SELECTORS,
             map_figure=map_figure,
         )
+
+    @callback(
+        Output(get_uuid("info-dialog"), "open"),
+        Input(get_uuid("info-button"), "n_clicks"),
+        State(get_uuid("info-dialog"), "open"),
+    )
+    def open_close_information_dialog(_n_click: list, is_open: bool) -> bool:
+        if _n_click is not None:
+            return not is_open
+        raise PreventUpdate
 
 
 def zip_filters(filter_values: list, filter_ids: list) -> dict:

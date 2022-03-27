@@ -28,13 +28,19 @@ def qc_flag_description() -> str:
 
 def check_swatinit_description() -> str:
     return """
+This plugin is used to visualize the output from **check_swatinit** which is a **QC tool for Water Initialization in Eclipse runs
+when the SWATINIT keyword has been used**. It is used to quantify how much the volume changes from **SWATINIT** to **SWAT** at time
+zero in the dynamical model, and help understand why it changes.
+
 When the keyword SWATINIT has been used as water initialization option in Eclipse, capillary pressure scaling on a cell-by-cell basis will
 occur in order to match SWATINIT from the geomodel. 
 This process has some exceptions which can cause volume changes from SWATINIT to SWAT at time zero.
 Each cell in the dynamical model has been flagged according to what has happened during initialization, and information is stored
 in the **QC_FLAG** column.
 
-Check the maximum capillary pressure pr SATNUM in each EQLNUM to ensure extreme values were not necessary
+> Check the maximum capillary pressure pr SATNUM in each EQLNUM to ensure extreme values were not necessary
+
+[check_swatinit documentation](https://fmu-docs.equinor.com/docs/subscript/scripts/check_swatinit.html) 
 """
 
 

@@ -186,6 +186,7 @@ class TabQqPlotLayout:
                             },
                         ],
                         value=self.MainPlots.PROP_VS_DEPTH,
+                        clearable=False,
                     ),
                     style={"margin-bottom": "15px"},
                 ),
@@ -211,6 +212,7 @@ class TabQqPlotLayout:
                                 for ens in self.datamodel.color_by_selectors
                             ],
                             value="QC_FLAG",
+                            clearable=False,
                         ),
                         wcc.Label("Max number of points:"),
                         dcc.Input(
@@ -430,15 +432,13 @@ class OverviewTabLayout:
     def main_layout(self) -> html.Div:
         return html.Div(
             children=[
-                wcc.Header("Water Initialization QC", style=LayoutStyle.HEADER),
                 html.Div(
-                    style={"height": "50vh", "overflow-y": "auto"},
+                    style={"height": "40vh", "overflow-y": "auto"},
                     children=[
                         wcc.FlexBox(
                             children=[
                                 wcc.FlexColumn(
                                     [
-                                        dcc.Markdown(check_swatinit_description()),
                                         self.overview_report_volume_changes,
                                     ],
                                     flex=7,
@@ -450,13 +450,34 @@ class OverviewTabLayout:
                     ],
                 ),
                 html.Div(
-                    style={"margin-top": "40px"},
+                    style={"margin-top": "20px"},
                     children=[
                         wcc.Header("QC_FLAG descriptions", style=LayoutStyle.HEADER),
                         dcc.Markdown(qc_flag_description()),
                     ],
                 ),
             ]
+        )
+
+    @property
+    def information_dialog(self) -> html.Div:
+        title = "Plugin and 'check_swatinit' information"
+        return html.Div(
+            style={"margin-bottom": "30px"},
+            children=[
+                html.Button(
+                    title,
+                    style={"width": "100%", "background-color": "white"},
+                    id=self.get_uuid("info-button"),
+                ),
+                wcc.Dialog(
+                    title=title,
+                    id=self.get_uuid("info-dialog"),
+                    max_width="md",
+                    open=False,
+                    children=dcc.Markdown(check_swatinit_description()),
+                ),
+            ],
         )
 
     @property
@@ -477,9 +498,11 @@ class OverviewTabLayout:
         ]
 
         return wcc.Frame(
-            style={"height": "100%"},
+            style={"height": "90%"},
             children=[
-                wcc.Header("Dataset information", style=LayoutStyle.HEADER),
+                wcc.Header("Information", style=LayoutStyle.HEADER),
+                self.information_dialog,
+                wcc.Header("Key numbers", style=LayoutStyle.HEADER),
                 html.Div(
                     [
                         html.Div([text, html.Span(num, style=number_style)])
@@ -496,7 +519,6 @@ class OverviewTabLayout:
             "Table showing volume changes from SWATINIT to SWAT at Reservoir conditions"
         )
         return html.Div(
-            style={"margin-top": "40px"},
             children=[
                 html.Div(
                     html.Label(label, className="webviz-underlined-label"),

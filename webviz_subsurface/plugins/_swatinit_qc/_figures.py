@@ -11,10 +11,6 @@ from webviz_subsurface._utils.colors import hex_to_rgb, rgb_to_str, scale_rgb_li
 from ._business_logic import QcFlags
 
 
-def layout_defaults() -> dict:
-    return {"plot_bgcolor": "white", "uirevision": True}
-
-
 def axis_defaults(showgrid: bool = True) -> dict:
     return {
         "showline": True,
@@ -79,7 +75,7 @@ class WaterfallPlot:
                 )
             )
             .update_layout(
-                **layout_defaults(),
+                plot_bgcolor="white",
                 title="Waterfall chart showing changes from SWATINIT to SWAT",
                 margin={"t": 50, "b": 50, "l": 50, "r": 50},
             )
@@ -180,8 +176,9 @@ class PropertiesVsDepthSubplots:
                 margin={"t": 50, "b": 10, "l": 10, "r": 10},
                 legend={"orientation": "h"},
                 clickmode="event+select",
+                coloraxis={"colorscale": "Viridis", **self.colorbar},
             )
-            .update_yaxes(matches="y", autorange="reversed", **axis_defaults())
+            .update_yaxes(autorange="reversed", **axis_defaults())
             .update_xaxes(axis_defaults())
         )
 
@@ -205,7 +202,7 @@ class PropertiesVsDepthSubplots:
                     mode="markers",
                     name=color,
                     showlegend=idx == 0,
-                    marker=self.set_marker_style(color, df[self.color_by]),
+                    marker=self.set_marker_style(color, df),
                     unselected={"marker": self.set_unselected_marker_style(color)},
                     customdata=customdata,
                     hovertemplate=self.hovertemplate,
@@ -215,6 +212,18 @@ class PropertiesVsDepthSubplots:
                 row, col = self.layout[idx]
                 self._figure.add_trace(trace, row=row, col=col)
 
+    @property
+    def colorbar(self) -> dict:
+        if self.color_by != "PERMX":
+            return {}
+        tickvals = list(range(-4, 5, 1))
+        return {
+            "colorbar": {
+                "tickvals": tickvals,
+                "ticktext": [10**val for val in tickvals],
+            }
+        }
+
     def create_hover_data(self, include_columns: list) -> list:
         # ensure the colorby is the first entry in the list -> used in customdata in callback
         hover_data = [self.color_by]
@@ -223,9 +232,14 @@ class PropertiesVsDepthSubplots:
                 hover_data.append(col)
         return hover_data
 
-    def set_marker_style(self, color: str, color_values: pd.Series) -> dict:
+    def set_marker_style(self, color: str, df: pd.DataFrame) -> dict:
         if not self.discrete_color:
-            return {"coloraxis": "coloraxis", "color": color_values}
+            return {
+                "coloraxis": "coloraxis",
+                "color": df[self.color_by]
+                if self.color_by != "PERMX"
+                else np.log10(df[self.color_by]),
+            }
         return {"color": self.colormap[color], "opacity": 0.5}
 
     def set_unselected_marker_style(self, color: str) -> dict:
@@ -260,7 +274,6 @@ class MapFigure:
         colormap: dict,
         faultlinedf: Optional[pd.DataFrame] = None,
     ):
-
         self.dframe = dframe
         self.color_by = color_by
         self.colormap = colormap
@@ -291,16 +304,19 @@ class MapFigure:
                 data_frame=self.dframe,
                 x="X",
                 y="Y",
-                color=self.color_by,
+                color=self.color_by
+                if self.color_by != "PERMX"
+                else np.log10(self.dframe[self.color_by]),
                 color_discrete_map=self.colormap,
                 xaxis={"constrain": "domain", **self.axis_layout},
                 yaxis={"scaleanchor": "x", **self.axis_layout},
                 hover_data=[self.color_by] + self.hover_data,
+                color_continuous_scale="Viridis",
             )
             .update_traces(marker_size=10, unselected={"marker": {"opacity": 0}})
             .update_coloraxes(showscale=False)
             .update_layout(
-                **layout_defaults(),
+                plot_bgcolor="white",
                 margin={"t": 10, "b": 10, "l": 0, "r": 0},
                 showlegend=False,
             )
