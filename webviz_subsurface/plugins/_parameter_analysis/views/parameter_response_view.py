@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Callable
 
 import webviz_core_components as wcc
@@ -8,6 +9,7 @@ from webviz_subsurface._components.parameter_filter import ParameterFilter
 
 from ..models import ParametersModel, SimulationTimeSeriesModel
 from .selector_view import (
+    button,
     color_opacity_selector,
     color_selector,
     date_selector,
@@ -17,6 +19,16 @@ from .selector_view import (
     plot_options,
     vector_selector,
 )
+
+
+class VisualizationOptions(str, Enum):
+    """
+    Type definition for visualization options in simulation time series
+    """
+
+    REALIZATIONS = "realizations"
+    STATISTICS = "statistics"
+    STATISTICS_AND_REALIZATIONS = "statistics and realizations"
 
 
 def timeseries_view(get_uuid: Callable) -> html.Div:
@@ -64,21 +76,57 @@ def selector_view(
                 ],
             ),
             wcc.Selectors(
-                label="Filters",
+                label="Visualization",
                 children=[
-                    wcc.Checklist(
-                        id=get_uuid("display-paramfilter"),
-                        options=[{"label": "Show parameter filter", "value": "Show"}],
-                        value=[],
-                    ),
-                    filter_vector_selector(
-                        get_uuid=get_uuid, vectormodel=vectormodel, tab="response"
-                    ),
+                    wcc.RadioItems(
+                        id=get_uuid("visualization"),
+                        options=[
+                            {
+                                "label": "Individual realizations",
+                                "value": VisualizationOptions.REALIZATIONS.value,
+                            },
+                            {
+                                "label": "Statistical lines",
+                                "value": VisualizationOptions.STATISTICS.value,
+                            },
+                            {
+                                "label": "Statistics + Realizations",
+                                "value": VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                            },
+                        ],
+                        value=VisualizationOptions.REALIZATIONS.value,
+                    )
                 ],
             ),
             wcc.Selectors(
+                label="Vectors for parameter correlation",
+                children=filter_vector_selector(get_uuid=get_uuid),
+            ),
+            wcc.Selectors(
                 label="Options",
-                open_details=False,
+                children=[
+                    parameter_filter_button(get_uuid),
+                    options_layout(get_uuid, theme_colors),
+                ],
+            ),
+        ],
+    )
+
+
+def parameter_filter_button(get_uuid: Callable):
+    return button(get_uuid("display-paramfilter"), "Show parameter filter")
+
+
+def options_layout(get_uuid: Callable, theme_colors: list):
+    return html.Div(
+        children=[
+            button(get_uuid("options-button"), "Options"),
+            wcc.Dialog(
+                title="Options",
+                id=get_uuid("options-dialog"),
+                backdrop=False,
+                draggable=True,
+                open=False,
                 children=[
                     plot_options(get_uuid=get_uuid, tab="response"),
                     color_selector(
@@ -93,7 +141,7 @@ def selector_view(
                     ),
                 ],
             ),
-        ],
+        ]
     )
 
 

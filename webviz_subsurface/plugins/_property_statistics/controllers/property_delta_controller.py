@@ -3,6 +3,7 @@ from typing import Callable, Tuple
 import pandas as pd
 import plotly.graph_objects as go
 from dash import ALL, Dash, Input, Output, html
+from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceLeafletModel
 
@@ -43,6 +44,10 @@ def property_delta_controller(
         selectors: list,
         clickdata: dict,
     ) -> Tuple[go.Figure, html.Div]:
+        # Prevent update if some filters are empty
+        if not all(filt for filt in selectors):
+            raise PreventUpdate
+
         # Make bar chart
         bars = property_model.make_delta_bars(
             prop=prop,
