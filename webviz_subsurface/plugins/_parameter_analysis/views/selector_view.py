@@ -132,9 +132,7 @@ def date_selector(
                 marks={
                     idx: {
                         "label": to_str(dates[idx]),
-                        "style": {
-                            "white-space": "nowrap",
-                        },
+                        "style": {"white-space": "nowrap"},
                     }
                     for idx in [0, len(dates) - 1]
                 },

@@ -81,11 +81,15 @@ def parameter_response_controller(
         vector_df = vectormodel.get_vector_df(
             ensemble=ensemble, realizations=realizations, vectors=vectors
         )
+        if date not in vector_df["DATE"].values:
+            return [empty_figure("Selected date does not exist for ensemble")] * 4
+        if vector not in vector_df:
+            return [empty_figure("Selected vector does not exist for ensemble")] * 4
+
         param_df = parametermodel.get_parameter_df_for_ensemble(ensemble, realizations)
         merged_df = merge_dataframes_on_realization(
             dframe1=vector_df[vector_df["DATE"] == date], dframe2=param_df
         )
-
         # Make correlation figure for vector
         if options["autocompute_corr"]:
             corr_v_fig = make_correlation_figure(

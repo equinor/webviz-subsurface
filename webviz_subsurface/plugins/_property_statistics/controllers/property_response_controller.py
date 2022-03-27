@@ -169,6 +169,8 @@ def property_response_controller(
         vector_df = timeseries_model.get_vector_df(
             ensemble=ensemble, vectors=[vector], realizations=real_filter
         )
+        if date not in vector_df["DATE"].values or vector not in vector_df:
+            return {}, {}, {}
 
         # Get dataframe with properties per label and REAL
         prop_df = property_model.get_ensemble_properties(ensemble, selectors)

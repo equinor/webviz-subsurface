@@ -102,23 +102,26 @@ realizations if you have defined `ensembles`.
             resampling_frequency = Frequency(time_index)
             provider_factory = EnsembleSummaryProviderFactory.instance()
 
-            try:
-                self.vmodel = ProviderTimeSeriesDataModel(
-                    provider_set={
-                        ens: provider_factory.create_from_arrow_unsmry_presampled(
-                            str(ens_path), rel_file_pattern, resampling_frequency
-                        )
-                        for ens, ens_path in ensemble_paths.items()
-                    },
-                    column_keys=column_keys,
-                )
-            except ValueError as error:
-                message = (
-                    f"No arrow files found at {rel_file_pattern}. If no arrow files have been "
-                    "generated with `ERT` using `ECL2CSV`, the commandline tool "
-                    "`smry2arrow_batch` can be used to generate arrow files for an ensemble"
-                )
-                raise ValueError(message) from error
+            provider_set = {}
+            for ens, ens_path in ensemble_paths.items():
+                try:
+                    provider_set[
+                        ens
+                    ] = provider_factory.create_from_arrow_unsmry_presampled(
+                        str(ens_path), rel_file_pattern, resampling_frequency
+                    )
+                except ValueError as error:
+                    message = (
+                        f"No arrow files found at {rel_file_pattern} for ensemble {ens}. \n"
+                        "If no arrow files have been generated with `ERT` using `ECL2CSV`, "
+                        "the commandline tool `smry2arrow_batch` can be used to generate arrow "
+                        "files for an ensemble"
+                    )
+                    raise ValueError(message) from error
+
+            self.vmodel = ProviderTimeSeriesDataModel(
+                provider_set=provider_set, column_keys=column_keys
+            )
 
             parameterproviderset = (
                 table_provider.create_provider_set_from_per_realization_parameter_file(

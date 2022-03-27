@@ -28,6 +28,9 @@ class ProviderTimeSeriesDataModel:
             if column_keys is not None
             else all_vector_names
         )
+        if not self._vector_names:
+            raise ValueError("No vectors match the selected 'column_keys' criteria")
+
         self._dates = self.all_dates()
 
         # add vectors to vector selector
@@ -112,7 +115,8 @@ class ProviderTimeSeriesDataModel:
         vectors: List[str],
     ) -> pd.DataFrame:
         provider = self._provider_set[ensemble]
-        return provider.get_vectors_df(vectors, None, realizations)
+        ens_vectors = [vec for vec in vectors if vec in provider.vector_names()]
+        return provider.get_vectors_df(ens_vectors, None, realizations)
 
     def get_last_date(self, ensemble: str) -> str:
         return max(self._provider_set[ensemble].dates(None))
