@@ -1,4 +1,6 @@
 import datetime
+import fnmatch
+import re
 from typing import List, Optional, Set
 
 import pandas as pd
@@ -14,12 +16,17 @@ from webviz_subsurface._utils.vector_selector import add_vector_to_vector_select
 class ProviderTimeSeriesDataModel:
     """Class to process and and visualize ensemble timeseries"""
 
-    def __init__(self, provider_set: dict) -> None:
+    def __init__(self, provider_set: dict, column_keys: Optional[list] = None) -> None:
 
         self._provider_set = provider_set
         self.line_shape_fallback = set_simulation_line_shape_fallback("linear")
-        self._vector_names = self._create_union_of_vector_names_from_providers(
+        all_vector_names = self._create_union_of_vector_names_from_providers(
             list(provider_set.values())
+        )
+        self._vector_names = (
+            self.filter_vectorlist_on_column_keys(column_keys, all_vector_names)
+            if column_keys is not None
+            else all_vector_names
         )
         self._dates = self.all_dates()
 
@@ -66,6 +73,20 @@ class ProviderTimeSeriesDataModel:
             )
         vector_names = list(sorted(set(vector_names)))
         return vector_names
+
+    @staticmethod
+    def filter_vectorlist_on_column_keys(
+        column_key_list: list, vectorlist: list
+    ) -> list:
+        """Filter vectors using list of unix shell wildcards"""
+        try:
+            regex = re.compile(
+                "|".join([fnmatch.translate(col) for col in column_key_list]),
+                flags=re.IGNORECASE,
+            )
+            return [v for v in vectorlist if regex.fullmatch(v)]
+        except re.error:
+            return []
 
     def get_historical_vector_df(
         self, vector: str, ensemble: str

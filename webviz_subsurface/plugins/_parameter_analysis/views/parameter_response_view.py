@@ -124,6 +124,7 @@ def options_layout(get_uuid: Callable, theme_colors: list):
             wcc.Dialog(
                 title="Options",
                 id=get_uuid("options-dialog"),
+                backdrop=False,
                 draggable=True,
                 open=False,
                 children=[

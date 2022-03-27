@@ -48,7 +48,8 @@ on reservoir simulation time series data.
     `yearly`.
 * **`drop_constants`:** Bool used to determine if constant parameters should be dropped. \
     Default is True.
-
+* **`column_keys`:** List of vectors to extract. If not given, all vectors \
+    from the simulations will be extracted. Wild card asterisk `*` can be used.
 ---
 
 ?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward \
@@ -77,6 +78,7 @@ realizations if you have defined `ensembles`.
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         time_index: str = "monthly",
+        column_keys: Optional[list] = None,
         drop_constants: bool = True,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         csvfile_parameters: Optional[Path] = None,
@@ -108,6 +110,7 @@ realizations if you have defined `ensembles`.
                         )
                         for ens, ens_path in ensemble_paths.items()
                     },
+                    column_keys=column_keys,
                 )
             except ValueError as error:
                 message = (

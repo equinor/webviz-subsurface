@@ -10,6 +10,7 @@ def test_parameter_analysis(dash_duo, app, shared_settings) -> None:
         app,
         shared_settings["HM_SETTINGS"],
         ensembles=shared_settings["HM_ENSEMBLES"],
+        column_keys=["WWCT:*"],
         time_index="monthly",
         drop_constants=True,
     )

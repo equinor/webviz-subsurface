@@ -55,6 +55,8 @@ FMU format.
 * **`rel_file_pattern`:** path to `.arrow` files with summary data.
 * **`statistic_file`:** Csv file for each realization with property statistics. See the \
     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors \
+    from the simulations will be extracted. Wild card asterisk `*` can be used.
 * **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or \
     `yearly`.
 * **`surface_renaming`:** Optional dictionary to rename properties/zones to match filenames \
@@ -90,6 +92,7 @@ differ between individual realizations of an ensemble.
         statistics_file: str = "share/results/tables/gridpropstatistics.csv",
         surface_renaming: Optional[dict] = None,
         time_index: str = "monthly",
+        column_keys: Optional[list] = None,
         csvfile_statistics: Optional[Path] = None,
         csvfile_smry: Optional[Path] = None,
     ):
@@ -122,6 +125,7 @@ differ between individual realizations of an ensemble.
                         )
                         for ens, ens_path in ensemble_paths.items()
                     },
+                    column_keys=column_keys,
                 )
             except ValueError as error:
                 message = (

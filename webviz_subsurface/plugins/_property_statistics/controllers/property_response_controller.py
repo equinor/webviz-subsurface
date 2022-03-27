@@ -141,6 +141,7 @@ def property_response_controller(
             callback_context.triggered is None
             or callback_context.triggered[0]["prop_id"] == "."
             or vector is None
+            or not vector
             or not all(filt for filt in selectors)
         ):
             raise PreventUpdate
@@ -220,13 +221,17 @@ def property_response_controller(
             line_shape_fallback=timeseries_model.line_shape_fallback,
         ).figure
 
-        scatter_fig = ScatterPlot(
-            merged_df if selected_corr in merged_df else pd.DataFrame(),
-            response=vector,
-            param=selected_corr,
-            color="#007079",
-            title=f"{vector} vs {selected_corr}",
-            plot_trendline=True,
-        ).figure
+        scatter_fig = (
+            ScatterPlot(
+                merged_df,
+                response=vector,
+                param=selected_corr,
+                color="#007079",
+                title=f"{vector} vs {selected_corr}",
+                plot_trendline=True,
+            ).figure
+            if selected_corr in merged_df
+            else {}
+        )
 
         return figure, correlation_figure.figure, scatter_fig
