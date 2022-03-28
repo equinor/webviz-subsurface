@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics`- Changed to reading unsmry data from `.arrow` files and deprecated the usage of aggregated csvfiles as input. 
+- [#986](https://github.com/equinor/webviz-subsurface/pull/986) - Avoid copying surfaces when using `MapViewerFMU` in non-portable mode.
 
 ## [0.2.11] - 2022-03-14
 

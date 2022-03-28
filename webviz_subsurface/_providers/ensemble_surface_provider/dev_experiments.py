@@ -35,7 +35,7 @@ def main() -> None:
     # factory = EnsembleSurfaceProviderFactory.instance()
 
     factory = EnsembleSurfaceProviderFactory(
-        root_storage_dir, allow_storage_writes=True
+        root_storage_dir, allow_storage_writes=True, avoid_copying_surfaces=False
     )
 
     provider: EnsembleSurfaceProvider = factory.create_from_ensemble_surface_files(
