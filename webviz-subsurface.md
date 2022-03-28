@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.11` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.12rc0` of `webviz-subsurface`.
 
 
 
@@ -806,15 +806,17 @@ How to use in YAML config file:
 
 #### ParameterAnalysis
 
+> :warning: At least one argument has a deprecation warning.</summary>
+
 
 <!-- tabs:start -->
 
 
 <!-- tab:Description -->
 
-This plugin visualizes parameter distributions and statistics. /
-    for FMU ensembles, and can be used to investigate parameter correlations /
-    on reservoir simulation time series data.
+This plugin visualizes parameter distributions and statistics.
+for FMU ensembles, and can be used to investigate parameter correlations
+on reservoir simulation time series data.
 
 
 
@@ -832,37 +834,53 @@ This plugin visualizes parameter distributions and statistics. /
 
 
 
+>:warning: **`csvfile_parameters`:** Certain values for the argument have been deprecated and might soon not be accepted anymore. See function below for details.
+
+
+>:warning: **`csvfile_smry`:** Certain values for the argument have been deprecated and might soon not be accepted anymore. See function below for details.
 
 
 
+---
 
 
-**Input data can be provided in two ways: Aggregated or read from ensembles stored on scratch.**
-
-**Using aggregated data**
-* **`csvfile_parameters`:** Aggregated `csv` file with `REAL`, `ENSEMBLE` and parameter columns.     (absolute path or relative to config file).
-* **`csvfile_smry`:** (Optional) Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE`     and vector columns (absolute path or relative to config file).
 
 **Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`rel_file_pattern`:** path to `.arrow` files with summary data.
 * **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
-
-**Common settings for all input options**
 * **`drop_constants`:** Bool used to determine if constant parameters should be dropped.     Default is True.
+* **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
 
 
+Function checking for deprecations:
+```python
+def check_deprecation_argument(
+    csvfile_parameters: Optional[Path], csvfile_smry: Optional[Path]
+) -> Optional[Tuple[str, str]]:
+    if any(elm is not None for elm in [csvfile_parameters, csvfile_smry]):
+        return (
+            "The usage of aggregated csvfiles as user input options are deprecated. "
+            "Please provide feedback if you see a need for a continuation "
+            "of this functionality ",
+            "",
+        )
+    return None
+
+```
+---
 
 ---
 How to use in YAML config file:
 ```yaml
     - ParameterAnalysis:
         ensembles:  # Optional, type Union[list, NoneType].
-        csvfile_parameters:  # Optional, type str (corresponding to a path).
-        csvfile_smry:  # Optional, type str (corresponding to a path).
         time_index:  # Optional, type str.
         column_keys:  # Optional, type Union[list, NoneType].
         drop_constants:  # Optional, type bool.
+        rel_file_pattern:  # Optional, type str.
+        csvfile_parameters:  # Deprecated, type Union[str (corresponding to a path), NoneType].
+        csvfile_smry:  # Deprecated, type Union[str (corresponding to a path), NoneType].
 ```
 
 
@@ -870,20 +888,14 @@ How to use in YAML config file:
 <!-- tab:Data input -->
 
 
-!> For smry data it is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` (controlled by the `sampling` key). This is because the statistics and fancharts are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
+?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
+
+!> For smry data it is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This is because the statistics are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
 
 ?> Vectors that are identified as historical vectors (e.g. FOPTH is the history of FOPT) will be plotted together with their non-historical counterparts as reference lines.
 
-**Using simulation time series data directly from `.UNSMRY` files**
-
 !> Parameter values are extracted automatically from the `parameters.txt` files in the individual
-realizations if you have defined `ensembles`, using the `fmu-ensemble` library.
-
-!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
-
-**Using aggregated data**
-
-?> Aggregated data may speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
+realizations if you have defined `ensembles`.
 
 
 
@@ -1297,6 +1309,8 @@ using the `fmu-ensemble` library.
 
 #### PropertyStatistics
 
+> :warning: At least one argument has a deprecation warning.</summary>
+
 
 <!-- tabs:start -->
 
@@ -1323,40 +1337,60 @@ This plugin visualizes ensemble statistics calculated from grid properties.
 
 
 
+>:warning: **`csvfile_statistics`:** Certain values for the argument have been deprecated and might soon not be accepted anymore. See function below for details.
 
 
+>:warning: **`csvfile_smry`:** Certain values for the argument have been deprecated and might soon not be accepted anymore. See function below for details.
+
+
+
+---
 
 
 **The main input to this plugin is property statistics extracted from grid models.
 See the documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
 Additional data includes UNSMRY data and optionally irap binary surfaces stored in standardized FMU format.
 
-**Input data can be provided in two ways: Aggregated or read from ensembles stored on scratch.**
-
-**Using aggregated data**
-* **`csvfile_smry`:** Aggregated `csv` file for volumes with `REAL`, `ENSEMBLE`, `DATE` and     vector columns (absolute path or relative to config file).
-* **`csvfile_statistics`:** Aggregated `csv` file for property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
 
 **Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`statistic_file`:** Csv file for each realization with property statistics.
+* **`rel_file_pattern`:** path to `.arrow` files with summary data.
+* **`statistic_file`:** Csv file for each realization with property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
 * **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
 * **`surface_renaming`:** Optional dictionary to rename properties/zones to match filenames     stored on FMU standardized format (zone--property.gri)
 
 
 
+Function checking for deprecations:
+```python
+def check_deprecation_argument(
+    csvfile_statistics: Optional[Path], csvfile_smry: Optional[Path]
+) -> Optional[Tuple[str, str]]:
+    if any(elm is not None for elm in [csvfile_statistics, csvfile_smry]):
+        return (
+            "The usage of aggregated csvfiles as user input options are deprecated. "
+            "Please provide feedback if you see a need for a continuation "
+            "of this functionality ",
+            "",
+        )
+    return None
+
+```
+---
+
 ---
 How to use in YAML config file:
 ```yaml
     - PropertyStatistics:
         ensembles:  # Optional, type Union[list, NoneType].
+        rel_file_pattern:  # Optional, type str.
         statistics_file:  # Optional, type str.
-        csvfile_statistics:  # Optional, type str (corresponding to a path).
-        csvfile_smry:  # Optional, type str (corresponding to a path).
         surface_renaming:  # Optional, type Union[dict, NoneType].
         time_index:  # Optional, type str.
         column_keys:  # Optional, type Union[list, NoneType].
+        csvfile_statistics:  # Deprecated, type Union[str (corresponding to a path), NoneType].
+        csvfile_smry:  # Deprecated, type Union[str (corresponding to a path), NoneType].
 ```
 
 
@@ -1364,24 +1398,11 @@ How to use in YAML config file:
 <!-- tab:Data input -->
 
 
+?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
+
 ?> Folders with statistical surfaces are assumed located at `<ensemble_path>/share/results/maps/<ensemble>/<statistic>` where `statistic` are subfolders with statistical calculation: `mean`, `stddev`, `p10`, `p90`, `min`, `max`.
 
-!> Surface data is currently not available when using aggregated files.
-
 !> For smry data it is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` (controlled by the `sampling` key). This is because the statistics and fancharts are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
-
-
-**Using aggregated data**
-
-
-**Using simulation time series data directly from `.UNSMRY` files**
-
-Time series data are extracted automatically from the `UNSMRY` files in the individual
-realizations, using the `fmu-ensemble` library.
-
-?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and cumulatives are used to decide the line shapes in the plot. Aggregated data may on the other speed up the build of the app, as processing of `UNSMRY` files can be slow for large models.
-
-!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
 
 
 
@@ -2871,6 +2892,71 @@ The surfacefiles are on a `ROFF binary` format and can be investigated outside `
 
 <div class="plugin-doc">
 
+#### SwatinitQC
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+This plugin is used to visualize the output from [check_swatinit](https://fmu-docs.equinor.com/docs/subscript/scripts/check_swatinit.html) which is a QC tool
+for Water Initialization in Eclipse runs when the `SWATINIT` keyword has been used. It is used to
+quantify how much the volume changes from `SWATINIT` to `SWAT` at time zero in the dynamical model,
+and help understand why it changes.
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+* **`csvfile`:** Path to an csvfile from check_swatinit. The path should be relative to the runpath
+if ensemble and realization is given as input, if not the path needs to be absolute.
+* **`ensemble`:** Which ensemble in `shared_settings` to visualize.
+* **`realization`:** Which realization to pick from the ensemble
+* **`faultlines`**: A csv file containing faultpolygons to be visualized together with the map view.
+Export format from [xtgeo.xyz.polygons.dataframe](
+https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.polygons.Polygons.dataframe
+) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/polygons/toptherys--gl_faultlines_extract_postprocess.csv).
+
+
+
+---
+How to use in YAML config file:
+```yaml
+    - SwatinitQC:
+        csvfile:  # Optional, type str.
+        ensemble:  # Optional, type Union[str, NoneType].
+        realization:  # Optional, type Union[int, NoneType].
+        faultlines:  # Optional, type Union[str (corresponding to a path), NoneType].
+```
+
+
+
+<!-- tab:Data input -->
+
+The `csvfile` can be generated by running the [CHECK_SWATINIT](https://fmu-docs.equinor.com/docs/ert/reference/forward_models.html?highlight=swatinit#CHECK_SWATINIT) forward model in ERT,
+or with the "check_swatinit" command line tool.
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
 #### TornadoPlotterFMU
 
 
@@ -3084,6 +3170,95 @@ For sensitivity runs the sensitivity information is extracted automatically if `
 
 
 **Remaining columns are seen as volumetric responses.**
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
+#### WellAnalysis
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+This plugin is for visualizing and analysing well data. There are different tabs
+for visualizing:
+
+* Well Production
+* Well control modes and network pressures
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* **`ensembles`:** Which ensembles in `shared_settings` to include.
+* **`rel_file_pattern`:** path to `.arrow` files with summary data.
+* **`gruptree_file`:** `.csv` with gruptree information.
+* **`time_index`:** Frequency for the data sampling.
+* **`filter_out_startswith`:** Filter out wells that starts with this string
+
+
+---
+How to use in YAML config file:
+```yaml
+    - WellAnalysis:
+        ensembles:  # Optional, type Union[typing.List[str], NoneType].
+        rel_file_pattern:  # Optional, type str.
+        gruptree_file:  # Optional, type str.
+        time_index:  # Optional, type str.
+        filter_out_startswith:  # Optional, type Union[str, NoneType].
+```
+
+
+
+<!-- tab:Data input -->
+
+
+**Summary data**
+
+This plugin needs the following summary vectors to be exported:
+* WOPT, WGPT and WWPT for all wells for the well overview plots
+* WMCTL, WTHP and WBHP for all wells for the well control plots
+* GPR for all network nodes downstream/upstream the wells
+
+**GRUPTREE input**
+
+`gruptree_file` is a path to a file stored per realization (e.g. in     `share/results/tables/gruptree.csv"`).
+
+The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
+model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
+representation of the Eclipse network:
+[Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+
+**time_index**
+
+This is the sampling interval of the summary data. It is `yearly` by default, but can be set
+to f.ex `monthly` if needed.
+
+**filter_out_startswith**
+
+Filter out well names that starts with this. Can f.ex be "R_" in order to filter out RFT wells
+without production.
 
 
 
