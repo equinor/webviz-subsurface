@@ -5,6 +5,7 @@ import pandas as pd
 from dash import dcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
+from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO, WebvizRunMode
 
 from webviz_subsurface._models import (
     EnsembleSetModel,
@@ -97,7 +98,8 @@ realizations if you have defined `ensembles`.
         self.vmodel: Optional[
             Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel]
         ] = None
-        run_mode_portable = app.webviz_settings.get("portable", False)
+
+        run_mode_portable = WEBVIZ_INSTANCE_INFO.run_mode == WebvizRunMode.PORTABLE
         table_provider = EnsembleTableProviderFactory.instance()
 
         if ensembles is not None:
