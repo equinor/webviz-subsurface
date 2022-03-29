@@ -6,8 +6,8 @@ import dash
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 
-from ._layout import LayoutElements
 from .._simulation_time_series.types.provider_set import ProviderSet
+from ._layout import LayoutElements
 from .utils import make_dataframes as makedf
 from .utils import make_figures as makefigs
 

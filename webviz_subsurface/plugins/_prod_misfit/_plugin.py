@@ -1,6 +1,5 @@
 # pylint: disable=too-many-arguments
 import logging
-import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -11,13 +10,11 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import Frequency
 
-from ._callbacks import plugin_callbacks
-from ._layout import main_layout
-
-# from .types.provider_set import create_presampled_provider_set_from_paths
 from .._simulation_time_series.types.provider_set import (
     create_presampled_provider_set_from_paths,
 )
+from ._callbacks import plugin_callbacks
+from ._layout import main_layout
 
 
 class ProdMisfit(WebvizPluginABC):
@@ -69,8 +66,6 @@ class ProdMisfit(WebvizPluginABC):
 
         super().__init__()
 
-        start = time.time()
-
         if phase_weights is None:
             phase_weights = {"Oil": 1.0, "Water": 1.0, "Gas": 300.0}
         self.weight_reduction_factor_oil = phase_weights["Oil"]
@@ -91,10 +86,7 @@ class ProdMisfit(WebvizPluginABC):
             ensemble_paths, rel_file_pattern, self._sampling
         )
 
-        logging.debug(
-            f"Created presampled provider_set. "
-            f"Cummulative time: {time.time() - start}"
-        )
+        logging.debug("Created presampled provider_set.")
 
         self.ensemble_names = self._input_provider_set.names()
 
@@ -122,29 +114,7 @@ class ProdMisfit(WebvizPluginABC):
 
         self.well_collections = _get_well_collections(well_groups_file, self.wells)
 
-        # -----------------------------------------
-        # TODO: Consider option to read hist vectors from seperate file
-        # defined in config file
-
-        # # Make dataframe of hist vectors mean values (over all realizations)
-        # self.df_hist_mean = {}
-        # for ens_name in self.ensemble_names:
-        #     hvectors = []
-        #     for vector in self.vectors[ens_name]:
-        #         hvectors.append(vector.split(":")[0] + "H:" + vector.split(":")[1])
-
-        #     df_hist = self._input_provider_set.provider(ens_name).get_vectors_df(
-        #         hvectors,
-        #         None,
-        #         None,
-        #     )
-        #     self.df_hist_mean[ens_name] = df_hist.groupby("DATE", as_index=False).mean()
-        #     self.df_hist_mean[ens_name].drop(columns=["REAL"], inplace=True)
-        #     # print(ens_name, "df_hist_mean:\n", self.df_hist_mean[ens_name])
-
         self.set_callbacks(app)
-
-        logging.debug(f"Init done. Cummulative time: {time.time() - start}")
 
     @property
     def layout(self) -> wcc.Tabs:
@@ -176,40 +146,6 @@ class ProdMisfit(WebvizPluginABC):
 # ------------------------------------------------------------------------
 # support functions below here
 # ------------------------------------------------------------------------
-
-
-# --------------------------------
-def _check_well_collections(
-    well_collections: Optional[Dict[str, List[str]]], wells: dict
-) -> Dict[str, List[str]]:
-    """Check well collections vs well lists.
-    Any well not included in well collections is returned as Undefined."""
-
-    all_wells = []
-    for ens_wells in wells.values():
-        all_wells.extend(ens_wells)
-    all_wells = list(sorted(set(all_wells)))
-
-    if well_collections is None:
-        well_collections = {}
-        well_collections["Undefined"] = all_wells
-    else:
-        undefined_wells = []
-        all_collection_wells = []
-        for collection_wells in well_collections.values():
-            all_collection_wells.extend(collection_wells)
-        all_collection_wells = list(set(all_collection_wells))
-        for well in all_wells:
-            if well not in all_collection_wells:
-                undefined_wells.append(well)
-        if len(undefined_wells) > 0:
-            well_collections["Undefined"] = undefined_wells
-            logging.warning(
-                "\nWells not included in any well collection ('Undefined'):"
-                f"\n{undefined_wells}\n"
-            )
-
-    return well_collections
 
 
 # --------------------------------
@@ -249,9 +185,9 @@ def _get_well_collections(
         for collection_wells in well_collections.values():
             all_collection_wells.extend(collection_wells)
         all_collection_wells = list(set(all_collection_wells))
-        for well in all_wells:
-            if well not in all_collection_wells:
-                undefined_wells.append(well)
+        undefined_wells = [
+            well for well in all_wells if well not in all_collection_wells
+        ]
         if len(undefined_wells) > 0:
             well_collections["Undefined"] = undefined_wells
             logging.warning(
