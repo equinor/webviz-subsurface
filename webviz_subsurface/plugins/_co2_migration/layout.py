@@ -14,11 +14,13 @@ class LayoutElements(str, Enum):
     COLORMAPLAYER = "colormaplayer"
     FAULTPOLYGONSLAYER = "faultpolygonslayer"
     LICENSEBOUNDARYLAYER = "licenseboundarylayer"
+    WELLPICKSLAYER = "wellpickslayer"
 
     PROPERTY = "property"
     ENSEMBLEINPUT = "ensembleinput"
     DATEINPUT = "dateinput"
     FAULTPOLYGONINPUT = "faultpolygoninput"
+    WELLPICKZONEINPUT = "wellpickzoneinput"
 
 
 class LayoutStyle:
@@ -45,7 +47,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                     PropertySelectorLayout(get_uuid),
                     EnsembleSelectorLayout(get_uuid, ensembles),
                     DateSelectorLayout(get_uuid),
-                    PolygonSelectorLayout(get_uuid),
+                    ZoneSelectorLayout(get_uuid),
                 ]
             ),
             wcc.Frame(
@@ -137,15 +139,19 @@ class DateSelectorLayout(html.Div):
         ))
 
 
-class PolygonSelectorLayout(html.Div):
+class ZoneSelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable):
         super().__init__(
             children=wcc.Selectors(
-                label="Polygons",
+                label="Zones and Horizons",
                 children=[
-                    'Fault Polygons',
+                    "Fault Polygons",
                     wcc.Dropdown(
                         id=get_uuid(LayoutElements.FAULTPOLYGONINPUT),
+                    ),
+                    "Well Picks",
+                    wcc.Dropdown(
+                        id=get_uuid(LayoutElements.WELLPICKZONEINPUT)
                     ),
                 ]
             )

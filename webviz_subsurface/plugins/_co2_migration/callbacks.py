@@ -5,12 +5,18 @@ from dash.exceptions import PreventUpdate
 from typing import Callable, Dict, List, Optional
 from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE
 from .layout import LayoutElements
+# TODO: tmp?
+from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
+    WellPickProvider,
+    WellPickTableColumns,
+)
 from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
     DeckGLMapLayersModel,
 )
 from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     ColormapLayer,
     FaultPolygonsLayer,
+    WellsLayer,
 )
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProvider,
@@ -31,15 +37,19 @@ def plugin_callbacks(
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
     license_boundary_file: Optional[str],
+    well_pick_provider: Optional[WellPickProvider],
 ):
+    # TODO: Verify optional parameters behave correctly when not provided
+    # TODO: sync zone/horizon names across data types?
     @callback(
         Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
         Output(get_uuid(LayoutElements.FAULTPOLYGONINPUT), 'options'),
+        Output(get_uuid(LayoutElements.WELLPICKZONEINPUT), 'options'),
         Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
     )
     def set_ensemble(ensemble):
         if ensemble is None:
-            return [], []
+            return [], [], []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
         dates = surface_provider.surface_dates_for_attribute(MapAttribute.MaxSaturation.value)
@@ -59,7 +69,16 @@ def plugin_callbacks(
             dict(label=p, value=p)
             for p in polygons
         ]
-        return dates, polygons
+        # Well pick horizons
+        if well_pick_provider is None:
+            well_pick_horizons = []
+        else:
+            well_pick_horizons = well_pick_provider.dframe[WellPickTableColumns.HORIZON].unique()
+            well_pick_horizons = [
+                dict(label=p, value=p)
+                for p in well_pick_horizons
+            ]
+        return dates, polygons, well_pick_horizons
 
     @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
@@ -67,9 +86,10 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.PROPERTY), "value"),
         Input(get_uuid(LayoutElements.DATEINPUT), "value"),
         Input(get_uuid(LayoutElements.FAULTPOLYGONINPUT), "value"),
+        Input(get_uuid(LayoutElements.WELLPICKZONEINPUT), "value"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
     )
-    def update_map_attribute(attribute, date, polygon_name, ensemble):
+    def update_map_attribute(attribute, date, polygon_name, well_pick_horizon, ensemble):
         if ensemble is None:
             raise PreventUpdate
         if MapAttribute(attribute) == MapAttribute.MaxSaturation and date is None:
@@ -79,11 +99,13 @@ def plugin_callbacks(
         layer_model, viewport_bounds = create_layer_model(
             surface_server=surface_server,
             surface_provider=ensemble_surface_providers[ensemble],
-            colormap_address=derive_colormap_address(attribute, date),
+            colormap_address=_derive_colormap_address(attribute, date),
             fault_polygons_server=fault_polygons_server,
             polygon_provider=ensemble_fault_polygons_providers[ensemble],
-            polygon_address=derive_fault_polygon_address(polygon_name),
+            polygon_address=_derive_fault_polygon_address(polygon_name),
             license_boundary_file=license_boundary_file,
+            well_pick_provider=well_pick_provider,
+            well_pick_horizon=well_pick_horizon,
         )
         return layer_model.layers, viewport_bounds
 
@@ -96,14 +118,19 @@ def create_layer_model(
     polygon_provider: EnsembleFaultPolygonsProvider,
     polygon_address: SimulatedFaultPolygonsAddress,
     license_boundary_file: Optional[str],
+    well_pick_provider: Optional[WellPickProvider],
+    well_pick_horizon: Optional[str],
 ) -> DeckGLMapLayersModel:
     # TODO: Using DeckGLMapLayersModel seems a bit unnecessary here,
     #  but we might want to use it for consistency with other plugins
-    layers = generate_map_layers(include_license_boundary=license_boundary_file is not None)
+    layers = _generate_map_layers(
+        include_license_boundary=license_boundary_file is not None,
+        include_well_picks=well_pick_provider is not None,
+    )
     layers = [json.loads(lay) for lay in layers]
     layer_model = DeckGLMapLayersModel(layers)
     # Update ColormapLayer
-    surf_meta, img_url  = publish_and_get_surface_metadata(surface_server, surface_provider, colormap_address)
+    surf_meta, img_url  = _publish_and_get_surface_metadata(surface_server, surface_provider, colormap_address)
     layer_model.update_layer_by_id(
         layer_id=LayoutElements.COLORMAPLAYER,
         layer_data={
@@ -129,10 +156,20 @@ def create_layer_model(
         layer_model.update_layer_by_id(
             layer_id=LayoutElements.LICENSEBOUNDARYLAYER,
             layer_data={
-                "data": parse_polygon_file(license_boundary_file)
+                "data": _parse_polygon_file(license_boundary_file)
+            }
+        )
+    if well_pick_provider is not None:
+        layer_model.update_layer_by_id(
+            layer_id=LayoutElements.WELLPICKSLAYER,
+            layer_data={
+                "data": well_pick_provider.get_geojson(
+                    well_pick_provider.well_names(), well_pick_horizon
+                )
             }
         )
     # View-port
+    # TODO: initial viewport seems off?
     viewport_bounds = [
         surf_meta.x_min,
         surf_meta.y_min,
@@ -142,7 +179,7 @@ def create_layer_model(
     return layer_model, viewport_bounds
 
 
-def parse_polygon_file(filename: str):
+def _parse_polygon_file(filename: str):
     import numpy as np
     xyz = np.genfromtxt(filename, skip_header=1, delimiter=",")
     as_geojson = {
@@ -161,7 +198,7 @@ def parse_polygon_file(filename: str):
     return as_geojson
 
 
-def derive_colormap_address(attribute: str, date):
+def _derive_colormap_address(attribute: str, date):
     attribute = MapAttribute(attribute)
     if attribute == MapAttribute.MigrationTime:
         return SimulatedSurfaceAddress(
@@ -181,7 +218,7 @@ def derive_colormap_address(attribute: str, date):
         raise NotImplementedError
 
 
-def derive_fault_polygon_address(polygon_name):
+def _derive_fault_polygon_address(polygon_name):
     return SimulatedFaultPolygonsAddress(
         attribute=FAULT_POLYGON_ATTRIBUTE,
         name=polygon_name,
@@ -189,14 +226,12 @@ def derive_fault_polygon_address(polygon_name):
     )
 
 
-def publish_and_get_surface_metadata(
+def _publish_and_get_surface_metadata(
     surface_server: SurfaceServer,
     surface_provider: EnsembleSurfaceProvider,
     surface_address: SurfaceAddress,
 ) -> Dict:
-    """
-    Nearly direct copy from MapViewerFMU
-    """
+    # TODO: Nearly direct copy from MapViewerFMU
     provider_id: str = surface_provider.provider_id()
     qualified_address = QualifiedSurfaceAddress(provider_id, surface_address)
     surf_meta = surface_server.get_surface_metadata(qualified_address)
@@ -212,7 +247,7 @@ def publish_and_get_surface_metadata(
     return surf_meta, surface_server.encode_partial_url(qualified_address)
 
 
-def generate_map_layers(include_license_boundary: bool):
+def _generate_map_layers(include_license_boundary: bool, include_well_picks: bool):
     layers = [
         ColormapLayer(uuid=LayoutElements.COLORMAPLAYER).to_json(),
         FaultPolygonsLayer(uuid=LayoutElements.FAULTPOLYGONSLAYER).to_json(),
@@ -224,6 +259,14 @@ def generate_map_layers(include_license_boundary: bool):
             FaultPolygonsLayer(
                 uuid=LayoutElements.LICENSEBOUNDARYLAYER,
                 name="License boundary",  # TODO: name definition in layout.py or something
+            ).to_json()
+        )
+    if include_well_picks:
+        # TODO: Same comments as license boudnary
+        layers.append(
+            WellsLayer(
+                uuid=LayoutElements.WELLPICKSLAYER,
+                name="Well picks"
             ).to_json()
         )
     return layers
