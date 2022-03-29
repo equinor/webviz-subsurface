@@ -6,18 +6,21 @@ from dash import Dash, dcc
 from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
+)
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
     EnsembleTableProviderFactory,
-    Frequency,
-)
-from webviz_subsurface._providers.ensemble_table_provider import (
     EnsembleTableProviderSet,
+    Frequency,
 )
 
 from .controllers.property_delta_controller import property_delta_controller
 from .controllers.property_qc_controller import property_qc_controller
 from .controllers.property_response_controller import property_response_controller
+from .data_loaders import read_csv
 from .models import (
     PropertyStatisticsModel,
     ProviderTimeSeriesDataModel,
@@ -93,17 +96,17 @@ differ between individual realizations of an ensemble.
         surface_renaming: Optional[dict] = None,
         time_index: str = "monthly",
         column_keys: Optional[list] = None,
-        csvfile_statistics: Optional[Path] = None,
-        csvfile_smry: Optional[Path] = None,
+        csvfile_statistics: Path = None,
+        csvfile_smry: Path = None,
     ):
         super().__init__()
         self.theme: WebvizConfigTheme = webviz_settings.theme
         self.ensembles = ensembles
-        self._surface_folders: Union[dict, None]
+        self._surface_folders: Union[dict, None] = None
         self._vmodel: Optional[
             Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel]
         ] = None
-
+        run_mode_portable = app.webviz_settings.get("portable", False)
         table_provider = EnsembleTableProviderFactory.instance()
 
         if ensembles is not None:
@@ -117,32 +120,45 @@ differ between individual realizations of an ensemble.
             resampling_frequency = Frequency(time_index)
             provider_factory = EnsembleSummaryProviderFactory.instance()
 
-            provider_set = {}
-            for ens, ens_path in ensemble_paths.items():
-                try:
-                    provider_set[
-                        ens
-                    ] = provider_factory.create_from_arrow_unsmry_presampled(
+            try:
+                provider_set = {
+                    ens: provider_factory.create_from_arrow_unsmry_presampled(
                         str(ens_path), rel_file_pattern, resampling_frequency
                     )
-                except ValueError as error:
-                    message = (
-                        f"No arrow files found at {rel_file_pattern} for ensemble {ens}. \n"
-                        "If no arrow files have been generated with `ERT` using `ECL2CSV`, "
-                        "the commandline tool `smry2arrow_batch` can be used to generate arrow "
-                        "files for an ensemble"
+                    for ens, ens_path in ensemble_paths.items()
+                }
+                self._vmodel = ProviderTimeSeriesDataModel(
+                    provider_set=provider_set, column_keys=column_keys
+                )
+                property_df = create_df_from_table_provider(
+                    table_provider.create_provider_set_from_per_realization_csv_file(
+                        ensemble_paths, statistics_file
                     )
+                )
+            except ValueError as error:
+                message = (
+                    f"Some/all ensembles are missing arrow files at {rel_file_pattern}.\n"
+                    "If no arrow files have been generated with `ERT` using `ECL2CSV`, "
+                    "the commandline tool `smry2arrow_batch` can be used to generate arrow "
+                    "files for an ensemble"
+                )
+                if not run_mode_portable:
                     raise ValueError(message) from error
 
-            self._vmodel = ProviderTimeSeriesDataModel(
-                provider_set=provider_set, column_keys=column_keys
-            )
-
-            propertyproviderset = (
-                table_provider.create_provider_set_from_per_realization_csv_file(
-                    ensemble_paths, statistics_file
+                # NOTE: this part below is to ensure backwards compatibility for portable app's
+                # created before the arrow support. It should be removed in the future.
+                emodel: EnsembleSetModel = (
+                    caching_ensemble_set_model_factory.get_or_create_model(
+                        ensemble_paths=ensemble_paths,
+                        time_index=time_index,
+                        column_keys=column_keys,
+                    )
                 )
-            )
+                self._vmodel = SimulationTimeSeriesModel(
+                    dataframe=emodel.get_or_load_smry_cached()
+                )
+                property_df = emodel.load_csv(csv_file=Path(statistics_file))
+
             self._surface_folders = {
                 ens: Path(ens_path.split("realization")[0]) / "share/results/maps" / ens
                 for ens, ens_path in ensemble_paths.items()
@@ -153,26 +169,34 @@ differ between individual realizations of an ensemble.
                 raise ValueError(
                     "If not 'ensembles', then csvfile_statistics must be provided"
                 )
-            propertyproviderset = (
-                table_provider.create_provider_set_from_aggregated_csv_file(
-                    csvfile_statistics
-                )
-            )
-            if csvfile_smry is not None:
-                smryprovider = (
+            # NOTE: the try/except is for backwards compatibility with existing portable app's.
+            # It should be removed in the future together with the support of aggregated csv-files
+            try:
+                property_df = create_df_from_table_provider(
                     table_provider.create_provider_set_from_aggregated_csv_file(
-                        csvfile_smry
+                        csvfile_statistics
                     )
                 )
-                self._vmodel = SimulationTimeSeriesModel(
-                    dataframe=create_df_from_table_provider(smryprovider)
-                )
-            self._surface_folders = None
+            except FileNotFoundError:
+                if not run_mode_portable:
+                    raise
+                property_df = read_csv(csvfile_statistics)
 
-        self._pmodel = PropertyStatisticsModel(
-            dataframe=create_df_from_table_provider(propertyproviderset),
-            theme=self.theme,
-        )
+            if csvfile_smry is not None:
+                try:
+                    smry_df = create_df_from_table_provider(
+                        table_provider.create_provider_set_from_aggregated_csv_file(
+                            csvfile_smry
+                        )
+                    )
+                except FileNotFoundError:
+                    if not run_mode_portable:
+                        raise
+                    smry_df = read_csv(csvfile_smry)
+
+                self._vmodel = SimulationTimeSeriesModel(dataframe=smry_df)
+
+        self._pmodel = PropertyStatisticsModel(dataframe=property_df, theme=self.theme)
 
         self._surface_renaming = surface_renaming if surface_renaming else {}
         self._surface_table = generate_surface_table(
