@@ -45,11 +45,13 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
         Output(get_uuid(LayoutElements.FAULTPOLYGONINPUT), 'options'),
         Output(get_uuid(LayoutElements.WELLPICKZONEINPUT), 'options'),
+        Output(get_uuid(LayoutElements.MAPZONEINPUT), 'options'),
         Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
+        Input(get_uuid(LayoutElements.PROPERTY), 'value'),
     )
-    def set_ensemble(ensemble):
+    def set_ensemble(ensemble, prop):
         if ensemble is None:
-            return [], [], []
+            return [], [], [], []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
         dates = surface_provider.surface_dates_for_attribute(MapAttribute.MaxSaturation.value)
@@ -61,6 +63,12 @@ def plugin_callbacks(
             int(d): '' if i > 0 and i < len(dates) - 1 else f"{d[:4]}.{d[4:6]}.{d[6:]}"
             for i, d in enumerate(dates)
         }
+        # Map
+        surfaces = surface_provider.surface_names_for_attribute(prop)
+        surfaces = [
+            dict(label=s, value=s)
+            for s in surfaces
+        ]
         # Fault Polygon
         polygon_provider = ensemble_fault_polygons_providers[ensemble]
         # TODO: ideally want horizons/zones in stratigraphic order?
@@ -78,7 +86,7 @@ def plugin_callbacks(
                 dict(label=p, value=p)
                 for p in well_pick_horizons
             ]
-        return dates, polygons, well_pick_horizons
+        return dates, polygons, well_pick_horizons, surfaces
 
     @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
@@ -87,19 +95,22 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.DATEINPUT), "value"),
         Input(get_uuid(LayoutElements.FAULTPOLYGONINPUT), "value"),
         Input(get_uuid(LayoutElements.WELLPICKZONEINPUT), "value"),
+        Input(get_uuid(LayoutElements.MAPZONEINPUT), "value"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
     )
-    def update_map_attribute(attribute, date, polygon_name, well_pick_horizon, ensemble):
+    def update_map_attribute(attribute, date, polygon_name, well_pick_horizon, surface_name, ensemble):
         if ensemble is None:
             raise PreventUpdate
         if MapAttribute(attribute) == MapAttribute.MaxSaturation and date is None:
             raise PreventUpdate
         date = str(date)
+        if surface_name is None:
+            surface_name = "all"
 
         layer_model, viewport_bounds = create_layer_model(
             surface_server=surface_server,
             surface_provider=ensemble_surface_providers[ensemble],
-            colormap_address=_derive_colormap_address(attribute, date),
+            colormap_address=_derive_colormap_address(surface_name, attribute, date),
             fault_polygons_server=fault_polygons_server,
             polygon_provider=ensemble_fault_polygons_providers[ensemble],
             polygon_address=_derive_fault_polygon_address(polygon_name),
@@ -198,19 +209,19 @@ def _parse_polygon_file(filename: str):
     return as_geojson
 
 
-def _derive_colormap_address(attribute: str, date):
+def _derive_colormap_address(surface_name: str, attribute: str, date):
     attribute = MapAttribute(attribute)
     if attribute == MapAttribute.MigrationTime:
         return SimulatedSurfaceAddress(
             attribute=MapAttribute.MigrationTime.value,
-            name="all",
+            name=surface_name,
             datestr=None,
             realization=0,  # TODO
         )
     elif attribute == MapAttribute.MaxSaturation:
         return SimulatedSurfaceAddress(
             attribute=MapAttribute.MaxSaturation.value,
-            name="all",
+            name=surface_name,
             datestr=date,
             realization=0,  # TODO
         )

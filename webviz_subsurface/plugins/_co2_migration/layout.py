@@ -21,6 +21,7 @@ class LayoutElements(str, Enum):
     DATEINPUT = "dateinput"
     FAULTPOLYGONINPUT = "faultpolygoninput"
     WELLPICKZONEINPUT = "wellpickzoneinput"
+    MAPZONEINPUT = "mapzoneinput"
 
 
 class LayoutStyle:
@@ -152,6 +153,10 @@ class ZoneSelectorLayout(html.Div):
                     "Well Picks",
                     wcc.Dropdown(
                         id=get_uuid(LayoutElements.WELLPICKZONEINPUT)
+                    ),
+                    "Map",
+                    wcc.Dropdown(
+                        id=get_uuid(LayoutElements.MAPZONEINPUT),
                     ),
                 ]
             )
