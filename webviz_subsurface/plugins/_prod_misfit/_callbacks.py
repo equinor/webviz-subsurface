@@ -1,6 +1,4 @@
-import logging
-import time
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Union
 
 import dash
 import webviz_core_components as wcc
@@ -61,9 +59,10 @@ def plugin_callbacks(
         obs_error_weight: float,
         misfit_exponent: float,
         # misfit_normalization: bool,
-    ) -> List[wcc.Graph]:
+    ) -> Union[str, List[wcc.Graph]]:
 
-        start_time = time.time()
+        if not ensemble_names:
+            return "No ensembles selected"
 
         well_names = _get_well_names_combined(
             well_collections,
@@ -99,9 +98,7 @@ def plugin_callbacks(
             misfit_exponent,
             # misfit_normalization,
         )
-        logging.debug(
-            f"\n--- Prod misfit callback --- Total time: {time.time() - start_time} seconds.\n"
-        )
+
         return figures
 
     # --------------------------------------------
@@ -136,7 +133,10 @@ def plugin_callbacks(
         figheight: int,
         boxmode: str,
         boxplot_points: str,
-    ) -> List[wcc.Graph]:
+    ) -> Union[str, List[wcc.Graph]]:
+
+        if not ensemble_names:
+            return "No ensembles selected"
 
         well_names = _get_well_names_combined(
             well_collections,
@@ -191,58 +191,6 @@ def plugin_callbacks(
 
         return figures
 
-    # # --------------------------------------------
-    # # --- group coverage ---
-    # # --------------------------------------------
-    # @app.callback(
-    #     Output(get_uuid("group_coverage-graph"), "children"),
-    #     Input(get_uuid("group_coverage-ensemble_names"), "value"),
-    #     Input(get_uuid("group_coverage-dates"), "value"),
-    #     Input(get_uuid("group_coverage-phases"), "value"),
-    #     Input(get_uuid("group_coverage-group_names"), "value"),
-    #     Input(get_uuid("group_coverage-colorby"), "value"),
-    #     Input(get_uuid("group_coverage-plot_type"), "value"),
-    #     # prevent_initial_call=True,
-    # )
-    # def _update_group_coverage_graph(
-    #     ensemble_names: List[str],
-    #     dates: list,
-    #     phases: list,
-    #     group_names: list,
-    #     colorby: str,
-    #     plot_type: str,
-    # ) -> List[wcc.Graph]:
-
-    #     if plot_type == "crossplot":
-    #         dframe = self.df_stat.copy()
-    #     else:
-    #         dframe = self.df_diff_stat.copy()
-
-    #     # --- apply date filter
-    #     dframe = dframe.loc[dframe["DATE"].isin(dates)]
-
-    #     # --- apply ensemble filter
-    #     dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
-
-    #     # --- apply group filter
-    #     dframe = dframe.loc[dframe["WELL"].isin(group_names)]
-
-    #     if plot_type == "crossplot":
-    #         figures = update_coverage_crossplot(
-    #             dframe,
-    #             phases,
-    #             colorby,
-    #             vector_type="group",
-    #         )
-    #     else:
-    #         figures = update_coverage_diff_plot(
-    #             dframe,
-    #             phases,
-    #             colorby,
-    #             vector_type="group",
-    #         )
-    #     return figures
-
     # --------------------------------------------
     # --- heatmap ---
     # --------------------------------------------
@@ -271,7 +219,10 @@ def plugin_callbacks(
         selector_filter_largest: int,
         selector_figheight: int,
         selector_scale_col_range: float,
-    ) -> List[wcc.Graph]:
+    ) -> Union[str, List[wcc.Graph]]:
+
+        if not ensemble_names:
+            return "No ensembles selected"
 
         well_names = _get_well_names_combined(
             well_collections,
@@ -298,17 +249,6 @@ def plugin_callbacks(
                 relative_diff=relative_diff,
             )
         )
-
-        # dframe = self.df_diff_stat.copy()
-
-        # # --- apply date filter
-        # dframe = dframe.loc[dframe["DATE"].isin(dates)]
-
-        # # --- apply ensemble filter
-        # dframe = dframe.loc[dframe["ENSEMBLE"].isin(ensemble_names)]
-
-        # # --- apply well filter
-        # dframe = dframe.loc[dframe["WELL"].isin(well_names)]
 
         figures = makefigs.heatmap_plot(
             dframe,
@@ -338,7 +278,6 @@ def _get_well_names_combined(
     for collection_name in selected_collection_names:
         selected_collection_wells.extend(well_collections[collection_name])
     selected_collection_wells = list(set(selected_collection_wells))
-
     if combine_type == "intersection":
         # find intersection of selector wells and selector well collections
         well_names_combined = [
