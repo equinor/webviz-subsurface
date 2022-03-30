@@ -27,6 +27,7 @@ class SimulationTimeSeriesModel:
             if column not in dataframe.columns:
                 raise KeyError(f"{column} column is missing from UNSMRY data")
 
+        dataframe = dataframe.copy()
         # ensure correct format of date
         dataframe["REAL"] = dataframe["REAL"].astype(int)
         dataframe["DATE"] = pd.to_datetime(dataframe["DATE"])
