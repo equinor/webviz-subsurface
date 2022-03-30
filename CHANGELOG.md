@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics` - Switched to the VectorSelector component, and other various improvements.
 
 ### Fixed
+- [#996](https://github.com/equinor/webviz-subsurface/pull/996) - `VolumetricAnalysis` - Fixed issue with the `Tornadoplot` tab not shown if volumes from both dynamic and static sources were included.
 - [#985](https://github.com/equinor/webviz-subsurface/pull/985) - `WellLogViewer` - Updated data format to latest version. Requires no changes in input data.
 
 ### Changed
