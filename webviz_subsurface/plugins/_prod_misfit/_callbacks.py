@@ -204,6 +204,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.HEATMAP_WELL_COMBINE_TYPE), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_FILTER_LARGEST), "value"),
+        Input(get_uuid(LayoutElements.HEATMAP_PLOT_TYPE), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_FIGHEIGHT), "value"),
         Input(get_uuid(LayoutElements.HEATMAP_SCALE_COL_RANGE), "value"),
         # prevent_initial_call=True,
@@ -217,6 +218,7 @@ def plugin_callbacks(
         selector_well_combine_type: str,
         selector_realizations: list,
         selector_filter_largest: int,
+        selector_plot_type: str,
         selector_figheight: int,
         selector_scale_col_range: float,
     ) -> Union[str, List[wcc.Graph]]:
@@ -231,9 +233,7 @@ def plugin_callbacks(
             selector_well_combine_type,
         )
 
-        # if plot_type in ["diffplot", "rel_diffplot"]:
-        plot_type = "diffplot"
-        relative_diff = plot_type == "rel_diffplot"
+        relative_diff = selector_plot_type == "rel_diffplot"
         dframe = makedf.get_df_diff_stat(
             makedf.get_df_diff(
                 makedf.get_df_smry(

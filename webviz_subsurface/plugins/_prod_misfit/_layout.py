@@ -51,6 +51,7 @@ class LayoutElements:
     HEATMAP_REALIZATIONS = "heatmap_realizations"
     HEATMAP_FILTER_LARGEST = "heatmap_filter_largest"
     HEATMAP_FIGHEIGHT = "heatmap_figheight"
+    HEATMAP_PLOT_TYPE = "heatmap_plot_type"
     HEATMAP_SCALE_COL_RANGE = "heatmap_scale_col_range"
     HEATMAP_GRAPH = "heatmap_graph"
 
@@ -896,6 +897,22 @@ def _heatmap_layout(
                             label="Plot settings and layout",
                             open_details=True,
                             children=[
+                                wcc.Dropdown(
+                                    label="Plot type",
+                                    id=get_uuid(LayoutElements.HEATMAP_PLOT_TYPE),
+                                    options=[
+                                        {"label": "Mean misfit", "value": "diffplot"},
+                                        {
+                                            "label": "Mean misfit relative (%)",
+                                            "value": "rel_diffplot",
+                                        },
+                                    ],
+                                    value="diffplot",
+                                    multi=False,
+                                    clearable=False,
+                                    persistence=True,
+                                    persistence_type="memory",
+                                ),
                                 wcc.Dropdown(
                                     label="Fig layout - height",
                                     id=get_uuid(LayoutElements.HEATMAP_FIGHEIGHT),
