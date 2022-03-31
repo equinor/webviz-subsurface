@@ -28,6 +28,7 @@ class CO2Migration(WebvizPluginABC):
         # TODO: license boundary file should be incorporated into fault
         #  polygon provider, get its own provider or something similar
         super().__init__()
+        self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
         # Surfaces
         self._ensemble_surface_providers = _initialize_surface_providers(webviz_settings, ensembles)
         self._surface_server = SurfaceServer.instance(app)
@@ -47,6 +48,7 @@ class CO2Migration(WebvizPluginABC):
         return main_layout(
             get_uuid=self.uuid,
             ensembles=list(self._ensemble_surface_providers.keys()),
+            ensemble_paths=self._ensemble_paths,
         )
 
     def set_callbacks(self):

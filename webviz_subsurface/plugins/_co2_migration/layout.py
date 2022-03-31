@@ -1,10 +1,10 @@
 import json
-from typing import Callable, List, Any
+from typing import Callable, List, Any, Dict
 from dash import html, dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import DeckGLMap
 from enum import unique, Enum
-from ._utils import MapAttribute
+from ._utils import MapAttribute, generate_co2_volume_figure
 
 
 @unique
@@ -23,12 +23,15 @@ class LayoutElements(str, Enum):
     WELLPICKZONEINPUT = "wellpickzoneinput"
     MAPZONEINPUT = "mapzoneinput"
 
+    ENSEMBLEBARPLOT = "ensemblebarplot"
+
 
 class LayoutStyle:
-    MAPHEIGHT = "87vh"
+    MAPHEIGHT = "81vh"
+    ENSEMBLEBARPLOTHEIGHT = 300
     PARENTDIV = {"display": "flex"}
-    SIDEBAR = {"flex": 1, "height": "90vh"}
-    MAINVIEW = {"flex": 3, "height": "90vh"}
+    SIDEBAR = {"flex": 1, "height": "84vh"}
+    MAINVIEW = {"flex": 3, "height": "84vh"}
     RESET_BUTTON = {
         "marginTop": "5px",
         "width": "100%",
@@ -39,14 +42,14 @@ class LayoutStyle:
     }
 
 
-def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
+def main_layout(get_uuid: Callable, ensembles: List[str], ensemble_paths: Dict[str, str]) -> html.Div:
     return html.Div(
         [
             wcc.Frame(
                 style=LayoutStyle.SIDEBAR,
                 children=[
                     PropertySelectorLayout(get_uuid),
-                    EnsembleSelectorLayout(get_uuid, ensembles),
+                    EnsembleSelectorLayout(get_uuid, ensembles, ensemble_paths),
                     DateSelectorLayout(get_uuid),
                     ZoneSelectorLayout(get_uuid),
                 ]
@@ -106,7 +109,7 @@ class PropertySelectorLayout(html.Div):
 
 
 class EnsembleSelectorLayout(html.Div):
-    def __init__(self, get_uuid: Callable, ensembles: List[str]):
+    def __init__(self, get_uuid: Callable, ensembles: List[str], ensemble_paths: Dict[str, str]):
         super().__init__(children=wcc.Selectors(
             label="Ensemble",
             open_details=True,
@@ -118,7 +121,18 @@ class EnsembleSelectorLayout(html.Div):
                         for en in ensembles
                     ],
                     value=ensembles[0]
-                )
+                ),
+                # TODO: check that this does not yield an error with missing csv files
+                dcc.Graph(
+                    id=get_uuid(LayoutElements.ENSEMBLEBARPLOT),
+                    figure=generate_co2_volume_figure(
+                        [ensemble_paths[ens] for ens in ensembles],
+                        LayoutStyle.ENSEMBLEBARPLOTHEIGHT,
+                    ),
+                    config={
+                        "displayModeBar": False,
+                    }
+                ),
             ]
         ))
 
