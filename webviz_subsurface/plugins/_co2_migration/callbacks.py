@@ -43,6 +43,7 @@ def plugin_callbacks(
     # TODO: sync zone/horizon names across data types?
     @callback(
         Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
+        Output(get_uuid(LayoutElements.DATEINPUT), 'value'),
         Output(get_uuid(LayoutElements.FAULTPOLYGONINPUT), 'options'),
         Output(get_uuid(LayoutElements.WELLPICKZONEINPUT), 'options'),
         Output(get_uuid(LayoutElements.MAPZONEINPUT), 'options'),
@@ -54,15 +55,22 @@ def plugin_callbacks(
             return [], [], [], []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
-        dates = surface_provider.surface_dates_for_attribute(MapAttribute.MaxSaturation.value)
-        if dates is None:
-            dates = []
-        dates = {
-            # TODO: handle dates using some utility tool instead?
-            # TODO: using date as value is convenient, but won't reflect the correct position of the mark
-            int(d): '' if i > 0 and i < len(dates) - 1 else f"{d[:4]}.{d[4:6]}.{d[6:]}"
-            for i, d in enumerate(dates)
-        }
+        date_list = surface_provider.surface_dates_for_attribute(MapAttribute.MaxSaturation.value)
+        if date_list is None:
+            dates = {}
+            initial_date = dash.no_update
+        else:
+            dates = {
+                # TODO: handle dates using some utility tool instead?
+                # TODO: using date as value is convenient, but won't reflect the correct position of the mark.
+                #  However, dash does not seem to support showing a different tooltip than the value (dict key).
+                #  This means that any tooltips shown will not reference the date in any meaningful way. An
+                #  alternative could be to let the value be time since start.
+                #  Relevant: https://github.com/plotly/dash/issues/1846
+                int(d): '' if i > 0 and i < len(date_list) - 1 else f"{d[:4]}.{d[4:6]}.{d[6:]}"
+                for i, d in enumerate(date_list)
+            }
+            initial_date = int(date_list[0])
         # Map
         surfaces = surface_provider.surface_names_for_attribute(prop)
         surfaces = [
@@ -86,7 +94,7 @@ def plugin_callbacks(
                 dict(label=p, value=p)
                 for p in well_pick_horizons
             ]
-        return dates, polygons, well_pick_horizons, surfaces
+        return dates, initial_date, polygons, well_pick_horizons, surfaces
 
     @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
@@ -180,7 +188,6 @@ def create_layer_model(
             }
         )
     # View-port
-    # TODO: initial viewport seems off?
     viewport_bounds = [
         surf_meta.x_min,
         surf_meta.y_min,

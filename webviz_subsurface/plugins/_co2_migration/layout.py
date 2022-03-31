@@ -66,6 +66,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                     coords={"visible": True},
                                     scale={"visible": True},
                                     coordinateUnit="m",
+                                    zoom=-7,
                                 ),
                             ],
                             style={"height": LayoutStyle.MAPHEIGHT},
