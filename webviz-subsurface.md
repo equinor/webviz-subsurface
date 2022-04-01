@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.12rc0` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.12rc1` of `webviz-subsurface`.
 
 
 
@@ -879,8 +879,8 @@ How to use in YAML config file:
         column_keys:  # Optional, type Union[list, NoneType].
         drop_constants:  # Optional, type bool.
         rel_file_pattern:  # Optional, type str.
-        csvfile_parameters:  # Deprecated, type Union[str (corresponding to a path), NoneType].
-        csvfile_smry:  # Deprecated, type Union[str (corresponding to a path), NoneType].
+        csvfile_parameters:  # Deprecated, type str (corresponding to a path).
+        csvfile_smry:  # Deprecated, type str (corresponding to a path).
 ```
 
 
@@ -1389,8 +1389,8 @@ How to use in YAML config file:
         surface_renaming:  # Optional, type Union[dict, NoneType].
         time_index:  # Optional, type str.
         column_keys:  # Optional, type Union[list, NoneType].
-        csvfile_statistics:  # Deprecated, type Union[str (corresponding to a path), NoneType].
-        csvfile_smry:  # Deprecated, type Union[str (corresponding to a path), NoneType].
+        csvfile_statistics:  # Deprecated, type str (corresponding to a path).
+        csvfile_smry:  # Deprecated, type str (corresponding to a path).
 ```
 
 
