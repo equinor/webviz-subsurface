@@ -85,6 +85,7 @@ setup(
         "dash>=2.0.0",
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
+        "dash-vtk>=0.0.9",
         "dataclasses>=0.8; python_version<'3.7'",
         "defusedxml>=0.6.0",
         "ecl2df>=0.15.0; sys_platform=='linux'",
