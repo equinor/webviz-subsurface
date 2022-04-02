@@ -49,6 +49,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         else:
             scalar = datamodel.get_restart_property(prop[0], date[0])
 
-        polydata = datamodel.esg_provider.extract_surface_with_scalar(scalar)
-
+        polydata = datamodel.esg_provider.surface_polydata
+        cell_indices = polydata["vtkOriginalCellIds"]
+        polydata["scalar"] = scalar[cell_indices]
         return polydata["scalar"], [np.nanmin(scalar), np.nanmax(scalar)]

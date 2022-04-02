@@ -29,25 +29,21 @@ def xtgeo_grid_to_explicit_structured_grid(
 class ExplicitStructuredGridProvider:
     def __init__(self, esg_grid: pv.ExplicitStructuredGrid) -> None:
         self.esg_grid = esg_grid
-
+        timer = PerfTimer()
         self.surface_polydata = self._extract_surface()
-        print(type(self.surface_polydata))
+        print(f"Extracted grid skin in : {timer.lap_s():.2f}s")
         self.surface_polys = vtk_to_numpy(self.surface_polydata.GetPolys().GetData())
+
         self.surface_points = vtk_to_numpy(self.surface_polydata.points).ravel()
 
     def _extract_surface(
         self,
     ) -> pv.PolyData:
+        """Extract and keep the grid surface. Also keep track of cell indices, to be used
+        to extract indices from the scalar arrays"""
         extract_skin_filter = vtkExplicitStructuredGridSurfaceFilter()
         extract_skin_filter.SetInputData(self.esg_grid)
-        extract_skin_filter.Update()
-        return pv.PolyData(extract_skin_filter.GetOutput())
-
-    def extract_surface_with_scalar(self, scalar: np.array) -> pv.PolyData:
-        grid = self.esg_grid
-        grid["scalar"] = scalar
-        extract_skin_filter = vtkExplicitStructuredGridSurfaceFilter()
-        extract_skin_filter.SetInputData(self.esg_grid)
+        extract_skin_filter.PassThroughCellIdsOn()
         extract_skin_filter.Update()
         return pv.PolyData(extract_skin_filter.GetOutput())
 
@@ -90,15 +86,15 @@ class EclipseGridDataModel:
     def restart_dates(self) -> List[str]:
         return self._restart_dates
 
-    def get_init_property(self, prop_name: str) -> np.array:
+    def get_init_property(self, prop_name: str) -> np.ndarray:
 
         prop = xtgeo.gridproperty_from_file(
             self._init_file, fformat="init", name=prop_name, grid=self._xtg_grid
         )
         return prop.get_npvalues1d(order="F").ravel()
 
-    def get_restart_property(self, prop_name: str, prop_date: int) -> np.array:
-
+    def get_restart_property(self, prop_name: str, prop_date: int) -> np.ndarray:
+        timer = PerfTimer()
         prop = xtgeo.gridproperty_from_file(
             self._restart_file,
             fformat="unrst",
@@ -106,4 +102,9 @@ class EclipseGridDataModel:
             date=prop_date,
             grid=self._xtg_grid,
         )
-        return prop.get_npvalues1d(order="F")
+        print(
+            f"Read {prop_name}, {prop_date} from restart file in {timer.lap_s():.2f}s"
+        )
+        vals = prop.get_npvalues1d(order="F")
+
+        return vals
