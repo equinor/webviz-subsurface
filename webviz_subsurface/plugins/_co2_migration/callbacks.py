@@ -1,6 +1,6 @@
 import json
+from typing import Callable, Dict, Optional
 import dash
-from typing import Callable, Dict, List, Optional
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 # TODO: tmp?
@@ -26,7 +26,7 @@ from webviz_subsurface._providers import (
     SurfaceAddress,
     SurfaceServer,
 )
-from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths
+from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths, parse_polygon_file
 from ._co2volume import generate_co2_volume_figure
 from .layout import LayoutElements, LayoutStyle
 
@@ -53,7 +53,6 @@ def plugin_callbacks(
             dict(label=r, value=r)
             for r in sorted(rz_paths.keys())
         ]
-        # TODO: get realization names elsewhere?
         # TODO: volumes should probably be read through a table provider or similar instead
         fig = generate_co2_volume_figure(
             rz_paths,
@@ -74,9 +73,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.PROPERTY), 'value'),
     )
     def set_realization(ensemble, realization, prop):
-        if realization is None:
-            raise PreventUpdate
-        if ensemble is None:
+        if ensemble is None or realization is None:
             return [], [], [], [], []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
@@ -187,21 +184,22 @@ def create_layer_model(
         }
     )
     # Update FaultPolygonLayer
-    layer_model.update_layer_by_id(
-        layer_id=LayoutElements.FAULTPOLYGONSLAYER,
-        layer_data={
-            "data": fault_polygons_server.encode_partial_url(
-                provider_id=polygon_provider.provider_id(),
-                fault_polygons_address=polygon_address,
-            ),
-        },
-    )
+    if polygon_address.name is not None:
+        layer_model.update_layer_by_id(
+            layer_id=LayoutElements.FAULTPOLYGONSLAYER,
+            layer_data={
+                "data": fault_polygons_server.encode_partial_url(
+                    provider_id=polygon_provider.provider_id(),
+                    fault_polygons_address=polygon_address,
+                ),
+            },
+        )
     # Update License boundary
     if license_boundary_file is not None:
         layer_model.update_layer_by_id(
             layer_id=LayoutElements.LICENSEBOUNDARYLAYER,
             layer_data={
-                "data": _parse_polygon_file(license_boundary_file)
+                "data": parse_polygon_file(license_boundary_file)
             }
         )
     if well_pick_provider is not None:
@@ -221,25 +219,6 @@ def create_layer_model(
         surf_meta.y_max,
     ]
     return layer_model, viewport_bounds
-
-
-def _parse_polygon_file(filename: str):
-    import numpy as np
-    xyz = np.genfromtxt(filename, skip_header=1, delimiter=",")
-    as_geojson = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "properties": {},
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": xyz[:, :2].tolist(),
-                }
-            }
-        ]
-    }
-    return as_geojson
 
 
 def _derive_colormap_address(surface_name: str, attribute: str, date, realization: int):

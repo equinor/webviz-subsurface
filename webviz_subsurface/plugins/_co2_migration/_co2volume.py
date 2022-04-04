@@ -1,7 +1,7 @@
-import pandas
-import numpy as np
 import pathlib
 from typing import Dict
+import pandas
+import numpy as np
 
 
 def _read_co2_volumes(realization_paths: Dict[str, str]):
@@ -28,11 +28,11 @@ def generate_co2_volume_figure(realization_paths: Dict[str, str], height):
     import plotly.express as px
     df = _read_co2_volumes(realization_paths)
     fig = px.bar(df, y="ensemble", x="volume", color="containment", title="End-state CO2 containment [m³]", orientation="h")
+    # TODO: figure height or yrange should depend on number of realizations (?)
     fig.layout.height = height
     fig.layout.legend.title.text = ""
     fig.layout.legend.orientation = "h"
     fig.layout.yaxis.title = ""
-    fig.layout.yaxis.tickangle = -90
     fig.layout.xaxis.exponentformat = "power"
     fig.layout.xaxis.title = ""
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
