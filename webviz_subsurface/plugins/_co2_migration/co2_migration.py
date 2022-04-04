@@ -1,7 +1,6 @@
-import pathlib
+from typing import List, Optional
 import pandas
 from dash import Dash
-from typing import Dict, List, Optional
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProviderFactory,
@@ -48,12 +47,12 @@ class CO2Migration(WebvizPluginABC):
         return main_layout(
             get_uuid=self.uuid,
             ensembles=list(self._ensemble_surface_providers.keys()),
-            ensemble_paths=self._ensemble_paths,
         )
 
     def set_callbacks(self):
         plugin_callbacks(
             get_uuid=self.uuid,
+            ensemble_paths=self._ensemble_paths,
             ensemble_surface_providers=self._ensemble_surface_providers,
             surface_server=self._surface_server,
             ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,

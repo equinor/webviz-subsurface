@@ -1,10 +1,10 @@
-import json
 from typing import Callable, List, Any, Dict
+from enum import unique, Enum
+import plotly.graph_objects as go
 from dash import html, dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import DeckGLMap
-from enum import unique, Enum
-from ._utils import MapAttribute, generate_co2_volume_figure
+from ._utils import MapAttribute
 
 
 @unique
@@ -18,6 +18,7 @@ class LayoutElements(str, Enum):
 
     PROPERTY = "property"
     ENSEMBLEINPUT = "ensembleinput"
+    REALIZATIONINPUT = "realizationinput"
     DATEINPUT = "dateinput"
     FAULTPOLYGONINPUT = "faultpolygoninput"
     WELLPICKZONEINPUT = "wellpickzoneinput"
@@ -42,14 +43,14 @@ class LayoutStyle:
     }
 
 
-def main_layout(get_uuid: Callable, ensembles: List[str], ensemble_paths: Dict[str, str]) -> html.Div:
+def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
     return html.Div(
         [
             wcc.Frame(
                 style=LayoutStyle.SIDEBAR,
                 children=[
                     PropertySelectorLayout(get_uuid),
-                    EnsembleSelectorLayout(get_uuid, ensembles, ensemble_paths),
+                    EnsembleSelectorLayout(get_uuid, ensembles),
                     DateSelectorLayout(get_uuid),
                     ZoneSelectorLayout(get_uuid),
                 ]
@@ -90,30 +91,34 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
 
 class PropertySelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable):
-        super().__init__(children=[
-            html.Div(
-                [
-                    wcc.Dropdown(
-                        label="Property",
-                        id=get_uuid(LayoutElements.PROPERTY),
-                        options=[
-                            dict(label=m.value, value=m.value)
-                            for m in MapAttribute
-                        ],
-                        value=MapAttribute.MigrationTime,
-                        clearable=False,
-                    )
-                ] 
-            )
-        ])
+        super().__init__(children=wcc.Selectors(
+            label="Property",
+            open_details=True,
+            children=[
+                html.Div(
+                    [
+                        wcc.Dropdown(
+                            id=get_uuid(LayoutElements.PROPERTY),
+                            options=[
+                                dict(label=m.value, value=m.value)
+                                for m in MapAttribute
+                            ],
+                            value=MapAttribute.MIGRATION_TIME,
+                            clearable=False,
+                        )
+                    ] 
+                )
+            ]
+        ))
 
 
 class EnsembleSelectorLayout(html.Div):
-    def __init__(self, get_uuid: Callable, ensembles: List[str], ensemble_paths: Dict[str, str]):
+    def __init__(self, get_uuid: Callable, ensembles: List[str]):
         super().__init__(children=wcc.Selectors(
             label="Ensemble",
             open_details=True,
             children=[
+                "Ensemble",
                 wcc.Dropdown(
                     id=get_uuid(LayoutElements.ENSEMBLEINPUT),
                     options=[
@@ -122,13 +127,14 @@ class EnsembleSelectorLayout(html.Div):
                     ],
                     value=ensembles[0]
                 ),
+                "Realization",
+                wcc.Dropdown(
+                    id=get_uuid(LayoutElements.REALIZATIONINPUT),
+                ),
                 # TODO: check that this does not yield an error with missing csv files
                 dcc.Graph(
                     id=get_uuid(LayoutElements.ENSEMBLEBARPLOT),
-                    figure=generate_co2_volume_figure(
-                        [ensemble_paths[ens] for ens in ensembles],
-                        LayoutStyle.ENSEMBLEBARPLOTHEIGHT,
-                    ),
+                    figure=go.Figure(),
                     config={
                         "displayModeBar": False,
                     }
@@ -169,7 +175,7 @@ class ZoneSelectorLayout(html.Div):
                     wcc.Dropdown(
                         id=get_uuid(LayoutElements.WELLPICKZONEINPUT)
                     ),
-                    "Map",
+                    "Color Map",
                     wcc.Dropdown(
                         id=get_uuid(LayoutElements.MAPZONEINPUT),
                     ),

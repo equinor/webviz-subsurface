@@ -1,10 +1,8 @@
 import json
 import dash
+from typing import Callable, Dict, List, Optional
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
-from typing import Callable, Dict, List, Optional
-from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE
-from .layout import LayoutElements
 # TODO: tmp?
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
@@ -28,10 +26,14 @@ from webviz_subsurface._providers import (
     SurfaceAddress,
     SurfaceServer,
 )
+from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths
+from ._co2volume import generate_co2_volume_figure
+from .layout import LayoutElements, LayoutStyle
 
 
 def plugin_callbacks(
     get_uuid: Callable,
+    ensemble_paths: Dict[str, str],  # TODO: To be replaced by table provider or similar
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
     surface_server: SurfaceServer,
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
@@ -39,6 +41,26 @@ def plugin_callbacks(
     license_boundary_file: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
 ):
+    @callback(
+        Output(get_uuid(LayoutElements.REALIZATIONINPUT), "options"),
+        Output(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
+        Output(get_uuid(LayoutElements.ENSEMBLEBARPLOT), "figure"),
+        Input(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
+    )
+    def set_ensemble(ensemble):
+        rz_paths = realization_paths(ensemble_paths[ensemble])
+        realizations = [
+            dict(label=r, value=r)
+            for r in sorted(rz_paths.keys())
+        ]
+        # TODO: get realization names elsewhere?
+        # TODO: volumes should probably be read through a table provider or similar instead
+        fig = generate_co2_volume_figure(
+            rz_paths,
+            LayoutStyle.ENSEMBLEBARPLOTHEIGHT,
+        )
+        return realizations, realizations[0]["value"], fig
+
     # TODO: Verify optional parameters behave correctly when not provided
     # TODO: sync zone/horizon names across data types?
     @callback(
@@ -48,14 +70,17 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.WELLPICKZONEINPUT), 'options'),
         Output(get_uuid(LayoutElements.MAPZONEINPUT), 'options'),
         Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
+        Input(get_uuid(LayoutElements.REALIZATIONINPUT), 'value'),
         Input(get_uuid(LayoutElements.PROPERTY), 'value'),
     )
-    def set_ensemble(ensemble, prop):
+    def set_realization(ensemble, realization, prop):
+        if realization is None:
+            raise PreventUpdate
         if ensemble is None:
-            return [], [], [], []
+            return [], [], [], [], []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
-        date_list = surface_provider.surface_dates_for_attribute(MapAttribute.MaxSaturation.value)
+        date_list = surface_provider.surface_dates_for_attribute(MapAttribute.MAX_SATURATION.value)
         if date_list is None:
             dates = {}
             initial_date = dash.no_update
@@ -104,12 +129,13 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.FAULTPOLYGONINPUT), "value"),
         Input(get_uuid(LayoutElements.WELLPICKZONEINPUT), "value"),
         Input(get_uuid(LayoutElements.MAPZONEINPUT), "value"),
+        Input(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
     )
-    def update_map_attribute(attribute, date, polygon_name, well_pick_horizon, surface_name, ensemble):
+    def update_map_attribute(attribute, date, polygon_name, well_pick_horizon, surface_name, realization, ensemble):
         if ensemble is None:
             raise PreventUpdate
-        if MapAttribute(attribute) == MapAttribute.MaxSaturation and date is None:
+        if MapAttribute(attribute) == MapAttribute.MAX_SATURATION and date is None:
             raise PreventUpdate
         date = str(date)
         if surface_name is None:
@@ -118,10 +144,10 @@ def plugin_callbacks(
         layer_model, viewport_bounds = create_layer_model(
             surface_server=surface_server,
             surface_provider=ensemble_surface_providers[ensemble],
-            colormap_address=_derive_colormap_address(surface_name, attribute, date),
+            colormap_address=_derive_colormap_address(surface_name, attribute, date, realization),
             fault_polygons_server=fault_polygons_server,
             polygon_provider=ensemble_fault_polygons_providers[ensemble],
-            polygon_address=_derive_fault_polygon_address(polygon_name),
+            polygon_address=_derive_fault_polygon_address(polygon_name, realization),
             license_boundary_file=license_boundary_file,
             well_pick_provider=well_pick_provider,
             well_pick_horizon=well_pick_horizon,
@@ -216,31 +242,31 @@ def _parse_polygon_file(filename: str):
     return as_geojson
 
 
-def _derive_colormap_address(surface_name: str, attribute: str, date):
+def _derive_colormap_address(surface_name: str, attribute: str, date, realization: int):
     attribute = MapAttribute(attribute)
-    if attribute == MapAttribute.MigrationTime:
+    if attribute == MapAttribute.MIGRATION_TIME:
         return SimulatedSurfaceAddress(
-            attribute=MapAttribute.MigrationTime.value,
+            attribute=MapAttribute.MIGRATION_TIME.value,
             name=surface_name,
             datestr=None,
-            realization=0,  # TODO
+            realization=realization,
         )
-    elif attribute == MapAttribute.MaxSaturation:
+    elif attribute == MapAttribute.MAX_SATURATION:
         return SimulatedSurfaceAddress(
-            attribute=MapAttribute.MaxSaturation.value,
+            attribute=MapAttribute.MAX_SATURATION.value,
             name=surface_name,
             datestr=date,
-            realization=0,  # TODO
+            realization=realization,
         )
     else:
         raise NotImplementedError
 
 
-def _derive_fault_polygon_address(polygon_name):
+def _derive_fault_polygon_address(polygon_name, realization):
     return SimulatedFaultPolygonsAddress(
         attribute=FAULT_POLYGON_ATTRIBUTE,
         name=polygon_name,
-        realization=0,
+        realization=realization,
     )
 
 
