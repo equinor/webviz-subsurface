@@ -24,12 +24,12 @@ def xtgeo_grid_to_explicit_structured_grid(
     xtg_grid: xtgeo.Grid,
 ) -> pv.ExplicitStructuredGrid:
     dims, corners, inactive = xtg_grid.get_vtk_geometries()
+    corners[:, 2] *= -1
     esg_grid = pv.ExplicitStructuredGrid(dims, corners)
-
     esg_grid = esg_grid.compute_connectivity()
     esg_grid.ComputeFacesConnectivityFlagsArray()
     esg_grid = esg_grid.hide_cells(inactive)
-    esg_grid.flip_z(inplace=True)
+    # esg_grid.flip_z(inplace=True)
     return esg_grid
 
 
@@ -132,7 +132,7 @@ class EclipseGridDataModel:
         prop = xtgeo.gridproperty_from_file(
             self._init_file, fformat="init", name=prop_name, grid=self._xtg_grid
         )
-        return prop.get_npvalues1d(order="F").ravel()
+        return prop
 
     def get_restart_property(self, prop_name: str, prop_date: int) -> np.ndarray:
         timer = PerfTimer()
@@ -146,6 +146,12 @@ class EclipseGridDataModel:
         print(
             f"Read {prop_name}, {prop_date} from restart file in {timer.lap_s():.2f}s"
         )
-        vals = prop.get_npvalues1d(order="F")
+        return prop
 
-        return vals
+    def get_init_values(self, prop_name: str):
+        prop = self.get_init_property(prop_name)
+        return prop.get_npvalues1d(order="F").ravel()
+
+    def get_restart_values(self, prop_name: str, prop_date: int):
+        prop = self.get_restart_property(prop_name, prop_date)
+        return prop.get_npvalues1d(order="F").ravel()

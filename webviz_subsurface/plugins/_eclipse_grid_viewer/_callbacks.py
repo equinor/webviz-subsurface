@@ -1,6 +1,7 @@
 import hashlib
 from time import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import json
 
 import numpy as np
 from dash import Input, Output, State, callback, no_update
@@ -63,9 +64,9 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
 
         timer = PerfTimer()
         if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
-            scalar = datamodel.get_init_property(prop[0])
+            scalar = datamodel.get_init_values(prop[0])
         else:
-            scalar = datamodel.get_restart_property(prop[0], date[0])
+            scalar = datamodel.get_restart_values(prop[0], date[0])
         print(f"Reading scalar from file in {timer.lap_s():.2f}s")
 
         polys, points, cell_indices = datamodel.esg_provider.crop(columns, rows, layers)
@@ -110,3 +111,51 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
     )
     def _reset_camera(_polys: np.ndarray, _points: np.ndarray, _actor: dict) -> float:
         return time()
+
+    @callback(
+        Output(get_uuid(LayoutElements.SELECTED_CELL), "children"),
+        Input(get_uuid(LayoutElements.VTK_VIEW), "clickInfo"),
+        State(get_uuid(LayoutElements.Z_SCALE), "value"),
+        State(get_uuid(LayoutElements.PROPERTIES), "value"),
+        State(get_uuid(LayoutElements.DATES), "value"),
+        State(get_uuid(LayoutElements.INIT_RESTART), "value"),
+    )
+    def _update_click_info(clickData, zscale, prop, date, proptype):
+
+        if clickData:
+            if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
+                scalar = datamodel.get_init_property(prop[0])
+            else:
+                scalar = datamodel.get_restart_property(prop[0], date[0])
+
+            pos = clickData["worldPosition"]
+            pos[2] = pos[2] / -zscale
+            import xtgeo
+
+            timer = PerfTimer()
+            p = xtgeo.Points([pos])
+
+            ijk = datamodel._xtg_grid.get_ijk_from_points(
+                p, dataframe=False, includepoints=False, zerobased=True
+            )[0]
+            print(f"Get selected cell {timer.lap_s():.2f}s")
+            scalar_value = scalar.get_values_by_ijk(
+                np.array([ijk[0]]), np.array([ijk[1]]), np.array([ijk[2]]), base=0
+            )
+            print(f"Get property value for selected cell {timer.lap_s():.2f}s")
+            scalar_value = scalar_value[0] if scalar_value is not None else None
+            propname = f"{prop[0]}-{date[0]}" if date else f"{prop[0]}"
+            return json.dumps(
+                {
+                    "x": pos[0],
+                    "y": pos[1],
+                    "z": pos[2],
+                    "i": ijk[0],
+                    "j": ijk[1],
+                    "k": ijk[2],
+                    propname: scalar_value,
+                },
+                indent=2,
+            )
+
+        return [""]

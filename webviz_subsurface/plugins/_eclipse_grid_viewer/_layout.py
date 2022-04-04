@@ -3,7 +3,7 @@ from typing import Callable
 
 import dash_vtk
 import webviz_core_components as wcc
-from dash import dcc
+from dash import dcc, html
 
 from ._business_logic import ExplicitStructuredGridProvider
 
@@ -22,6 +22,7 @@ class LayoutElements(str, Enum):
     VTK_GRID_POLYDATA = "vtk-grid-polydata"
     VTK_GRID_CELLDATA = "vtk-grid-celldata"
     STORED_CELL_INDICES_HASH = "stored-cell-indices-hash"
+    SELECTED_CELL = "selected-cell"
 
 
 class LayoutTitles(str, Enum):
@@ -123,6 +124,7 @@ def sidebar(
                     "always_visible": True,
                 },
             ),
+            html.Pre(id=get_uuid(LayoutElements.SELECTED_CELL)),
         ],
     )
 
@@ -131,6 +133,7 @@ def vtk_view(get_uuid: Callable) -> dash_vtk.View:
     return dash_vtk.View(
         id=get_uuid(LayoutElements.VTK_VIEW),
         style=LayoutStyle.VTK_VIEW,
+        pickingModes=["click"],
         children=[
             dash_vtk.GeometryRepresentation(
                 id=get_uuid(LayoutElements.VTK_GRID_REPRESENTATION),
