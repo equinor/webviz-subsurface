@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pyvista as pv
@@ -7,6 +7,12 @@ import xtgeo
 
 # pylint: disable=no-name-in-module, import-error
 from vtk.util.numpy_support import vtk_to_numpy
+
+# pylint: disable=no-name-in-module,
+from vtkmodules.vtkCommonDataModel import vtkExplicitStructuredGrid
+
+# pylint: disable=no-name-in-module,
+from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
@@ -19,6 +25,7 @@ def xtgeo_grid_to_explicit_structured_grid(
 ) -> pv.ExplicitStructuredGrid:
     dims, corners, inactive = xtg_grid.get_vtk_geometries()
     esg_grid = pv.ExplicitStructuredGrid(dims, corners)
+
     esg_grid = esg_grid.compute_connectivity()
     esg_grid.ComputeFacesConnectivityFlagsArray()
     esg_grid = esg_grid.hide_cells(inactive)
@@ -29,23 +36,57 @@ def xtgeo_grid_to_explicit_structured_grid(
 class ExplicitStructuredGridProvider:
     def __init__(self, esg_grid: pv.ExplicitStructuredGrid) -> None:
         self.esg_grid = esg_grid
-        timer = PerfTimer()
-        self.surface_polydata = self._extract_surface()
-        print(f"Extracted grid skin in : {timer.lap_s():.2f}s")
-        self.surface_polys = vtk_to_numpy(self.surface_polydata.GetPolys().GetData())
 
-        self.surface_points = vtk_to_numpy(self.surface_polydata.points).ravel()
+    def crop(
+        self, irange: List[int], jrange: List[int], krange: List[int]
+    ) -> vtkExplicitStructuredGrid:
+        crop_filter = vtkExplicitStructuredGridCrop()
+        crop_filter.SetInputData(self.esg_grid)
+        crop_filter.SetOutputWholeExtent(
+            irange[0], irange[1], jrange[0], jrange[1], krange[0], krange[1]
+        )
+        crop_filter.Update()
+        grid = crop_filter.GetOutput()
+        return self.extract_skin(grid)
 
-    def _extract_surface(
-        self,
-    ) -> pv.PolyData:
-        """Extract and keep the grid surface. Also keep track of cell indices, to be used
-        to extract indices from the scalar arrays"""
+    def extract_skin(
+        self, grid: vtkExplicitStructuredGrid = None
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        grid = grid if grid is not None else self.esg_grid
         extract_skin_filter = vtkExplicitStructuredGridSurfaceFilter()
-        extract_skin_filter.SetInputData(self.esg_grid)
+        extract_skin_filter.SetInputData(grid)
         extract_skin_filter.PassThroughCellIdsOn()
         extract_skin_filter.Update()
-        return pv.PolyData(extract_skin_filter.GetOutput())
+        polydata = extract_skin_filter.GetOutput()
+        polydata = pv.PolyData(polydata)
+        polys = vtk_to_numpy(polydata.GetPolys().GetData())
+        points = vtk_to_numpy(polydata.points).ravel()
+        indices = polydata["vtkOriginalCellIds"]
+        return polys, points, indices
+
+    @property
+    def imin(self) -> int:
+        return 0
+
+    @property
+    def imax(self) -> int:
+        return self.esg_grid.dimensions[0] - 1
+
+    @property
+    def jmin(self) -> int:
+        return 0
+
+    @property
+    def jmax(self) -> int:
+        return self.esg_grid.dimensions[1] - 1
+
+    @property
+    def kmin(self) -> int:
+        return 0
+
+    @property
+    def kmax(self) -> int:
+        return self.esg_grid.dimensions[2] - 1
 
 
 class EclipseGridDataModel:
