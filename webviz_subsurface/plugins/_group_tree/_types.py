@@ -13,3 +13,9 @@ class StatOptions(str, Enum):
     P90 = "p90"
     MAX = "max"
     MIN = "min"
+
+
+class NodeType(str, Enum):
+    PROD = "prod"
+    INJ = "inj"
+    OTHER = "other"

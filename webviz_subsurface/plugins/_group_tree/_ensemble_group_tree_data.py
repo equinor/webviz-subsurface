@@ -7,7 +7,7 @@ from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from ._types import StatOptions, TreeModeOptions
+from ._types import NodeType, StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:
@@ -51,7 +51,7 @@ class EnsembleGroupTreeData:
         tree_mode: TreeModeOptions,
         stat_option: StatOptions,
         real: int,
-        prod_inj_other: List[str],
+        node_types: List[NodeType],
     ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]], List[Dict[str, str]]]:
         """This method is called when an event is triggered to create a new dataset
         to the GroupTree plugin. First there is a lot of filtering of the smry and
@@ -91,17 +91,14 @@ class EnsembleGroupTreeData:
             gruptree_filtered = gruptree_filtered[gruptree_filtered["REAL"] == real]
 
         # Filter nodetype prod, inj and/or other
-        df = pd.DataFrame()
-        for tpe in ["prod", "inj", "other"]:
-            if tpe in prod_inj_other:
-                df = pd.concat(
-                    [df, gruptree_filtered[gruptree_filtered[f"IS_{tpe}".upper()]]]
-                )
-        gruptree_filtered = df.drop_duplicates()
+        dfs = []
+        for tpe in node_types:
+            dfs.append(gruptree_filtered[gruptree_filtered[f"IS_{tpe.value}".upper()]])
+        gruptree_filtered = pd.concat(dfs).drop_duplicates()
 
         return (
             create_dataset(smry, gruptree_filtered, self._sumvecs),
-            self.get_edge_options(prod_inj_other),
+            self.get_edge_options(node_types),
             [
                 {"name": option, "label": get_label(option)}
                 for option in ["pressure", "bhp", "wmctl"]
@@ -176,7 +173,7 @@ class EnsembleGroupTreeData:
             )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_edge_options(self, prod_inj_other: list) -> List[Dict[str, str]]:
+    def get_edge_options(self, node_types: List[NodeType]) -> List[Dict[str, str]]:
         """Returns a list with edge node options for the dropdown
         menu in the GroupTree component. The output list has the format:
         [
@@ -185,12 +182,12 @@ class EnsembleGroupTreeData:
         ]
         """
         options = []
-        if "prod" in prod_inj_other:
+        if NodeType.PROD in node_types:
             for rate in ["oilrate", "gasrate", "waterrate"]:
                 options.append({"name": rate, "label": get_label(rate)})
-        if "inj" in prod_inj_other and self._has_waterinj:
+        if NodeType.INJ in node_types and self._has_waterinj:
             options.append({"name": "waterinjrate", "label": get_label("waterinjrate")})
-        if "inj" in prod_inj_other and self._has_gasinj:
+        if NodeType.INJ in node_types and self._has_gasinj:
             options.append({"name": "gasinjrate", "label": get_label("gasinjrate")})
         if options:
             return options
