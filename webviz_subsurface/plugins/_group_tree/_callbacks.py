@@ -10,7 +10,7 @@ from ._types import NodeType, StatOptions, TreeModeOptions
 
 def plugin_callbacks(
     app: dash.Dash,
-    get_uuid: Callable,
+    get_uuid: Callable[[str], str],
     group_tree_data: Dict[str, EnsembleGroupTreeData],
 ) -> None:
     @app.callback(
