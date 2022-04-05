@@ -6,7 +6,7 @@ from dash import html
 from ._types import NodeType, StatOptions
 
 
-def main_layout(get_uuid: Callable, ensembles: List[str]) -> wcc.FlexBox:
+def main_layout(get_uuid: Callable[[str], str], ensembles: List[str]) -> wcc.FlexBox:
     """Main layout"""
     return wcc.FlexBox(
         id=get_uuid("layout"),
@@ -41,7 +41,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> wcc.FlexBox:
     )
 
 
-def filters_layout(get_uuid: Callable) -> wcc.Selectors:
+def filters_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The filters part of the menu"""
     filters_uuid = get_uuid("filters")
     return wcc.Selectors(
@@ -64,7 +64,7 @@ def filters_layout(get_uuid: Callable) -> wcc.Selectors:
     )
 
 
-def options_layout(get_uuid: Callable) -> wcc.Selectors:
+def options_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The options part of the menu"""
     options_uuid = get_uuid("options")
     return wcc.Selectors(
@@ -103,7 +103,9 @@ def options_layout(get_uuid: Callable) -> wcc.Selectors:
     )
 
 
-def selections_layout(get_uuid: Callable, ensembles: List[str]) -> wcc.Selectors:
+def selections_layout(
+    get_uuid: Callable[[str], str], ensembles: List[str]
+) -> wcc.Selectors:
     """Layout for the component input options"""
     controls_uuid = get_uuid("controls")
     return wcc.Selectors(
