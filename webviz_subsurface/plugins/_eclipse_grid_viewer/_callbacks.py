@@ -69,7 +69,8 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
             scalar = datamodel.get_restart_values(prop[0], date[0])
         print(f"Reading scalar from file in {timer.lap_s():.2f}s")
 
-        polys, points, cell_indices = datamodel.esg_provider.crop(columns, rows, layers)
+        cropped_grid = datamodel.esg_provider.crop(columns, rows, layers)
+        polys, points, cell_indices = datamodel.esg_provider.extract_skin(cropped_grid)
         print(f"Extracting cropped geometry in {timer.lap_s():.2f}s")
 
         # Storing hash of cell indices client side to control if only scalar should be updated
@@ -98,10 +99,22 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         Input(get_uuid(LayoutElements.Z_SCALE), "value"),
         State(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),
     )
-    def _set_actor(z_scale: int, actor: Optional[dict]) -> dict:
+    def _set_representation_actor(z_scale: int, actor: Optional[dict]) -> dict:
         actor = actor if actor else {}
         actor.update({"scale": (1, 1, z_scale)})
         return actor
+
+    @callback(
+        Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "property"),
+        Input(get_uuid(LayoutElements.SHOW_GRID_LINES), "value"),
+        State(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "property"),
+    )
+    def _set_representation_property(
+        show_grid_lines: int, properties: Optional[dict]
+    ) -> dict:
+        properties = properties if properties else {}
+        properties.update({"edgeVisibility": bool(show_grid_lines)})
+        return properties
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_VIEW), "triggerResetCamera"),
@@ -122,40 +135,33 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
     )
     def _update_click_info(clickData, zscale, prop, date, proptype):
 
-        if clickData:
-            if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
-                scalar = datamodel.get_init_property(prop[0])
-            else:
-                scalar = datamodel.get_restart_property(prop[0], date[0])
+        if not clickData:
+            return [""]
+        if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
+            scalar = datamodel.get_init_values(prop[0])
+        else:
+            scalar = datamodel.get_restart_values(prop[0], date[0])
 
-            pos = clickData["worldPosition"]
-            pos[2] = pos[2] / -zscale
-            import xtgeo
+        pos = clickData["worldPosition"]
+        pos[2] = pos[2] / zscale
 
-            timer = PerfTimer()
-            p = xtgeo.Points([pos])
+        timer = PerfTimer()
 
-            ijk = datamodel._xtg_grid.get_ijk_from_points(
-                p, dataframe=False, includepoints=False, zerobased=True
-            )[0]
-            print(f"Get selected cell {timer.lap_s():.2f}s")
-            scalar_value = scalar.get_values_by_ijk(
-                np.array([ijk[0]]), np.array([ijk[1]]), np.array([ijk[2]]), base=0
-            )
-            print(f"Get property value for selected cell {timer.lap_s():.2f}s")
-            scalar_value = scalar_value[0] if scalar_value is not None else None
-            propname = f"{prop[0]}-{date[0]}" if date else f"{prop[0]}"
-            return json.dumps(
-                {
-                    "x": pos[0],
-                    "y": pos[1],
-                    "z": pos[2],
-                    "i": ijk[0],
-                    "j": ijk[1],
-                    "k": ijk[2],
-                    propname: scalar_value,
-                },
-                indent=2,
-            )
+        cell_id, ijk = datamodel.esg_provider.find_containing_cell(pos)
+        scalar_value = scalar[cell_id]
 
-        return [""]
+        propname = f"{prop[0]}-{date[0]}" if date else f"{prop[0]}"
+        return json.dumps(
+            {
+                "x": pos[0],
+                "y": pos[1],
+                "z": pos[2],
+                "i": ijk[0],
+                "j": ijk[1],
+                "k": ijk[2],
+                propname: float(
+                    scalar_value,
+                ),
+            },
+            indent=2,
+        )

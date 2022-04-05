@@ -9,7 +9,12 @@ import xtgeo
 from vtk.util.numpy_support import vtk_to_numpy
 
 # pylint: disable=no-name-in-module,
-from vtkmodules.vtkCommonDataModel import vtkExplicitStructuredGrid
+from vtkmodules.vtkCommonDataModel import (
+    vtkExplicitStructuredGrid,
+    vtkCellLocator,
+    vtkGenericCell,
+)
+from vtkmodules.vtkCommonCore import mutable
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
@@ -36,6 +41,7 @@ def xtgeo_grid_to_explicit_structured_grid(
 class ExplicitStructuredGridProvider:
     def __init__(self, esg_grid: pv.ExplicitStructuredGrid) -> None:
         self.esg_grid = esg_grid
+        self.extract_skin_filter = vtkExplicitStructuredGridSurfaceFilter()
 
     def crop(
         self, irange: List[int], jrange: List[int], krange: List[int]
@@ -47,22 +53,48 @@ class ExplicitStructuredGridProvider:
         )
         crop_filter.Update()
         grid = crop_filter.GetOutput()
-        return self.extract_skin(grid)
+        return grid
 
     def extract_skin(
         self, grid: vtkExplicitStructuredGrid = None
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         grid = grid if grid is not None else self.esg_grid
-        extract_skin_filter = vtkExplicitStructuredGridSurfaceFilter()
-        extract_skin_filter.SetInputData(grid)
-        extract_skin_filter.PassThroughCellIdsOn()
-        extract_skin_filter.Update()
-        polydata = extract_skin_filter.GetOutput()
+
+        self.extract_skin_filter.SetInputData(grid)
+        self.extract_skin_filter.PassThroughCellIdsOn()
+        self.extract_skin_filter.Update()
+        polydata = self.extract_skin_filter.GetOutput()
         polydata = pv.PolyData(polydata)
         polys = vtk_to_numpy(polydata.GetPolys().GetData())
         points = vtk_to_numpy(polydata.points).ravel()
         indices = polydata["vtkOriginalCellIds"]
         return polys, points, indices
+
+    def find_containing_cell(self, coords):
+        timer = PerfTimer()
+        locator = vtkCellLocator()
+        locator.SetDataSet(self.esg_grid)
+        locator.BuildLocator()
+        # containing_cell = locator.FindCell(coords) #Slower and not precise??
+        # print(f"Containing cell in {timer.lap_s():.2f}")
+
+        cell = vtkGenericCell()
+        closest_point = [0.0, 0.0, 0.0]
+        cell_id = mutable(0)
+        sub_id = mutable(0)
+        dist2 = mutable(0.0)
+        closest_cell = locator.FindClosestPoint(
+            coords, closest_point, cell, cell_id, sub_id, dist2
+        )
+        print(f"Closest cell in {timer.lap_s():.2f}")
+
+        i = mutable(0)
+        j = mutable(0)
+        k = mutable(0)
+        self.esg_grid.ComputeCellStructuredCoords(cell_id, i, j, k, False)
+        print(f"Get ijk in  {timer.lap_s():.2f}")
+
+        return cell_id, [int(i), int(j), int(k)]
 
     @property
     def imin(self) -> int:
@@ -103,7 +135,10 @@ class EclipseGridDataModel:
         self._restart_file = restart_file
         self._init_names = init_names
         self._restart_names = restart_names
+
+        # Eclipse grid geometry required when loading grid properties later on
         self._xtg_grid = xtgeo.grid_from_file(egrid_file, fformat="egrid")
+
         timer = PerfTimer()
         print("Converting egrid to VTK ExplicitStructuredGrid")
         self.esg_provider = ExplicitStructuredGridProvider(
@@ -141,10 +176,7 @@ class EclipseGridDataModel:
             fformat="unrst",
             name=prop_name,
             date=prop_date,
-            grid=self._xtg_grid,
-        )
-        print(
-            f"Read {prop_name}, {prop_date} from restart file in {timer.lap_s():.2f}s"
+            # grid=self._xtg_grid,
         )
         return prop
 

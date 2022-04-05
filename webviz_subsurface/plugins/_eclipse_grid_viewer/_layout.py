@@ -23,6 +23,7 @@ class LayoutElements(str, Enum):
     VTK_GRID_CELLDATA = "vtk-grid-celldata"
     STORED_CELL_INDICES_HASH = "stored-cell-indices-hash"
     SELECTED_CELL = "selected-cell"
+    SHOW_GRID_LINES = "show-grid-lines"
 
 
 class LayoutTitles(str, Enum):
@@ -33,6 +34,7 @@ class LayoutTitles(str, Enum):
     GRID_COLUMNS = "Grid columns"
     GRID_ROWS = "Grid rows"
     GRID_LAYERS = "Grid layers"
+    SHOW_GRID_LINES = "Show grid lines"
 
 
 class PROPERTYTYPE(str, Enum):
@@ -76,6 +78,11 @@ def sidebar(
             ),
             wcc.SelectWithLabel(
                 id=get_uuid(LayoutElements.DATES), label=LayoutTitles.DATES
+            ),
+            wcc.Checklist(
+                id=get_uuid(LayoutElements.SHOW_GRID_LINES),
+                options=[LayoutTitles.SHOW_GRID_LINES],
+                value=[LayoutTitles.SHOW_GRID_LINES],
             ),
             wcc.Slider(
                 label=LayoutTitles.Z_SCALE,
