@@ -1,10 +1,9 @@
 from enum import Enum
 from typing import Callable
 
+from dash import dcc, html
 import dash_vtk
 import webviz_core_components as wcc
-from dash import dcc, html
-from dash_vtk.utils import presets as colormaps
 
 from ._business_logic import ExplicitStructuredGridProvider
 
@@ -134,7 +133,7 @@ def sidebar(
                         id=get_uuid(LayoutElements.GRID_LAYERS),
                         min=esg_provider.kmin,
                         max=esg_provider.kmax,
-                        value=[esg_provider.kmin, esg_provider.kmax],
+                        value=[esg_provider.kmin, esg_provider.kmin],
                         step=1,
                         marks=None,
                         tooltip={
