@@ -116,7 +116,7 @@ def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Selectors:
                 value=ensembles[0],
             ),
             wcc.RadioItems(
-                label="Mean or realization",
+                label="Statistics or realization",
                 id={"id": controls_uuid, "element": "tree_mode"},
             ),
         ],

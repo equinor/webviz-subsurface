@@ -5,6 +5,7 @@ import webviz_subsurface_components
 from dash.dependencies import Input, Output, State
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
+from ._property_serialization import StatOptions, TreeModeOptions
 
 
 def plugin_callbacks(
@@ -40,24 +41,24 @@ def plugin_callbacks(
                 "value": "single_real",
             },
         ]
-        tree_mode_value = (
+        tree_mode = TreeModeOptions(
             tree_mode_state if tree_mode_state is not None else "statistics"
         )
-        stat_option_value = (
+        stat_option = StatOptions(
             stat_option_state if stat_option_state is not None else "mean"
         )
         ensemble = group_tree_data[ensemble_name]
         if not ensemble.tree_is_equivalent_in_all_real():
             tree_mode_options[0]["label"] = "Ensemble mean (disabled)"
             tree_mode_options[0]["disabled"] = True
-            tree_mode_value = "single_real"
+            tree_mode = TreeModeOptions("single_real")
 
         unique_real = ensemble.get_unique_real()
 
         return (
             tree_mode_options,
-            tree_mode_value,
-            stat_option_value,
+            tree_mode.value,
+            stat_option.value,
             [{"label": real, "value": real} for real in unique_real],
             real_state if real_state in unique_real else min(unique_real),
         )
@@ -80,7 +81,12 @@ def plugin_callbacks(
         """This callback updates the input dataset to the Grouptree component."""
         data, edge_options, node_options = group_tree_data[
             ensemble_name
-        ].create_grouptree_dataset(tree_mode, stat_option, real, prod_inj_other)
+        ].create_grouptree_dataset(
+            TreeModeOptions(tree_mode),
+            StatOptions(stat_option),
+            real,
+            prod_inj_other,
+        )
 
         return [
             webviz_subsurface_components.GroupTree(
@@ -108,6 +114,6 @@ def plugin_callbacks(
     def _show_hide_single_real_options(
         tree_mode: str,
     ) -> Tuple[Dict[str, str], Dict[str, str]]:
-        if tree_mode == "statistics":
+        if TreeModeOptions(tree_mode) is TreeModeOptions.STATISTICS:
             return {"display": "block"}, {"display": "none"}
         return {"display": "none"}, {"display": "block"}

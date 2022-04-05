@@ -7,6 +7,8 @@ from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
+from ._property_serialization import StatOptions, TreeModeOptions
+
 
 class EnsembleGroupTreeData:
     """This class holds the summary provider and gruptree dataset. It has functionality
@@ -46,8 +48,8 @@ class EnsembleGroupTreeData:
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def create_grouptree_dataset(
         self,
-        tree_mode: str,
-        stat_option: str,
+        tree_mode: TreeModeOptions,
+        stat_option: StatOptions,
         real: int,
         prod_inj_other: List[str],
     ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]], List[Dict[str, str]]]:
@@ -66,18 +68,20 @@ class EnsembleGroupTreeData:
         # Filter smry
         smry = self._provider.get_vectors_df(list(self._sumvecs["SUMVEC"]), None)
 
-        if tree_mode == "statistics":
-            if stat_option == "mean":
+        if tree_mode is TreeModeOptions.STATISTICS:
+            if stat_option is StatOptions.MEAN:
                 smry = smry.groupby("DATE").mean().reset_index()
-            elif stat_option in ["p50", "p10", "p90"]:
-                quantile = {"p50": 0.5, "p10": 0.9, "p90": 0.1}[stat_option]
+            elif stat_option in [StatOptions.P50, StatOptions.P10, StatOptions.P90]:
+                quantile = {"p50": 0.5, "p10": 0.9, "p90": 0.1}[stat_option.value]
                 smry = smry.groupby("DATE").quantile(quantile).reset_index()
-            elif stat_option == "max":
+            elif stat_option is StatOptions.MAX:
                 smry = smry.groupby("DATE").max().reset_index()
-            elif stat_option == "min":
+            elif stat_option is StatOptions.MIN:
                 smry = smry.groupby("DATE").min().reset_index()
             else:
-                raise ValueError(f"Statistical option: {stat_option} not implemented")
+                raise ValueError(
+                    f"Statistical option: {stat_option.value} not implemented"
+                )
         else:
             smry = smry[smry["REAL"] == real]
 
