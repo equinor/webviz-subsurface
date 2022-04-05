@@ -5,7 +5,7 @@ import webviz_subsurface_components
 from dash.dependencies import Input, Output, State
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
-from ._property_serialization import StatOptions, TreeModeOptions
+from ._types import StatOptions, TreeModeOptions
 
 
 def plugin_callbacks(
