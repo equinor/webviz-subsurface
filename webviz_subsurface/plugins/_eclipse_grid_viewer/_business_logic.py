@@ -73,7 +73,7 @@ class ExplicitStructuredGridProvider:
     def find_containing_cell(self, coords):
         timer = PerfTimer()
         locator = vtkCellLocator()
-        locator.SetDataSet(self.esg_grid)
+        locator.SetDataSet(self.esg_grid.show_cells())
         locator.BuildLocator()
         # containing_cell = locator.FindCell(coords) #Slower and not precise??
         # print(f"Containing cell in {timer.lap_s():.2f}")
@@ -83,9 +83,7 @@ class ExplicitStructuredGridProvider:
         cell_id = mutable(0)
         sub_id = mutable(0)
         dist2 = mutable(0.0)
-        closest_cell = locator.FindClosestPoint(
-            coords, closest_point, cell, cell_id, sub_id, dist2
-        )
+        locator.FindClosestPoint(coords, closest_point, cell, cell_id, sub_id, dist2)
         print(f"Closest cell in {timer.lap_s():.2f}")
 
         i = mutable(0)
