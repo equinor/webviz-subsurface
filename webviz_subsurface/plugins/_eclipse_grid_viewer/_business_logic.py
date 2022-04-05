@@ -176,7 +176,7 @@ class EclipseGridDataModel:
             fformat="unrst",
             name=prop_name,
             date=prop_date,
-            # grid=self._xtg_grid,
+            grid=self._xtg_grid,
         )
         return prop
 
