@@ -71,6 +71,8 @@ class ExplicitStructuredGridProvider:
         return polys, points, indices
 
     def find_containing_cell(self, coords):
+        """OBS! OBS! Currently picks the layer above the visualized layer.
+        Solve by e.g. shifting the z value? Getting cell neighbours?..."""
         timer = PerfTimer()
         locator = vtkCellLocator()
         locator.SetDataSet(self.esg_grid.show_cells())
