@@ -7,7 +7,7 @@ from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from ._property_serialization import StatOptions, TreeModeOptions
+from ._types import StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:
