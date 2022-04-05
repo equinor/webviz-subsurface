@@ -5,7 +5,7 @@ import webviz_subsurface_components
 from dash.dependencies import Input, Output, State
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
-from ._types import StatOptions, TreeModeOptions
+from ._types import NodeType, StatOptions, TreeModeOptions
 
 
 def plugin_callbacks(
@@ -34,24 +34,29 @@ def plugin_callbacks(
         tree_mode_options: List[Dict[str, Any]] = [
             {
                 "label": "Statistics",
-                "value": "statistics",
+                "value": TreeModeOptions.STATISTICS.value,
             },
             {
                 "label": "Single realization",
-                "value": "single_real",
+                "value": TreeModeOptions.SINGLE_REAL.value,
             },
         ]
-        tree_mode = TreeModeOptions(
-            tree_mode_state if tree_mode_state is not None else "statistics"
+        tree_mode = (
+            TreeModeOptions(tree_mode_state)
+            if tree_mode_state is not None
+            else TreeModeOptions.STATISTICS
         )
-        stat_option = StatOptions(
-            stat_option_state if stat_option_state is not None else "mean"
+        stat_option = (
+            StatOptions(stat_option_state)
+            if stat_option_state is not None
+            else StatOptions.MEAN
         )
+
         ensemble = group_tree_data[ensemble_name]
         if not ensemble.tree_is_equivalent_in_all_real():
             tree_mode_options[0]["label"] = "Ensemble mean (disabled)"
             tree_mode_options[0]["disabled"] = True
-            tree_mode = TreeModeOptions("single_real")
+            tree_mode = TreeModeOptions.SINGLE_REAL
 
         unique_real = ensemble.get_unique_real()
 
@@ -68,14 +73,14 @@ def plugin_callbacks(
         Input({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
         Input({"id": get_uuid("options"), "element": "statistical_option"}, "value"),
         Input({"id": get_uuid("options"), "element": "realization"}, "value"),
-        Input({"id": get_uuid("filters"), "element": "prod_inj_other"}, "value"),
+        Input({"id": get_uuid("filters"), "element": "node_types"}, "value"),
         State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
     )
     def _render_grouptree(
         tree_mode: str,
         stat_option: str,
         real: int,
-        prod_inj_other: list,
+        node_types: list,
         ensemble_name: str,
     ) -> list:
         """This callback updates the input dataset to the Grouptree component."""
@@ -85,7 +90,7 @@ def plugin_callbacks(
             TreeModeOptions(tree_mode),
             StatOptions(stat_option),
             real,
-            prod_inj_other,
+            [NodeType(tpe) for tpe in node_types],
         )
 
         return [

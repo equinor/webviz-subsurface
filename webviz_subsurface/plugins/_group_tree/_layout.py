@@ -1,10 +1,12 @@
-from typing import Callable
+from typing import Callable, List
 
 import webviz_core_components as wcc
 from dash import html
 
+from ._types import NodeType, StatOptions
 
-def main_layout(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
+
+def main_layout(get_uuid: Callable, ensembles: List[str]) -> wcc.FlexBox:
     """Main layout"""
     return wcc.FlexBox(
         id=get_uuid("layout"),
@@ -48,13 +50,13 @@ def filters_layout(get_uuid: Callable) -> wcc.Selectors:
         children=[
             wcc.SelectWithLabel(
                 label="Prod/Inj/Other",
-                id={"id": filters_uuid, "element": "prod_inj_other"},
+                id={"id": filters_uuid, "element": "node_types"},
                 options=[
-                    {"label": "Production", "value": "prod"},
-                    {"label": "Injection", "value": "inj"},
-                    {"label": "Other", "value": "other"},
+                    {"label": "Production", "value": NodeType.PROD.value},
+                    {"label": "Injection", "value": NodeType.INJ.value},
+                    {"label": "Other", "value": NodeType.OTHER.value},
                 ],
-                value=["prod", "inj", "other"],
+                value=[NodeType.PROD.value, NodeType.INJ.value, NodeType.OTHER.value],
                 multi=True,
                 size=3,
             )
@@ -75,12 +77,12 @@ def options_layout(get_uuid: Callable) -> wcc.Selectors:
                     wcc.RadioItems(
                         id={"id": options_uuid, "element": "statistical_option"},
                         options=[
-                            {"label": "Mean", "value": "mean"},
-                            {"label": "P10 (high)", "value": "p10"},
-                            {"label": "P50 (median)", "value": "p50"},
-                            {"label": "P90 (low)", "value": "p90"},
-                            {"label": "Maximum", "value": "max"},
-                            {"label": "Minimum", "value": "min"},
+                            {"label": "Mean", "value": StatOptions.MEAN.value},
+                            {"label": "P10 (high)", "value": StatOptions.P10.value},
+                            {"label": "P50 (median)", "value": StatOptions.P50.value},
+                            {"label": "P90 (low)", "value": StatOptions.P90.value},
+                            {"label": "Maximum", "value": StatOptions.MAX.value},
+                            {"label": "Minimum", "value": StatOptions.MIN.value},
                         ],
                     )
                 ],
@@ -101,7 +103,7 @@ def options_layout(get_uuid: Callable) -> wcc.Selectors:
     )
 
 
-def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Selectors:
+def selections_layout(get_uuid: Callable, ensembles: List[str]) -> wcc.Selectors:
     """Layout for the component input options"""
     controls_uuid = get_uuid("controls")
     return wcc.Selectors(
