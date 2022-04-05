@@ -165,3 +165,10 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
             },
             indent=2,
         )
+
+    @callback(
+        Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "colorMapPreset"),
+        Input(get_uuid(LayoutElements.COLORMAP), "value"),
+    )
+    def _reset_camera(colormap: str) -> str:
+        return colormap

@@ -4,6 +4,7 @@ from typing import Callable
 import dash_vtk
 import webviz_core_components as wcc
 from dash import dcc, html
+from dash_vtk.utils import presets as colormaps
 
 from ._business_logic import ExplicitStructuredGridProvider
 
@@ -24,6 +25,7 @@ class LayoutElements(str, Enum):
     STORED_CELL_INDICES_HASH = "stored-cell-indices-hash"
     SELECTED_CELL = "selected-cell"
     SHOW_GRID_LINES = "show-grid-lines"
+    COLORMAP = "color-map"
 
 
 class LayoutTitles(str, Enum):
@@ -35,6 +37,12 @@ class LayoutTitles(str, Enum):
     GRID_ROWS = "Grid rows"
     GRID_LAYERS = "Grid layers"
     SHOW_GRID_LINES = "Show grid lines"
+    COLORMAP = "Color map"
+    GRID_FILTERS = "Grid filters"
+    COLORS = "Colors"
+
+
+COLORMAPS = ["erdc_rainbow_dark", "Viridis (matplotlib)", "BuRd"]
 
 
 class PROPERTYTYPE(str, Enum):
@@ -92,44 +100,63 @@ def sidebar(
                 value=1,
                 step=1,
             ),
-            wcc.RangeSlider(
-                label=LayoutTitles.GRID_COLUMNS,
-                id=get_uuid(LayoutElements.GRID_COLUMNS),
-                min=esg_provider.imin,
-                max=esg_provider.imax,
-                value=[esg_provider.imin, esg_provider.imax],
-                step=1,
-                marks=None,
-                tooltip={
-                    "placement": "bottom",
-                    "always_visible": True,
-                },
+            wcc.Selectors(
+                label=LayoutTitles.GRID_FILTERS,
+                children=[
+                    wcc.RangeSlider(
+                        label=LayoutTitles.GRID_COLUMNS,
+                        id=get_uuid(LayoutElements.GRID_COLUMNS),
+                        min=esg_provider.imin,
+                        max=esg_provider.imax,
+                        value=[esg_provider.imin, esg_provider.imax],
+                        step=1,
+                        marks=None,
+                        tooltip={
+                            "placement": "bottom",
+                            "always_visible": True,
+                        },
+                    ),
+                    wcc.RangeSlider(
+                        label=LayoutTitles.GRID_ROWS,
+                        id=get_uuid(LayoutElements.GRID_ROWS),
+                        min=esg_provider.jmin,
+                        max=esg_provider.jmax,
+                        value=[esg_provider.jmin, esg_provider.jmax],
+                        step=1,
+                        marks=None,
+                        tooltip={
+                            "placement": "bottom",
+                            "always_visible": True,
+                        },
+                    ),
+                    wcc.RangeSlider(
+                        label=LayoutTitles.GRID_LAYERS,
+                        id=get_uuid(LayoutElements.GRID_LAYERS),
+                        min=esg_provider.kmin,
+                        max=esg_provider.kmax,
+                        value=[esg_provider.kmin, esg_provider.kmax],
+                        step=1,
+                        marks=None,
+                        tooltip={
+                            "placement": "bottom",
+                            "always_visible": True,
+                        },
+                    ),
+                ],
             ),
-            wcc.RangeSlider(
-                label=LayoutTitles.GRID_ROWS,
-                id=get_uuid(LayoutElements.GRID_ROWS),
-                min=esg_provider.jmin,
-                max=esg_provider.jmax,
-                value=[esg_provider.jmin, esg_provider.jmax],
-                step=1,
-                marks=None,
-                tooltip={
-                    "placement": "bottom",
-                    "always_visible": True,
-                },
-            ),
-            wcc.RangeSlider(
-                label=LayoutTitles.GRID_LAYERS,
-                id=get_uuid(LayoutElements.GRID_LAYERS),
-                min=esg_provider.kmin,
-                max=esg_provider.kmax,
-                value=[esg_provider.kmin, esg_provider.kmax],
-                step=1,
-                marks=None,
-                tooltip={
-                    "placement": "bottom",
-                    "always_visible": True,
-                },
+            wcc.Selectors(
+                label=LayoutTitles.COLORS,
+                children=[
+                    wcc.Dropdown(
+                        id=get_uuid(LayoutElements.COLORMAP),
+                        options=[
+                            {"value": colormap, "label": colormap}
+                            for colormap in COLORMAPS
+                        ],
+                        value=COLORMAPS[0],
+                        clearable=False,
+                    )
+                ],
             ),
             html.Pre(id=get_uuid(LayoutElements.SELECTED_CELL)),
         ],
