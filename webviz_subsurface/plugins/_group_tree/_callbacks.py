@@ -5,6 +5,7 @@ import webviz_subsurface_components
 from dash.dependencies import Input, Output, State
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
+from ._layout import LayoutElements
 from ._types import NodeType, StatOptions, TreeModeOptions
 
 
@@ -14,15 +15,15 @@ def plugin_callbacks(
     group_tree_data: Dict[str, EnsembleGroupTreeData],
 ) -> None:
     @app.callback(
-        Output({"id": get_uuid("controls"), "element": "tree_mode"}, "options"),
-        Output({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
-        Output({"id": get_uuid("options"), "element": "statistical_option"}, "value"),
-        Output({"id": get_uuid("options"), "element": "realization"}, "options"),
-        Output({"id": get_uuid("options"), "element": "realization"}, "value"),
-        Input({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
-        State({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
-        State({"id": get_uuid("options"), "element": "statistical_option"}, "value"),
-        State({"id": get_uuid("options"), "element": "realization"}, "value"),
+        Output(get_uuid(LayoutElements.TREE_MODE), "options"),
+        Output(get_uuid(LayoutElements.TREE_MODE), "value"),
+        Output(get_uuid(LayoutElements.STATISTICAL_OPTION), "value"),
+        Output(get_uuid(LayoutElements.REALIZATION), "options"),
+        Output(get_uuid(LayoutElements.REALIZATION), "value"),
+        Input(get_uuid(LayoutElements.ENSEMBLE), "value"),
+        State(get_uuid(LayoutElements.TREE_MODE), "value"),
+        State(get_uuid(LayoutElements.STATISTICAL_OPTION), "value"),
+        State(get_uuid(LayoutElements.REALIZATION), "value"),
     )
     def _update_ensemble_options(
         ensemble_name: str,
@@ -69,12 +70,12 @@ def plugin_callbacks(
         )
 
     @app.callback(
-        Output(get_uuid("grouptree_wrapper"), "children"),
-        Input({"id": get_uuid("controls"), "element": "tree_mode"}, "value"),
-        Input({"id": get_uuid("options"), "element": "statistical_option"}, "value"),
-        Input({"id": get_uuid("options"), "element": "realization"}, "value"),
-        Input({"id": get_uuid("filters"), "element": "node_types"}, "value"),
-        State({"id": get_uuid("controls"), "element": "ensemble"}, "value"),
+        Output(get_uuid(LayoutElements.GRAPH), "children"),
+        Input(get_uuid(LayoutElements.TREE_MODE), "value"),
+        Input(get_uuid(LayoutElements.STATISTICAL_OPTION), "value"),
+        Input(get_uuid(LayoutElements.REALIZATION), "value"),
+        Input(get_uuid(LayoutElements.NODETYPE_FILTER), "value"),
+        State(get_uuid(LayoutElements.ENSEMBLE), "value"),
     )
     def _render_grouptree(
         tree_mode: str,
@@ -103,18 +104,9 @@ def plugin_callbacks(
         ]
 
     @app.callback(
-        Output(
-            {"id": get_uuid("options"), "element": "statistical_options"},
-            "style",
-        ),
-        Output(
-            {"id": get_uuid("options"), "element": "single_real_options"},
-            "style",
-        ),
-        Input(
-            {"id": get_uuid("controls"), "element": "tree_mode"},
-            "value",
-        ),
+        Output(get_uuid(LayoutElements.STATISTICAL_OPTIONS), "style"),
+        Output(get_uuid(LayoutElements.SINGLE_REAL_OPTIONS), "style"),
+        Input(get_uuid(LayoutElements.TREE_MODE), "value"),
     )
     def _show_hide_single_real_options(
         tree_mode: str,

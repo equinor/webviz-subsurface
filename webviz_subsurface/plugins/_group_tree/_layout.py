@@ -6,10 +6,21 @@ from dash import html
 from ._types import NodeType, StatOptions
 
 
+# pylint: disable = too-few-public-methods
+class LayoutElements:
+    GRAPH = "graph"
+    NODETYPE_FILTER = "node-type-filter"
+    STATISTICAL_OPTIONS = "statistical-options"
+    STATISTICAL_OPTION = "statistical-option"
+    SINGLE_REAL_OPTIONS = "single-real-options"
+    REALIZATION = "realization"
+    ENSEMBLE = "ensemble"
+    TREE_MODE = "tree-mode"
+
+
 def main_layout(get_uuid: Callable[[str], str], ensembles: List[str]) -> wcc.FlexBox:
     """Main layout"""
     return wcc.FlexBox(
-        id=get_uuid("layout"),
         children=[
             wcc.FlexColumn(
                 flex=1,
@@ -32,7 +43,7 @@ def main_layout(get_uuid: Callable[[str], str], ensembles: List[str]) -> wcc.Fle
                         highlight=False,
                         color="white",
                         children=html.Div(
-                            id=get_uuid("grouptree_wrapper"),
+                            id=get_uuid(LayoutElements.GRAPH),
                         ),
                     )
                 ],
@@ -43,14 +54,12 @@ def main_layout(get_uuid: Callable[[str], str], ensembles: List[str]) -> wcc.Fle
 
 def filters_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The filters part of the menu"""
-    filters_uuid = get_uuid("filters")
     return wcc.Selectors(
-        id=get_uuid("filters_layout"),
         label="Filters",
         children=[
             wcc.SelectWithLabel(
                 label="Prod/Inj/Other",
-                id={"id": filters_uuid, "element": "node_types"},
+                id=get_uuid(LayoutElements.NODETYPE_FILTER),
                 options=[
                     {"label": "Production", "value": NodeType.PROD.value},
                     {"label": "Injection", "value": NodeType.INJ.value},
@@ -66,16 +75,14 @@ def filters_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
 
 def options_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The options part of the menu"""
-    options_uuid = get_uuid("options")
     return wcc.Selectors(
-        id=get_uuid("options_layout"),
         label="Options",
         children=[
             html.Div(
-                id={"id": options_uuid, "element": "statistical_options"},
+                id=get_uuid(LayoutElements.STATISTICAL_OPTIONS),
                 children=[
                     wcc.RadioItems(
-                        id={"id": options_uuid, "element": "statistical_option"},
+                        id=get_uuid(LayoutElements.STATISTICAL_OPTION),
                         options=[
                             {"label": "Mean", "value": StatOptions.MEAN.value},
                             {"label": "P10 (high)", "value": StatOptions.P10.value},
@@ -88,11 +95,11 @@ def options_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
                 ],
             ),
             html.Div(
-                id={"id": options_uuid, "element": "single_real_options"},
+                id=get_uuid(LayoutElements.SINGLE_REAL_OPTIONS),
                 children=[
                     wcc.Dropdown(
                         label="Realization",
-                        id={"id": options_uuid, "element": "realization"},
+                        id=get_uuid(LayoutElements.REALIZATION),
                         options=[],
                         value=None,
                         multi=False,
@@ -107,21 +114,18 @@ def selections_layout(
     get_uuid: Callable[[str], str], ensembles: List[str]
 ) -> wcc.Selectors:
     """Layout for the component input options"""
-    controls_uuid = get_uuid("controls")
     return wcc.Selectors(
-        id=get_uuid("selections_layout"),
         label="Controls",
         children=[
             wcc.Dropdown(
                 label="Ensemble",
-                id={"id": controls_uuid, "element": "ensemble"},
+                id=get_uuid(LayoutElements.ENSEMBLE),
                 options=[{"label": ens, "value": ens} for ens in ensembles],
                 clearable=False,
                 value=ensembles[0],
             ),
             wcc.RadioItems(
-                label="Statistics or realization",
-                id={"id": controls_uuid, "element": "tree_mode"},
+                label="Statistics or realization", id=get_uuid(LayoutElements.TREE_MODE)
             ),
         ],
     )
