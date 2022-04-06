@@ -21,6 +21,7 @@ from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
+from dash_vtk.utils.vtk import b64_encode_numpy
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -68,7 +69,7 @@ class ExplicitStructuredGridProvider:
         polys = vtk_to_numpy(polydata.GetPolys().GetData())
         points = vtk_to_numpy(polydata.points).ravel()
         indices = polydata["vtkOriginalCellIds"]
-        return polys, points, indices
+        return b64_encode_numpy(polys), b64_encode_numpy(points), indices
 
     def find_containing_cell(self, coords):
         """OBS! OBS! Currently picks the layer above the visualized layer.
@@ -77,7 +78,7 @@ class ExplicitStructuredGridProvider:
         locator = vtkCellLocator()
         locator.SetDataSet(self.esg_grid.show_cells())
         locator.BuildLocator()
-        # containing_cell = locator.FindCell(coords) #Slower and not precise??
+        # cell_id = locator.FindCell(coords)  # Slower and not precise??
         # print(f"Containing cell in {timer.lap_s():.2f}")
 
         cell = vtkGenericCell()
@@ -95,6 +96,10 @@ class ExplicitStructuredGridProvider:
         print(f"Get ijk in  {timer.lap_s():.2f}")
 
         return cell_id, [int(i), int(j), int(k)]
+
+    @staticmethod
+    def array_to_base64(array: np.ndarray) -> str:
+        return b64_encode_numpy(array)
 
     @property
     def imin(self) -> int:

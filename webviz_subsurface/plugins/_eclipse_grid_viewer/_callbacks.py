@@ -81,7 +81,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
             return (
                 no_update,
                 no_update,
-                scalar[cell_indices],
+                datamodel.esg_provider.array_to_base64(scalar[cell_indices]),
                 [np.nanmin(scalar), np.nanmax(scalar)],
                 no_update,
             )
@@ -89,7 +89,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         return (
             polys,
             points,
-            scalar[cell_indices],
+            datamodel.esg_provider.array_to_base64(scalar[cell_indices]),
             [np.nanmin(scalar), np.nanmax(scalar)],
             hashed_indices,
         )
