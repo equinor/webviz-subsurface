@@ -1,10 +1,11 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 from webviz_config.common_cache import CACHE
 
+from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
 from ._types import NodeType, StatOptions, TreeModeOptions
@@ -15,12 +16,16 @@ class EnsembleGroupTreeData:
     to combine the data and calculate the GroupTree component input dataset.
     """
 
-    def __init__(self, provider: EnsembleSummaryProvider, gruptree: pd.DataFrame):
+    def __init__(
+        self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
+    ):
 
         self._provider = provider
-        self._wells: List[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
-            "CHILD"
-        ].unique()
+        self._gruptree_model = gruptree_model
+        self._gruptree = self._gruptree_model.dataframe
+        self._wells: List[str] = self._gruptree[
+            self._gruptree["KEYWORD"] == "WELSPECS"
+        ]["CHILD"].unique()
 
         # Check that all field rate and WSTAT summary vectors exist
         self._check_that_sumvecs_exists(
@@ -34,7 +39,7 @@ class EnsembleGroupTreeData:
         self._has_gasinj = smry["FGIR"].sum() > 0
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
-        self._gruptree = add_nodetype(gruptree, self._provider, self._wells)
+        self._gruptree = add_nodetype(self._gruptree, self._provider, self._wells)
 
         # Add edge label
         self._gruptree["EDGE_LABEL"] = self._gruptree.apply(get_edge_label, axis=1)
@@ -44,6 +49,10 @@ class EnsembleGroupTreeData:
 
         # Check that all summary vectors exist
         self._check_that_sumvecs_exists(list(self._sumvecs["SUMVEC"]))
+
+    @property
+    def webviz_store(self) -> Tuple[Callable, List[Dict]]:
+        return self._gruptree_model.webviz_store
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def create_grouptree_dataset(
