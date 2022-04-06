@@ -69,7 +69,11 @@ class ExplicitStructuredGridProvider:
         polys = vtk_to_numpy(polydata.GetPolys().GetData())
         points = vtk_to_numpy(polydata.points).ravel()
         indices = polydata["vtkOriginalCellIds"]
-        return b64_encode_numpy(polys), b64_encode_numpy(points), indices
+        return (
+            b64_encode_numpy(polys),
+            b64_encode_numpy(points.astype(np.float32)),
+            indices,
+        )
 
     def find_containing_cell(self, coords):
         """OBS! OBS! Currently picks the layer above the visualized layer.
@@ -99,7 +103,7 @@ class ExplicitStructuredGridProvider:
 
     @staticmethod
     def array_to_base64(array: np.ndarray) -> str:
-        return b64_encode_numpy(array)
+        return b64_encode_numpy(array.astype(np.float32))
 
     @property
     def imin(self) -> int:
