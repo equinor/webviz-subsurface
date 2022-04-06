@@ -8,6 +8,10 @@ from ._types import NodeType, StatOptions
 
 # pylint: disable = too-few-public-methods
 class LayoutElements:
+    LAYOUT = "layout"
+    OPTIONS_LAYOUT = "options-layout"
+    FILTERS_LAYOUT = "filters-layout"
+    SELECTIONS_LAYOUT = "selections-layout"
     GRAPH = "graph"
     NODETYPE_FILTER = "node-type-filter"
     STATISTICAL_OPTIONS = "statistical-options"
@@ -55,6 +59,7 @@ def main_layout(get_uuid: Callable[[str], str], ensembles: List[str]) -> wcc.Fle
 def filters_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The filters part of the menu"""
     return wcc.Selectors(
+        id=get_uuid(LayoutElements.FILTERS_LAYOUT),
         label="Filters",
         children=[
             wcc.SelectWithLabel(
@@ -76,6 +81,7 @@ def filters_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
 def options_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The options part of the menu"""
     return wcc.Selectors(
+        id=get_uuid(LayoutElements.OPTIONS_LAYOUT),
         label="Options",
         children=[
             html.Div(
@@ -115,6 +121,7 @@ def selections_layout(
 ) -> wcc.Selectors:
     """Layout for the component input options"""
     return wcc.Selectors(
+        id=get_uuid(LayoutElements.SELECTIONS_LAYOUT),
         label="Controls",
         children=[
             wcc.Dropdown(

@@ -14,7 +14,7 @@ from webviz_subsurface._providers import (
 
 from ._callbacks import plugin_callbacks
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
-from ._layout import main_layout
+from ._layout import LayoutElements, main_layout
 
 
 class GroupTree(WebvizPluginABC):
@@ -111,19 +111,19 @@ class GroupTree(WebvizPluginABC):
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.uuid("layout"),
-                "content": "Dashboard vizualizing Eclipse network tree.",
+                "id": self.uuid(LayoutElements.SELECTIONS_LAYOUT),
+                "content": "Menu for selecting ensemble and tree mode.",
             },
             {
-                "id": self.uuid("selections_layout"),
-                "content": "Menu for selecting ensemble and other options.",
+                "id": self.uuid(LayoutElements.OPTIONS_LAYOUT),
+                "content": "Menu for statistical options or realization.",
             },
             {
-                "id": self.uuid("filters_layout"),
+                "id": self.uuid(LayoutElements.FILTERS_LAYOUT),
                 "content": "Menu for filtering options.",
             },
             {
-                "id": self.uuid("grouptree_wrapper"),
+                "id": self.uuid(LayoutElements.GRAPH),
                 "content": "Vizualisation of network tree.",
             },
         ]
