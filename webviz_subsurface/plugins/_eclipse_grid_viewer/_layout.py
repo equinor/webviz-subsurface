@@ -28,6 +28,7 @@ class LayoutElements(str, Enum):
     ENABLE_PICKING = "enable-picking"
     VTK_PICK_REPRESENTATION = "vtk-pick-representation"
     VTK_PICK_SPHERE = "vtk-pick-sphere"
+    SHOW_AXES = "show-axes"
 
 
 class LayoutTitles(str, Enum):
@@ -43,7 +44,8 @@ class LayoutTitles(str, Enum):
     GRID_FILTERS = "Grid filters"
     COLORS = "Colors"
     PICKING = "Picking"
-    ENABLE_PICKING = "Enable picking"
+    ENABLE_PICKING = "Enable readout from picked cell"
+    SHOW_AXES = "Show axes"
 
 
 COLORMAPS = ["erdc_rainbow_dark", "Viridis (matplotlib)", "BuRd"]
@@ -90,11 +92,6 @@ def sidebar(
             ),
             wcc.SelectWithLabel(
                 id=get_uuid(LayoutElements.DATES), label=LayoutTitles.DATES
-            ),
-            wcc.Checklist(
-                id=get_uuid(LayoutElements.SHOW_GRID_LINES),
-                options=[LayoutTitles.SHOW_GRID_LINES],
-                value=[LayoutTitles.SHOW_GRID_LINES],
             ),
             wcc.Slider(
                 label=LayoutTitles.Z_SCALE,
@@ -162,10 +159,30 @@ def sidebar(
                     )
                 ],
             ),
-            wcc.Checklist(
-                id=get_uuid(LayoutElements.ENABLE_PICKING),
-                options=[LayoutTitles.ENABLE_PICKING],
-                value=[LayoutTitles.ENABLE_PICKING],
+            wcc.Selectors(
+                label="Options",
+                children=[
+                    wcc.Checklist(
+                        id=get_uuid(LayoutElements.SHOW_AXES),
+                        options=[LayoutTitles.SHOW_AXES],
+                        value=[LayoutTitles.SHOW_AXES],
+                    ),
+                    wcc.Checklist(
+                        id=get_uuid(LayoutElements.SHOW_GRID_LINES),
+                        options=[LayoutTitles.SHOW_GRID_LINES],
+                        value=[LayoutTitles.SHOW_GRID_LINES],
+                    ),
+                ],
+            ),
+            wcc.Selectors(
+                label="Readout",
+                children=[
+                    wcc.Checklist(
+                        id=get_uuid(LayoutElements.ENABLE_PICKING),
+                        options=[LayoutTitles.ENABLE_PICKING],
+                        value=[LayoutTitles.ENABLE_PICKING],
+                    )
+                ],
             ),
             html.Pre(id=get_uuid(LayoutElements.SELECTED_CELL)),
         ],
@@ -180,6 +197,7 @@ def vtk_view(get_uuid: Callable) -> dash_vtk.View:
         children=[
             dash_vtk.GeometryRepresentation(
                 id=get_uuid(LayoutElements.VTK_GRID_REPRESENTATION),
+                showCubeAxes=True,
                 children=[
                     dash_vtk.PolyData(
                         id=get_uuid(LayoutElements.VTK_GRID_POLYDATA),

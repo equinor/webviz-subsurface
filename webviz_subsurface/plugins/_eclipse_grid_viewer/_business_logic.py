@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pyvista as pv
@@ -11,10 +11,7 @@ from vtk.util.numpy_support import vtk_to_numpy
 from vtkmodules.vtkCommonCore import mutable, vtkIdList
 
 # pylint: disable=no-name-in-module,
-from vtkmodules.vtkCommonDataModel import (
-    vtkCellLocator,
-    vtkExplicitStructuredGrid,
-)
+from vtkmodules.vtkCommonDataModel import vtkCellLocator, vtkExplicitStructuredGrid
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop

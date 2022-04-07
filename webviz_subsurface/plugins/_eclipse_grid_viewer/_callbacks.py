@@ -1,7 +1,7 @@
 import hashlib
+import json
 from time import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
-import json
 
 import numpy as np
 from dash import Input, Output, State, callback, no_update
@@ -96,13 +96,18 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),
+        Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "showCubeAxes"),
         Input(get_uuid(LayoutElements.Z_SCALE), "value"),
+        Input(get_uuid(LayoutElements.SHOW_AXES), "value"),
         State(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),
     )
-    def _set_representation_actor(z_scale: int, actor: Optional[dict]) -> dict:
+    def _set_representation_actor(
+        z_scale: int, axes_is_on: List[str], actor: Optional[dict]
+    ) -> Tuple[dict, bool]:
+        show_axes = bool(z_scale == 1 and axes_is_on)
         actor = actor if actor else {}
         actor.update({"scale": (1, 1, z_scale)})
-        return actor
+        return actor, show_axes
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "property"),
@@ -110,7 +115,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         State(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "property"),
     )
     def _set_representation_property(
-        show_grid_lines: int, properties: Optional[dict]
+        show_grid_lines: List[str], properties: Optional[dict]
     ) -> dict:
         properties = properties if properties else {}
         properties.update({"edgeVisibility": bool(show_grid_lines)})
