@@ -140,24 +140,25 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         State(get_uuid(LayoutElements.GRID_LAYERS), "value"),
         State(get_uuid(LayoutElements.VTK_PICK_REPRESENTATION), "actor"),
     )
+    # pylint: disable = too-many-locals, too-many-arguments
     def _update_click_info(
-        clickData,
-        enable_picking,
-        prop,
-        date,
-        proptype,
-        zscale,
+        click_data: Optional[Dict],
+        enable_picking: Optional[str],
+        prop: List[str],
+        date: List[int],
+        proptype: str,
+        zscale: float,
         columns: List[int],
         rows: List[int],
         layers: List[int],
         pick_representation_actor: Optional[Dict],
-    ):
+    ) -> Tuple[str, Dict[str, Any], Dict[str, bool]]:
         pick_representation_actor = (
             pick_representation_actor if pick_representation_actor else {}
         )
-        if not clickData or not enable_picking:
+        if not click_data or not enable_picking:
             pick_representation_actor.update({"visibility": False})
-            return [""], {}, pick_representation_actor
+            return "", {}, pick_representation_actor
         pick_representation_actor.update({"visibility": True})
 
         if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
@@ -168,14 +169,14 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         cropped_grid = datamodel.esg_provider.crop(columns, rows, layers)
 
         # Getting position and ray below mouse position
-        coords = clickData["worldPosition"].copy()
-        print(coords)
-        ray = clickData["ray"]
+        coords = click_data["worldPosition"].copy()
+
+        ray = click_data["ray"]
         # Remove z-scaling from points
         coords[2] = coords[2] / zscale
         ray[0][2] = ray[0][2] / zscale
         ray[1][2] = ray[1][2] / zscale
-        print(clickData["worldPosition"])
+
         # Find the cell index and i,j,k of the closest cell the ray intersects
         cell_id, ijk = datamodel.esg_provider.find_closest_cell_ray_to_ray(
             cropped_grid, ray
@@ -200,7 +201,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
                 },
                 indent=2,
             ),
-            {"center": clickData["worldPosition"], "radius": 100},
+            {"center": click_data["worldPosition"], "radius": 100},
             pick_representation_actor,
         )
 
@@ -208,5 +209,5 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "colorMapPreset"),
         Input(get_uuid(LayoutElements.COLORMAP), "value"),
     )
-    def _reset_camera(colormap: str) -> str:
+    def _set_colormap(colormap: str) -> str:
         return colormap

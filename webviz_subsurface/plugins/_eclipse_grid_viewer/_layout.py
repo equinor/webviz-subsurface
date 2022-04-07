@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import Callable
 
-from dash import dcc, html
 import dash_vtk
 import webviz_core_components as wcc
+from dash import dcc, html
 
 from ._business_logic import ExplicitStructuredGridProvider
 

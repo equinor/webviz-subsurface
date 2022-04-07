@@ -1,27 +1,26 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 import pyvista as pv
 import xtgeo
+from dash_vtk.utils.vtk import b64_encode_numpy
 
 # pylint: disable=no-name-in-module, import-error
 from vtk.util.numpy_support import vtk_to_numpy
+from vtkmodules.vtkCommonCore import mutable, vtkIdList
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkCommonDataModel import (
-    vtkExplicitStructuredGrid,
     vtkCellLocator,
-    vtkGenericCell,
+    vtkExplicitStructuredGrid,
 )
-from vtkmodules.vtkCommonCore import mutable, vtkIdList
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
-from dash_vtk.utils.vtk import b64_encode_numpy
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -86,7 +85,9 @@ class ExplicitStructuredGridProvider:
             indices,
         )
 
-    def find_closest_cell_ray_to_ray(self, grid, ray):
+    def find_closest_cell_ray_to_ray(
+        self, grid: pv.ExplicitStructuredGrid, ray: List[float]
+    ) -> Tuple[Optional[int], List[Optional[int]]]:
         """Find the active cell closest to the given ray."""
         timer = PerfTimer()
         locator = vtkCellLocator()
@@ -195,15 +196,16 @@ class EclipseGridDataModel:
     def restart_dates(self) -> List[str]:
         return self._restart_dates
 
-    def get_init_property(self, prop_name: str) -> np.ndarray:
+    def get_init_property(self, prop_name: str) -> xtgeo.GridProperty:
 
         prop = xtgeo.gridproperty_from_file(
             self._init_file, fformat="init", name=prop_name, grid=self._xtg_grid
         )
         return prop
 
-    def get_restart_property(self, prop_name: str, prop_date: int) -> np.ndarray:
-        timer = PerfTimer()
+    def get_restart_property(
+        self, prop_name: str, prop_date: int
+    ) -> xtgeo.GridProperty:
         prop = xtgeo.gridproperty_from_file(
             self._restart_file,
             fformat="unrst",
@@ -213,10 +215,10 @@ class EclipseGridDataModel:
         )
         return prop
 
-    def get_init_values(self, prop_name: str):
+    def get_init_values(self, prop_name: str) -> np.ndarray:
         prop = self.get_init_property(prop_name)
         return prop.get_npvalues1d(order="F").ravel()
 
-    def get_restart_values(self, prop_name: str, prop_date: int):
+    def get_restart_values(self, prop_name: str, prop_date: int) -> np.ndarray:
         prop = self.get_restart_property(prop_name, prop_date)
         return prop.get_npvalues1d(order="F").ravel()
