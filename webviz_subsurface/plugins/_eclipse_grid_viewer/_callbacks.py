@@ -132,8 +132,20 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         State(get_uuid(LayoutElements.PROPERTIES), "value"),
         State(get_uuid(LayoutElements.DATES), "value"),
         State(get_uuid(LayoutElements.INIT_RESTART), "value"),
+        State(get_uuid(LayoutElements.GRID_COLUMNS), "value"),
+        State(get_uuid(LayoutElements.GRID_ROWS), "value"),
+        State(get_uuid(LayoutElements.GRID_LAYERS), "value"),
     )
-    def _update_click_info(clickData, zscale, prop, date, proptype):
+    def _update_click_info(
+        clickData,
+        zscale,
+        prop,
+        date,
+        proptype,
+        columns: List[int],
+        rows: List[int],
+        layers: List[int],
+    ):
 
         if not clickData:
             return [""]
@@ -142,20 +154,30 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         else:
             scalar = datamodel.get_restart_values(prop[0], date[0])
 
-        pos = clickData["worldPosition"]
-        pos[2] = pos[2] / zscale
+        cropped_grid = datamodel.esg_provider.crop(columns, rows, layers)
 
-        timer = PerfTimer()
+        # Getting position and ray below mouse position
+        coords = clickData["worldPosition"]
+        ray = clickData["ray"]
+        # Remove z-scaling from points
+        coords[2] = coords[2] / zscale
+        ray[0][2] = ray[0][2] / zscale
+        ray[1][2] = ray[1][2] / zscale
 
-        cell_id, ijk = datamodel.esg_provider.find_containing_cell(pos)
+        # Find the cell index and i,j,k of the closest cell the ray intersects
+        cell_id, ijk = datamodel.esg_provider.find_closest_cell_ray_to_ray(
+            cropped_grid, ray
+        )
+
+        # Get the scalar value of the cell index
         scalar_value = scalar[cell_id]
 
         propname = f"{prop[0]}-{date[0]}" if date else f"{prop[0]}"
         return json.dumps(
             {
-                "x": pos[0],
-                "y": pos[1],
-                "z": pos[2],
+                "x": coords[0],
+                "y": coords[1],
+                "z": coords[2],
                 "i": ijk[0],
                 "j": ijk[1],
                 "k": ijk[2],

@@ -14,7 +14,7 @@ from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
     vtkGenericCell,
 )
-from vtkmodules.vtkCommonCore import mutable
+from vtkmodules.vtkCommonCore import mutable, vtkIdList
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
@@ -47,18 +47,28 @@ class ExplicitStructuredGridProvider:
     def crop(
         self, irange: List[int], jrange: List[int], krange: List[int]
     ) -> vtkExplicitStructuredGrid:
+        """Crops grids within specified ijk ranges. Original cell indices
+        kept as vtkOriginalCellIds CellArray"""
         crop_filter = vtkExplicitStructuredGridCrop()
         crop_filter.SetInputData(self.esg_grid)
         crop_filter.SetOutputWholeExtent(
-            irange[0], irange[1], jrange[0], jrange[1], krange[0], krange[1]
+            irange[0], irange[1] + 1, jrange[0], jrange[1] + 1, krange[0], krange[1] + 1
         )
         crop_filter.Update()
+
         grid = crop_filter.GetOutput()
+        timer = PerfTimer()
+        grid = pv.ExplicitStructuredGrid(grid)
+        print(f"to pyvista {timer.lap_s()}")
         return grid
 
     def extract_skin(
-        self, grid: vtkExplicitStructuredGrid = None
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        self, grid: pv.ExplicitStructuredGrid = None
+    ) -> Tuple[str, str, np.ndarray]:
+        """Extracts skin from a provided cropped grid or the entire grid if
+        no grid is given.
+
+        Returns polydata and indices of original cell ids"""
         grid = grid if grid is not None else self.esg_grid
 
         self.extract_skin_filter.SetInputData(grid)
@@ -69,37 +79,43 @@ class ExplicitStructuredGridProvider:
         polys = vtk_to_numpy(polydata.GetPolys().GetData())
         points = vtk_to_numpy(polydata.points).ravel()
         indices = polydata["vtkOriginalCellIds"]
+
         return (
             b64_encode_numpy(polys),
             b64_encode_numpy(points.astype(np.float32)),
             indices,
         )
 
-    def find_containing_cell(self, coords):
+    def find_closest_cell_ray_to_ray(self, grid, ray):
         """OBS! OBS! Currently picks the layer above the visualized layer.
         Solve by e.g. shifting the z value? Getting cell neighbours?..."""
         timer = PerfTimer()
         locator = vtkCellLocator()
-        locator.SetDataSet(self.esg_grid.show_cells())
+        locator.SetDataSet(grid)
         locator.BuildLocator()
-        # cell_id = locator.FindCell(coords)  # Slower and not precise??
-        # print(f"Containing cell in {timer.lap_s():.2f}")
 
-        cell = vtkGenericCell()
-        closest_point = [0.0, 0.0, 0.0]
-        cell_id = mutable(0)
-        sub_id = mutable(0)
-        dist2 = mutable(0.0)
-        locator.FindClosestPoint(coords, closest_point, cell, cell_id, sub_id, dist2)
+        cell_ids = vtkIdList()
+        tolerance = mutable(0.0)
+
+        # Find the closest cell in the cropped grid
+        locator.FindCellsAlongLine(ray[0], ray[1], tolerance, cell_ids)
+
+        # Find the cell index in the full grid
+        relative_cell_id = cell_ids.GetId(0)
+        absolute_cell_id = grid["vtkOriginalCellIds"][relative_cell_id]
+
         print(f"Closest cell in {timer.lap_s():.2f}")
 
         i = mutable(0)
         j = mutable(0)
         k = mutable(0)
-        self.esg_grid.ComputeCellStructuredCoords(cell_id, i, j, k, False)
+        pcoords = mutable([0, 0, 0])
+
+        # Find the ijk of the cell in the full grid
+        self.esg_grid.ComputeCellStructuredCoords(absolute_cell_id, i, j, k, False)
         print(f"Get ijk in  {timer.lap_s():.2f}")
 
-        return cell_id, [int(i), int(j), int(k)]
+        return absolute_cell_id, [int(i), int(j), int(k)]
 
     @staticmethod
     def array_to_base64(array: np.ndarray) -> str:
@@ -111,7 +127,7 @@ class ExplicitStructuredGridProvider:
 
     @property
     def imax(self) -> int:
-        return self.esg_grid.dimensions[0] - 1
+        return self.esg_grid.dimensions[0] - 2
 
     @property
     def jmin(self) -> int:
@@ -119,7 +135,7 @@ class ExplicitStructuredGridProvider:
 
     @property
     def jmax(self) -> int:
-        return self.esg_grid.dimensions[1] - 1
+        return self.esg_grid.dimensions[1] - 2
 
     @property
     def kmin(self) -> int:
@@ -127,7 +143,7 @@ class ExplicitStructuredGridProvider:
 
     @property
     def kmax(self) -> int:
-        return self.esg_grid.dimensions[2] - 1
+        return self.esg_grid.dimensions[2] - 2
 
 
 class EclipseGridDataModel:
