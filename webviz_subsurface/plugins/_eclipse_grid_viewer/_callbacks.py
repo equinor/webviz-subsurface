@@ -168,13 +168,14 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         cropped_grid = datamodel.esg_provider.crop(columns, rows, layers)
 
         # Getting position and ray below mouse position
-        coords = clickData["worldPosition"]
+        coords = clickData["worldPosition"].copy()
+        print(coords)
         ray = clickData["ray"]
         # Remove z-scaling from points
         coords[2] = coords[2] / zscale
         ray[0][2] = ray[0][2] / zscale
         ray[1][2] = ray[1][2] / zscale
-
+        print(clickData["worldPosition"])
         # Find the cell index and i,j,k of the closest cell the ray intersects
         cell_id, ijk = datamodel.esg_provider.find_closest_cell_ray_to_ray(
             cropped_grid, ray
