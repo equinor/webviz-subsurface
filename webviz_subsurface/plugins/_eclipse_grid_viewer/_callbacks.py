@@ -127,28 +127,39 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
 
     @callback(
         Output(get_uuid(LayoutElements.SELECTED_CELL), "children"),
+        Output(get_uuid(LayoutElements.VTK_PICK_SPHERE), "state"),
+        Output(get_uuid(LayoutElements.VTK_PICK_REPRESENTATION), "actor"),
         Input(get_uuid(LayoutElements.VTK_VIEW), "clickInfo"),
+        Input(get_uuid(LayoutElements.ENABLE_PICKING), "value"),
+        Input(get_uuid(LayoutElements.PROPERTIES), "value"),
+        Input(get_uuid(LayoutElements.DATES), "value"),
+        Input(get_uuid(LayoutElements.INIT_RESTART), "value"),
         State(get_uuid(LayoutElements.Z_SCALE), "value"),
-        State(get_uuid(LayoutElements.PROPERTIES), "value"),
-        State(get_uuid(LayoutElements.DATES), "value"),
-        State(get_uuid(LayoutElements.INIT_RESTART), "value"),
         State(get_uuid(LayoutElements.GRID_COLUMNS), "value"),
         State(get_uuid(LayoutElements.GRID_ROWS), "value"),
         State(get_uuid(LayoutElements.GRID_LAYERS), "value"),
+        State(get_uuid(LayoutElements.VTK_PICK_REPRESENTATION), "actor"),
     )
     def _update_click_info(
         clickData,
-        zscale,
+        enable_picking,
         prop,
         date,
         proptype,
+        zscale,
         columns: List[int],
         rows: List[int],
         layers: List[int],
+        pick_representation_actor: Optional[Dict],
     ):
+        pick_representation_actor = (
+            pick_representation_actor if pick_representation_actor else {}
+        )
+        if not clickData or not enable_picking:
+            pick_representation_actor.update({"visibility": False})
+            return [""], {}, pick_representation_actor
+        pick_representation_actor.update({"visibility": True})
 
-        if not clickData:
-            return [""]
         if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
             scalar = datamodel.get_init_values(prop[0])
         else:
@@ -173,19 +184,23 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         scalar_value = scalar[cell_id] if cell_id is not None else np.nan
 
         propname = f"{prop[0]}-{date[0]}" if date else f"{prop[0]}"
-        return json.dumps(
-            {
-                "x": coords[0],
-                "y": coords[1],
-                "z": coords[2],
-                "i": ijk[0],
-                "j": ijk[1],
-                "k": ijk[2],
-                propname: float(
-                    scalar_value,
-                ),
-            },
-            indent=2,
+        return (
+            json.dumps(
+                {
+                    "x": coords[0],
+                    "y": coords[1],
+                    "z": coords[2],
+                    "i": ijk[0],
+                    "j": ijk[1],
+                    "k": ijk[2],
+                    propname: float(
+                        scalar_value,
+                    ),
+                },
+                indent=2,
+            ),
+            {"center": clickData["worldPosition"], "radius": 100},
+            pick_representation_actor,
         )
 
     @callback(

@@ -87,8 +87,7 @@ class ExplicitStructuredGridProvider:
         )
 
     def find_closest_cell_ray_to_ray(self, grid, ray):
-        """OBS! OBS! Currently picks the layer above the visualized layer.
-        Solve by e.g. shifting the z value? Getting cell neighbours?..."""
+        """Find the active cell closest to the given ray."""
         timer = PerfTimer()
         locator = vtkCellLocator()
         locator.SetDataSet(grid)
@@ -119,7 +118,6 @@ class ExplicitStructuredGridProvider:
         i = mutable(0)
         j = mutable(0)
         k = mutable(0)
-        pcoords = mutable([0, 0, 0])
 
         # Find the ijk of the cell in the full grid
         self.esg_grid.ComputeCellStructuredCoords(absolute_cell_id, i, j, k, False)

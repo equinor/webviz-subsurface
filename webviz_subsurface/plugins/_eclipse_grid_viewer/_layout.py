@@ -25,6 +25,9 @@ class LayoutElements(str, Enum):
     SELECTED_CELL = "selected-cell"
     SHOW_GRID_LINES = "show-grid-lines"
     COLORMAP = "color-map"
+    ENABLE_PICKING = "enable-picking"
+    VTK_PICK_REPRESENTATION = "vtk-pick-representation"
+    VTK_PICK_SPHERE = "vtk-pick-sphere"
 
 
 class LayoutTitles(str, Enum):
@@ -39,6 +42,8 @@ class LayoutTitles(str, Enum):
     COLORMAP = "Color map"
     GRID_FILTERS = "Grid filters"
     COLORS = "Colors"
+    PICKING = "Picking"
+    ENABLE_PICKING = "Enable picking"
 
 
 COLORMAPS = ["erdc_rainbow_dark", "Viridis (matplotlib)", "BuRd"]
@@ -157,6 +162,11 @@ def sidebar(
                     )
                 ],
             ),
+            wcc.Checklist(
+                id=get_uuid(LayoutElements.ENABLE_PICKING),
+                options=[LayoutTitles.ENABLE_PICKING],
+                value=[LayoutTitles.ENABLE_PICKING],
+            ),
             html.Pre(id=get_uuid(LayoutElements.SELECTED_CELL)),
         ],
     )
@@ -187,6 +197,16 @@ def vtk_view(get_uuid: Callable) -> dash_vtk.View:
                     )
                 ],
                 property={"edgeVisibility": True},
+            ),
+            dash_vtk.GeometryRepresentation(
+                id=get_uuid(LayoutElements.VTK_PICK_REPRESENTATION),
+                actor={"visibility": False},
+                children=[
+                    dash_vtk.Algorithm(
+                        id=get_uuid(LayoutElements.VTK_PICK_SPHERE),
+                        vtkClass="vtkSphereSource",
+                    )
+                ],
             ),
         ],
     )
