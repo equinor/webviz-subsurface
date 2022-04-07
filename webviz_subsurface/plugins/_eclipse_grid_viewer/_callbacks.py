@@ -170,7 +170,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         )
 
         # Get the scalar value of the cell index
-        scalar_value = scalar[cell_id]
+        scalar_value = scalar[cell_id] if cell_id is not None else np.nan
 
         propname = f"{prop[0]}-{date[0]}" if date else f"{prop[0]}"
         return json.dumps(

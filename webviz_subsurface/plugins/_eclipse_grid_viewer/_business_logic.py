@@ -100,8 +100,18 @@ class ExplicitStructuredGridProvider:
         # Find the closest cell in the cropped grid
         locator.FindCellsAlongLine(ray[0], ray[1], tolerance, cell_ids)
 
-        # Find the cell index in the full grid
-        relative_cell_id = cell_ids.GetId(0)
+        # Find the closest active cell index in the full grid
+        relative_cell_id = None
+        for cell_idx in range(0, cell_ids.GetNumberOfIds()):
+            cell_id = cell_ids.GetId(cell_idx)
+            if grid["vtkGhostType"][cell_id] == 0:
+                relative_cell_id = cell_id
+                break
+
+        # If no cells are found return None
+        if relative_cell_id is None:
+            return None, [None, None, None]
+
         absolute_cell_id = grid["vtkOriginalCellIds"][relative_cell_id]
 
         print(f"Closest cell in {timer.lap_s():.2f}")
