@@ -49,6 +49,7 @@ jobs:
         if [[ $(pip freeze) ]]; then
           pip freeze | grep -vw "pip" | xargs pip uninstall -y
         fi
+        pip install "bleach<5"  # https://github.com/equinor/webviz-config/issues/586
         pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
         pip install .
         pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components # Testing against our latest release (including pre-releases)
