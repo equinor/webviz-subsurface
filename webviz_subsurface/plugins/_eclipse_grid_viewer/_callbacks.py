@@ -162,7 +162,9 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         pick_representation_actor = (
             pick_representation_actor if pick_representation_actor else {}
         )
-        if not click_data or not enable_picking:
+        if not click_data:
+            return no_update, no_update, no_update
+        if not enable_picking:
             pick_representation_actor.update({"visibility": False})
             return "", {}, pick_representation_actor
         pick_representation_actor.update({"visibility": True})
