@@ -4,13 +4,13 @@ from time import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
-from dash import Input, Output, State, callback, no_update
+from dash import Input, Output, State, callback, no_update, callback_context, MATCH, ALL
 from dash_vtk.utils.vtk import b64_encode_numpy
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._business_logic import EclipseGridDataModel
-from ._layout import PROPERTYTYPE, LayoutElements
+from ._layout import PROPERTYTYPE, LayoutElements, GRID_DIRECTION
 
 
 def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> None:
@@ -47,18 +47,14 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         Output(get_uuid(LayoutElements.STORED_CELL_INDICES_HASH), "data"),
         Input(get_uuid(LayoutElements.PROPERTIES), "value"),
         Input(get_uuid(LayoutElements.DATES), "value"),
-        Input(get_uuid(LayoutElements.GRID_COLUMNS), "value"),
-        Input(get_uuid(LayoutElements.GRID_ROWS), "value"),
-        Input(get_uuid(LayoutElements.GRID_LAYERS), "value"),
+        Input(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
         State(get_uuid(LayoutElements.INIT_RESTART), "value"),
         State(get_uuid(LayoutElements.STORED_CELL_INDICES_HASH), "data"),
     )
     def _set_geometry_and_scalar(
         prop: List[str],
         date: List[int],
-        columns: List[int],
-        rows: List[int],
-        layers: List[int],
+        grid_range: List[List[int]],
         proptype: str,
         stored_cell_indices: int,
     ) -> Tuple[Any, Any, Any, List, Any]:
@@ -70,7 +66,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
             scalar = datamodel.get_restart_values(prop[0], date[0])
         print(f"Reading scalar from file in {timer.lap_s():.2f}s")
 
-        cropped_grid = datamodel.esg_accessor.crop(columns, rows, layers)
+        cropped_grid = datamodel.esg_accessor.crop(*grid_range)
         polys, points, cell_indices = datamodel.esg_accessor.extract_skin(cropped_grid)
         print(f"Extracting cropped geometry in {timer.lap_s():.2f}s")
 
@@ -141,9 +137,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         Input(get_uuid(LayoutElements.DATES), "value"),
         Input(get_uuid(LayoutElements.INIT_RESTART), "value"),
         State(get_uuid(LayoutElements.Z_SCALE), "value"),
-        State(get_uuid(LayoutElements.GRID_COLUMNS), "value"),
-        State(get_uuid(LayoutElements.GRID_ROWS), "value"),
-        State(get_uuid(LayoutElements.GRID_LAYERS), "value"),
+        Input(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
         State(get_uuid(LayoutElements.VTK_PICK_REPRESENTATION), "actor"),
     )
     # pylint: disable = too-many-locals, too-many-arguments
@@ -154,9 +148,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         date: List[int],
         proptype: str,
         zscale: float,
-        columns: List[int],
-        rows: List[int],
-        layers: List[int],
+        grid_range: List[List[int]],
         pick_representation_actor: Optional[Dict],
     ) -> Tuple[str, Dict[str, Any], Dict[str, bool]]:
         pick_representation_actor = (
@@ -174,7 +166,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         else:
             scalar = datamodel.get_restart_values(prop[0], date[0])
 
-        cropped_grid = datamodel.esg_accessor.crop(columns, rows, layers)
+        cropped_grid = datamodel.esg_accessor.crop(*grid_range)
 
         # Getting position and ray below mouse position
         coords = click_data["worldPosition"].copy()
@@ -219,3 +211,77 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
     )
     def _set_colormap(colormap: str) -> str:
         return colormap
+
+    @callback(
+        Output(
+            {
+                "id": get_uuid(LayoutElements.CROP_WIDGET),
+                "direction": MATCH,
+                "component": "input",
+                "component2": MATCH,
+            },
+            "value",
+        ),
+        Output(
+            {
+                "id": get_uuid(LayoutElements.CROP_WIDGET),
+                "direction": MATCH,
+                "component": "slider",
+                "component2": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid(LayoutElements.CROP_WIDGET),
+                "direction": MATCH,
+                "component": "input",
+                "component2": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid(LayoutElements.CROP_WIDGET),
+                "direction": MATCH,
+                "component": "slider",
+                "component2": MATCH,
+            },
+            "value",
+        ),
+    )
+    def _synchronize_crop_slider_and_input(
+        input_val: int, slider_val: int
+    ) -> Tuple[Any, Any]:
+        trigger_id = callback_context.triggered[0]["prop_id"].split(".")[0]
+        if "slider" in trigger_id:
+            return slider_val, no_update
+        return no_update, input_val
+
+    @callback(
+        Output(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
+        Input(
+            {
+                "id": get_uuid(LayoutElements.CROP_WIDGET),
+                "direction": ALL,
+                "component": "input",
+                "component2": "start",
+            },
+            "value",
+        ),
+        Input(
+            {
+                "id": get_uuid(LayoutElements.CROP_WIDGET),
+                "direction": ALL,
+                "component": "input",
+                "component2": "width",
+            },
+            "value",
+        ),
+    )
+    def _store_grid_range_from_crop_widget(
+        input_vals: List[int], width_vals: List[int]
+    ) -> List[List[int]]:
+        if not input_vals or not width_vals:
+            return no_update
+        return [[val, val + width] for val, width in zip(input_vals, width_vals)]

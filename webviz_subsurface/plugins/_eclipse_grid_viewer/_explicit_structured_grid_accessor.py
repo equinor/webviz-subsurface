@@ -38,7 +38,7 @@ class ExplicitStructuredGridAccessor:
         crop_filter = vtkExplicitStructuredGridCrop()
         crop_filter.SetInputData(self.es_grid)
         crop_filter.SetOutputWholeExtent(
-            irange[0], irange[1] + 1, jrange[0], jrange[1] + 1, krange[0], krange[1] + 1
+            irange[0] - 1, irange[1], jrange[0] - 1, jrange[1], krange[0] - 1, krange[1]
         )
         crop_filter.Update()
 
@@ -132,28 +132,28 @@ class ExplicitStructuredGridAccessor:
         self.es_grid.ComputeCellStructuredCoords(cell_id, i, j, k, False)
         print(f"Get ijk in  {timer.lap_s():.2f}")
 
-        return cell_id, [int(i), int(j), int(k)]
+        return cell_id, [int(i) + 1, int(j) + 1, int(k) + 1]
 
     @property
     def imin(self) -> int:
-        return 0
+        return 1
 
     @property
     def imax(self) -> int:
-        return self.es_grid.dimensions[0] - 2
+        return self.es_grid.dimensions[0] - 1
 
     @property
     def jmin(self) -> int:
-        return 0
+        return 1
 
     @property
     def jmax(self) -> int:
-        return self.es_grid.dimensions[1] - 2
+        return self.es_grid.dimensions[1] - 1
 
     @property
     def kmin(self) -> int:
-        return 0
+        return 1
 
     @property
     def kmax(self) -> int:
-        return self.es_grid.dimensions[2] - 2
+        return self.es_grid.dimensions[2] - 1
