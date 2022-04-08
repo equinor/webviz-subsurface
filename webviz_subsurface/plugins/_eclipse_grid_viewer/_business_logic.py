@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Callable
+from typing import Callable, List, Tuple
 
 import numpy as np
 import pyvista as pv

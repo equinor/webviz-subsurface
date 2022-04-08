@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Callable, Dict
+from typing import Callable, Dict, List, Tuple
 
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
