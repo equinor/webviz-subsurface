@@ -1,10 +1,11 @@
 from typing import List, Optional, Tuple
 
 import numpy as np
+import pyvista as pv
 
 # pylint: disable=no-name-in-module, import-error
 from vtk.util.numpy_support import vtk_to_numpy
-from vtkmodules.vtkCommonCore import reference, vtkIdList
+from vtkmodules.vtkCommonCore import reference  # , vtkIdList
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkCommonDataModel import (
@@ -18,8 +19,6 @@ from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
 
 # pylint: disable=no-name-in-module,
 from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
-
-import pyvista as pv
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -82,7 +81,7 @@ class ExplicitStructuredGridAccessor:
         locator.SetDataSet(grid)
         locator.BuildLocator()
 
-        cell_ids = vtkIdList()
+        # cell_ids = vtkIdList()
         tolerance = reference(0.0)
 
         # # Find the cells intersected by the ray. (Ordered by near to far????)
@@ -107,15 +106,15 @@ class ExplicitStructuredGridAccessor:
         # if relative_cell_id is None:
         #     return None, [None, None, None]
 
-        t = reference(0)
-        x = np.array([0, 0, 0])
+        _t = reference(0)
+        _x = np.array([0, 0, 0])
         _pcoords = np.array([0, 0, 0])
-        _subId = reference(0)
+        _sub_id = reference(0)
         cell_id = reference(0)
         _cell = vtkGenericCell()
 
         locator.IntersectWithLine(
-            ray[0], ray[1], tolerance, t, x, _pcoords, _subId, cell_id, _cell
+            ray[0], ray[1], tolerance, _t, _x, _pcoords, _sub_id, cell_id, _cell
         )
 
         # # Check if an array with OriginalCellIds is present, and if so use

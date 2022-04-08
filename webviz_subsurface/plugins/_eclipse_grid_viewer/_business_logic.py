@@ -6,6 +6,7 @@ import pyvista as pv
 import xtgeo
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
+
 from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
 
