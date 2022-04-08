@@ -1,14 +1,15 @@
+# pylint: skip-file
+# type: ignore
 import pytest
-
-from vtkmodules.vtkCommonDataModel import vtkCellLocator
-from vtkmodules.vtkCommonCore import vtkIdList
 import pyvista as pv
+from vtkmodules.vtkCommonCore import vtkIdList
+from vtkmodules.vtkCommonDataModel import vtkCellLocator
 
 from webviz_subsurface.plugins._eclipse_grid_viewer._explicit_structured_grid_accessor import (
     ExplicitStructuredGridAccessor,
 )
-from ._utils import create_explicit_structured_grid
 
+from ._utils import create_explicit_structured_grid
 
 ES_GRID_ACCESSOR = ExplicitStructuredGridAccessor(
     create_explicit_structured_grid(5, 4, 3, 20.0, 10.0, 5.0)
