@@ -34,5 +34,5 @@ class EclipseGridViewer(WebvizPluginABC):
     @property
     def layout(self) -> wcc.FlexBox:
         return plugin_main_layout(
-            get_uuid=self.uuid, esg_provider=self._datamodel.esg_provider
+            get_uuid=self.uuid, esg_accessor=self._datamodel.esg_accessor
         )

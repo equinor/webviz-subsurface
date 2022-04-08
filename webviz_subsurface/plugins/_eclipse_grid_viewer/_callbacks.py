@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 from dash import Input, Output, State, callback, no_update
+from dash_vtk.utils.vtk import b64_encode_numpy
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -69,8 +70,8 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
             scalar = datamodel.get_restart_values(prop[0], date[0])
         print(f"Reading scalar from file in {timer.lap_s():.2f}s")
 
-        cropped_grid = datamodel.esg_provider.crop(columns, rows, layers)
-        polys, points, cell_indices = datamodel.esg_provider.extract_skin(cropped_grid)
+        cropped_grid = datamodel.esg_accessor.crop(columns, rows, layers)
+        polys, points, cell_indices = datamodel.esg_accessor.extract_skin(cropped_grid)
         print(f"Extracting cropped geometry in {timer.lap_s():.2f}s")
 
         # Storing hash of cell indices client side to control if only scalar should be updated
@@ -81,15 +82,15 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
             return (
                 no_update,
                 no_update,
-                datamodel.esg_provider.array_to_base64(scalar[cell_indices]),
+                b64_encode_numpy(scalar[cell_indices].astype(np.float32)),
                 [np.nanmin(scalar), np.nanmax(scalar)],
                 no_update,
             )
 
         return (
-            polys,
-            points,
-            datamodel.esg_provider.array_to_base64(scalar[cell_indices]),
+            b64_encode_numpy(polys.astype(np.float32)),
+            b64_encode_numpy(points.astype(np.float32)),
+            b64_encode_numpy(scalar[cell_indices].astype(np.float32)),
             [np.nanmin(scalar), np.nanmax(scalar)],
             hashed_indices,
         )
@@ -171,7 +172,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         else:
             scalar = datamodel.get_restart_values(prop[0], date[0])
 
-        cropped_grid = datamodel.esg_provider.crop(columns, rows, layers)
+        cropped_grid = datamodel.esg_accessor.crop(columns, rows, layers)
 
         # Getting position and ray below mouse position
         coords = click_data["worldPosition"].copy()
@@ -183,7 +184,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         ray[1][2] = ray[1][2] / zscale
 
         # Find the cell index and i,j,k of the closest cell the ray intersects
-        cell_id, ijk = datamodel.esg_provider.find_closest_cell_ray_to_ray(
+        cell_id, ijk = datamodel.esg_accessor.find_closest_cell_to_ray(
             cropped_grid, ray
         )
 

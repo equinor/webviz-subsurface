@@ -5,7 +5,7 @@ import dash_vtk
 import webviz_core_components as wcc
 from dash import dcc, html
 
-from ._business_logic import ExplicitStructuredGridProvider
+from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
 
 # pylint: disable = too-few-public-methods
@@ -63,12 +63,12 @@ class LayoutStyle:
 
 
 def plugin_main_layout(
-    get_uuid: Callable, esg_provider: ExplicitStructuredGridProvider
+    get_uuid: Callable, esg_accessor: ExplicitStructuredGridAccessor
 ) -> wcc.FlexBox:
 
     return wcc.FlexBox(
         children=[
-            sidebar(get_uuid=get_uuid, esg_provider=esg_provider),
+            sidebar(get_uuid=get_uuid, esg_accessor=esg_accessor),
             vtk_view(get_uuid=get_uuid),
             dcc.Store(id=get_uuid(LayoutElements.STORED_CELL_INDICES_HASH)),
         ]
@@ -76,7 +76,7 @@ def plugin_main_layout(
 
 
 def sidebar(
-    get_uuid: Callable, esg_provider: ExplicitStructuredGridProvider
+    get_uuid: Callable, esg_accessor: ExplicitStructuredGridAccessor
 ) -> wcc.Frame:
     return wcc.Frame(
         style=LayoutStyle.SIDEBAR,
@@ -107,9 +107,9 @@ def sidebar(
                     wcc.RangeSlider(
                         label=LayoutTitles.GRID_COLUMNS,
                         id=get_uuid(LayoutElements.GRID_COLUMNS),
-                        min=esg_provider.imin,
-                        max=esg_provider.imax,
-                        value=[esg_provider.imin, esg_provider.imax],
+                        min=esg_accessor.imin,
+                        max=esg_accessor.imax,
+                        value=[esg_accessor.imin, esg_accessor.imax],
                         step=1,
                         marks=None,
                         tooltip={
@@ -120,9 +120,9 @@ def sidebar(
                     wcc.RangeSlider(
                         label=LayoutTitles.GRID_ROWS,
                         id=get_uuid(LayoutElements.GRID_ROWS),
-                        min=esg_provider.jmin,
-                        max=esg_provider.jmax,
-                        value=[esg_provider.jmin, esg_provider.jmax],
+                        min=esg_accessor.jmin,
+                        max=esg_accessor.jmax,
+                        value=[esg_accessor.jmin, esg_accessor.jmax],
                         step=1,
                         marks=None,
                         tooltip={
@@ -133,9 +133,9 @@ def sidebar(
                     wcc.RangeSlider(
                         label=LayoutTitles.GRID_LAYERS,
                         id=get_uuid(LayoutElements.GRID_LAYERS),
-                        min=esg_provider.kmin,
-                        max=esg_provider.kmax,
-                        value=[esg_provider.kmin, esg_provider.kmin],
+                        min=esg_accessor.kmin,
+                        max=esg_accessor.kmax,
+                        value=[esg_accessor.kmin, esg_accessor.kmin],
                         step=1,
                         marks=None,
                         tooltip={

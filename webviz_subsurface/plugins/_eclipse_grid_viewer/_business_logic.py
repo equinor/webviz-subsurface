@@ -1,25 +1,12 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List
 
 import numpy as np
 import pyvista as pv
 import xtgeo
-from dash_vtk.utils.vtk import b64_encode_numpy
-
-# pylint: disable=no-name-in-module, import-error
-from vtk.util.numpy_support import vtk_to_numpy
-from vtkmodules.vtkCommonCore import mutable, vtkIdList
-
-# pylint: disable=no-name-in-module,
-from vtkmodules.vtkCommonDataModel import vtkCellLocator, vtkExplicitStructuredGrid
-
-# pylint: disable=no-name-in-module,
-from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
-
-# pylint: disable=no-name-in-module,
-from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
+from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
 
 def xtgeo_grid_to_explicit_structured_grid(
@@ -29,127 +16,10 @@ def xtgeo_grid_to_explicit_structured_grid(
     corners[:, 2] *= -1
     esg_grid = pv.ExplicitStructuredGrid(dims, corners)
     esg_grid = esg_grid.compute_connectivity()
-    esg_grid.ComputeFacesConnectivityFlagsArray()
+    # esg_grid.ComputeFacesConnectivityFlagsArray()
     esg_grid = esg_grid.hide_cells(inactive)
     # esg_grid.flip_z(inplace=True)
     return esg_grid
-
-
-class ExplicitStructuredGridProvider:
-    def __init__(self, esg_grid: pv.ExplicitStructuredGrid) -> None:
-        self.esg_grid = esg_grid
-        self.extract_skin_filter = vtkExplicitStructuredGridSurfaceFilter()
-
-    def crop(
-        self, irange: List[int], jrange: List[int], krange: List[int]
-    ) -> vtkExplicitStructuredGrid:
-        """Crops grids within specified ijk ranges. Original cell indices
-        kept as vtkOriginalCellIds CellArray"""
-        crop_filter = vtkExplicitStructuredGridCrop()
-        crop_filter.SetInputData(self.esg_grid)
-        crop_filter.SetOutputWholeExtent(
-            irange[0], irange[1] + 1, jrange[0], jrange[1] + 1, krange[0], krange[1] + 1
-        )
-        crop_filter.Update()
-
-        grid = crop_filter.GetOutput()
-        timer = PerfTimer()
-        grid = pv.ExplicitStructuredGrid(grid)
-        print(f"to pyvista {timer.lap_s()}")
-        return grid
-
-    def extract_skin(
-        self, grid: pv.ExplicitStructuredGrid = None
-    ) -> Tuple[str, str, np.ndarray]:
-        """Extracts skin from a provided cropped grid or the entire grid if
-        no grid is given.
-
-        Returns polydata and indices of original cell ids"""
-        grid = grid if grid is not None else self.esg_grid
-
-        self.extract_skin_filter.SetInputData(grid)
-        self.extract_skin_filter.PassThroughCellIdsOn()
-        self.extract_skin_filter.Update()
-        polydata = self.extract_skin_filter.GetOutput()
-        polydata = pv.PolyData(polydata)
-        polys = vtk_to_numpy(polydata.GetPolys().GetData())
-        points = vtk_to_numpy(polydata.points).ravel()
-        indices = polydata["vtkOriginalCellIds"]
-
-        return (
-            b64_encode_numpy(polys),
-            b64_encode_numpy(points.astype(np.float32)),
-            indices,
-        )
-
-    def find_closest_cell_ray_to_ray(
-        self, grid: pv.ExplicitStructuredGrid, ray: List[float]
-    ) -> Tuple[Optional[int], List[Optional[int]]]:
-        """Find the active cell closest to the given ray."""
-        timer = PerfTimer()
-        locator = vtkCellLocator()
-        locator.SetDataSet(grid)
-        locator.BuildLocator()
-
-        cell_ids = vtkIdList()
-        tolerance = mutable(0.0)
-
-        # Find the closest cell in the cropped grid
-        locator.FindCellsAlongLine(ray[0], ray[1], tolerance, cell_ids)
-
-        # Find the closest active cell index in the full grid
-        relative_cell_id = None
-        for cell_idx in range(0, cell_ids.GetNumberOfIds()):
-            cell_id = cell_ids.GetId(cell_idx)
-            if grid["vtkGhostType"][cell_id] == 0:
-                relative_cell_id = cell_id
-                break
-
-        # If no cells are found return None
-        if relative_cell_id is None:
-            return None, [None, None, None]
-
-        absolute_cell_id = grid["vtkOriginalCellIds"][relative_cell_id]
-
-        print(f"Closest cell in {timer.lap_s():.2f}")
-
-        i = mutable(0)
-        j = mutable(0)
-        k = mutable(0)
-
-        # Find the ijk of the cell in the full grid
-        self.esg_grid.ComputeCellStructuredCoords(absolute_cell_id, i, j, k, False)
-        print(f"Get ijk in  {timer.lap_s():.2f}")
-
-        return absolute_cell_id, [int(i), int(j), int(k)]
-
-    @staticmethod
-    def array_to_base64(array: np.ndarray) -> str:
-        return b64_encode_numpy(array.astype(np.float32))
-
-    @property
-    def imin(self) -> int:
-        return 0
-
-    @property
-    def imax(self) -> int:
-        return self.esg_grid.dimensions[0] - 2
-
-    @property
-    def jmin(self) -> int:
-        return 0
-
-    @property
-    def jmax(self) -> int:
-        return self.esg_grid.dimensions[1] - 2
-
-    @property
-    def kmin(self) -> int:
-        return 0
-
-    @property
-    def kmax(self) -> int:
-        return self.esg_grid.dimensions[2] - 2
 
 
 class EclipseGridDataModel:
@@ -172,7 +42,7 @@ class EclipseGridDataModel:
 
         timer = PerfTimer()
         print("Converting egrid to VTK ExplicitStructuredGrid")
-        self.esg_provider = ExplicitStructuredGridProvider(
+        self.esg_accessor = ExplicitStructuredGridAccessor(
             xtgeo_grid_to_explicit_structured_grid(self._xtg_grid)
         )
         print(f"Conversion complete in : {timer.lap_s():.2f}s")
