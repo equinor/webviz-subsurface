@@ -198,6 +198,7 @@ def vtk_view(get_uuid: Callable) -> dash_vtk.View:
             dash_vtk.GeometryRepresentation(
                 id=get_uuid(LayoutElements.VTK_GRID_REPRESENTATION),
                 showCubeAxes=True,
+                showScalarBar=True,
                 children=[
                     dash_vtk.PolyData(
                         id=get_uuid(LayoutElements.VTK_GRID_POLYDATA),

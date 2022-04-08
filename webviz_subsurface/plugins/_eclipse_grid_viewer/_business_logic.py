@@ -1,11 +1,12 @@
 from pathlib import Path
-from typing import List
+from typing import List, Tuple, Callable
 
 import numpy as np
 import pyvista as pv
 import xtgeo
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
+from webviz_subsurface._utils.webvizstore_functions import get_path
 
 from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
@@ -32,9 +33,10 @@ class EclipseGridDataModel:
         init_names: List[str],
         restart_names: List[str],
     ):
-        self._egrid_file = egrid_file
-        self._init_file = init_file
-        self._restart_file = restart_file
+        self.add_webviz_store(egrid_file, init_file, restart_file)
+        self._egrid_file = get_path(egrid_file)
+        self._init_file = get_path(init_file)
+        self._restart_file = get_path(restart_file)
         self._init_names = init_names
         self._restart_names = restart_names
 
@@ -48,6 +50,20 @@ class EclipseGridDataModel:
         )
         print(f"Conversion complete in : {timer.lap_s():.2f}s")
         self._restart_dates = self._get_restart_dates()
+
+    def add_webviz_store(
+        self, egrid_file: Path, init_file: Path, restart_file: Path
+    ) -> None:
+        self._webviz_store: List[Tuple[Callable, List[dict]]] = [
+            (
+                get_path,
+                [{"path": path} for path in [egrid_file, init_file, restart_file]],
+            )
+        ]
+
+    @property
+    def webviz_store(self) -> List[Tuple[Callable, List[dict]]]:
+        return self._webviz_store
 
     def _get_restart_dates(self) -> List[str]:
         return xtgeo.GridProperties.scan_dates(self._restart_file, datesonly=True)

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Tuple, Callable, Dict
 
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC
@@ -36,3 +36,6 @@ class EclipseGridViewer(WebvizPluginABC):
         return plugin_main_layout(
             get_uuid=self.uuid, esg_accessor=self._datamodel.esg_accessor
         )
+
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        return self._datamodel.webviz_store
