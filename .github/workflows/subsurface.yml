@@ -97,6 +97,7 @@ jobs:
         webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
         rm -rf ./webviz-subsurface-testdata
         pushd example_subsurface_app
+        sed -i '/FROM python:...-slim/a\RUN apt-get update\n\RUN apt-get install libgl1-mesa-dev xvfb tk -y' Dockerfile
         docker build -t webviz/example_subsurface_image:equinor-theme .
         popd
 
