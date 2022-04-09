@@ -38,7 +38,12 @@ class ExplicitStructuredGridAccessor:
         crop_filter = vtkExplicitStructuredGridCrop()
         crop_filter.SetInputData(self.es_grid)
         crop_filter.SetOutputWholeExtent(
-            irange[0] - 1, irange[1], jrange[0] - 1, jrange[1], krange[0] - 1, krange[1]
+            irange[0] - 1,
+            irange[1] - 1,
+            jrange[0] - 1,
+            jrange[1] - 1,
+            krange[0] - 1,
+            krange[1] - 1,
         )
         crop_filter.Update()
 
