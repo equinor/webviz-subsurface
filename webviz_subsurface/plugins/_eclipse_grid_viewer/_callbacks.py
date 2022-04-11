@@ -5,11 +5,13 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 from dash import Input, Output, State, callback, no_update, callback_context, MATCH, ALL
-from dash_vtk.utils.vtk import b64_encode_numpy
+from webviz_vtk.utils.vtk import b64_encode_numpy
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from ._business_logic import EclipseGridDataModel
+from ._eclipse_grid_datamodel import EclipseGridDataModel
+from ._roff_grid_datamodel import RoffGridDataModel
+
 from ._layout import PROPERTYTYPE, LayoutElements, GRID_DIRECTION
 
 
@@ -82,7 +84,6 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
                 [np.nanmin(scalar), np.nanmax(scalar)],
                 no_update,
             )
-
         return (
             b64_encode_numpy(polys.astype(np.float32)),
             b64_encode_numpy(points.astype(np.float32)),

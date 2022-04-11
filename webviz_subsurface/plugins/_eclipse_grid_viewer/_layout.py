@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Callable, Optional
 
-import dash_vtk
+import webviz_vtk
 import webviz_core_components as wcc
 from dash import dcc, html
 
@@ -286,23 +286,23 @@ def crop_widget(
     )
 
 
-def vtk_view(get_uuid: Callable) -> dash_vtk.View:
-    return dash_vtk.View(
+def vtk_view(get_uuid: Callable) -> webviz_vtk.View:
+    return webviz_vtk.View(
         id=get_uuid(LayoutElements.VTK_VIEW),
         style=LayoutStyle.VTK_VIEW,
         pickingModes=["click"],
         children=[
-            dash_vtk.GeometryRepresentation(
+            webviz_vtk.GeometryRepresentation(
                 id=get_uuid(LayoutElements.VTK_GRID_REPRESENTATION),
                 showCubeAxes=True,
                 showScalarBar=True,
                 children=[
-                    dash_vtk.PolyData(
+                    webviz_vtk.PolyData(
                         id=get_uuid(LayoutElements.VTK_GRID_POLYDATA),
                         children=[
-                            dash_vtk.CellData(
+                            webviz_vtk.CellData(
                                 [
-                                    dash_vtk.DataArray(
+                                    webviz_vtk.DataArray(
                                         id=get_uuid(LayoutElements.VTK_GRID_CELLDATA),
                                         registration="setScalars",
                                         name="scalar",
@@ -314,11 +314,11 @@ def vtk_view(get_uuid: Callable) -> dash_vtk.View:
                 ],
                 property={"edgeVisibility": True},
             ),
-            dash_vtk.GeometryRepresentation(
+            webviz_vtk.GeometryRepresentation(
                 id=get_uuid(LayoutElements.VTK_PICK_REPRESENTATION),
                 actor={"visibility": False},
                 children=[
-                    dash_vtk.Algorithm(
+                    webviz_vtk.Algorithm(
                         id=get_uuid(LayoutElements.VTK_PICK_SPHERE),
                         vtkClass="vtkSphereSource",
                     )
