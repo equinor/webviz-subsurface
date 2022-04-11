@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.12] - 2022-04-07
+ 
 ### Added
 
 - [#981](https://github.com/equinor/webviz-subsurface/pull/981) - `WellAnalysis` - New plugin well analysis. One tab for well production overview plots and one for well control mode and network analysis.
