@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import dash
-import pandas as pd
 import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 
+from webviz_subsurface._models import WellAttributesModel
 from webviz_subsurface._providers import Frequency
 
 from .._simulation_time_series.types.provider_set import (
@@ -34,12 +34,12 @@ class ProdMisfit(WebvizPluginABC):
     * **`rel_file_pattern`:** path to `.arrow` files with summary data.
     * **`gruptree_file`:** `.csv` with gruptree information.
     * **`sampling`:** Frequency for the data sampling.
+    * **`well_attributes_file`:** Path to json file containing info of well attributes.
+    The attribute category values can be used for filtering of well collections.
     * **`excl_name_startswith`:** Filter out wells that starts with this string
     * **`excl_name_contains`:** Filter out wells that contains this string
     * **`phase_weights`:** Dict of "Oil", "Water" and "Gas" (inverse) weight factors that
     are included as weight option for misfit per real calculation.
-    * **`well_groups_file`:** Path to csv file containing info of well name and its
-    corresponding group name. Must contain the column names 'PARENT' and 'CHILD'.
     ---
 
     **Summary data**
@@ -48,6 +48,38 @@ class ProdMisfit(WebvizPluginABC):
     * WOPT+WOPTH and/or WWPT+WWPTH and/or WGPT+WGPTH
 
     Summary files can be converted to arrow format with the `ECL2CSV` forward model.
+
+
+    `well_attributes_file`: Optional json file with well attributes.
+    The file needs to follow the format below. The categorical attributes \
+    are optional (user defined).
+    ```json
+    {
+        "version" : "0.1",
+        "wells" : [
+        {
+            "alias" : {
+                "eclipse" : "A1"
+            },
+            "attributes" : {
+                "structure" : "East",
+                "welltype" : "producer"
+            },
+            "name" : "55_33-A-1"
+        },
+        {
+            "alias" : {
+                "eclipse" : "A5"
+            },
+            "attributes" : {
+                "structure" : "North",
+                "welltype" : "injector"
+            },
+            "name" : "55_33-A-5"
+        },
+        ]
+    }
+    ```
     """
 
     def __init__(
@@ -56,12 +88,11 @@ class ProdMisfit(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: list,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
-        sampling: str = Frequency.YEARLY.value,  # "yearly"
-        # sampling: Union[str, list] # make it possible to add user specified date list?
+        sampling: str = Frequency.YEARLY.value,
+        well_attributes_file: str = None,
         excl_name_startswith: list = None,
         excl_name_contains: list = None,
         phase_weights: dict = None,
-        well_groups_file: str = None,
     ):
 
         super().__init__()
@@ -72,7 +103,7 @@ class ProdMisfit(WebvizPluginABC):
         self.weight_reduction_factor_wat = phase_weights["Water"]
         self.weight_reduction_factor_gas = phase_weights["Gas"]
 
-        # Must define valid freqency
+        # Must define valid frequency
         self._sampling = Frequency(sampling)
 
         ensemble_paths: Dict[str, Path] = {
@@ -112,7 +143,13 @@ class ProdMisfit(WebvizPluginABC):
                 ens_provider.vector_names(), excl_name_startswith, excl_name_contains
             )
 
-        self.well_collections = _get_well_collections(well_groups_file, self.wells)
+        # self.well_collections = _get_well_collections_from_attr(well_attrs, self.wells)
+        self.well_collections = _get_well_collections_from_attr(
+            self.wells,
+            self.ensemble_names[0],
+            ensemble_paths[self.ensemble_names[0]],
+            well_attributes_file,
+        )
 
         self.set_callbacks(app)
 
@@ -146,57 +183,6 @@ class ProdMisfit(WebvizPluginABC):
 # ------------------------------------------------------------------------
 # support functions below here
 # ------------------------------------------------------------------------
-
-
-# --------------------------------
-def _get_well_collections(
-    well_groups_file: Optional[str], wells: dict
-) -> Dict[str, List[str]]:
-    """Read csv file and create well_collections dictionary. Then check well collections
-    vs well lists. Any well not included in well collections is returned as Undefined."""
-
-    all_wells = []
-    for ens_wells in wells.values():
-        all_wells.extend(ens_wells)
-    all_wells = list(sorted(set(all_wells)))
-
-    well_collections = {}
-
-    if well_groups_file is None:
-        well_collections["Undefined"] = all_wells
-    else:
-
-        # create well_collections dictionary from csv file
-        df_well_groups = pd.read_csv(well_groups_file).dropna()
-        df_cols = df_well_groups.columns
-        if "PARENT" not in df_cols or "CHILD" not in df_cols:
-            RuntimeError(
-                "If included, the csv file 'well_groups_file' must contain the columns"
-                " 'PARENT' and 'CHILD'"
-            )
-        if "KEYWORD" in df_cols:
-            df_well_groups = df_well_groups[df_well_groups["KEYWORD"] == "WELSPECS"]
-        for group in df_well_groups.groupby("PARENT"):
-            well_collections[group[0]] = sorted(list(set(group[1].CHILD.to_list())))
-
-        undefined_wells = []
-        all_collection_wells = []
-
-        for collection_wells in well_collections.values():
-            all_collection_wells.extend(collection_wells)
-        all_collection_wells = list(set(all_collection_wells))
-        undefined_wells = [
-            well for well in all_wells if well not in all_collection_wells
-        ]
-        if len(undefined_wells) > 0:
-            well_collections["Undefined"] = undefined_wells
-            logging.warning(
-                "\nWells not included in any well collection ('Undefined'):"
-                f"\n{undefined_wells}\n"
-            )
-
-    return well_collections
-
 
 # ---------------------------
 def _get_wells_vectors_phases(
@@ -253,3 +239,57 @@ def _get_wells_vectors_phases(
     logging.debug(f"\nVectors: {vectors}")
 
     return wells, vectors, list(phases)
+
+
+# --------------------------------
+def _get_well_collections_from_attr(
+    wells: dict,
+    ens_name: str,
+    ens_path: Path,
+    well_attr_file: Optional[str],
+) -> Dict[str, List[str]]:
+    """Read well attributes json file and create well_collections dictionary. Then check
+    well collections vs well lists. Any well not included in well collections is
+    returned as Undefined."""
+
+    all_wells = []
+    for ens_wells in wells.values():
+        all_wells.extend(ens_wells)
+    all_wells = list(sorted(set(all_wells)))
+
+    well_collections = {}
+
+    if well_attr_file is None:
+        well_collections["Undefined"] = all_wells
+        return well_collections
+
+    well_attributes = WellAttributesModel(ens_name, ens_path, well_attr_file)
+
+    # create well_collections dictionary from dataframe
+    df_well_groups = well_attributes.dataframe_melted.dropna()
+    df_cols = df_well_groups.columns
+    if "WELL" not in df_cols or "VALUE" not in df_cols:
+        RuntimeError(
+            f"The {well_attributes._well_attributes_file} file must contain the columns"
+            " 'WELL' and 'VALUE'"
+        )
+    for group in df_well_groups.groupby("VALUE"):
+        well_collections[group[0]] = sorted(list(set(group[1].WELL.to_list())))
+
+    undefined_wells = []
+    all_collection_wells = []
+
+    for collection_wells in well_collections.values():
+        all_collection_wells.extend(collection_wells)
+    all_collection_wells = list(set(all_collection_wells))
+    undefined_wells = [well for well in all_wells if well not in all_collection_wells]
+    if len(undefined_wells) > 0:
+        well_collections["Undefined"] = undefined_wells
+        logging.warning(
+            "\nWells not included in any well collection ('Undefined'):"
+            f"\n{undefined_wells}\n"
+            f"Update the {well_attributes._well_attributes_file} file if they should be"
+            " included"
+        )
+
+    return well_collections
