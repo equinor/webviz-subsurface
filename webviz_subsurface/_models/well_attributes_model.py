@@ -81,7 +81,23 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
 
     @property
     def dataframe(self) -> pd.DataFrame:
-        return pd.DataFrame.from_dict(self._data, orient="index")
+        """Returns the well attributes data as a dataframe with well eclipse alias
+        and categories as columns
+        """
+        return (
+            pd.DataFrame.from_dict(self._data, orient="index")
+            .rename_axis("Well")
+            .reset_index()
+        )
+
+    @property
+    def dataframe_melted(self) -> pd.DataFrame:
+        """Returns the well attributes data as melted dataframe, that means with
+        only three columns Well, Category and Value
+        """
+        return self.dataframe.melt(
+            id_vars=["Well"], value_vars=self._categories
+        ).rename({"variable": "Category", "value": "Value"}, axis=1)
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
