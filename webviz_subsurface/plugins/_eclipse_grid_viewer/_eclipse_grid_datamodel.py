@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Callable, List, Tuple
 
 import numpy as np
-import pyvista as pv
 import xtgeo
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
+from ._xtgeo_to_explicit_structured_grid import xtgeo_grid_to_explicit_structured_grid
 from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
 

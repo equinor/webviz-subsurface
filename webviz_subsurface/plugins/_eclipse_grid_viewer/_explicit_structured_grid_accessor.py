@@ -1,7 +1,6 @@
 from typing import List, Optional, Tuple
 
 import numpy as np
-import pyvista as pv
 
 # pylint: disable=no-name-in-module, import-error
 from vtk.util.numpy_support import vtk_to_numpy
@@ -12,6 +11,7 @@ from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
     vtkExplicitStructuredGrid,
     vtkGenericCell,
+    vtkPolyData,
 )
 
 # pylint: disable=no-name-in-module,
@@ -24,7 +24,7 @@ from webviz_subsurface._utils.perf_timer import PerfTimer
 
 
 class ExplicitStructuredGridAccessor:
-    def __init__(self, es_grid: pv.ExplicitStructuredGrid) -> None:
+    def __init__(self, es_grid: vtkExplicitStructuredGrid) -> None:
         self.es_grid = es_grid
         self.extract_skin_filter = (
             vtkExplicitStructuredGridSurfaceFilter()
@@ -49,12 +49,11 @@ class ExplicitStructuredGridAccessor:
 
         grid = crop_filter.GetOutput()
         timer = PerfTimer()
-        grid = pv.ExplicitStructuredGrid(grid)
         print(f"to pyvista {timer.lap_s()}")
         return grid
 
     def extract_skin(
-        self, grid: pv.ExplicitStructuredGrid = None
+        self, grid: vtkExplicitStructuredGrid = None
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extracts skin from a provided cropped grid or the entire grid if
         no grid is given.
@@ -65,12 +64,12 @@ class ExplicitStructuredGridAccessor:
         self.extract_skin_filter.SetInputData(grid)
         self.extract_skin_filter.PassThroughCellIdsOn()
         self.extract_skin_filter.Update()
-        polydata = self.extract_skin_filter.GetOutput()
-        polydata = pv.PolyData(polydata)
+        polydata: vtkPolyData = self.extract_skin_filter.GetOutput()
         polys = vtk_to_numpy(polydata.GetPolys().GetData())
         points = vtk_to_numpy(polydata.GetPoints().GetData()).ravel()
-        indices = polydata["vtkOriginalCellIds"]
-
+        indices = vtk_to_numpy(
+            polydata.GetCellData().GetAbstractArray("vtkOriginalCellIds")
+        )
         return (
             polys,
             points.astype(np.float32),
@@ -78,11 +77,12 @@ class ExplicitStructuredGridAccessor:
         )
 
     def find_closest_cell_to_ray(
-        self, grid: pv.ExplicitStructuredGrid, ray: List[float]
+        self, grid: vtkExplicitStructuredGrid, ray: List[float]
     ) -> Tuple[Optional[int], List[Optional[int]]]:
         """Find the active cell closest to the given ray."""
         timer = PerfTimer()
         locator = vtkCellLocator()
+
         locator.SetDataSet(grid)
         locator.BuildLocator()
 
