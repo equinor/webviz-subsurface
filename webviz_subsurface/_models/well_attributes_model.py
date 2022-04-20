@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
+import pandas as pd
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._datainput.fmu_input import scratch_ensemble
@@ -77,6 +78,10 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
     def categories(self) -> List[str]:
         """List of all well attribute categories"""
         return self._categories
+
+    @property
+    def dataframe(self) -> pd.DataFrame:
+        return pd.DataFrame.from_dict(self._data, orient="index")
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
