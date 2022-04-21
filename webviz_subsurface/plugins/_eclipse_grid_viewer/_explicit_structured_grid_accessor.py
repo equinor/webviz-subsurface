@@ -38,12 +38,12 @@ class ExplicitStructuredGridAccessor:
         crop_filter = vtkExplicitStructuredGridCrop()
         crop_filter.SetInputData(self.es_grid)
         crop_filter.SetOutputWholeExtent(
-            irange[0] - 1,
-            irange[1] - 1,
-            jrange[0] - 1,
-            jrange[1] - 1,
-            krange[0] - 1,
-            krange[1] - 1,
+            irange[0],
+            irange[1] + 1,
+            jrange[0],
+            jrange[1] + 1,
+            krange[0],
+            krange[1] + 1,
         )
         crop_filter.Update()
 
@@ -89,28 +89,6 @@ class ExplicitStructuredGridAccessor:
         # cell_ids = vtkIdList()
         tolerance = reference(0.0)
 
-        # # Find the cells intersected by the ray. (Ordered by near to far????)
-        # Apparently not!
-
-        # locator.FindCellsAlongLine(ray[0], ray[1], tolerance, cell_ids)
-
-        # We want the closest non-ghost(active) cell
-        # Check if ghost array is present and return first non-ghost cell
-        # if "vtkGhostType" in grid.array_names:
-        #     for cell_idx in range(cell_ids.GetNumberOfIds()):
-        #         cell_id = cell_ids.GetId(cell_idx)
-        #         if grid["vtkGhostType"][cell_id] == 0:
-        #             relative_cell_id = cell_id
-        #             break
-        # else:
-        #     relative_cell_id = cell_ids.GetId(0)
-        # for cell_idx in range(cell_ids.GetNumberOfIds()):
-        #     print("test", cell_idx)
-        #     print(cell_ids.GetId(cell_idx))
-        # # If no cells are found return None
-        # if relative_cell_id is None:
-        #     return None, [None, None, None]
-
         _t = reference(0)
         _x = np.array([0, 0, 0])
         _pcoords = np.array([0, 0, 0])
@@ -124,10 +102,10 @@ class ExplicitStructuredGridAccessor:
 
         # # Check if an array with OriginalCellIds is present, and if so use
         # # that as the cell index, if not assume the grid is not cropped.
-        if "vtkOriginalCellIds" in grid.array_names:
-            cell_id = grid["vtkOriginalCellIds"][cell_id]
-
-        # print(f"Closest cell in {timer.lap_s():.2f}")
+        if grid.GetCellData().HasArray("vtkOriginalCellIds") == 1:
+            cell_id = vtk_to_numpy(
+                grid.GetCellData().GetAbstractArray("vtkOriginalCellIds")
+            )[cell_id]
 
         i = reference(0)
         j = reference(0)
@@ -137,28 +115,28 @@ class ExplicitStructuredGridAccessor:
         self.es_grid.ComputeCellStructuredCoords(cell_id, i, j, k, False)
         print(f"Get ijk in  {timer.lap_s():.2f}")
 
-        return cell_id, [int(i) + 1, int(j) + 1, int(k) + 1]
+        return cell_id, [int(i), int(j), int(k)]
 
     @property
     def imin(self) -> int:
-        return 1
+        return 0
 
     @property
     def imax(self) -> int:
-        return self.es_grid.dimensions[0] - 1
+        return self.es_grid.dimensions[0] - 2
 
     @property
     def jmin(self) -> int:
-        return 1
+        return 0
 
     @property
     def jmax(self) -> int:
-        return self.es_grid.dimensions[1] - 1
+        return self.es_grid.dimensions[1] - 2
 
     @property
     def kmin(self) -> int:
-        return 1
+        return 0
 
     @property
     def kmax(self) -> int:
-        return self.es_grid.dimensions[2] - 1
+        return self.es_grid.dimensions[2] - 2

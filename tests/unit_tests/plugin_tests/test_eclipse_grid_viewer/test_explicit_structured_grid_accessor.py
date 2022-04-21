@@ -1,9 +1,9 @@
 # pylint: skip-file
 # type: ignore
 import pytest
-import pyvista as pv
+from vtk.util.numpy_support import vtk_to_numpy
 from vtkmodules.vtkCommonCore import vtkIdList
-from vtkmodules.vtkCommonDataModel import vtkCellLocator
+from vtkmodules.vtkCommonDataModel import vtkCellLocator, vtkExplicitStructuredGrid
 
 from webviz_subsurface.plugins._eclipse_grid_viewer._explicit_structured_grid_accessor import (
     ExplicitStructuredGridAccessor,
@@ -33,9 +33,12 @@ EXPECTED_CROP_BOX_ORIGINAL_INDEX = [32, 33, 37, 38, 52, 53, 57, 58]
 )
 def test_crop(crop_range, expected_cells) -> None:
     cropped_grid = ES_GRID_ACCESSOR.crop(*crop_range)
-    assert isinstance(cropped_grid, pv.ExplicitStructuredGrid)
-    assert "vtkOriginalCellIds" in cropped_grid.array_names
-    assert set(cropped_grid["vtkOriginalCellIds"]) == set(expected_cells)
+    assert isinstance(cropped_grid, vtkExplicitStructuredGrid)
+    assert cropped_grid.GetCellData().HasArray("vtkOriginalCellIds") == 1
+    assert set(
+        vtk_to_numpy(cropped_grid.GetCellData().GetAbstractArray("vtkOriginalCellIds"))
+    ) == set(expected_cells)
+
     _polys, _points, indices = ES_GRID_ACCESSOR.extract_skin(cropped_grid)
     assert set(indices) == set(expected_cells)
 
