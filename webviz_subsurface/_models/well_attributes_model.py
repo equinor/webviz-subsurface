@@ -2,7 +2,7 @@ import io
 import json
 import logging
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import pandas as pd
 from webviz_config.webviz_store import webvizstore
@@ -11,7 +11,7 @@ from webviz_subsurface._datainput.fmu_input import scratch_ensemble
 
 
 class WellAttributesModel:
-    """Facilitates loading of json file with well attributes.
+    """Facilitates loading of a json file with well attributes.
 
     The file needs to follow the format below. The categorical attributes \
     are optional.
@@ -48,7 +48,8 @@ class WellAttributesModel:
         self._ens_name = ens_name
         self._ens_path = ens_path
         self._well_attributes_file = well_attributes_file
-        self._data: Dict[str, Dict[str, str]] = json.load(self._load_data())
+        self._data_raw: Dict[str, Any] = json.load(self._load_data())
+        self._data: Dict[str, Dict[str, str]] = self._transform_data()
         self._categories: List[str] = list(
             {name for categories in self._data.values() for name in categories}
         )
@@ -61,24 +62,18 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
 
     @property
     def data(self) -> Dict[str, Dict[str, str]]:
-        """Returns a dictionary on the format:
-        {
-            "OP_1": {
-                "mlt_singlebranch" : "mlt",
-                "structure" : "East",
-                "welltype" : "producer"
-            },
-            "OP_2 : {...}
-        }
-
-        where the key of the outer dictionary is the well eclipse alias.
-        """
+        """Returns the well attributes on the transformed format"""
         return self._data
 
     @property
     def categories(self) -> List[str]:
         """List of all well attribute categories"""
         return self._categories
+
+    @property
+    def file_name(self) -> str:
+        """Returns the well attributes file name"""
+        return self._well_attributes_file
 
     @property
     def dataframe(self) -> pd.DataFrame:
@@ -124,12 +119,26 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
         for _, row in df_files.iterrows():
             file_content = json.loads(Path(row["FULLPATH"]).read_text())
             logging.debug(f"Well attributes loaded from file: {row['FULLPATH']}")
-            return io.BytesIO(
-                json.dumps(
-                    {
-                        well_data["alias"]["eclipse"]: well_data["attributes"]
-                        for well_data in file_content["wells"]
-                    }
-                ).encode()
-            )
+            return io.BytesIO(json.dumps(file_content).encode())
         return io.BytesIO(json.dumps({}).encode())
+
+    def _transform_data(self) -> Dict[str, Dict[str, str]]:
+        """Transforms the well attributes format to a simpler form
+        where the key of the outer dictionary is the well eclipse alias:
+        {
+            "OP_1": {
+                "mlt_singlebranch" : "mlt",
+                "structure" : "East",
+                "welltype" : "producer"
+            },
+            "OP_2 : {...}
+        }
+        """
+        if self._data_raw["version"] != "0.1":
+            raise ValueError(
+                f"{self._data_raw['version']} of the well attributes export is not implemented"
+            )
+        return {
+            well_data["alias"]["eclipse"]: well_data["attributes"]
+            for well_data in self._data_raw["wells"]
+        }
