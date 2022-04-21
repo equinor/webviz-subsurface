@@ -2,20 +2,19 @@ from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 import dash
-import pandas as pd
 from dash import html
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.webviz_store import webvizstore
 
-from ..._datainput.fmu_input import scratch_ensemble
-from ..._providers import (
+from webviz_subsurface._models import GruptreeModel
+from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
     Frequency,
 )
+
 from ._callbacks import plugin_callbacks
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
-from ._layout import main_layout
+from ._layout import LayoutElements, main_layout
 
 
 class GroupTree(WebvizPluginABC):
@@ -96,45 +95,35 @@ class GroupTree(WebvizPluginABC):
                     str(ens_path), rel_file_pattern, sampling
                 )
             )
-            gruptree = read_ensemble_gruptree(ens_name, ens_path, gruptree_file)
-            self._group_tree_data[ens_name] = EnsembleGroupTreeData(provider, gruptree)
+            self._group_tree_data[ens_name] = EnsembleGroupTreeData(
+                provider, GruptreeModel(ens_name, ens_path, gruptree_file)
+            )
 
         self.set_callbacks(app)
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
-        functions: List[Tuple[Callable, List[Dict]]] = []
-        functions.append(
-            (
-                read_ensemble_gruptree,
-                [
-                    {
-                        "ens_name": ens_name,
-                        "ens_path": ens_path,
-                        "gruptree_file": self._gruptree_file,
-                    }
-                    for ens_name, ens_path in self._ensemble_paths.items()
-                ],
-            )
-        )
-        return functions
+        return [
+            ens_grouptree_data.webviz_store
+            for _, ens_grouptree_data in self._group_tree_data.items()
+        ]
 
     @property
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.uuid("layout"),
-                "content": "Dashboard vizualizing Eclipse network tree.",
+                "id": self.uuid(LayoutElements.SELECTIONS_LAYOUT),
+                "content": "Menu for selecting ensemble and tree mode.",
             },
             {
-                "id": self.uuid("selections_layout"),
-                "content": "Menu for selecting ensemble and other options.",
+                "id": self.uuid(LayoutElements.OPTIONS_LAYOUT),
+                "content": "Menu for statistical options or realization.",
             },
             {
-                "id": self.uuid("filters_layout"),
+                "id": self.uuid(LayoutElements.FILTERS_LAYOUT),
                 "content": "Menu for filtering options.",
             },
             {
-                "id": self.uuid("grouptree_wrapper"),
+                "id": self.uuid(LayoutElements.GRAPH),
                 "content": "Vizualisation of network tree.",
             },
         ]
@@ -151,55 +140,3 @@ class GroupTree(WebvizPluginABC):
         plugin_callbacks(
             app=app, get_uuid=self.uuid, group_tree_data=self._group_tree_data
         )
-
-
-@webvizstore
-def read_ensemble_gruptree(
-    ens_name: str, ens_path: str, gruptree_file: str
-) -> pd.DataFrame:
-    """Reads the gruptree files for an ensemble from the scratch disk. These
-    files can be exported in the FMU workflow using the ECL2CSV
-    forward model with subcommand gruptree.
-
-    If BRANPROP is found in the KEYWORD column, then GRUPTREE rows
-    are filtered out.
-
-    If the trees are equal in every realization, only one realization is kept.
-    """
-
-    ens = scratch_ensemble(ens_name, ens_path, filter_file="OK")
-    df_files = ens.find_files(gruptree_file)
-
-    if df_files.empty:
-        raise ValueError(f"No gruptree file available for ensemble: {ens_name}")
-
-    # Load all gruptree dataframes and check if they are equal
-    compare_columns = ["DATE", "CHILD", "KEYWORD", "PARENT"]
-    df_prev = pd.DataFrame()
-    dataframes = []
-    gruptrees_are_equal = True
-    for i, row in df_files.iterrows():
-        df_real = pd.read_csv(row["FULLPATH"])
-
-        if "BRANPROP" in df_real["KEYWORD"].unique():
-            df_real = df_real[df_real["KEYWORD"] != "GRUPTREE"]
-        if (
-            i > 0
-            and gruptrees_are_equal
-            and not df_real[compare_columns].equals(df_prev)
-        ):
-            gruptrees_are_equal = False
-        else:
-            df_prev = df_real[compare_columns].copy()
-
-        df_real["REAL"] = row["REAL"]
-        dataframes.append(df_real)
-    df = pd.concat(dataframes)
-
-    # Return either one or all realization in a common dataframe
-    if gruptrees_are_equal:
-        df = df[df["REAL"] == df["REAL"].min()]
-
-    df["DATE"] = pd.to_datetime(df["DATE"])
-
-    return df.where(pd.notnull(df), None)
