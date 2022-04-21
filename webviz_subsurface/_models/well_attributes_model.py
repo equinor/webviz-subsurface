@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
@@ -86,7 +87,7 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
         """
         return (
             pd.DataFrame.from_dict(self._data, orient="index")
-            .rename_axis("Well")
+            .rename_axis("WELL")
             .reset_index()
         )
 
@@ -96,8 +97,8 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
         only three columns: Well, Category and Value
         """
         return self.dataframe.melt(
-            id_vars=["Well"], value_vars=self._categories
-        ).rename({"variable": "Category", "value": "Value"}, axis=1)
+            id_vars=["WELL"], value_vars=self._categories
+        ).rename({"variable": "CATEGORY", "value": "VALUE"}, axis=1)
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
@@ -122,6 +123,7 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
 
         for _, row in df_files.iterrows():
             file_content = json.loads(Path(row["FULLPATH"]).read_text())
+            logging.debug(f"Well attributes loaded from file: {row['FULLPATH']}")
             return io.BytesIO(
                 json.dumps(
                     {
