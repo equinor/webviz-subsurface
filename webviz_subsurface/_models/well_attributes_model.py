@@ -60,7 +60,7 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
 
     @property
     def data(self) -> Dict[str, Dict[str, str]]:
-        """Returns a dictionary with the well attributes data on the format:
+        """Returns a dictionary on the format:
         {
             "OP_1": {
                 "mlt_singlebranch" : "mlt",
@@ -93,7 +93,7 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
     @property
     def dataframe_melted(self) -> pd.DataFrame:
         """Returns the well attributes data as melted dataframe, that means with
-        only three columns Well, Category and Value
+        only three columns: Well, Category and Value
         """
         return self.dataframe.melt(
             id_vars=["Well"], value_vars=self._categories
@@ -114,7 +114,7 @@ WellAttributesModel {self._ens_name} {self._ens_path} {self._well_attributes_fil
     def _load_data(self) -> io.BytesIO:
         """This method reads the well attributes for an ensemble. It returns
         the data from the first file it finds so it is implicitly assumed that
-        the file is equal for all realizations.
+        the files are equal for all realizations.
         """
 
         ens = scratch_ensemble(self._ens_name, self._ens_path, filter_file="OK")
