@@ -52,7 +52,7 @@ class ProdMisfit(WebvizPluginABC):
 
     `well_attributes_file`: Optional json file with well attributes.
     The file needs to follow the format below. The categorical attributes \
-    are optional (user defined).
+    are completely flexible (user defined).
     ```json
     {
         "version" : "0.1",
@@ -225,10 +225,10 @@ def _get_wells_vectors_phases(
 
     wells, vectors = sorted(wells), sorted(vectors)
 
-    if len(vectors) == 0:
+    if not vectors:
         RuntimeError("No WOPT, WWPT or WGPT vectors found.")
 
-    if len(drop_list) > 0:
+    if drop_list:
         logging.debug(
             "\nWells dropped based on config excl lists:\n"
             f"{list(sorted(set(drop_list)))}"
@@ -270,7 +270,7 @@ def _get_well_collections_from_attr(
     df_cols = df_well_groups.columns
     if "WELL" not in df_cols or "VALUE" not in df_cols:
         RuntimeError(
-            f"The {well_attributes._well_attributes_file} file must contain the columns"
+            f"The {well_attributes.file_name} file must contain the columns"
             " 'WELL' and 'VALUE'"
         )
     for group in df_well_groups.groupby("VALUE"):
@@ -283,13 +283,12 @@ def _get_well_collections_from_attr(
         all_collection_wells.extend(collection_wells)
     all_collection_wells = list(set(all_collection_wells))
     undefined_wells = [well for well in all_wells if well not in all_collection_wells]
-    if len(undefined_wells) > 0:
+    if undefined_wells:
         well_collections["Undefined"] = undefined_wells
         logging.warning(
             "\nWells not included in any well collection ('Undefined'):"
             f"\n{undefined_wells}\n"
-            f"Update the {well_attributes._well_attributes_file} file if they should be"
-            " included"
+            f"Update the {well_attributes.file_name} file if they should be included"
         )
 
     return well_collections

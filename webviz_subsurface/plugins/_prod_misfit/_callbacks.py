@@ -9,8 +9,6 @@ from ._layout import LayoutElements
 from .utils import make_dataframes as makedf
 from .utils import make_figures as makefigs
 
-# from ._property_serialization import GraphFigureBuilder
-
 
 # pylint: disable = too-many-arguments, too-many-locals
 def plugin_callbacks(

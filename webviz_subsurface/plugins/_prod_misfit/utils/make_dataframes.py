@@ -4,7 +4,6 @@ from typing import Dict, List
 
 import pandas as pd
 
-# from ..types.provider_set import ProviderSet
 from ..._simulation_time_series.types.provider_set import ProviderSet
 
 
@@ -92,14 +91,14 @@ def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
     if df_diff.empty:
         return pd.DataFrame()
 
-    my_ensembles = []
-    my_dates = []
-    my_wells = []
-    my_diff_vectors = []
-    my_diff_mean_values = []
-    my_diff_std_values = []
-    my_diff_p10_values = []
-    my_diff_p90_values = []
+    ensembles = []
+    dates = []
+    wells = []
+    diff_vectors = []
+    diff_mean_values = []
+    diff_std_values = []
+    diff_p10_values = []
+    diff_p90_values = []
 
     for ens_name, dframe in df_diff.groupby("ENSEMBLE"):
         for _date, ensdf in dframe.groupby("DATE"):
@@ -116,25 +115,25 @@ def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
                         "DIFF_GGPT",
                     ]:
                         well = col.split(":")[1]
-                        my_wells.append(well)
-                        my_dates.append(_date)
-                        my_ensembles.append(ens_name)
-                        my_diff_vectors.append(vector)
-                        my_diff_mean_values.append(ensdf[col].mean())
-                        my_diff_std_values.append(ensdf[col].std())
-                        my_diff_p10_values.append(ensdf[col].quantile(0.9))
-                        my_diff_p90_values.append(ensdf[col].quantile(0.1))
+                        wells.append(well)
+                        dates.append(_date)
+                        ensembles.append(ens_name)
+                        diff_vectors.append(vector)
+                        diff_mean_values.append(ensdf[col].mean())
+                        diff_std_values.append(ensdf[col].std())
+                        diff_p10_values.append(ensdf[col].quantile(0.9))
+                        diff_p90_values.append(ensdf[col].quantile(0.1))
 
     df_stat = pd.DataFrame(
         data={
-            "ENSEMBLE": my_ensembles,
-            "WELL": my_wells,
-            "VECTOR": my_diff_vectors,
-            "DATE": my_dates,
-            "DIFF_MEAN": my_diff_mean_values,
-            "DIFF_STD": my_diff_std_values,
-            "DIFF_P10": my_diff_p10_values,
-            "DIFF_P90": my_diff_p90_values,
+            "ENSEMBLE": ensembles,
+            "WELL": wells,
+            "VECTOR": diff_vectors,
+            "DATE": dates,
+            "DIFF_MEAN": diff_mean_values,
+            "DIFF_STD": diff_std_values,
+            "DIFF_P10": diff_p10_values,
+            "DIFF_P90": diff_p90_values,
         }
     )
 
