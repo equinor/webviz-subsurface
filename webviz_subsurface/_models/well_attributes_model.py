@@ -18,28 +18,28 @@ class WellAttributesModel:
     {
         "version" : "0.1",
         "wells" : [
-        {
-            "alias" : {
-                "eclipse" : "OP_1"
+            {
+                "alias" : {
+                    "eclipse" : "OP_1"
+                },
+                "attributes" : {
+                    "mlt_singlebranch" : "mlt",
+                    "structure" : "East",
+                    "welltype" : "producer"
+                },
+                "name" : "OP_1"
             },
-            "attributes" : {
-                "mlt_singlebranch" : "mlt",
-                "structure" : "East",
-                "welltype" : "producer"
+            {
+                "alias" : {
+                    "eclipse" : "GI_1"
+                },
+                "attributes" : {
+                    "mlt_singlebranch" : "singlebranch",
+                    "structure" : "West",
+                    "welltype" : "gas injector"
+                },
+                "name" : "GI_1"
             },
-            "name" : "OP_1"
-        },
-        {
-            "alias" : {
-                "eclipse" : "GI_1"
-            },
-            "attributes" : {
-                "mlt_singlebranch" : "singlebranch",
-                "structure" : "West",
-                "welltype" : "gas injector"
-            },
-            "name" : "GI_1"
-        },
         ]
     }
     """
@@ -134,9 +134,9 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
         }
         """
         if self._data_raw["version"] != "0.1":
-            raise ValueError(
+            raise NotImplementedError(
                 f"Version {self._data_raw['version']} of the well attributes file "
-                "is not implemented"
+                "is not implemented."
             )
         return {
             well_data["alias"]["eclipse"]: well_data["attributes"]
