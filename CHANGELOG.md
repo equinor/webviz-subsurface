@@ -8,11 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ## [0.2.12] - 2022-04-07
- 
+
 ### Added
 
+- [#938](https://github.com/equinor/webviz-subsurface/pull/938) - `ProdMisfit` - New plugin for well production misfit visualization. Features visualization of production misfit at selected dates, production coverage at selected dates and heatmap representation of ensemble mean misfit for selected dates.
 - [#981](https://github.com/equinor/webviz-subsurface/pull/981) - `WellAnalysis` - New plugin well analysis. One tab for well production overview plots and one for well control mode and network analysis.
-- [#987](https://github.com/equinor/webviz-subsurface/pull/987) - `SwatinitQC` - New plugin for QC of Water Initialization in Eclipse runs where the `SWATINIT` keyword has been used. 
+- [#987](https://github.com/equinor/webviz-subsurface/pull/987) - `SwatinitQC` - New plugin for QC of Water Initialization in Eclipse runs where the `SWATINIT` keyword has been used.
 - [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics` - Switched to the VectorSelector component, and other various improvements.
 
 ### Fixed
@@ -21,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics`- Changed to reading unsmry data from `.arrow` files and deprecated the usage of aggregated csvfiles as input. 
+- [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics`- Changed to reading unsmry data from `.arrow` files and deprecated the usage of aggregated csvfiles as input.
 - [#986](https://github.com/equinor/webviz-subsurface/pull/986) - Avoid copying surfaces when using `MapViewerFMU` in non-portable mode.
 
 ## [0.2.11] - 2022-03-14
