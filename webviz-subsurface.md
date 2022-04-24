@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.12` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.13rc0` of `webviz-subsurface`.
 
 
 
@@ -1298,6 +1298,123 @@ Responses are extracted automatically from the `UNSMRY` files in the individual 
 using the `fmu-ensemble` library.
 
 !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the individual realizations. You should therefore not have more than one `UNSMRY` file in this folder, to avoid risk of not extracting the right data.
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
+#### ProdMisfit
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+Visualizes production data misfit at selected date(s).
+
+When not dealing with absolute value of differences, difference plots are
+represented as: (simulated - observed),
+i.e. negative values means sim is lower than obs and vice versa.
+
+**Features**
+* Visualization of prod misfit at selected time.
+* Visualization of prod coverage at selected time.
+* Heatmap representation of ensemble mean misfit for selected dates.
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* **`ensembles`:** Which ensembles in `shared_settings` to include.
+* **`rel_file_pattern`:** path to `.arrow` files with summary data.
+* **`gruptree_file`:** `.csv` with gruptree information.
+* **`sampling`:** Frequency for the data sampling.
+* **`well_attributes_file`:** Path to json file containing info of well attributes.
+The attribute category values can be used for filtering of well collections.
+* **`excl_name_startswith`:** Filter out wells that starts with this string
+* **`excl_name_contains`:** Filter out wells that contains this string
+* **`phase_weights`:** Dict of "Oil", "Water" and "Gas" (inverse) weight factors that
+are included as weight option for misfit per real calculation.
+
+
+---
+How to use in YAML config file:
+```yaml
+    - ProdMisfit:
+        ensembles:  # Required, type list.
+        rel_file_pattern:  # Optional, type str.
+        sampling:  # Optional, type str.
+        well_attributes_file:  # Optional, type str.
+        excl_name_startswith:  # Optional, type list.
+        excl_name_contains:  # Optional, type list.
+        phase_weights:  # Optional, type dict.
+```
+
+
+
+<!-- tab:Data input -->
+
+
+**Summary data**
+
+This plugin needs the following summary vectors to be stored with arrow format:
+* WOPT+WOPTH and/or WWPT+WWPTH and/or WGPT+WGPTH
+
+Summary files can be converted to arrow format with the `ECL2CSV` forward model.
+
+
+`well_attributes_file`: Optional json file with well attributes.
+The file needs to follow the format below. The categorical attributes     are completely flexible (user defined).
+```json
+{
+    "version" : "0.1",
+    "wells" : [
+    {
+        "alias" : {
+            "eclipse" : "A1"
+        },
+        "attributes" : {
+            "structure" : "East",
+            "welltype" : "producer"
+        },
+        "name" : "55_33-A-1"
+    },
+    {
+        "alias" : {
+            "eclipse" : "A5"
+        },
+        "attributes" : {
+            "structure" : "North",
+            "welltype" : "injector"
+        },
+        "name" : "55_33-A-5"
+    },
+    ]
+}
+```
 
 
 
