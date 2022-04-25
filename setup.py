@@ -11,6 +11,7 @@ TESTS_REQUIRE = [
     "isort",
     "mypy",
     "pylint",
+    "pylint-mock",
     "pytest-xdist",
     "selenium>=3.141",
     "types-dataclasses>=0.1.5; python_version<'3.7'",
