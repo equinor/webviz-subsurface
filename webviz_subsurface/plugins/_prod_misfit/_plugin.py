@@ -1,7 +1,7 @@
 # pylint: disable=too-many-arguments
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import dash
 import webviz_core_components as wcc
@@ -127,6 +127,16 @@ class ProdMisfit(WebvizPluginABC):
         self.vectors = {}
         self.phases = {}
 
+        self._well_attributes = (
+            WellAttributesModel(
+                self.ensemble_names[0],
+                ensemble_paths[self.ensemble_names[0]],
+                well_attributes_file,
+            )
+            if well_attributes_file is not None
+            else None
+        )
+
         for ens_name in self.ensemble_names:
             logging.debug(f"Working with: {ens_name}")
             ens_provider = self._input_provider_set.provider(ens_name)
@@ -145,10 +155,7 @@ class ProdMisfit(WebvizPluginABC):
 
         # self.well_collections = _get_well_collections_from_attr(well_attrs, self.wells)
         self.well_collections = _get_well_collections_from_attr(
-            self.wells,
-            self.ensemble_names[0],
-            ensemble_paths[self.ensemble_names[0]],
-            well_attributes_file,
+            self.wells, self._well_attributes
         )
 
         self.set_callbacks(app)
@@ -163,6 +170,13 @@ class ProdMisfit(WebvizPluginABC):
             wells=self.wells,
             realizations=self.realizations,
             well_collections=self.well_collections,
+        )
+
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        return (
+            [self._well_attributes.webviz_store]
+            if self._well_attributes is not None
+            else []
         )
 
     # ---------------------------------------------
@@ -244,11 +258,9 @@ def _get_wells_vectors_phases(
 # --------------------------------
 def _get_well_collections_from_attr(
     wells: dict,
-    ens_name: str,
-    ens_path: Path,
-    well_attr_file: Optional[str],
+    well_attributes: Optional[WellAttributesModel],
 ) -> Dict[str, List[str]]:
-    """Read well attributes json file and create well_collections dictionary. Then check
+    """Create well_collections dictionary. Then check
     well collections vs well lists. Any well not included in well collections is
     returned as Undefined."""
 
@@ -259,11 +271,9 @@ def _get_well_collections_from_attr(
 
     well_collections = {}
 
-    if well_attr_file is None:
+    if well_attributes is None:
         well_collections["Undefined"] = all_wells
         return well_collections
-
-    well_attributes = WellAttributesModel(ens_name, ens_path, well_attr_file)
 
     # create well_collections dictionary from dataframe
     df_well_groups = well_attributes.dataframe_melted.dropna()
