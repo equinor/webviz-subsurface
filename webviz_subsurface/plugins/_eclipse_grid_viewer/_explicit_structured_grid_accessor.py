@@ -26,6 +26,9 @@ from webviz_subsurface._utils.perf_timer import PerfTimer
 class ExplicitStructuredGridAccessor:
     def __init__(self, es_grid: vtkExplicitStructuredGrid) -> None:
         self.es_grid = es_grid
+        self.cell_dimensions = [-1, -1, -1]
+        self.es_grid.GetCellDims(self.cell_dimensions)
+
         self.extract_skin_filter = (
             vtkExplicitStructuredGridSurfaceFilter()
         )  # Is this thread safe?
@@ -123,7 +126,7 @@ class ExplicitStructuredGridAccessor:
 
     @property
     def imax(self) -> int:
-        return self.es_grid.dimensions[0] - 2
+        return self.cell_dimensions[0] - 1
 
     @property
     def jmin(self) -> int:
@@ -131,7 +134,7 @@ class ExplicitStructuredGridAccessor:
 
     @property
     def jmax(self) -> int:
-        return self.es_grid.dimensions[1] - 2
+        return self.cell_dimensions[1] - 1
 
     @property
     def kmin(self) -> int:
@@ -139,4 +142,4 @@ class ExplicitStructuredGridAccessor:
 
     @property
     def kmax(self) -> int:
-        return self.es_grid.dimensions[2] - 2
+        return self.cell_dimensions[2] - 1
