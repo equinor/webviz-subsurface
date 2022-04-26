@@ -66,9 +66,10 @@ def _surface_ident_from_filename(filename: str) -> Optional[SurfaceIdent]:
 
 
 def discover_per_realization_surface_files(
-    ens_path: str, attribute_filter: List[str] = None
+    ens_path: str,
+    attribute_filter: List[str] = None,
+    rel_surface_folder: str = "share/results/maps",
 ) -> List[SurfaceFileInfo]:
-    rel_surface_folder: str = "share/results/maps"
     suffix: str = "*.gri"
 
     surface_files: List[SurfaceFileInfo] = []
