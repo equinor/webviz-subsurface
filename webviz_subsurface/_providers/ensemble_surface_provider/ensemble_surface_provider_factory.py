@@ -63,8 +63,8 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
     def create_from_ensemble_surface_files(
         self,
         ens_path: str,
-        attribute_filter: List[str] = None,
         rel_surface_folder: str = "share/results/maps",
+        attribute_filter: List[str] = None,
     ) -> EnsembleSurfaceProvider:
         timer = PerfTimer()
         string_to_hash = (
@@ -92,7 +92,7 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
 
         timer.lap_s()
         sim_surface_files = discover_per_realization_surface_files(
-            ens_path, attribute_filter, rel_surface_folder
+            ens_path, rel_surface_folder, attribute_filter
         )
         obs_surface_files = discover_observed_surface_files(ens_path, attribute_filter)
         et_discover_s = timer.lap_s()
