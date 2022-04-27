@@ -33,7 +33,7 @@ class GruptreeModel:
     def __repr__(self) -> str:
         """This is necessary for webvizstore to work on objects"""
         return f"""
-GruptreeDataModel {self._ens_name} {self._ens_path} {self._gruptree_file}
+GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r})
         """
 
     @property
