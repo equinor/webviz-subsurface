@@ -220,9 +220,8 @@ class VolumeValidatorAndCombinator:
             )
             self.dframe.drop(columns=total_columns, inplace=True)
 
-    def drop_rows_with_totals_from_selectors(
-        self, dframe: pd.DataFrame
-    ) -> pd.DataFrame:
+    @staticmethod
+    def drop_rows_with_totals_from_selectors(dframe: pd.DataFrame) -> pd.DataFrame:
         """Drop rows containing total volumes ("Totals") if present"""
         selectors = [col for col in ["ZONE", "REGION", "FACIES"] if col in dframe]
         for sel in selectors:
