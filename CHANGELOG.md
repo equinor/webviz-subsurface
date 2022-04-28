@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#1014](https://github.com/equinor/webviz-subsurface/pull/1014) - `ParameterResponseCorrelation` - fix bug in range slider. `VolumetricAnalysis` - prevent "Totals" volumes (if present) beeing included in the sum when comparing static and dynamic volumes, and do not include non-numeric columns as volumetric responses.
+- [#1014](https://github.com/equinor/webviz-subsurface/pull/1014) - `ParameterResponseCorrelation` and `BhpQc` - fix bug in range slider. `VolumetricAnalysis` - prevent "Totals" volumes (if present) beeing included in the sum when comparing static and dynamic volumes, and do not include non-numeric columns as volumetric responses.
 
 ## [0.2.12] - 2022-04-07
 
