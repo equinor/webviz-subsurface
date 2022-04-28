@@ -386,4 +386,4 @@ def test_create_with_repeated_dates(tmp_path: Path) -> None:
     # fmt:on
 
     with pytest.raises(ValueError):
-        provider = _create_provider_obj_with_data(input_data, tmp_path)
+        _create_provider_obj_with_data(input_data, tmp_path)
