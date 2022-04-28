@@ -224,9 +224,13 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
             )
         et_import_smry_s = timer.lap_s()
 
-        ProviderImplArrowLazy.write_backing_store_from_per_realization_tables(
-            self._storage_dir, storage_key, per_real_tables
-        )
+        try:
+            ProviderImplArrowLazy.write_backing_store_from_per_realization_tables(
+                self._storage_dir, storage_key, per_real_tables
+            )
+        except ValueError as exc:
+            raise ValueError(f"Failed to write backing store for: {ens_path}") from exc
+
         et_write_s = timer.lap_s()
 
         provider = ProviderImplArrowLazy.from_backing_store(
