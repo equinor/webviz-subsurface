@@ -49,8 +49,10 @@ class VolumeValidatorAndCombinator:
         self.disjoint_set_df = (
             fipmapper.FipMapper(yamlfile=fipfile).disjoint_sets() if fipfile else None
         )
-        self.dframe = self.validate_and_combine_sources(volumes_table)
-        self.drop_rows_with_totals_from_selectors()
+
+        self.dframe = self.validate_and_combine_sources(
+            self.drop_rows_with_totals_from_selectors(volumes_table)
+        )
         self.volume_type = self.set_volumetric_type()
 
         if self.volume_type == "mixed":
@@ -218,7 +220,10 @@ class VolumeValidatorAndCombinator:
             )
             self.dframe.drop(columns=total_columns, inplace=True)
 
-    def drop_rows_with_totals_from_selectors(self) -> None:
+    @staticmethod
+    def drop_rows_with_totals_from_selectors(dframe: pd.DataFrame) -> pd.DataFrame:
         """Drop rows containing total volumes ("Totals") if present"""
-        for sel in [col for col in self.VALID_STATIC_SELECTORS if col in self.dframe]:
-            self.dframe = self.dframe.loc[self.dframe[sel] != "Totals"]
+        selectors = [col for col in ["ZONE", "REGION", "FACIES"] if col in dframe]
+        for sel in selectors:
+            dframe = dframe.loc[dframe[sel] != "Totals"]
+        return dframe

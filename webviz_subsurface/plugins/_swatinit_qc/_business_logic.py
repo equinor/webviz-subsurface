@@ -57,6 +57,10 @@ class SwatinitQcDataModel:
         self.faultlines_df = read_csv(faultlines) if faultlines else None
 
         if ensemble is not None:
+            if isinstance(ensemble, list):
+                raise TypeError(
+                    'Incorrent argument type, "ensemble" must be a string instead of a list'
+                )
             if realization is None:
                 raise ValueError('Incorrent arguments, "realization" must be specified')
 

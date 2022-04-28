@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 
 from .ensemble_set_model import EnsembleSetModel
 from .parameter_model import ParametersModel
@@ -164,7 +165,9 @@ class InplaceVolumesModel:
         return [
             x
             for x in self._dataframe
-            if x not in self.selectors and x not in self.property_columns
+            if x not in self.selectors
+            and x not in self.property_columns
+            and is_numeric_dtype(self._dataframe[x])
         ]
 
     @property

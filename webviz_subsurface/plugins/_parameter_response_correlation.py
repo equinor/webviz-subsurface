@@ -308,6 +308,7 @@ folder, to avoid risk of not extracting the right data.
                     id=self.uuid("max-params"),
                     min=1,
                     max=max_params,
+                    step=1,
                     marks={1: "1", max_params: str(max_params)},
                     value=max_params,
                 ),

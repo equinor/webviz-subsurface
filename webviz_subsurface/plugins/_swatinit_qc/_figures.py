@@ -257,7 +257,8 @@ class PropertiesVsDepthSubplots:
             if contact in self.dframe and self.dframe["EQLNUM"].nunique() == 1:
                 # contacts are assumed constant in the dataframe
                 value = self.dframe[contact].values[0]
-                if value not in [0, 1000]:
+                # do not include dummy contacts (shallower than the dataset)
+                if value > self.dframe["Z"].min():
                     self._figure.add_hline(
                         value,
                         line={"color": "black", "dash": "dash", "width": 1.5},
