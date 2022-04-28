@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#938](https://github.com/equinor/webviz-subsurface/pull/938) - `ProdMisfit` - New plugin for well production misfit visualization. Features visualization of production misfit at selected dates, production coverage at selected dates and heatmap representation of ensemble mean misfit for selected dates.
 - [#1013](https://github.com/equinor/webviz-subsurface/pull/1013) - `MapViewerFMU` - Added option to specify the folder where maps are located (relative to runpath in each realization).
 
+### Changed
+
+- [#1015](https://github.com/equinor/webviz-subsurface/pull/1015) - Improved error reporting for .arrow files where dates are not monotonically increasing.
+
 ### Fixed
 
 - [#1014](https://github.com/equinor/webviz-subsurface/pull/1014) - `ParameterResponseCorrelation` and `BhpQc` - fix bug in range slider. `VolumetricAnalysis` - prevent "Totals" volumes (if present) beeing included in the sum when comparing static and dynamic volumes, and do not include non-numeric columns as volumetric responses.
