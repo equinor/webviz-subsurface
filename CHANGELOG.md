@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- [#1015](https://github.com/equinor/webviz-subsurface/pull/1015) - Improved error reporting for .arrow files where dates are not monotonically increasing.
+- [#1015](https://github.com/equinor/webviz-subsurface/pull/1015) - Improved error reporting for `.arrow` files where dates are not monotonically increasing.
 
 ### Fixed
 
