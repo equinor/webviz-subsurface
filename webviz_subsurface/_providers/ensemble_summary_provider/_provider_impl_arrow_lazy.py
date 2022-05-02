@@ -152,7 +152,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
                 raise ValueError(
                     f"DATE column must be monotonically increasing\n"
                     f"Error detected in realization: {real_num}\n"
-                    f"First offending timestamps: {offending_pair[0], offending_pair[0]}"
+                    f"First offending timestamps: {offending_pair}"
                 )
 
         LOGGER.debug(
