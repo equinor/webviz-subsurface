@@ -7,12 +7,13 @@ from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
 from ...._utils.colors import StandardColors
+from .._types import PressurePlotMode
 
 
 def create_well_control_figure(
     node_info: Dict[str, Any],
     smry: pd.DataFrame,
-    mean_or_single_real: str,
+    pressure_plot_mode: PressurePlotMode,
     real: int,
     display_ctrlmode_bar: bool,
     shared_xaxes: bool,
@@ -30,7 +31,7 @@ def create_well_control_figure(
     ]
     rows = 2
     row_heights = [0.5, 0.5]
-    if display_ctrlmode_bar and mean_or_single_real == "single_real":
+    if display_ctrlmode_bar and pressure_plot_mode == PressurePlotMode.SINGLE_REAL:
         rows = 3
         display_ctrlmode_bar = True
         row_heights = [0.46, 0.46, 0.08]
@@ -54,10 +55,10 @@ def create_well_control_figure(
     # Add traces
     add_ctrl_mode_traces(fig, node_info, smry_ctrlmodes)
     add_network_pressure_traces(
-        fig, node_info, smry, mean_or_single_real, real, include_bhp, theme_colors
+        fig, node_info, smry, pressure_plot_mode, real, include_bhp, theme_colors
     )
 
-    if display_ctrlmode_bar and mean_or_single_real == "single_real":
+    if display_ctrlmode_bar and pressure_plot_mode == PressurePlotMode.SINGLE_REAL:
         add_ctrlmode_bar(
             fig,
             node_info,
@@ -108,7 +109,7 @@ def add_network_pressure_traces(
     fig: go.Figure,
     node_info: Dict[str, Any],
     smry: pd.DataFrame,
-    mean_or_single_real: str,
+    pressure_plot_mode: PressurePlotMode,
     real: int,
     include_bhp: bool,
     theme_colors: list,
@@ -123,7 +124,7 @@ def add_network_pressure_traces(
     traces = {}
     for node_network in node_info["networks"]:
         df = get_filtered_smry(
-            node_network, node_info["ctrlmode_sumvec"], mean_or_single_real, real, smry
+            node_network, node_info["ctrlmode_sumvec"], pressure_plot_mode, real, smry
         )
 
         for nodedict in node_network["nodes"]:
@@ -195,7 +196,7 @@ def add_ctrlmode_bar(
 def get_filtered_smry(
     node_network: dict,
     ctrlmode_sumvec: str,
-    mean_or_single_real: str,
+    pressure_plot_mode: PressurePlotMode,
     real: int,
     smry: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -214,12 +215,12 @@ def get_filtered_smry(
     if end_date is not None:
         df = df[df.DATE < end_date]
 
-    if mean_or_single_real == "plot_mean":
+    if pressure_plot_mode == PressurePlotMode.MEAN:
         # Filter out realizations whitout production
         df = df[df[ctrlmode_sumvec] != 0.0]
         # Group by date and take the mean of each group
         df = df.groupby("DATE").mean().reset_index()
-    elif mean_or_single_real == "single_real":
+    elif pressure_plot_mode == PressurePlotMode.SINGLE_REAL:
         df = df[df.REAL == real]
     return df
 

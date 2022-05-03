@@ -7,6 +7,7 @@ from webviz_config import WebvizConfigTheme
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import create_well_control_figure
 from .._layout import WellControlLayoutElements
+from .._types import PressurePlotMode
 
 
 def well_control_callbacks(
@@ -41,7 +42,7 @@ def well_control_callbacks(
         Output(get_uuid(WellControlLayoutElements.GRAPH), "children"),
         Input(get_uuid(WellControlLayoutElements.WELL), "value"),
         Input(get_uuid(WellControlLayoutElements.INCLUDE_BHP), "value"),
-        Input(get_uuid(WellControlLayoutElements.MEAN_OR_REAL), "value"),
+        Input(get_uuid(WellControlLayoutElements.PRESSURE_PLOT_MODE), "value"),
         Input(get_uuid(WellControlLayoutElements.REAL), "value"),
         Input(get_uuid(WellControlLayoutElements.CTRLMODE_BAR), "value"),
         Input(get_uuid(WellControlLayoutElements.SHARED_XAXES), "value"),
@@ -51,7 +52,7 @@ def well_control_callbacks(
     def _update_figure(
         well: str,
         include_bhp: List[str],
-        mean_or_single_real: str,
+        pressure_plot_mode: str,
         real: int,
         display_ctrlmode_bar: bool,
         shared_xaxes: List[str],
@@ -61,7 +62,7 @@ def well_control_callbacks(
         fig = create_well_control_figure(
             data_models[ensemble].get_node_info(well),
             data_models[ensemble].summary_data,
-            mean_or_single_real,
+            PressurePlotMode(pressure_plot_mode),
             real,
             display_ctrlmode_bar,
             "shared_xaxes" in shared_xaxes,
@@ -76,12 +77,12 @@ def well_control_callbacks(
             get_uuid(WellControlLayoutElements.SINGLE_REAL_OPTIONS),
             component_property="style",
         ),
-        Input(get_uuid(WellControlLayoutElements.MEAN_OR_REAL), "value"),
+        Input(get_uuid(WellControlLayoutElements.PRESSURE_PLOT_MODE), "value"),
     )
-    def _show_hide_single_real_options(mean_or_single_real: str) -> Dict[str, str]:
+    def _show_hide_single_real_options(pressure_plot_mode: str) -> Dict[str, str]:
         """Hides or unhides the realization dropdown according to whether mean
         or single realization is selected.
         """
-        if mean_or_single_real == "plot_mean":
+        if PressurePlotMode(pressure_plot_mode) == PressurePlotMode.MEAN:
             return {"display": "none"}
         return {"display": "block"}
