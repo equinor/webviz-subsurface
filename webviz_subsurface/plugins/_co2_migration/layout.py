@@ -28,7 +28,7 @@ class LayoutElements(str, Enum):
 
 
 @unique
-class LayoutLabels(Enum):
+class LayoutLabels(str, Enum):
     LICENSE_BOUNDARY_LAYER = "License Boundary"
 
 

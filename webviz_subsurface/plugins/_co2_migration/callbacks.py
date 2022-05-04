@@ -194,12 +194,16 @@ def create_map_layers(
             )
         )
     if well_pick_provider is not None:
+        # Need to cast to dict. Possible bug when passing geojson.FeatureCollection via
+        # WellsLayer.__init__
         layers.append(
             WellsLayer(
                 uuid=LayoutElements.WELLPICKSLAYER,
-                data=well_pick_provider.get_geojson(
-                    well_pick_provider.well_names(), well_pick_horizon
-                )
+                data=dict(
+                    well_pick_provider.get_geojson(
+                        well_pick_provider.well_names(), well_pick_horizon
+                    )
+                ),
             )
         )
     # View-port
