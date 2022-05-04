@@ -68,7 +68,7 @@ def main_view(
             ),
         )
     )
-    if volumemodel.sensrun and volumemodel.volume_type != "mixed":
+    if volumemodel.sensrun:
         tabs.append(
             wcc.Tab(
                 label="Tornadoplots",

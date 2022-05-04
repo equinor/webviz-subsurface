@@ -262,7 +262,7 @@ def check_and_format_observations(obsfile: Path) -> dict:
         except TypeError as exc:
             raise TypeError(
                 "The observation file's othermost level must be a dictionary, while the input "
-                f"file's outermost level is of type {type(obslist)}."
+                f"file's outermost level is of type {type(obsfile_data)}."
             ) from exc
         if not isinstance(obslist, list):
             raise TypeError(

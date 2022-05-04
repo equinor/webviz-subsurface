@@ -3,7 +3,6 @@ from typing import Any, List, Tuple
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from dash.dash_table.Format import Format
 from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._figures import create_figure
@@ -32,6 +31,7 @@ class PropertyStatisticsModel:
 
     def __init__(self, dataframe: pd.DataFrame, theme: WebvizConfigTheme) -> None:
         self._dataframe = dataframe
+        self._dataframe["REAL"] = self._dataframe["REAL"].astype(int)
         self._prepare_and_validate_data()
         self._dataframe["label"] = self._dataframe.agg(
             lambda x: " | ".join(
@@ -175,6 +175,8 @@ class PropertyStatisticsModel:
         if selector_values is not None:
             df = self.filter_dataframe(df, self.selectors, selector_values)
         df = df[["REAL", statistic, "label"]]
+        if df.empty:
+            return df
         return (
             df.pivot_table(columns=["label"], values=statistic, index="REAL")
             .rename_axis(None, axis=1)
@@ -292,7 +294,7 @@ class PropertyStatisticsModel:
                 "id": col,
                 "name": [col.split("|")[0], col.split("|")[1]],
                 "type": "numeric",
-                "format": Format(precision=3),
+                "format": {"specifier": ".3~r"},
             }
             for col in df.columns
         ]
@@ -348,3 +350,25 @@ class PropertyStatisticsModel:
         fig = fig.to_dict()
         fig["layout"] = self.theme.create_themed_layout(fig["layout"])
         return fig
+
+    def get_real_and_value_df(
+        self,
+        ensemble: str,
+        series: str,
+        normalize: bool = False,
+        statistic: str = "Avg",
+    ) -> pd.DataFrame:
+        """
+        Return dataframe with label and values for selected label for an ensemble.
+        A column with normalized values can be added.
+        """
+        df = self.dataframe[self.dataframe["ENSEMBLE"] == ensemble]
+        df = df[df["label"] == series]
+        if normalize:
+            df["VALUE_NORM"] = (df[statistic] - df[statistic].min()) / (
+                df[statistic].max() - df[statistic].min()
+            )
+
+        df.rename(columns={statistic: "VALUE"}, inplace=True)
+
+        return df[["label", "REAL", "VALUE", "VALUE_NORM"]].reset_index(drop=True)

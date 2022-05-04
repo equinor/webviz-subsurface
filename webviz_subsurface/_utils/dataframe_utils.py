@@ -1,5 +1,7 @@
 import datetime
+from typing import Optional
 
+import numpy as np
 import pandas as pd
 
 
@@ -87,3 +89,26 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> None:
     raise ValueError(
         f'Column "DATE" of type {type(sampled_date_value)} is not handled!'
     )
+
+
+def correlate_response_with_dataframe(
+    df: pd.DataFrame, response: str, corrwith: Optional[list] = None
+) -> pd.Series:
+    """Returns the correlation matrix for a dataframe soprted by correlation"""
+    df = df[corrwith + [response]].copy() if corrwith is not None else df.copy()
+    df = df[df.columns[df.nunique() > 1]]
+    if response not in df.columns:
+        df[response] = np.nan
+    series = df[response]
+    df = df.drop(columns=[response])
+    corrdf = df.corrwith(series)
+    return corrdf.reindex(corrdf.abs().sort_values().index)
+
+
+def merge_dataframes_on_realization(
+    dframe1: pd.DataFrame, dframe2: pd.DataFrame
+) -> pd.DataFrame:
+    """Merge two dataframes on realization"""
+    dframe1.set_index("REAL", inplace=True)
+    dframe2.set_index("REAL", inplace=True)
+    return dframe1.join(dframe2).reset_index()

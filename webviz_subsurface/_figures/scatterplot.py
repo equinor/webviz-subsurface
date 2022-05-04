@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
 
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objs as go
 
 from .._utils.colors import hex_to_rgba_str
+from .px_figure import create_figure
 
 
 class ScatterPlot:
@@ -28,10 +28,10 @@ class ScatterPlot:
         title: str,
         plot_trendline: bool = False,
     ):
-
         self._figure = (
-            px.scatter(
-                df[["REAL", response, param]],
+            create_figure(
+                plot_type="scatter",
+                data_frame=df[["REAL", response, param]],
                 x=param,
                 y=response,
                 trendline="ols"
@@ -39,27 +39,15 @@ class ScatterPlot:
                 else None,
                 trendline_color_override="#243746",
                 hover_data=["REAL", response, param],
+                framed=False,
             )
             .update_layout(
-                margin={
-                    "r": 20,
-                    "l": 20,
-                    "t": 60,
-                    "b": 20,
-                },
-                paper_bgcolor="white",
-                plot_bgcolor="white",
+                margin={"r": 20, "l": 20, "t": 60, "b": 20},
                 title={"text": title, "x": 0.5},
                 xaxis_title=None,
                 yaxis_title=None,
             )
-            .update_traces(
-                marker={
-                    "size": 15,
-                    "color": hex_to_rgba_str(color, 0.7),
-                    "line": {"width": 1.2, "color": hex_to_rgba_str(color, 1)},
-                }
-            )
+            .update_traces(marker_color=color)
         )
 
     @property

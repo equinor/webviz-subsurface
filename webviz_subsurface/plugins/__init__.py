@@ -37,6 +37,7 @@ from ._parameter_correlation import ParameterCorrelation
 from ._parameter_distribution import ParameterDistribution
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
 from ._parameter_response_correlation import ParameterResponseCorrelation
+from ._prod_misfit import ProdMisfit
 from ._property_statistics import PropertyStatistics
 from ._pvt_plot import PvtPlot
 from ._relative_permeability import RelativePermeability
@@ -57,8 +58,10 @@ from ._subsurface_map import SubsurfaceMap
 from ._surface_viewer_fmu import SurfaceViewerFMU
 from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
+from ._swatinit_qc import SwatinitQC
 from ._tornado_plotter_fmu import TornadoPlotterFMU
 from ._volumetric_analysis import VolumetricAnalysis
+from ._well_analysis import WellAnalysis
 from ._well_completions import WellCompletions
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU

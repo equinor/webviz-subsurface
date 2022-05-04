@@ -2,7 +2,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -43,12 +43,23 @@ def _sort_table_on_real_then_date(table: pa.Table) -> pa.Table:
     return sorted_table
 
 
-def _is_date_column_sorted(table: pa.Table) -> bool:
+def _is_date_column_monotonically_increasing(table: pa.Table) -> bool:
     dates_np = table.column("DATE").to_numpy()
     if not np.all(np.diff(dates_np) > np.timedelta64(0)):
         return False
 
     return True
+
+
+def _find_first_non_increasing_date_pair(
+    table: pa.Table,
+) -> Tuple[Optional[np.datetime64], Optional[np.datetime64]]:
+    dates_np = table.column("DATE").to_numpy()
+    offending_indices = np.asarray(np.diff(dates_np) <= np.timedelta64(0)).nonzero()[0]
+    if not offending_indices:
+        return (None, None)
+
+    return (dates_np[offending_indices[0]], dates_np[offending_indices[0] + 1])
 
 
 class ProviderImplArrowLazy(EnsembleSummaryProvider):
@@ -123,17 +134,26 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         timer = PerfTimer()
 
         unique_column_names = set()
-        for table in per_real_tables.values():
+        for real_num, table in per_real_tables.items():
             unique_column_names.update(table.schema.names)
 
             if "REAL" in table.schema.names:
-                raise ValueError("Input tables should not have REAL column")
+                raise ValueError(
+                    f"Input tables should not have REAL column (real={real_num})"
+                )
 
             if table.schema.field("DATE").type != pa.timestamp("ms"):
-                raise ValueError("DATE column must have timestamp[ms] data type")
+                raise ValueError(
+                    f"DATE column must have timestamp[ms] data type (real={real_num})"
+                )
 
-            if not _is_date_column_sorted(table):
-                raise ValueError("DATE column must be sorted")
+            if not _is_date_column_monotonically_increasing(table):
+                offending_pair = _find_first_non_increasing_date_pair(table)
+                raise ValueError(
+                    f"DATE column must be monotonically increasing\n"
+                    f"Error detected in realization: {real_num}\n"
+                    f"First offending timestamps: {offending_pair}"
+                )
 
         LOGGER.debug(
             f"Concatenating {len(per_real_tables)} tables with "

@@ -190,6 +190,7 @@ class BhpQc(WebvizPluginABC):
                             id=self.uuid("n_wells"),
                             min=1,
                             max=len(self.wells),
+                            step=1,
                             value=min(10, len(self.wells)),
                             marks={1: 1, len(self.wells): len(self.wells)},
                         ),

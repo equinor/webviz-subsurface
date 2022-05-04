@@ -426,8 +426,8 @@ folder, to avoid risk of not extracting the right data.
                 State(self.ids("graph"), "clickData"),
                 State(self.ids("graph"), "figure"),
             ],
-        )  # pylint: disable=too-many-branches, too-many-locals
-        def _render_tornado(
+        )
+        def _render_tornado(  # pylint: disable=too-many-branches, too-many-locals
             tornado_click_data_str: Union[str, None],
             high_low_storage: dict,
             ensemble: str,

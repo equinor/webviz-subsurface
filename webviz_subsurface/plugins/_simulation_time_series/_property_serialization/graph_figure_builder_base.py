@@ -39,7 +39,6 @@ class GraphFigureBuilderBase(abc.ABC):
     @abc.abstractmethod
     def create_graph_legends(self) -> None:
         """Create legends for graphs after trace data is added"""
-        ...
 
     @abc.abstractmethod
     def add_realizations_traces(
@@ -58,7 +57,6 @@ class GraphFigureBuilderBase(abc.ABC):
         * color_lightness_scale: float - Color lightness scale percentage, to adjust trace colors
         relative to original trace line color defined. Range 50% - 150%
         """
-        ...
 
     @abc.abstractmethod
     def add_statistics_traces(
@@ -82,7 +80,6 @@ class GraphFigureBuilderBase(abc.ABC):
         * color_lightness_scale: float - Color lightness scale percentage, to adjust trace colors
         relative to original trace line color defined. Range 50% - 150%
         """
-        ...
 
     @abc.abstractmethod
     def add_fanchart_traces(
@@ -102,7 +99,6 @@ class GraphFigureBuilderBase(abc.ABC):
         * ensemble: str - Name of ensemble providing the input vector data
         * fanchart_options: List[StatisticsOptions] - List of fanchart options traces to include
         """
-        ...
 
     @abc.abstractmethod
     def add_history_traces(
@@ -119,7 +115,6 @@ class GraphFigureBuilderBase(abc.ABC):
 
         * ensemble: str - Name of ensemble providing the input vector data
         """
-        ...
 
     @abc.abstractmethod
     def add_vector_observations(
@@ -131,7 +126,6 @@ class GraphFigureBuilderBase(abc.ABC):
         * vector_name: str - Vector to add observations for
         * vector_observations: dict - Dictionary with observation data for vector
         """
-        ...
 
     # ------------------------------------
     #
@@ -153,7 +147,6 @@ class GraphFigureBuilderBase(abc.ABC):
         of vector line traces for figure.
         * ensemble: str - Optional name of ensemble providing the input vector data
         """
-        ...
 
     @abc.abstractmethod
     def _add_vector_trace_set_to_figure(
@@ -169,4 +162,3 @@ class GraphFigureBuilderBase(abc.ABC):
         vector line trace for figure.
         * ensemble: str - Optional name of ensemble providing the input vector data
         """
-        ...

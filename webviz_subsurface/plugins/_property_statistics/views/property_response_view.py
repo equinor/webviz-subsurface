@@ -1,11 +1,20 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import html
 
-from ..models import PropertyStatisticsModel
-from .selector_view import ensemble_selector, filter_selector, source_selector
+from ..models import (
+    PropertyStatisticsModel,
+    ProviderTimeSeriesDataModel,
+    SimulationTimeSeriesModel,
+)
+from .selector_view import (
+    ensemble_selector,
+    filter_selector,
+    source_selector,
+    vector_selector,
+)
 
 
 def surface_select_view(get_uuid: Callable, tab: str) -> html.Div:
@@ -51,20 +60,10 @@ def surface_view(get_uuid: Callable, tab: str) -> html.Div:
     )
 
 
-def timeseries_view(get_uuid: Callable, options: List[Dict]) -> html.Div:
+def timeseries_view(get_uuid: Callable) -> html.Div:
     return html.Div(
         style={"height": "38vh"},
         children=[
-            html.Div(
-                children=[
-                    wcc.Dropdown(
-                        id=get_uuid("property-response-vector-select"),
-                        options=options,
-                        clearable=False,
-                        placeholder="Select a vector from the list...",
-                    ),
-                ]
-            ),
             wcc.Graph(
                 id=get_uuid("property-response-vector-graph"),
                 config={"displayModeBar": False},
@@ -75,9 +74,17 @@ def timeseries_view(get_uuid: Callable, options: List[Dict]) -> html.Div:
 
 
 def correlation_view(get_uuid: Callable) -> wcc.Graph:
-    return wcc.Graph(
-        style={"height": "78vh"},
-        id=get_uuid("property-response-correlation-graph"),
+    return html.Div(
+        [
+            wcc.Graph(
+                style={"height": "38vh"},
+                id=get_uuid("property-response-correlation-graph"),
+            ),
+            wcc.Graph(
+                style={"height": "38vh", "margin-top": "20px"},
+                id=get_uuid("property-response-scatter-graph"),
+            ),
+        ]
     )
 
 
@@ -105,6 +112,7 @@ def filter_correlated_parameter(get_uuid: Callable, labels: List[str]) -> html.D
 def selector_view(
     get_uuid: Callable,
     property_model: PropertyStatisticsModel,
+    vector_model: Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel],
     surface_folders: Optional[Dict],
 ) -> html.Div:
     return html.Div(
@@ -122,6 +130,7 @@ def selector_view(
                         sources=property_model.sources,
                         tab="response",
                     ),
+                    vector_selector(get_uuid=get_uuid, vector_model=vector_model),
                 ],
             ),
             wcc.Selectors(
@@ -148,7 +157,7 @@ def selector_view(
 def property_response_view(
     get_uuid: Callable,
     property_model: PropertyStatisticsModel,
-    vector_options: List[Dict],
+    vector_model: Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel],
     surface_folders: Optional[Dict],
 ) -> wcc.FlexBox:
     return wcc.FlexBox(
@@ -160,6 +169,7 @@ def property_response_view(
                     children=selector_view(
                         get_uuid=get_uuid,
                         property_model=property_model,
+                        vector_model=vector_model,
                         surface_folders=surface_folders,
                     ),
                 )
@@ -173,9 +183,7 @@ def property_response_view(
                     children=[
                         html.Div(
                             style={"height": "38vh"},
-                            children=timeseries_view(
-                                get_uuid=get_uuid, options=vector_options
-                            ),
+                            children=timeseries_view(get_uuid=get_uuid),
                         ),
                         html.Div(
                             style={"height": "39vh"},

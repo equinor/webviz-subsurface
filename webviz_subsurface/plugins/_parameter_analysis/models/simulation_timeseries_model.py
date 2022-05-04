@@ -1,210 +1,112 @@
-from itertools import chain
-from typing import Dict, Iterable, List, Optional, Tuple
+import fnmatch
+import re
+from typing import List, Optional
 
 import pandas as pd
-from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
+from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 from webviz_subsurface._utils.simulation_timeseries import (
-    get_simulation_line_shape,
     set_simulation_line_shape_fallback,
 )
+from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
 
 
 class SimulationTimeSeriesModel:
     """Class to process and and visualize ensemble timeseries"""
 
+    REQUIRED_COLUMNS = ["ENSEMBLE", "REAL", "DATE"]
+
     def __init__(
         self,
         dataframe: pd.DataFrame,
-        metadata: Optional[pd.DataFrame] = None,
         line_shape_fallback: str = "linear",
     ) -> None:
 
-        for column in ["ENSEMBLE", "REAL", "DATE"]:
+        for column in self.REQUIRED_COLUMNS:
             if column not in dataframe.columns:
                 raise KeyError(f"{column} column is missing from UNSMRY data")
 
-        self._dataframe = dataframe
-        self._metadata = metadata
+        dataframe = dataframe.copy()
+        # ensure correct format of date
+        dataframe["REAL"] = dataframe["REAL"].astype(int)
+        dataframe["DATE"] = pd.to_datetime(dataframe["DATE"])
+        make_date_column_datetime_object(dataframe)
+
+        self._dataframe = self._remove_columns_with_only_0(dataframe)
         self.line_shape_fallback = set_simulation_line_shape_fallback(
             line_shape_fallback
         )
+        self._dates = sorted(self._dataframe["DATE"].unique())
+        self._vector_names = self._determine_vector_names()
 
-        self._vector_names = SimulationTimeSeriesModel._determine_vector_names(
-            self._dataframe, self._metadata
-        )
-        # Strip out vector names where all data is 0
-        self._vector_names = (
-            SimulationTimeSeriesModel._filter_vector_names_discard_0_columns(
-                self._vector_names, self._dataframe
-            )
-        )
+        # add vectors to vector selector
+        self.vector_selector_data: list = []
+        for vector in self._vector_names:
+            add_vector_to_vector_selector_data(self.vector_selector_data, vector)
 
-        self._vector_groups = SimulationTimeSeriesModel._split_vectors_by_type(
-            self._vector_names
-        )
-
-        self._dates = sorted(self._dataframe["DATE"].unique().astype(str))
-
-        # Currently we cannot be sure what data type the DATE column has.
-        # Apparently it will have datetime if the source is SMRY files, but
-        # may be of type str if the source is CSV files.
-        # Try and detect if the data type is string by sampling the first entry
-        sample_date = self._dataframe["DATE"].iloc[0]
-        self._date_column_is_str = isinstance(sample_date, str)
-
-    @staticmethod
-    def _determine_vector_names(
-        dataframe: pd.DataFrame, metadata: Optional[pd.DataFrame]
-    ) -> List[str]:
+    def _determine_vector_names(self) -> List[str]:
         """Determine which vectors we should make available"""
-        vecnames = [
-            c
-            for c in dataframe.columns
-            if c not in ["REAL", "ENSEMBLE", "DATE"]
-            and not historical_vector(c, metadata, False) in dataframe.columns
-        ]
-        return vecnames
+        return [c for c in self._dataframe if c not in self.REQUIRED_COLUMNS]
 
     @staticmethod
-    def _filter_vector_names_discard_0_columns(
-        vector_names: Iterable[str], dataframe: pd.DataFrame
-    ) -> List[str]:
+    def _remove_columns_with_only_0(dframe: pd.DataFrame) -> pd.DataFrame:
         """Filter list of vector names by removing vector names where the data is all zeros"""
-        non_zero_column_mask = (dataframe != 0).any(axis=0)
-        non_zero_column_names = set(dataframe.columns[non_zero_column_mask])
-        filtered_vecnames = [n for n in vector_names if n in non_zero_column_names]
-        return filtered_vecnames
-
-    @staticmethod
-    def _split_vectors_by_type(vector_names: Iterable[str]) -> Dict[str, dict]:
-        vtypes = ["Field", "Well", "Region", "Block", "Group", "Connection"]
-        vgroups = {}
-        for vtype in vtypes:
-            vectors = [v for v in vector_names if v.startswith(vtype[0])]
-            if vectors:
-                shortnames, items = SimulationTimeSeriesModel._vector_subitems(vectors)
-                vgroups[vtype] = dict(
-                    vectors=vectors, shortnames=shortnames, items=items
-                )
-
-        other_vectors = [
-            x
-            for x in vector_names
-            if x
-            not in list(
-                chain.from_iterable(
-                    [vtype_dict["vectors"] for vtype_dict in vgroups.values()]
-                )
-            )
-        ]
-        if other_vectors:
-            vgroups["Others"] = dict(
-                vectors=other_vectors, shortnames=other_vectors, items=[]
-            )
-        return vgroups
-
-    @staticmethod
-    def _vector_subitems(vectors: Iterable[str]) -> Tuple[List[str], List[str]]:
-        shortnames = {v.split(":")[0] for v in vectors}
-        items = {":".join(v.split(":")[1:]) for v in vectors if len(v.split(":")) > 1}
-
-        return sorted(shortnames), sorted(
-            items, key=int if all(item.isdigit() for item in items) else None
-        )
+        return dframe.loc[:, (dframe != 0).any(axis=0)]
 
     @property
     def dates(self) -> List[str]:
         return self._dates
 
     @property
-    def vectors(self) -> List[str]:
-        return self._vector_names
+    def dataframe(self) -> List[str]:
+        return self._dataframe
 
     @property
-    def vector_groups(self) -> Dict[str, dict]:
-        return self._vector_groups
+    def vectors(self) -> List[str]:
+        return self._vector_names
 
     @property
     def ensembles(self) -> List[str]:
         return list(self._dataframe["ENSEMBLE"].unique())
 
-    def get_line_shape(self, vector: str) -> str:
-        return get_simulation_line_shape(
-            line_shape_fallback=self.line_shape_fallback,
-            vector=vector,
-            smry_meta=self._metadata,
-        )
+    def filter_vectors(self, column_keys: str):
+        """Filter vector list used for correlation"""
+        column_keys = "".join(column_keys.split()).split(",")
+        try:
+            regex = re.compile(
+                "|".join([fnmatch.translate(col) for col in column_keys]),
+                flags=re.IGNORECASE,
+            )
+            return [v for v in self.vectors if regex.fullmatch(v)]
+        except re.error:
+            return []
 
-    def get_ensemble_vectors_for_date(
-        self, ensemble: str, date: str, vectors: list = None
+    def get_vector_df(
+        self,
+        ensemble: str,
+        realizations: list,
+        vectors: Optional[list] = None,
     ) -> pd.DataFrame:
         vectors = vectors if vectors is not None else self._vector_names
-
-        # If the data type of the DATE column is string, use the passed date argument
-        # directly. Otherwise convert to datetime before doing query
-        query_date = date if self._date_column_is_str else pd.to_datetime(date)
-        df = self._dataframe.loc[
-            (self._dataframe["ENSEMBLE"] == ensemble)
-            & (self._dataframe["DATE"] == query_date),
-            vectors + ["REAL"],
-        ]
-        return df
-
-    def _add_history_trace(self, dframe: pd.DataFrame, vector: str) -> dict:
-        """Renders the history line"""
-        df = dframe.loc[
-            (dframe["REAL"] == dframe["REAL"].unique()[0])
-            & (dframe["ENSEMBLE"] == dframe["ENSEMBLE"].unique()[0])
-        ]
-        return {
-            "line": {"shape": self.get_line_shape(vector)},
-            "x": df["DATE"].astype(str),
-            "y": df[vector],
-            "hovertext": "History",
-            "hoverinfo": "y+x+text",
-            "name": "History",
-            "marker": {"color": "black"},
-            "showlegend": True,
-        }
-
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def add_realization_traces(
-        self, ensemble: str, vector: str, real_filter: Optional[list] = None
-    ) -> list:
-        """Renders line trace for each realization, includes history line if present"""
-        dataframe = self._dataframe[self._dataframe["ENSEMBLE"] == ensemble]
-        dataframe = (
-            dataframe[dataframe["REAL"].isin(real_filter)]
-            if real_filter is not None
-            else dataframe
-        )
-        traces = [
-            {
-                "line": {"shape": self.get_line_shape(vector)},
-                "x": list(real_df["DATE"].astype(str)),
-                "y": list(real_df[vector]),
-                "name": ensemble,
-                "customdata": real,
-                "legendgroup": ensemble,
-                "marker": {"color": "red"},
-                "showlegend": real_idx == 0,
-            }
-            for real_idx, (real, real_df) in enumerate(dataframe.groupby("REAL"))
+        df = self.dataframe[self.REQUIRED_COLUMNS + vectors].copy()
+        return df.loc[
+            (df["ENSEMBLE"] == ensemble) & (df["REAL"].isin(realizations)),
+            ["DATE", "REAL"] + vectors,
         ]
 
-        hist_vecname = historical_vector(vector=vector, smry_meta=self._metadata)
-        if hist_vecname and hist_vecname in dataframe.columns:
-            traces.append(
-                self._add_history_trace(
-                    dataframe,
-                    hist_vecname,
-                )
+    def get_historical_vector_df(
+        self, vector: str, ensemble: str
+    ) -> Optional[pd.DataFrame]:
+        df = self._dataframe
+        hist_vecname = historical_vector(vector, None)
+        if hist_vecname and hist_vecname in df.columns:
+            return (
+                df[[hist_vecname, "DATE"]]
+                .loc[
+                    (df["REAL"] == df["REAL"].unique()[0])
+                    & (df["ENSEMBLE"] == ensemble)
+                ]
+                .rename(columns={hist_vecname: vector})
             )
-
-        return traces
-
-    def daterange_for_plot(self, vector: str) -> List[str]:
-        date = self._dataframe["DATE"][self._dataframe[vector] != 0]
-        return [str(date.min()), str(date.max())]
+        return None

@@ -308,10 +308,11 @@ folder, to avoid risk of not extracting the right data.
                     id=self.uuid("max-params"),
                     min=1,
                     max=max_params,
-                    marks={"1": 1, str(max_params): max_params},
+                    step=1,
+                    marks={1: "1", max_params: str(max_params)},
                     value=max_params,
                 ),
-                style={"margin-top": "10px"},
+                style={"marginTop": "10px"},
             ),
         ]
 
@@ -330,9 +331,15 @@ folder, to avoid risk of not extracting the right data.
                                 label="Controls", children=self.control_layout
                             )
                         ]
-                        + [wcc.Selectors(label="Filters", children=self.filter_layout)]
-                        if self.response_filters
-                        else [],
+                        + (
+                            [
+                                wcc.Selectors(
+                                    label="Filters", children=self.filter_layout
+                                )
+                            ]
+                            if self.response_filters
+                            else []
+                        ),
                     ),
                 ),
                 wcc.FlexColumn(

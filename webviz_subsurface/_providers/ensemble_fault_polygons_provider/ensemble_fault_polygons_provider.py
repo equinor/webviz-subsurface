@@ -23,24 +23,20 @@ class EnsembleFaultPolygonsProvider(abc.ABC):
     @abc.abstractmethod
     def provider_id(self) -> str:
         """Returns string ID of the provider."""
-        ...
 
     @abc.abstractmethod
     def attributes(self) -> List[str]:
         """Returns list of all available attributes."""
-        ...
 
     @abc.abstractmethod
     def fault_polygons_names_for_attribute(
         self, fault_polygons_attribute: str
     ) -> List[str]:
         """Returns list of all available fault polygons names for a given attribute."""
-        ...
 
     @abc.abstractmethod
     def realizations(self) -> List[int]:
         """Returns list of all available realizations."""
-        ...
 
     @abc.abstractmethod
     def get_fault_polygons(
@@ -48,20 +44,16 @@ class EnsembleFaultPolygonsProvider(abc.ABC):
         address: FaultPolygonsAddress,
     ) -> Optional[xtgeo.Polygons]:
         """Returns fault polygons for a given fault polygons address"""
-        ...
 
     # @abc.abstractmethod
     # def get_surface_bounds(self, surface: EnsembleSurfaceContext) -> List[float]:
     #     """Returns the bounds for a surface [xmin,ymin, xmax,ymax]"""
-    #     ...
 
     # @abc.abstractmethod
     # def get_surface_value_range(self, surface: EnsembleSurfaceContext) -> List[float]:
     #     """Returns the value range for a given surface context [zmin, zmax]"""
-    #     ...
 
     # @abc.abstractmethod
     # def get_surface_as_rgba(self, surface: EnsembleSurfaceContext) -> io.BytesIO:
     #     """Returns surface as a greyscale png RGBA with encoded elevation values
     #     in a bytestream"""
-    #     ...
