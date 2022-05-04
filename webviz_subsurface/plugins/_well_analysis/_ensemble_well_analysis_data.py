@@ -6,7 +6,7 @@ import pandas as pd
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from ._types import PressurePlotMode
+from ._types import NodeType, PressurePlotMode
 
 
 class EnsembleWellAnalysisData:
@@ -77,7 +77,7 @@ class EnsembleWellAnalysisData:
         node: str,
         pressure_plot_mode: PressurePlotMode,
         real: int,
-        node_type: str = "well",
+        node_type: NodeType = NodeType.WELL,
     ) -> Dict[str, Any]:
         """Returns a list of dictionaries containing the network nodes
         ending in the input node, with from_date and end_date. If end_date
@@ -118,11 +118,11 @@ class EnsembleWellAnalysisData:
             # the plot mode is MEAN and the gruptrees are different over
             # realization, we return only data for the current node.
             nodes = [_get_node_field(node_type, node)]
-            if node_type == "well":
-                nodes.append(_get_node_field("well_bhp", node))
+            if node_type == NodeType.WELL:
+                nodes.append(_get_node_field(NodeType.WELL_BH, node))
             return {
                 "name": node,
-                "type": node_type,
+                "type": node_type.value,
                 "ctrlmode_sumvec": _get_ctrlmode_sumvec(node_type, node),
                 "networks": [
                     {
@@ -162,13 +162,15 @@ class EnsembleWellAnalysisData:
                     node_networks[-1]["end_date"] = next_date
         return {
             "name": node,
-            "type": node_type,
+            "type": node_type.value,
             "ctrlmode_sumvec": _get_ctrlmode_sumvec(node_type, node),
             "networks": node_networks,
         }
 
 
-def _get_nodelist(df: pd.DataFrame, node_type: str, node: str) -> List[Dict[str, str]]:
+def _get_nodelist(
+    df: pd.DataFrame, node_type: NodeType, node: str
+) -> List[Dict[str, str]]:
     """Returns a list of node dictionaries ending up in the input
     node. The input dataframe has only one date.
 
@@ -189,16 +191,19 @@ def _get_nodelist(df: pd.DataFrame, node_type: str, node: str) -> List[Dict[str,
             f"There can be maximum one row per child per date: {child_row}"
         )
     if is_terminal_node(node, child_row):
-        return [_get_node_field("terminal_node", node)]
+        return [_get_node_field(NodeType.TERMINAL_NODE, node)]
     parent = child_row.PARENT.values[0]
     nodelist = [_get_node_field(node_type, node)]
-    if node_type == "well":
-        nodelist.append(_get_node_field("well_bhp", node))
-    return nodelist + _get_nodelist(df, "field_group", parent)
+    if node_type == NodeType.WELL:
+        nodelist.append(_get_node_field(NodeType.WELL_BH, node))
+    return nodelist + _get_nodelist(df, NodeType.GROUP, parent)
 
 
 def is_terminal_node(node: str, row: pd.Series) -> bool:
-    """Desc"""
+    """Checks if the input node is a terminal node in the network.
+    FIELD is always a terminal node, but other nodes are terminal if they
+    have a value in the TERMINAL_PRESSURE column.
+    """
     if node == "FIELD":
         return True
     if (
@@ -210,44 +215,44 @@ def is_terminal_node(node: str, row: pd.Series) -> bool:
     return False
 
 
-def _get_node_field(node_type: str, node: str) -> Dict[str, str]:
+def _get_node_field(node_type: NodeType, node: str) -> Dict[str, str]:
     """Returns a dictionary with info about a single node:
     * Name
     * Label to be used in pressure plot
-    * Type: well, well_bhp or field_group
+    * Type: well, well-bh, group or terminal-node
     """
-    if node_type in ["field_group", "terminal_node"]:
+    if node_type in [NodeType.GROUP, NodeType.TERMINAL_NODE]:
         return {
             "name": node,
             "label": node,
-            "type": node_type,
+            "type": node_type.value,
             "pressure": f"GPR:{node}",
         }
-    if node_type == "well":
+    if node_type == NodeType.WELL:
         return {
             "name": node,
             "label": "THP",
-            "type": "well",
+            "type": node_type.value,
             "pressure": f"WTHP:{node}",
         }
-    if node_type == "well_bhp":
+    if node_type == NodeType.WELL_BH:
         return {
             "name": node,
             "label": "BHP",
-            "type": "well_bhp",
+            "type": node_type.value,
             "pressure": f"WBHP:{node}",
         }
     raise ValueError(f"Node type {node_type} not implemented.")
 
 
-def _get_ctrlmode_sumvec(node_type: str, node: str) -> str:
+def _get_ctrlmode_sumvec(node_type: NodeType, node: str) -> str:
     """Returns the control mode sumvec for a given node type
     and node name. Only production network implemented so far.
     """
     if node == "FIELD":
         return "FMCTP"
-    if node_type == "well":
+    if node_type == NodeType.WELL:
         return f"WMCTL:{node}"
-    if node_type == "field_group":
+    if node_type == NodeType.GROUP:
         return f"GMCTP:{node}"
     raise ValueError(f"Node type {node_type} not implemented")

@@ -50,7 +50,12 @@ def create_well_control_figure(
     # Prepare data
     ctrlmode_sumvec = node_info["ctrlmode_sumvec"]
     smry_ctrlmodes = smry[["DATE", "REAL", ctrlmode_sumvec]].copy()
+    # Truncate at -1
     smry_ctrlmodes[ctrlmode_sumvec].clip(-1, None, inplace=True)
+    # Replace interpolated values
+    smry_ctrlmodes[ctrlmode_sumvec] = smry_ctrlmodes[ctrlmode_sumvec].apply(
+        lambda x: "Interpolated" if x % 1 else x
+    )
 
     # Add traces
     add_ctrl_mode_traces(fig, node_info, smry_ctrlmodes)
@@ -269,6 +274,7 @@ def get_ctrlmode_categories(node_type: str) -> dict:
             "6.0": {"name": "THP", "color": "#7e5980"},  # purple
             "7.0": {"name": "BHP", "color": "#1f77b4"},  # muted blue
             "-1.0": {"name": "GRUP", "color": "#cfcc74"},  # yellow
+            "Interpolated": {"name": "Interpolated", "color": "#ffffff"},  # white
             "Other": {"name": "Other", "color": "#ffffff"},  # white
         }
     if node_type == "field_group":
@@ -282,6 +288,7 @@ def get_ctrlmode_categories(node_type: str) -> dict:
             "6.0": {"name": "PRBL", "color": "#7e5980"},  # purple
             "7.0": {"name": "ENERGY", "color": "#1f77b4"},  # muted blue
             "-ve": {"name": "GRUP", "color": "#cfcc74"},  # yellow
+            "Interpolated": {"name": "Interpolated", "color": "#ffffff"},  # white
             "Other": {"name": "Other", "color": "#ffffff"},  # white
         }
     raise ValueError(f"Node type: {node_type} not implemented")
