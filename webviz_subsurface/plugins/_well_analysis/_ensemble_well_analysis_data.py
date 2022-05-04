@@ -225,21 +225,21 @@ def _get_node_field(node_type: NodeType, node: str) -> Dict[str, str]:
         return {
             "name": node,
             "label": node,
-            "type": node_type.value,
+            "type": node_type,
             "pressure": f"GPR:{node}",
         }
     if node_type == NodeType.WELL:
         return {
             "name": node,
             "label": "THP",
-            "type": node_type.value,
+            "type": node_type,
             "pressure": f"WTHP:{node}",
         }
     if node_type == NodeType.WELL_BH:
         return {
             "name": node,
             "label": "BHP",
-            "type": node_type.value,
+            "type": node_type,
             "pressure": f"WBHP:{node}",
         }
     raise ValueError(f"Node type {node_type} not implemented.")

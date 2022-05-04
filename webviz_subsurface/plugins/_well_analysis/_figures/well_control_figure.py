@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
 from ...._utils.colors import StandardColors
-from .._types import PressurePlotMode
+from .._types import NodeType, PressurePlotMode
 
 
 def create_well_control_figure(
@@ -133,7 +133,7 @@ def add_network_pressure_traces(
         )
 
         for nodedict in node_network["nodes"]:
-            if nodedict["type"] == "well_bhp" and not include_bhp:
+            if nodedict["type"] == NodeType.WELL_BH and not include_bhp:
                 continue
             sumvec = nodedict["pressure"]
             label = nodedict["label"]
@@ -261,9 +261,9 @@ def add_area_trace(
     )
 
 
-def get_ctrlmode_categories(node_type: str) -> dict:
+def get_ctrlmode_categories(node_type: NodeType) -> dict:
     """Returning name and color for the control mode values"""
-    if node_type == "well":
+    if node_type == NodeType.WELL:
         return {
             "0.0": {"name": "SHUT/STOP", "color": "#302f2f"},  # grey
             "1.0": {"name": "ORAT", "color": StandardColors.OIL_GREEN.value},  # green
@@ -277,7 +277,7 @@ def get_ctrlmode_categories(node_type: str) -> dict:
             "Interpolated": {"name": "Interpolated", "color": "#ffffff"},  # white
             "Other": {"name": "Other", "color": "#ffffff"},  # white
         }
-    if node_type == "field_group":
+    if node_type == NodeType.GROUP:
         return {
             "0.0": {"name": "NONE", "color": "#302f2f"},  # grey
             "1.0": {"name": "ORAT", "color": StandardColors.OIL_GREEN.value},  # green
