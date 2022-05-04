@@ -39,8 +39,11 @@ class CO2Migration(WebvizPluginABC):
         for provider in self._ensemble_fault_polygons_providers.values():
             self._polygons_server.add_provider(provider)
         # License boundary
+        # TODO: may want to expose license boundary via a provider, but need
+        #  standardization on its location first
         self._license_boundary_file = license_boundary_file
         # Wells
+        # TODO: this does not support well picks differing between realizations
         self._well_pick_provider = _initialize_well_picks_providers(well_pick_file)
         self.set_callbacks()
 

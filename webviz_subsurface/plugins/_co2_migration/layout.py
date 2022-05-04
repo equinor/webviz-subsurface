@@ -27,6 +27,11 @@ class LayoutElements(str, Enum):
     ENSEMBLEBARPLOT = "ensemblebarplot"
 
 
+@unique
+class LayoutLabels(Enum):
+    LICENSE_BOUNDARY_LAYER = "License Boundary"
+
+
 class LayoutStyle:
     MAPHEIGHT = "81vh"
     ENSEMBLEBARPLOTHEIGHT = 300
@@ -131,7 +136,6 @@ class EnsembleSelectorLayout(html.Div):
                 wcc.Dropdown(
                     id=get_uuid(LayoutElements.REALIZATIONINPUT),
                 ),
-                # TODO: check that this does not yield an error with missing csv files
                 dcc.Graph(
                     id=get_uuid(LayoutElements.ENSEMBLEBARPLOT),
                     figure=go.Figure(),
