@@ -8,8 +8,8 @@ FAULT_POLYGON_ATTRIBUTE = "dl_extracted_faultlines"
 
 
 class MapAttribute(Enum):
-    MIGRATION_TIME = "migration-time"
-    MAX_SATURATION = "max-saturation"
+    MIGRATION_TIME = "Migration Time"
+    MAX_SATURATION = "Maximum Saturation"
 
 
 def realization_paths(ensemble_path) -> Dict[str, str]:

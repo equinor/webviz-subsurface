@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 import pandas
 from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -23,11 +23,13 @@ class CO2Migration(WebvizPluginABC):
         ensembles: List[str],
         license_boundary_file: Optional[str] = None,
         well_pick_file: Optional[str] = None,
+        map_attribute_names: Optional[Dict[str, str]] = None,
     ):
         # TODO: license boundary file should be incorporated into fault
         #  polygon provider, get its own provider or something similar
         super().__init__()
         self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
+        self._map_attribute_names = _initialize_map_attribute_names(map_attribute_names)
         # Surfaces
         self._ensemble_surface_providers = _initialize_surface_providers(webviz_settings, ensembles)
         self._surface_server = SurfaceServer.instance(app)
@@ -59,16 +61,28 @@ class CO2Migration(WebvizPluginABC):
             fault_polygons_server=self._polygons_server,
             license_boundary_file=self._license_boundary_file,
             well_pick_provider=self._well_pick_provider,
+            map_attribute_names=self._map_attribute_names
         )
+
+
+def _initialize_map_attribute_names(
+    mapping: Optional[Dict[str, str]]
+) -> Dict[MapAttribute, str]:
+    if mapping is None:
+        # Based on name convention of xtgeoapp_grd3dmaps:
+        return {
+            MapAttribute.MIGRATION_TIME: "min_MigrationTime",
+            MapAttribute.MAX_SATURATION: "max_SGAS",
+        }
+    else:
+        return {MapAttribute(key): value for key, value in mapping.items()}
 
 
 def _initialize_surface_providers(webviz_settings, ensembles):
     surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
-    attributes = [m.value for m in MapAttribute]
     return {
         ens: surface_provider_factory.create_from_ensemble_surface_files(
             webviz_settings.shared_settings["scratch_ensembles"][ens],
-            attribute_filter=attributes,
         )
         for ens in ensembles
     }

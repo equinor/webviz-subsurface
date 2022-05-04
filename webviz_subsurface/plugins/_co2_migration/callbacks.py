@@ -40,6 +40,7 @@ def plugin_callbacks(
     fault_polygons_server: FaultPolygonsServer,
     license_boundary_file: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
+    map_attribute_names: Dict[MapAttribute, str],
 ):
     @callback(
         Output(get_uuid(LayoutElements.REALIZATIONINPUT), "options"),
@@ -77,7 +78,8 @@ def plugin_callbacks(
             return [], [], [], [], []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
-        date_list = surface_provider.surface_dates_for_attribute(MapAttribute.MAX_SATURATION.value)
+        att_name = map_attribute_names[MapAttribute.MAX_SATURATION]
+        date_list = surface_provider.surface_dates_for_attribute(att_name)
         if date_list is None:
             dates = {}
             initial_date = dash.no_update
@@ -94,6 +96,7 @@ def plugin_callbacks(
             }
             initial_date = int(date_list[0])
         # Map
+        prop = map_attribute_names[MapAttribute(prop)]
         surfaces = surface_provider.surface_names_for_attribute(prop)
         surfaces = [
             dict(label=s, value=s)
@@ -141,7 +144,7 @@ def plugin_callbacks(
         layer_model, viewport_bounds = create_layer_model(
             surface_server=surface_server,
             surface_provider=ensemble_surface_providers[ensemble],
-            colormap_address=_derive_colormap_address(surface_name, attribute, date, realization),
+            colormap_address=_derive_colormap_address(surface_name, attribute, date, realization, map_attribute_names),
             fault_polygons_server=fault_polygons_server,
             polygon_provider=ensemble_fault_polygons_providers[ensemble],
             polygon_address=_derive_fault_polygon_address(polygon_name, realization),
@@ -221,24 +224,21 @@ def create_layer_model(
     return layer_model, viewport_bounds
 
 
-def _derive_colormap_address(surface_name: str, attribute: str, date, realization: int):
+def _derive_colormap_address(
+    surface_name: str,
+    attribute: str,
+    date: Optional[str],
+    realization: int,
+    map_attribute_names: Dict[MapAttribute, str]
+):
     attribute = MapAttribute(attribute)
-    if attribute == MapAttribute.MIGRATION_TIME:
-        return SimulatedSurfaceAddress(
-            attribute=MapAttribute.MIGRATION_TIME.value,
-            name=surface_name,
-            datestr=None,
-            realization=realization,
-        )
-    elif attribute == MapAttribute.MAX_SATURATION:
-        return SimulatedSurfaceAddress(
-            attribute=MapAttribute.MAX_SATURATION.value,
-            name=surface_name,
-            datestr=date,
-            realization=realization,
-        )
-    else:
-        raise NotImplementedError
+    date = None if attribute == MapAttribute.MIGRATION_TIME else date
+    return SimulatedSurfaceAddress(
+        attribute=map_attribute_names[attribute],
+        name=surface_name,
+        datestr=date,
+        realization=realization
+    )
 
 
 def _derive_fault_polygon_address(polygon_name, realization):
