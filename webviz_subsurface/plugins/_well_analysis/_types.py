@@ -10,4 +10,3 @@ class NodeType(str, Enum):
     WELL = "well"
     GROUP = "group"
     WELL_BH = "well-bh"
-    TERMINAL_NODE = "terminal-node"

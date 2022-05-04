@@ -191,7 +191,7 @@ def _get_nodelist(
             f"There can be maximum one row per child per date: {child_row}"
         )
     if is_terminal_node(node, child_row):
-        return [_get_node_field(NodeType.TERMINAL_NODE, node)]
+        return [_get_node_field(NodeType.GROUP, node)]
     parent = child_row.PARENT.values[0]
     nodelist = [_get_node_field(node_type, node)]
     if node_type == NodeType.WELL:
@@ -221,7 +221,7 @@ def _get_node_field(node_type: NodeType, node: str) -> Dict[str, str]:
     * Label to be used in pressure plot
     * Type: well, well-bh, group or terminal-node
     """
-    if node_type in [NodeType.GROUP, NodeType.TERMINAL_NODE]:
+    if node_type == NodeType.GROUP:
         return {
             "name": node,
             "label": node,
