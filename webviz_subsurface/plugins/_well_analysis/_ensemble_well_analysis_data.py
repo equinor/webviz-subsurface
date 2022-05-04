@@ -6,6 +6,8 @@ import pandas as pd
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
+from ._types import PressurePlotMode
+
 
 class EnsembleWellAnalysisData:
     """This class holds the summary data provider."""
@@ -70,7 +72,13 @@ class EnsembleWellAnalysisData:
         df_melted["ENSEMBLE"] = self._ensemble_name
         return df_melted
 
-    def get_node_info(self, node: str, node_type: str = "well") -> Dict[str, Any]:
+    def get_node_info(
+        self,
+        node: str,
+        pressure_plot_mode: PressurePlotMode,
+        real: int,
+        node_type: str = "well",
+    ) -> Dict[str, Any]:
         """Returns a list of dictionaries containing the network nodes
         ending in the input node, with from_date and end_date. If end_date
         is None it means that the network is valid for the rest of the
@@ -99,8 +107,19 @@ class EnsembleWellAnalysisData:
             ]
         }
         """
+
         gruptree_df = self._gruptree_model.dataframe
-        if gruptree_df.empty:
+
+        if gruptree_df.empty or (
+            pressure_plot_mode == PressurePlotMode.MEAN
+            and not self._gruptree_model.gruptrees_are_equal_over_reals
+        ):
+            # If there is no gruptree OR
+            # the plot mode is MEAN and the gruptrees are different over
+            # realization, we return only data for the current node.
+            nodes = [_get_node_field(node_type, node)]
+            if node_type == "well":
+                nodes.append(_get_node_field("well_bhp", node))
             return {
                 "name": node,
                 "type": node_type,
@@ -109,10 +128,19 @@ class EnsembleWellAnalysisData:
                     {
                         "start_date": self._smry["DATE"].min(),
                         "end_date": None,
-                        "nodes": [_get_node_field(node_type, node)],
+                        "nodes": nodes,
                     }
                 ],
             }
+
+        if (
+            pressure_plot_mode == PressurePlotMode.SINGLE_REAL
+            and not self._gruptree_model.gruptrees_are_equal_over_reals
+        ):
+            # If the plot mode is SINGLE_REAL and gruptrees are
+            # different over realizations, then we need to filter
+            # the gruptree dataframe on realization
+            gruptree_df = gruptree_df[gruptree_df["REAL"] == real]
 
         node_networks: List[Dict[str, Any]] = []
         prev_nodelist: List[Dict[str, Any]] = []

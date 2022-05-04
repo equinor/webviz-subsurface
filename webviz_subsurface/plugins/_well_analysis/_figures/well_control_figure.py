@@ -162,7 +162,6 @@ def add_ctrlmode_bar(
     sumvec = node_info["ctrlmode_sumvec"]
     categories = get_ctrlmode_categories(node_info["type"])
     df = smry[smry.REAL == real]
-
     prev_ctrlmode = df[df.DATE == df.DATE.min()][sumvec].values[0]
     ctrlmode_startdate = df.DATE.min()
     end_date = df.DATE.max()

@@ -52,17 +52,18 @@ def well_control_callbacks(
     def _update_figure(
         well: str,
         include_bhp: List[str],
-        pressure_plot_mode: str,
+        pressure_plot_mode_string: str,
         real: int,
         display_ctrlmode_bar: bool,
         shared_xaxes: List[str],
         ensemble: str,
     ) -> List[Optional[Any]]:
         """Updates the well control figure"""
+        pressure_plot_mode = PressurePlotMode(pressure_plot_mode_string)
         fig = create_well_control_figure(
-            data_models[ensemble].get_node_info(well),
+            data_models[ensemble].get_node_info(well, pressure_plot_mode, real),
             data_models[ensemble].summary_data,
-            PressurePlotMode(pressure_plot_mode),
+            pressure_plot_mode,
             real,
             display_ctrlmode_bar,
             "shared_xaxes" in shared_xaxes,

@@ -25,10 +25,27 @@ class GruptreeModel:
         self._gruptree_file = gruptree_file
         self._remove_gruptree_if_branprop = remove_gruptree_if_branprop
         self._dataframe = self.read_ensemble_gruptree()
+        self._gruptrees_are_equal_over_reals = self._dataframe["REAL"].nunique() == 1
 
     @property
     def dataframe(self) -> pd.DataFrame:
+        """Returns a dataframe that will have the following columns:
+        * DATE
+        * CHILD (node in tree)
+        * PARENT (node in tree)
+        * KEYWORD (GRUPTREE, WELSPECS or BRANPROP)
+        * REAL
+
+        If gruptrees are exactly equal in all realizations then only one tree is
+        stored in the dataframe. That means the REAL column will only have one unique value.
+        If not, all trees are stored.
+        """
         return self._dataframe
+
+    @property
+    def gruptrees_are_equal_over_reals(self) -> bool:
+        """Returns true if gruptrees are exactly equal in all realizations."""
+        return self._gruptrees_are_equal_over_reals
 
     def __repr__(self) -> str:
         """This is necessary for webvizstore to work on objects"""
