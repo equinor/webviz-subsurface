@@ -71,6 +71,9 @@ def test_object_properties(mocker):
         },
     }
 
+    # Test category_dict
+    assert well_attr.category_dict == {"attr1": ["value1"], "attr2": ["value2", np.nan]}
+
     # Test dataframe
     pd.testing.assert_frame_equal(
         well_attr.dataframe,
