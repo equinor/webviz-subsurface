@@ -70,12 +70,6 @@ class WellAttributesModel:
             id_vars=["WELL"], value_vars=self._categories
         ).rename({"variable": "CATEGORY", "value": "VALUE"}, axis=1)
 
-        # Dictionary on the form: category : attribute_values
-        self._category_dict = {
-            category: list(df["VALUE"].unique())
-            for category, df in self._dataframe_melted.groupby("CATEGORY")
-        }
-
     def __repr__(self) -> str:
         """This is necessary for webvizstore to work on objects"""
         return f"""
@@ -120,7 +114,12 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
             "category2": ...
         }
         """
-        return self._category_dict
+        return {
+            category: list(df["VALUE"].unique())
+            for category, df in self._dataframe_melted.fillna("Undefined").groupby(
+                "CATEGORY"
+            )
+        }
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:

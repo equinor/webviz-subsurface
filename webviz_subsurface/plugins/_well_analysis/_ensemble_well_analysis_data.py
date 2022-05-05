@@ -78,7 +78,7 @@ class EnsembleWellAnalysisData:
         well attributes will be ignored. If no categories match, then all
         wells is returned.
         """
-        well_attr_df = self._well_attributes_model.dataframe_melted
+        well_attr_df = self._well_attributes_model.dataframe_melted.fillna("Undefined")
         filtered_wells = set(self._wells)
         for category, values in well_attributes_filter.items():
             if category in self._well_attributes_model.categories:
