@@ -3095,7 +3095,7 @@ def makedf(
 
         df = makedf_seis_obs_meta(obsfile, obs_mult=obs_mult)
 
-        df["ENSEMBLE"] = ens_name  # add ENSEBLE column
+        df["ENSEMBLE"] = ens_name  # add ENSEMBLE column
         dfs_obs.append(df.copy())
 
         # --- add sim data ---
@@ -3206,6 +3206,7 @@ def makedf_seis_addsim(
 
     data_found, no_data_found = [], []
     real_path = {}
+    obs_size = len(df.index)
 
     runpaths = glob.glob(ens_path)
     if len(runpaths) == 0:
@@ -3224,10 +3225,16 @@ def makedf_seis_addsim(
                 Path(real_path[real]) / Path(attribute_sim_path) / Path(attribute_name)
             )
             if simfile.exists():
+                # ---read sim data and apply sim multiplier ---
                 colname = "real-" + str(real)
-                sim_df_list.append(
-                    pd.read_csv(simfile, header=None, names=[colname]) * sim_mult
-                )  # ---read sim data and apply sim multiplier ---
+                sim_df = pd.read_csv(simfile, header=None, names=[colname]) * sim_mult
+                if len(sim_df.index) != obs_size:
+                    raise RuntimeError(
+                        f"---\nThe length of {simfile} is {len(sim_df.index)} which is "
+                        f"different to the obs data which has {obs_size} data points. "
+                        "These must be the same size.\n---"
+                    )
+                sim_df_list.append(sim_df)
                 data_found.append(real)
             else:
                 no_data_found.append(real)
