@@ -7,7 +7,7 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
 import webviz_subsurface
 
-from ..._models import GruptreeModel
+from ..._models import GruptreeModel, WellAttributesModel
 from ..._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
@@ -62,6 +62,7 @@ class WellAnalysis(WebvizPluginABC):
 
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: Dash,
@@ -69,7 +70,8 @@ class WellAnalysis(WebvizPluginABC):
         ensembles: Optional[List[str]] = None,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         gruptree_file: str = "share/results/tables/gruptree.csv",
-        time_index: str = "yearly",
+        well_attributes_file: str = "rms/output/wells/well_attributes.json",
+        time_index: str = Frequency.YEARLY.value,
         filter_out_startswith: Optional[str] = None,
     ) -> None:
         super().__init__()
@@ -109,11 +111,8 @@ class WellAnalysis(WebvizPluginABC):
             self._data_models[ens_name] = EnsembleWellAnalysisData(
                 ens_name,
                 provider,
-                GruptreeModel(
-                    ens_name,
-                    ens_path,
-                    gruptree_file,
-                ),
+                GruptreeModel(ens_name, ens_path, gruptree_file),
+                WellAttributesModel(ens_name, ens_path, well_attributes_file),
                 filter_out_startswith=filter_out_startswith,
             )
 
@@ -121,8 +120,9 @@ class WellAnalysis(WebvizPluginABC):
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
-            ens_data_model.webviz_store
+            webviz_store_tuple
             for _, ens_data_model in self._data_models.items()
+            for webviz_store_tuple in ens_data_model.webviz_store
         ]
 
     @property

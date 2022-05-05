@@ -1,9 +1,9 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
 
-from webviz_subsurface._models import GruptreeModel
+from webviz_subsurface._models import GruptreeModel, WellAttributesModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
 from ._types import NodeType, PressurePlotMode
@@ -17,10 +17,12 @@ class EnsembleWellAnalysisData:
         ensemble_name: str,
         provider: EnsembleSummaryProvider,
         gruptree_model: GruptreeModel,
+        well_attributes_model: WellAttributesModel,
         filter_out_startswith: Optional[str] = None,
     ):
         self._ensemble_name = ensemble_name
         self._gruptree_model = gruptree_model
+        self._well_attributes_model = well_attributes_model
         self._provider = provider
         self._vector_names = self._provider.vector_names()
         self._realizations = self._provider.realizations()
@@ -39,8 +41,11 @@ class EnsembleWellAnalysisData:
         self._smry = provider.get_vectors_df(well_sumvecs + group_sumvecs, None)
 
     @property
-    def webviz_store(self) -> Tuple[Callable, List[Dict]]:
-        return self._gruptree_model.webviz_store
+    def webviz_store(self) -> List[Tuple[Callable, List[Dict]]]:
+        return [
+            self._gruptree_model.webviz_store,
+            self._well_attributes_model.webviz_store,
+        ]
 
     @property
     def summary_data(self) -> pd.DataFrame:
@@ -53,6 +58,36 @@ class EnsembleWellAnalysisData:
     @property
     def wells(self) -> List[str]:
         return self._wells
+
+    @property
+    def well_attributes(self) -> pd.DataFrame:
+        return self._well_attributes_model.category_dict
+
+    def filter_on_well_attributes(
+        self, well_attributes_filter: Dict[str, List[str]]
+    ) -> Set[str]:
+        """Filters wells based on the input well attributes filter.
+
+        The input parameter well_attribute_filter has the form:
+        {
+            "welltype":["oil_producer", "water_injector", ...],
+            "category2": ...
+        }
+
+        Any categories in the filter than does not exist in the ensemble
+        well attributes will be ignored. If no categories match, then all
+        wells is returned.
+        """
+        well_attr_df = self._well_attributes_model.dataframe_melted
+        filtered_wells = set(self._wells)
+        for category, values in well_attributes_filter.items():
+            if category in self._well_attributes_model.categories:
+                df = well_attr_df[
+                    (well_attr_df["CATEGORY"] == category)
+                    & (well_attr_df["VALUE"].isin(values))
+                ]
+                filtered_wells = filtered_wells.intersection(set(df["WELL"].unique()))
+        return filtered_wells
 
     def get_dataframe_melted(self, well_sumvec: str) -> pd.DataFrame:
         """Returns a dataframe on long form consisting of these columns:

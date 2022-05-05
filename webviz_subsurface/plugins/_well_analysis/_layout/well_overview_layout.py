@@ -16,6 +16,7 @@ class WellOverviewLayoutElements:
     CHARTTYPE_SETTINGS = "well-overview-charttype-settings"
     CHARTTYPE_CHECKLIST = "well-overview-charttype-checklist"
     WELL_FILTER = "well-overview-well-filter"
+    WELL_ATTRIBUTES = "well-overview-well-attributes"
 
 
 def well_overview_tab(
@@ -77,7 +78,7 @@ def controls(
 ) -> wcc.Selectors:
     ensembles = list(data_models.keys())
     return wcc.Selectors(
-        label="Selections",
+        label="Plot Controls",
         children=[
             wcc.Dropdown(
                 label="Ensembles",
@@ -104,11 +105,18 @@ def controls(
 def filters(
     get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
 ) -> wcc.Selectors:
-    wells = [
-        well
-        for _, ens_data_model in data_models.items()
-        for well in ens_data_model.wells
-    ]
+    # Collecting wells and well_attributes from all ensembles.
+    wells = []
+    well_attr = {}
+    for _, ens_data_model in data_models.items():
+        wells.extend([well for well in ens_data_model.wells if well not in wells])
+        for category, values in ens_data_model.well_attributes.items():
+            if category not in well_attr:
+                well_attr[category] = values
+            else:
+                well_attr[category].extend(
+                    [value for value in values if value not in well_attr[category]]
+                )
 
     return wcc.Selectors(
         label="Filters",
@@ -121,6 +129,21 @@ def filters(
                 value=wells,
                 multi=True,
             )
+        ]
+        # Adding well attributes selectors
+        + [
+            wcc.SelectWithLabel(
+                label=category.capitalize(),
+                size=min(5, len(values)),
+                id={
+                    "id": get_uuid(WellOverviewLayoutElements.WELL_ATTRIBUTES),
+                    "category": category,
+                },
+                options=[{"label": value, "value": value} for value in values],
+                value=values,
+                multi=True,
+            )
+            for category, values in well_attr.items()
         ],
     )
 

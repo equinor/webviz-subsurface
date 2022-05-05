@@ -96,6 +96,19 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
         ).rename({"variable": "CATEGORY", "value": "VALUE"}, axis=1)
 
     @property
+    def category_dict(self) -> Dict[str, List[str]]:
+        """Returns a Dict on the following form:
+        {
+            "welltype":["oil_producer", "water_injector", ...],
+            "category2": ...
+        }
+        """
+        return {
+            category: list(df["VALUE"].unique())
+            for category, df in self.dataframe_melted.groupby("CATEGORY")
+        }
+
+    @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
         return (
             self._load_data,
@@ -119,7 +132,7 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
             file_content = json.loads(Path(row["FULLPATH"]).read_text())
             logging.debug(f"Well attributes loaded from file: {row['FULLPATH']}")
             return io.BytesIO(json.dumps(file_content).encode())
-        return io.BytesIO(json.dumps({}).encode())
+        return io.BytesIO(json.dumps({"version": "0.1", "wells": []}).encode())
 
     def _transform_data(self) -> Dict[str, Dict[str, str]]:
         """Transforms the well attributes format to a simpler form
@@ -133,6 +146,10 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
             "OP_2 : {...}
         }
         """
+        if "version" not in self._data_raw:
+            raise ValueError(
+                "Attribute 'version' not found in the well attributes file."
+            )
         if self._data_raw["version"] != "0.1":
             raise NotImplementedError(
                 f"Version {self._data_raw['version']} of the well attributes file "

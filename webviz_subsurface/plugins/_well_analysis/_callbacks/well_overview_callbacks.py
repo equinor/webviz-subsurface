@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Set
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
@@ -124,10 +124,24 @@ def well_overview_callbacks(
         Input(get_uuid(WellOverviewLayoutElements.SUMVEC), "value"),
         Input(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
         Input(get_uuid(WellOverviewLayoutElements.WELL_FILTER), "value"),
+        Input(
+            {
+                "id": get_uuid(WellOverviewLayoutElements.WELL_ATTRIBUTES),
+                "category": ALL,
+            },
+            "value",
+        ),
         State(
             {
                 "id": get_uuid(WellOverviewLayoutElements.CHARTTYPE_CHECKLIST),
                 "charttype": ALL,
+            },
+            "id",
+        ),
+        State(
+            {
+                "id": get_uuid(WellOverviewLayoutElements.WELL_ATTRIBUTES),
+                "category": ALL,
             },
             "id",
         ),
@@ -139,9 +153,13 @@ def well_overview_callbacks(
         sumvec: str,
         chart_selected: str,
         wells_selected: List[str],
+        well_attr_selected: List[str],
         checklist_ids: List[Dict[str, str]],
+        well_attr_ids: List[Dict[str, str]],
         current_fig_dict: dict,
     ) -> List[wcc.Graph]:
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-arguments
         """Updates the well overview graph with selected input (f.ex chart type)"""
         ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
@@ -149,6 +167,23 @@ def well_overview_callbacks(
             checklist_id["charttype"]: checklist_values[i]
             for i, checklist_id in enumerate(checklist_ids)
         }
+        well_attributes_selected: Dict[str, List[str]] = {
+            well_attr_id["category"]: list(well_attr_selected[i])
+            for i, well_attr_id in enumerate(well_attr_ids)
+        }
+
+        # Make set of wells that match the well_attributes
+        # Well attributes that does not exist in one ensemble will be ignored
+        wellattr_filtered_wells: Set[str] = set()
+        for _, ens_data_model in data_models.items():
+            wellattr_filtered_wells = wellattr_filtered_wells.union(
+                ens_data_model.filter_on_well_attributes(well_attributes_selected)
+            )
+        # Take the intersection with wells_selected.
+        # this way preserves the order in wells_selected and will not have duplicates
+        filtered_wells = [
+            well for well in wells_selected if well in wellattr_filtered_wells
+        ]
 
         # If the event is a plot settings event, then we only update the formatting
         # and not the figure data
@@ -165,7 +200,7 @@ def well_overview_callbacks(
                 data_models,
                 sumvec,
                 chart_selected,
-                wells_selected,
+                filtered_wells,
                 theme,
             )
 

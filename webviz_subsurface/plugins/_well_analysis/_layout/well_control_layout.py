@@ -45,7 +45,7 @@ def controls(
         style={"flex": 1, "height": "87vh"},
         children=[
             wcc.Selectors(
-                label="Selections",
+                label="Plot Controls",
                 children=[
                     wcc.Dropdown(
                         label="Ensemble",
