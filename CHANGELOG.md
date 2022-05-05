@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.13] - 2022-05-05
+
 ### Added
 
 - [#938](https://github.com/equinor/webviz-subsurface/pull/938) - `ProdMisfit` - New plugin for well production misfit visualization. Features visualization of production misfit at selected dates, production coverage at selected dates and heatmap representation of ensemble mean misfit for selected dates.
