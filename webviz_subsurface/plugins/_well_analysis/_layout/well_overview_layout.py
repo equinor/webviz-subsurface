@@ -1,4 +1,5 @@
-from typing import Callable, Dict
+import datetime
+from typing import Callable, Dict, List, Set
 
 import webviz_core_components as wcc
 from dash import html
@@ -17,6 +18,7 @@ class WellOverviewLayoutElements:
     CHARTTYPE_CHECKLIST = "well-overview-charttype-checklist"
     WELL_FILTER = "well-overview-well-filter"
     WELL_ATTRIBUTES = "well-overview-well-attributes"
+    DATE = "well-overview-date"
 
 
 def well_overview_tab(
@@ -77,6 +79,11 @@ def controls(
     get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
 ) -> wcc.Selectors:
     ensembles = list(data_models.keys())
+    dates: Set[datetime.datetime] = set()
+    for _, ens_data_model in data_models.items():
+        dates = dates.union(ens_data_model.dates)
+    sorted_dates: List[datetime.datetime] = sorted(list(dates))
+
     return wcc.Selectors(
         label="Plot Controls",
         children=[
@@ -96,6 +103,18 @@ def controls(
                     {"label": "Water production", "value": "WWPT"},
                 ],
                 value="WOPT",
+                multi=False,
+            ),
+            wcc.Dropdown(
+                label="Only Production after date",
+                id=get_uuid(WellOverviewLayoutElements.DATE),
+                options=[
+                    {
+                        "label": dte.strftime("%Y-%m-%d"),
+                        "value": dte.strftime("%Y-%m-%d"),
+                    }
+                    for dte in sorted_dates
+                ],
                 multi=False,
             ),
         ],

@@ -1,6 +1,7 @@
+import datetime
 import itertools
 import math
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -16,6 +17,7 @@ class WellOverviewFigure:
         ensembles: List[str],
         data_models: Dict[str, EnsembleWellAnalysisData],
         sumvec: str,
+        prod_after_date: Union[datetime.datetime, None],
         charttype: str,  # bar, pie, area
         wells_selected: List[str],
         theme: WebvizConfigTheme,
@@ -24,6 +26,7 @@ class WellOverviewFigure:
         self._ensembles = ensembles
         self._data_models = data_models
         self._sumvec = sumvec
+        self._prod_after_date = prod_after_date
         self._charttype = charttype
         self._wells_selected = wells_selected
         self._colors = theme.plotly_theme["layout"]["colorway"]
@@ -66,7 +69,9 @@ class WellOverviewFigure:
         different chart types.
         """
         if self._charttype in ["pie", "bar"]:
-            df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
+            df = self._data_models[ensemble].get_dataframe_melted(
+                self._sumvec, self._prod_after_date
+            )
             df = df[df["WELL"].isin(self._wells_selected)]
             df_mean = df.groupby("WELL").mean().reset_index()
             return df_mean[df_mean[self._sumvec] > 0]

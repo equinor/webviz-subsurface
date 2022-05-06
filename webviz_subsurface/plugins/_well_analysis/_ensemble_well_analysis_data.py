@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+import datetime
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -52,6 +53,10 @@ class EnsembleWellAnalysisData:
         return self._smry
 
     @property
+    def dates(self) -> List[datetime.datetime]:
+        return list(self._smry["DATE"].unique())
+
+    @property
     def realizations(self) -> List[int]:
         return self._realizations
 
@@ -89,7 +94,9 @@ class EnsembleWellAnalysisData:
                 filtered_wells = filtered_wells.intersection(set(df["WELL"].unique()))
         return filtered_wells
 
-    def get_dataframe_melted(self, well_sumvec: str) -> pd.DataFrame:
+    def get_dataframe_melted(
+        self, well_sumvec: str, prod_after_date: Union[datetime.datetime, None]
+    ) -> pd.DataFrame:
         """Returns a dataframe on long form consisting of these columns:
         * WELL
         * well_sumvec (f.ex WOPT)
@@ -98,6 +105,16 @@ class EnsembleWellAnalysisData:
         sumvecs = [f"{well_sumvec}:{well}" for well in self._wells]
         df = self._smry[["REAL", "DATE"] + sumvecs]
         df = df[df["DATE"] == df["DATE"].max()]
+
+        if prod_after_date is not None:
+            df_date = self._smry[["REAL", "DATE"] + sumvecs]
+            df_date = df_date[df_date["DATE"] >= prod_after_date]
+            df_date = df_date[df_date["DATE"] == df_date["DATE"].min()]
+            df_merged = df.merge(df_date, on=["REAL"], how="inner")
+            for vec in sumvecs:
+                df_merged[vec] = df_merged[f"{vec}_x"] - df_merged[f"{vec}_y"]
+            df = df_merged[["REAL"] + sumvecs]
+
         df_melted = pd.melt(
             df, value_vars=sumvecs, var_name="WELL", value_name=well_sumvec
         )

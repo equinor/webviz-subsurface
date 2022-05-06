@@ -1,4 +1,5 @@
-from typing import Callable, Dict, List, Set
+import datetime
+from typing import Callable, Dict, List, Set, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
@@ -122,6 +123,7 @@ def well_overview_callbacks(
             "value",
         ),
         Input(get_uuid(WellOverviewLayoutElements.SUMVEC), "value"),
+        Input(get_uuid(WellOverviewLayoutElements.DATE), "value"),
         Input(get_uuid(ClientsideStoreElements.WELL_OVERVIEW_CHART_SELECTED), "data"),
         Input(get_uuid(WellOverviewLayoutElements.WELL_FILTER), "value"),
         Input(
@@ -151,6 +153,7 @@ def well_overview_callbacks(
         ensembles: List[str],
         checklist_values: List[List[str]],
         sumvec: str,
+        prod_after_date: Union[str, None],
         chart_selected: str,
         wells_selected: List[str],
         well_attr_selected: List[str],
@@ -199,6 +202,9 @@ def well_overview_callbacks(
                 ensembles,
                 data_models,
                 sumvec,
+                datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
+                if prod_after_date is not None
+                else None,
                 chart_selected,
                 filtered_wells,
                 theme,
