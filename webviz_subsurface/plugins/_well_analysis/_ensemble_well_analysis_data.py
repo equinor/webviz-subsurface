@@ -94,6 +94,27 @@ class EnsembleWellAnalysisData:
                 filtered_wells = filtered_wells.intersection(set(df["WELL"].unique()))
         return filtered_wells
 
+    def get_summary_data(
+        self, well_sumvec: str, prod_after_date: Union[datetime.datetime, None]
+    ) -> pd.DataFrame:
+        """Returns all summary data matching the well_sumvec. If the prod_after_date
+        is not None it will return all dates after that date and subtract the cumulative
+        production at that date.
+        """
+        sumvecs = [f"{well_sumvec}:{well}" for well in self._wells]
+        df = self._smry[["REAL", "DATE"] + sumvecs]
+
+        if prod_after_date is not None:
+            df = df[df["DATE"] >= prod_after_date]
+            df_date = df[df["DATE"] == df["DATE"].min()].copy()
+            df_merged = df.merge(df_date, on=["REAL"], how="inner")
+            for vec in sumvecs:
+                df_merged[vec] = df_merged[f"{vec}_x"] - df_merged[f"{vec}_y"]
+            df = df_merged[["REAL", "DATE_x"] + sumvecs].rename(
+                {"DATE_x": "DATE"}, axis=1
+            )
+        return df
+
     def get_dataframe_melted(
         self, well_sumvec: str, prod_after_date: Union[datetime.datetime, None]
     ) -> pd.DataFrame:

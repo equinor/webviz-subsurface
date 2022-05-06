@@ -76,13 +76,11 @@ class WellOverviewFigure:
             df_mean = df.groupby("WELL").mean().reset_index()
             return df_mean[df_mean[self._sumvec] > 0]
 
-        # else chart type = are
-        return (
-            self._data_models[ensemble]
-            .summary_data.groupby("DATE")
-            .mean()
-            .reset_index()
+        # else chart type == area
+        df = self._data_models[ensemble].get_summary_data(
+            self._sumvec, self._prod_after_date
         )
+        return df.groupby("DATE").mean().reset_index()
 
     def _add_traces(self) -> None:
         """Add all traces for the currently selected chart type."""
