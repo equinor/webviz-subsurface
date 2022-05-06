@@ -26,7 +26,7 @@ from webviz_subsurface._providers import (
     SurfaceServer,
 )
 from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths, parse_polygon_file
-from ._co2volume import generate_co2_volume_figure
+from ._co2volume import (generate_co2_volume_figure, generate_co2_time_containment_figure)
 from .layout import LayoutElements, LayoutStyle, LayoutLabels
 
 
@@ -45,6 +45,7 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.REALIZATIONINPUT), "options"),
         Output(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
         Output(get_uuid(LayoutElements.ENSEMBLEBARPLOT), "figure"),
+        Output(get_uuid(LayoutElements.ENSEMBLETIMELEAKPLOT), "figure"),
         Input(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
     )
     def set_ensemble(ensemble):
@@ -53,11 +54,15 @@ def plugin_callbacks(
             dict(label=r, value=r)
             for r in sorted(rz_paths.keys())
         ]
-        fig = generate_co2_volume_figure(
+        fig0 = generate_co2_volume_figure(
             rz_paths,
             LayoutStyle.ENSEMBLEBARPLOTHEIGHT,
         )
-        return realizations, realizations[0]["value"], fig
+        fig1 = generate_co2_time_containment_figure(
+            rz_paths,
+            LayoutStyle.ENSEMBLEBARPLOTHEIGHT,
+        )
+        return realizations, realizations[0]["value"], fig0, fig1
 
     # TODO: Verify optional parameters behave correctly when not provided
     @callback(

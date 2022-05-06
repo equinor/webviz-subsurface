@@ -25,6 +25,7 @@ class LayoutElements(str, Enum):
     MAPZONEINPUT = "mapzoneinput"
 
     ENSEMBLEBARPLOT = "ensemblebarplot"
+    ENSEMBLETIMELEAKPLOT = "ensembletimeleakplot"
 
 
 @unique
@@ -54,8 +55,8 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
             wcc.Frame(
                 style=LayoutStyle.SIDEBAR,
                 children=[
-                    PropertySelectorLayout(get_uuid),
                     EnsembleSelectorLayout(get_uuid, ensembles),
+                    PropertySelectorLayout(get_uuid),
                     DateSelectorLayout(get_uuid),
                     ZoneSelectorLayout(get_uuid),
                 ]
@@ -143,6 +144,11 @@ class EnsembleSelectorLayout(html.Div):
                         "displayModeBar": False,
                     }
                 ),
+                dcc.Graph(
+                    id=get_uuid(LayoutElements.ENSEMBLETIMELEAKPLOT),
+                    figure=go.Figure(),
+                    # config={},
+                )
             ]
         ))
 
