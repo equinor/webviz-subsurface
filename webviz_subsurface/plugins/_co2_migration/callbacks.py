@@ -131,7 +131,7 @@ def plugin_callbacks(
     def update_map_attribute(attribute, date, polygon_name, well_pick_horizon, surface_name, realization, ensemble):
         if ensemble is None:
             raise PreventUpdate
-        if MapAttribute(attribute) == MapAttribute.MAX_SATURATION and date is None:
+        if MapAttribute(attribute) != MapAttribute.MIGRATION_TIME and date is None:
             raise PreventUpdate
         date = str(date)
         if surface_name is None:
