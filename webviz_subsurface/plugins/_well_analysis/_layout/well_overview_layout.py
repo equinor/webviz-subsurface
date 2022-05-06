@@ -5,6 +5,7 @@ import webviz_core_components as wcc
 from dash import html
 
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
+from .._types import ChartType
 
 
 # pylint: disable = too-few-public-methods
@@ -59,17 +60,17 @@ def buttons(get_uuid: Callable) -> html.Div:
             html.Button(
                 "Bar Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "bar"},
+                id={"id": uuid, "button": ChartType.BAR},
             ),
             html.Button(
                 "Pie Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "pie"},
+                id={"id": uuid, "button": ChartType.PIE},
             ),
             html.Button(
                 "Stacked Area Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "area"},
+                id={"id": uuid, "button": ChartType.AREA},
             ),
         ],
     )

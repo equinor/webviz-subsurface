@@ -9,6 +9,7 @@ from webviz_config import WebvizConfigTheme
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import WellOverviewFigure, format_well_overview_figure
 from .._layout import ClientsideStoreElements, WellOverviewLayoutElements
+from .._types import ChartType
 
 
 def well_overview_callbacks(
@@ -40,11 +41,11 @@ def well_overview_callbacks(
 
         # handle initial callback
         if ctx["prop_id"] == ".":
-            return "bar"
+            return ChartType.BAR.value
 
         for button_id in button_ids:
             if button_id["button"] in ctx["prop_id"]:
-                return button_id["button"]
+                return ChartType(button_id["button"]).value
         raise ValueError("Id not found")
 
     @callback(
@@ -190,11 +191,12 @@ def well_overview_callbacks(
 
         # If the event is a plot settings event, then we only update the formatting
         # and not the figure data
+        chart_selected_type = ChartType(chart_selected)
         if current_fig_dict is not None and is_plot_settings_event(ctx, get_uuid):
             fig_dict = format_well_overview_figure(
                 go.Figure(current_fig_dict),
-                chart_selected,
-                settings[chart_selected],
+                chart_selected_type,
+                settings[chart_selected_type.value],
                 sumvec,
             )
         else:
@@ -205,13 +207,16 @@ def well_overview_callbacks(
                 datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
                 if prod_after_date is not None
                 else None,
-                chart_selected,
+                chart_selected_type,
                 filtered_wells,
                 theme,
             )
 
             fig_dict = format_well_overview_figure(
-                figure.figure, chart_selected, settings[chart_selected], sumvec
+                figure.figure,
+                chart_selected_type,
+                settings[chart_selected_type.value],
+                sumvec,
             )
 
         return [

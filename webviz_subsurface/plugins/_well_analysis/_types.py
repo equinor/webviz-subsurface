@@ -10,3 +10,9 @@ class NodeType(str, Enum):
     WELL = "well"
     GROUP = "group"
     WELL_BH = "well-bh"
+
+
+class ChartType(str, Enum):
+    BAR = "bar"
+    PIE = "pie"
+    AREA = "area"
