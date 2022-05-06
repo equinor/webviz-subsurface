@@ -166,13 +166,20 @@ def create_map_layers(
         surface_server, surface_provider, colormap_address
     )
     # Update ColormapLayer
+    import numpy as np
+    # TODO: value_range should perhaps never be masked in the first place? Possible bug
+    #  also in MapViewerFMU
+    value_range = [
+        0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
+        0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
+    ]
     layers = [
         ColormapLayer(
             uuid=LayoutElements.COLORMAPLAYER,
             image=img_url,
             bounds=surf_meta.deckgl_bounds,
-            value_range=[surf_meta.val_min, surf_meta.val_max],
-            color_map_range=[surf_meta.val_min, surf_meta.val_max],
+            value_range=value_range,
+            color_map_range=value_range,
             rotDeg=surf_meta.deckgl_rot_deg,
         ),
     ]
