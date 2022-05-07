@@ -8,19 +8,24 @@ from dash import Input, Output, State, callback, no_update, callback_context, MA
 from webviz_vtk.utils.vtk import b64_encode_numpy
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
-
-from ._eclipse_grid_datamodel import EclipseGridDataModel
-from ._roff_grid_datamodel import RoffGridDataModel
+from webviz_subsurface._providers.ensemble_grid_provider import (
+    EnsembleGridProvider,
+    GridVizService,
+    PropertySpec,
+    CellFilter,
+)
 
 from ._layout import PROPERTYTYPE, LayoutElements, GRID_DIRECTION
 
 
-def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> None:
+def plugin_callbacks(
+    get_uuid: Callable,
+    grid_provider: EnsembleGridProvider,
+    grid_viz_service: GridVizService,
+) -> None:
     @callback(
         Output(get_uuid(LayoutElements.PROPERTIES), "options"),
         Output(get_uuid(LayoutElements.PROPERTIES), "value"),
-        Output(get_uuid(LayoutElements.DATES), "options"),
-        Output(get_uuid(LayoutElements.DATES), "value"),
         Input(get_uuid(LayoutElements.INIT_RESTART), "value"),
     )
     def _populate_properties(
@@ -29,14 +34,41 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         List[Dict[str, str]], List[str], List[Dict[str, str]], Optional[List[str]]
     ]:
         if PROPERTYTYPE(init_restart) == PROPERTYTYPE.INIT:
-            prop_names = datamodel.init_names
-            dates = []
+            prop_names = grid_provider.static_property_names()
+
         else:
-            prop_names = datamodel.restart_names
-            dates = datamodel.restart_dates
+            prop_names = grid_provider.dynamic_property_names()
+
         return (
             [{"label": prop, "value": prop} for prop in prop_names],
             [prop_names[0]],
+        )
+
+    @callback(
+        Output(get_uuid(LayoutElements.DATES), "options"),
+        Output(get_uuid(LayoutElements.DATES), "value"),
+        Input(get_uuid(LayoutElements.PROPERTIES), "value"),
+        State(get_uuid(LayoutElements.INIT_RESTART), "value"),
+        State(get_uuid(LayoutElements.DATES), "options"),
+    )
+    def _populate_dates(
+        property_name: str,
+        init_restart: str,
+        current_date_options: List,
+    ) -> Tuple[List[Dict[str, str]], Optional[List[str]]]:
+        if PROPERTYTYPE(init_restart) == PROPERTYTYPE.INIT:
+            return [], None
+        else:
+            dates = grid_provider.dates_for_dynamic_property(
+                property_name=property_name
+            )
+            dates = dates if dates else []
+            current_date_options = current_date_options if current_date_options else []
+            if set(dates) == set(
+                [dateopt["value"] for dateopt in current_date_options]
+            ):
+                return no_update, no_update
+        return (
             ([{"label": prop, "value": prop} for prop in dates]),
             [dates[0]] if dates else None,
         )
@@ -46,7 +78,6 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
         Output(get_uuid(LayoutElements.VTK_GRID_POLYDATA), "points"),
         Output(get_uuid(LayoutElements.VTK_GRID_CELLDATA), "values"),
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "colorDataRange"),
-        Output(get_uuid(LayoutElements.STORED_CELL_INDICES_HASH), "data"),
         Input(get_uuid(LayoutElements.PROPERTIES), "value"),
         Input(get_uuid(LayoutElements.DATES), "value"),
         Input(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
@@ -63,33 +94,46 @@ def plugin_callbacks(get_uuid: Callable, datamodel: EclipseGridDataModel) -> Non
 
         timer = PerfTimer()
         if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
-            scalar = datamodel.get_init_values(prop[0])
+            scalar = grid_provider.get_static_property_values(prop[0], realization=0)
         else:
-            scalar = datamodel.get_restart_values(prop[0], date[0])
+            scalar = grid_provider.get_dynamic_property_values(
+                prop[0], str(date[0]), realization=0
+            )
         print(f"Reading scalar from file in {timer.lap_s():.2f}s")
 
-        cropped_grid = datamodel.esg_accessor.crop(*grid_range)
-        polys, points, cell_indices = datamodel.esg_accessor.extract_skin(cropped_grid)
+        surface_polys, scalars = grid_viz_service.get_surface(
+            provider_id=grid_provider.provider_id(),
+            realization=0,
+            property_spec=PropertySpec(prop_name="poro", prop_date=None),
+            cell_filter=CellFilter(
+                i_min=grid_range[0][0],
+                i_max=grid_range[0][1],
+                j_min=grid_range[1][0],
+                j_max=grid_range[1][1],
+                k_min=grid_range[2][0],
+                k_max=grid_range[2][1],
+            ),
+        )
+
         print(f"Extracting cropped geometry in {timer.lap_s():.2f}s")
 
-        # Storing hash of cell indices client side to control if only scalar should be updated
-        hashed_indices = hashlib.sha256(cell_indices.data.tobytes()).hexdigest().upper()
-        print(f"Hashing indices in {timer.lap_s():.2f}s")
+        # # Storing hash of cell indices client side to control if only scalar should be updated
+        # hashed_indices = hashlib.sha256(cell_indices.data.tobytes()).hexdigest().upper()
+        # print(f"Hashing indices in {timer.lap_s():.2f}s")
 
-        if hashed_indices == stored_cell_indices:
-            return (
-                no_update,
-                no_update,
-                b64_encode_numpy(scalar[cell_indices].astype(np.float32)),
-                [np.nanmin(scalar), np.nanmax(scalar)],
-                no_update,
-            )
+        # if hashed_indices == stored_cell_indices:
+        #     return (
+        #         no_update,
+        #         no_update,
+        #         b64_encode_numpy(scalar[cell_indices].astype(np.float32)),
+        #         [np.nanmin(scalar), np.nanmax(scalar)],
+        #         no_update,
+        #     )
         return (
-            b64_encode_numpy(polys.astype(np.float32)),
-            b64_encode_numpy(points.astype(np.float32)),
-            b64_encode_numpy(scalar[cell_indices].astype(np.float32)),
-            [np.nanmin(scalar), np.nanmax(scalar)],
-            hashed_indices,
+            b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
+            b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
+            b64_encode_numpy(scalars.value_arr.astype(np.float32)),
+            [np.nanmin(scalars.value_arr), np.nanmax(scalars.value_arr)],
         )
 
     @callback(

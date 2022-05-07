@@ -5,6 +5,7 @@ import webviz_vtk
 import webviz_core_components as wcc
 from dash import dcc, html
 
+from webviz_subsurface._providers.ensemble_grid_provider import CellFilter
 from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
 
@@ -64,30 +65,26 @@ class LayoutStyle:
     VTK_VIEW = {"flex": 5, "height": "87vh"}
 
 
-def plugin_main_layout(
-    get_uuid: Callable, esg_accessor: ExplicitStructuredGridAccessor
-) -> wcc.FlexBox:
+def plugin_main_layout(get_uuid: Callable, grid_dimensions: CellFilter) -> wcc.FlexBox:
 
     return wcc.FlexBox(
         children=[
-            sidebar(get_uuid=get_uuid, esg_accessor=esg_accessor),
+            sidebar(get_uuid=get_uuid, grid_dimensions=grid_dimensions),
             vtk_view(get_uuid=get_uuid),
             dcc.Store(id=get_uuid(LayoutElements.STORED_CELL_INDICES_HASH)),
             dcc.Store(
                 id=get_uuid(LayoutElements.GRID_RANGE_STORE),
                 data=[
-                    [esg_accessor.imin, esg_accessor.imax],
-                    [esg_accessor.jmin, esg_accessor.jmax],
-                    [esg_accessor.kmin, esg_accessor.kmin],
+                    [grid_dimensions.i_min, grid_dimensions.i_max],
+                    [grid_dimensions.j_min, grid_dimensions.j_max],
+                    [grid_dimensions.k_min, grid_dimensions.k_min],
                 ],
             ),
         ]
     )
 
 
-def sidebar(
-    get_uuid: Callable, esg_accessor: ExplicitStructuredGridAccessor
-) -> wcc.Frame:
+def sidebar(get_uuid: Callable, grid_dimensions: CellFilter) -> wcc.Frame:
     return wcc.Frame(
         style=LayoutStyle.SIDEBAR,
         children=[
@@ -130,21 +127,21 @@ def sidebar(
                 children=[
                     crop_widget(
                         get_uuid=get_uuid,
-                        min_val=esg_accessor.imin,
-                        max_val=esg_accessor.imax,
+                        min_val=grid_dimensions.i_min,
+                        max_val=grid_dimensions.i_max,
                         direction=GRID_DIRECTION.I,
                     ),
                     crop_widget(
                         get_uuid=get_uuid,
-                        min_val=esg_accessor.jmin,
-                        max_val=esg_accessor.jmax,
+                        min_val=grid_dimensions.j_min,
+                        max_val=grid_dimensions.j_max,
                         direction=GRID_DIRECTION.J,
                     ),
                     crop_widget(
                         get_uuid=get_uuid,
-                        min_val=esg_accessor.kmin,
-                        max_val=esg_accessor.kmax,
-                        max_width=esg_accessor.kmin,
+                        min_val=grid_dimensions.k_min,
+                        max_val=grid_dimensions.k_max,
+                        max_width=grid_dimensions.k_min,
                         direction=GRID_DIRECTION.K,
                     ),
                 ],
