@@ -341,4 +341,4 @@ def plugin_callbacks(
     ) -> List[List[int]]:
         if not input_vals or not width_vals:
             return no_update
-        return [[val, val + width] for val, width in zip(input_vals, width_vals)]
+        return [[val, val + width - 1] for val, width in zip(input_vals, width_vals)]
