@@ -229,7 +229,7 @@ def crop_widget(
                         },
                     ),
                     dcc.Input(
-                        style={"width": "30px", "height": "10px"},
+                        style={"width": "50px", "height": "10px"},
                         id={
                             "id": get_uuid(LayoutElements.CROP_WIDGET),
                             "direction": direction,
@@ -276,7 +276,7 @@ def crop_widget(
                         },
                     ),
                     dcc.Input(
-                        style={"width": "30px", "height": "10px"},
+                        style={"width": "50px", "height": "10px"},
                         id={
                             "id": get_uuid(LayoutElements.CROP_WIDGET),
                             "direction": direction,
@@ -288,7 +288,7 @@ def crop_widget(
                         persistence=True,
                         persistence_type="session",
                         value=max_width,
-                        min=min_val,
+                        min=1,
                         max=max_val,
                     ),
                     wcc.Slider(
@@ -298,7 +298,7 @@ def crop_widget(
                             "component": "slider",
                             "component2": "width",
                         },
-                        min=min_val,
+                        min=1,
                         max=max_val,
                         value=max_width,
                         step=1,
