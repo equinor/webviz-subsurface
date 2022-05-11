@@ -32,11 +32,11 @@ def xtgeo_grid_to_vtk_explicit_structured_grid(
     vertex_arr[:, 2] *= -1
     print(f"get_vtk_esg_geometry_data() took {t.lap_s():.2f}s")
 
-    print(f"{pt_dims=}")
-    print(f"{vertex_arr.shape=}")
-    print(f"{vertex_arr.dtype=}")
-    print(f"{conn_arr.shape=}")
-    print(f"{conn_arr.dtype=}")
+    print(f"pt_dims={pt_dims}")
+    print(f"vertex_arr.shape={vertex_arr.shape}")
+    print(f"vertex_arr.dtype={vertex_arr.dtype}")
+    print(f"conn_arr.shape={conn_arr.shape}")
+    print(f"conn_arr.dtype={conn_arr.dtype}")
 
     vtk_esgrid = _create_vtk_esgrid_from_verts_and_conn(pt_dims, vertex_arr, conn_arr)
     print(f"create vtk_esgrid : {t.lap_s():.2f}s")

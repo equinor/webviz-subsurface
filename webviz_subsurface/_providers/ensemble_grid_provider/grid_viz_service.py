@@ -32,6 +32,8 @@ from webviz_subsurface._utils.perf_timer import PerfTimer
 
 LOGGER = logging.getLogger(__name__)
 
+_GRID_VIZ_SERVICE_INSTANCE: Optional["GridVizService"] = None
+
 
 @dataclass
 class PropertySpec:
@@ -98,12 +100,12 @@ class GridVizService:
 
     @staticmethod
     def instance() -> "GridVizService":
-        global GRID_VIZ_SERVICE_INSTANCE
-        if not GRID_VIZ_SERVICE_INSTANCE:
+        global _GRID_VIZ_SERVICE_INSTANCE
+        if not _GRID_VIZ_SERVICE_INSTANCE:
             LOGGER.debug("Initializing GridVizService instance")
-            GRID_VIZ_SERVICE_INSTANCE = GridVizService()
+            _GRID_VIZ_SERVICE_INSTANCE = GridVizService()
 
-        return GRID_VIZ_SERVICE_INSTANCE
+        return _GRID_VIZ_SERVICE_INSTANCE
 
     def register_provider(self, provider: EnsembleGridProvider) -> None:
         provider_id = provider.provider_id()
@@ -323,6 +325,3 @@ def _calc_grid_surface(esgrid: vtkExplicitStructuredGrid) -> vtkPolyData:
 
     polydata: vtkPolyData = surf_filter.GetOutput()
     return polydata
-
-
-GRID_VIZ_SERVICE_INSTANCE: Optional[GridVizService] = None
