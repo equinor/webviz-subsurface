@@ -253,7 +253,8 @@ class ProviderImplRoff(EnsembleGridProvider):
                 "Something has gone terribly wrong."
             )
         grid_property = xtgeo.gridproperty_from_file(fn_list[0])
-        return grid_property.get_npvalues1d(order="F").ravel()
+        fill_value = np.nan if not grid_property.isdiscrete else -1
+        return grid_property.get_npvalues1d(order="F", fill_value=fill_value).ravel()
 
     def get_dynamic_property_values(
         self, property_name: str, property_date: str, realization: int
