@@ -20,6 +20,7 @@ from vtkmodules.vtkCommonDataModel import (
 from vtkmodules.util.numpy_support import vtk_to_numpy
 
 
+from webviz_subsurface._utils.perf_timer import PerfTimer
 from .ensemble_grid_provider import EnsembleGridProvider
 
 # Requires updated xtgeo
@@ -129,6 +130,16 @@ class GridVizService:
         cell_filter: Optional[CellFilter],
     ) -> Tuple[SurfacePolys, Optional[PropertyScalars]]:
 
+        LOGGER.debug(
+            f"Getting grid surface... "
+            f"(provider_id={provider_id}, real={realization}, "
+            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
+            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
+            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
+            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+        )
+        timer = PerfTimer()
+
         provider = self._id_to_provider_dict.get(provider_id)
         if not provider:
             raise ValueError("Could not find provider")
@@ -170,6 +181,15 @@ class GridVizService:
 
         worker.set_cached_original_cell_indices(cell_filter, original_cell_indices_np)
 
+        LOGGER.debug(
+            f"Got grid surface in {timer.elapsed_s():.2f}s "
+            f"(provider_id={provider_id}, real={realization}, "
+            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
+            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
+            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
+            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+        )
+
         return surface_polys, property_scalars
 
     def get_mapped_property_values(
@@ -179,6 +199,16 @@ class GridVizService:
         property_spec: PropertySpec,
         cell_filter: Optional[CellFilter],
     ) -> Optional[PropertyScalars]:
+
+        LOGGER.debug(
+            f"Getting property values... "
+            f"(provider_id={provider_id}, real={realization}, "
+            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
+            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
+            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
+            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+        )
+        timer = PerfTimer()
 
         provider = self._id_to_provider_dict.get(provider_id)
         if not provider:
@@ -198,25 +228,37 @@ class GridVizService:
             )
 
         if raw_cell_values is None:
+            LOGGER.warning(
+                f"No cell values found for "
+                f"prop=({property_spec.prop_name}, {property_spec.prop_name})"
+            )
             return None
 
         original_cell_indices_np = worker.get_cached_original_cell_indices(cell_filter)
-        if original_cell_indices_np is not None:
-            mapped_cell_values = raw_cell_values[original_cell_indices_np]
-            return PropertyScalars(mapped_cell_values)
+        if original_cell_indices_np is None:
+            # Must first generate the grid to get the original cell indices
+            grid = worker.get_full_esgrid()
+            if cell_filter:
+                grid = _calc_cropped_grid(grid, cell_filter)
 
-        # Must first generate the grid to get the original cell indices
-        grid = worker.get_full_esgrid()
-        if cell_filter:
-            grid = _calc_cropped_grid(grid, cell_filter)
+            polydata = _calc_grid_surface(grid)
+            original_cell_indices_np = vtk_to_numpy(
+                polydata.GetCellData().GetAbstractArray("vtkOriginalCellIds")
+            )
+            worker.set_cached_original_cell_indices(
+                cell_filter, original_cell_indices_np
+            )
 
-        polydata = _calc_grid_surface(grid)
-        original_cell_indices_np = vtk_to_numpy(
-            polydata.GetCellData().GetAbstractArray("vtkOriginalCellIds")
-        )
         mapped_cell_values = raw_cell_values[original_cell_indices_np]
 
-        worker.set_cached_original_cell_indices(cell_filter, original_cell_indices_np)
+        LOGGER.debug(
+            f"Got property values in {timer.elapsed_s():.2f}s "
+            f"(provider_id={provider_id}, real={realization}, "
+            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
+            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
+            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
+            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+        )
 
         return PropertyScalars(value_arr=mapped_cell_values)
 
@@ -258,13 +300,15 @@ def _calc_cropped_grid(
 ) -> vtkExplicitStructuredGrid:
     crop_filter = vtkExplicitStructuredGridCrop()
     crop_filter.SetInputData(esgrid)
+
+    # In VTK dimensions correspond to points
     crop_filter.SetOutputWholeExtent(
         cell_filter.i_min,
-        cell_filter.i_max,
+        cell_filter.i_max + 1,
         cell_filter.j_min,
-        cell_filter.j_max,
-        cell_filter.j_min,
-        cell_filter.j_max,
+        cell_filter.j_max + 1,
+        cell_filter.k_min,
+        cell_filter.k_max + 1,
     )
     crop_filter.Update()
     cropped_grid = crop_filter.GetOutput()
