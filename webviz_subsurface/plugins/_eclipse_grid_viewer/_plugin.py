@@ -24,7 +24,7 @@ class EclipseGridViewer(WebvizPluginABC):
         grid_provider_factory = EnsembleGridProviderFactory.instance()
         self.grid_provider = grid_provider_factory.create_from_roff_files(
             ens_path=webviz_settings.shared_settings["scratch_ensembles"][ensembles[0]],
-            grid_name="eclgrid",
+            grid_name="geogrid",
         )
         initial_grid = self.grid_provider.get_3dgrid(
             self.grid_provider.realizations()[0]
@@ -39,14 +39,7 @@ class EclipseGridViewer(WebvizPluginABC):
         )
         self.grid_viz_service = GridVizService.instance()
         self.grid_viz_service.register_provider(self.grid_provider)
-        print(
-            self.grid_viz_service.get_surface(
-                provider_id=self.grid_provider.provider_id(),
-                realization=0,
-                property_spec=PropertySpec(prop_name="poro", prop_date=None),
-                cell_filter=self.grid_dimensions,
-            )
-        )
+
         plugin_callbacks(
             get_uuid=self.uuid,
             grid_provider=self.grid_provider,
@@ -55,6 +48,4 @@ class EclipseGridViewer(WebvizPluginABC):
 
     @property
     def layout(self) -> wcc.FlexBox:
-        return plugin_main_layout(
-            get_uuid=self.uuid, grid_dimensions=self.grid_dimensions
-        )
+        return plugin_main_layout(get_uuid=self.uuid, grid_provider=self.grid_provider)

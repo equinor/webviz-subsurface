@@ -1,16 +1,20 @@
 from enum import Enum
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 
 import webviz_vtk
 import webviz_core_components as wcc
 from dash import dcc, html
 
-from webviz_subsurface._providers.ensemble_grid_provider import CellFilter
+from webviz_subsurface._providers.ensemble_grid_provider import (
+    EnsembleGridProvider,
+    CellFilter,
+)
 from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
 
 # pylint: disable = too-few-public-methods
 class LayoutElements(str, Enum):
+    REALIZATIONS = "realization"
     INIT_RESTART = "init-restart-select"
     PROPERTIES = "properties-select"
     DATES = "dates-select"
@@ -32,6 +36,7 @@ class LayoutElements(str, Enum):
 
 
 class LayoutTitles(str, Enum):
+    REALIZATIONS = "Realization"
     INIT_RESTART = "Init / Restart"
     PROPERTIES = "Property"
     DATES = "Date"
@@ -65,11 +70,25 @@ class LayoutStyle:
     VTK_VIEW = {"flex": 5, "height": "87vh"}
 
 
-def plugin_main_layout(get_uuid: Callable, grid_dimensions: CellFilter) -> wcc.FlexBox:
-
+def plugin_main_layout(
+    get_uuid: Callable, grid_provider: EnsembleGridProvider
+) -> wcc.FlexBox:
+    initial_grid = grid_provider.get_3dgrid(grid_provider.realizations()[0])
+    grid_dimensions = CellFilter(
+        i_min=0,
+        j_min=0,
+        k_min=0,
+        i_max=initial_grid.dimensions[0] - 1,
+        j_max=initial_grid.dimensions[1] - 1,
+        k_max=initial_grid.dimensions[2] - 1,
+    )
     return wcc.FlexBox(
         children=[
-            sidebar(get_uuid=get_uuid, grid_dimensions=grid_dimensions),
+            sidebar(
+                get_uuid=get_uuid,
+                grid_dimensions=grid_dimensions,
+                realizations=grid_provider.realizations(),
+            ),
             vtk_view(get_uuid=get_uuid),
             dcc.Store(id=get_uuid(LayoutElements.STORED_CELL_INDICES_HASH)),
             dcc.Store(
@@ -84,10 +103,19 @@ def plugin_main_layout(get_uuid: Callable, grid_dimensions: CellFilter) -> wcc.F
     )
 
 
-def sidebar(get_uuid: Callable, grid_dimensions: CellFilter) -> wcc.Frame:
+def sidebar(
+    get_uuid: Callable, grid_dimensions: CellFilter, realizations: List[int]
+) -> wcc.Frame:
     return wcc.Frame(
         style=LayoutStyle.SIDEBAR,
         children=[
+            wcc.SelectWithLabel(
+                id=get_uuid(LayoutElements.REALIZATIONS),
+                label=LayoutTitles.REALIZATIONS,
+                options=[{"label": real, "value": real} for real in realizations],
+                value=[realizations[0]],
+                multi=False,
+            ),
             wcc.RadioItems(
                 label=LayoutTitles.INIT_RESTART,
                 id=get_uuid(LayoutElements.INIT_RESTART),

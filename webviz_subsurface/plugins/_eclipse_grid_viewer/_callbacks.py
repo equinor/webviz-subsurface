@@ -81,6 +81,7 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "colorDataRange"),
         Input(get_uuid(LayoutElements.PROPERTIES), "value"),
         Input(get_uuid(LayoutElements.DATES), "value"),
+        Input(get_uuid(LayoutElements.REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
         State(get_uuid(LayoutElements.INIT_RESTART), "value"),
         State(get_uuid(LayoutElements.VTK_GRID_POLYDATA), "polys"),
@@ -88,6 +89,7 @@ def plugin_callbacks(
     def _set_geometry_and_scalar(
         prop: List[str],
         date: List[int],
+        realizations: List[int],
         grid_range: List[List[int]],
         proptype: str,
         current_polys: str,
@@ -104,10 +106,11 @@ def plugin_callbacks(
             triggered == "."
             or current_polys is None
             or get_uuid(LayoutElements.GRID_RANGE_STORE) in triggered
+            or get_uuid(LayoutElements.REALIZATIONS) in triggered
         ):
             surface_polys, scalars = grid_viz_service.get_surface(
                 provider_id=grid_provider.provider_id(),
-                realization=0,
+                realization=realizations[0],
                 property_spec=property_spec,
                 cell_filter=CellFilter(
                     i_min=grid_range[0][0],
@@ -127,7 +130,7 @@ def plugin_callbacks(
         else:
             scalars = grid_viz_service.get_mapped_property_values(
                 provider_id=grid_provider.provider_id(),
-                realization=0,
+                realization=realizations[0],
                 property_spec=property_spec,
                 cell_filter=CellFilter(
                     i_min=grid_range[0][0],
