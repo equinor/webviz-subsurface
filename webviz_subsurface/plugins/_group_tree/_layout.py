@@ -1,13 +1,30 @@
-from typing import Callable
+from typing import Callable, List
 
 import webviz_core_components as wcc
 from dash import html
 
+from ._types import NodeType, StatOptions
 
-def main_layout(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
+
+# pylint: disable = too-few-public-methods
+class LayoutElements:
+    LAYOUT = "layout"
+    OPTIONS_LAYOUT = "options-layout"
+    FILTERS_LAYOUT = "filters-layout"
+    SELECTIONS_LAYOUT = "selections-layout"
+    GRAPH = "graph"
+    NODETYPE_FILTER = "node-type-filter"
+    STATISTICAL_OPTIONS = "statistical-options"
+    STATISTICAL_OPTION = "statistical-option"
+    SINGLE_REAL_OPTIONS = "single-real-options"
+    REALIZATION = "realization"
+    ENSEMBLE = "ensemble"
+    TREE_MODE = "tree-mode"
+
+
+def main_layout(get_uuid: Callable[[str], str], ensembles: List[str]) -> wcc.FlexBox:
     """Main layout"""
     return wcc.FlexBox(
-        id=get_uuid("layout"),
         children=[
             wcc.FlexColumn(
                 flex=1,
@@ -30,7 +47,7 @@ def main_layout(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
                         highlight=False,
                         color="white",
                         children=html.Div(
-                            id=get_uuid("grouptree_wrapper"),
+                            id=get_uuid(LayoutElements.GRAPH),
                         ),
                     )
                 ],
@@ -39,22 +56,21 @@ def main_layout(get_uuid: Callable, ensembles: list) -> wcc.FlexBox:
     )
 
 
-def filters_layout(get_uuid: Callable) -> wcc.Selectors:
+def filters_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The filters part of the menu"""
-    filters_uuid = get_uuid("filters")
     return wcc.Selectors(
-        id=get_uuid("filters_layout"),
+        id=get_uuid(LayoutElements.FILTERS_LAYOUT),
         label="Filters",
         children=[
             wcc.SelectWithLabel(
                 label="Prod/Inj/Other",
-                id={"id": filters_uuid, "element": "prod_inj_other"},
+                id=get_uuid(LayoutElements.NODETYPE_FILTER),
                 options=[
-                    {"label": "Production", "value": "prod"},
-                    {"label": "Injection", "value": "inj"},
-                    {"label": "Other", "value": "other"},
+                    {"label": "Production", "value": NodeType.PROD.value},
+                    {"label": "Injection", "value": NodeType.INJ.value},
+                    {"label": "Other", "value": NodeType.OTHER.value},
                 ],
-                value=["prod", "inj", "other"],
+                value=[NodeType.PROD.value, NodeType.INJ.value, NodeType.OTHER.value],
                 multi=True,
                 size=3,
             )
@@ -62,35 +78,34 @@ def filters_layout(get_uuid: Callable) -> wcc.Selectors:
     )
 
 
-def options_layout(get_uuid: Callable) -> wcc.Selectors:
+def options_layout(get_uuid: Callable[[str], str]) -> wcc.Selectors:
     """The options part of the menu"""
-    options_uuid = get_uuid("options")
     return wcc.Selectors(
-        id=get_uuid("options_layout"),
+        id=get_uuid(LayoutElements.OPTIONS_LAYOUT),
         label="Options",
         children=[
             html.Div(
-                id={"id": options_uuid, "element": "statistical_options"},
+                id=get_uuid(LayoutElements.STATISTICAL_OPTIONS),
                 children=[
                     wcc.RadioItems(
-                        id={"id": options_uuid, "element": "statistical_option"},
+                        id=get_uuid(LayoutElements.STATISTICAL_OPTION),
                         options=[
-                            {"label": "Mean", "value": "mean"},
-                            {"label": "P10 (high)", "value": "p10"},
-                            {"label": "P50 (median)", "value": "p50"},
-                            {"label": "P90 (low)", "value": "p90"},
-                            {"label": "Maximum", "value": "max"},
-                            {"label": "Minimum", "value": "min"},
+                            {"label": "Mean", "value": StatOptions.MEAN.value},
+                            {"label": "P10 (high)", "value": StatOptions.P10.value},
+                            {"label": "P50 (median)", "value": StatOptions.P50.value},
+                            {"label": "P90 (low)", "value": StatOptions.P90.value},
+                            {"label": "Maximum", "value": StatOptions.MAX.value},
+                            {"label": "Minimum", "value": StatOptions.MIN.value},
                         ],
                     )
                 ],
             ),
             html.Div(
-                id={"id": options_uuid, "element": "single_real_options"},
+                id=get_uuid(LayoutElements.SINGLE_REAL_OPTIONS),
                 children=[
                     wcc.Dropdown(
                         label="Realization",
-                        id={"id": options_uuid, "element": "realization"},
+                        id=get_uuid(LayoutElements.REALIZATION),
                         options=[],
                         value=None,
                         multi=False,
@@ -101,23 +116,23 @@ def options_layout(get_uuid: Callable) -> wcc.Selectors:
     )
 
 
-def selections_layout(get_uuid: Callable, ensembles: list) -> wcc.Selectors:
+def selections_layout(
+    get_uuid: Callable[[str], str], ensembles: List[str]
+) -> wcc.Selectors:
     """Layout for the component input options"""
-    controls_uuid = get_uuid("controls")
     return wcc.Selectors(
-        id=get_uuid("selections_layout"),
+        id=get_uuid(LayoutElements.SELECTIONS_LAYOUT),
         label="Controls",
         children=[
             wcc.Dropdown(
                 label="Ensemble",
-                id={"id": controls_uuid, "element": "ensemble"},
+                id=get_uuid(LayoutElements.ENSEMBLE),
                 options=[{"label": ens, "value": ens} for ens in ensembles],
                 clearable=False,
                 value=ensembles[0],
             ),
             wcc.RadioItems(
-                label="Mean or realization",
-                id={"id": controls_uuid, "element": "tree_mode"},
+                label="Statistics or realization", id=get_uuid(LayoutElements.TREE_MODE)
             ),
         ],
     )

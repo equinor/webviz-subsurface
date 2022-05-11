@@ -1,11 +1,14 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 from webviz_config.common_cache import CACHE
 
+from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
+
+from ._types import NodeType, StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:
@@ -13,12 +16,16 @@ class EnsembleGroupTreeData:
     to combine the data and calculate the GroupTree component input dataset.
     """
 
-    def __init__(self, provider: EnsembleSummaryProvider, gruptree: pd.DataFrame):
+    def __init__(
+        self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
+    ):
 
         self._provider = provider
-        self._wells: List[str] = gruptree[gruptree["KEYWORD"] == "WELSPECS"][
-            "CHILD"
-        ].unique()
+        self._gruptree_model = gruptree_model
+        self._gruptree = self._gruptree_model.dataframe
+        self._wells: List[str] = self._gruptree[
+            self._gruptree["KEYWORD"] == "WELSPECS"
+        ]["CHILD"].unique()
 
         # Check that all field rate and WSTAT summary vectors exist
         self._check_that_sumvecs_exists(
@@ -32,7 +39,7 @@ class EnsembleGroupTreeData:
         self._has_gasinj = smry["FGIR"].sum() > 0
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
-        self._gruptree = add_nodetype(gruptree, self._provider, self._wells)
+        self._gruptree = add_nodetype(self._gruptree, self._provider, self._wells)
 
         # Add edge label
         self._gruptree["EDGE_LABEL"] = self._gruptree.apply(get_edge_label, axis=1)
@@ -43,13 +50,17 @@ class EnsembleGroupTreeData:
         # Check that all summary vectors exist
         self._check_that_sumvecs_exists(list(self._sumvecs["SUMVEC"]))
 
+    @property
+    def webviz_store(self) -> Tuple[Callable, List[Dict]]:
+        return self._gruptree_model.webviz_store
+
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
     def create_grouptree_dataset(
         self,
-        tree_mode: str,
-        stat_option: str,
+        tree_mode: TreeModeOptions,
+        stat_option: StatOptions,
         real: int,
-        prod_inj_other: List[str],
+        node_types: List[NodeType],
     ) -> Tuple[List[Dict[Any, Any]], List[Dict[str, str]], List[Dict[str, str]]]:
         """This method is called when an event is triggered to create a new dataset
         to the GroupTree plugin. First there is a lot of filtering of the smry and
@@ -66,18 +77,20 @@ class EnsembleGroupTreeData:
         # Filter smry
         smry = self._provider.get_vectors_df(list(self._sumvecs["SUMVEC"]), None)
 
-        if tree_mode == "statistics":
-            if stat_option == "mean":
+        if tree_mode is TreeModeOptions.STATISTICS:
+            if stat_option is StatOptions.MEAN:
                 smry = smry.groupby("DATE").mean().reset_index()
-            elif stat_option in ["p50", "p10", "p90"]:
-                quantile = {"p50": 0.5, "p10": 0.9, "p90": 0.1}[stat_option]
+            elif stat_option in [StatOptions.P50, StatOptions.P10, StatOptions.P90]:
+                quantile = {"p50": 0.5, "p10": 0.9, "p90": 0.1}[stat_option.value]
                 smry = smry.groupby("DATE").quantile(quantile).reset_index()
-            elif stat_option == "max":
+            elif stat_option is StatOptions.MAX:
                 smry = smry.groupby("DATE").max().reset_index()
-            elif stat_option == "min":
+            elif stat_option is StatOptions.MIN:
                 smry = smry.groupby("DATE").min().reset_index()
             else:
-                raise ValueError(f"Statistical option: {stat_option} not implemented")
+                raise ValueError(
+                    f"Statistical option: {stat_option.value} not implemented"
+                )
         else:
             smry = smry[smry["REAL"] == real]
 
@@ -87,17 +100,14 @@ class EnsembleGroupTreeData:
             gruptree_filtered = gruptree_filtered[gruptree_filtered["REAL"] == real]
 
         # Filter nodetype prod, inj and/or other
-        df = pd.DataFrame()
-        for tpe in ["prod", "inj", "other"]:
-            if tpe in prod_inj_other:
-                df = pd.concat(
-                    [df, gruptree_filtered[gruptree_filtered[f"IS_{tpe}".upper()]]]
-                )
-        gruptree_filtered = df.drop_duplicates()
+        dfs = []
+        for tpe in node_types:
+            dfs.append(gruptree_filtered[gruptree_filtered[f"IS_{tpe.value}".upper()]])
+        gruptree_filtered = pd.concat(dfs).drop_duplicates()
 
         return (
             create_dataset(smry, gruptree_filtered, self._sumvecs),
-            self.get_edge_options(prod_inj_other),
+            self.get_edge_options(node_types),
             [
                 {"name": option, "label": get_label(option)}
                 for option in ["pressure", "bhp", "wmctl"]
@@ -172,7 +182,7 @@ class EnsembleGroupTreeData:
             )
 
     @CACHE.memoize(timeout=CACHE.TIMEOUT)
-    def get_edge_options(self, prod_inj_other: list) -> List[Dict[str, str]]:
+    def get_edge_options(self, node_types: List[NodeType]) -> List[Dict[str, str]]:
         """Returns a list with edge node options for the dropdown
         menu in the GroupTree component. The output list has the format:
         [
@@ -181,12 +191,12 @@ class EnsembleGroupTreeData:
         ]
         """
         options = []
-        if "prod" in prod_inj_other:
+        if NodeType.PROD in node_types:
             for rate in ["oilrate", "gasrate", "waterrate"]:
                 options.append({"name": rate, "label": get_label(rate)})
-        if "inj" in prod_inj_other and self._has_waterinj:
+        if NodeType.INJ in node_types and self._has_waterinj:
             options.append({"name": "waterinjrate", "label": get_label("waterinjrate")})
-        if "inj" in prod_inj_other and self._has_gasinj:
+        if NodeType.INJ in node_types and self._has_gasinj:
             options.append({"name": "gasinjrate", "label": get_label("gasinjrate")})
         if options:
             return options

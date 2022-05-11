@@ -48,6 +48,7 @@ jobs:
           if [[ $(pip freeze) ]]; then
             pip freeze | grep -vw "pip" | xargs pip uninstall -y
           fi
+          pip install "bleach<5"  # https://github.com/equinor/webviz-config/issues/586
           pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
           pip install .
           pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components # Testing against our latest release (including pre-releases)
@@ -80,11 +81,11 @@ jobs:
           TESTDATA_REPO_BRANCH: more-grid
         run: |
           git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
-          # # Copy any clientside script to the test folder before running tests
+          # Copy any clientside script to the test folder before running tests
           # mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
           # pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
           # rm -rf ./tests/assets
-          # webviz docs --portable ./docs_build --skip-open
+          webviz docs --portable ./docs_build --skip-open
 
       - name: 🐳 Build Docker example image
         if: matrix.python-version != '3.7' # https://github.com/statsmodels/statsmodels/issues/8110
@@ -95,7 +96,6 @@ jobs:
           webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
           rm -rf ./webviz-subsurface-testdata
           pushd example_subsurface_app
-          # sed -i '/FROM python:...-slim/a\RUN apt-get update\n\RUN apt-get install libgl1-mesa-dev xvfb tk -y' Dockerfile
           docker build -t webviz/example_subsurface_image:equinor-theme .
           popd
 
