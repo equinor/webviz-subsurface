@@ -64,9 +64,9 @@ class EnsembleGridProviderFactory(WebvizFactory):
     ) -> EnsembleGridProvider:
         timer = PerfTimer()
         string_to_hash = (
-            f"{ens_path}"
+            f"{ens_path}_{grid_name}"
             if attribute_filter is None
-            else f"{ens_path}_{'_'.join([str(attr) for attr in attribute_filter])}"
+            else f"{ens_path}_{grid_name}_{'_'.join([str(attr) for attr in attribute_filter])}"
         )
         storage_key = f"ens__{_make_hash_string(string_to_hash)}"
         provider = ProviderImplRoff.from_backing_store(self._storage_dir, storage_key)
