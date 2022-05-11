@@ -13,10 +13,15 @@ from webviz_config.webviz_store import webvizstore
 import webviz_subsurface._utils.parameter_response as parresp
 from webviz_subsurface._datainput.fmu_input import load_csv, load_parameters
 from webviz_subsurface._figures import create_figure
-from webviz_subsurface._models import (
-    EnsembleSetModel,
-    ParametersModel,
-    caching_ensemble_set_model_factory,
+from webviz_subsurface._models import ParametersModel
+from webviz_subsurface._providers import (
+    EnsembleSummaryProviderFactory,
+    EnsembleTableProviderFactory,
+    EnsembleTableProviderSet,
+    Frequency,
+)
+from ._simulation_time_series.types.provider_set import (
+    create_presampled_provider_set_from_paths,
 )
 
 
@@ -127,6 +132,7 @@ folder, to avoid risk of not extracting the right data.
         parameter_csv: Path = None,
         response_csv: Path = None,
         ensembles: list = None,
+        rel_file_pattern: str = "share/results/unsmry/*.arrow",
         response_file: str = None,
         response_filters: dict = None,
         response_ignore: list = None,
@@ -144,7 +150,7 @@ folder, to avoid risk of not extracting the right data.
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.column_keys = column_keys
-        self.time_index = sampling
+        self._sampling = Frequency(sampling)
         self.corr_method = corr_method
         self.aggregation = aggregation
         if response_ignore and response_include:
@@ -166,8 +172,14 @@ folder, to avoid risk of not extracting the right data.
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            parameterdf = load_parameters(
-                ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+            # parameterdf = load_parameters(
+            #     ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+            # )
+            table_provider = EnsembleTableProviderFactory.instance()
+            parameterdf = create_df_from_table_provider(
+                table_provider.create_provider_set_from_per_realization_parameter_file(
+                    self.ens_paths
+                )
             )
             if self.response_file:
                 self.responsedf = load_csv(
@@ -176,15 +188,24 @@ folder, to avoid risk of not extracting the right data.
                     ensemble_set_name="EnsembleSet",
                 )
             else:
-                self.emodel: EnsembleSetModel = (
-                    caching_ensemble_set_model_factory.get_or_create_model(
-                        ensemble_paths=self.ens_paths,
-                        column_keys=self.column_keys,
-                        time_index=self.time_index,
-                    )
-                )
-                self.responsedf = self.emodel.get_or_load_smry_cached()
                 self.response_filters["DATE"] = "single"
+                self._input_provider_set = create_presampled_provider_set_from_paths(
+                    self.ens_paths, rel_file_pattern, self._sampling
+                )
+                dfs = []
+                for ens_name in ensembles:
+                    provider = self._input_provider_set.provider(ens_name)
+                    # all_sumvecs = provider.vector_names
+                    # sumvecs = []
+                    # for column_key in
+                    df = provider.get_vectors_df(self.column_keys, None)
+                    df["ENSEMBLE"] = ens_name
+                    dfs.append(df)
+
+                self.responsedf = pd.concat(dfs)
+                self.responsedf["DATE"] = pd.to_datetime(
+                    self.responsedf["DATE"]
+                ).dt.strftime("%Y-%m-%d")
         else:
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
@@ -194,6 +215,7 @@ folder, to avoid risk of not extracting the right data.
         )
         self.parameterdf = pmodel.dataframe
         self.parameter_columns = pmodel.parameters
+
         parresp.check_runs(self.parameterdf, self.responsedf)
         parresp.check_response_filters(self.responsedf, self.response_filters)
 
@@ -784,3 +806,15 @@ def theme_layout(theme, specific_layout):
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
+
+
+def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.DataFrame:
+    """This function is the same as in parameter analysis and could be generalized."""
+    dfs = []
+    for ens in provider.ensemble_names():
+        df = provider.ensemble_provider(ens).get_column_data(
+            column_names=provider.ensemble_provider(ens).column_names()
+        )
+        df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+        dfs.append(df)
+    return pd.concat(dfs)
