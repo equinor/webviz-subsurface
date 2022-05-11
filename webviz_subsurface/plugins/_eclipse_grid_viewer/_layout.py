@@ -9,7 +9,6 @@ from webviz_subsurface._providers.ensemble_grid_provider import (
     EnsembleGridProvider,
     CellFilter,
 )
-from ._explicit_structured_grid_accessor import ExplicitStructuredGridAccessor
 
 
 # pylint: disable = too-few-public-methods
