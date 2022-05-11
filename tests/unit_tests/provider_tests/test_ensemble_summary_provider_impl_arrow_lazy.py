@@ -5,10 +5,13 @@ from typing import Dict
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
+import pytest
 
 from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_lazy import (
     Frequency,
     ProviderImplArrowLazy,
+    _find_first_non_increasing_date_pair,
+    _is_date_column_monotonically_increasing,
 )
 from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_provider import (
     EnsembleSummaryProvider,
@@ -336,3 +339,51 @@ def test_get_vectors_for_date_with_resampling(tmp_path: Path) -> None:
     assert df["REAL"][0] == 1
     assert df["TOT_t"][0] == 30.0
     assert df["RATE_r"][0] == 4.0
+
+
+def test_monotonically_increasing_date_util_functions() -> None:
+    table_with_duplicate = pa.Table.from_pydict(
+        {
+            "DATE": [
+                np.datetime64("2020-01-01", "ms"),
+                np.datetime64("2020-01-02", "ms"),
+                np.datetime64("2020-01-02", "ms"),
+                np.datetime64("2020-01-03", "ms"),
+            ],
+        },
+    )
+
+    table_with_decrease = pa.Table.from_pydict(
+        {
+            "DATE": [
+                np.datetime64("2020-01-01", "ms"),
+                np.datetime64("2020-01-05", "ms"),
+                np.datetime64("2020-01-04", "ms"),
+                np.datetime64("2020-01-10", "ms"),
+            ],
+        },
+    )
+
+    assert not _is_date_column_monotonically_increasing(table_with_duplicate)
+    offending_pair = _find_first_non_increasing_date_pair(table_with_duplicate)
+    assert offending_pair[0] == np.datetime64("2020-01-02", "ms")
+    assert offending_pair[1] == np.datetime64("2020-01-02", "ms")
+
+    assert not _is_date_column_monotonically_increasing(table_with_decrease)
+    offending_pair = _find_first_non_increasing_date_pair(table_with_decrease)
+    assert offending_pair[0] == np.datetime64("2020-01-05", "ms")
+    assert offending_pair[1] == np.datetime64("2020-01-04", "ms")
+
+
+def test_create_with_repeated_dates(tmp_path: Path) -> None:
+    # fmt:off
+    input_data = [
+        ["DATE",                                 "REAL", "A"],
+        [np.datetime64("2000-01-02T00:00", "ms"), 1,     10.0],
+        [np.datetime64("2500-12-20T23:59", "ms"), 1,     11.0],
+        [np.datetime64("2500-12-20T23:59", "ms"), 1,     12.0],
+    ]
+    # fmt:on
+
+    with pytest.raises(ValueError):
+        _create_provider_obj_with_data(input_data, tmp_path)

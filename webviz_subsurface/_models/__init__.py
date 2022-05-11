@@ -6,4 +6,5 @@ from .observation_model import ObservationModel
 from .parameter_model import ParametersModel
 from .surface_leaflet_model import SurfaceLeafletModel
 from .surface_set_model import SurfaceSetModel
+from .well_attributes_model import WellAttributesModel
 from .well_set_model import WellSetModel

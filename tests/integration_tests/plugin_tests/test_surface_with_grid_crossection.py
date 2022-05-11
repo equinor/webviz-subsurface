@@ -8,7 +8,7 @@ def test_surface_with_grid_crosssection(
     plugin = SurfaceWithGridCrossSection(
         app,
         shared_settings["HM_SETTINGS"],
-        gridfile=[
+        gridfile=(
             testdata_folder
             / "01_drogon_ahm"
             / "realization-0"
@@ -17,7 +17,7 @@ def test_surface_with_grid_crosssection(
             / "results"
             / "grids"
             / "geogrid.roff"
-        ],
+        ),
         gridparameterfiles=[
             testdata_folder
             / "01_drogon_ahm"
