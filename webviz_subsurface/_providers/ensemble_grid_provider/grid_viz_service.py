@@ -74,7 +74,7 @@ class GridWorker:
     def get_cached_original_cell_indices(
         self, cell_filter: Optional[CellFilter]
     ) -> Optional[np.ndarray]:
-        if not self._cached_original_cell_indices:
+        if self._cached_original_cell_indices is None:
             return None
 
         if cell_filter == self._cached_cell_filter:
@@ -197,11 +197,11 @@ class GridVizService:
                 property_spec.prop_name, realization
             )
 
-        if not raw_cell_values:
+        if raw_cell_values is None:
             return None
 
         original_cell_indices_np = worker.get_cached_original_cell_indices(cell_filter)
-        if original_cell_indices_np:
+        if original_cell_indices_np is not None:
             mapped_cell_values = raw_cell_values[original_cell_indices_np]
             return PropertyScalars(mapped_cell_values)
 

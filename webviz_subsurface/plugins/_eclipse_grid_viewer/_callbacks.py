@@ -52,13 +52,14 @@ def plugin_callbacks(
         State(get_uuid(LayoutElements.DATES), "options"),
     )
     def _populate_dates(
-        property_name: str,
+        property_name: List[str],
         init_restart: str,
         current_date_options: List,
     ) -> Tuple[List[Dict[str, str]], Optional[List[str]]]:
         if PROPERTYTYPE(init_restart) == PROPERTYTYPE.INIT:
             return [], None
         else:
+            property_name = property_name[0]
             dates = grid_provider.dates_for_dynamic_property(
                 property_name=property_name
             )
@@ -82,59 +83,67 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.DATES), "value"),
         Input(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
         State(get_uuid(LayoutElements.INIT_RESTART), "value"),
-        State(get_uuid(LayoutElements.STORED_CELL_INDICES_HASH), "data"),
+        State(get_uuid(LayoutElements.VTK_GRID_POLYDATA), "polys"),
     )
     def _set_geometry_and_scalar(
         prop: List[str],
         date: List[int],
         grid_range: List[List[int]],
         proptype: str,
-        stored_cell_indices: int,
+        current_polys: str,
     ) -> Tuple[Any, Any, Any, List, Any]:
 
-        timer = PerfTimer()
         if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
-            scalar = grid_provider.get_static_property_values(prop[0], realization=0)
+            property_spec = PropertySpec(prop_name=prop[0], prop_date=0)
         else:
-            scalar = grid_provider.get_dynamic_property_values(
-                prop[0], str(date[0]), realization=0
+            property_spec = PropertySpec(prop_name=prop[0], prop_date=date[0])
+
+        triggered = callback_context.triggered[0]["prop_id"]
+        timer = PerfTimer()
+        if (
+            triggered == "."
+            or current_polys is None
+            or get_uuid(LayoutElements.GRID_RANGE_STORE) in triggered
+        ):
+            surface_polys, scalars = grid_viz_service.get_surface(
+                provider_id=grid_provider.provider_id(),
+                realization=0,
+                property_spec=property_spec,
+                cell_filter=CellFilter(
+                    i_min=grid_range[0][0],
+                    i_max=grid_range[0][1],
+                    j_min=grid_range[1][0],
+                    j_max=grid_range[1][1],
+                    k_min=grid_range[2][0],
+                    k_max=grid_range[2][1],
+                ),
             )
-        print(f"Reading scalar from file in {timer.lap_s():.2f}s")
-
-        surface_polys, scalars = grid_viz_service.get_surface(
-            provider_id=grid_provider.provider_id(),
-            realization=0,
-            property_spec=PropertySpec(prop_name="poro", prop_date=None),
-            cell_filter=CellFilter(
-                i_min=grid_range[0][0],
-                i_max=grid_range[0][1],
-                j_min=grid_range[1][0],
-                j_max=grid_range[1][1],
-                k_min=grid_range[2][0],
-                k_max=grid_range[2][1],
-            ),
-        )
-
-        print(f"Extracting cropped geometry in {timer.lap_s():.2f}s")
-
-        # # Storing hash of cell indices client side to control if only scalar should be updated
-        # hashed_indices = hashlib.sha256(cell_indices.data.tobytes()).hexdigest().upper()
-        # print(f"Hashing indices in {timer.lap_s():.2f}s")
-
-        # if hashed_indices == stored_cell_indices:
-        #     return (
-        #         no_update,
-        #         no_update,
-        #         b64_encode_numpy(scalar[cell_indices].astype(np.float32)),
-        #         [np.nanmin(scalar), np.nanmax(scalar)],
-        #         no_update,
-        #     )
-        return (
-            b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
-            b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
-            b64_encode_numpy(scalars.value_arr.astype(np.float32)),
-            [np.nanmin(scalars.value_arr), np.nanmax(scalars.value_arr)],
-        )
+            return (
+                b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
+                b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
+                b64_encode_numpy(scalars.value_arr.astype(np.float32)),
+                [np.nanmin(scalars.value_arr), np.nanmax(scalars.value_arr)],
+            )
+        else:
+            scalars = grid_viz_service.get_mapped_property_values(
+                provider_id=grid_provider.provider_id(),
+                realization=0,
+                property_spec=property_spec,
+                cell_filter=CellFilter(
+                    i_min=grid_range[0][0],
+                    i_max=grid_range[0][1],
+                    j_min=grid_range[1][0],
+                    j_max=grid_range[1][1],
+                    k_min=grid_range[2][0],
+                    k_max=grid_range[2][1],
+                ),
+            )
+            return (
+                no_update,
+                no_update,
+                b64_encode_numpy(scalars.value_arr.astype(np.float32)),
+                [np.nanmin(scalars.value_arr), np.nanmax(scalars.value_arr)],
+            )
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),

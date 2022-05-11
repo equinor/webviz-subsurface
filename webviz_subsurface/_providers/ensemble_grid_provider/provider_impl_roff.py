@@ -194,12 +194,13 @@ class ProviderImplRoff(EnsembleGridProvider):
         )
 
     def dates_for_dynamic_property(self, property_name: str) -> Optional[List[str]]:
+        print(property_name)
         dates = sorted(
             list(
                 self._inventory_df.loc[
                     (self._inventory_df[Col.TYPE] == GridType.DYNAMIC_PROPERTY)
-                    & ((self._inventory_df[Col.ATTRIBUTE] == property_name))
-                ][Col.ATTRIBUTE].unique()
+                    & (self._inventory_df[Col.ATTRIBUTE] == property_name)
+                ][Col.DATESTR].unique()
             )
         )
         if len(dates) == 1 and not bool(dates[0]):
