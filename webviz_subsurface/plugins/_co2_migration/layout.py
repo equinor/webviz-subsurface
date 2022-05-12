@@ -9,7 +9,9 @@ from ._utils import MapAttribute
 
 @unique
 class LayoutElements(str, Enum):
-    MAINVIEW = "mainview"
+    MAP_VIEW = "map-view"
+    CONTENT_VIEW = "content-view"
+    PLOT_VIEW = "plot-view"
     DECKGLMAP = "deckglmap"
     COLORMAPLAYER = "colormaplayer"
     FAULTPOLYGONSLAYER = "faultpolygonslayer"
@@ -34,18 +36,33 @@ class LayoutLabels(str, Enum):
 
 
 class LayoutStyle:
-    MAPHEIGHT = "81vh"
-    ENSEMBLEBARPLOTHEIGHT = 300
-    PARENTDIV = {"display": "flex"}
-    SIDEBAR = {"flex": 1, "height": "84vh"}
-    MAINVIEW = {"flex": 3, "height": "84vh"}
-    RESET_BUTTON = {
-        "marginTop": "5px",
-        "width": "100%",
-        "height": "20px",
-        "line-height": "20px",
-        "background-color": "#7393B3",
-        "color": "#fff",
+    ENSEMBLE_PLOT_HEIGHT = 300
+    ENSEMBLE_PLOT_WIDTH = 400
+    PARENTDIV = {
+        "display": "flex",
+        "height": "84vh",
+    }
+    SIDEBAR = {
+        "flex": 1
+    }
+    CONTENT_PARENT = {
+        "flex": 3,
+        "display": "flex",
+        "flex-direction": "column",
+    }
+    MAP_VIEW = {
+        "flex": 2,
+    }
+    MAP_WRAPPER = {
+        "padding": "2vh",
+        "height": "90%",
+        "position": "relative",
+    }
+    PLOT_VIEW = {
+        "flex": 1,
+        "display": "flex",
+        "flex-direction": "row",
+        "justify-content": "center",
     }
 
 
@@ -61,29 +78,37 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                     ZoneSelectorLayout(get_uuid),
                 ]
             ),
-            wcc.Frame(
-                id=get_uuid(LayoutElements.MAINVIEW),
-                style=LayoutStyle.MAINVIEW,
-                color="white",
-                highlight=False,
-                children=[
-                    FullScreen(
-                        html.Div(
-                            [
-                                DeckGLMap(
-                                    id=get_uuid(LayoutElements.DECKGLMAP),
-                                    layers=[],
-                                    coords={"visible": True},
-                                    scale={"visible": True},
-                                    coordinateUnit="m",
-                                    zoom=-7,
-                                ),
-                            ],
-                            style={"height": LayoutStyle.MAPHEIGHT},
-                        )
+            html.Div(
+                [
+                    wcc.Frame(
+                        id=get_uuid(LayoutElements.MAP_VIEW),
+                        color="white",
+                        highlight=False,
+                        children=[
+                            html.Div(
+                                [
+                                    DeckGLMap(
+                                        id=get_uuid(LayoutElements.DECKGLMAP),
+                                        layers=[],
+                                        coords={"visible": True},
+                                        scale={"visible": True},
+                                        coordinateUnit="m",
+                                        zoom=-7,
+                                    ),
+                                ],
+                                style=LayoutStyle.MAP_WRAPPER,
+                            ),
+                        ],
+                        style=LayoutStyle.MAP_VIEW,
+                    ),
+                    wcc.Frame(
+                        id=get_uuid(LayoutElements.PLOT_VIEW),
+                        style=LayoutStyle.PLOT_VIEW,
+                        children=SummaryGraphLayout(get_uuid).children
                     )
-                ]
-            ),
+                ],
+                style=LayoutStyle.CONTENT_PARENT
+            )
         ],
         style=LayoutStyle.PARENTDIV,
     )
@@ -137,6 +162,14 @@ class EnsembleSelectorLayout(html.Div):
                 wcc.Dropdown(
                     id=get_uuid(LayoutElements.REALIZATIONINPUT),
                 ),
+            ]
+        ))
+
+
+class SummaryGraphLayout(html.Div):
+    def __init__(self, get_uuid: Callable, **kwargs):
+        super().__init__(
+            children=[
                 dcc.Graph(
                     id=get_uuid(LayoutElements.ENSEMBLEBARPLOT),
                     figure=go.Figure(),
@@ -148,9 +181,10 @@ class EnsembleSelectorLayout(html.Div):
                     id=get_uuid(LayoutElements.ENSEMBLETIMELEAKPLOT),
                     figure=go.Figure(),
                     # config={},
-                )
-            ]
-        ))
+                ),
+            ],
+            **kwargs,
+        )
 
 
 class DateSelectorLayout(html.Div):

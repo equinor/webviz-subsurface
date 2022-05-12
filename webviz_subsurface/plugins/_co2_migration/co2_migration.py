@@ -25,8 +25,10 @@ class CO2Migration(WebvizPluginABC):
         well_pick_file: Optional[str] = None,
         map_attribute_names: Optional[Dict[str, str]] = None,
     ):
-        # TODO: license boundary file should be incorporated into fault
-        #  polygon provider, get its own provider or something similar
+        # TMP
+        import warnings
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        # ---
         super().__init__()
         self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
         self._map_attribute_names = _initialize_map_attribute_names(map_attribute_names)

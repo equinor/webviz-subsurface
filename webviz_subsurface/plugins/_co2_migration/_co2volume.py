@@ -47,12 +47,13 @@ def _read_co2_volumes(realization_paths: Dict[str, str]):
     ])
 
 
-def generate_co2_volume_figure(realization_paths: Dict[str, str], height):
+def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width):
     import plotly.express as px
     df = _read_terminal_co2_volumes(realization_paths)
     fig = px.bar(df, y=_Columns.REALIZATION, x=_Columns.VOLUME, color=_Columns.CONTAINMENT, title="End-state CO2 containment [m³]", orientation="h")
     # TODO: figure height or yrange should depend on number of realizations (?)
     fig.layout.height = height
+    fig.layout.width = width
     fig.layout.legend.title.text = ""
     fig.layout.legend.orientation = "h"
     fig.layout.yaxis.title = ""
@@ -66,7 +67,7 @@ def generate_co2_volume_figure(realization_paths: Dict[str, str], height):
     return fig
 
 
-def generate_co2_time_containment_figure(realization_paths: Dict[str, str], height):
+def generate_co2_time_containment_figure(realization_paths: Dict[str, str], height, width):
     import plotly.graph_objects as go
     import plotly.express as px
     df = _read_co2_volumes(realization_paths)
@@ -90,6 +91,7 @@ def generate_co2_time_containment_figure(realization_paths: Dict[str, str], heig
         fig.add_scatter(y=sub_df["co2_outside"], line_dash="dash", showlegend=False, **common_args)
         fig.add_scatter(y=sub_df["co2_total"], **common_args)
     fig.layout.height = height
+    fig.layout.width = width
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
     fig.layout.margin.b = 10
     fig.layout.margin.t = 60

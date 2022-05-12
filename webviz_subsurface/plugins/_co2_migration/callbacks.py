@@ -55,12 +55,10 @@ def plugin_callbacks(
             for r in sorted(rz_paths.keys())
         ]
         fig0 = generate_co2_volume_figure(
-            rz_paths,
-            LayoutStyle.ENSEMBLEBARPLOTHEIGHT,
+            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH
         )
         fig1 = generate_co2_time_containment_figure(
-            rz_paths,
-            LayoutStyle.ENSEMBLEBARPLOTHEIGHT,
+            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH
         )
         return realizations, realizations[0]["value"], fig0, fig1
 
