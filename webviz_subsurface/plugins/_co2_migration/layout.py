@@ -62,7 +62,7 @@ class LayoutStyle:
         "flex": 9,
         "display": "flex",
         "flex-direction": "row",
-        "justify-content": "center",
+        "justify-content": "space-evenly",
     }
 
 
@@ -185,7 +185,9 @@ class SummaryGraphLayout(html.Div):
                 dcc.Graph(
                     id=get_uuid(LayoutElements.ENSEMBLETIMELEAKPLOT),
                     figure=go.Figure(),
-                    # config={},
+                    config={
+                        "displayModeBar": False,
+                    }
                 ),
             ],
             **kwargs,
