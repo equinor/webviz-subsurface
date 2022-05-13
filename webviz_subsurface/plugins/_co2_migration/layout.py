@@ -22,9 +22,7 @@ class LayoutElements(str, Enum):
     ENSEMBLEINPUT = "ensembleinput"
     REALIZATIONINPUT = "realizationinput"
     DATEINPUT = "dateinput"
-    FAULTPOLYGONINPUT = "faultpolygoninput"
-    WELLPICKZONEINPUT = "wellpickzoneinput"
-    MAPZONEINPUT = "mapzoneinput"
+    FORMATION_INPUT = "formation-input"
 
     ENSEMBLEBARPLOT = "ensemblebarplot"
     ENSEMBLETIMELEAKPLOT = "ensembletimeleakplot"
@@ -51,7 +49,7 @@ class LayoutStyle:
         "flex-direction": "column",
     }
     MAP_VIEW = {
-        "flex": 2,
+        "flex": 11,
     }
     MAP_WRAPPER = {
         "padding": "2vh",
@@ -59,7 +57,7 @@ class LayoutStyle:
         "position": "relative",
     }
     PLOT_VIEW = {
-        "flex": 1,
+        "flex": 9,
         "display": "flex",
         "flex-direction": "row",
         "justify-content": "center",
@@ -74,8 +72,6 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                 children=[
                     EnsembleSelectorLayout(get_uuid, ensembles),
                     PropertySelectorLayout(get_uuid),
-                    DateSelectorLayout(get_uuid),
-                    ZoneSelectorLayout(get_uuid),
                 ]
             ),
             html.Div(
@@ -108,26 +104,21 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                     )
                 ],
                 style=LayoutStyle.CONTENT_PARENT
-            )
+            ),
         ],
         style=LayoutStyle.PARENTDIV,
     )
 
 
-class FullScreen(wcc.WebvizPluginPlaceholder):
-    # TODO: this class is a direct copy from MapViewerFMU
-    def __init__(self, children: List[Any]) -> None:
-        super().__init__(buttons=["expand"], children=children)
-
-
 class PropertySelectorLayout(html.Div):
     def __init__(self, get_uuid: Callable):
         super().__init__(children=wcc.Selectors(
-            label="Property",
+            label="Map Settings",
             open_details=True,
             children=[
                 html.Div(
                     [
+                        "Colored Property",
                         wcc.Dropdown(
                             id=get_uuid(LayoutElements.PROPERTY),
                             options=[
@@ -136,7 +127,20 @@ class PropertySelectorLayout(html.Div):
                             ],
                             value=MapAttribute.MIGRATION_TIME,
                             clearable=False,
-                        )
+                        ),
+                        "Formation",
+                        wcc.Dropdown(
+                            id=get_uuid(LayoutElements.FORMATION_INPUT),
+                        ),
+                        "Date",
+                        dcc.Slider(
+                            id=get_uuid(LayoutElements.DATEINPUT),
+                            step=None,
+                            marks={0: ''},
+                            value=0,
+                            tooltip={"placement": "bottom", "always_visible": False},
+                            # TODO: add arrows for next/previous date?
+                        ),
                     ] 
                 )
             ]
@@ -184,45 +188,4 @@ class SummaryGraphLayout(html.Div):
                 ),
             ],
             **kwargs,
-        )
-
-
-class DateSelectorLayout(html.Div):
-    def __init__(self, get_uuid: Callable):
-        super().__init__(children=wcc.Selectors(
-            label="Dates",
-            open_details=True,
-            children=[
-                dcc.Slider(
-                    id=get_uuid(LayoutElements.DATEINPUT),
-                    step=None,
-                    marks={0: ''},
-                    value=0,
-                    tooltip={"placement": "bottom", "always_visible": False},
-                    # TODO: add arrows for next/previous date?
-                )
-            ]
-        ))
-
-
-class ZoneSelectorLayout(html.Div):
-    def __init__(self, get_uuid: Callable):
-        super().__init__(
-            children=wcc.Selectors(
-                label="Zones and Horizons",
-                children=[
-                    "Fault Polygons",
-                    wcc.Dropdown(
-                        id=get_uuid(LayoutElements.FAULTPOLYGONINPUT),
-                    ),
-                    "Well Picks",
-                    wcc.Dropdown(
-                        id=get_uuid(LayoutElements.WELLPICKZONEINPUT)
-                    ),
-                    "Color Map",
-                    wcc.Dropdown(
-                        id=get_uuid(LayoutElements.MAPZONEINPUT),
-                    ),
-                ]
-            )
         )

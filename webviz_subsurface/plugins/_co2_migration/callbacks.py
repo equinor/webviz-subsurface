@@ -66,16 +66,15 @@ def plugin_callbacks(
     @callback(
         Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
         Output(get_uuid(LayoutElements.DATEINPUT), 'value'),
-        Output(get_uuid(LayoutElements.FAULTPOLYGONINPUT), 'options'),
-        Output(get_uuid(LayoutElements.WELLPICKZONEINPUT), 'options'),
-        Output(get_uuid(LayoutElements.MAPZONEINPUT), 'options'),
-        Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
+        Output(get_uuid(LayoutElements.FORMATION_INPUT), 'options'),
+        Output(get_uuid(LayoutElements.FORMATION_INPUT), 'value'),
+        Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),  # TODO: needed?
         Input(get_uuid(LayoutElements.REALIZATIONINPUT), 'value'),
         Input(get_uuid(LayoutElements.PROPERTY), 'value'),
     )
     def set_realization(ensemble, realization, prop):
         if ensemble is None or realization is None:
-            return [], [], [], [], []
+            return [], None, [], None
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
         att_name = map_attribute_names[MapAttribute.MAX_SATURATION]
@@ -96,49 +95,43 @@ def plugin_callbacks(
             }
             initial_date = int(date_list[0])
         # Map
-        prop = map_attribute_names[MapAttribute(prop)]
-        surfaces = surface_provider.surface_names_for_attribute(prop)
-        surfaces = [
-            dict(label=s, value=s)
-            for s in surfaces
-        ]
-        # Fault Polygon
-        polygon_provider = ensemble_fault_polygons_providers[ensemble]
-        polygons = polygon_provider.fault_polygons_names_for_attribute(FAULT_POLYGON_ATTRIBUTE)
-        polygons = [
-            dict(label=p, value=p)
-            for p in polygons
-        ]
-        # Well pick horizons
-        if well_pick_provider is None:
-            well_pick_horizons = []
-        else:
-            well_pick_horizons = well_pick_provider.dframe[WellPickTableColumns.HORIZON].unique()
-            well_pick_horizons = [
-                dict(label=p, value=p)
-                for p in well_pick_horizons
-            ]
-        return dates, initial_date, polygons, well_pick_horizons, surfaces
+        prop_name = map_attribute_names[MapAttribute(prop)]
+        surfaces = surface_name_aliases(surface_provider, prop_name)
+        polygons = fault_polygon_aliases(ensemble_fault_polygons_providers[ensemble])
+        well_picks = well_pick_names_aliases(well_pick_provider)
+        # Formation names
+        formations = sorted(list(set(surfaces + polygons + well_picks)))
+        initial_formation = formations[0] if len(formations) > 0 else None
+        formations = [{"label": f, "value": f} for f in formations]
+        return dates, initial_date, formations, initial_formation
 
     @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
         Output(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
         Input(get_uuid(LayoutElements.PROPERTY), "value"),
         Input(get_uuid(LayoutElements.DATEINPUT), "value"),
-        Input(get_uuid(LayoutElements.FAULTPOLYGONINPUT), "value"),
-        Input(get_uuid(LayoutElements.WELLPICKZONEINPUT), "value"),
-        Input(get_uuid(LayoutElements.MAPZONEINPUT), "value"),
+        Input(get_uuid(LayoutElements.FORMATION_INPUT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
     )
-    def update_map_attribute(attribute, date, polygon_name, well_pick_horizon, surface_name, realization, ensemble):
+    def update_map_attribute(attribute, date, formation, realization, ensemble):
         if ensemble is None:
             raise PreventUpdate
         if MapAttribute(attribute) != MapAttribute.MIGRATION_TIME and date is None:
             raise PreventUpdate
         date = str(date)
+        # Look up formation aliases
+        surface_name = lookup_surface_alias(
+            formation,
+            ensemble_surface_providers[ensemble],
+            map_attribute_names[MapAttribute(attribute)],
+        )
         if surface_name is None:
             surface_name = "all"
+        polygon_name = lookup_fault_polygon_alias(
+            formation, ensemble_fault_polygons_providers[ensemble]
+        )
+        well_pick_horizon = lookup_well_pick_alias(formation, well_pick_provider)
 
         layers, viewport_bounds = create_map_layers(
             surface_server=surface_server,
@@ -152,6 +145,54 @@ def plugin_callbacks(
             well_pick_horizon=well_pick_horizon,
         )
         return layers, viewport_bounds
+
+
+def surface_name_aliases(surface_provider, prop):
+    return [
+        s.title()
+        for s in surface_provider.surface_names_for_attribute(prop)
+    ]
+
+
+def fault_polygon_aliases(polygon_provider):
+    return [
+        p.title()
+        for p in polygon_provider.fault_polygons_names_for_attribute(FAULT_POLYGON_ATTRIBUTE)
+    ]
+
+
+def well_pick_names_aliases(well_pick_provider):
+    if well_pick_provider is None:
+        return []
+    return [
+        p.title()
+        for p in well_pick_provider.dframe[WellPickTableColumns.HORIZON].unique()
+    ]
+
+
+def lookup_surface_alias(alias, surface_provider, prop):
+    return lookup_formation_alias(alias, surface_provider.surface_names_for_attribute(prop))
+
+
+def lookup_fault_polygon_alias(alias, polygon_provider):
+    return lookup_formation_alias(
+        alias, polygon_provider.fault_polygons_names_for_attribute(FAULT_POLYGON_ATTRIBUTE)
+    )
+
+
+def lookup_well_pick_alias(alias, well_pick_provider):
+    if well_pick_provider is None:
+        return None
+    return lookup_formation_alias(
+        alias, well_pick_provider.dframe[WellPickTableColumns.HORIZON].unique()
+    )
+
+
+def lookup_formation_alias(alias, names):
+    matches = [s for s in names if s.title() == alias]
+    if len(matches) == 0:
+        return None
+    return matches[0]
 
 
 def create_map_layers(
