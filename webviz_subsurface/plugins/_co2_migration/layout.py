@@ -27,6 +27,8 @@ class LayoutElements(str, Enum):
     ENSEMBLEBARPLOT = "ensemblebarplot"
     ENSEMBLETIMELEAKPLOT = "ensembletimeleakplot"
 
+    DATE_STORE = "date-store"
+
 
 @unique
 class LayoutLabels(str, Enum):
@@ -105,6 +107,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                 ],
                 style=LayoutStyle.CONTENT_PARENT
             ),
+            dcc.Store(id=get_uuid(LayoutElements.DATE_STORE)),
         ],
         style=LayoutStyle.PARENTDIV,
     )
@@ -138,8 +141,6 @@ class PropertySelectorLayout(html.Div):
                             step=None,
                             marks={0: ''},
                             value=0,
-                            tooltip={"placement": "bottom", "always_visible": False},
-                            # TODO: add arrows for next/previous date?
                         ),
                     ] 
                 )

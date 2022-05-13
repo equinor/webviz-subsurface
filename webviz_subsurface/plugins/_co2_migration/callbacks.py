@@ -66,6 +66,7 @@ def plugin_callbacks(
     @callback(
         Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
         Output(get_uuid(LayoutElements.DATEINPUT), 'value'),
+        Output(get_uuid(LayoutElements.DATE_STORE), "data"),
         Output(get_uuid(LayoutElements.FORMATION_INPUT), 'options'),
         Output(get_uuid(LayoutElements.FORMATION_INPUT), 'value'),
         Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),  # TODO: needed?
@@ -74,7 +75,7 @@ def plugin_callbacks(
     )
     def set_realization(ensemble, realization, prop):
         if ensemble is None or realization is None:
-            return [], None, [], None
+            return [], None, [], [], None
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
         att_name = map_attribute_names[MapAttribute.MAX_SATURATION]
@@ -85,15 +86,14 @@ def plugin_callbacks(
         else:
             dates = {
                 # TODO: handle dates using some utility tool instead?
-                # TODO: using date as value is convenient, but won't reflect the correct position of the mark.
-                #  However, dash does not seem to support showing a different tooltip than the value (dict key).
-                #  This means that any tooltips shown will not reference the date in any meaningful way. An
-                #  alternative could be to let the value be time since start.
-                #  Relevant: https://github.com/plotly/dash/issues/1846
-                int(d): '' if i > 0 and i < len(date_list) - 1 else f"{d[:4]}.{d[4:6]}.{d[6:]}"
+                # Regarding tooltips: https://github.com/plotly/dash/issues/1846
+                i: {
+                    "label": f"{d[:4]}.{d[4:6]}.{d[6:]}",
+                    "style": {"writing-mode": "vertical-rl"},
+                }
                 for i, d in enumerate(date_list)
             }
-            initial_date = int(date_list[0])
+            initial_date = 0
         # Map
         prop_name = map_attribute_names[MapAttribute(prop)]
         surfaces = surface_name_aliases(surface_provider, prop_name)
@@ -103,7 +103,7 @@ def plugin_callbacks(
         formations = sorted(list(set(surfaces + polygons + well_picks)))
         initial_formation = formations[0] if len(formations) > 0 else None
         formations = [{"label": f, "value": f} for f in formations]
-        return dates, initial_date, formations, initial_formation
+        return dates, initial_date, date_list, formations, initial_formation
 
     @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
@@ -113,13 +113,14 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.FORMATION_INPUT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
+        State(get_uuid(LayoutElements.DATE_STORE), "data"),
     )
-    def update_map_attribute(attribute, date, formation, realization, ensemble):
+    def update_map_attribute(attribute, date, formation, realization, ensemble, date_list):
         if ensemble is None:
             raise PreventUpdate
         if MapAttribute(attribute) != MapAttribute.MIGRATION_TIME and date is None:
             raise PreventUpdate
-        date = str(date)
+        date = str(date_list[date])
         # Look up formation aliases
         surface_name = lookup_surface_alias(
             formation,
