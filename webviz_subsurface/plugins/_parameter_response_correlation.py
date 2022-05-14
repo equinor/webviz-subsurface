@@ -30,7 +30,7 @@ class ParameterResponseCorrelation(WebvizPluginABC):
     """Visualizes correlations between numerical input parameters and responses.
 
 ---
-**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
+**Three main options for input data: Aggregated, file per realization and read from `.arrow`.**
 
 **Using aggregated data**
 * **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns \
@@ -47,15 +47,15 @@ columns (absolute path or relative to config file).
 
 **Using simulation time series data directly from `UNSMRY` files as responses**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` \
-                implies that the input data should be time series data from simulation `.UNSMRY` \
-                files, read using `fmu-ensemble`.
+                implies that the input data should be time series data from `.arrow` file \
+* **`rel_file_pattern`:** Relative file path to `.arrow` file.
 * **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading \
                 from UNSMRY-files in the defined ensembles (default is all vectors). * can be \
                 used as wild card.
 * **`sampling`:** (Optional) sampling frequency when reading simulation data directly from \
                `.UNSMRY`-files (default is monthly).
 
-?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter \
+?> The `.arrow` input method implies that the "DATE" vector will be used as a filter \
    of type `single` (as defined below under `response_filters`).
 
 
@@ -90,7 +90,7 @@ would make more sense (though the pressures in this case would not be volume wei
 and the aggregation would therefore likely be imprecise).
 
 !> It is **strongly recommended** to keep the data frequency to a regular frequency (like \
-`monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` \
+`monthly` or `yearly`). This applies to both csv input and when reading from `.arrow` \
 (controlled by the `sampling` key). This is because the statistics are calculated per DATE over \
 all realizations in an ensemble, and the available dates should therefore not differ between \
 individual realizations of an ensemble.
@@ -112,17 +112,12 @@ The `response_file` must have the response columns (and the columns to use as `r
 if that option is used).
 
 
-**Using simulation time series data directly from `UNSMRY` files as responses**
+**Using simulation time series data directly from `.arrow` files as responses**
 
 Parameters are extracted automatically from the `parameters.txt` files in the individual
-realizations, using the `fmu-ensemble` library.
+realizations.
 
-Responses are extracted automatically from the `UNSMRY` files in the individual realizations,
-using the `fmu-ensemble` library.
-
-!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
-individual realizations. You should therefore not have more than one `UNSMRY` file in this \
-folder, to avoid risk of not extracting the right data.
+Responses are extracted automatically from the `.arrow` files in the individual realizations.
 """
 
     # pylint:disable=too-many-arguments, too-many-locals
