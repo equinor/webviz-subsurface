@@ -15,12 +15,13 @@ from webviz_subsurface._datainput.fmu_input import load_csv, load_parameters
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import ParametersModel
 from webviz_subsurface._providers import (
-    EnsembleSummaryProviderFactory,
     EnsembleTableProviderFactory,
     EnsembleTableProviderSet,
     Frequency,
 )
+
 from ._simulation_time_series.types.provider_set import (
+    ProviderSet,
     create_presampled_provider_set_from_paths,
 )
 
@@ -172,9 +173,6 @@ folder, to avoid risk of not extracting the right data.
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            # parameterdf = load_parameters(
-            #     ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
-            # )
             table_provider = EnsembleTableProviderFactory.instance()
             parameterdf = create_df_from_table_provider(
                 table_provider.create_provider_set_from_per_realization_parameter_file(
@@ -189,23 +187,12 @@ folder, to avoid risk of not extracting the right data.
                 )
             else:
                 self.response_filters["DATE"] = "single"
-                self._input_provider_set = create_presampled_provider_set_from_paths(
-                    self.ens_paths, rel_file_pattern, self._sampling
+                self.responsedf = create_df_from_summary_provider(
+                    create_presampled_provider_set_from_paths(
+                        self.ens_paths, rel_file_pattern, self._sampling
+                    ),
+                    self.column_keys,
                 )
-                dfs = []
-                for ens_name in ensembles:
-                    provider = self._input_provider_set.provider(ens_name)
-                    # all_sumvecs = provider.vector_names
-                    # sumvecs = []
-                    # for column_key in
-                    df = provider.get_vectors_df(self.column_keys, None)
-                    df["ENSEMBLE"] = ens_name
-                    dfs.append(df)
-
-                self.responsedf = pd.concat(dfs)
-                self.responsedf["DATE"] = pd.to_datetime(
-                    self.responsedf["DATE"]
-                ).dt.strftime("%Y-%m-%d")
         else:
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
@@ -321,7 +308,7 @@ folder, to avoid risk of not extracting the right data.
                     label=f"{col_name}:",
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
-                    value=values[0],
+                    value=values[-1],
                     multi=False,
                     clearable=False,
                 )
@@ -660,8 +647,6 @@ folder, to avoid risk of not extracting the right data.
                     ],
                 )
             )
-        else:
-            functions.extend(self.emodel.webvizstore)
         return functions
 
 
@@ -818,3 +803,19 @@ def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.Data
         df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
         dfs.append(df)
     return pd.concat(dfs)
+
+
+def create_df_from_summary_provider(
+    provider_set: ProviderSet, column_keys: List[str]
+) -> pd.DataFrame:
+    """Descr"""
+    dfs = []
+    for ens_name, provider in provider_set.items():
+        all_sumvecs = provider.get_matching_vector_names(column_keys)
+        df = provider.get_vectors_df(all_sumvecs, None)
+        df["ENSEMBLE"] = ens_name
+        dfs.append(df)
+
+    df_all = pd.concat(dfs)
+    df_all["DATE"] = pd.to_datetime(df_all["DATE"]).dt.strftime("%Y-%m-%d")
+    return df_all
