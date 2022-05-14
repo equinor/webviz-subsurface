@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -11,18 +11,14 @@ from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface._utils.parameter_response as parresp
-from webviz_subsurface._datainput.fmu_input import load_csv, load_parameters
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import ParametersModel
 from webviz_subsurface._providers import (
+    EnsembleSummaryProvider,
+    EnsembleSummaryProviderFactory,
     EnsembleTableProviderFactory,
     EnsembleTableProviderSet,
     Frequency,
-)
-
-from ._simulation_time_series.types.provider_set import (
-    ProviderSet,
-    create_presampled_provider_set_from_paths,
 )
 
 
@@ -168,26 +164,33 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            table_provider = EnsembleTableProviderFactory.instance()
+            smry_provider_factory = EnsembleSummaryProviderFactory.instance()
+            table_provider_factory = EnsembleTableProviderFactory.instance()
             parameterdf = create_df_from_table_provider(
-                table_provider.create_provider_set_from_per_realization_parameter_file(
+                table_provider_factory.create_provider_set_from_per_realization_parameter_file(
                     self.ens_paths
                 )
             )
             if self.response_file:
-                self.responsedf = load_csv(
-                    ensemble_paths=self.ens_paths,
-                    csv_file=response_file,
-                    ensemble_set_name="EnsembleSet",
-                )
+                provider_set = {
+                    ens_name: smry_provider_factory.create_from_per_realization_csv_file(
+                        ens_path, response_file
+                    )
+                    for ens_name, ens_path in self.ens_paths.items()
+                }
             else:
-                self.response_filters["DATE"] = "single"
-                self.responsedf = create_df_from_summary_provider(
-                    create_presampled_provider_set_from_paths(
-                        self.ens_paths, rel_file_pattern, self._sampling
-                    ),
-                    self.column_keys,
-                )
+                provider_set = {
+                    ens_name: smry_provider_factory.create_from_arrow_unsmry_presampled(
+                        ens_path, rel_file_pattern, self._sampling
+                    )
+                    for ens_name, ens_path in self.ens_paths.items()
+                }
+
+            self.response_filters["DATE"] = "single"
+            self.responsedf = create_df_from_summary_provider(
+                provider_set,
+                self.column_keys,
+            )
         else:
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
@@ -617,32 +620,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                     ],
                 ),
             ]
-
-        functions = [
-            (
-                load_parameters,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
-            ),
-        ]
-        if self.response_file:
-            functions.append(
-                (
-                    load_csv,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "csv_file": self.response_file,
-                            "ensemble_set_name": "EnsembleSet",
-                        }
-                    ],
-                )
-            )
-        return functions
+        return []
 
 
 def correlate(inputdf, response, method="pearson"):
@@ -801,7 +779,7 @@ def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.Data
 
 
 def create_df_from_summary_provider(
-    provider_set: ProviderSet, column_keys: List[str]
+    provider_set: Dict[str, EnsembleSummaryProvider], column_keys: List[str]
 ) -> pd.DataFrame:
     """Descr"""
     dfs = []
