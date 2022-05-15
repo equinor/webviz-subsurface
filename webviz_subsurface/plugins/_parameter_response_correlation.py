@@ -11,6 +11,7 @@ from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface._utils.parameter_response as parresp
+from webviz_subsurface._datainput.fmu_input import load_csv
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import ParametersModel
 from webviz_subsurface._providers import (
@@ -164,7 +165,6 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            smry_provider_factory = EnsembleSummaryProviderFactory.instance()
             table_provider_factory = EnsembleTableProviderFactory.instance()
             parameterdf = create_df_from_table_provider(
                 table_provider_factory.create_provider_set_from_per_realization_parameter_file(
@@ -172,25 +172,24 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 )
             )
             if self.response_file:
-                provider_set = {
-                    ens_name: smry_provider_factory.create_from_per_realization_csv_file(
-                        ens_path, response_file
-                    )
-                    for ens_name, ens_path in self.ens_paths.items()
-                }
+                self.responsedf = load_csv(
+                    ensemble_paths=self.ens_paths,
+                    csv_file=response_file,
+                    ensemble_set_name="EnsembleSet",
+                )
             else:
+                smry_provider_factory = EnsembleSummaryProviderFactory.instance()
                 provider_set = {
                     ens_name: smry_provider_factory.create_from_arrow_unsmry_presampled(
                         ens_path, rel_file_pattern, self._sampling
                     )
                     for ens_name, ens_path in self.ens_paths.items()
                 }
-
-            self.response_filters["DATE"] = "single"
-            self.responsedf = create_df_from_summary_provider(
-                provider_set,
-                self.column_keys,
-            )
+                self.response_filters["DATE"] = "single"
+                self.responsedf = create_df_from_summary_provider(
+                    provider_set,
+                    self.column_keys,
+                )
         else:
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
@@ -619,6 +618,19 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                         }
                     ],
                 ),
+            ]
+        if self.response_file:
+            return [
+                (
+                    load_csv,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "csv_file": self.response_file,
+                            "ensemble_set_name": "EnsembleSet",
+                        }
+                    ],
+                )
             ]
         return []
 
