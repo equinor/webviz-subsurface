@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -215,7 +215,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         self.set_callbacks(app)
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[Dict[str, Any]]:
         steps = [
             {
                 "id": self.uuid("layout"),
@@ -279,12 +279,12 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         return steps
 
     @property
-    def ensembles(self):
+    def ensembles(self) -> List[str]:
         """Returns list of ensembles"""
         return list(self.parameterdf["ENSEMBLE"].unique())
 
     @property
-    def filter_layout(self):
+    def filter_layout(self) -> List[Any]:
         """Layout to display selectors for response filters"""
         children = []
         for col_name, col_type in self.response_filters.items():
@@ -332,7 +332,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         return children
 
     @property
-    def control_layout(self):
+    def control_layout(self) -> List[Any]:
         """Layout to select e.g. iteration and response"""
         max_params = len(self.parameter_columns)
         return [
@@ -396,7 +396,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         ]
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         """Main layout"""
         return wcc.FlexBox(
             id=self.uuid("layout"),
@@ -456,7 +456,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         )
 
     @property
-    def correlation_input_callbacks(self):
+    def correlation_input_callbacks(self) -> List[Input]:
         """List of Inputs for correlation callback"""
         callbacks = [
             Input(self.uuid("ensemble"), "value"),
@@ -473,7 +473,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         return callbacks
 
     @property
-    def distribution_input_callbacks(self):
+    def distribution_input_callbacks(self) -> List[Input]:
         """List of Inputs for distribution callback"""
         callbacks = [
             Input(self.uuid("correlation-graph"), "clickData"),
@@ -487,7 +487,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 callbacks.append(Input(self.uuid(f"filter-{col_name}"), "value"))
         return callbacks
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app) -> None:
         @app.callback(
             [
                 Output(self.uuid("correlation-graph"), "figure"),
@@ -599,7 +599,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
             ]
             return make_distribution_plot(df, parameter, response, self.theme)
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         if self.parameter_csv and self.response_csv:
             return [
                 (
@@ -635,7 +635,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         return []
 
 
-def correlate(inputdf, response, method="pearson"):
+def correlate(inputdf, response, method="pearson") -> pd.DataFrame:
     """Returns the correlation matrix for a dataframe"""
     if method == "pearson":
         corrdf = inputdf.corr(method=method)
@@ -649,9 +649,7 @@ def correlate(inputdf, response, method="pearson"):
     return corrdf.reindex(corrdf[response].abs().sort_values().index)
 
 
-def make_correlation_plot(
-    series, response, theme, corr_method, corr_cutoff, max_parameters
-):
+def make_correlation_plot(series, response, theme, corr_method) -> Dict[str, Any]:
     """Make Plotly trace for correlation plot"""
     xaxis_range = max(abs(series.values)) * 1.1
     layout = {
@@ -735,11 +733,10 @@ def make_distribution_plot(df, parameter, response, theme):
             },
         )
     )
-
     return fig
 
 
-def make_range_slider(domid, values, col_name):
+def make_range_slider(domid, values, col_name) -> wcc.RangeSlider:
     try:
         values.apply(pd.to_numeric, errors="raise")
     except ValueError as exc:
@@ -765,7 +762,7 @@ def make_range_slider(domid, values, col_name):
     )
 
 
-def theme_layout(theme, specific_layout):
+def theme_layout(theme, specific_layout) -> Dict:
     layout = {}
     layout.update(theme["layout"])
     layout.update(specific_layout)
