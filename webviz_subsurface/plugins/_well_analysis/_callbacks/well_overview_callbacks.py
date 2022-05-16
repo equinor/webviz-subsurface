@@ -198,6 +198,7 @@ def well_overview_callbacks(
                 chart_selected_type,
                 settings[chart_selected_type.value],
                 sumvec,
+                prod_after_date,
             )
         else:
             figure = WellOverviewFigure(
@@ -217,6 +218,7 @@ def well_overview_callbacks(
                 chart_selected_type,
                 settings[chart_selected_type.value],
                 sumvec,
+                prod_after_date,
             )
 
         return [

@@ -105,6 +105,7 @@ def controls(
                 ],
                 value="WOPT",
                 multi=False,
+                clearable=False,
             ),
             wcc.Dropdown(
                 label="Only Production after date",
