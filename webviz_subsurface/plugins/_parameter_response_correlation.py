@@ -20,6 +20,7 @@ from webviz_subsurface._providers import (
     EnsembleTableProviderFactory,
     EnsembleTableProviderSet,
     Frequency,
+    get_matching_vector_names,
 )
 
 
@@ -776,7 +777,7 @@ def read_csv(csv_file) -> pd.DataFrame:
 
 
 def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.DataFrame:
-    """This function is the same as in parameter analysis and could be generalized."""
+    """Aggregates parameters from all ensemble into a common dataframe."""
     dfs = []
     for ens in provider.ensemble_names():
         df = provider.ensemble_provider(ens).get_column_data(
@@ -790,11 +791,11 @@ def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.Data
 def create_df_from_summary_provider(
     provider_set: Dict[str, EnsembleSummaryProvider], column_keys: List[str]
 ) -> pd.DataFrame:
-    """Descr"""
+    """Aggregates summary data from all ensembles into a common dataframe."""
     dfs = []
     for ens_name, provider in provider_set.items():
-        all_sumvecs = provider.get_matching_vector_names(column_keys)
-        df = provider.get_vectors_df(all_sumvecs, None)
+        matching_sumvecs = get_matching_vector_names(provider, column_keys)
+        df = provider.get_vectors_df(matching_sumvecs, None)
         df["ENSEMBLE"] = ens_name
         dfs.append(df)
 

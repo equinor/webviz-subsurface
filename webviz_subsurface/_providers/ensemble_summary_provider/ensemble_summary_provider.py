@@ -1,7 +1,5 @@
 import abc
 import datetime
-import fnmatch
-import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Sequence
@@ -118,20 +116,3 @@ class EnsembleSummaryProvider(abc.ABC):
         The returned DataFrame will always contain a 'REAL' column in addition to
         columns for all the requested vectors.
         """
-
-    def get_matching_vector_names(self, column_keys: List[str]) -> List[str]:
-        """Returns a list of vectors that match the input columns_keys that
-        can have unix shell wildcards.
-
-        This function is almost the same as filter_vectorlist_on_column_keys in
-        parameter_analysis/models/ensemble_timeseries_datamodel.py and should be
-        generalized somewhere.
-        """
-        try:
-            regex = re.compile(
-                "|".join([fnmatch.translate(col) for col in column_keys]),
-                flags=re.IGNORECASE,
-            )
-            return [vec for vec in self.vector_names() if regex.fullmatch(vec)]
-        except re.error:
-            return []
