@@ -101,11 +101,11 @@ def create_heatmap(df: pd.DataFrame, y: str, x: str) -> wcc.Graph:
                 + f"{y}: %{{y}} <extra></extra>",
             )
         )
+        .update_xaxes(title_text=x, tickangle=45, ticks="outside", **axis_variables())
+        .update_yaxes(title_text=y, **axis_variables())
         .update_layout(
             margin={"l": 20, "r": 20, "t": 20, "b": 20}, plot_bgcolor="white"
-        )
-        .update_xaxes(title_text=x, tickangle=45, ticks="outside", **axis_variables())
-        .update_yaxes(title_text=y, **axis_variables()),
+        ),
     )
 
 
