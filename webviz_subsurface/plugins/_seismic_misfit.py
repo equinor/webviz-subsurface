@@ -4,7 +4,6 @@ import glob
 import logging
 import math
 import re
-import warnings
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -3522,12 +3521,13 @@ def make_polygon_df(ensemble_set: dict, polygon: str) -> pd.DataFrame:
                         df_polygon = df_polygon[["X_UTME", "Y_UTMN", "POLY_ID"]].rename(
                             columns={"X_UTME": "X", "Y_UTMN": "Y", "POLY_ID": "ID"}
                         )
-                        warnings.warn(
-                            "For the future, consider using X,Y,ID as headers in the"
-                            "polygon files instead of X_UTME,Y_UTMN,POLY_ID"
+                        logging.warning(
+                            "For the future, consider using X,Y,Z,ID as header names in "
+                            "the polygon files, as this is regarded as the FMU standard."
+                            f"The {poly_file} file uses X_UTME,Y_UTMN,POLY_ID."
                         )
                     else:
-                        logging.debug(
+                        logging.warning(
                             f"The polygon file {poly_file} does not have an expected "
                             "format and is therefore skipped. The file must either "
                             "contain the columns 'POLY_ID', 'X_UTME' and 'Y_UTMN' or "
