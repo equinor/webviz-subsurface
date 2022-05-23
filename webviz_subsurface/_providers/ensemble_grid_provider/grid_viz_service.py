@@ -11,10 +11,12 @@ import xtgeo
 
 from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
 from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
-
+from vtkmodules.vtkCommonCore import reference
 from vtkmodules.vtkCommonDataModel import (
     vtkExplicitStructuredGrid,
     vtkPolyData,
+    vtkCellLocator,
+    vtkGenericCell,
 )
 
 from vtkmodules.util.numpy_support import vtk_to_numpy
@@ -62,6 +64,23 @@ class PropertyScalars:
     value_arr: np.ndarray
     # min_value: float
     # max_value: float
+
+
+@dataclass
+class Ray:
+    origin: List[float]
+    end: List[float]
+    # direction: List[float]
+
+
+@dataclass
+class PickResult:
+    cell_index: int
+    cell_i: int
+    cell_j: int
+    cell_k: int
+    intersection_point: List[float]
+    cell_property_value: Optional[float]
 
 
 class GridWorker:
@@ -135,10 +154,8 @@ class GridVizService:
         LOGGER.debug(
             f"Getting grid surface... "
             f"(provider_id={provider_id}, real={realization}, "
-            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
-            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
-            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
-            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+            f"{_property_spec_dbg_str(property_spec)}, "
+            f"{_cell_filter_dbg_str(cell_filter)})"
         )
         timer = PerfTimer()
 
@@ -169,27 +186,18 @@ class GridVizService:
 
         property_scalars: Optional[PropertyScalars] = None
         if property_spec:
-            if property_spec.prop_date:
-                raw_cell_values = provider.get_dynamic_property_values(
-                    property_spec.prop_name, property_spec.prop_date, realization
-                )
-            else:
-                raw_cell_values = provider.get_static_property_values(
-                    property_spec.prop_name, realization
-                )
-            if raw_cell_values is not None:
-                mapped_cell_values = raw_cell_values[original_cell_indices_np]
-                property_scalars = PropertyScalars(value_arr=mapped_cell_values)
+            raw_cell_vals = _load_property_values(provider, realization, property_spec)
+            if raw_cell_vals is not None:
+                mapped_cell_vals = raw_cell_vals[original_cell_indices_np]
+                property_scalars = PropertyScalars(value_arr=mapped_cell_vals)
 
         worker.set_cached_original_cell_indices(cell_filter, original_cell_indices_np)
 
         LOGGER.debug(
             f"Got grid surface in {timer.elapsed_s():.2f}s "
             f"(provider_id={provider_id}, real={realization}, "
-            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
-            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
-            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
-            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+            f"{_property_spec_dbg_str(property_spec)}, "
+            f"{_cell_filter_dbg_str(cell_filter)})"
         )
 
         return surface_polys, property_scalars
@@ -205,10 +213,8 @@ class GridVizService:
         LOGGER.debug(
             f"Getting property values... "
             f"(provider_id={provider_id}, real={realization}, "
-            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
-            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
-            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
-            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+            f"{_property_spec_dbg_str(property_spec)}, "
+            f"{_cell_filter_dbg_str(cell_filter)})"
         )
         timer = PerfTimer()
 
@@ -220,16 +226,8 @@ class GridVizService:
         if not worker:
             raise ValueError("Could not get grid worker")
 
-        if property_spec.prop_date:
-            raw_cell_values = provider.get_dynamic_property_values(
-                property_spec.prop_name, property_spec.prop_date, realization
-            )
-        else:
-            raw_cell_values = provider.get_static_property_values(
-                property_spec.prop_name, realization
-            )
-
-        if raw_cell_values is None:
+        raw_cell_vals = _load_property_values(provider, realization, property_spec)
+        if raw_cell_vals is None:
             LOGGER.warning(
                 f"No cell values found for "
                 f"prop=({property_spec.prop_name}, {property_spec.prop_name})"
@@ -251,29 +249,90 @@ class GridVizService:
                 cell_filter, original_cell_indices_np
             )
 
-        mapped_cell_values = raw_cell_values[original_cell_indices_np]
+        mapped_cell_vals = raw_cell_vals[original_cell_indices_np]
 
         LOGGER.debug(
             f"Got property values in {timer.elapsed_s():.2f}s "
             f"(provider_id={provider_id}, real={realization}, "
-            f"prop=({property_spec.prop_name}, {property_spec.prop_date}), "
-            f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
-            f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
-            f"K=[{cell_filter.k_min},{cell_filter.k_max}])"
+            f"{_property_spec_dbg_str(property_spec)}, "
+            f"{_cell_filter_dbg_str(cell_filter)})"
         )
 
-        return PropertyScalars(value_arr=mapped_cell_values)
+        return PropertyScalars(value_arr=mapped_cell_vals)
 
     def ray_pick(
         self,
         provider_id: str,
         realization: int,
-        ray: List[float],
+        ray: Ray,
         property_spec: Optional[PropertySpec],
         cell_filter: Optional[CellFilter],
-    ) -> None:
-        # TODO!!!
-        pass
+    ) -> Optional[PickResult]:
+
+        LOGGER.debug(
+            f"Doing ray pick: "
+            f"ray.origin={ray.origin}, ray.end={ray.end}, "
+            f"(provider_id={provider_id}, real={realization}, "
+            f"{_property_spec_dbg_str(property_spec)}, "
+            f"{_cell_filter_dbg_str(cell_filter)})"
+        )
+        timer = PerfTimer()
+
+        provider = self._id_to_provider_dict.get(provider_id)
+        if not provider:
+            raise ValueError("Could not find provider")
+
+        worker = self._get_or_create_grid_worker(provider_id, realization)
+        if not worker:
+            raise ValueError("Could not get grid worker")
+
+        grid = worker.get_full_esgrid()
+        if cell_filter:
+            grid = _calc_cropped_grid(grid, cell_filter)
+        et_crop_s = timer.lap_s()
+
+        cell_id, isect_pt = _raypick_in_grid(grid, ray)
+        et_pick_s = timer.lap_s()
+        if cell_id is None:
+            return None
+
+        original_cell_id = cell_id
+        if cell_filter:
+            # If a cell filter is present, assume picking was done against cropped grid
+            original_cell_id = (
+                grid.GetCellData()
+                .GetAbstractArray("vtkOriginalCellIds")
+                .GetValue(cell_id)
+            )
+
+        i_ref = reference(0)
+        j_ref = reference(0)
+        k_ref = reference(0)
+        grid.ComputeCellStructuredCoords(cell_id, i_ref, j_ref, k_ref, True)
+
+        cell_property_val: Optional[float] = None
+        if property_spec:
+            raw_cell_vals = _load_property_values(provider, realization, property_spec)
+            if raw_cell_vals is not None:
+                cell_property_val = raw_cell_vals[original_cell_id]
+        et_props_s = timer.lap_s()
+
+        LOGGER.debug(
+            f"Did ray pick in {timer.elapsed_s():.2f}s ("
+            f"crop={et_crop_s:.2f}s, pick={et_pick_s:.2f}s, props={et_props_s:.2f}s, "
+            f"provider_id={provider_id}, real={realization}, "
+            f"{_property_spec_dbg_str(property_spec)}, "
+            f"{_cell_filter_dbg_str(cell_filter)})"
+        )
+
+        return PickResult(
+            cell_index=original_cell_id,
+            cell_i=i_ref.get(),
+            cell_j=j_ref.get(),
+            cell_k=k_ref.get(),
+            intersection_point=isect_pt,
+            cell_property_value=cell_property_val,
+        )
 
     def _get_or_create_grid_worker(
         self, provider_id: str, realization: int
@@ -317,6 +376,46 @@ def _calc_cropped_grid(
     return cropped_grid
 
 
+def _raypick_in_grid(
+    esgrid: vtkExplicitStructuredGrid, ray: Ray
+) -> Optional[Tuple[int, List[float]]]:
+    """Do a ray pick against the specified grid.
+    Returns None if nothing was hit, otherwise returns the cellId (cell index) of the cell
+    that was hit and the intersection point
+    """
+
+    locator = vtkCellLocator()
+    locator.SetDataSet(esgrid)
+    locator.BuildLocator()
+
+    tolerance = 0.0
+    t_ref = reference(0.0)
+    isect_pt = [0.0, 0.0, 0.0]
+    pcoords = [0.0, 0.0, 0.0]
+    sub_id_ref = reference(0)
+    cell_id_ref = reference(0)
+    cell = vtkGenericCell()
+
+    # From doc for vtkCell it seems that isect_pt will be the actual intersection point
+    # while pcoords is in parametric coordinates
+    anyHits = locator.IntersectWithLine(
+        ray.origin,
+        ray.end,
+        tolerance,
+        t_ref,
+        isect_pt,
+        pcoords,
+        sub_id_ref,
+        cell_id_ref,
+        cell,
+    )
+
+    if not anyHits:
+        return None
+
+    return cell_id_ref.get(), isect_pt
+
+
 def _calc_grid_surface(esgrid: vtkExplicitStructuredGrid) -> vtkPolyData:
     surf_filter = vtkExplicitStructuredGridSurfaceFilter()
     surf_filter.SetInputData(esgrid)
@@ -325,3 +424,36 @@ def _calc_grid_surface(esgrid: vtkExplicitStructuredGrid) -> vtkPolyData:
 
     polydata: vtkPolyData = surf_filter.GetOutput()
     return polydata
+
+
+def _load_property_values(
+    provider: EnsembleGridProvider, realization: int, property_spec: PropertySpec
+) -> Optional[np.ndarray]:
+    if property_spec.prop_date:
+        prop_values = provider.get_dynamic_property_values(
+            property_spec.prop_name, property_spec.prop_date, realization
+        )
+    else:
+        prop_values = provider.get_static_property_values(
+            property_spec.prop_name, realization
+        )
+
+    return prop_values
+
+
+def _property_spec_dbg_str(property_spec: Optional[PropertySpec]) -> str:
+    if not property_spec:
+        return "prop=None"
+
+    return f"prop=({property_spec.prop_name}, {property_spec.prop_date})"
+
+
+def _cell_filter_dbg_str(cell_filter: Optional[CellFilter]) -> str:
+    if not cell_filter:
+        return "IJK=None"
+
+    return (
+        f"I=[{cell_filter.i_min},{cell_filter.i_max}] "
+        f"J=[{cell_filter.j_min},{cell_filter.j_max}] "
+        f"K=[{cell_filter.k_min},{cell_filter.k_max}]"
+    )

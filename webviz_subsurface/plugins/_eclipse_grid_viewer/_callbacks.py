@@ -13,6 +13,7 @@ from webviz_subsurface._providers.ensemble_grid_provider import (
     GridVizService,
     PropertySpec,
     CellFilter,
+    Ray,
 )
 
 from ._layout import PROPERTYTYPE, LayoutElements, GRID_DIRECTION
@@ -192,9 +193,10 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.ENABLE_PICKING), "value"),
         Input(get_uuid(LayoutElements.PROPERTIES), "value"),
         Input(get_uuid(LayoutElements.DATES), "value"),
+        Input(get_uuid(LayoutElements.REALIZATIONS), "value"),
+        Input(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
         Input(get_uuid(LayoutElements.INIT_RESTART), "value"),
         State(get_uuid(LayoutElements.Z_SCALE), "value"),
-        Input(get_uuid(LayoutElements.GRID_RANGE_STORE), "data"),
         State(get_uuid(LayoutElements.VTK_PICK_REPRESENTATION), "actor"),
     )
     # pylint: disable = too-many-locals, too-many-arguments
@@ -203,9 +205,10 @@ def plugin_callbacks(
         enable_picking: Optional[str],
         prop: List[str],
         date: List[int],
+        realizations: List[int],
+        grid_range: List[List[int]],
         proptype: str,
         zscale: float,
-        grid_range: List[List[int]],
         pick_representation_actor: Optional[Dict],
     ) -> Tuple[str, Dict[str, Any], Dict[str, bool]]:
         pick_representation_actor = (
@@ -218,47 +221,55 @@ def plugin_callbacks(
             return "", {}, pick_representation_actor
         pick_representation_actor.update({"visibility": True})
 
-        if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
-            scalar = datamodel.get_init_values(prop[0])
-        else:
-            scalar = datamodel.get_restart_values(prop[0], date[0])
+        client_world_pos = click_data["worldPosition"]
+        client_ray = click_data["ray"]
 
-        cropped_grid = datamodel.esg_accessor.crop(*grid_range)
+        # Remove z-scaling from client ray
+        client_world_pos[2] = client_world_pos[2] / zscale
+        client_ray[0][2] = client_ray[0][2] / zscale
+        client_ray[1][2] = client_ray[1][2] / zscale
 
-        # Getting position and ray below mouse position
-        coords = click_data["worldPosition"].copy()
-
-        ray = click_data["ray"]
-        # Remove z-scaling from points
-        coords[2] = coords[2] / zscale
-        ray[0][2] = ray[0][2] / zscale
-        ray[1][2] = ray[1][2] / zscale
-
-        # Find the cell index and i,j,k of the closest cell the ray intersects
-        cell_id, ijk = datamodel.esg_accessor.find_closest_cell_to_ray(
-            cropped_grid, ray
+        ray = Ray(origin=client_ray[0], end=client_ray[1])
+        cell_filter = CellFilter(
+            i_min=grid_range[0][0],
+            i_max=grid_range[0][1],
+            j_min=grid_range[1][0],
+            j_max=grid_range[1][1],
+            k_min=grid_range[2][0],
+            k_max=grid_range[2][1],
         )
 
-        # Get the scalar value of the cell index
-        scalar_value = scalar[cell_id] if cell_id is not None else np.nan
+        if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
+            property_spec = PropertySpec(prop_name=prop[0], prop_date=0)
+        else:
+            property_spec = PropertySpec(prop_name=prop[0], prop_date=date[0])
+
+        pick_result = grid_viz_service.ray_pick(
+            provider_id=grid_provider.provider_id(),
+            realization=realizations[0],
+            ray=ray,
+            property_spec=property_spec,
+            cell_filter=cell_filter,
+        )
+
+        pick_sphere_pos = pick_result.intersection_point.copy()
+        pick_sphere_pos[2] *= zscale
 
         propname = f"{prop[0]}-{date[0]}" if date else f"{prop[0]}"
         return (
             json.dumps(
                 {
-                    "x": coords[0],
-                    "y": coords[1],
-                    "z": coords[2],
-                    "i": ijk[0],
-                    "j": ijk[1],
-                    "k": ijk[2],
-                    propname: float(
-                        scalar_value,
-                    ),
+                    "x": pick_result.intersection_point[0],
+                    "y": pick_result.intersection_point[1],
+                    "z": pick_result.intersection_point[2],
+                    "i": pick_result.cell_i,
+                    "j": pick_result.cell_j,
+                    "k": pick_result.cell_k,
+                    propname: float(pick_result.cell_property_value),
                 },
                 indent=2,
             ),
-            {"center": click_data["worldPosition"], "radius": 100},
+            {"center": pick_sphere_pos, "radius": 100},
             pick_representation_actor,
         )
 
