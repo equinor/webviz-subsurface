@@ -86,7 +86,7 @@ def plugin_main_layout(
             sidebar(
                 get_uuid=get_uuid,
                 grid_dimensions=grid_dimensions,
-                realizations=grid_provider.realizations(),
+                grid_provider=grid_provider,
             ),
             vtk_view(get_uuid=get_uuid),
             dcc.Store(id=get_uuid(LayoutElements.STORED_CELL_INDICES_HASH)),
@@ -103,8 +103,26 @@ def plugin_main_layout(
 
 
 def sidebar(
-    get_uuid: Callable, grid_dimensions: CellFilter, realizations: List[int]
+    get_uuid: Callable, grid_dimensions: CellFilter, grid_provider: EnsembleGridProvider
 ) -> wcc.Frame:
+
+    realizations = grid_provider.realizations()
+    property_options = []
+    property_value = None
+
+    if grid_provider.static_property_names():
+        property_options.append(
+            {"label": PROPERTYTYPE.INIT, "value": PROPERTYTYPE.INIT}
+        )
+        property_value = PROPERTYTYPE.INIT
+
+    if grid_provider.dynamic_property_names():
+        property_options.append(
+            {"label": PROPERTYTYPE.RESTART, "value": PROPERTYTYPE.RESTART}
+        )
+        if property_value is None:
+            property_value = PROPERTYTYPE.RESTART
+
     return wcc.Frame(
         style=LayoutStyle.SIDEBAR,
         children=[
@@ -118,8 +136,8 @@ def sidebar(
             wcc.RadioItems(
                 label=LayoutTitles.INIT_RESTART,
                 id=get_uuid(LayoutElements.INIT_RESTART),
-                options=[{"label": prop, "value": prop} for prop in PROPERTYTYPE],
-                value=PROPERTYTYPE.INIT,
+                options=property_options,
+                value=property_value,
             ),
             wcc.SelectWithLabel(
                 id=get_uuid(LayoutElements.PROPERTIES), label=LayoutTitles.PROPERTIES
