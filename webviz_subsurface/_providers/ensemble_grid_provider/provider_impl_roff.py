@@ -352,6 +352,5 @@ def _compose_rel_grid_pathstr(
     if not attribute and not datestr:
         return str(Path(f"{real}--{name}{extension}"))
     if not datestr:
-        return str(Path(f"{real}--{name}--{attribute}--{datestr}{extension}"))
-
-    return str(Path(f"{real}--{name}--{attribute}{extension}"))
+        return str(Path(f"{real}--{name}--{attribute}{extension}"))
+    return str(Path(f"{real}--{name}--{attribute}--{datestr}{extension}"))
