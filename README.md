@@ -2,7 +2,7 @@
 [![Build Status](https://github.com/equinor/webviz-subsurface/workflows/webviz-subsurface/badge.svg)](https://github.com/equinor/webviz-subsurface/actions?query=branch%3Amaster)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/equinor/webviz-subsurface.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/equinor/webviz-subsurface/alerts/)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/equinor/webviz-subsurface.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/equinor/webviz-subsurface/context:python)
-[![Python 3.6 | 3.7 | 3.8 | 3.9](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8%20|%203.9-blue.svg)](https://www.python.org/)
+[![Python 3.6 | 3.7 | 3.8 | 3.9 | 3.10](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8%20|%203.9%20|%203.10-blue.svg)](https://www.python.org/)
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 
 ## Webviz subsurface
