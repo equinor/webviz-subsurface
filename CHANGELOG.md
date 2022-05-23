@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#938](https://github.com/equinor/webviz-subsurface/pull/938) - `ProdMisfit` - New plugin for well production misfit visualization. Features visualization of production misfit at selected dates, production coverage at selected dates and heatmap representation of ensemble mean misfit for selected dates.
 - [#1013](https://github.com/equinor/webviz-subsurface/pull/1013) - `MapViewerFMU` - Added option to specify the folder where maps are located (relative to runpath in each realization).
+- [#936](https://github.com/equinor/webviz-subsurface/pull/936) - `ParameterResponseCorrelation` - Added options to interactively change correlation method and response aggregation, correlation cut-off and parameter filter.
 
 ### Changed
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -66,8 +67,8 @@ All of these are optional, some have defaults seen in the code snippet below.
                       (cannot use with response_include).
 * **`response_include`:** List of response (columns in csv or simulation vectors) to include \
                        (cannot use with response_ignore).
-* **`aggregation`:** How to aggregate responses per realization. Either `sum` or `mean`.
-* **`corr_method`:** Correlation method. Either `pearson` or `spearman`.
+* **`aggregation`:** Initial way to aggregate responses per realization. Either `sum` or `mean`.
+* **`corr_method`:** Initial correlation method. Either `pearson` or `spearman`.
 
 ---
 
@@ -229,8 +230,8 @@ folder, to avoid risk of not extracting the right data.
             {
                 "id": self.uuid("distribution-graph"),
                 "content": (
-                    "Visualized the distribution of the response and the selected input parameter "
-                    "in the correlation chart."
+                    "Visualization of the distribution of the response and the selected "
+                    "input parameter in the correlation chart."
                 ),
             },
             {
@@ -240,6 +241,32 @@ folder, to avoid risk of not extracting the right data.
             {
                 "id": self.uuid("responses"),
                 "content": ("Select the active response."),
+            },
+            {
+                "id": self.uuid("correlation-method"),
+                "content": ("Select Pearson or Spearman correlation."),
+            },
+            {
+                "id": self.uuid("aggregation"),
+                "content": (
+                    "Select whether the response after filtering should be aggregated "
+                    "by summation or mean."
+                ),
+            },
+            {
+                "id": self.uuid("correlation-cutoff"),
+                "content": (
+                    "Slider to set a minimum correlation factor for parameters shown "
+                    "in plots."
+                ),
+            },
+            {
+                "id": self.uuid("max-params"),
+                "content": ("Slider to set a maximum number of parameters shown"),
+            },
+            {
+                "id": self.uuid("filters"),
+                "content": ("Filters for response and parameters to correlate with."),
             },
         ]
 
@@ -259,16 +286,17 @@ folder, to avoid risk of not extracting the right data.
             values = list(self.responsedf[col_name].unique())
             if col_type == "multi":
                 selector = wcc.SelectWithLabel(
-                    label=col_name,
+                    label=f"{col_name}:",
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
                     value=values,
                     multi=True,
-                    size=min(20, len(values)),
+                    size=min(10, len(values)),
+                    collapsible=True,
                 )
             elif col_type == "single":
                 selector = wcc.Dropdown(
-                    label=col_name,
+                    label=f"{col_name}:",
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
                     value=values[0],
@@ -281,6 +309,20 @@ folder, to avoid risk of not extracting the right data.
                 return children
             children.append(selector)
 
+        children.append(
+            wcc.SelectWithLabel(
+                label="Parameters:",
+                id=self.uuid("parameter-filter"),
+                options=[
+                    {"label": val, "value": val} for val in self.parameter_columns
+                ],
+                value=self.parameter_columns,
+                multi=True,
+                size=min(10, len(self.parameter_columns)),
+                collapsible=True,
+            )
+        )
+
         return children
 
     @property
@@ -289,22 +331,53 @@ folder, to avoid risk of not extracting the right data.
         max_params = len(self.parameter_columns)
         return [
             wcc.Dropdown(
-                label="Ensemble",
+                label="Ensemble:",
                 id=self.uuid("ensemble"),
                 options=[{"label": ens, "value": ens} for ens in self.ensembles],
                 clearable=False,
                 value=self.ensembles[0],
             ),
             wcc.Dropdown(
-                label="Response",
+                label="Response:",
                 id=self.uuid("responses"),
-                options=[{"label": ens, "value": ens} for ens in self.response_columns],
+                options=[{"label": col, "value": col} for col in self.response_columns],
                 clearable=False,
                 value=self.response_columns[0],
             ),
+            wcc.RadioItems(
+                label="Correlation method:",
+                id=self.uuid("correlation-method"),
+                options=[
+                    {"label": opt.capitalize(), "value": opt}
+                    for opt in ["pearson", "spearman"]
+                ],
+                vertical=False,
+                value=self.corr_method,
+            ),
+            wcc.RadioItems(
+                label="Response aggregation:",
+                id=self.uuid("aggregation"),
+                options=[
+                    {"label": opt.capitalize(), "value": opt} for opt in ["sum", "mean"]
+                ],
+                vertical=False,
+                value=self.aggregation,
+            ),
             html.Div(
                 wcc.Slider(
-                    label="Max number of parameters",
+                    label="Correlation cut-off (abs):",
+                    id=self.uuid("correlation-cutoff"),
+                    min=0,
+                    max=1,
+                    step=0.1,
+                    marks={"0": 0, "1": 1},
+                    value=0,
+                ),
+                style={"margin-top": "10px"},
+            ),
+            html.Div(
+                wcc.Slider(
+                    label="Max number of parameters:",
                     id=self.uuid("max-params"),
                     min=1,
                     max=max_params,
@@ -334,7 +407,9 @@ folder, to avoid risk of not extracting the right data.
                         + (
                             [
                                 wcc.Selectors(
-                                    label="Filters", children=self.filter_layout
+                                    label="Filters",
+                                    id=self.uuid("filters"),
+                                    children=self.filter_layout,
                                 )
                             ]
                             if self.response_filters
@@ -381,6 +456,10 @@ folder, to avoid risk of not extracting the right data.
             Input(self.uuid("ensemble"), "value"),
             Input(self.uuid("responses"), "value"),
             Input(self.uuid("max-params"), "value"),
+            Input(self.uuid("parameter-filter"), "value"),
+            Input(self.uuid("correlation-method"), "value"),
+            Input(self.uuid("aggregation"), "value"),
+            Input(self.uuid("correlation-cutoff"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -395,6 +474,7 @@ folder, to avoid risk of not extracting the right data.
             Input(self.uuid("initial-parameter"), "data"),
             Input(self.uuid("ensemble"), "value"),
             Input(self.uuid("responses"), "value"),
+            Input(self.uuid("aggregation"), "value"),
         ]
         if self.response_filters:
             for col_name in self.response_filters:
@@ -409,7 +489,16 @@ folder, to avoid risk of not extracting the right data.
             ],
             self.correlation_input_callbacks,
         )
-        def _update_correlation_graph(ensemble, response, max_parameters, *filters):
+        def _update_correlation_graph(
+            ensemble: str,
+            response: str,
+            max_parameters: int,
+            selected_parameters: List[str],
+            correlation_method: str,
+            aggregation: str,
+            correlation_cutoff: float,
+            *filters,
+        ):
             """Callback to update correlation graph
 
             1. Filters and aggregates response dataframe per realization
@@ -429,11 +518,14 @@ folder, to avoid risk of not extracting the right data.
                 ensemble,
                 response,
                 filteroptions=filteroptions,
-                aggregation=self.aggregation,
+                aggregation=aggregation,
             )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
+            parameterdf = self.parameterdf[
+                ["ENSEMBLE", "REAL"] + selected_parameters
+            ].loc[self.parameterdf["ENSEMBLE"] == ensemble]
+
             df = pd.merge(responsedf, parameterdf, on=["REAL"])
-            corrdf = correlate(df, response=response, method=self.corr_method)
+            corrdf = correlate(df, response=response, method=correlation_method)
             try:
                 corr_response = (
                     corrdf[response]
@@ -441,14 +533,19 @@ folder, to avoid risk of not extracting the right data.
                     .drop(["REAL", response], axis=0)
                     .tail(n=max_parameters)
                 )
-
+                corr_response = corr_response[corr_response.abs() >= correlation_cutoff]
                 return (
                     make_correlation_plot(
-                        corr_response, response, self.theme, self.corr_method
+                        corr_response,
+                        response,
+                        self.theme,
+                        correlation_method,
+                        correlation_cutoff,
+                        max_parameters,
                     ),
                     corr_response.index[-1],
                 )
-            except KeyError:
+            except (KeyError, ValueError):
                 return (
                     {
                         "layout": {
@@ -464,7 +561,7 @@ folder, to avoid risk of not extracting the right data.
             self.distribution_input_callbacks,
         )
         def _update_distribution_graph(
-            clickdata, initial_parameter, ensemble, response, *filters
+            clickdata, initial_parameter, ensemble, response, aggregation, *filters
         ):
             """Callback to update distribution graphs.
 
@@ -488,7 +585,7 @@ folder, to avoid risk of not extracting the right data.
                 ensemble,
                 response,
                 filteroptions=filteroptions,
-                aggregation=self.aggregation,
+                aggregation=aggregation,
             )
             parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
             df = pd.merge(responsedf, parameterdf, on=["REAL"])[
@@ -560,14 +657,21 @@ def correlate(inputdf, response, method="pearson"):
     return corrdf.reindex(corrdf[response].abs().sort_values().index)
 
 
-def make_correlation_plot(series, response, theme, corr_method):
+def make_correlation_plot(
+    series, response, theme, corr_method, corr_cutoff, max_parameters
+):
     """Make Plotly trace for correlation plot"""
     xaxis_range = max(abs(series.values)) * 1.1
     layout = {
         "barmode": "relative",
         "margin": {"l": 200, "r": 50, "b": 20, "t": 100},
         "xaxis": {"range": [-xaxis_range, xaxis_range]},
-        "title": f"Correlations ({corr_method}) between {response} and input parameters",
+        "yaxis": {"dtick": 1},
+        "title": (
+            f"Correlations between {response} and input parameters<br>"
+            f"{corr_method.capitalize()} correlation with abs cut-off {corr_cutoff}"
+            f" and max {max_parameters} parameters"
+        ),
     }
     layout = theme.create_themed_layout(layout)
 
@@ -652,7 +756,7 @@ def make_range_slider(domid, values, col_name):
             "Ensure that it is a numerical column."
         ) from exc
     return wcc.RangeSlider(
-        label=col_name,
+        label=f"{col_name}:",
         id=domid,
         min=values.min(),
         max=values.max(),
