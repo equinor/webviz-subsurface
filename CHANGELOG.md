@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- [#1017](https://github.com/equinor/webviz-subsurface/pull/1017) - `SeismicMisfit` - Added support for X,Y,Z,ID header in polygon files and improved error handling when inconsistency between obs and sim data.
+- [#1030](https://github.com/equinor/webviz-subsurface/pull/1030) - Implemented new summary data provider (using `.arrow` files) for the `ParameterResponseCorrelation` plugin.
 
 ## [0.2.13] - 2022-05-05
 
