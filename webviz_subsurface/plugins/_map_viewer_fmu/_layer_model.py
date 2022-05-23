@@ -2,7 +2,7 @@ import warnings
 from enum import Enum
 from typing import Dict, List
 
-from .types.deckgl_props import LayerTypes
+from ._types import LayerTypes
 
 
 class DeckGLMapLayersModel:

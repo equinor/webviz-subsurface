@@ -8,9 +8,6 @@ from dash import ALL, MATCH, Input, Output, State, callback, callback_context, n
 from dash.exceptions import PreventUpdate
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
-from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
-    DeckGLMapLayersModel,
-)
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProvider,
     EnsembleSurfaceProvider,
@@ -25,6 +22,7 @@ from webviz_subsurface._providers import (
     SurfaceServer,
 )
 
+from ._layer_model import DeckGLMapLayersModel
 from ._tmp_well_pick_provider import WellPickProvider
 from ._types import SurfaceMode
 from .layout import (
