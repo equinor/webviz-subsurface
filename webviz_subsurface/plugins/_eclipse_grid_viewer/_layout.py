@@ -333,6 +333,37 @@ def vtk_view(get_uuid: Callable) -> webviz_vtk.View:
         id=get_uuid(LayoutElements.VTK_VIEW),
         style=LayoutStyle.VTK_VIEW,
         pickingModes=["click"],
+        interactorSettings=[
+            {
+                "button": 1,
+                "action": "Zoom",
+                "scrollEnabled": True,
+            },
+            {
+                "button": 3,
+                "action": "Pan",
+            },
+            {
+                "button": 2,
+                "action": "Rotate",
+            },
+            {
+                "button": 1,
+                "action": "Pan",
+                "shift": True,
+            },
+            {
+                "button": 1,
+                "action": "Zoom",
+                "alt": True,
+            },
+            {
+                "button": 1,
+                "action": "Roll",
+                "alt": True,
+                "shift": True,
+            },
+        ],
         children=[
             webviz_vtk.GeometryRepresentation(
                 id=get_uuid(LayoutElements.VTK_GRID_REPRESENTATION),
