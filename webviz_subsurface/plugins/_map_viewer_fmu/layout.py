@@ -179,6 +179,7 @@ def main_layout(
     get_uuid: Callable,
     well_names: List[str],
     realizations: List[int],
+    color_tables: List[Dict],
     show_fault_polygons: bool = True,
 ) -> html.Div:
     return html.Div(
@@ -219,7 +220,9 @@ def main_layout(
                                     style=LayoutStyle.MAINVIEW,
                                     color="white",
                                     highlight=False,
-                                    children=MapViewLayout(tab, get_uuid),
+                                    children=MapViewLayout(
+                                        tab, get_uuid, color_tables=color_tables
+                                    ),
                                 ),
                             ]
                         ),
@@ -244,13 +247,14 @@ class OpenDialogButton(html.Button):
 class MapViewLayout(FullScreen):
     """Layout for the main view containing the map"""
 
-    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
+    def __init__(self, tab: Tabs, get_uuid: Callable, color_tables: List[Dict]) -> None:
         super().__init__(
             children=html.Div(
                 DeckGLMap(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
                     layers=update_map_layers(1),
                     zoom=-4,
+                    colorTables=color_tables,
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
             ),

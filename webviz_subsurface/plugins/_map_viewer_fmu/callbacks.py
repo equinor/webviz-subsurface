@@ -35,7 +35,7 @@ from .layout import (
 )
 
 
-# pylint: disable=too-many-locals,too-many-statements
+# pylint: disable=too-many-locals,too-many-statements, too-many-arguments
 def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
@@ -45,6 +45,7 @@ def plugin_callbacks(
     map_surface_names_to_fault_polygons: Dict[str, str],
     well_picks_provider: Optional[WellPickProvider],
     fault_polygon_attribute: Optional[str],
+    color_tables: List[Dict],
 ) -> None:
     def selections(tab: str, colorselector: bool = False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -602,7 +603,7 @@ def plugin_callbacks(
         stored_color_settings = (
             stored_color_settings if stored_color_settings is not None else {}
         )
-        colormaps = DefaultSettings.COLORMAP_OPTIONS
+        colormaps = [color_table["name"] for color_table in color_tables]
 
         surfids: List[str] = []
         color_data: List[dict] = []
