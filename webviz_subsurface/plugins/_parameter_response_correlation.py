@@ -650,7 +650,9 @@ def correlate(inputdf, response, method="pearson") -> pd.DataFrame:
     return corrdf.reindex(corrdf[response].abs().sort_values().index)
 
 
-def make_correlation_plot(series, response, theme, corr_method) -> Dict[str, Any]:
+def make_correlation_plot(
+    series, response, theme, corr_method, corr_cutoff, max_parameters
+) -> Dict[str, Any]:
     """Make Plotly trace for correlation plot"""
     xaxis_range = max(abs(series.values)) * 1.1
     layout = {
