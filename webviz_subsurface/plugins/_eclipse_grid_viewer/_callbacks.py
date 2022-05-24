@@ -178,11 +178,10 @@ def plugin_callbacks(
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_VIEW), "triggerResetCamera"),
-        Input(get_uuid(LayoutElements.VTK_GRID_POLYDATA), "polys"),
-        Input(get_uuid(LayoutElements.VTK_GRID_POLYDATA), "points"),
+        Input(get_uuid(LayoutElements.REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),
     )
-    def _reset_camera(_polys: np.ndarray, _points: np.ndarray, _actor: dict) -> float:
+    def _reset_camera(realizations: List[int], _actor: dict) -> float:
         return time()
 
     @callback(
