@@ -797,6 +797,10 @@ def create_df_from_summary_provider(
     dfs = []
     for ens_name, provider in provider_set.items():
         matching_sumvecs = get_matching_vector_names(provider, column_keys)
+        if not matching_sumvecs:
+            raise ValueError(
+                f"No vectors matching the given column_keys: {column_keys} for ensemble: {ens_name}"
+            )
         df = provider.get_vectors_df(matching_sumvecs, None)
         df["ENSEMBLE"] = ens_name
         dfs.append(df)
