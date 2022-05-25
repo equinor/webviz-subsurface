@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import Any, Callable, Dict, List, Tuple
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -11,12 +11,16 @@ from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface._utils.parameter_response as parresp
-from webviz_subsurface._datainput.fmu_input import load_csv, load_parameters
+from webviz_subsurface._datainput.fmu_input import load_csv
 from webviz_subsurface._figures import create_figure
-from webviz_subsurface._models import (
-    EnsembleSetModel,
-    ParametersModel,
-    caching_ensemble_set_model_factory,
+from webviz_subsurface._models import ParametersModel
+from webviz_subsurface._providers import (
+    EnsembleSummaryProvider,
+    EnsembleSummaryProviderFactory,
+    EnsembleTableProviderFactory,
+    EnsembleTableProviderSet,
+    Frequency,
+    get_matching_vector_names,
 )
 
 
@@ -24,7 +28,7 @@ class ParameterResponseCorrelation(WebvizPluginABC):
     """Visualizes correlations between numerical input parameters and responses.
 
 ---
-**Three main options for input data: Aggregated, file per realization and read from UNSMRY.**
+**Three main options for input data: Aggregated, file per realization and read from `.arrow`.**
 
 **Using aggregated data**
 * **`parameter_csv`:** Aggregated csvfile for input parameters with `REAL` and `ENSEMBLE` columns \
@@ -41,15 +45,15 @@ columns (absolute path or relative to config file).
 
 **Using simulation time series data directly from `UNSMRY` files as responses**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize. The lack of `response_file` \
-                implies that the input data should be time series data from simulation `.UNSMRY` \
-                files, read using `fmu-ensemble`.
+                implies that the input data should be time series data from `.arrow` file \
+* **`rel_file_pattern`:** Relative file path to `.arrow` file.
 * **`column_keys`:** (Optional) slist of simulation vectors to include as responses when reading \
                 from UNSMRY-files in the defined ensembles (default is all vectors). * can be \
                 used as wild card.
 * **`sampling`:** (Optional) sampling frequency when reading simulation data directly from \
                `.UNSMRY`-files (default is monthly).
 
-?> The `UNSMRY` input method implies that the "DATE" vector will be used as a filter \
+?> The `.arrow` input method implies that the "DATE" vector will be used as a filter \
    of type `single` (as defined below under `response_filters`).
 
 
@@ -84,7 +88,7 @@ would make more sense (though the pressures in this case would not be volume wei
 and the aggregation would therefore likely be imprecise).
 
 !> It is **strongly recommended** to keep the data frequency to a regular frequency (like \
-`monthly` or `yearly`). This applies to both csv input and when reading from `UNSMRY` \
+`monthly` or `yearly`). This applies to both csv input and when reading from `.arrow` \
 (controlled by the `sampling` key). This is because the statistics are calculated per DATE over \
 all realizations in an ensemble, and the available dates should therefore not differ between \
 individual realizations of an ensemble.
@@ -106,17 +110,12 @@ The `response_file` must have the response columns (and the columns to use as `r
 if that option is used).
 
 
-**Using simulation time series data directly from `UNSMRY` files as responses**
+**Using simulation time series data directly from `.arrow` files as responses**
 
 Parameters are extracted automatically from the `parameters.txt` files in the individual
-realizations, using the `fmu-ensemble` library.
+realizations.
 
-Responses are extracted automatically from the `UNSMRY` files in the individual realizations,
-using the `fmu-ensemble` library.
-
-!> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
-individual realizations. You should therefore not have more than one `UNSMRY` file in this \
-folder, to avoid risk of not extracting the right data.
+Responses are extracted automatically from the `.arrow` files in the individual realizations.
 """
 
     # pylint:disable=too-many-arguments, too-many-locals
@@ -127,6 +126,7 @@ folder, to avoid risk of not extracting the right data.
         parameter_csv: Path = None,
         response_csv: Path = None,
         ensembles: list = None,
+        rel_file_pattern: str = "share/results/unsmry/*.arrow",
         response_file: str = None,
         response_filters: dict = None,
         response_ignore: list = None,
@@ -144,7 +144,7 @@ folder, to avoid risk of not extracting the right data.
         self.response_file = response_file if response_file else None
         self.response_filters = response_filters if response_filters else {}
         self.column_keys = column_keys
-        self.time_index = sampling
+        self._sampling = Frequency(sampling)
         self.corr_method = corr_method
         self.aggregation = aggregation
         if response_ignore and response_include:
@@ -166,8 +166,11 @@ folder, to avoid risk of not extracting the right data.
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            parameterdf = load_parameters(
-                ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+            table_provider_factory = EnsembleTableProviderFactory.instance()
+            parameterdf = create_df_from_table_provider(
+                table_provider_factory.create_provider_set_from_per_realization_parameter_file(
+                    self.ens_paths
+                )
             )
             if self.response_file:
                 self.responsedf = load_csv(
@@ -176,15 +179,18 @@ folder, to avoid risk of not extracting the right data.
                     ensemble_set_name="EnsembleSet",
                 )
             else:
-                self.emodel: EnsembleSetModel = (
-                    caching_ensemble_set_model_factory.get_or_create_model(
-                        ensemble_paths=self.ens_paths,
-                        column_keys=self.column_keys,
-                        time_index=self.time_index,
+                smry_provider_factory = EnsembleSummaryProviderFactory.instance()
+                provider_set = {
+                    ens_name: smry_provider_factory.create_from_arrow_unsmry_presampled(
+                        ens_path, rel_file_pattern, self._sampling
                     )
-                )
-                self.responsedf = self.emodel.get_or_load_smry_cached()
+                    for ens_name, ens_path in self.ens_paths.items()
+                }
                 self.response_filters["DATE"] = "single"
+                self.responsedf = create_df_from_summary_provider(
+                    provider_set,
+                    self.column_keys,
+                )
         else:
             raise ValueError(
                 'Incorrect arguments. Either provide "csv files" or "ensembles and response_file".'
@@ -194,6 +200,7 @@ folder, to avoid risk of not extracting the right data.
         )
         self.parameterdf = pmodel.dataframe
         self.parameter_columns = pmodel.parameters
+
         parresp.check_runs(self.parameterdf, self.responsedf)
         parresp.check_response_filters(self.responsedf, self.response_filters)
 
@@ -209,7 +216,7 @@ folder, to avoid risk of not extracting the right data.
         self.set_callbacks(app)
 
     @property
-    def tour_steps(self):
+    def tour_steps(self) -> List[Dict[str, Any]]:
         steps = [
             {
                 "id": self.uuid("layout"),
@@ -273,12 +280,12 @@ folder, to avoid risk of not extracting the right data.
         return steps
 
     @property
-    def ensembles(self):
+    def ensembles(self) -> List[str]:
         """Returns list of ensembles"""
         return list(self.parameterdf["ENSEMBLE"].unique())
 
     @property
-    def filter_layout(self):
+    def filter_layout(self) -> List[Any]:
         """Layout to display selectors for response filters"""
         children = []
         for col_name, col_type in self.response_filters.items():
@@ -299,7 +306,7 @@ folder, to avoid risk of not extracting the right data.
                     label=f"{col_name}:",
                     id=domid,
                     options=[{"label": val, "value": val} for val in values],
-                    value=values[0],
+                    value=values[-1],
                     multi=False,
                     clearable=False,
                 )
@@ -326,7 +333,7 @@ folder, to avoid risk of not extracting the right data.
         return children
 
     @property
-    def control_layout(self):
+    def control_layout(self) -> List[Any]:
         """Layout to select e.g. iteration and response"""
         max_params = len(self.parameter_columns)
         return [
@@ -390,7 +397,7 @@ folder, to avoid risk of not extracting the right data.
         ]
 
     @property
-    def layout(self):
+    def layout(self) -> wcc.FlexBox:
         """Main layout"""
         return wcc.FlexBox(
             id=self.uuid("layout"),
@@ -450,7 +457,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def correlation_input_callbacks(self):
+    def correlation_input_callbacks(self) -> List[Input]:
         """List of Inputs for correlation callback"""
         callbacks = [
             Input(self.uuid("ensemble"), "value"),
@@ -467,7 +474,7 @@ folder, to avoid risk of not extracting the right data.
         return callbacks
 
     @property
-    def distribution_input_callbacks(self):
+    def distribution_input_callbacks(self) -> List[Input]:
         """List of Inputs for distribution callback"""
         callbacks = [
             Input(self.uuid("correlation-graph"), "clickData"),
@@ -481,7 +488,7 @@ folder, to avoid risk of not extracting the right data.
                 callbacks.append(Input(self.uuid(f"filter-{col_name}"), "value"))
         return callbacks
 
-    def set_callbacks(self, app):
+    def set_callbacks(self, app) -> None:
         @app.callback(
             [
                 Output(self.uuid("correlation-graph"), "figure"),
@@ -593,7 +600,7 @@ folder, to avoid risk of not extracting the right data.
             ]
             return make_distribution_plot(df, parameter, response, self.theme)
 
-    def add_webvizstore(self):
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         if self.parameter_csv and self.response_csv:
             return [
                 (
@@ -613,20 +620,8 @@ folder, to avoid risk of not extracting the right data.
                     ],
                 ),
             ]
-
-        functions = [
-            (
-                load_parameters,
-                [
-                    {
-                        "ensemble_paths": self.ens_paths,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
-            ),
-        ]
         if self.response_file:
-            functions.append(
+            return [
                 (
                     load_csv,
                     [
@@ -637,13 +632,11 @@ folder, to avoid risk of not extracting the right data.
                         }
                     ],
                 )
-            )
-        else:
-            functions.extend(self.emodel.webvizstore)
-        return functions
+            ]
+        return []
 
 
-def correlate(inputdf, response, method="pearson"):
+def correlate(inputdf, response, method="pearson") -> pd.DataFrame:
     """Returns the correlation matrix for a dataframe"""
     if method == "pearson":
         corrdf = inputdf.corr(method=method)
@@ -659,7 +652,7 @@ def correlate(inputdf, response, method="pearson"):
 
 def make_correlation_plot(
     series, response, theme, corr_method, corr_cutoff, max_parameters
-):
+) -> Dict[str, Any]:
     """Make Plotly trace for correlation plot"""
     xaxis_range = max(abs(series.values)) * 1.1
     layout = {
@@ -743,11 +736,10 @@ def make_distribution_plot(df, parameter, response, theme):
             },
         )
     )
-
     return fig
 
 
-def make_range_slider(domid, values, col_name):
+def make_range_slider(domid, values, col_name) -> wcc.RangeSlider:
     try:
         values.apply(pd.to_numeric, errors="raise")
     except ValueError as exc:
@@ -773,7 +765,7 @@ def make_range_slider(domid, values, col_name):
     )
 
 
-def theme_layout(theme, specific_layout):
+def theme_layout(theme, specific_layout) -> Dict:
     layout = {}
     layout.update(theme["layout"])
     layout.update(specific_layout)
@@ -784,3 +776,35 @@ def theme_layout(theme, specific_layout):
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
+
+
+def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.DataFrame:
+    """Aggregates parameters from all ensemble into a common dataframe."""
+    dfs = []
+    for ens in provider.ensemble_names():
+        df = provider.ensemble_provider(ens).get_column_data(
+            column_names=provider.ensemble_provider(ens).column_names()
+        )
+        df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+        dfs.append(df)
+    return pd.concat(dfs)
+
+
+def create_df_from_summary_provider(
+    provider_set: Dict[str, EnsembleSummaryProvider], column_keys: List[str]
+) -> pd.DataFrame:
+    """Aggregates summary data from all ensembles into a common dataframe."""
+    dfs = []
+    for ens_name, provider in provider_set.items():
+        matching_sumvecs = get_matching_vector_names(provider, column_keys)
+        if not matching_sumvecs:
+            raise ValueError(
+                f"No vectors matching the given column_keys: {column_keys} for ensemble: {ens_name}"
+            )
+        df = provider.get_vectors_df(matching_sumvecs, None)
+        df["ENSEMBLE"] = ens_name
+        dfs.append(df)
+
+    df_all = pd.concat(dfs)
+    df_all["DATE"] = pd.to_datetime(df_all["DATE"]).dt.strftime("%Y-%m-%d")
+    return df_all
