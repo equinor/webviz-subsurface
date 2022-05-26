@@ -25,7 +25,11 @@ class GruptreeModel:
         self._gruptree_file = gruptree_file
         self._remove_gruptree_if_branprop = remove_gruptree_if_branprop
         self._dataframe = self.read_ensemble_gruptree()
-        self._gruptrees_are_equal_over_reals = self._dataframe["REAL"].nunique() == 1
+        self._gruptrees_are_equal_over_reals = (
+            self._dataframe["REAL"].nunique() == 1
+            if not self._dataframe.empty
+            else False
+        )
 
     @property
     def dataframe(self) -> pd.DataFrame:
@@ -81,7 +85,6 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
 
         if df_files.empty:
             return pd.DataFrame()
-            # raise ValueError(f"No gruptree file available for ensemble: {ens_name}")
 
         # Load all gruptree dataframes and check if they are equal
         compare_columns = ["DATE", "CHILD", "KEYWORD", "PARENT"]
