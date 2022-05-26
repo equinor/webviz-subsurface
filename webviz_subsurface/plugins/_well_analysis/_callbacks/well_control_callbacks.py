@@ -22,9 +22,11 @@ def well_control_callbacks(
         Output(get_uuid(WellControlLayoutElements.REAL), "options"),
         Output(get_uuid(WellControlLayoutElements.REAL), "value"),
         Input(get_uuid(WellControlLayoutElements.ENSEMBLE), "value"),
+        State(get_uuid(WellControlLayoutElements.WELL), "value"),
+        State(get_uuid(WellControlLayoutElements.REAL), "value"),
     )
     def _update_dropdowns(
-        ensemble: str,
+        ensemble: str, state_well: str, state_real: int
     ) -> Tuple[
         List[Dict[str, str]], Optional[str], List[Dict[str, Any]], Optional[int]
     ]:
@@ -33,9 +35,9 @@ def well_control_callbacks(
         reals = data_models[ensemble].realizations
         return (
             [{"label": well, "value": well} for well in wells],
-            wells[0],
+            state_well if state_well in wells else wells[0],
             [{"label": real, "value": real} for real in reals],
-            reals[0],
+            state_real if state_real in reals else reals[0],
         )
 
     @app.callback(
