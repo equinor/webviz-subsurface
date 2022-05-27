@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1020](https://github.com/equinor/webviz-subsurface/pull/1020) - `WellAnalysis` - Several improvements and bug fixes. F.ex a well attribute filter in the well overview plots and the possibility to see production only after a given date.
 - [#1017](https://github.com/equinor/webviz-subsurface/pull/1017) - `SeismicMisfit` - Added support for X,Y,Z,ID header in polygon files and improved error handling when inconsistency between obs and sim data.
 - [#1030](https://github.com/equinor/webviz-subsurface/pull/1030) - Implemented new summary data provider (using `.arrow` files) for the `ParameterResponseCorrelation` plugin.
+- [#1041](https://github.com/equinor/webviz-subsurface/pull/1041) - Increased maximum number of selected vectors in `SimulationTimeSeries` plugin.
 
 ## [0.2.13] - 2022-05-05
 

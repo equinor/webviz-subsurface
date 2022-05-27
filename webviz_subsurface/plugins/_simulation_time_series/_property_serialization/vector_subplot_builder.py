@@ -64,7 +64,7 @@ class VectorSubplotBuilder(GraphFigureBuilderBase):
             rows=max(1, len(self._selected_vectors)),
             cols=1,
             shared_xaxes=True,
-            vertical_spacing=0.05,
+            vertical_spacing=min(0.05, 1 / max(1, len(self._selected_vectors))),
             subplot_titles=[vector_titles.get(elm, elm) for elm in selected_vectors],
         )
         if theme:
