@@ -1,9 +1,11 @@
-from typing import Callable, Dict
+import datetime
+from typing import Callable, Dict, List, Set
 
 import webviz_core_components as wcc
 from dash import html
 
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
+from .._types import ChartType
 
 
 # pylint: disable = too-few-public-methods
@@ -16,6 +18,8 @@ class WellOverviewLayoutElements:
     CHARTTYPE_SETTINGS = "well-overview-charttype-settings"
     CHARTTYPE_CHECKLIST = "well-overview-charttype-checklist"
     WELL_FILTER = "well-overview-well-filter"
+    WELL_ATTRIBUTES = "well-overview-well-attributes"
+    DATE = "well-overview-date"
 
 
 def well_overview_tab(
@@ -56,17 +60,17 @@ def buttons(get_uuid: Callable) -> html.Div:
             html.Button(
                 "Bar Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "bar"},
+                id={"id": uuid, "button": ChartType.BAR},
             ),
             html.Button(
                 "Pie Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "pie"},
+                id={"id": uuid, "button": ChartType.PIE},
             ),
             html.Button(
                 "Stacked Area Chart",
                 className="webviz-inplace-vol-btn",
-                id={"id": uuid, "button": "area"},
+                id={"id": uuid, "button": ChartType.AREA},
             ),
         ],
     )
@@ -76,8 +80,13 @@ def controls(
     get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
 ) -> wcc.Selectors:
     ensembles = list(data_models.keys())
+    dates: Set[datetime.datetime] = set()
+    for _, ens_data_model in data_models.items():
+        dates = dates.union(ens_data_model.dates)
+    sorted_dates: List[datetime.datetime] = sorted(list(dates))
+
     return wcc.Selectors(
-        label="Selections",
+        label="Plot Controls",
         children=[
             wcc.Dropdown(
                 label="Ensembles",
@@ -96,6 +105,19 @@ def controls(
                 ],
                 value="WOPT",
                 multi=False,
+                clearable=False,
+            ),
+            wcc.Dropdown(
+                label="Only Production after date",
+                id=get_uuid(WellOverviewLayoutElements.DATE),
+                options=[
+                    {
+                        "label": dte.strftime("%Y-%m-%d"),
+                        "value": dte.strftime("%Y-%m-%d"),
+                    }
+                    for dte in sorted_dates
+                ],
+                multi=False,
             ),
         ],
     )
@@ -104,11 +126,18 @@ def controls(
 def filters(
     get_uuid: Callable, data_models: Dict[str, EnsembleWellAnalysisData]
 ) -> wcc.Selectors:
-    wells = [
-        well
-        for _, ens_data_model in data_models.items()
-        for well in ens_data_model.wells
-    ]
+    # Collecting wells and well_attributes from all ensembles.
+    wells = []
+    well_attr = {}
+    for _, ens_data_model in data_models.items():
+        wells.extend([well for well in ens_data_model.wells if well not in wells])
+        for category, values in ens_data_model.well_attributes.items():
+            if category not in well_attr:
+                well_attr[category] = values
+            else:
+                well_attr[category].extend(
+                    [value for value in values if value not in well_attr[category]]
+                )
 
     return wcc.Selectors(
         label="Filters",
@@ -121,6 +150,21 @@ def filters(
                 value=wells,
                 multi=True,
             )
+        ]
+        # Adding well attributes selectors
+        + [
+            wcc.SelectWithLabel(
+                label=category.capitalize(),
+                size=min(5, len(values)),
+                id={
+                    "id": get_uuid(WellOverviewLayoutElements.WELL_ATTRIBUTES),
+                    "category": category,
+                },
+                options=[{"label": value, "value": value} for value in values],
+                value=values,
+                multi=True,
+            )
+            for category, values in well_attr.items()
         ],
     )
 

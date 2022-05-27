@@ -4,6 +4,7 @@ import webviz_core_components as wcc
 from dash import html
 
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
+from .._types import PressurePlotMode
 
 
 # pylint: disable = too-few-public-methods
@@ -12,7 +13,7 @@ class WellControlLayoutElements:
     ENSEMBLE = "well-control-ensemble"
     WELL = "well-control-well"
     INCLUDE_BHP = "well-control-include-bhp"
-    MEAN_OR_REAL = "well-control-mean-or-real"
+    PRESSURE_PLOT_MODE = "well-control-pressure-plot-mode"
     SINGLE_REAL_OPTIONS = "well-control-single-real-options"
     REAL = "well-control-real"
     CTRLMODE_BAR = "well-control-ctrlmode-bar"
@@ -44,7 +45,7 @@ def controls(
         style={"flex": 1, "height": "87vh"},
         children=[
             wcc.Selectors(
-                label="Selections",
+                label="Plot Controls",
                 children=[
                     wcc.Dropdown(
                         label="Ensemble",
@@ -72,18 +73,18 @@ def controls(
                     ),
                     wcc.RadioItems(
                         label="Mean or realization",
-                        id=get_uuid(WellControlLayoutElements.MEAN_OR_REAL),
+                        id=get_uuid(WellControlLayoutElements.PRESSURE_PLOT_MODE),
                         options=[
                             {
                                 "label": "Mean of producing real.",
-                                "value": "plot_mean",
+                                "value": PressurePlotMode.MEAN.value,
                             },
                             {
                                 "label": "Single realization",
-                                "value": "single_real",
+                                "value": PressurePlotMode.SINGLE_REAL.value,
                             },
                         ],
-                        value="plot_mean",
+                        value=PressurePlotMode.MEAN.value,
                     ),
                     html.Div(
                         id=get_uuid(WellControlLayoutElements.SINGLE_REAL_OPTIONS),

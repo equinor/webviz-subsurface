@@ -7,12 +7,13 @@ from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
 from ...._utils.colors import StandardColors
+from .._types import NodeType, PressurePlotMode
 
 
 def create_well_control_figure(
     node_info: Dict[str, Any],
     smry: pd.DataFrame,
-    mean_or_single_real: str,
+    pressure_plot_mode: PressurePlotMode,
     real: int,
     display_ctrlmode_bar: bool,
     shared_xaxes: bool,
@@ -30,7 +31,7 @@ def create_well_control_figure(
     ]
     rows = 2
     row_heights = [0.5, 0.5]
-    if display_ctrlmode_bar and mean_or_single_real == "single_real":
+    if display_ctrlmode_bar and pressure_plot_mode == PressurePlotMode.SINGLE_REAL:
         rows = 3
         display_ctrlmode_bar = True
         row_heights = [0.46, 0.46, 0.08]
@@ -49,15 +50,20 @@ def create_well_control_figure(
     # Prepare data
     ctrlmode_sumvec = node_info["ctrlmode_sumvec"]
     smry_ctrlmodes = smry[["DATE", "REAL", ctrlmode_sumvec]].copy()
+    # Truncate at -1
     smry_ctrlmodes[ctrlmode_sumvec].clip(-1, None, inplace=True)
+    # Replace interpolated values
+    smry_ctrlmodes[ctrlmode_sumvec] = smry_ctrlmodes[ctrlmode_sumvec].apply(
+        lambda x: "Interpolated" if x % 1 else x
+    )
 
     # Add traces
     add_ctrl_mode_traces(fig, node_info, smry_ctrlmodes)
     add_network_pressure_traces(
-        fig, node_info, smry, mean_or_single_real, real, include_bhp, theme_colors
+        fig, node_info, smry, pressure_plot_mode, real, include_bhp, theme_colors
     )
 
-    if display_ctrlmode_bar and mean_or_single_real == "single_real":
+    if display_ctrlmode_bar and pressure_plot_mode == PressurePlotMode.SINGLE_REAL:
         add_ctrlmode_bar(
             fig,
             node_info,
@@ -108,7 +114,7 @@ def add_network_pressure_traces(
     fig: go.Figure,
     node_info: Dict[str, Any],
     smry: pd.DataFrame,
-    mean_or_single_real: str,
+    pressure_plot_mode: PressurePlotMode,
     real: int,
     include_bhp: bool,
     theme_colors: list,
@@ -123,11 +129,11 @@ def add_network_pressure_traces(
     traces = {}
     for node_network in node_info["networks"]:
         df = get_filtered_smry(
-            node_network, node_info["ctrlmode_sumvec"], mean_or_single_real, real, smry
+            node_network, node_info["ctrlmode_sumvec"], pressure_plot_mode, real, smry
         )
 
         for nodedict in node_network["nodes"]:
-            if nodedict["type"] == "well_bhp" and not include_bhp:
+            if nodedict["type"] == NodeType.WELL_BH and not include_bhp:
                 continue
             sumvec = nodedict["pressure"]
             label = nodedict["label"]
@@ -161,7 +167,6 @@ def add_ctrlmode_bar(
     sumvec = node_info["ctrlmode_sumvec"]
     categories = get_ctrlmode_categories(node_info["type"])
     df = smry[smry.REAL == real]
-
     prev_ctrlmode = df[df.DATE == df.DATE.min()][sumvec].values[0]
     ctrlmode_startdate = df.DATE.min()
     end_date = df.DATE.max()
@@ -195,7 +200,7 @@ def add_ctrlmode_bar(
 def get_filtered_smry(
     node_network: dict,
     ctrlmode_sumvec: str,
-    mean_or_single_real: str,
+    pressure_plot_mode: PressurePlotMode,
     real: int,
     smry: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -214,12 +219,12 @@ def get_filtered_smry(
     if end_date is not None:
         df = df[df.DATE < end_date]
 
-    if mean_or_single_real == "plot_mean":
+    if pressure_plot_mode == PressurePlotMode.MEAN:
         # Filter out realizations whitout production
         df = df[df[ctrlmode_sumvec] != 0.0]
         # Group by date and take the mean of each group
         df = df.groupby("DATE").mean().reset_index()
-    elif mean_or_single_real == "single_real":
+    elif pressure_plot_mode == PressurePlotMode.SINGLE_REAL:
         df = df[df.REAL == real]
     return df
 
@@ -256,9 +261,9 @@ def add_area_trace(
     )
 
 
-def get_ctrlmode_categories(node_type: str) -> dict:
+def get_ctrlmode_categories(node_type: NodeType) -> dict:
     """Returning name and color for the control mode values"""
-    if node_type == "well":
+    if node_type == NodeType.WELL:
         return {
             "0.0": {"name": "SHUT/STOP", "color": "#302f2f"},  # grey
             "1.0": {"name": "ORAT", "color": StandardColors.OIL_GREEN.value},  # green
@@ -269,9 +274,10 @@ def get_ctrlmode_categories(node_type: str) -> dict:
             "6.0": {"name": "THP", "color": "#7e5980"},  # purple
             "7.0": {"name": "BHP", "color": "#1f77b4"},  # muted blue
             "-1.0": {"name": "GRUP", "color": "#cfcc74"},  # yellow
+            "Interpolated": {"name": "Interpolated", "color": "#ffffff"},  # white
             "Other": {"name": "Other", "color": "#ffffff"},  # white
         }
-    if node_type == "field_group":
+    if node_type == NodeType.GROUP:
         return {
             "0.0": {"name": "NONE", "color": "#302f2f"},  # grey
             "1.0": {"name": "ORAT", "color": StandardColors.OIL_GREEN.value},  # green
@@ -282,6 +288,7 @@ def get_ctrlmode_categories(node_type: str) -> dict:
             "6.0": {"name": "PRBL", "color": "#7e5980"},  # purple
             "7.0": {"name": "ENERGY", "color": "#1f77b4"},  # muted blue
             "-ve": {"name": "GRUP", "color": "#cfcc74"},  # yellow
+            "Interpolated": {"name": "Interpolated", "color": "#ffffff"},  # white
             "Other": {"name": "Other", "color": "#ffffff"},  # white
         }
     raise ValueError(f"Node type: {node_type} not implemented")
