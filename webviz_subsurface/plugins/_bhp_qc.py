@@ -425,6 +425,6 @@ def _get_wbhp_vectors(
         wbhp_vectors.append(vector)
 
     if not wbhp_vectors:
-        RuntimeError("No WBHP vectors found.")
+        raise RuntimeError("No WBHP vectors found.")
 
     return wbhp_vectors
