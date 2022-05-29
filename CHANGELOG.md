@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1041](https://github.com/equinor/webviz-subsurface/pull/1041) - Increased maximum number of selected vectors in `SimulationTimeSeries` plugin.
 - [#1035](https://github.com/equinor/webviz-subsurface/pull/1035) - Removed `pydeck` dependency.
 
+### Added
+
+- [#1037](https://github.com/equinor/webviz-subsurface/pull/1037) - `MapViewerFMU` - Color tables are now customizable from the config file.
+
 ## [0.2.13] - 2022-05-05
 
 ### Added
@@ -41,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics` - Switched to the VectorSelector component, and other various improvements.
 
 ### Fixed
+
 - [#996](https://github.com/equinor/webviz-subsurface/pull/996) - `VolumetricAnalysis` - Fixed issue with the `Tornadoplot` tab not shown if volumes from both dynamic and static sources were included.
 - [#985](https://github.com/equinor/webviz-subsurface/pull/985) - `WellLogViewer` - Updated data format to latest version. Requires no changes in input data.
 
@@ -68,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#980](https://github.com/equinor/webviz-subsurface/pull/980) - Deprecated plugin `SurfaceViewerFMU`. This has been replaced by the faster, and more feature-rich plugin `MapViewerFMU`.
 
 ### Fixed
+
 - [#965](https://github.com/equinor/webviz-subsurface/pull/965) - Allow a filtered subset of surface names for multiple attributes in `StructuralUncertainty`.
 - [#972](https://github.com/equinor/webviz-subsurface/pull/972) - FIxed bug occuring when ensembles had different PORE/PORV naming standards in the volumetric input files. Also fixed bug occuring if only BO and/or BG was selected in the table.
 - [#958](https://github.com/equinor/webviz-subsurface/pull/958) - Disable unwanted calculation of `marks` in some `RangeSlider` components.
