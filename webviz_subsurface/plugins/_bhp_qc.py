@@ -417,13 +417,9 @@ def _get_wbhp_vectors(
     if wells is not None:
         return [f"WBHP:{well}" for well in wells]
 
-    wbhp_vectors = []
-    vector_names = ens_provider.vector_names()
-    for vector in vector_names:
-        if not vector.startswith("WBHP:"):
-            continue
-        wbhp_vectors.append(vector)
-
+    wbhp_vectors = [
+        vector for vector in ens_provider.vector_names() if vector.startswith("WBHP:")
+    ]
     if not wbhp_vectors:
         raise RuntimeError("No WBHP vectors found.")
 
