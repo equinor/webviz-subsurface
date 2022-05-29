@@ -1,36 +1,42 @@
-import logging
-from pathlib import Path
-from typing import Callable, List, Tuple, Dict, Optional, Any
-from dataclasses import dataclass
 import dataclasses
+import logging
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
-
 import xtgeo
-
-from vtkmodules.vtkFiltersCore import vtkExplicitStructuredGridCrop
-from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
-from vtkmodules.vtkCommonCore import reference
-from vtkmodules.vtkCommonDataModel import (
-    vtkExplicitStructuredGrid,
-    vtkPolyData,
-    vtkCellLocator,
-    vtkGenericCell,
-)
-
 from vtkmodules.util.numpy_support import vtk_to_numpy
-
+from vtkmodules.vtkCommonCore import reference, vtkIdList, vtkPoints
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkCellLocator,
+    vtkExplicitStructuredGrid,
+    vtkGenericCell,
+    vtkLine,
+    vtkPlane,
+    vtkPolyData,
+    vtkStaticCellLocator,
+    vtkUnstructuredGrid,
+)
+from vtkmodules.vtkFiltersCore import (
+    vtkAppendPolyData,
+    vtkExplicitStructuredGridCrop,
+    vtkExplicitStructuredGridToUnstructuredGrid,
+    vtkPlaneCutter,
+    vtkPolyDataPlaneClipper,
+    vtkUnstructuredGridToExplicitStructuredGrid,
+)
+from vtkmodules.vtkFiltersGeneral import vtkBoxClipDataSet
+from vtkmodules.vtkFiltersGeometry import vtkExplicitStructuredGridSurfaceFilter
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
-from .ensemble_grid_provider import EnsembleGridProvider
 
 # Requires updated xtgeo
 from ._xtgeo_to_vtk_explicit_structured_grid import (
     xtgeo_grid_to_vtk_explicit_structured_grid,
 )
-
-from webviz_subsurface._utils.perf_timer import PerfTimer
+from .ensemble_grid_provider import EnsembleGridProvider
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,16 +89,20 @@ class PickResult:
     cell_property_value: Optional[float]
 
 
+# =============================================================================
 class GridWorker:
+    # -----------------------------------------------------------------------------
     def __init__(self, full_esgrid: vtkExplicitStructuredGrid) -> None:
         self._full_esgrid = full_esgrid
 
         self._cached_cell_filter: Optional[CellFilter] = None
         self._cached_original_cell_indices: Optional[np.ndarray] = None
 
+    # -----------------------------------------------------------------------------
     def get_full_esgrid(self) -> vtkExplicitStructuredGrid:
         return self._full_esgrid
 
+    # -----------------------------------------------------------------------------
     def get_cached_original_cell_indices(
         self, cell_filter: Optional[CellFilter]
     ) -> Optional[np.ndarray]:
@@ -104,6 +114,7 @@ class GridWorker:
 
         return None
 
+    # -----------------------------------------------------------------------------
     def set_cached_original_cell_indices(
         self, cell_filter: Optional[CellFilter], original_cell_indices: np.ndarray
     ) -> None:
@@ -112,11 +123,14 @@ class GridWorker:
         self._cached_original_cell_indices = original_cell_indices
 
 
+# =============================================================================
 class GridVizService:
+    # -----------------------------------------------------------------------------
     def __init__(self) -> None:
         self._id_to_provider_dict: Dict[str, EnsembleGridProvider] = {}
         self._key_to_worker_dict: Dict[str, GridWorker] = {}
 
+    # -----------------------------------------------------------------------------
     @staticmethod
     def instance() -> "GridVizService":
         global _GRID_VIZ_SERVICE_INSTANCE
@@ -126,6 +140,7 @@ class GridVizService:
 
         return _GRID_VIZ_SERVICE_INSTANCE
 
+    # -----------------------------------------------------------------------------
     def register_provider(self, provider: EnsembleGridProvider) -> None:
         provider_id = provider.provider_id()
         LOGGER.debug(f"Adding grid provider with id={provider_id}")
@@ -143,6 +158,7 @@ class GridVizService:
 
         self._id_to_provider_dict[provider_id] = provider
 
+    # -----------------------------------------------------------------------------
     def get_surface(
         self,
         provider_id: str,
@@ -202,6 +218,7 @@ class GridVizService:
 
         return surface_polys, property_scalars
 
+    # -----------------------------------------------------------------------------
     def get_mapped_property_values(
         self,
         provider_id: str,
@@ -260,6 +277,191 @@ class GridVizService:
 
         return PropertyScalars(value_arr=mapped_cell_vals)
 
+    # -----------------------------------------------------------------------------
+    def cut_along_polyline(
+        self,
+        provider_id: str,
+        realization: int,
+        polyline_xy: List[float],
+        property_spec: Optional[PropertySpec],
+    ) -> Tuple[SurfacePolys, Optional[PropertyScalars]]:
+
+        LOGGER.debug(
+            f"Cutting along polyline... "
+            f"(provider_id={provider_id}, real={realization})"
+        )
+        timer = PerfTimer()
+
+        provider = self._id_to_provider_dict.get(provider_id)
+        if not provider:
+            raise ValueError("Could not find provider")
+
+        worker = self._get_or_create_grid_worker(provider_id, realization)
+        if not worker:
+            raise ValueError("Could not get grid worker")
+
+        esgrid = worker.get_full_esgrid()
+
+        bounds = esgrid.GetBounds()
+        min_z = bounds[4]
+        max_z = bounds[5]
+
+        num_points_in_polyline = int(len(polyline_xy) / 2)
+
+        ugrid = _vtk_esg_to_ug(esgrid)
+
+        # !!!!!!!!!!!!!!
+        # Requires VTK 9.2-ish
+        # ugrid = _extract_intersected_ugrid(ugrid, polyline_xy, 10.0)
+
+        cutter_alg = vtkPlaneCutter()
+        cutter_alg.SetInputDataObject(ugrid)
+
+        # cell_locator = vtkStaticCellLocator()
+        # cell_locator.SetDataSet(esgrid)
+        # cell_locator.BuildLocator()
+
+        # box_clip_alg = vtkBoxClipDataSet()
+        # box_clip_alg.SetInputDataObject(ugrid)
+
+        append_alg = vtkAppendPolyData()
+        cut_surface_polydata_arr = []
+        et_setup_s = timer.lap_s()
+
+        et_cut_s = 0.0
+        et_clip_s = 0.0
+
+        for i in range(0, num_points_in_polyline - 1):
+            x0 = polyline_xy[2 * i]
+            y0 = polyline_xy[2 * i + 1]
+            x1 = polyline_xy[2 * (i + 1)]
+            y1 = polyline_xy[2 * (i + 1) + 1]
+            fwd_vec = np.array([x1 - x0, y1 - y0, 0.0])
+            fwd_vec /= np.linalg.norm(fwd_vec)
+            right_vec = np.array([fwd_vec[1], -fwd_vec[0], 0])
+
+            # box_clip_alg.SetBoxClip(x0, x1, y0, y1, min_z, max_z)
+            # box_clip_alg.Update()
+            # clipped_ugrid = box_clip_alg.GetOutputDataObject(0)
+
+            # polyline_bounds = _calc_polyline_bounds([x0, y0, x1, y1])
+            # polyline_bounds.extend([min_z, max_z])
+            # cell_ids = vtkIdList()
+            # cell_locator.FindCellsWithinBounds(polyline_bounds, cell_ids)
+            # print(f"{cell_ids.GetNumberOfIds()}  {polyline_bounds=}")
+
+            plane = vtkPlane()
+            plane.SetOrigin([x0, y0, 0])
+            plane.SetNormal(right_vec)
+
+            plane_0 = vtkPlane()
+            plane_0.SetOrigin([x0, y0, 0])
+            plane_0.SetNormal(fwd_vec)
+
+            plane_1 = vtkPlane()
+            plane_1.SetOrigin([x1, y1, 0])
+            plane_1.SetNormal(-fwd_vec)
+
+            cutter_alg.SetPlane(plane)
+            cutter_alg.Update()
+
+            # Apparently we get a vtkPartitionedDataSet back here in VTK 9.1
+            # Note that when testing with VTK 9.2-ish it seems we get polydata back instead
+            cut_surface_dataset_or_polydata = cutter_alg.GetOutput()
+            # print(f"{type(cut_surface_dataset_or_polydata)=}")
+            et_cut_s += timer.lap_s()
+
+            if cut_surface_dataset_or_polydata.IsA("vtkPartitionedDataSet"):
+                cut_surface_dataset = cut_surface_dataset_or_polydata
+                for i in range(0, cut_surface_dataset.GetNumberOfPartitions()):
+                    part_polydata = cut_surface_dataset.GetPartition(i)
+                    # print(f"{i=} {type(part_polydata)=}")
+                    # print(part_polydata)
+
+                    clipper_0 = vtkPolyDataPlaneClipper()
+                    clipper_0.SetInputDataObject(part_polydata)
+                    clipper_0.SetPlane(plane_0)
+                    clipper_0.Update()
+                    clipped_polydata = clipper_0.GetOutputDataObject(0)
+
+                    clipper_1 = vtkPolyDataPlaneClipper()
+                    clipper_1.SetInputDataObject(clipped_polydata)
+                    clipper_1.SetPlane(plane_1)
+                    clipper_1.Update()
+                    clipped_polydata = clipper_1.GetOutputDataObject(0)
+
+                    # print(f"{i=} {type(clipped_polydata)=}")
+                    # print(clipped_polydata)
+
+                    cut_surface_polydata_arr.append(clipped_polydata)
+                    append_alg.AddInputData(clipped_polydata)
+
+                    et_clip_s += timer.lap_s()
+            else:
+                cut_surface_polydata = cut_surface_dataset_or_polydata
+
+                clipper_0 = vtkPolyDataPlaneClipper()
+                clipper_0.SetInputDataObject(cut_surface_polydata)
+                clipper_0.SetPlane(plane_0)
+                clipper_0.Update()
+                clipped_polydata = clipper_0.GetOutputDataObject(0)
+
+                clipper_1 = vtkPolyDataPlaneClipper()
+                clipper_1.SetInputDataObject(clipped_polydata)
+                clipper_1.SetPlane(plane_1)
+                clipper_1.Update()
+                clipped_polydata = clipper_1.GetOutputDataObject(0)
+
+                # print(f"{i=} {type(clipped_polydata)=}")
+                # print(clipped_polydata)
+
+                cut_surface_polydata_arr.append(clipped_polydata)
+                append_alg.AddInputData(clipped_polydata)
+
+                et_clip_s += timer.lap_s()
+
+        append_alg.Update()
+        comb_polydata = append_alg.GetOutput()
+        et_combine_s = timer.lap_s()
+
+        points_np = vtk_to_numpy(comb_polydata.GetPoints().GetData()).ravel()
+        polys_np = vtk_to_numpy(comb_polydata.GetPolys().GetData())
+
+        surface_polys = SurfacePolys(point_arr=points_np, poly_arr=polys_np)
+
+        LOGGER.debug(
+            f"Cutting along polyline done in {timer.elapsed_s():.2f}s "
+            f"setup={et_setup_s:.2f}s, cut={et_cut_s:.2f}s, clip={et_clip_s:.2f}s, combine={et_combine_s:.2f}s, "
+            f"(provider_id={provider_id}, real={realization})"
+        )
+
+        return surface_polys, None
+
+        """
+        dbg_point_arr = []
+        dbg_conn_arr = []
+        for i in range(0, num_points_in_polyline):
+            x = polyline_xy[2 * i]
+            y = polyline_xy[2 * i + 1]
+            dbg_point_arr.extend([x, y, min_z])
+            dbg_point_arr.extend([x, y, max_z])
+            if i > 0:
+                base = 2 * (i - 1)
+                dbg_conn_arr.extend([4, base, base + 2, base + 3, base + 1])
+
+        for i in range(0, int(len(dbg_point_arr) / 3)):
+            print(
+                f"{i}: {dbg_point_arr[3*i]}, {dbg_point_arr[3*i + 1]}, {dbg_point_arr[3*i + 2]}"
+            )
+
+        point_arr_np = np.array(dbg_point_arr).reshape(-1, 3)
+        conn_arr_np = np.array(dbg_conn_arr)
+        surface_polys = SurfacePolys(point_arr=point_arr_np, poly_arr=conn_arr_np)
+
+        return surface_polys, None
+        """
+
+    # -----------------------------------------------------------------------------
     def ray_pick(
         self,
         provider_id: str,
@@ -334,6 +536,7 @@ class GridVizService:
             cell_property_value=cell_property_val,
         )
 
+    # -----------------------------------------------------------------------------
     def _get_or_create_grid_worker(
         self, provider_id: str, realization: int
     ) -> Optional[GridWorker]:
@@ -356,6 +559,7 @@ class GridVizService:
         return worker
 
 
+# -----------------------------------------------------------------------------
 def _calc_cropped_grid(
     esgrid: vtkExplicitStructuredGrid, cell_filter: CellFilter
 ) -> vtkExplicitStructuredGrid:
@@ -376,6 +580,7 @@ def _calc_cropped_grid(
     return cropped_grid
 
 
+# -----------------------------------------------------------------------------
 def _raypick_in_grid(
     esgrid: vtkExplicitStructuredGrid, ray: Ray
 ) -> Optional[Tuple[int, List[float]]]:
@@ -416,6 +621,7 @@ def _raypick_in_grid(
     return cell_id_ref.get(), isect_pt
 
 
+# -----------------------------------------------------------------------------
 def _calc_grid_surface(esgrid: vtkExplicitStructuredGrid) -> vtkPolyData:
     surf_filter = vtkExplicitStructuredGridSurfaceFilter()
     surf_filter.SetInputData(esgrid)
@@ -426,6 +632,7 @@ def _calc_grid_surface(esgrid: vtkExplicitStructuredGrid) -> vtkPolyData:
     return polydata
 
 
+# -----------------------------------------------------------------------------
 def _load_property_values(
     provider: EnsembleGridProvider, realization: int, property_spec: PropertySpec
 ) -> Optional[np.ndarray]:
@@ -441,6 +648,137 @@ def _load_property_values(
     return prop_values
 
 
+# -----------------------------------------------------------------------------
+def _vtk_esg_to_ug(vtk_esgrid: vtkExplicitStructuredGrid) -> vtkUnstructuredGrid:
+    convertFilter = vtkExplicitStructuredGridToUnstructuredGrid()
+    convertFilter.SetInputData(vtk_esgrid)
+    convertFilter.Update()
+    vtk_ugrid = convertFilter.GetOutput()
+
+    return vtk_ugrid
+
+
+# -----------------------------------------------------------------------------
+def _vtk_ug_to_esg(vtk_ugrid: vtkUnstructuredGrid) -> vtkExplicitStructuredGrid:
+    convertFilter = vtkUnstructuredGridToExplicitStructuredGrid()
+    convertFilter.SetInputData(vtk_ugrid)
+    convertFilter.SetInputArrayToProcess(0, 0, 0, 1, "BLOCK_I")
+    convertFilter.SetInputArrayToProcess(1, 0, 0, 1, "BLOCK_J")
+    convertFilter.SetInputArrayToProcess(2, 0, 0, 1, "BLOCK_K")
+    convertFilter.Update()
+    vtk_esgrid = convertFilter.GetOutput()
+
+    return vtk_esgrid
+
+
+# -----------------------------------------------------------------------------
+def _calc_polyline_bounds(polyline_xy: List[float]) -> List[float]:
+    num_points = int(len(polyline_xy) / 2)
+    if num_points < 1:
+        return None
+
+    min_x = min(polyline_xy[0::2])
+    max_x = max(polyline_xy[0::2])
+    min_y = min(polyline_xy[1::2])
+    max_y = max(polyline_xy[1::2])
+
+    return [min_x, max_x, min_y, max_y]
+
+
+# -----------------------------------------------------------------------------
+def _extract_intersected_ugrid(
+    ugrid: vtkUnstructuredGrid, polyline_xy_in: List[float], max_point_dist: float
+) -> vtkUnstructuredGrid:
+
+    # Requires VTK 9.2
+    from vtkmodules.vtkFiltersCore import vtkExtractCellsAlongPolyLine
+
+    timer = PerfTimer()
+
+    polyline_xy = _resample_polyline(polyline_xy_in, max_point_dist)
+    et_resample_s = timer.lap_s()
+
+    num_points_in_polyline = int(len(polyline_xy) / 2)
+    if num_points_in_polyline < 1:
+        return ugrid
+
+    bounds = ugrid.GetBounds()
+    min_z = bounds[4]
+    max_z = bounds[5]
+
+    points = vtkPoints()
+    lines = vtkCellArray()
+
+    for i in range(0, num_points_in_polyline):
+        x = polyline_xy[2 * i]
+        y = polyline_xy[2 * i + 1]
+
+        points.InsertNextPoint([x, y, min_z])
+        points.InsertNextPoint([x, y, max_z])
+
+        line = vtkLine()
+        line.GetPointIds().SetId(0, 2 * i)
+        line.GetPointIds().SetId(1, 2 * i + 1)
+
+        lines.InsertNextCell(line)
+
+    polyData = vtkPolyData()
+    polyData.SetPoints(points)
+    polyData.SetLines(lines)
+
+    et_build_s = timer.lap_s()
+
+    extractor = vtkExtractCellsAlongPolyLine()
+    extractor.SetInputData(0, ugrid)
+    extractor.SetInputData(1, polyData)
+    extractor.Update()
+
+    ret_grid = extractor.GetOutput(0)
+
+    et_extract_s = timer.lap_s()
+
+    LOGGER.debug(
+        f"extraction with {num_points_in_polyline} points took {timer.elapsed_s():.2f}s "
+        f"(resample={et_resample_s:.2f}s, build={et_build_s:.2f}s, extract={et_extract_s:.2f}s)"
+    )
+
+    return ret_grid
+
+
+# -----------------------------------------------------------------------------
+def _resample_polyline(polyline_xy: List[float], max_point_dist: float) -> List[float]:
+    num_points = int(len(polyline_xy) / 2)
+    if num_points < 2:
+        return polyline_xy
+
+    ret_polyline = []
+
+    prev_x = polyline_xy[0]
+    prev_y = polyline_xy[1]
+    ret_polyline.extend([prev_x, prev_y])
+
+    for i in range(1, num_points):
+        x = polyline_xy[2 * i]
+        y = polyline_xy[2 * i + 1]
+
+        fwd = [x - prev_x, y - prev_y]
+        length = np.linalg.norm(fwd)
+        if length > max_point_dist:
+            n = int(length / max_point_dist)
+            delta_t = 1.0 / (n + 1)
+            for j in range(0, n):
+                pt_x = prev_x + fwd[0] * (j + 1) * delta_t
+                pt_y = prev_y + fwd[1] * (j + 1) * delta_t
+                ret_polyline.extend([pt_x, pt_y])
+
+        ret_polyline.extend([x, y])
+        prev_x = x
+        prev_y = y
+
+    return ret_polyline
+
+
+# -----------------------------------------------------------------------------
 def _property_spec_dbg_str(property_spec: Optional[PropertySpec]) -> str:
     if not property_spec:
         return "prop=None"
@@ -448,6 +786,7 @@ def _property_spec_dbg_str(property_spec: Optional[PropertySpec]) -> str:
     return f"prop=({property_spec.prop_name}, {property_spec.prop_date})"
 
 
+# -----------------------------------------------------------------------------
 def _cell_filter_dbg_str(cell_filter: Optional[CellFilter]) -> str:
     if not cell_filter:
         return "IJK=None"
