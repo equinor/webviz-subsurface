@@ -1,6 +1,7 @@
+import datetime
 import itertools
 import math
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -8,6 +9,7 @@ from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
+from .._types import ChartType
 
 
 class WellOverviewFigure:
@@ -16,7 +18,8 @@ class WellOverviewFigure:
         ensembles: List[str],
         data_models: Dict[str, EnsembleWellAnalysisData],
         sumvec: str,
-        charttype: str,  # bar, pie, area
+        prod_after_date: Union[datetime.datetime, None],
+        charttype: ChartType,
         wells_selected: List[str],
         theme: WebvizConfigTheme,
     ) -> None:
@@ -24,12 +27,13 @@ class WellOverviewFigure:
         self._ensembles = ensembles
         self._data_models = data_models
         self._sumvec = sumvec
+        self._prod_after_date = prod_after_date
         self._charttype = charttype
         self._wells_selected = wells_selected
         self._colors = theme.plotly_theme["layout"]["colorway"]
         self._rows, self._cols = self.get_subplot_dim()
-        spec_type = "scatter" if self._charttype == "area" else self._charttype
-        subplot_titles = None if self._charttype == "bar" else self._ensembles
+        spec_type = "scatter" if self._charttype == ChartType.AREA else self._charttype
+        subplot_titles = None if self._charttype == ChartType.BAR else self._ensembles
 
         self._figure = make_subplots(
             rows=self._rows,
@@ -53,31 +57,31 @@ class WellOverviewFigure:
         row per ensemble.
         """
         number_of_ens = len(self._ensembles)
-        if self._charttype == "bar":
+        if self._charttype == ChartType.BAR:
             return 2, 1
-        if self._charttype == "pie":
+        if self._charttype == ChartType.PIE:
             return max(math.ceil(number_of_ens / 2), 2), 2
-        if self._charttype == "area":
+        if self._charttype == ChartType.AREA:
             return number_of_ens, 1
-        raise ValueError(f"Chart type: {self._charttype} not implemented")
+        raise ValueError(f"Chart type: {self._charttype.value} not implemented")
 
     def _get_ensemble_charttype_data(self, ensemble: str) -> pd.DataFrame:
         """Returns a dataframe with summary data on the form needed for the
         different chart types.
         """
-        if self._charttype in ["pie", "bar"]:
-            df = self._data_models[ensemble].get_dataframe_melted(self._sumvec)
+        if self._charttype in [ChartType.BAR, ChartType.PIE]:
+            df = self._data_models[ensemble].get_dataframe_melted(
+                self._sumvec, self._prod_after_date
+            )
             df = df[df["WELL"].isin(self._wells_selected)]
             df_mean = df.groupby("WELL").mean().reset_index()
             return df_mean[df_mean[self._sumvec] > 0]
 
-        # else chart type = are
-        return (
-            self._data_models[ensemble]
-            .summary_data.groupby("DATE")
-            .mean()
-            .reset_index()
+        # else chart type == area
+        df = self._data_models[ensemble].get_summary_data(
+            self._sumvec, self._prod_after_date
         )
+        return df.groupby("DATE").mean().reset_index()
 
     def _add_traces(self) -> None:
         """Add all traces for the currently selected chart type."""
@@ -86,7 +90,7 @@ class WellOverviewFigure:
         for i, ensemble in enumerate(self._ensembles):
             df = self._get_ensemble_charttype_data(ensemble)
 
-            if self._charttype == "pie":
+            if self._charttype == ChartType.PIE:
                 self._figure.add_trace(
                     go.Pie(
                         values=df[self._sumvec],
@@ -99,7 +103,7 @@ class WellOverviewFigure:
                     col=i % 2 + 1,
                 )
 
-            elif self._charttype == "bar":
+            elif self._charttype == ChartType.BAR:
                 trace = {
                     "x": df["WELL"],
                     "y": df[self._sumvec],
@@ -117,7 +121,7 @@ class WellOverviewFigure:
                     row=1,
                     col=1,
                 )
-            elif self._charttype == "area":
+            elif self._charttype == ChartType.AREA:
                 color_iterator = itertools.cycle(self._colors)
 
                 for well in self._data_models[ensemble].wells:
@@ -146,7 +150,11 @@ class WellOverviewFigure:
 
 
 def format_well_overview_figure(
-    figure: go.Figure, charttype: str, settings: List[str], sumvec: str
+    figure: go.Figure,
+    charttype: ChartType,
+    settings: List[str],
+    sumvec: str,
+    prod_after_date: Union[str, None],
 ) -> go.Figure:
     """This function formate the well overview figure. The reason for keeping this
     function outside the figure class is that we can update the figure formatting
@@ -155,7 +163,7 @@ def format_well_overview_figure(
     settings are changed. See in the well_overview_callbacks how it is used.
     """
 
-    if charttype == "pie":
+    if charttype == ChartType.PIE:
         figure.update_traces(
             texttemplate=(
                 "%{label}<br>%{value:.2s}"
@@ -164,7 +172,7 @@ def format_well_overview_figure(
             )
         )
 
-    elif charttype == "bar":
+    elif charttype == ChartType.BAR:
         figure.update_layout(
             barmode=("overlay" if "overlay_bars" in settings else "group")
         )
@@ -177,10 +185,14 @@ def format_well_overview_figure(
         template=("plotly_white" if "white_background" in settings else "plotly")
     )
 
+    # Make title
     phase = {"WOPT": "Oil", "WGPT": "Gas", "WWPT": "Water"}[sumvec]
+    title = f"Cumulative Well {phase} Production (Sm3)"
+    if prod_after_date is not None:
+        title += f" after {prod_after_date}"
 
     figure.update(
-        layout_title_text=f"Cumulative Well {phase} Production (Sm3)",
+        layout_title_text=title,
         layout_showlegend=("legend" in settings),
     )
     return figure

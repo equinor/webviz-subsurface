@@ -89,7 +89,7 @@ def make_map_selectors(
                     for val in ["Mean", "StdDev", "Max", "Min", "P90", "P10"]
                     + [str(real) for real in realizations]
                 ],
-                value=realizations[0],
+                value=str(realizations[0]),
                 clearable=False,
             ),
             wcc.Checklist(

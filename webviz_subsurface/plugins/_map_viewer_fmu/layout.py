@@ -1,20 +1,11 @@
-import json
 from enum import Enum, unique
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, Dict, List, Union
 
-import pydeck
 import webviz_core_components as wcc
 from dash import dcc, html
 from webviz_subsurface_components import DeckGLMap  # type: ignore
 
-from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
-    ColormapLayer,
-    FaultPolygonsLayer,
-    Hillshading2DLayer,
-    WellsLayer,
-)
-
-from ._types import SurfaceMode
+from ._types import LayerTypes, SurfaceMode
 
 
 @unique
@@ -188,6 +179,7 @@ def main_layout(
     get_uuid: Callable,
     well_names: List[str],
     realizations: List[int],
+    color_tables: List[Dict],
     show_fault_polygons: bool = True,
 ) -> html.Div:
     return html.Div(
@@ -228,7 +220,9 @@ def main_layout(
                                     style=LayoutStyle.MAINVIEW,
                                     color="white",
                                     highlight=False,
-                                    children=MapViewLayout(tab, get_uuid),
+                                    children=MapViewLayout(
+                                        tab, get_uuid, color_tables=color_tables
+                                    ),
                                 ),
                             ]
                         ),
@@ -253,13 +247,14 @@ class OpenDialogButton(html.Button):
 class MapViewLayout(FullScreen):
     """Layout for the main view containing the map"""
 
-    def __init__(self, tab: Tabs, get_uuid: Callable) -> None:
+    def __init__(self, tab: Tabs, get_uuid: Callable, color_tables: List[Dict]) -> None:
         super().__init__(
             children=html.Div(
                 DeckGLMap(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
                     layers=update_map_layers(1),
                     zoom=-4,
+                    colorTables=color_tables,
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
             ),
@@ -639,32 +634,45 @@ def update_map_layers(
     visible_fault_polygons_layer: bool = True,
     visible_hillshading_layer: bool = True,
 ) -> List[dict]:
-    layers: List[pydeck.Layer] = []
+    layers: List[Dict] = []
     for idx in range(views):
         layers.extend(
             [
                 # Map3DLayer(uuid=f"{LayoutElements.MAP3D_LAYER}-{idx}"),
-                ColormapLayer(uuid=f"{LayoutElements.COLORMAP_LAYER}-{idx}"),
-                Hillshading2DLayer(
-                    uuid=f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
-                    visible=visible_hillshading_layer,
-                ),
+                {
+                    "@@type": LayerTypes.COLORMAP,
+                    "id": f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                },
+                {
+                    "@@type": LayerTypes.HILLSHADING,
+                    "id": f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
+                    "visible": visible_hillshading_layer,
+                },
             ]
         )
-
         if include_faultpolygon_layer:
             layers.append(
-                FaultPolygonsLayer(
-                    uuid=f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
-                    visible=visible_fault_polygons_layer,
-                )
-            )
-        if include_well_layer:
-            layers.append(
-                WellsLayer(
-                    uuid=f"{LayoutElements.WELLS_LAYER}-{idx}",
-                    visible=visible_well_layer,
-                )
+                {
+                    "@@type": LayerTypes.FAULTPOLYGONS,
+                    "id": f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
+                    "visible": visible_fault_polygons_layer,
+                }
             )
 
-    return [json.loads(layer.to_json()) for layer in layers]
+        if include_well_layer:
+            layers.append(
+                {
+                    "@@type": LayerTypes.GEOJSON,
+                    "id": f"{LayoutElements.WELLS_LAYER}-{idx}",
+                    "data": {"type": "FeatureCollection", "features": []},
+                    "visible": visible_well_layer,
+                    "getText": "@@=properties.attribute",
+                    "getTextSize": 12,
+                    "getTextAnchor": "start",
+                    "pointType": "circle+text",
+                    "lineWidthMinPixels": 2,
+                    "pointRadiusMinPixels": 2,
+                    "pickable": True,
+                }
+            )
+    return layers

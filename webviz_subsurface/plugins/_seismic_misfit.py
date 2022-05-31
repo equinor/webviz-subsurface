@@ -144,12 +144,15 @@ class SeismicMisfit(WebvizPluginABC):
 
     b) Polygon data is optional to include. Polygons must be stored in
     csv file(s) on the format shown below. A csv file can have multiple
-    polygons (e.g. fault polygons), identified with the POLY_ID value.
+    polygons (e.g. fault polygons), identified with the ID value.
+    The alternative header names "X_UTME", "Y_UTMN", "Z_TVDSS", "POLY_ID" will also
+    be accepted. The "Z"/"Z_TVDSS" column can be omitted. Any other column can be
+    included, but they will be skipped upon reading.
     ```csv
-        X_UTME,Y_UTMN,Z_TVDSS,POLY_ID
-        460606.36,5935605.44,1676.49,0
-        460604.92,5935583.99,1674.84,0
-        460604.33,5935575.08,1674.16,2
+        X,Y,Z,ID
+        460606.36,5935605.44,1676.49,1
+        460604.92,5935583.99,1674.84,1
+        460604.33,5935575.08,1674.16,3
         ...
         ...
     ```
@@ -442,6 +445,7 @@ class SeismicMisfit(WebvizPluginABC):
                                             abs(self.obs_range_init[1]),
                                         ),
                                         step=0.5 * self.obs_error_range_init[0],
+                                        marks=None,
                                         value=0,
                                     ),
                                     html.Div(
@@ -2254,11 +2258,11 @@ def update_obsdata_map(
     # ----------------------------------------
     # add polygon to map if defined
     if not df_polygon.empty:
-        for poly_id, polydf in df_polygon.groupby("POLY_ID"):
+        for poly_id, polydf in df_polygon.groupby("ID"):
             fig.append_trace(
                 go.Scattergl(
-                    x=polydf["X_UTME"],
-                    y=polydf["Y_UTMN"],
+                    x=polydf["X"],
+                    y=polydf["Y"],
                     mode="lines",
                     line_color="RoyalBlue",
                     name=f"pol{poly_id}",
@@ -2511,11 +2515,11 @@ def update_obs_sim_map_plot(
     # ----------------------------------------
     # add polygon to map if defined
     if not df_polygon.empty:
-        for poly_id, polydf in df_polygon.groupby("POLY_ID"):
+        for poly_id, polydf in df_polygon.groupby("ID"):
             fig.append_trace(
                 go.Scattergl(
-                    x=polydf["X_UTME"],
-                    y=polydf["Y_UTMN"],
+                    x=polydf["X"],
+                    y=polydf["Y"],
                     mode="lines",
                     line_color="RoyalBlue",
                     name=f"pol{poly_id}",
@@ -3095,7 +3099,7 @@ def makedf(
 
         df = makedf_seis_obs_meta(obsfile, obs_mult=obs_mult)
 
-        df["ENSEMBLE"] = ens_name  # add ENSEBLE column
+        df["ENSEMBLE"] = ens_name  # add ENSEMBLE column
         dfs_obs.append(df.copy())
 
         # --- add sim data ---
@@ -3206,6 +3210,7 @@ def makedf_seis_addsim(
 
     data_found, no_data_found = [], []
     real_path = {}
+    obs_size = len(df.index)
 
     runpaths = glob.glob(ens_path)
     if len(runpaths) == 0:
@@ -3224,10 +3229,16 @@ def makedf_seis_addsim(
                 Path(real_path[real]) / Path(attribute_sim_path) / Path(attribute_name)
             )
             if simfile.exists():
+                # ---read sim data and apply sim multiplier ---
                 colname = "real-" + str(real)
-                sim_df_list.append(
-                    pd.read_csv(simfile, header=None, names=[colname]) * sim_mult
-                )  # ---read sim data and apply sim multiplier ---
+                sim_df = pd.read_csv(simfile, header=None, names=[colname]) * sim_mult
+                if len(sim_df.index) != obs_size:
+                    raise RuntimeError(
+                        f"---\nThe length of {simfile} is {len(sim_df.index)} which is "
+                        f"different to the obs data which has {obs_size} data points. "
+                        "These must be the same size.\n---"
+                    )
+                sim_df_list.append(sim_df)
                 data_found.append(real)
             else:
                 no_data_found.append(real)
@@ -3497,26 +3508,36 @@ def make_polygon_df(ensemble_set: dict, polygon: str) -> pd.DataFrame:
             else:
                 for poly_file in poly_files:
                     logging.debug(f"Read polygon file:\n {poly_file}")
-                    df_polygon = pd.read_csv(
-                        poly_file, usecols=["POLY_ID", "X_UTME", "Y_UTMN"]
-                    )
+                    df_polygon = pd.read_csv(poly_file)
                     cols = df_polygon.columns
-                    if (
-                        ("POLY_ID" not in cols)
-                        or ("X_UTME" not in cols)
-                        or ("Y_UTMN" not in cols)
+
+                    if ("ID" in cols) and ("X" in cols) and ("Y" in cols):
+                        df_polygon = df_polygon[["X", "Y", "ID"]]
+                    elif (
+                        ("POLY_ID" in cols)
+                        and ("X_UTME" in cols)
+                        and ("Y_UTMN" in cols)
                     ):
-                        logging.debug(
-                            f"The polygon file {poly_file} does not have an expected"
-                            " format. \nThe file must contain the columns "
-                            "'POLY_ID', 'X_UTME' and 'Y_UTMN' "
-                            "(the column names must match exactly)."
-                            " Please update file or edit polygon input argument "
-                            "(default is None)"
+                        df_polygon = df_polygon[["X_UTME", "Y_UTMN", "POLY_ID"]].rename(
+                            columns={"X_UTME": "X", "Y_UTMN": "Y", "POLY_ID": "ID"}
+                        )
+                        logging.warning(
+                            "For the future, consider using X,Y,Z,ID as header names in "
+                            "the polygon files, as this is regarded as the FMU standard."
+                            f"The {poly_file} file uses X_UTME,Y_UTMN,POLY_ID."
                         )
                     else:
-                        df_polygon["name"] = str(Path(poly_file).stem).replace("_", " ")
-                        df_polygons = pd.concat([df_polygons, df_polygon])
+                        logging.warning(
+                            f"The polygon file {poly_file} does not have an expected "
+                            "format and is therefore skipped. The file must either "
+                            "contain the columns 'POLY_ID', 'X_UTME' and 'Y_UTMN' or "
+                            "the columns 'ID', 'X' and 'Y'."
+                        )
+                        continue
+
+                    df_polygon["name"] = str(Path(poly_file).stem).replace("_", " ")
+                    df_polygons = pd.concat([df_polygons, df_polygon])
+
                 logging.debug(f"Polygon dataframe:\n{df_polygons}")
                 return df_polygons
 
