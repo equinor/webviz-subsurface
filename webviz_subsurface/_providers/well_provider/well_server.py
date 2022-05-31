@@ -1,10 +1,19 @@
 import logging
 from typing import Dict, List, Optional
 from urllib.parse import quote
+from dataclasses import dataclass
 
 import flask
 import geojson
+import numpy as np
 from dash import Dash
+from vtkmodules.vtkCommonCore import vtkPoints
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkPolyData,
+    vtkPolyLine,
+)
+from vtkmodules.util.numpy_support import vtk_to_numpy
 
 from webviz_subsurface._providers.well_provider.well_provider import WellProvider
 from webviz_subsurface._utils.perf_timer import PerfTimer
@@ -14,6 +23,12 @@ LOGGER = logging.getLogger(__name__)
 _ROOT_URL_PATH = "/WellServer"
 
 _WELL_SERVER_INSTANCE: Optional["WellServer"] = None
+
+
+@dataclass
+class PolyLine:
+    point_arr: np.ndarray
+    line_arr: np.ndarray
 
 
 class WellServer:
@@ -31,7 +46,7 @@ class WellServer:
 
         return _WELL_SERVER_INSTANCE
 
-    def add_provider(self, provider: WellProvider) -> None:
+    def register_provider(self, provider: WellProvider) -> None:
 
         provider_id = provider.provider_id()
         LOGGER.debug(f"Adding provider with id={provider_id}")
@@ -113,3 +128,36 @@ class WellServer:
 
             LOGGER.debug(f"Request handled in: {timer.elapsed_s():.2f}s")
             return response
+
+    def get_polyline(
+        self, provider_id: str, well_name: str, tvdmin: float = None
+    ) -> PolyLine:
+        provider = self._id_to_provider_dict[provider_id]
+        well_path = provider.get_well_path(well_name)
+        xyz_arr = [
+            [x, y, z]
+            for x, y, z in zip(well_path.x_arr, well_path.y_arr, well_path.z_arr)
+        ]
+        points = vtkPoints()
+        for p in xyz_arr:
+            points.InsertNextPoint(p[0], p[1], -p[2])
+
+        polyLine = vtkPolyLine()
+        polyLine.GetPointIds().SetNumberOfIds(len(xyz_arr))
+        for i in range(0, len(xyz_arr)):
+            polyLine.GetPointIds().SetId(i, i)
+
+        # Create a cell array to store the lines in and add the lines to it
+        cells = vtkCellArray()
+        cells.InsertNextCell(polyLine)
+
+        # Create a polydata to store everything in
+        polyData = vtkPolyData()
+        # Add the points to the dataset
+        polyData.SetPoints(points)
+
+        # Add the lines to the dataset
+        polyData.SetLines(cells)
+        points = vtk_to_numpy(polyData.GetPoints().GetData())
+        lines = vtk_to_numpy(polyData.GetLines().GetData())
+        return PolyLine(point_arr=points, line_arr=lines)

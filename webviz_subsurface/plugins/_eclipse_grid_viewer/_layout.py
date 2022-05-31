@@ -9,7 +9,7 @@ from webviz_subsurface._providers.ensemble_grid_provider import (
     EnsembleGridProvider,
     CellFilter,
 )
-
+from webviz_subsurface._providers.well_provider import WellProvider
 
 # pylint: disable = too-few-public-methods
 class LayoutElements(str, Enum):
@@ -17,11 +17,17 @@ class LayoutElements(str, Enum):
     INIT_RESTART = "init-restart-select"
     PROPERTIES = "properties-select"
     DATES = "dates-select"
+    WELL_SELECT = "well-select"
     Z_SCALE = "z-scale"
     VTK_VIEW = "vtk-view"
     VTK_GRID_REPRESENTATION = "vtk-grid-representation"
     VTK_GRID_POLYDATA = "vtk-grid-polydata"
     VTK_GRID_CELLDATA = "vtk-grid-celldata"
+    VTK_WELL_INTERSECT_REPRESENTATION = "vtk-well-intersect-representation"
+    VTK_WELL_INTERSECT_POLYDATA = "vtk-well-intersect-polydata"
+    VTK_WELL_INTERSECT_CELL_DATA = "vtk-well-intersect-celldata"
+    VTK_WELL_PATH_REPRESENTATION = "vtk-well-path-representation"
+    VTK_WELL_PATH_POLYDATA = "vtk-well-path-polydata"
     STORED_CELL_INDICES_HASH = "stored-cell-indices-hash"
     SELECTED_CELL = "selected-cell"
     SHOW_GRID_LINES = "show-grid-lines"
@@ -39,6 +45,7 @@ class LayoutTitles(str, Enum):
     INIT_RESTART = "Init / Restart"
     PROPERTIES = "Property"
     DATES = "Date"
+    WELL_SELECT = "Well"
     Z_SCALE = "Z-scale"
     SHOW_GRID_LINES = "Show grid lines"
     COLORMAP = "Color map"
@@ -70,7 +77,7 @@ class LayoutStyle:
 
 
 def plugin_main_layout(
-    get_uuid: Callable, grid_provider: EnsembleGridProvider
+    get_uuid: Callable, grid_provider: EnsembleGridProvider, well_names: List[str]
 ) -> wcc.FlexBox:
     initial_grid = grid_provider.get_3dgrid(grid_provider.realizations()[0])
     grid_dimensions = CellFilter(
@@ -87,6 +94,7 @@ def plugin_main_layout(
                 get_uuid=get_uuid,
                 grid_dimensions=grid_dimensions,
                 grid_provider=grid_provider,
+                well_names=well_names,
             ),
             vtk_view(get_uuid=get_uuid),
             dcc.Store(id=get_uuid(LayoutElements.STORED_CELL_INDICES_HASH)),
@@ -103,7 +111,10 @@ def plugin_main_layout(
 
 
 def sidebar(
-    get_uuid: Callable, grid_dimensions: CellFilter, grid_provider: EnsembleGridProvider
+    get_uuid: Callable,
+    grid_dimensions: CellFilter,
+    grid_provider: EnsembleGridProvider,
+    well_names: List[str],
 ) -> wcc.Frame:
 
     realizations = grid_provider.realizations()
@@ -140,10 +151,18 @@ def sidebar(
                 value=property_value,
             ),
             wcc.SelectWithLabel(
-                id=get_uuid(LayoutElements.PROPERTIES), label=LayoutTitles.PROPERTIES
+                id=get_uuid(LayoutElements.PROPERTIES),
+                label=LayoutTitles.PROPERTIES,
             ),
             wcc.SelectWithLabel(
                 id=get_uuid(LayoutElements.DATES), label=LayoutTitles.DATES
+            ),
+            wcc.SelectWithLabel(
+                id=get_uuid(LayoutElements.WELL_SELECT),
+                label=LayoutTitles.WELL_SELECT,
+                multi=False,
+                options=[{"value": well, "label": well} for well in well_names],
+                value=[],
             ),
             wcc.Slider(
                 label=LayoutTitles.Z_SCALE,
@@ -216,7 +235,7 @@ def sidebar(
                     )
                 ],
             ),
-            html.Pre(id=get_uuid(LayoutElements.SELECTED_CELL)),
+            html.Pre(id=get_uuid(LayoutElements.SELECTED_CELL), children=[]),
         ],
     )
 
@@ -394,6 +413,37 @@ def vtk_view(get_uuid: Callable) -> webviz_vtk.View:
                     webviz_vtk.Algorithm(
                         id=get_uuid(LayoutElements.VTK_PICK_SPHERE),
                         vtkClass="vtkSphereSource",
+                    )
+                ],
+            ),
+            webviz_vtk.GeometryRepresentation(
+                id=get_uuid(LayoutElements.VTK_WELL_INTERSECT_REPRESENTATION),
+                actor={"visibility": True},
+                children=[
+                    webviz_vtk.PolyData(
+                        id=get_uuid(LayoutElements.VTK_WELL_INTERSECT_POLYDATA),
+                        children=[
+                            webviz_vtk.CellData(
+                                [
+                                    webviz_vtk.DataArray(
+                                        id=get_uuid(
+                                            LayoutElements.VTK_WELL_INTERSECT_CELL_DATA
+                                        ),
+                                        registration="setScalars",
+                                        name="scalar",
+                                    )
+                                ]
+                            )
+                        ],
+                    )
+                ],
+            ),
+            webviz_vtk.GeometryRepresentation(
+                id=get_uuid(LayoutElements.VTK_WELL_PATH_REPRESENTATION),
+                actor={"visibility": True},
+                children=[
+                    webviz_vtk.PolyData(
+                        id=get_uuid(LayoutElements.VTK_WELL_PATH_POLYDATA),
                     )
                 ],
             ),

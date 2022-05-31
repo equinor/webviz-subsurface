@@ -15,6 +15,7 @@ from webviz_subsurface._providers.ensemble_grid_provider import (
     CellFilter,
     Ray,
 )
+from webviz_subsurface._providers.well_provider import WellProvider, WellServer
 
 from ._layout import PROPERTYTYPE, LayoutElements, GRID_DIRECTION
 
@@ -23,6 +24,8 @@ def plugin_callbacks(
     get_uuid: Callable,
     grid_provider: EnsembleGridProvider,
     grid_viz_service: GridVizService,
+    well_provider: WellProvider,
+    well_server: WellServer,
 ) -> None:
     @callback(
         Output(get_uuid(LayoutElements.PROPERTIES), "options"),
@@ -122,6 +125,7 @@ def plugin_callbacks(
                     k_max=grid_range[2][1],
                 ),
             )
+
             return (
                 b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
                 b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
@@ -150,31 +154,99 @@ def plugin_callbacks(
             )
 
     @callback(
+        Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_POLYDATA), "points"),
+        Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_POLYDATA), "polys"),
+        Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_CELL_DATA), "values"),
+        Input(get_uuid(LayoutElements.WELL_SELECT), "value"),
+        Input(get_uuid(LayoutElements.REALIZATIONS), "value"),
+        Input(get_uuid(LayoutElements.PROPERTIES), "value"),
+        Input(get_uuid(LayoutElements.DATES), "value"),
+        State(get_uuid(LayoutElements.INIT_RESTART), "value"),
+    )
+    def set_well_geometries(
+        well_names: List[str],
+        realizations: List[int],
+        prop: List[str],
+        date: List[int],
+        proptype: str,
+    ) -> Tuple[
+        List[Dict[str, str]], List[str], List[Dict[str, str]], Optional[List[str]]
+    ]:
+
+        if not well_names:
+            return no_update, no_update, no_update
+        polyline_xy = well_provider.get_polyline_along_well_path_SIMPLIFIED(
+            well_names[0]
+        )
+        polyline_xy = np.array(polyline_xy).flatten()
+        if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
+            property_spec = PropertySpec(prop_name=prop[0], prop_date=0)
+        else:
+            property_spec = PropertySpec(prop_name=prop[0], prop_date=date[0])
+
+        surface_polys, scalars = grid_viz_service.cut_along_polyline(
+            provider_id=grid_provider.provider_id(),
+            realization=realizations[0],
+            polyline_xy=polyline_xy,
+            property_spec=property_spec,
+        )
+
+        return (
+            b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
+            b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
+            b64_encode_numpy(scalars.value_arr.astype(np.float32))
+            if scalars is not None
+            else no_update,
+        )
+
+    @callback(
+        Output(get_uuid(LayoutElements.VTK_WELL_PATH_POLYDATA), "points"),
+        Output(get_uuid(LayoutElements.VTK_WELL_PATH_POLYDATA), "lines"),
+        Input(get_uuid(LayoutElements.WELL_SELECT), "value"),
+    )
+    def set_well_geometries(
+        well_names: List[str],
+    ) -> Tuple[
+        List[Dict[str, str]], List[str], List[Dict[str, str]], Optional[List[str]]
+    ]:
+
+        if not well_names:
+            return no_update, no_update
+        polyline = well_server.get_polyline(
+            provider_id=well_provider.provider_id(), well_name=well_names[0]
+        )
+
+        return (
+            b64_encode_numpy(polyline.point_arr.astype(np.float32)),
+            b64_encode_numpy(polyline.line_arr.astype(np.float32)),
+        )
+
+    @callback(
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),
+        Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_REPRESENTATION), "actor"),
+        Output(get_uuid(LayoutElements.VTK_WELL_PATH_REPRESENTATION), "actor"),
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "showCubeAxes"),
         Input(get_uuid(LayoutElements.Z_SCALE), "value"),
         Input(get_uuid(LayoutElements.SHOW_AXES), "value"),
-        State(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),
     )
     def _set_representation_actor(
-        z_scale: int, axes_is_on: List[str], actor: Optional[dict]
+        z_scale: int, axes_is_on: List[str]
     ) -> Tuple[dict, bool]:
         show_axes = bool(z_scale == 1 and axes_is_on)
-        actor = actor if actor else {}
-        actor.update({"scale": (1, 1, z_scale)})
-        return actor, show_axes
+        actor = {"scale": (1, 1, z_scale)}
+        return actor, actor, actor, show_axes
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "property"),
+        Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_REPRESENTATION), "property"),
         Input(get_uuid(LayoutElements.SHOW_GRID_LINES), "value"),
-        State(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "property"),
     )
     def _set_representation_property(
-        show_grid_lines: List[str], properties: Optional[dict]
+        show_grid_lines: List[str],
     ) -> dict:
-        properties = properties if properties else {}
-        properties.update({"edgeVisibility": bool(show_grid_lines)})
-        return properties
+        properties = {"edgeVisibility": bool(show_grid_lines)}
+
+        return properties, properties
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_VIEW), "triggerResetCamera"),

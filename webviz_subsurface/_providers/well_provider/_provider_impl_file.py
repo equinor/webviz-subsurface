@@ -3,11 +3,14 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import numpy as np
+import pandas as pd
 import xtgeo
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from .well_provider import WellPath, WellProvider
+from .well_provider import WellPath, WellProvider, WellIntersectionPolyLine
+from ._simplify_polyline import rdp
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,3 +134,39 @@ class ProviderImplFile(WellProvider):
         )
 
         return well
+
+    def get_polyline_along_well_path_SIMPLIFIED(
+        self, well_name: str, tvdmin=None
+    ) -> np.array:
+        """Returns a polyline for the well path along with MD for the well."""
+        well = self.get_well_xtgeo_obj(well_name).copy()
+        if tvdmin is not None:
+            well.dataframe = well.dataframe[well.dataframe["Z_TVDSS"] >= tvdmin]
+
+        xy_arr = np.stack(
+            (
+                np.array(well.dataframe["X_UTME"].values),
+                np.array(well.dataframe["Y_UTMN"].values),
+            ),
+            axis=-1,
+        )
+
+        timer = PerfTimer()
+        if np.all(xy_arr == xy_arr[0]):
+            xy_start = xy_arr[0] - 500
+            xy_end = xy_arr[0] + 500
+
+            print(
+                f"Well is vertical. Returning two points extended in xy from trajectory"
+            )
+            return [xy_start, xy_end]
+
+        simplified_xy_arr = rdp(xy_arr, epsilon=1)
+
+        print(
+            f"Original well polyline has {len(xy_arr)} points. "
+            f"Simplified well polyline has {len(simplified_xy_arr)} points. ",
+            f"Time to calculate: {timer.elapsed_ms()}ms",
+        )
+
+        return simplified_xy_arr

@@ -14,6 +14,12 @@ class WellPath:
     md_arr: np.ndarray
 
 
+@dataclass(frozen=True)
+class WellIntersectionPolyLine:
+    x_arr: np.ndarray
+    y_arr: np.ndarray
+
+
 # Class provides data for wells
 class WellProvider(abc.ABC):
     @abc.abstractmethod
@@ -30,4 +36,11 @@ class WellProvider(abc.ABC):
 
     @abc.abstractmethod
     def get_well_xtgeo_obj(self, well_name: str) -> xtgeo.Well:
+        ...
+
+    @abc.abstractmethod
+    def get_polyline_along_well_path_SIMPLIFIED(
+        self, well_name: str, tvdmin=None
+    ) -> WellIntersectionPolyLine:
+        """Returns a polyline for the well path."""
         ...
