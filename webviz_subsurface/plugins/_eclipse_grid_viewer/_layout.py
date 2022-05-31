@@ -20,6 +20,7 @@ class LayoutElements(str, Enum):
     WELL_SELECT = "well-select"
     Z_SCALE = "z-scale"
     VTK_VIEW = "vtk-view"
+    VTK_INTERSECT_VIEW = "vtk-intersect-view"
     VTK_GRID_REPRESENTATION = "vtk-grid-representation"
     VTK_GRID_POLYDATA = "vtk-grid-polydata"
     VTK_GRID_CELLDATA = "vtk-grid-celldata"
@@ -28,6 +29,11 @@ class LayoutElements(str, Enum):
     VTK_WELL_INTERSECT_CELL_DATA = "vtk-well-intersect-celldata"
     VTK_WELL_PATH_REPRESENTATION = "vtk-well-path-representation"
     VTK_WELL_PATH_POLYDATA = "vtk-well-path-polydata"
+    VTK_WELL_2D_INTERSECT_REPRESENTATION = "vtk-well-2d-intersect-representation"
+    VTK_WELL_2D_INTERSECT_POLYDATA = "vtk-well-2d-intersect-polydata"
+    VTK_WELL_2D_INTERSECT_CELL_DATA = "vtk-well-2d-intersect-celldata"
+    VTK_WELL_PATH_2D_REPRESENTATION = "vtk-well-2d-path-representation"
+    VTK_WELL_PATH_2D_POLYDATA = "vtk-well-2d-path-polydata"
     STORED_CELL_INDICES_HASH = "stored-cell-indices-hash"
     SELECTED_CELL = "selected-cell"
     SHOW_GRID_LINES = "show-grid-lines"
@@ -73,7 +79,7 @@ class PROPERTYTYPE(str, Enum):
 class LayoutStyle:
     MAIN_HEIGHT = "87vh"
     SIDEBAR = {"flex": 1, "height": "87vh"}
-    VTK_VIEW = {"flex": 5, "height": "87vh"}
+    VTK_VIEW = {"height": "40vh", "marginBottom": "10px"}
 
 
 def plugin_main_layout(
@@ -96,7 +102,13 @@ def plugin_main_layout(
                 grid_provider=grid_provider,
                 well_names=well_names,
             ),
-            vtk_view(get_uuid=get_uuid),
+            html.Div(
+                style={"flex": "5"},
+                children=[
+                    vtk_3d_view(get_uuid=get_uuid),
+                    vtk_intersect_view(get_uuid=get_uuid),
+                ],
+            ),
             dcc.Store(id=get_uuid(LayoutElements.STORED_CELL_INDICES_HASH)),
             dcc.Store(
                 id=get_uuid(LayoutElements.GRID_RANGE_STORE),
@@ -347,7 +359,7 @@ def crop_widget(
     )
 
 
-def vtk_view(get_uuid: Callable) -> webviz_vtk.View:
+def vtk_3d_view(get_uuid: Callable) -> webviz_vtk.View:
     return webviz_vtk.View(
         id=get_uuid(LayoutElements.VTK_VIEW),
         style=LayoutStyle.VTK_VIEW,
@@ -444,6 +456,79 @@ def vtk_view(get_uuid: Callable) -> webviz_vtk.View:
                 children=[
                     webviz_vtk.PolyData(
                         id=get_uuid(LayoutElements.VTK_WELL_PATH_POLYDATA),
+                    )
+                ],
+            ),
+        ],
+    )
+
+
+def vtk_intersect_view(get_uuid: Callable) -> webviz_vtk.View:
+    return webviz_vtk.View(
+        id=get_uuid(LayoutElements.VTK_INTERSECT_VIEW),
+        style=LayoutStyle.VTK_VIEW,
+        pickingModes=["click"],
+        interactorSettings=[
+            {
+                "button": 1,
+                "action": "Zoom",
+                "scrollEnabled": True,
+            },
+            {
+                "button": 3,
+                "action": "Pan",
+            },
+            {
+                "button": 2,
+                "action": "Rotate",
+            },
+            {
+                "button": 1,
+                "action": "Pan",
+                "shift": True,
+            },
+            {
+                "button": 1,
+                "action": "Zoom",
+                "alt": True,
+            },
+            {
+                "button": 1,
+                "action": "Roll",
+                "alt": True,
+                "shift": True,
+            },
+        ],
+        children=[
+            webviz_vtk.GeometryRepresentation(
+                id=get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_REPRESENTATION),
+                actor={"visibility": True},
+                property={"edgeVisibility": True},
+                children=[
+                    webviz_vtk.PolyData(
+                        id=get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA),
+                        children=[
+                            webviz_vtk.CellData(
+                                [
+                                    webviz_vtk.DataArray(
+                                        id=get_uuid(
+                                            LayoutElements.VTK_WELL_2D_INTERSECT_CELL_DATA
+                                        ),
+                                        registration="setScalars",
+                                        name="scalar",
+                                    )
+                                ]
+                            )
+                        ],
+                    )
+                ],
+            ),
+            webviz_vtk.GeometryRepresentation(
+                id=get_uuid(LayoutElements.VTK_WELL_PATH_2D_REPRESENTATION),
+                actor={"visibility": True},
+                children=[
+                    webviz_vtk.PolyData(
+                        id=get_uuid(LayoutElements.VTK_WELL_PATH_2D_POLYDATA),
                     )
                 ],
             ),

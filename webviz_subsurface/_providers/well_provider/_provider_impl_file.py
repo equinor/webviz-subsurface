@@ -161,7 +161,7 @@ class ProviderImplFile(WellProvider):
             )
             return [xy_start, xy_end]
 
-        simplified_xy_arr = rdp(xy_arr, epsilon=1)
+        simplified_xy_arr = rdp(xy_arr)
 
         print(
             f"Original well polyline has {len(xy_arr)} points. "

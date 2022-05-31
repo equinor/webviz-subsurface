@@ -157,6 +157,9 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_POLYDATA), "points"),
         Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_POLYDATA), "polys"),
         Output(get_uuid(LayoutElements.VTK_WELL_INTERSECT_CELL_DATA), "values"),
+        Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA), "points"),
+        Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA), "polys"),
+        Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_CELL_DATA), "values"),
         Input(get_uuid(LayoutElements.WELL_SELECT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.PROPERTIES), "value"),
@@ -174,7 +177,7 @@ def plugin_callbacks(
     ]:
 
         if not well_names:
-            return no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update
         polyline_xy = well_provider.get_polyline_along_well_path_SIMPLIFIED(
             well_names[0]
         )
@@ -197,11 +200,19 @@ def plugin_callbacks(
             b64_encode_numpy(scalars.value_arr.astype(np.float32))
             if scalars is not None
             else no_update,
+            b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
+            b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
+            b64_encode_numpy(scalars.value_arr.astype(np.float32))
+            if scalars is not None
+            else no_update,
         )
 
     @callback(
         Output(get_uuid(LayoutElements.VTK_WELL_PATH_POLYDATA), "points"),
         Output(get_uuid(LayoutElements.VTK_WELL_PATH_POLYDATA), "lines"),
+        Output(get_uuid(LayoutElements.VTK_WELL_PATH_2D_POLYDATA), "points"),
+        Output(get_uuid(LayoutElements.VTK_WELL_PATH_2D_POLYDATA), "lines"),
+        Output(get_uuid(LayoutElements.VTK_INTERSECT_VIEW), "triggerResetCamera"),
         Input(get_uuid(LayoutElements.WELL_SELECT), "value"),
     )
     def set_well_geometries(
@@ -211,7 +222,7 @@ def plugin_callbacks(
     ]:
 
         if not well_names:
-            return no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update
         polyline = well_server.get_polyline(
             provider_id=well_provider.provider_id(), well_name=well_names[0]
         )
@@ -219,6 +230,9 @@ def plugin_callbacks(
         return (
             b64_encode_numpy(polyline.point_arr.astype(np.float32)),
             b64_encode_numpy(polyline.line_arr.astype(np.float32)),
+            b64_encode_numpy(polyline.point_arr.astype(np.float32)),
+            b64_encode_numpy(polyline.line_arr.astype(np.float32)),
+            time(),
         )
 
     @callback(
@@ -254,6 +268,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.VTK_GRID_REPRESENTATION), "actor"),
     )
     def _reset_camera(realizations: List[int], _actor: dict) -> float:
+
         return time()
 
     @callback(
