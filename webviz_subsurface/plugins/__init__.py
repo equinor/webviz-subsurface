@@ -24,6 +24,7 @@ from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
 from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
 from ._eclipse_grid_viewer import EclipseGridViewer
+from ._grid_viewer import GridViewer
 from ._group_tree import GroupTree
 from ._history_match import HistoryMatch
 from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer

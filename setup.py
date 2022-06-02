@@ -41,6 +41,7 @@ setup(
             "BhpQc = webviz_subsurface.plugins:BhpQc",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
             "EclipseGridViewer = webviz_subsurface.plugins:EclipseGridViewer",
+            "GridViewer = webviz_subsurface.plugins:GridViewer",
             "GroupTree = webviz_subsurface.plugins:GroupTree",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
@@ -104,7 +105,7 @@ setup(
         "pyvista>=0.33.3",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
-        "webviz-config>=0.3.8",
+        "webviz-config",
         "webviz-core-components",
         "webviz-subsurface-components>=0.4.12",
         "webviz_vtk@git+https://github.com/hanskallekleiv/webviz-vtk",

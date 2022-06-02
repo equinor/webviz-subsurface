@@ -6,7 +6,6 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._providers.ensemble_grid_provider import (
     EnsembleGridProviderFactory,
     GridVizService,
-    CellFilter,
 )
 from webviz_subsurface._providers.well_provider import (
     WellProvider,
