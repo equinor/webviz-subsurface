@@ -46,6 +46,7 @@ setup(
             "InplaceVolumes = webviz_subsurface.plugins:InplaceVolumes",
             "InplaceVolumesOneByOne = webviz_subsurface.plugins:InplaceVolumesOneByOne",
             "LinePlotterFMU = webviz_subsurface.plugins:LinePlotterFMU",
+            "MapViewerSumo = webviz_subsurface.plugins:MapViewerSumo",
             "MapViewerFMU = webviz_subsurface.plugins:MapViewerFMU",
             "MorrisPlot = webviz_subsurface.plugins:MorrisPlot",
             "ParameterAnalysis = webviz_subsurface.plugins:ParameterAnalysis",
@@ -101,8 +102,8 @@ setup(
         "pyscal>=0.7.5",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
-        "webviz-config>=0.3.8",
-        "webviz-core-components>=0.5.6",
+        "webviz-config",
+        "webviz-core-components",
         "webviz-subsurface-components>=0.4.12",
         "xtgeo>=2.14",
     ],
