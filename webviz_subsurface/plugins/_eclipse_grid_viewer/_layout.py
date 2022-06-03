@@ -44,6 +44,7 @@ class LayoutElements(str, Enum):
     SHOW_AXES = "show-axes"
     CROP_WIDGET = "crop-widget"
     GRID_RANGE_STORE = "crop-widget-store"
+    LINEGRAPH = "line-graph"
 
 
 class LayoutTitles(str, Enum):
@@ -106,7 +107,20 @@ def plugin_main_layout(
                 style={"flex": "5"},
                 children=[
                     vtk_3d_view(get_uuid=get_uuid),
-                    vtk_intersect_view(get_uuid=get_uuid),
+                    wcc.FlexBox(
+                        children=[
+                            html.Div(
+                                style={"flex": 1},
+                                children=vtk_intersect_view(get_uuid=get_uuid),
+                            ),
+                            html.Div(
+                                style={"flex": 1},
+                                children=dcc.Graph(
+                                    id=get_uuid(LayoutElements.LINEGRAPH)
+                                ),
+                            ),
+                        ]
+                    ),
                 ],
             ),
             dcc.Store(id=get_uuid(LayoutElements.STORED_CELL_INDICES_HASH)),
@@ -534,3 +548,7 @@ def vtk_intersect_view(get_uuid: Callable) -> webviz_vtk.View:
             ),
         ],
     )
+
+
+def plotly_xy_plot(xy, xy2):
+    return {"data": [{}]}

@@ -40,7 +40,7 @@ class WellProvider(abc.ABC):
 
     @abc.abstractmethod
     def get_polyline_along_well_path_SIMPLIFIED(
-        self, well_name: str, tvdmin=None
+        self, well_name: str, tvdmin=None, use_rdp: bool = True
     ) -> WellIntersectionPolyLine:
         """Returns a polyline for the well path."""
         ...

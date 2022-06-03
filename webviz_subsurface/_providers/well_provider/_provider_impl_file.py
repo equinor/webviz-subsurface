@@ -136,7 +136,7 @@ class ProviderImplFile(WellProvider):
         return well
 
     def get_polyline_along_well_path_SIMPLIFIED(
-        self, well_name: str, tvdmin=None
+        self, well_name: str, tvdmin=None, use_rdp=True
     ) -> np.array:
         """Returns a polyline for the well path along with MD for the well."""
         well = self.get_well_xtgeo_obj(well_name).copy()
@@ -160,7 +160,8 @@ class ProviderImplFile(WellProvider):
                 f"Well is vertical. Returning two points extended in xy from trajectory"
             )
             return [xy_start, xy_end]
-
+        if not use_rdp:
+            return xy_arr
         simplified_xy_arr = rdp(xy_arr)
 
         print(
