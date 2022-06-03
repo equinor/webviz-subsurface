@@ -12,6 +12,7 @@ class ElementIds:
 
     class CASE_SELECTOR:
         ID = "case-selector"
+        FIELD = "field"
         CASE = "case"
         ITER = "iter"
 

@@ -15,6 +15,10 @@ from ..._mock_sumo import (
     get_realizations,
 )
 
+from webviz_subsurface._providers.ensemble_surface_provider import (
+    EnsembleProviderDealer,
+)
+
 
 @dataclass(frozen=True)
 class SurfaceAddress:
@@ -39,9 +43,12 @@ class AGGREGATIONS(str, Enum):
 
 
 class SurfaceSelector(SettingsGroupABC):
-    def __init__(self, field_name: str) -> None:
+    def __init__(
+        self, provider_dealer: EnsembleProviderDealer, field_name: str
+    ) -> None:
         super().__init__("Surface selectors")
         self.field_name = field_name
+        self._provider_dealer = provider_dealer
 
     def layout(self) -> List[Component]:
 
@@ -120,9 +127,10 @@ class SurfaceSelector(SettingsGroupABC):
             agg = AGGREGATIONS(aggregation)
             case = case_iter["case"][0]
             iteration = case_iter["iteration"][0]
-            realizations = get_realizations(
-                field_name=self.field_name, case_name=case, iteration_name=iteration
+            provider = self._provider_dealer.get_surface_provider(
+                field_name=self.field_name, case_name=case, iteration_id=iteration
             )
+            realizations = provider.realizations()
             if agg == AGGREGATIONS.SINGLE_REAL:
                 selected_reals = [realizations[0]]
                 multi = False
@@ -159,9 +167,10 @@ class SurfaceSelector(SettingsGroupABC):
                 return no_update
             case = case_iter["case"][0]
             iteration = case_iter["iteration"][0]
-            attributes = get_surface_attribute_names(
-                field_name=self.field_name, case_name=case, iteration_name=iteration
+            provider = self._provider_dealer.get_surface_provider(
+                field_name=self.field_name, case_name=case, iteration_id=iteration
             )
+            attributes = provider.attributes()
             return [{"label": attr, "value": attr} for attr in attributes], [
                 attributes[0]
             ]
@@ -202,36 +211,30 @@ class SurfaceSelector(SettingsGroupABC):
             if not case_iter or not attribute_name:
                 return no_update, no_update, no_update, no_update
             attribute_name = attribute_name[0]
-            surface_names = get_surface_names(
-                field_name=self.field_name,
-                case_name=case,
-                iteration_name=iteration,
-                attribute_name=attribute_name,
-            )
-            surface_dates = get_surface_dates(
-                field_name=self.field_name,
-                case_name=case,
-                iteration_name=iteration,
-                attribute_name=attribute_name,
-            )
-            return (
-                [{"label": name, "value": name} for name in surface_names],
-                [surface_names][0],
-                [{"label": date, "value": date} for date in surface_dates],
-                [surface_dates][0],
+
+            provider = self._provider_dealer.get_surface_provider(
+                field_name=self.field_name, case_name=case, iteration_id=iteration
             )
 
-        def _update_surface_attribute(case_iter: Dict) -> Tuple[List[Dict], str]:
-            if not case_iter:
-                return no_update
-            case = case_iter["case"][0]
-            iteration = case_iter["iteration"][0]
-            attributes = get_surface_attribute_names(
-                field_name=self.field_name, case_name=case, iteration_name=iteration
+            surface_names = provider.surface_names_for_attribute(
+                surface_attribute=attribute_name,
             )
-            return [{"label": attr, "value": attr} for attr in attributes], [
-                attributes[0]
-            ]
+            surface_dates = provider.surface_dates_for_attribute(
+                surface_attribute=attribute_name,
+            )
+
+            name_options = [{"label": name, "value": name} for name in surface_names]
+            name_value = [[surface_names][0]]
+
+            date_options = [{}]
+            date_value = None
+            if surface_dates:
+                date_options = (
+                    [{"label": date, "value": date} for date in surface_dates],
+                )
+                date_value = [[surface_dates][0]]
+
+            return name_options, name_value, date_options, date_value
 
         @callback(
             Output(

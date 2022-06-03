@@ -12,16 +12,24 @@ from .view_elements._deckgl_view import DeckGLView
 from .._layout_elements import ElementIds
 from .settings._surface_selectors import SurfaceAddress
 
+from webviz_subsurface._providers.ensemble_surface_provider import (
+    EnsembleProviderDealer,
+)
+
 
 class SingleMapView(ViewABC):
-    def __init__(self, field_name: str) -> None:
+    def __init__(
+        self, provider_dealer: EnsembleProviderDealer, field_name: str
+    ) -> None:
         super().__init__("Single Surface View")
         self.add_view_element(DeckGLView(), ElementIds.DECKGLVIEW.ID),
         self.add_settings_group(
-            CaseSelector(field_name=field_name), ElementIds.CASE_SELECTOR.ID
+            CaseSelector(provider_dealer=provider_dealer, field_name=field_name),
+            ElementIds.CASE_SELECTOR.ID,
         )
         self.add_settings_group(
-            SurfaceSelector(field_name=field_name), ElementIds.SURFACE_SELECTOR.ID
+            SurfaceSelector(provider_dealer=provider_dealer, field_name=field_name),
+            ElementIds.SURFACE_SELECTOR.ID,
         )
 
     def set_callbacks(self) -> None:
@@ -45,7 +53,7 @@ class SingleMapView(ViewABC):
         )
         def _update_map_component(surface_address: Dict, views: Dict) -> Dict:
             if not surface_address:
-                return no_update, no_update
+                return no_update
 
             # surface_address = SurfaceAddress(**surface_address)
 
