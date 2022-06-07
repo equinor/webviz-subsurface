@@ -224,7 +224,8 @@ class SurfaceSelector(SettingsGroupABC):
             )
 
             name_options = [{"label": name, "value": name} for name in surface_names]
-            name_value = [[surface_names][0]]
+
+            name_value = [surface_names[0]]
 
             date_options = [{}]
             date_value = None
@@ -232,7 +233,7 @@ class SurfaceSelector(SettingsGroupABC):
                 date_options = (
                     [{"label": date, "value": date} for date in surface_dates],
                 )
-                date_value = [[surface_dates][0]]
+                date_value = [surface_dates[0]]
 
             return name_options, name_value, date_options, date_value
 
@@ -302,9 +303,9 @@ class SurfaceSelector(SettingsGroupABC):
                 iteration_name=iteration,
                 realizations=realizations,
                 aggregation=aggregation,
-                surface_attribute=surface_attribute,
-                surface_name=surface_name,
-                surface_date=surface_date,
+                surface_attribute=surface_attribute[0],
+                surface_name=surface_name[0],
+                surface_date=surface_date[0],
             )
             print(address)
             return address

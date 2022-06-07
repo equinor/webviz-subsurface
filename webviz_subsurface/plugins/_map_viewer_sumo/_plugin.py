@@ -9,6 +9,7 @@ from .views._single_map_view import SingleMapView
 from webviz_subsurface._providers.ensemble_surface_provider import (
     EnsembleProviderDealer_sumo,
 )
+from webviz_subsurface._providers.ensemble_surface_provider import SurfaceServer
 
 
 class MapViewerSumo(WebvizPluginABC):
@@ -19,7 +20,7 @@ class MapViewerSumo(WebvizPluginABC):
         super().__init__(stretch=True)
 
         provider_dealer = EnsembleProviderDealer_sumo(False)
-
+        surface_server = SurfaceServer.instance(app)
         self.add_store(
             ElementIds.STORES.CASE_ITER_STORE,
             storage_type=WebvizPluginABC.StorageType.SESSION,
@@ -29,6 +30,10 @@ class MapViewerSumo(WebvizPluginABC):
             storage_type=WebvizPluginABC.StorageType.SESSION,
         )
         self.add_view(
-            SingleMapView(provider_dealer=provider_dealer, field_name=field_name),
+            SingleMapView(
+                provider_dealer=provider_dealer,
+                field_name=field_name,
+                surface_server=surface_server,
+            ),
             ElementIds.SINGLEMAPVIEW.ID,
         )

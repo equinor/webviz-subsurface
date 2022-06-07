@@ -23,7 +23,7 @@ class DeckGLView(ViewElementABC):
                         "@@type": "ColormapLayer",
                     },
                 ],
-                bounds=[0, 0, 100, 100],
+                bounds=[456063.6875, 5926551, 467483.6875, 5939431],
                 views={
                     "layout": [1, 1],
                     "showLabel": True,
