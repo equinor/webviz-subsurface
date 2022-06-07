@@ -5,7 +5,7 @@ import webviz_core_components as wcc
 from dash import dcc, html
 from webviz_subsurface_components import DeckGLMap  # type: ignore
 
-from ._types import LayerTypes, SurfaceMode, LayerNames
+from ._types import LayerNames, LayerTypes, SurfaceMode
 
 
 @unique
