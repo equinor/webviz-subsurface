@@ -54,8 +54,7 @@ jobs:
         pip install .
         
         # Testing against our latest release (including pre-releases)
-        # Temporarily do not use prerelase of wsc due to https://github.com/equinor/webviz-subsurface-components/issues/1007
-        pip install --pre --upgrade webviz-config webviz-core-components # webviz-subsurface-components 
+        pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components 
 
     - name: 📦 Install test dependencies
       run: |

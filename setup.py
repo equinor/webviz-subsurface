@@ -10,7 +10,7 @@ TESTS_REQUIRE = [
     "flaky",
     "isort",
     "mypy",
-    "pylint",
+    "pylint<=2.13.9",  # Locked due to https://github.com/equinor/webviz-subsurface/issues/1052
     "pytest-mock",
     "pytest-xdist",
     "selenium>=3.141",
