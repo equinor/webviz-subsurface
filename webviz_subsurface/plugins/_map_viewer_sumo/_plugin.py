@@ -12,6 +12,7 @@ from webviz_subsurface._providers.ensemble_surface_provider import (
 from webviz_subsurface._providers.ensemble_surface_provider import SurfaceServer
 
 from werkzeug.middleware.proxy_fix import ProxyFix
+from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO, WebvizRunMode
 
 
 class MapViewerSumo(WebvizPluginABC):
@@ -20,7 +21,10 @@ class MapViewerSumo(WebvizPluginABC):
     # pylint: disable=too-many-arguments
     def __init__(self, app: Dash, field_name: str):
         super().__init__(stretch=True)
-        self._use_oauth2 = True
+        self._use_oauth2 = (
+            True if WEBVIZ_INSTANCE_INFO.run_mode == WebvizRunMode.PORTABLE else False
+        )
+
         app.server.wsgi_app = ProxyFix(app.server.wsgi_app, x_proto=1, x_host=1)
         provider_dealer = EnsembleProviderDealerSumo(use_session_token=self._use_oauth2)
         surface_server = SurfaceServer.instance(app)
