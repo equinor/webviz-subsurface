@@ -298,7 +298,6 @@ class SurfaceSelector(SettingsGroupABC):
                     case_iter,
                     surface_attribute,
                     surface_name,
-                    surface_date,
                     realizations,
                     aggregation,
                 ]
@@ -316,7 +315,7 @@ class SurfaceSelector(SettingsGroupABC):
                 aggregation=aggregation,
                 surface_attribute=surface_attribute[0],
                 surface_name=surface_name[0],
-                surface_date=surface_date[0],
+                surface_date=surface_date[0] if surface_date is not None else None,
             )
             print(address)
             return address
