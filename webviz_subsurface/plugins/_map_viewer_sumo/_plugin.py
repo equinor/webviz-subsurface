@@ -7,7 +7,7 @@ from ._layout_elements import ElementIds
 from .views._single_map_view import SingleMapView
 
 from webviz_subsurface._providers.ensemble_surface_provider import (
-    EnsembleProviderDealer_sumo,
+    EnsembleProviderDealerSumo,
 )
 from webviz_subsurface._providers.ensemble_surface_provider import SurfaceServer
 
@@ -19,7 +19,7 @@ class MapViewerSumo(WebvizPluginABC):
     def __init__(self, app: Dash, field_name: str):
         super().__init__(stretch=True)
 
-        provider_dealer = EnsembleProviderDealer_sumo(False)
+        provider_dealer = EnsembleProviderDealerSumo(False)
         surface_server = SurfaceServer.instance(app)
         self.add_store(
             ElementIds.STORES.CASE_ITER_STORE,

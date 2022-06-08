@@ -38,11 +38,13 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         self._use_access_token = use_access_token
         self._access_token = access_token
 
-        self._cache_prefix = f"surf_provider_{self._provider_id}__"
+        self._cache_prefix = f"ProviderImplSumo_{self._provider_id}__"
         self._cache = cache
 
-        my_cache_dir = cache_dir / Path("surf_provider_" + self._provider_id)
-        self._stat_surf_cache = StatSurfCache(my_cache_dir)
+        # my_cache_dir = cache_dir / Path(
+        #     "ProviderImplSumo_StatSurfCache_" + self._provider_id
+        # )
+        # self._stat_surf_cache = StatSurfCache(my_cache_dir)
 
     def provider_id(self) -> str:
         return self._provider_id

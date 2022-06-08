@@ -12,7 +12,5 @@ from .surface_server import (
     SurfaceMeta,
     SurfaceServer,
 )
-from .ensemble_provider_dealer import (
-    EnsembleProviderDealer,
-    EnsembleProviderDealer_sumo,
-)
+from .ensemble_provider_dealer import EnsembleProviderDealer
+from .ensemble_provider_dealer_sumo import EnsembleProviderDealerSumo
