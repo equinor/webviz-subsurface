@@ -70,7 +70,7 @@ class SingleMapView(ViewABC):
             ),
         )
         def _update_map_component(surface_address: Dict, views: Dict) -> Dict:
-            print(f"callback _update_map_component() {surface_address=}")
+            # print(f"callback _update_map_component() {surface_address=}")
 
             if not surface_address:
                 return no_update

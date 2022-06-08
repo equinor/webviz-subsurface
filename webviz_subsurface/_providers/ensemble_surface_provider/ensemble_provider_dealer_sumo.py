@@ -122,11 +122,8 @@ class WorkSession:
         if self._use_session_token:
             access_token = self.get_access_token()
             self._sumo_explorer = webviz_sumo.create_explorer(access_token)
-            print("using token")
-            print(access_token)
         else:
             self._sumo_explorer = webviz_sumo.create_interactive_explorer()
-            print("not using token")
 
         return self._sumo_explorer
 
