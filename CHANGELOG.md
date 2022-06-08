@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Fixed
+
+- [#1046](https://github.com/equinor/webviz-subsurface/pull/1046) - `MapViewerFMU` - Fixed an issue related to upstream changes in prop specification for the DeckGLMap component.
+
 ### Changed
 
 - [#1020](https://github.com/equinor/webviz-subsurface/pull/1020) - `WellAnalysis` - Several improvements and bug fixes. F.ex a well attribute filter in the well overview plots and the possibility to see production only after a given date.

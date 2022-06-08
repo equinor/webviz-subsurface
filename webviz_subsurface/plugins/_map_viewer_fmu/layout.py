@@ -5,7 +5,7 @@ import webviz_core_components as wcc
 from dash import dcc, html
 from webviz_subsurface_components import DeckGLMap  # type: ignore
 
-from ._types import LayerTypes, SurfaceMode
+from ._types import LayerNames, LayerTypes, SurfaceMode
 
 
 @unique
@@ -255,6 +255,7 @@ class MapViewLayout(FullScreen):
                     layers=update_map_layers(1),
                     zoom=-4,
                     colorTables=color_tables,
+                    bounds=[0, 0, 1000, 1000],
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
             ),
@@ -638,13 +639,14 @@ def update_map_layers(
     for idx in range(views):
         layers.extend(
             [
-                # Map3DLayer(uuid=f"{LayoutElements.MAP3D_LAYER}-{idx}"),
                 {
                     "@@type": LayerTypes.COLORMAP,
+                    "name": LayerNames.COLORMAP,
                     "id": f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                 },
                 {
                     "@@type": LayerTypes.HILLSHADING,
+                    "name": LayerNames.HILLSHADING,
                     "id": f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
                     "visible": visible_hillshading_layer,
                 },
@@ -654,6 +656,7 @@ def update_map_layers(
             layers.append(
                 {
                     "@@type": LayerTypes.FAULTPOLYGONS,
+                    "name": LayerNames.FAULTPOLYGONS,
                     "id": f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
                     "visible": visible_fault_polygons_layer,
                 }
@@ -662,7 +665,8 @@ def update_map_layers(
         if include_well_layer:
             layers.append(
                 {
-                    "@@type": LayerTypes.GEOJSON,
+                    "@@type": LayerTypes.WELLTOPSLAYER,
+                    "name": LayerNames.WELLTOPSLAYER,
                     "id": f"{LayoutElements.WELLS_LAYER}-{idx}",
                     "data": {"type": "FeatureCollection", "features": []},
                     "visible": visible_well_layer,
