@@ -11,6 +11,8 @@ from webviz_subsurface._providers.ensemble_surface_provider import (
 )
 from webviz_subsurface._providers.ensemble_surface_provider import SurfaceServer
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 class MapViewerSumo(WebvizPluginABC):
     """Surface visualizer for FMU ensembles using SUMO."""
@@ -18,8 +20,9 @@ class MapViewerSumo(WebvizPluginABC):
     # pylint: disable=too-many-arguments
     def __init__(self, app: Dash, field_name: str):
         super().__init__(stretch=True)
-
-        provider_dealer = EnsembleProviderDealerSumo(False)
+        self._use_oauth2 = True
+        app.server.wsgi_app = ProxyFix(app.server.wsgi_app, x_proto=1, x_host=1)
+        provider_dealer = EnsembleProviderDealerSumo(use_session_token=self._use_oauth2)
         surface_server = SurfaceServer.instance(app)
         self.add_store(
             ElementIds.STORES.CASE_ITER_STORE,
@@ -37,3 +40,7 @@ class MapViewerSumo(WebvizPluginABC):
             ),
             ElementIds.SINGLEMAPVIEW.ID,
         )
+
+    @property
+    def oauth2(self):
+        return self._use_oauth2

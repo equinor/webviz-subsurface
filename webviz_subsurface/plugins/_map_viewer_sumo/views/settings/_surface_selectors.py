@@ -236,11 +236,12 @@ class SurfaceSelector(SettingsGroupABC):
             date_options = [{}]
             date_value = None
             if surface_dates:
-                date_options = (
-                    [{"label": date, "value": date} for date in surface_dates],
-                )
+                date_options = [
+                    {"label": date, "value": date} for date in surface_dates
+                ]
                 date_value = [surface_dates[0]]
-
+                print("DAAAAAAAAAAAAAATE", surface_dates)
+                print("options", date_options, date_value)
             return name_options, name_value, date_options, date_value
 
         @callback(
