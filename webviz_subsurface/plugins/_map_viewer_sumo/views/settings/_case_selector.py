@@ -59,7 +59,7 @@ class CaseSelector(SettingsGroupABC):
             ),
         )
         def _update_case(field_names: list) -> Tuple[List[Dict], str]:
-            print(f"_update_case() {type(field_names)=}  {field_names=}")
+            print(f"callback _update_case() {field_names=}")
 
             if field_names is None:
                 return [{}], None
@@ -95,8 +95,7 @@ class CaseSelector(SettingsGroupABC):
         def _update_iteration(
             field_names: list, case_names: list
         ) -> Tuple[List[Dict], str]:
-            print(f"_update_iteration() {type(field_names)=}  {field_names=}")
-            print(f"_update_iteration() {type(case_names)=}  {case_names=}")
+            print(f"callback _update_iteration() {field_names=} {case_names=}")
 
             if field_names is None or case_names is None:
                 return [{}], None
@@ -128,6 +127,8 @@ class CaseSelector(SettingsGroupABC):
             ),
         )
         def _update_case_iter_store(case: str, iteration: str) -> Dict:
+            print(f"callback _update_case_iter_store() {case=} {iteration=}")
+
             if not case or not iteration:
                 return {}
             return {"case": case, "iteration": iteration}

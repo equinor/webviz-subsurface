@@ -122,6 +122,8 @@ class SurfaceSelector(SettingsGroupABC):
         def _update_realization(
             case_iter: Dict, aggregation: str
         ) -> Tuple[List[Dict], int]:
+            print(f"callback _update_realization() {case_iter=} {aggregation=}")
+
             if not case_iter:
                 return no_update
             agg = AGGREGATIONS(aggregation)
@@ -163,6 +165,8 @@ class SurfaceSelector(SettingsGroupABC):
             ),
         )
         def _update_surface_attribute(case_iter: Dict) -> Tuple[List[Dict], str]:
+            print(f"callback _update_surface_attribute() {case_iter=}")
+
             if not case_iter:
                 return no_update
             case = case_iter["case"][0]
@@ -206,6 +210,8 @@ class SurfaceSelector(SettingsGroupABC):
         def _update_surface_names_and_dates(
             attribute_name: str, case_iter: Dict
         ) -> Tuple[List[Dict], str, List[Dict], str]:
+            print(f"callback _update_surface_names_and_dates() {attribute_name=}")
+
             case = case_iter["case"][0]
             iteration = case_iter["iteration"][0]
             if not case_iter or not attribute_name:
@@ -281,6 +287,10 @@ class SurfaceSelector(SettingsGroupABC):
             realizations: List[int],
             aggregation: str,
         ) -> Dict:
+            print(
+                f"callback _update_surface_names_and_dates() {surface_attribute=} {surface_name=} {surface_date=} {realizations=}"
+            )
+
             if any(
                 el is None
                 for el in [
