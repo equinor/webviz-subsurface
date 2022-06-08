@@ -181,8 +181,11 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
 
         if self._use_access_token:
             sumo = webviz_sumo.create_explorer(self._access_token)
+            print("using token from provider implementation")
+            print(self._access_token)
         else:
             sumo = webviz_sumo.create_interactive_explorer()
+            print("not using token from provider implementation")
         et_create_s = timer.lap_s()
 
         case = sumo.get_case_by_id(self._case_sumo_id)
