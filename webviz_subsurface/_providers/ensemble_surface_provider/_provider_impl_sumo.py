@@ -46,6 +46,8 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         # )
         # self._stat_surf_cache = StatSurfCache(my_cache_dir)
 
+        self._cached_sumo_case: Optional[webviz_sumo.Case] = None
+
     def provider_id(self) -> str:
         return self._provider_id
 
@@ -55,10 +57,12 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         cache_key = f"{self._cache_prefix}__attributes"
         cached_arr = self._cache.get(cache_key)
         if cached_arr is not None:
-            LOGGER.debug(f"attributes() from cache in: {timer.elapsed_s():.2f}s")
+            LOGGER.debug(
+                f"ProviderImplSumo.attributes() from cache in: {timer.elapsed_s():.2f}s"
+            )
             return cached_arr
 
-        case = self._get_my_sumo_case()
+        case = self._get_my_sumo_case_obj()
         attrib_names = case.get_object_property_values(
             "tag_name", "surface", iteration_ids=[self._iteration_id]
         )
@@ -66,7 +70,9 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
 
         self._cache.set(cache_key, attrib_names)
 
-        LOGGER.debug(f"attributes() completed using Sumo in: {timer.elapsed_s():.2f}s")
+        LOGGER.debug(
+            f"ProviderImplSumo.attributes() completed using Sumo in: {timer.elapsed_s():.2f}s"
+        )
 
         return attrib_names
 
@@ -79,11 +85,11 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         cached_arr = self._cache.get(cache_key)
         if cached_arr is not None:
             LOGGER.debug(
-                f"surface_names_for_attribute({surface_attribute}) from cache in: {timer.elapsed_s():.2f}s"
+                f"ProviderImplSumo.surface_names_for_attribute({surface_attribute}) from cache in: {timer.elapsed_s():.2f}s"
             )
             return cached_arr
 
-        case = self._get_my_sumo_case()
+        case = self._get_my_sumo_case_obj()
         surf_names = case.get_object_property_values(
             "object_name",
             "surface",
@@ -95,7 +101,7 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         self._cache.set(cache_key, surf_names)
 
         LOGGER.debug(
-            f"surface_names_for_attribute({surface_attribute}) completed using Sumo in: {timer.elapsed_s():.2f}s"
+            f"ProviderImplSumo.surface_names_for_attribute({surface_attribute}) completed using Sumo in: {timer.elapsed_s():.2f}s"
         )
 
         return surf_names
@@ -111,13 +117,13 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         cached_arr = self._cache.get(cache_key)
         if cached_arr is not None:
             LOGGER.debug(
-                f"surface_dates_for_attribute({surface_attribute}) from cache in: {timer.elapsed_s():.2f}s"
+                f"ProviderImplSumo.surface_dates_for_attribute({surface_attribute}) from cache in: {timer.elapsed_s():.2f}s"
             )
             if len(cached_arr) == 1 and not bool(cached_arr[0]):
                 return None
             return cached_arr
 
-        case = self._get_my_sumo_case()
+        case = self._get_my_sumo_case_obj()
         time_intervals = case.get_object_property_values(
             "time_interval",
             "surface",
@@ -134,7 +140,7 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         self._cache.set(cache_key, datestr_arr)
 
         LOGGER.debug(
-            f"surface_dates_for_attribute({surface_attribute}) completed using Sumo in: {timer.elapsed_s():.2f}s"
+            f"ProviderImplSumo.surface_dates_for_attribute({surface_attribute}) completed using Sumo in: {timer.elapsed_s():.2f}s"
         )
 
         if len(datestr_arr) == 1 and not bool(datestr_arr[0]):
@@ -148,17 +154,19 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         cache_key = f"{self._cache_prefix}__realizations"
         cached_arr = self._cache.get(cache_key)
         if cached_arr is not None:
-            LOGGER.debug(f"realizations() from cache in: {timer.elapsed_s():.2f}s")
+            LOGGER.debug(
+                f"ProviderImplSumo.realizations() from cache in: {timer.elapsed_s():.2f}s"
+            )
             return cached_arr
 
-        case = self._get_my_sumo_case()
+        case = self._get_my_sumo_case_obj()
         realization_ids = case.get_object_property_values("realization_id", "surface")
         realization_ids = sorted(realization_ids)
 
         self._cache.set(cache_key, realization_ids)
 
         LOGGER.debug(
-            f"realizations() completed using Sumo in: {timer.elapsed_s():.2f}s"
+            f"ProviderImplSumo.realizations() completed using Sumo in: {timer.elapsed_s():.2f}s"
         )
 
         return realization_ids
@@ -176,7 +184,11 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
 
         raise TypeError("Unknown type of surface address")
 
-    def _get_my_sumo_case(self) -> webviz_sumo.Case:
+    def _get_my_sumo_case_obj(self) -> webviz_sumo.Case:
+
+        if self._cached_sumo_case is not None:
+            return self._cached_sumo_case
+
         timer = PerfTimer()
 
         if self._use_access_token:
@@ -185,15 +197,15 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
             sumo = webviz_sumo.create_interactive_explorer()
         et_create_s = timer.lap_s()
 
-        case = sumo.get_case_by_id(self._case_sumo_id)
+        self._cached_sumo_case = sumo.get_case_by_id(self._case_sumo_id)
         et_get_s = timer.lap_s()
 
         LOGGER.debug(
-            f"_get_my_sumo_case() took: {timer.elapsed_s():.2f}s "
+            f"_get_my_sumo_case_obj() took: {timer.elapsed_s():.2f}s "
             f"(create={et_create_s:.2f}s, get={et_get_s:.2f}s)"
         )
 
-        return case
+        return self._cached_sumo_case
 
     def _get_simulated_surface(
         self, address: SimulatedSurfaceAddress
@@ -202,7 +214,7 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
 
         timer = PerfTimer()
 
-        case = self._get_my_sumo_case()
+        case = self._get_my_sumo_case_obj()
 
         time_intervals_list = [address.datestr] if address.datestr is not None else []
 
@@ -230,7 +242,9 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         byte_stream = BytesIO(blob_bytes)
         xtgeo_surf = xtgeo.surface_from_file(byte_stream)
 
-        LOGGER.debug(f"Loaded simulated surface from Sumo in: {timer.elapsed_s():.2f}s")
+        LOGGER.debug(
+            f"ProviderImplSumo loaded simulated surface from Sumo in: {timer.elapsed_s():.2f}s"
+        )
 
         return xtgeo_surf
 
@@ -240,9 +254,10 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
 
         timer = PerfTimer()
 
-        case = self._get_my_sumo_case()
-
         time_intervals_list = [address.datestr] if address.datestr is not None else []
+
+        case = self._get_my_sumo_case_obj()
+        et_get_case_s = timer.lap_s()
 
         surface_collection = case.get_objects(
             "surface",
@@ -252,6 +267,7 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
             object_names=[address.name],
             time_intervals=time_intervals_list,
         )
+        et_get_coll_s = timer.lap_s()
 
         surf_count = len(surface_collection)
         if surf_count == 0:
@@ -269,11 +285,15 @@ class ProviderImplSumo(EnsembleSurfaceProvider):
         sumo_aggr_str = surfstat_to_sumostatstr_map[address.statistic]
 
         agg_surf_bytes: bytes = surface_collection.aggregate(sumo_aggr_str)
+        et_calc_s = timer.lap_s()
+
         byte_stream = BytesIO(agg_surf_bytes)
         xtgeo_surf = xtgeo.surface_from_file(byte_stream)
 
         LOGGER.debug(
-            f"Calculated statistical surface using Sumo in: {timer.elapsed_s():.2f}s ("
+            f"ProviderImplSumo calculated statistical surface using Sumo in: "
+            f"{timer.elapsed_s():.2f}s ("
+            f"get_case={et_get_case_s:.2f}s, get_coll={et_get_coll_s:.2f}s, calc={et_calc_s:.2f}s), "
             f"[#surfaces={surf_count}, stat={address.statistic}, "
             f"attr={address.attribute}, name={address.name}, date={address.datestr}]"
         )
