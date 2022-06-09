@@ -12,10 +12,10 @@ import flask
 import flask_caching
 import xtgeo
 from dash import Dash
-from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
+from . import cache_helpers
 from ._surface_to_image import surface_to_png_bytes_optimized
 from .ensemble_surface_provider import (
     ObservedSurfaceAddress,
@@ -59,18 +59,9 @@ class SurfaceMeta:
 
 class SurfaceServer:
     def __init__(self, app: Dash) -> None:
-        cache_dir = (
-            WEBVIZ_INSTANCE_INFO.storage_folder / f"SurfaceServer_filecache_{uuid4()}"
+        self._image_cache = cache_helpers.get_or_create_named_cache(
+            "SurfaceServer_imagecache"
         )
-        LOGGER.debug(f"Setting up file cache in: {cache_dir}")
-        self._image_cache = flask_caching.Cache(
-            config={
-                "CACHE_TYPE": "FileSystemCache",
-                "CACHE_DIR": cache_dir,
-                "CACHE_DEFAULT_TIMEOUT": 0,
-            }
-        )
-        self._image_cache.init_app(app.server)
 
         self._setup_url_rule(app)
 
@@ -196,15 +187,21 @@ class SurfaceServer:
 
         timer = PerfTimer()
 
-        LOGGER.debug("Converting surface to PNG image...")
+        # LOGGER.debug("Converting surface to PNG image...")
         png_bytes: bytes = surface_to_png_bytes_optimized(surface)
-        LOGGER.debug(f"Got PNG image, size={(len(png_bytes) / (1024 * 1024)):.2f}MB")
+        # LOGGER.debug(f"Got PNG image, size={(len(png_bytes) / (1024 * 1024)):.2f}MB")
         et_to_image_s = timer.lap_s()
 
         img_cache_key = "IMG:" + base_cache_key
         meta_cache_key = "META:" + base_cache_key
 
-        self._image_cache.add(img_cache_key, png_bytes)
+        # The timeout for the cached image
+        # Note that we use different values for the metadata and the actual image to make
+        # sure that the metadata times out first
+        timeout_meta_s = 24 * 3600
+        timeout_image_s = 25 * 3600
+
+        self._image_cache.set(img_cache_key, png_bytes, timeout_image_s)
 
         # For debugging rotations
         # unrot_surf = surface.copy()
@@ -223,12 +220,13 @@ class SurfaceServer:
             deckgl_bounds=deckgl_bounds,
             deckgl_rot_deg=deckgl_rot,
         )
-        self._image_cache.add(meta_cache_key, meta)
+        self._image_cache.set(meta_cache_key, meta, timeout_meta_s)
         et_write_cache_s = timer.lap_s()
 
         LOGGER.debug(
-            f"Created image and wrote to cache in in: {timer.elapsed_s():.2f}s ("
+            f"Created PNG image and wrote to cache in in: {timer.elapsed_s():.2f}s ("
             f"to_image={et_to_image_s:.2f}s, write_cache={et_write_cache_s:.2f}s), "
+            f"size={(len(png_bytes) / (1024 * 1024)):.2f}MB, "
             f"[base_cache_key={base_cache_key}]"
         )
 
