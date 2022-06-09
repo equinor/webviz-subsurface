@@ -180,6 +180,7 @@ class PropertiesVsDepthSubplots:
             )
             .update_yaxes(autorange="reversed", **axis_defaults())
             .update_xaxes(axis_defaults())
+            .update_xaxes(row=1, col=2, matches="x")
         )
 
     def add_subplotfigures_to_main_figure(self) -> None:
