@@ -35,9 +35,9 @@ class SurfaceAddress:
 class AGGREGATIONS(str, Enum):
     SINGLE_REAL = "Single realization"
     MEAN = "Mean"
-    STDDEV = "Standard deviation"
-    MIN = "Min"
-    MAX = "Max"
+    STDDEV = "StdDev"
+    MIN = "Minimum"
+    MAX = "Maximum"
     P10 = "P10"
     P90 = "P90"
 
