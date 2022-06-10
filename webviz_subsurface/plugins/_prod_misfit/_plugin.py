@@ -225,13 +225,11 @@ def _get_wells_vectors_phases(
             continue
 
         well = vector.split(":")[1]
-        if well.startswith(tuple(excl_name_startswith)):
+
+        if _skip_well(well, excl_name_startswith, excl_name_contains):
             drop_list.append(well)
             continue
-        for excl in excl_name_contains:
-            if excl in well:
-                drop_list.append(well)
-                continue
+
         if well not in wells:
             wells.append(well)
         if vector not in vectors:
@@ -253,6 +251,23 @@ def _get_wells_vectors_phases(
     logging.debug(f"\nVectors: {vectors}")
 
     return wells, vectors, list(phases)
+
+
+def _skip_well(
+    well: str,
+    excl_name_startswith: list,
+    excl_name_contains: list,
+) -> bool:
+    """Check well name against exclude strings and return True if it should be skipped."""
+
+    # ensure all list elements are str
+    excl_name_startswith = [str(element) for element in excl_name_startswith]
+    if well.startswith(tuple(excl_name_startswith)):
+        return True
+    for excl in excl_name_contains:
+        if str(excl) in well:
+            return True
+    return False
 
 
 # --------------------------------
