@@ -1,6 +1,7 @@
 import json
 from typing import Callable, Dict, Optional, List, Tuple
 import dash
+import pydeck
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 # TODO: tmp?
@@ -48,7 +49,7 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.ENSEMBLETIMELEAKPLOT), "figure"),
         Input(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
     )
-    def set_ensemble(ensemble):
+    def set_realizations(ensemble):
         rz_paths = realization_paths(ensemble_paths[ensemble])
         realizations = [
             dict(label=r, value=r)
@@ -62,38 +63,17 @@ def plugin_callbacks(
         )
         return realizations, realizations[0]["value"], fig0, fig1
 
-    # TODO: Verify optional parameters behave correctly when not provided
     @callback(
-        Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
-        Output(get_uuid(LayoutElements.DATEINPUT), 'value'),
-        Output(get_uuid(LayoutElements.DATE_STORE), "data"),
         Output(get_uuid(LayoutElements.FORMATION_INPUT), 'options'),
         Output(get_uuid(LayoutElements.FORMATION_INPUT), 'value'),
-        Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),  # TODO: needed?
-        Input(get_uuid(LayoutElements.REALIZATIONINPUT), 'value'),
+        State(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
         Input(get_uuid(LayoutElements.PROPERTY), 'value'),
     )
-    def set_realization(ensemble, realization, prop):
-        if ensemble is None or realization is None:
-            return [], None, [], [], None
+    def set_formations(ensemble, prop):
+        if ensemble is None:
+            return [], None
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
-        att_name = map_attribute_names[MapAttribute.MAX_SATURATION]
-        date_list = surface_provider.surface_dates_for_attribute(att_name)
-        if date_list is None:
-            dates = {}
-            initial_date = dash.no_update
-        else:
-            dates = {
-                # TODO: handle dates using some utility tool instead?
-                # Regarding tooltips: https://github.com/plotly/dash/issues/1846
-                i: {
-                    "label": f"{d[:4]}.{d[4:6]}.{d[6:]}",
-                    "style": {"writing-mode": "vertical-rl"},
-                }
-                for i, d in enumerate(date_list)
-            }
-            initial_date = 0
         # Map
         prop_name = map_attribute_names[MapAttribute(prop)]
         surfaces = surface_name_aliases(surface_provider, prop_name)
@@ -103,7 +83,35 @@ def plugin_callbacks(
         formations = sorted(list(set(surfaces + polygons + well_picks)))
         initial_formation = formations[0] if len(formations) > 0 else None
         formations = [{"label": f, "value": f} for f in formations]
-        return dates, initial_date, date_list, formations, initial_formation
+        return formations, initial_formation
+
+    @callback(
+        Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
+        Output(get_uuid(LayoutElements.DATEINPUT), 'value'),
+        Output(get_uuid(LayoutElements.DATE_STORE), "data"),
+        Input(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
+    )
+    def set_dates(ensemble):
+        if ensemble is None:
+            return [], None, []
+        # Dates
+        surface_provider = ensemble_surface_providers[ensemble]
+        att_name = map_attribute_names[MapAttribute.MAX_SATURATION]
+        date_list = surface_provider.surface_dates_for_attribute(att_name)
+        if date_list is None:
+            dates = {}
+            initial_date = dash.no_update
+        else:
+            dates = {
+                # Regarding tooltips: https://github.com/plotly/dash/issues/1846
+                i: {
+                    "label": f"{d[:4]}.{d[4:6]}.{d[6:]}",
+                    "style": {"writing-mode": "vertical-rl"},
+                }
+                for i, d in enumerate(date_list)
+            }
+            initial_date = 0
+        return dates, initial_date, date_list
 
     @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),

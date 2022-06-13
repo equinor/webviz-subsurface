@@ -34,9 +34,14 @@ def _read_terminal_co2_volumes(realization_paths: Dict[str, str]):
         ]
     df = pandas.DataFrame.from_records(
         records,
-        columns=[_Columns.REALIZATION, _Columns.VOLUME, _Columns.CONTAINMENT, _Columns.VOLUME_OUTSIDE]
+        columns=[
+            _Columns.REALIZATION.value,
+            _Columns.VOLUME.value,
+            _Columns.CONTAINMENT.value,
+            _Columns.VOLUME_OUTSIDE.value,
+        ]
     )
-    df.sort_values(_Columns.VOLUME_OUTSIDE, inplace=True, ascending=False)
+    df.sort_values(_Columns.VOLUME_OUTSIDE.value, inplace=True, ascending=False)
     return df
 
 
@@ -50,7 +55,14 @@ def _read_co2_volumes(realization_paths: Dict[str, str]):
 def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width):
     import plotly.express as px
     df = _read_terminal_co2_volumes(realization_paths)
-    fig = px.bar(df, y=_Columns.REALIZATION, x=_Columns.VOLUME, color=_Columns.CONTAINMENT, title="End-state CO2 containment", orientation="h")
+    fig = px.bar(
+        df,
+        y=_Columns.REALIZATION.value,
+        x=_Columns.VOLUME.value,
+        color=_Columns.CONTAINMENT.value,
+        title="End-state CO2 containment",
+        orientation="h",
+    )
     # TODO: figure height or yrange should depend on number of realizations (?)
     fig.layout.height = height
     fig.layout.width = width
