@@ -27,8 +27,8 @@ def get_root_cache_folder() -> Path:
 
 def get_or_create_cache() -> flask_caching.SimpleCache:
     if not _CACHE_INFO.main_cache:
-        _CACHE_INFO.main_cache = _create_file_system_cache("_FlaskFileSystemCache_main")
-        # _CACHE_INFO.main_cache = _create_redis_cache("main:")
+        # _CACHE_INFO.main_cache = _create_file_system_cache("_FlaskFileSystemCache_main")
+        _CACHE_INFO.main_cache = _create_redis_cache("main:")
 
     return _CACHE_INFO.main_cache
 
@@ -36,8 +36,8 @@ def get_or_create_cache() -> flask_caching.SimpleCache:
 def get_or_create_named_cache(cache_name: str) -> flask_caching.SimpleCache:
     cache = _CACHE_INFO.named_cache_dict.get(cache_name)
     if cache is None:
-        cache = _create_file_system_cache(f"_FlaskFileSystemCache__{cache_name}")
-        # cache = _create_redis_cache(f"_{cache_name}:")
+        # cache = _create_file_system_cache(f"_FlaskFileSystemCache__{cache_name}")
+        cache = _create_redis_cache(f"_{cache_name}:")
         _CACHE_INFO.named_cache_dict[cache_name] = cache
 
     return cache
@@ -72,7 +72,7 @@ def _create_redis_cache(key_prefix: str) -> flask_caching.SimpleCache:
     default_timeout_s = 3600
 
     return flask_caching.backends.RedisCache(
-        host="localhost",
+        host="redis-cache",
         port=6379,
         default_timeout=default_timeout_s,
         key_prefix=key_prefix,
