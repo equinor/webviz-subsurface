@@ -74,11 +74,6 @@ class WaterfallPlot:
                     connector={"mode": "spanning"},
                 )
             )
-            .update_layout(
-                plot_bgcolor="white",
-                title="Waterfall chart showing changes from SWATINIT to SWAT",
-                margin={"t": 50, "b": 50, "l": 50, "r": 50},
-            )
             .update_yaxes(
                 title="Water Volume (Mrm3)", range=self.range, **axis_defaults()
             )
@@ -87,6 +82,11 @@ class WaterfallPlot:
                 tickangle=-45,
                 tickfont_size=17,
                 **axis_defaults(showgrid=False),
+            )
+            .update_layout(
+                plot_bgcolor="white",
+                title="Waterfall chart showing changes from SWATINIT to SWAT",
+                margin={"t": 50, "b": 50, "l": 50, "r": 50},
             )
         )
 
@@ -180,6 +180,7 @@ class PropertiesVsDepthSubplots:
             )
             .update_yaxes(autorange="reversed", **axis_defaults())
             .update_xaxes(axis_defaults())
+            .update_xaxes(row=1, col=2, matches="x")
         )
 
     def add_subplotfigures_to_main_figure(self) -> None:

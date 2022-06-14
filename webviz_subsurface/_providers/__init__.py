@@ -13,6 +13,7 @@ from .ensemble_summary_provider.ensemble_summary_provider import (
 from .ensemble_summary_provider.ensemble_summary_provider_factory import (
     EnsembleSummaryProviderFactory,
 )
+from .ensemble_summary_provider.utils import get_matching_vector_names
 from .ensemble_surface_provider import (
     EnsembleSurfaceProvider,
     EnsembleSurfaceProviderFactory,

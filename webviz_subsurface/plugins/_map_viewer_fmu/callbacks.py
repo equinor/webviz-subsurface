@@ -8,9 +8,6 @@ from dash import ALL, MATCH, Input, Output, State, callback, callback_context, n
 from dash.exceptions import PreventUpdate
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
-from webviz_subsurface._components.deckgl_map.deckgl_map_layers_model import (
-    DeckGLMapLayersModel,
-)
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProvider,
     EnsembleSurfaceProvider,
@@ -25,6 +22,7 @@ from webviz_subsurface._providers import (
     SurfaceServer,
 )
 
+from ._layer_model import DeckGLMapLayersModel
 from ._tmp_well_pick_provider import WellPickProvider
 from ._types import SurfaceMode
 from .layout import (
@@ -37,7 +35,7 @@ from .layout import (
 )
 
 
-# pylint: disable=too-many-locals,too-many-statements
+# pylint: disable=too-many-locals,too-many-statements, too-many-arguments
 def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
@@ -47,6 +45,7 @@ def plugin_callbacks(
     map_surface_names_to_fault_polygons: Dict[str, str],
     well_picks_provider: Optional[WellPickProvider],
     fault_polygon_attribute: Optional[str],
+    color_tables: List[Dict],
 ) -> None:
     def selections(tab: str, colorselector: bool = False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -604,7 +603,7 @@ def plugin_callbacks(
         stored_color_settings = (
             stored_color_settings if stored_color_settings is not None else {}
         )
-        colormaps = DefaultSettings.COLORMAP_OPTIONS
+        colormaps = [color_table["name"] for color_table in color_tables]
 
         surfids: List[str] = []
         color_data: List[dict] = []

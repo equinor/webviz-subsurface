@@ -49,10 +49,26 @@ class WellAttributesModel:
         self._ens_path = ens_path
         self._well_attributes_file = well_attributes_file
         self._data_raw: Dict[str, Any] = json.load(self._load_data())
+
+        # Double Dictionary with eclipse alias as key on first level
         self._data: Dict[str, Dict[str, str]] = self._transform_data()
+
+        # List of categories
         self._categories: List[str] = list(
             {name for categories in self._data.values() for name in categories}
         )
+
+        # Dataframe with the well eclipse alias and well attributes as columns
+        self._dataframe = (
+            pd.DataFrame.from_dict(self._data, orient="index")
+            .rename_axis("WELL")
+            .reset_index()
+        )
+
+        # Melted dataframe with columns: WELL, CATEGORY and VALUE
+        self._dataframe_melted = self._dataframe.melt(
+            id_vars=["WELL"], value_vars=self._categories
+        ).rename({"variable": "CATEGORY", "value": "VALUE"}, axis=1)
 
     def __repr__(self) -> str:
         """This is necessary for webvizstore to work on objects"""
@@ -80,20 +96,30 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
         """Returns the well attributes data as a dataframe with the well eclipse
         alias and categories as columns
         """
-        return (
-            pd.DataFrame.from_dict(self._data, orient="index")
-            .rename_axis("WELL")
-            .reset_index()
-        )
+        return self._dataframe
 
     @property
     def dataframe_melted(self) -> pd.DataFrame:
         """Returns the well attributes data as melted dataframe, that means with
         only three columns: WELL, CATEGORY and VALUE
         """
-        return self.dataframe.melt(
-            id_vars=["WELL"], value_vars=self._categories
-        ).rename({"variable": "CATEGORY", "value": "VALUE"}, axis=1)
+        return self._dataframe_melted
+
+    @property
+    def category_dict(self) -> Dict[str, List[str]]:
+        """Returns a Dict with all possible attributes per category
+        on the form:
+        {
+            "welltype":["oil_producer", "water_injector", ...],
+            "category2": ...
+        }
+        """
+        return {
+            category: list(df["VALUE"].unique())
+            for category, df in self._dataframe_melted.fillna("Undefined").groupby(
+                "CATEGORY"
+            )
+        }
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
@@ -119,7 +145,7 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
             file_content = json.loads(Path(row["FULLPATH"]).read_text())
             logging.debug(f"Well attributes loaded from file: {row['FULLPATH']}")
             return io.BytesIO(json.dumps(file_content).encode())
-        return io.BytesIO(json.dumps({}).encode())
+        return io.BytesIO(json.dumps({"version": "0.1", "wells": []}).encode())
 
     def _transform_data(self) -> Dict[str, Dict[str, str]]:
         """Transforms the well attributes format to a simpler form
@@ -133,6 +159,10 @@ WellAttributesModel({self._ens_name!r}, {self._ens_path!r}, {self._well_attribut
             "OP_2 : {...}
         }
         """
+        if "version" not in self._data_raw:
+            raise ValueError(
+                "Attribute 'version' not found in the well attributes file."
+            )
         if self._data_raw["version"] != "0.1":
             raise NotImplementedError(
                 f"Version {self._data_raw['version']} of the well attributes file "

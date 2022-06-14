@@ -1,4 +1,5 @@
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from pathlib import Path
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -7,10 +8,7 @@ from dash import Dash, Input, Output, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 
-from webviz_subsurface._models import (
-    EnsembleSetModel,
-    caching_ensemble_set_model_factory,
-)
+from webviz_subsurface._providers import EnsembleSummaryProvider
 
 from .._utils.fanchart_plotting import (
     FanchartData,
@@ -20,6 +18,9 @@ from .._utils.fanchart_plotting import (
     get_fanchart_traces,
 )
 from .._utils.unique_theming import unique_colors
+from ._simulation_time_series.types.provider_set import (
+    create_lazy_provider_set_from_paths,
+)
 
 
 class BhpQc(WebvizPluginABC):
@@ -31,14 +32,12 @@ class BhpQc(WebvizPluginABC):
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+    * **`rel_file_pattern`:** path to `.arrow` files with summary data.
     ---
-    Data is read directly from the UNSMRY files with the raw frequency (not resampled).
+    Data is read directly from the arrow files with the raw frequency (not resampled).
     Resampling and csvs are not supported to avoid potential of interpolation, which
     might cover extreme BHP values.
 
-    !> The `UNSMRY` files are auto-detected by `fmu-ensemble` in the `eclipse/model` folder of the \
-    individual realizations. You should therefore not have more than one `UNSMRY` file in this \
-    folder, to avoid risk of not extracting the right data.
     """
 
     def __init__(
@@ -46,25 +45,33 @@ class BhpQc(WebvizPluginABC):
         app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
-        wells: Optional[List[str]] = None,
+        rel_file_pattern: str = "share/results/unsmry/*.arrow",
+        wells: List[str] = None,
     ):
         super().__init__()
-        if wells is None:
-            self.column_keys = ["WBHP:*"]
-        else:
-            self.column_keys = [f"WBHP:{well}" for well in wells]
 
-        self.emodel: EnsembleSetModel = (
-            caching_ensemble_set_model_factory.get_or_create_model(
-                ensemble_paths={
-                    ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                    for ens in ensembles
-                },
-                time_index="raw",
-                column_keys=self.column_keys,
-            )
+        self.ens_paths: Dict[str, Path] = {
+            ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                ensemble_name
+            ]
+            for ensemble_name in ensembles
+        }
+
+        self._input_provider_set = create_lazy_provider_set_from_paths(
+            self.ens_paths,
+            rel_file_pattern,
         )
-        self.smry = self.emodel.get_or_load_smry_cached()
+
+        dfs = []
+        column_keys = {}
+        for ens_name in ensembles:
+            ens_provider = self._input_provider_set.provider(ens_name)
+            column_keys[ens_name] = _get_wbhp_vectors(ens_provider, wells)
+            df = ens_provider.get_vectors_df(column_keys[ens_name], None)
+            df["ENSEMBLE"] = ens_name
+            dfs.append(df.loc[:, (df != 0).any(axis=0)])  # remove zero-columns
+
+        self.smry = pd.concat(dfs)
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
 
@@ -125,7 +132,7 @@ class BhpQc(WebvizPluginABC):
             id=self.uuid("layout"),
             children=[
                 wcc.Frame(
-                    style={"flex": 1, "height": "45vh"},
+                    style={"flex": 1, "height": "65vh"},
                     children=[
                         wcc.Dropdown(
                             label="Ensemble",
@@ -161,7 +168,7 @@ class BhpQc(WebvizPluginABC):
                                         for key, value in self.label_map.items()
                                     ],
                                     size=8,
-                                    value=["count", "low_p90", "p50"],
+                                    value=["min", "low_p90", "mean", "high_p10", "max"],
                                 ),
                             ],
                         ),
@@ -206,9 +213,9 @@ class BhpQc(WebvizPluginABC):
                 wcc.Frame(
                     color="white",
                     highlight=False,
-                    style={"flex": 6, "height": "45vh"},
+                    style={"flex": 6, "height": "65vh"},
                     children=[
-                        wcc.Graph(id=self.uuid("graph")),
+                        wcc.Graph(id=self.uuid("graph"), style={"height": "60vh"}),
                     ],
                 ),
             ],
@@ -296,7 +303,7 @@ class BhpQc(WebvizPluginABC):
                     "yaxis": {
                         "side": "left",
                         "title": "Bottom hole pressure",
-                        "showgrid": False,
+                        "showgrid": True,
                     },
                     "yaxis2": {
                         "side": "right",
@@ -321,9 +328,6 @@ class BhpQc(WebvizPluginABC):
                 if plot_type == "Fan chart"
                 else {"display": "block"}
             )
-
-    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        return self.emodel.webvizstore
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -401,3 +405,22 @@ def _get_fanchart_traces(
         legend_group=legend_group,
         hovermode="x",
     )
+
+
+# ---------------------------
+def _get_wbhp_vectors(
+    ens_provider: EnsembleSummaryProvider,
+    wells: List[str] = None,
+) -> list:
+    """Return list of WBHP vectors. If wells arg is None, return for all wells."""
+
+    if wells is not None:
+        return [f"WBHP:{well}" for well in wells]
+
+    wbhp_vectors = [
+        vector for vector in ens_provider.vector_names() if vector.startswith("WBHP:")
+    ]
+    if not wbhp_vectors:
+        raise RuntimeError("No WBHP vectors found.")
+
+    return wbhp_vectors

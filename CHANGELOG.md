@@ -7,14 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Fixed
+
+- [#1055](https://github.com/equinor/webviz-subsurface/pull/1055) - `ProdMisfit` - Fixed a bug related to the input argument *excl_name_contains*.
+- [#1053](https://github.com/equinor/webviz-subsurface/pull/1046) - `SwatinitQC` - Fixed an issue so that relative paths for the `faultlines` argument works.
+- [#1046](https://github.com/equinor/webviz-subsurface/pull/1046) - `MapViewerFMU` - Fixed an issue related to upstream changes in prop specification for the DeckGLMap component.
+
+### Changed
+
+- [#1020](https://github.com/equinor/webviz-subsurface/pull/1020) - `WellAnalysis` - Several improvements and bug fixes. F.ex a well attribute filter in the well overview plots and the possibility to see production only after a given date.
+- [#1017](https://github.com/equinor/webviz-subsurface/pull/1017) - `SeismicMisfit` - Added support for X,Y,Z,ID header in polygon files and improved error handling when inconsistency between obs and sim data.
+- [#1030](https://github.com/equinor/webviz-subsurface/pull/1030) - Implemented new summary data provider (using `.arrow` files) for the `ParameterResponseCorrelation` plugin.
+- [#1041](https://github.com/equinor/webviz-subsurface/pull/1041) - Increased maximum number of selected vectors in `SimulationTimeSeries` plugin.
+- [#1035](https://github.com/equinor/webviz-subsurface/pull/1035) - Removed `pydeck` dependency.
+
+### Added
+
+- [#1037](https://github.com/equinor/webviz-subsurface/pull/1037) - `MapViewerFMU` - Color tables are now customizable from the config file.
+
+## [0.2.13] - 2022-05-05
+
 ### Added
 
 - [#938](https://github.com/equinor/webviz-subsurface/pull/938) - `ProdMisfit` - New plugin for well production misfit visualization. Features visualization of production misfit at selected dates, production coverage at selected dates and heatmap representation of ensemble mean misfit for selected dates.
 - [#1013](https://github.com/equinor/webviz-subsurface/pull/1013) - `MapViewerFMU` - Added option to specify the folder where maps are located (relative to runpath in each realization).
+- [#936](https://github.com/equinor/webviz-subsurface/pull/936) - `ParameterResponseCorrelation` - Added options to interactively change correlation method and response aggregation, correlation cut-off and parameter filter.
 
 ### Changed
 
 - [#1015](https://github.com/equinor/webviz-subsurface/pull/1015) - Improved error reporting for `.arrow` files where dates are not monotonically increasing.
+- [#1028](https://github.com/equinor/webviz-subsurface/pull/1028) - `BhpQc` - read data from `.arrow` files instead of `.UNSMRY`.
 
 ### Fixed
 
@@ -29,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#988](https://github.com/equinor/webviz-subsurface/pull/988) - `ParameterAnalysis` and `PropertyStatistics` - Switched to the VectorSelector component, and other various improvements.
 
 ### Fixed
+
 - [#996](https://github.com/equinor/webviz-subsurface/pull/996) - `VolumetricAnalysis` - Fixed issue with the `Tornadoplot` tab not shown if volumes from both dynamic and static sources were included.
 - [#985](https://github.com/equinor/webviz-subsurface/pull/985) - `WellLogViewer` - Updated data format to latest version. Requires no changes in input data.
 
@@ -53,10 +76,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#956](https://github.com/equinor/webviz-subsurface/pull/956) - `SimulationTimeSeries` - Deprecate usage of user input options {vector1, vector2, vector3}. Add list of vectors as user input options for initially selected vectors.
 - [#961](https://github.com/equinor/webviz-subsurface/pull/961) - Improved error message when there are none valid realizations in an ensemble.
 - [#970](https://github.com/equinor/webviz-subsurface/pull/970) - Replaced modals with new Dialog component in `StructuralUncertainty`. Changed display of uncertainty table to be a Dialog.
-- [#980](https://github.com/equinor/webviz-subsurface/pull/980) - Deprecated plugin `SurfaceViewerFMU`. This has been replaced by the faster, and more
-feature-rich plugin `MapViewerFMU`.
+- [#980](https://github.com/equinor/webviz-subsurface/pull/980) - Deprecated plugin `SurfaceViewerFMU`. This has been replaced by the faster, and more feature-rich plugin `MapViewerFMU`.
 
 ### Fixed
+
 - [#965](https://github.com/equinor/webviz-subsurface/pull/965) - Allow a filtered subset of surface names for multiple attributes in `StructuralUncertainty`.
 - [#972](https://github.com/equinor/webviz-subsurface/pull/972) - FIxed bug occuring when ensembles had different PORE/PORV naming standards in the volumetric input files. Also fixed bug occuring if only BO and/or BG was selected in the table.
 - [#958](https://github.com/equinor/webviz-subsurface/pull/958) - Disable unwanted calculation of `marks` in some `RangeSlider` components.

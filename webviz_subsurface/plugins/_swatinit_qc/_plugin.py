@@ -42,7 +42,7 @@ or with the "check_swatinit" command line tool.
         csvfile: str = "share/results/tables/check_swatinit.csv",
         ensemble: Optional[str] = None,
         realization: Optional[int] = None,
-        faultlines: Optional[Path] = None,
+        faultlines: Path = None,
     ) -> None:
         super().__init__()
 

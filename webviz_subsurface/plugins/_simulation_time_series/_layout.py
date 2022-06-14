@@ -259,7 +259,7 @@ def __settings_layout(
                 children=[
                     wsc.VectorSelector(
                         id=get_uuid(LayoutElements.VECTOR_SELECTOR),
-                        maxNumSelectedNodes=3,
+                        maxNumSelectedNodes=100,
                         data=vector_selector_data,
                         persistence=True,
                         persistence_type="session",
