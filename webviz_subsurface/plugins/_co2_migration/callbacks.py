@@ -7,13 +7,6 @@ from dash.exceptions import PreventUpdate
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
 )
-from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
-    ColormapLayer,
-    FaultPolygonsLayer,
-    WellsLayer,
-    CustomLayer,
-    LayerTypes,
-)
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProvider,
     EnsembleSurfaceProvider,
@@ -203,14 +196,16 @@ def create_map_layers(
             0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
             0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
         ]
-        layers.append(ColormapLayer(
-            uuid=LayoutElements.COLORMAPLAYER,
-            image=img_url,
-            bounds=surf_meta.deckgl_bounds,
-            value_range=value_range,
-            color_map_range=value_range,
-            rotDeg=surf_meta.deckgl_rot_deg,
-        ))
+        layers.append({
+            "@@type": "ColormapLayer",
+            "name": "Property",
+            "id": LayoutElements.COLORMAPLAYER,
+            "image": img_url,
+            "bounds": surf_meta.deckgl_bounds,
+            "value_range": value_range,
+            "color_map_range": value_range,
+            "rotDeg": surf_meta.deckgl_rot_deg,
+        })
         viewport_bounds = [
             surf_meta.x_min,
             surf_meta.y_min,
@@ -218,35 +213,37 @@ def create_map_layers(
             surf_meta.y_max,
         ]
     if polygon_address.name is not None:
-        layers.append(FaultPolygonsLayer(
-            uuid=LayoutElements.FAULTPOLYGONSLAYER,
-            data=fault_polygons_server.encode_partial_url(
+        layers.append({
+            "@@type": "FaultPolygonsLayer",
+            "name": "Fault Polygons",
+            "id": LayoutElements.FAULTPOLYGONSLAYER,
+            "data": fault_polygons_server.encode_partial_url(
                 provider_id=polygon_provider.provider_id(),
                 fault_polygons_address=polygon_address,
             ),
-        ))
+        })
     if license_boundary_file is not None:
-        layers.append(CustomLayer(
-            layer_type=LayerTypes.FAULTPOLYGONS,
-            uuid=LayoutElements.LICENSEBOUNDARYLAYER,
-            name=LayoutLabels.LICENSE_BOUNDARY_LAYER,
-            data=parse_polygon_file(license_boundary_file)
-        ))
+        layers.append({
+            "@@type": "FaultPolygonsLayer",
+            "name": LayoutLabels.LICENSE_BOUNDARY_LAYER,
+            "id": LayoutElements.LICENSEBOUNDARYLAYER,
+            "data": parse_polygon_file(license_boundary_file),
+        })
     if well_pick_provider is not None:
         # Need to cast to dict. Possible bug when passing geojson.FeatureCollection via
         # WellsLayer.__init__
-        layers.append(
-            WellsLayer(
-                uuid=LayoutElements.WELLPICKSLAYER,
-                data=dict(
-                    well_pick_provider.get_geojson(
-                        well_pick_provider.well_names(), well_pick_horizon
-                    )
-                ),
-            )
-        )
+        layers.append({
+            "@@type": "GeoJsonLayer",
+            "name": "Well Picks",
+            "id": LayoutElements.WELLPICKSLAYER,
+            "data": dict(
+                well_pick_provider.get_geojson(
+                    well_pick_provider.well_names(), well_pick_horizon
+                )
+            ),
+        })
     # Convert layers to dictionaries
-    layers = [json.loads(lay.to_json()) for lay in layers]
+    # layers = [json.loads(json.dumps(lay)) for lay in layers]
     return layers, viewport_bounds
 
 
