@@ -80,9 +80,14 @@ def plugin_callbacks(
         polygons = fault_polygon_aliases(ensemble_fault_polygons_providers[ensemble])
         well_picks = well_pick_names_aliases(well_pick_provider)
         # Formation names
-        formations = sorted(list(set(surfaces + polygons + well_picks)))
-        initial_formation = formations[0] if len(formations) > 0 else None
-        formations = [{"label": f, "value": f} for f in formations]
+        formations = compile_alias_list(surfaces, well_picks, polygons)
+        initial_formation = None
+        if len(formations) != 0:
+            if "disabled" in formations[0]:
+                if any(fmt["value"] == "All" for fmt in formations):
+                    initial_formation = "All"
+            else:
+                initial_formation = formations[0]["value"]
         return formations, initial_formation
 
     @callback(
@@ -154,6 +159,16 @@ def plugin_callbacks(
             well_pick_horizon=well_pick_horizon,
         )
         return layers, viewport_bounds
+
+
+def compile_alias_list(*alias_lists):
+    alias_sets = [set(s) for s in alias_lists]
+    complete = set.intersection(*alias_sets)
+    remainder = set.union(*alias_sets) - complete
+    options = [{"label": v, "value": v} for v in sorted(list(complete))]
+    options += [{"label": "Incomplete data", "value": "", "disabled": True}]
+    options += [{"label": v, "value": v} for v in sorted(list(remainder))]
+    return options
 
 
 def surface_name_aliases(surface_provider, prop):
