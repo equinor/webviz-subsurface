@@ -76,8 +76,9 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.FORMATION_INPUT), 'value'),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), 'value'),
         Input(get_uuid(LayoutElements.PROPERTY), 'value'),
+        State(get_uuid(LayoutElements.FORMATION_INPUT), 'value'),
     )
-    def set_formations(ensemble, prop):
+    def set_formations(ensemble, prop, current_value):
         if ensemble is None:
             return [], None
         # Dates
@@ -89,14 +90,16 @@ def plugin_callbacks(
         well_picks = well_pick_names_aliases(well_pick_provider)
         # Formation names
         formations = compile_alias_list(formation_aliases, surfaces, well_picks, polygons)
-        initial_formation = None
+        picked_formation = None
         if len(formations) != 0:
-            if "disabled" in formations[0]:
+            if any(fmt["value"] == current_value for fmt in formations):
+                picked_formation = dash.no_update
+            elif "disabled" in formations[0]:
                 if any(fmt["value"] == "all" for fmt in formations):
-                    initial_formation = "all"
+                    picked_formation = "all"
             else:
-                initial_formation = formations[0]["value"]
-        return formations, initial_formation
+                picked_formation = formations[0]["value"]
+        return formations, picked_formation
 
     @callback(
         Output(get_uuid(LayoutElements.DATEINPUT), 'marks'),
