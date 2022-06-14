@@ -32,13 +32,13 @@ class ProdMisfit(WebvizPluginABC):
     ---
     * **`ensembles`:** Which ensembles in `shared_settings` to include.
     * **`rel_file_pattern`:** path to `.arrow` files with summary data.
-    * **`gruptree_file`:** `.csv` with gruptree information.
     * **`sampling`:** Frequency for the data sampling.
     * **`well_attributes_file`:** Path to json file containing info of well attributes.
     The attribute category values can be used for filtering of well collections.
-    * **`excl_name_startswith`:** Filter out wells that starts with this string
-    * **`excl_name_contains`:** Filter out wells that contains this string
-    * **`phase_weights`:** Dict of "Oil", "Water" and "Gas" (inverse) weight factors that
+    * **`excl_name_startswith`:** Exclude wells that starts with this string.
+    * **`excl_name_endswith`:** Exclude wells that ends with this string.
+    * **`excl_name_contains`:** Exclude wells that contains this string.
+    * **`phase_weights`:** Dict of "Oil", "Water" and "Gas" inverse weight factors that
     are included as weight option for misfit per real calculation.
     ---
 
@@ -91,6 +91,7 @@ class ProdMisfit(WebvizPluginABC):
         sampling: str = Frequency.YEARLY.value,
         well_attributes_file: str = None,
         excl_name_startswith: list = None,
+        excl_name_endswith: list = None,
         excl_name_contains: list = None,
         phase_weights: dict = None,
     ):
@@ -102,6 +103,16 @@ class ProdMisfit(WebvizPluginABC):
         self.weight_reduction_factor_oil = phase_weights["Oil"]
         self.weight_reduction_factor_wat = phase_weights["Water"]
         self.weight_reduction_factor_gas = phase_weights["Gas"]
+
+        if excl_name_startswith is None:
+            excl_name_startswith = []
+        excl_name_startswith = [str(element) for element in excl_name_startswith]
+        if excl_name_endswith is None:
+            excl_name_endswith = []
+        excl_name_endswith = [str(element) for element in excl_name_endswith]
+        if excl_name_contains is None:
+            excl_name_contains = []
+        excl_name_contains = [str(element) for element in excl_name_contains]
 
         # Must define valid frequency
         self._sampling = Frequency(sampling)
@@ -150,7 +161,10 @@ class ProdMisfit(WebvizPluginABC):
                 self.vectors[ens_name],
                 self.phases[ens_name],
             ) = _get_wells_vectors_phases(
-                ens_provider.vector_names(), excl_name_startswith, excl_name_contains
+                ens_provider.vector_names(),
+                excl_name_startswith,
+                excl_name_endswith,
+                excl_name_contains,
             )
 
         # self.well_collections = _get_well_collections_from_attr(well_attrs, self.wells)
@@ -200,16 +214,12 @@ class ProdMisfit(WebvizPluginABC):
 
 # ---------------------------
 def _get_wells_vectors_phases(
-    vector_names: list,
-    excl_name_startswith: Optional[list],
-    excl_name_contains: Optional[list],
+    vector_names: List[str],
+    excl_name_startswith: List[str],
+    excl_name_endswith: List[str],
+    excl_name_contains: List[str],
 ) -> Tuple[List, List, List]:
     """Return lists of wells, vectors and phases."""
-
-    if excl_name_startswith is None:
-        excl_name_startswith = []
-    if excl_name_contains is None:
-        excl_name_contains = []
 
     wells, vectors, drop_list = [], [], []
     phases = set()
@@ -225,13 +235,13 @@ def _get_wells_vectors_phases(
             continue
 
         well = vector.split(":")[1]
-        if well.startswith(tuple(excl_name_startswith)):
+
+        if _skip_well(
+            well, excl_name_startswith, excl_name_endswith, excl_name_contains
+        ):
             drop_list.append(well)
             continue
-        for excl in excl_name_contains:
-            if excl in well:
-                drop_list.append(well)
-                continue
+
         if well not in wells:
             wells.append(well)
         if vector not in vectors:
@@ -253,6 +263,24 @@ def _get_wells_vectors_phases(
     logging.debug(f"\nVectors: {vectors}")
 
     return wells, vectors, list(phases)
+
+
+def _skip_well(
+    well: str,
+    excl_name_startswith: List[str],
+    excl_name_endswith: List[str],
+    excl_name_contains: List[str],
+) -> bool:
+    """Check well name against exclude strings and return True if it should be skipped."""
+
+    if well.startswith(tuple(excl_name_startswith)):
+        return True
+    if well.endswith(tuple(excl_name_endswith)):
+        return True
+    for excl in excl_name_contains:
+        if excl in well:
+            return True
+    return False
 
 
 # --------------------------------
