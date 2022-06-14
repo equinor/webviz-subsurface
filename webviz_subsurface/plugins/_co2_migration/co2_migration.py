@@ -24,6 +24,7 @@ class CO2Migration(WebvizPluginABC):
         license_boundary_file: Optional[str] = None,
         well_pick_file: Optional[str] = None,
         map_attribute_names: Optional[Dict[str, str]] = None,
+        formation_aliases: Optional[List[List[str]]] = None,
     ):
         # TMP
         import warnings
@@ -40,6 +41,7 @@ class CO2Migration(WebvizPluginABC):
         self._polygons_server = FaultPolygonsServer.instance(app)
         for provider in self._ensemble_fault_polygons_providers.values():
             self._polygons_server.add_provider(provider)
+        self._formation_aliases = [set(f) for f in formation_aliases or []]
         # License boundary
         # TODO: may want to expose license boundary via a provider, but need
         #  standardization on its location first
@@ -66,7 +68,8 @@ class CO2Migration(WebvizPluginABC):
             fault_polygons_server=self._polygons_server,
             license_boundary_file=self._license_boundary_file,
             well_pick_provider=self._well_pick_provider,
-            map_attribute_names=self._map_attribute_names
+            map_attribute_names=self._map_attribute_names,
+            formation_aliases=self._formation_aliases,
         )
 
 

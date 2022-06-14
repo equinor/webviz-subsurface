@@ -1,13 +1,11 @@
 import json
-from typing import Callable, Dict, Optional, List, Tuple
+from typing import Callable, Dict, Optional, List, Tuple, Set
 import dash
-import pydeck
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 # TODO: tmp?
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
-    WellPickTableColumns,
 )
 from webviz_subsurface._components.deckgl_map.types.deckgl_props import (
     ColormapLayer,
@@ -26,6 +24,15 @@ from webviz_subsurface._providers import (
     SurfaceAddress,
     SurfaceServer,
 )
+from ._formation_alias import (
+    compile_alias_list,
+    surface_name_aliases,
+    fault_polygon_aliases,
+    well_pick_names_aliases,
+    lookup_surface_alias,
+    lookup_fault_polygon_alias,
+    lookup_well_pick_alias,
+)
 from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths, parse_polygon_file
 from ._co2volume import (generate_co2_volume_figure, generate_co2_time_containment_figure)
 from .layout import LayoutElements, LayoutStyle, LayoutLabels
@@ -41,6 +48,7 @@ def plugin_callbacks(
     license_boundary_file: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
     map_attribute_names: Dict[MapAttribute, str],
+    formation_aliases: List[Set[str]],
 ):
     @callback(
         Output(get_uuid(LayoutElements.REALIZATIONINPUT), "options"),
@@ -80,12 +88,12 @@ def plugin_callbacks(
         polygons = fault_polygon_aliases(ensemble_fault_polygons_providers[ensemble])
         well_picks = well_pick_names_aliases(well_pick_provider)
         # Formation names
-        formations = compile_alias_list(surfaces, well_picks, polygons)
+        formations = compile_alias_list(formation_aliases, surfaces, well_picks, polygons)
         initial_formation = None
         if len(formations) != 0:
             if "disabled" in formations[0]:
-                if any(fmt["value"] == "All" for fmt in formations):
-                    initial_formation = "All"
+                if any(fmt["value"] == "all" for fmt in formations):
+                    initial_formation = "all"
             else:
                 initial_formation = formations[0]["value"]
         return formations, initial_formation
@@ -136,16 +144,17 @@ def plugin_callbacks(
         date = str(date_list[date])
         # Look up formation aliases
         surface_name = lookup_surface_alias(
+            formation_aliases,
             formation,
             ensemble_surface_providers[ensemble],
             map_attribute_names[MapAttribute(attribute)],
         )
-        if surface_name is None:
-            surface_name = "all"
         polygon_name = lookup_fault_polygon_alias(
-            formation, ensemble_fault_polygons_providers[ensemble]
+            formation_aliases, formation, ensemble_fault_polygons_providers[ensemble]
         )
-        well_pick_horizon = lookup_well_pick_alias(formation, well_pick_provider)
+        well_pick_horizon = lookup_well_pick_alias(
+            formation_aliases, formation, well_pick_provider
+        )
 
         layers, viewport_bounds = create_map_layers(
             surface_server=surface_server,
@@ -159,65 +168,6 @@ def plugin_callbacks(
             well_pick_horizon=well_pick_horizon,
         )
         return layers, viewport_bounds
-
-
-def compile_alias_list(*formation_lists):
-    formation_sets = [set(s) for s in formation_lists]
-    alias_sets = [{s.title() for s in f} for f in formation_sets]
-    complete = set.intersection(*alias_sets)
-    remainder = set.union(*alias_sets) - complete
-    options = [{"label": v, "value": v} for v in sorted(list(complete))]
-    options += [{"label": "Incomplete data", "value": "", "disabled": True}]
-    options += [{"label": v, "value": v} for v in sorted(list(remainder))]
-    return options
-
-
-def surface_name_aliases(surface_provider, prop):
-    return [
-        s.title()
-        for s in surface_provider.surface_names_for_attribute(prop)
-    ]
-
-
-def fault_polygon_aliases(polygon_provider):
-    return [
-        p.title()
-        for p in polygon_provider.fault_polygons_names_for_attribute(FAULT_POLYGON_ATTRIBUTE)
-    ]
-
-
-def well_pick_names_aliases(well_pick_provider):
-    if well_pick_provider is None:
-        return []
-    return [
-        p.title()
-        for p in well_pick_provider.dframe[WellPickTableColumns.HORIZON].unique()
-    ]
-
-
-def lookup_surface_alias(alias, surface_provider, prop):
-    return lookup_formation_alias(alias, surface_provider.surface_names_for_attribute(prop))
-
-
-def lookup_fault_polygon_alias(alias, polygon_provider):
-    return lookup_formation_alias(
-        alias, polygon_provider.fault_polygons_names_for_attribute(FAULT_POLYGON_ATTRIBUTE)
-    )
-
-
-def lookup_well_pick_alias(alias, well_pick_provider):
-    if well_pick_provider is None:
-        return None
-    return lookup_formation_alias(
-        alias, well_pick_provider.dframe[WellPickTableColumns.HORIZON].unique()
-    )
-
-
-def lookup_formation_alias(alias, names):
-    matches = [s for s in names if s.title() == alias]
-    if len(matches) == 0:
-        return None
-    return matches[0]
 
 
 def create_map_layers(
