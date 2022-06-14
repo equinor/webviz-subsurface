@@ -16,7 +16,7 @@ def compile_alias_list(formation_aliases: List[Set[str]], *formation_lists):
     }
     remainder = set.union(*(set(f) for f in formation_lists)) - complete
     options = [{"label": v.title(), "value": v} for v in sorted(list(complete))]
-    options += [{"label": "Incomplete data", "value": "", "disabled": True}]
+    options += [{"label": "Incomplete data ↓", "value": "", "disabled": True}]
     options += [{"label": v.title(), "value": v} for v in sorted(list(remainder))]
     return options
 

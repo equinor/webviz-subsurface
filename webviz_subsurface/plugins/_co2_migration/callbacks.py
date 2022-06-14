@@ -155,11 +155,16 @@ def plugin_callbacks(
         well_pick_horizon = lookup_well_pick_alias(
             formation_aliases, formation, well_pick_provider
         )
-
+        if surface_name is not None:
+            cm_address = _derive_colormap_address(
+                surface_name, attribute, date, realization, map_attribute_names
+            )
+        else:
+            cm_address = None
         layers, viewport_bounds = create_map_layers(
             surface_server=surface_server,
             surface_provider=ensemble_surface_providers[ensemble],
-            colormap_address=_derive_colormap_address(surface_name, attribute, date, realization, map_attribute_names),
+            colormap_address=cm_address,
             fault_polygons_server=fault_polygons_server,
             polygon_provider=ensemble_fault_polygons_providers[ensemble],
             polygon_address=_derive_fault_polygon_address(polygon_name, realization),
@@ -173,7 +178,7 @@ def plugin_callbacks(
 def create_map_layers(
     surface_server: SurfaceServer,
     surface_provider: EnsembleSurfaceProvider,
-    colormap_address: SimulatedSurfaceAddress,
+    colormap_address: Optional[SimulatedSurfaceAddress],
     fault_polygons_server: FaultPolygonsServer,
     polygon_provider: EnsembleFaultPolygonsProvider,
     polygon_address: SimulatedFaultPolygonsAddress,
@@ -181,27 +186,34 @@ def create_map_layers(
     well_pick_provider: Optional[WellPickProvider],
     well_pick_horizon: Optional[str],
 ) -> Tuple[List[Dict], List[float]]:
-    surf_meta, img_url = _publish_and_get_surface_metadata(
-        surface_server, surface_provider, colormap_address
-    )
-    # Update ColormapLayer
-    import numpy as np
-    # TODO: value_range should perhaps never be masked in the first place? Possible bug
-    #  also in MapViewerFMU
-    value_range = [
-        0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
-        0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
-    ]
-    layers = [
-        ColormapLayer(
+    layers = []
+    viewport_bounds = dash.no_update
+    if colormap_address is not None:
+        surf_meta, img_url = _publish_and_get_surface_metadata(
+            surface_server, surface_provider, colormap_address
+        )
+        # Update ColormapLayer
+        import numpy as np
+        # TODO: value_range should perhaps never be masked in the first place? Possible bug
+        #  also in MapViewerFMU
+        value_range = [
+            0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
+            0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
+        ]
+        layers.append(ColormapLayer(
             uuid=LayoutElements.COLORMAPLAYER,
             image=img_url,
             bounds=surf_meta.deckgl_bounds,
             value_range=value_range,
             color_map_range=value_range,
             rotDeg=surf_meta.deckgl_rot_deg,
-        ),
-    ]
+        ))
+        viewport_bounds = [
+            surf_meta.x_min,
+            surf_meta.y_min,
+            surf_meta.x_max,
+            surf_meta.y_max,
+        ]
     if polygon_address.name is not None:
         layers.append(FaultPolygonsLayer(
             uuid=LayoutElements.FAULTPOLYGONSLAYER,
@@ -211,14 +223,12 @@ def create_map_layers(
             ),
         ))
     if license_boundary_file is not None:
-        layers.append(
-            CustomLayer(
-                layer_type=LayerTypes.FAULTPOLYGONS,
-                uuid=LayoutElements.LICENSEBOUNDARYLAYER,
-                name=LayoutLabels.LICENSE_BOUNDARY_LAYER,
-                data=parse_polygon_file(license_boundary_file)
-            )
-        )
+        layers.append(CustomLayer(
+            layer_type=LayerTypes.FAULTPOLYGONS,
+            uuid=LayoutElements.LICENSEBOUNDARYLAYER,
+            name=LayoutLabels.LICENSE_BOUNDARY_LAYER,
+            data=parse_polygon_file(license_boundary_file)
+        ))
     if well_pick_provider is not None:
         # Need to cast to dict. Possible bug when passing geojson.FeatureCollection via
         # WellsLayer.__init__
@@ -232,13 +242,6 @@ def create_map_layers(
                 ),
             )
         )
-    # View-port
-    viewport_bounds = [
-        surf_meta.x_min,
-        surf_meta.y_min,
-        surf_meta.x_max,
-        surf_meta.y_max,
-    ]
     # Convert layers to dictionaries
     layers = [json.loads(lay.to_json()) for lay in layers]
     return layers, viewport_bounds
