@@ -161,8 +161,9 @@ def plugin_callbacks(
         return layers, viewport_bounds
 
 
-def compile_alias_list(*alias_lists):
-    alias_sets = [set(s) for s in alias_lists]
+def compile_alias_list(*formation_lists):
+    formation_sets = [set(s) for s in formation_lists]
+    alias_sets = [{s.title() for s in f} for f in formation_sets]
     complete = set.intersection(*alias_sets)
     remainder = set.union(*alias_sets) - complete
     options = [{"label": v, "value": v} for v in sorted(list(complete))]
