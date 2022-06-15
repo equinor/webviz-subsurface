@@ -2,15 +2,18 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
+import flask_caching
 from webviz_config.webviz_factory import WebvizFactory
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_instance_info import WebvizRunMode
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
+from . import cache_helpers
 
 from ._provider_impl_file import ProviderImplFile
+from ._provider_impl_sumo import ProviderImplSumo
 from ._surface_discovery import (
     discover_observed_surface_files,
     discover_per_realization_surface_files,
@@ -24,15 +27,21 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
     def __init__(
         self,
         root_storage_folder: Path,
+        root_cache_folder: Path,
+        cache: flask_caching.SimpleCache,
         allow_storage_writes: bool,
         avoid_copying_surfaces: bool,
     ) -> None:
         self._storage_dir = Path(root_storage_folder) / __name__
+        self._cache_dir = Path(root_cache_folder) / __name__
+        self._cache = cache
         self._allow_storage_writes = allow_storage_writes
         self._avoid_copying_surfaces = avoid_copying_surfaces
 
         LOGGER.info(
-            f"EnsembleSurfaceProviderFactory init: storage_dir={self._storage_dir}"
+            f"EnsembleSurfaceProviderFactory init: "
+            f"storage_dir={self._storage_dir}, cache_dir={self._cache_dir},"
+            f"cache={type(self._cache)}"
         )
 
         if self._allow_storage_writes:
@@ -45,12 +54,16 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
         factory = WEBVIZ_FACTORY_REGISTRY.get_factory(EnsembleSurfaceProviderFactory)
         if not factory:
             app_instance_info = WEBVIZ_FACTORY_REGISTRY.app_instance_info
-            storage_folder = app_instance_info.storage_folder
+            root_storage_folder = app_instance_info.storage_folder
+            root_cache_folder = cache_helpers.get_root_cache_folder()
+            cache = cache_helpers.get_or_create_cache()
             allow_writes = app_instance_info.run_mode != WebvizRunMode.PORTABLE
             dont_copy_surfs = app_instance_info.run_mode == WebvizRunMode.NON_PORTABLE
 
             factory = EnsembleSurfaceProviderFactory(
-                root_storage_folder=storage_folder,
+                root_storage_folder=root_storage_folder,
+                root_cache_folder=root_cache_folder,
+                cache=cache,
                 allow_storage_writes=allow_writes,
                 avoid_copying_surfaces=dont_copy_surfs,
             )
@@ -115,6 +128,35 @@ class EnsembleSurfaceProviderFactory(WebvizFactory):
         LOGGER.info(
             f"Saved surface provider to backing store in {timer.elapsed_s():.2f}s ("
             f"discover={et_discover_s:.2f}s, write={et_write_s:.2f}s, ens_path={ens_path})"
+        )
+
+        return provider
+
+    def create_from_sumo_case_id(
+        self,
+        sumo_id_of_case: str,
+        iteration_id: str,
+        use_access_token: bool,
+        access_token: Optional[str],
+    ) -> EnsembleSurfaceProvider:
+        timer = PerfTimer()
+
+        provider = ProviderImplSumo(
+            cache_dir=self._cache_dir,
+            cache=self._cache,
+            sumo_id_of_case=sumo_id_of_case,
+            iteration_id=iteration_id,
+            use_access_token=use_access_token,
+            access_token=access_token,
+        )
+
+        if not provider:
+            raise ValueError(
+                f"Failed to create sumo surface provider for {sumo_id_of_case=}, {iteration_id=}"
+            )
+
+        LOGGER.info(
+            f"Created sumo surface provider for {sumo_id_of_case=}, {iteration_id=} in {timer.elapsed_s():.2f}s"
         )
 
         return provider

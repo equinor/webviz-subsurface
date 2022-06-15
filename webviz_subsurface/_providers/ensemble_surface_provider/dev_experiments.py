@@ -1,6 +1,9 @@
 import logging
 from pathlib import Path
 
+import flask_caching
+
+from ._provider_impl_sumo import ProviderImplSumo
 from .ensemble_surface_provider import (
     EnsembleSurfaceProvider,
     ObservedSurfaceAddress,
@@ -23,6 +26,7 @@ def main() -> None:
     logging.getLogger("webviz_subsurface").setLevel(level=logging.DEBUG)
 
     root_storage_dir = Path("/home/sigurdp/buf/webviz_storage_dir")
+    root_cache_dir = Path("/home/sigurdp/buf/webviz_cache_dir")
 
     # fmt:off
     # ensemble_path = "../webviz-subsurface-testdata/01_drogon_ahm/realization-*/iter-0"
@@ -35,11 +39,24 @@ def main() -> None:
     # factory = EnsembleSurfaceProviderFactory.instance()
 
     factory = EnsembleSurfaceProviderFactory(
-        root_storage_dir, allow_storage_writes=True, avoid_copying_surfaces=False
+        root_storage_folder=root_storage_dir,
+        root_cache_folder=root_cache_dir,
+        allow_storage_writes=True,
+        avoid_copying_surfaces=False,
     )
 
-    provider: EnsembleSurfaceProvider = factory.create_from_ensemble_surface_files(
-        ensemble_path
+    # provider: EnsembleSurfaceProvider = factory.create_from_ensemble_surface_files(
+    #     ensemble_path
+    # )
+
+    cache = flask_caching.backends.FileSystemCache(root_cache_dir)
+    provider: EnsembleSurfaceProvider = ProviderImplSumo(
+        cache_dir=root_cache_dir,
+        cache=cache,
+        sumo_id_of_case="9f184b7b-9382-6b3d-164a-2a704ccb7dfd",
+        iteration_id="0",
+        use_access_token=False,
+        access_token=None,
     )
 
     all_attributes = provider.attributes()
@@ -60,57 +77,71 @@ def main() -> None:
     all_realizations = provider.realizations()
     print(f"all_realizations={all_realizations}")
 
-    surf = provider.get_surface(
-        SimulatedSurfaceAddress(
-            attribute="oilthickness",
-            name="therys",
-            datestr="20200701_20180101",
-            realization=1,
+    #########################
+    if provider.__class__.__name__ == "ProviderImplFile":
+        surf = provider.get_surface(
+            SimulatedSurfaceAddress(
+                attribute="oilthickness",
+                name="therys",
+                datestr="20200701_20180101",
+                realization=1,
+            )
         )
-    )
-    print(surf)
+        print(surf)
 
-    surf = provider.get_surface(
-        ObservedSurfaceAddress(
-            attribute="amplitude_mean",
-            name="basevolantis",
-            datestr="20180701_20180101",
+        surf = provider.get_surface(
+            ObservedSurfaceAddress(
+                attribute="amplitude_mean",
+                name="basevolantis",
+                datestr="20180701_20180101",
+            )
         )
-    )
-    print(surf)
+        print(surf)
 
-    # surf = provider.get_surface(
-    #     StatisticalSurfaceAddress(
-    #         attribute="amplitude_mean",
-    #         name="basevolantis",
-    #         datestr="20180701_20180101",
-    #         statistic=SurfaceStatistic.P10,
-    #         realizations=[0, 1],
-    #     )
-    # )
-    # print(surf)
+        # surf = provider.get_surface(
+        #     StatisticalSurfaceAddress(
+        #         attribute="amplitude_mean",
+        #         name="basevolantis",
+        #         datestr="20180701_20180101",
+        #         statistic=SurfaceStatistic.P10,
+        #         realizations=[0, 1],
+        #     )
+        # )
+        # print(surf)
 
-    # surf = provider.get_surface(
-    #     StatisticalSurfaceAddress(
-    #         attribute="amplitude_mean",
-    #         name="basevolantis",
-    #         datestr="20180701_20180101",
-    #         statistic=SurfaceStatistic.P10,
-    #         realizations=all_realizations,
-    #     )
-    # )
-    # print(surf)
+        # surf = provider.get_surface(
+        #     StatisticalSurfaceAddress(
+        #         attribute="amplitude_mean",
+        #         name="basevolantis",
+        #         datestr="20180701_20180101",
+        #         statistic=SurfaceStatistic.P10,
+        #         realizations=all_realizations,
+        #     )
+        # )
+        # print(surf)
 
-    surf = provider.get_surface(
-        StatisticalSurfaceAddress(
-            attribute="ds_extract_postprocess-refined8",
-            name="topvolantis",
-            datestr=None,
-            statistic=SurfaceStatistic.P10,
-            realizations=all_realizations,
+        surf = provider.get_surface(
+            StatisticalSurfaceAddress(
+                attribute="ds_extract_postprocess-refined8",
+                name="topvolantis",
+                datestr=None,
+                statistic=SurfaceStatistic.P10,
+                realizations=all_realizations,
+            )
         )
-    )
-    print(surf)
+        print(surf)
+
+    #########################
+    if provider.__class__.__name__ == "ProviderImplSumo":
+        surf = provider.get_surface(
+            SimulatedSurfaceAddress(
+                attribute="ds_extract_geogrid",
+                name="Therys Fm. Top",
+                datestr=None,
+                realization=1,
+            )
+        )
+        print(surf)
 
 
 # Running:
