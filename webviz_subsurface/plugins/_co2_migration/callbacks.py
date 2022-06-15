@@ -1,5 +1,6 @@
-import json
+from dataclasses import dataclass
 from typing import Callable, Dict, Optional, List, Tuple, Set
+import numpy as np
 import dash
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
@@ -16,6 +17,7 @@ from webviz_subsurface._providers import (
     SimulatedSurfaceAddress,
     SurfaceAddress,
     SurfaceServer,
+    SurfaceMeta,
 )
 from ._formation_alias import (
     compile_alias_list,
@@ -29,6 +31,34 @@ from ._formation_alias import (
 from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths, parse_polygon_file
 from ._co2volume import (generate_co2_volume_figure, generate_co2_time_containment_figure)
 from .layout import LayoutElements, LayoutStyle, LayoutLabels
+
+
+@dataclass
+class _SurfaceData:
+    color_map_range: Tuple[float, float]
+    color_map_name: str
+    value_range: Tuple[float, float]
+    meta_data: SurfaceMeta
+    img_url: str
+
+    @staticmethod
+    def from_server(
+        surface_server, surface_provider, surface_address, color_map_range, color_map_name
+    ):
+        surf_meta, img_url = _publish_and_get_surface_metadata(
+            surface_server, surface_provider, surface_address
+        )
+        value_range = (
+            0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
+            0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
+        )
+        color_map_range = (
+            value_range[0] if color_map_range[0] is None else color_map_range[0],
+            value_range[1] if color_map_range[1] is None else color_map_range[1],
+        )
+        return _SurfaceData(
+            color_map_range, color_map_name, value_range, surf_meta, img_url
+        )
 
 
 def plugin_callbacks(
@@ -123,16 +153,46 @@ def plugin_callbacks(
         return dates, initial_date, date_list
 
     @callback(
+        Output(get_uuid(LayoutElements.COLOR_RANGE_STORE), "data"),
+        Output(get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE), "disabled"),
+        Output(get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE), "disabled"),
+        Input(get_uuid(LayoutElements.COLOR_RANGE_MIN_AUTO), "value"),
+        Input(get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE), "value"),
+        Input(get_uuid(LayoutElements.COLOR_RANGE_MAX_AUTO), "value"),
+        Input(get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE), "value"),
+    )
+    def set_color_range_data(min_auto, min_val, max_auto, max_val):
+        return (
+            [
+                min_val if len(min_auto) == 0 else None,
+                max_val if len(max_auto) == 0 else None,
+            ],
+            len(min_auto) == 1,
+            len(max_auto) == 1,
+        )
+
+    @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
         Output(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
         Input(get_uuid(LayoutElements.PROPERTY), "value"),
         Input(get_uuid(LayoutElements.DATEINPUT), "value"),
         Input(get_uuid(LayoutElements.FORMATION_INPUT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
+        Input(get_uuid(LayoutElements.COLORMAP_INPUT), "value"),
+        Input(get_uuid(LayoutElements.COLOR_RANGE_STORE), "data"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
         State(get_uuid(LayoutElements.DATE_STORE), "data"),
     )
-    def update_map_attribute(attribute, date, formation, realization, ensemble, date_list):
+    def update_map_attribute(
+        attribute,
+        date,
+        formation,
+        realization,
+        color_map_name,
+        color_map_range,
+        ensemble,
+        date_list,
+    ):
         if ensemble is None:
             raise PreventUpdate
         if MapAttribute(attribute) != MapAttribute.MIGRATION_TIME and date is None:
@@ -152,15 +212,20 @@ def plugin_callbacks(
             formation_aliases, formation, well_pick_provider
         )
         if surface_name is not None:
-            cm_address = _derive_colormap_address(
+            surf_address = _derive_surface_address(
                 surface_name, attribute, date, realization, map_attribute_names
             )
+            surf_data = _SurfaceData.from_server(
+                surface_server,
+                ensemble_surface_providers[ensemble],
+                surf_address,
+                color_map_range,
+                color_map_name,
+            )
         else:
-            cm_address = None
+            surf_data = None
         layers, viewport_bounds = create_map_layers(
-            surface_server=surface_server,
-            surface_provider=ensemble_surface_providers[ensemble],
-            colormap_address=cm_address,
+            surface_data=surf_data,
             fault_polygons_server=fault_polygons_server,
             polygon_provider=ensemble_fault_polygons_providers[ensemble],
             polygon_address=_derive_fault_polygon_address(polygon_name, realization),
@@ -172,9 +237,7 @@ def plugin_callbacks(
 
 
 def create_map_layers(
-    surface_server: SurfaceServer,
-    surface_provider: EnsembleSurfaceProvider,
-    colormap_address: Optional[SimulatedSurfaceAddress],
+    surface_data: Optional[_SurfaceData],
     fault_polygons_server: FaultPolygonsServer,
     polygon_provider: EnsembleFaultPolygonsProvider,
     polygon_address: SimulatedFaultPolygonsAddress,
@@ -184,33 +247,24 @@ def create_map_layers(
 ) -> Tuple[List[Dict], List[float]]:
     layers = []
     viewport_bounds = dash.no_update
-    if colormap_address is not None:
-        surf_meta, img_url = _publish_and_get_surface_metadata(
-            surface_server, surface_provider, colormap_address
-        )
+    if surface_data is not None:
         # Update ColormapLayer
-        import numpy as np
-        # TODO: value_range should perhaps never be masked in the first place? Possible bug
-        #  also in MapViewerFMU
-        value_range = [
-            0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
-            0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
-        ]
         layers.append({
             "@@type": "ColormapLayer",
             "name": "Property",
             "id": LayoutElements.COLORMAPLAYER,
-            "image": img_url,
-            "bounds": surf_meta.deckgl_bounds,
-            "value_range": value_range,
-            "color_map_range": value_range,
-            "rotDeg": surf_meta.deckgl_rot_deg,
+            "image": surface_data.img_url,
+            "bounds": surface_data.meta_data.deckgl_bounds,
+            "valueRange": surface_data.value_range,
+            "colorMapRange": surface_data.color_map_range,
+            "colorMapName": surface_data.color_map_name,
+            "rotDeg": surface_data.meta_data.deckgl_rot_deg,
         })
         viewport_bounds = [
-            surf_meta.x_min,
-            surf_meta.y_min,
-            surf_meta.x_max,
-            surf_meta.y_max,
+            surface_data.meta_data.x_min,
+            surface_data.meta_data.y_min,
+            surface_data.meta_data.x_max,
+            surface_data.meta_data.y_max,
         ]
     if polygon_address.name is not None:
         layers.append({
@@ -247,7 +301,7 @@ def create_map_layers(
     return layers, viewport_bounds
 
 
-def _derive_colormap_address(
+def _derive_surface_address(
     surface_name: str,
     attribute: str,
     date: Optional[str],

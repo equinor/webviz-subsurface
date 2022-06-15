@@ -5,6 +5,8 @@ from dash import html, dcc
 import webviz_core_components as wcc
 from webviz_subsurface_components import DeckGLMap
 from ._utils import MapAttribute
+# Local import?
+from .._map_viewer_fmu.color_tables import default_color_tables
 
 
 @unique
@@ -23,11 +25,18 @@ class LayoutElements(str, Enum):
     REALIZATIONINPUT = "realizationinput"
     DATEINPUT = "dateinput"
     FORMATION_INPUT = "formation-input"
+    COLORMAP_INPUT = "colormap-input"
+
+    COLOR_RANGE_MIN_AUTO = "color-range-min-auto"
+    COLOR_RANGE_MIN_VALUE = "color-range-min-value"
+    COLOR_RANGE_MAX_AUTO = "color-range-max-auto"
+    COLOR_RANGE_MAX_VALUE = "color-range-max-value"
 
     ENSEMBLEBARPLOT = "ensemblebarplot"
     ENSEMBLETIMELEAKPLOT = "ensembletimeleakplot"
 
     DATE_STORE = "date-store"
+    COLOR_RANGE_STORE = "color-range-store"
 
 
 @unique
@@ -64,6 +73,14 @@ class LayoutStyle:
         "flex-direction": "row",
         "justify-content": "space-evenly",
     }
+    COLORMAP_MINMAX = {
+        "width": "150px"
+    }
+    COLORMAP_RANGE = {
+        "display": "flex",
+        "justify-content": "space-between",
+        "padding-top": "10px"
+    }
 
 
 def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
@@ -91,6 +108,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                         coords={"visible": True},
                                         scale={"visible": True},
                                         coordinateUnit="m",
+                                        colorTables=default_color_tables,
                                         zoom=-7,
                                     ),
                                 ],
@@ -108,6 +126,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                 style=LayoutStyle.CONTENT_PARENT
             ),
             dcc.Store(id=get_uuid(LayoutElements.DATE_STORE)),
+            dcc.Store(id=get_uuid(LayoutElements.COLOR_RANGE_STORE)),
         ],
         style=LayoutStyle.PARENTDIV,
     )
@@ -136,11 +155,40 @@ class PropertySelectorLayout(html.Div):
                             id=get_uuid(LayoutElements.FORMATION_INPUT),
                         ),
                         "Date",
-                        dcc.Slider(
-                            id=get_uuid(LayoutElements.DATEINPUT),
-                            step=None,
-                            marks={0: ''},
-                            value=0,
+                        html.Div(
+                            [
+                                dcc.Slider(
+                                    id=get_uuid(LayoutElements.DATEINPUT),
+                                    step=None,
+                                    marks={0: ''},
+                                    value=0,
+                                ),
+                            ],
+                            style={
+                                "padding-bottom": "50px",
+                            }
+                        ),
+                        "Color Scale",
+                        dcc.Dropdown(
+                            id=get_uuid(LayoutElements.COLORMAP_INPUT),
+                            options=[d["name"] for d in default_color_tables],
+                            value=default_color_tables[0]["name"],
+                        ),
+                        html.Div(
+                            [
+                                html.Label("Minimum", style=LayoutStyle.COLORMAP_MINMAX),
+                                dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE), type="number"),
+                                dcc.Checklist(["Auto"], ["Auto"], id=get_uuid(LayoutElements.COLOR_RANGE_MIN_AUTO)),
+                            ],
+                            style=LayoutStyle.COLORMAP_RANGE,
+                        ),
+                        html.Div(
+                            [
+                                html.Label("Maximum", style=LayoutStyle.COLORMAP_MINMAX),
+                                dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE), type="number"),
+                                dcc.Checklist(["Auto"], ["Auto"], id=get_uuid(LayoutElements.COLOR_RANGE_MAX_AUTO)),
+                            ],
+                            style=LayoutStyle.COLORMAP_RANGE,
                         ),
                     ] 
                 )
