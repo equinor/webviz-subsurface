@@ -1,0 +1,219 @@
+import itertools
+from typing import Any, Dict, Iterator, List, Optional, Tuple
+
+import pandas as pd
+
+from ..._datainput.well_completions import get_ecl_unit_system, read_stratigraphy
+from ..._models import WellAttributesModel
+from ..._providers import EnsembleTableProvider
+
+
+class WellCompletionsDataModel:
+    def __init__(
+        self,
+        ensemble_path: str,
+        wellcompletion_provider: EnsembleTableProvider,
+        stratigraphy_file: str,
+        well_attributes_model: WellAttributesModel,
+        kh_unit: Optional[str],
+        kh_decimal_places: int,
+        theme_colors: List[str],
+    ) -> None:
+        self._kh_unit = kh_unit
+        self._kh_decimal_places = kh_decimal_places
+        self._theme_colors = theme_colors
+
+        self._wellcompletion_df = wellcompletion_provider.get_column_data(
+            column_names=wellcompletion_provider.column_names()
+        )
+        self._zones = self._wellcompletion_df["ZONE"].unique()
+        self._realizations = sorted(self._wellcompletion_df["REAL"].unique())
+        self._datemap = {
+            dte: i
+            for i, dte in enumerate(sorted(self._wellcompletion_df["DATE"].unique()))
+        }
+        self._wellcompletion_df["TIMESTEP"] = self._wellcompletion_df["DATE"].map(
+            self._datemap
+        )
+
+        self._stratigraphy = read_stratigraphy(
+            ensemble_path=ensemble_path, stratigraphy_file=stratigraphy_file
+        )
+        self._well_attributes = well_attributes_model.data
+        if self._kh_unit is None:
+            self._kh_unit, self._kh_decimal_places = _get_kh_unit(
+                ensemble_path=ensemble_path
+            )
+
+    @property
+    def realizations(self) -> List[int]:
+        return self._realizations
+
+    def create_ensemble_dataset(
+        self, realization: Optional[int] = None
+    ) -> Dict[str, Any]:
+
+        df = self._wellcompletion_df
+        if realization is not None:
+            df = df[df["REAL"] == realization]
+
+        return {
+            "version": "1.1.0",
+            "units": {
+                "kh": {"unit": self._kh_unit, "decimalPlaces": self._kh_decimal_places}
+            },
+            "stratigraphy": self._extract_stratigraphy(),
+            "timeSteps": [
+                pd.to_datetime(str(dte)).strftime("%Y-%m-%d")
+                for dte in self._datemap.keys()
+            ],
+            "wells": self._extract_wells(df),
+        }
+
+    def _extract_wells(self, wellcompletion_df: pd.DataFrame) -> List[Dict[str, Any]]:
+        """Descr..."""
+        well_list = []
+        no_real = wellcompletion_df["REAL"].nunique()
+        for well_name, well_group in wellcompletion_df.groupby("WELL"):
+            well_data = _extract_well(well_group, well_name, no_real)
+            well_data["attributes"] = (
+                self._well_attributes[well_name]
+                if well_name in self._well_attributes
+                else {}
+            )
+            well_list.append(well_data)
+        return well_list
+
+    def _extract_stratigraphy(self) -> List[Dict[str, Any]]:
+        """Returns the stratigraphy part of the data set"""
+        color_iterator = itertools.cycle(self._theme_colors)
+        if self._stratigraphy is None:
+            return [
+                {
+                    "name": zone,
+                    "color": next(color_iterator),
+                }
+                for zone in self._zones
+            ]
+
+        # If stratigraphy is not None the following is done:
+        stratigraphy, remaining_valid_zones = _filter_valid_nodes(
+            self._stratigraphy, self._zones
+        )
+
+        if remaining_valid_zones:
+            raise ValueError(
+                "The following zones are defined in the well completion data, "
+                f"but not in the stratigraphy: {remaining_valid_zones}"
+            )
+
+        return _add_colors_to_stratigraphy(stratigraphy, color_iterator)
+
+
+def _add_colors_to_stratigraphy(
+    stratigraphy: List[Dict[str, Any]],
+    color_iterator: Iterator,
+    zone_color_mapping: Optional[Dict[str, str]] = None,
+) -> List[Dict[str, Any]]:
+    """Add colors to the stratigraphy tree. The function will recursively parse the tree.
+
+    There are tree sources of color:
+    1. The color is given in the stratigraphy list, in which case nothing is done to the node
+    2. The color is the optional the zone->color map
+    3. If none of the above applies, the color will be taken from the theme color iterable for \
+    the leaves. For other levels, a dummy color grey is used
+    """
+    for zonedict in stratigraphy:
+        if "color" not in zonedict:
+            if (
+                zone_color_mapping is not None
+                and zonedict["name"] in zone_color_mapping
+            ):
+                zonedict["color"] = zone_color_mapping[zonedict["name"]]
+            elif "subzones" not in zonedict:
+                zonedict["color"] = next(
+                    color_iterator
+                )  # theme colors only applied on leaves
+            else:
+                zonedict["color"] = "#808080"  # grey
+        if "subzones" in zonedict:
+            zonedict["subzones"] = _add_colors_to_stratigraphy(
+                zonedict["subzones"],
+                color_iterator,
+                zone_color_mapping=zone_color_mapping,
+            )
+    return stratigraphy
+
+
+def _extract_well(
+    well_group: pd.DataFrame, well_name: str, no_real: int
+) -> Dict[str, Any]:
+    """Extract completion events and kh values for a single well"""
+    well_dict: Dict[str, Any] = {}
+    well_dict["name"] = well_name
+
+    completions: Dict[str, Dict[str, List[Any]]] = {}
+    for (zone, timestep), group_df in well_group.groupby(["ZONE", "TIMESTEP"]):
+        data = group_df["OP/SH"].value_counts()
+        if zone not in completions:
+            completions[zone] = {
+                "t": [],
+                "open": [],
+                "shut": [],
+                "khMean": [],
+                "khMin": [],
+                "khMax": [],
+            }
+        zonedict = completions[zone]
+        zonedict["t"].append(int(timestep))
+        zonedict["open"].append(float(data["OPEN"] / no_real if "OPEN" in data else 0))
+        zonedict["shut"].append(float(data["SHUT"] / no_real if "SHUT" in data else 0))
+        zonedict["khMean"].append(round(float(group_df["KH"].mean()), 2))
+        zonedict["khMin"].append(round(float(group_df["KH"].min()), 2))
+        zonedict["khMax"].append(round(float(group_df["KH"].max()), 2))
+
+    well_dict["completions"] = completions
+    return well_dict
+
+
+def _filter_valid_nodes(
+    stratigraphy: List[Dict[str, Any]], valid_zone_names: List[str]
+) -> Tuple[List, List]:
+    """Returns the stratigraphy tree with only valid nodes.
+    A node is considered valid if it self or one of it's subzones are in the
+    valid zone names list (passed from the lyr file)
+
+    The function recursively parses the tree to add valid nodes.
+    """
+    output = []
+    remaining_valid_zones = valid_zone_names
+    for zonedict in stratigraphy:
+        if "subzones" in zonedict:
+            zonedict["subzones"], remaining_valid_zones = _filter_valid_nodes(
+                zonedict["subzones"], remaining_valid_zones
+            )
+        if zonedict["name"] in remaining_valid_zones:
+            if "subzones" in zonedict and not zonedict["subzones"]:
+                zonedict.pop("subzones")
+            output.append(zonedict)
+            remaining_valid_zones = [
+                zone for zone in remaining_valid_zones if zone != zonedict["name"]
+            ]  # remove zone name from valid zones if it is found in the stratigraphy
+        elif "subzones" in zonedict and zonedict["subzones"]:
+            output.append(zonedict)
+
+    return output, remaining_valid_zones
+
+
+def _get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
+    """Returns kh unit and decimal places based on the unit system of the eclipse deck"""
+    units = {
+        "METRIC": ("mD·m", 2),
+        "FIELD": ("mD·ft", 2),
+        "LAB": ("mD·cm", 2),
+        "PVT-M": ("mD·m", 2),
+    }
+    unit_system = get_ecl_unit_system(ensemble_path=ensemble_path)
+    if unit_system is not None:
+        return units[unit_system]
+    return ("", 2)

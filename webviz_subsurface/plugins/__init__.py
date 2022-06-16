@@ -62,6 +62,7 @@ from ._tornado_plotter_fmu import TornadoPlotterFMU
 from ._volumetric_analysis import VolumetricAnalysis
 from ._well_analysis import WellAnalysis
 from ._well_completions import WellCompletions
+from ._well_completions_new import WellCompletionsNew
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._well_log_viewer import WellLogViewer
