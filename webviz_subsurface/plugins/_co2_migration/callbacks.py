@@ -5,6 +5,9 @@ import dash
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 # TODO: tmp?
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    SurfaceStatistic
+)
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
 )
@@ -18,6 +21,7 @@ from webviz_subsurface._providers import (
     SurfaceAddress,
     SurfaceServer,
     SurfaceMeta,
+    StatisticalSurfaceAddress,
 )
 from ._formation_alias import (
     compile_alias_list,
@@ -178,6 +182,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.DATEINPUT), "value"),
         Input(get_uuid(LayoutElements.FORMATION_INPUT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
+        Input(get_uuid(LayoutElements.STATISTIC_INPUT), "value"),
         Input(get_uuid(LayoutElements.COLORMAP_INPUT), "value"),
         Input(get_uuid(LayoutElements.COLOR_RANGE_STORE), "data"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
@@ -188,11 +193,18 @@ def plugin_callbacks(
         date,
         formation,
         realization,
+        statistic,
         color_map_name,
         color_map_range,
         ensemble,
         date_list,
     ):
+        if isinstance(realization, int):
+            realization = [realization]
+        elif len(realization) == 0:
+            raise PreventUpdate
+        elif len(realization) > 1 and statistic is None:
+            raise PreventUpdate
         if ensemble is None:
             raise PreventUpdate
         if MapAttribute(attribute) != MapAttribute.MIGRATION_TIME and date is None:
@@ -211,9 +223,9 @@ def plugin_callbacks(
         well_pick_horizon = lookup_well_pick_alias(
             formation_aliases, formation, well_pick_provider
         )
-        if surface_name is not None:
+        if surface_name is not None and len(realization) > 0:
             surf_address = _derive_surface_address(
-                surface_name, attribute, date, realization, map_attribute_names
+                surface_name, attribute, date, realization, map_attribute_names, statistic
             )
             surf_data = _SurfaceData.from_server(
                 surface_server,
@@ -305,17 +317,27 @@ def _derive_surface_address(
     surface_name: str,
     attribute: str,
     date: Optional[str],
-    realization: int,
-    map_attribute_names: Dict[MapAttribute, str]
+    realization: List[int],
+    map_attribute_names: Dict[MapAttribute, str],
+    statistic: str,
 ):
     attribute = MapAttribute(attribute)
     date = None if attribute == MapAttribute.MIGRATION_TIME else date
-    return SimulatedSurfaceAddress(
-        attribute=map_attribute_names[attribute],
-        name=surface_name,
-        datestr=date,
-        realization=realization
-    )
+    if len(realization) == 1:
+        return SimulatedSurfaceAddress(
+            attribute=map_attribute_names[attribute],
+            name=surface_name,
+            datestr=date,
+            realization=realization[0],
+        )
+    else:
+        return StatisticalSurfaceAddress(
+            attribute=map_attribute_names[attribute],
+            name=surface_name,
+            datestr=date,
+            statistic=SurfaceStatistic(statistic),
+            realizations=realization,
+        )
 
 
 def _derive_fault_polygon_address(polygon_name, realization):

@@ -1,8 +1,11 @@
-from typing import Callable, List, Any, Dict
+from typing import Callable, List
 from enum import unique, Enum
 import plotly.graph_objects as go
 from dash import html, dcc
 import webviz_core_components as wcc
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    SurfaceStatistic
+)
 from webviz_subsurface_components import DeckGLMap
 from ._utils import MapAttribute
 # Local import?
@@ -34,6 +37,7 @@ class LayoutElements(str, Enum):
 
     ENSEMBLEBARPLOT = "ensemblebarplot"
     ENSEMBLETIMELEAKPLOT = "ensembletimeleakplot"
+    STATISTIC_INPUT = "statistic-input"
 
     DATE_STORE = "date-store"
     COLOR_RANGE_STORE = "color-range-store"
@@ -150,6 +154,11 @@ class PropertySelectorLayout(html.Div):
                             value=MapAttribute.MIGRATION_TIME,
                             clearable=False,
                         ),
+                        "Statistic",
+                        wcc.Dropdown(
+                            id=get_uuid(LayoutElements.STATISTIC_INPUT),
+                            options=[s.value for s in SurfaceStatistic],
+                        ),
                         "Formation",
                         wcc.Dropdown(
                             id=get_uuid(LayoutElements.FORMATION_INPUT),
@@ -214,6 +223,7 @@ class EnsembleSelectorLayout(html.Div):
                 "Realization",
                 wcc.Dropdown(
                     id=get_uuid(LayoutElements.REALIZATIONINPUT),
+                    multi=True,
                 ),
             ]
         ))
