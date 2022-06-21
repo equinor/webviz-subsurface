@@ -80,7 +80,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
         ensemble_df = pd.read_csv(csv_file)
         et_import_csv_s = timer.lap_s()
 
-        if ensemble_df.empty == 0:
+        if ensemble_df.empty:
             raise ValueError("Import resulted in empty DataFrame")
         if "REAL" not in ensemble_df.columns:
             raise ValueError("No REAL column present in input data")
