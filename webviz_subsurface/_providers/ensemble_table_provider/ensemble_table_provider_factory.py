@@ -207,7 +207,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
             self._storage_dir, storage_key
         )
         if not provider:
-            raise ValueError(f"Failed to load/create lazy provider for {ens_path}")
+            raise ValueError(f"Failed to load/create table provider for {ens_path}")
 
         LOGGER.info(
             f"Saved lazy summary provider to backing store in {timer.elapsed_s():.2f}s ("
@@ -255,7 +255,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
         elapsed_load_parameters_s = timer.lap_s()
 
         try:
-            EnsembleTableProviderImplArrow.write_backing_store_from_per_realization_tables(
+            EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
                 self._storage_dir, storage_key, ensemble_df
             )
         except ValueError as exc:
