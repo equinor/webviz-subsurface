@@ -28,7 +28,6 @@ from .ensemble_surface_provider import (
 )
 from .ensemble_table_provider.ensemble_table_provider import (
     EnsembleTableProvider,
-    EnsembleTableProviderSet,
 )
 from .ensemble_table_provider.ensemble_table_provider_factory import (
     EnsembleTableProviderFactory,

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -10,6 +10,7 @@ from webviz_subsurface._providers import (
 from webviz_subsurface._providers.ensemble_table_provider.ensemble_table_provider_impl_arrow import (
     EnsembleTableProviderImplArrow,
 )
+
 
 def _create_synthetic_table_provider(
     storage_dir: Path,
@@ -61,15 +62,10 @@ def test_synthetic_get_column_data(testdata_folder: Path) -> None:
 def test_create_from_aggregated_csv_file_smry_csv(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-    factory = EnsembleTableProviderFactory(
-        tmp_path, allow_storage_writes=True
-    )
-    providerset = factory.create_provider_set_from_aggregated_csv_file(
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_ensemble_csv_file(
         testdata_folder / "reek_test_data" / "aggregated_data" / "smry.csv"
     )
-
-    assert providerset.ensemble_names() == ["iter-0"]
-    provider = providerset.ensemble_provider("iter-0")
 
     assert len(provider.column_names()) == 17
     assert provider.column_names()[0] == "DATE"
@@ -94,22 +90,11 @@ def test_create_from_per_realization_csv_file(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
 
-    ensembles: Dict[str, str] = {
-        "iter-0": str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
-        "iter-3": str(testdata_folder / "01_drogon_ahm/realization-*/iter-3"),
-    }
-
-    csvfile = "share/results/tables/rft.csv"
-
-    factory = EnsembleTableProviderFactory(
-        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_per_realization_csv_file(
+        str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
+        "share/results/tables/rft.csv",
     )
-    providerset = factory.create_provider_set_from_per_realization_csv_file(
-        ensembles, csvfile
-    )
-
-    assert providerset.ensemble_names() == ["iter-0", "iter-3"]
-    provider = providerset.ensemble_provider("iter-0")
 
     all_column_names = provider.column_names()
     # print(all_column_names)
@@ -124,3 +109,17 @@ def test_create_from_per_realization_csv_file(
     assert valdf["REAL"].unique() == [2]
     assert valdf["CONIDX"].nunique() == 24
     assert sorted(valdf["CONIDX"].unique()) == list(range(1, 25))
+
+
+def test_create_from_per_realization_arrow_file(
+    testdata_folder: Path, tmp_path: Path
+) -> None:
+
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_per_realization_csv_file(
+        str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
+        "share/results/unsmry/*arrow",
+    )
+
+    # valdf = provider.get_column_data(provider.column_names)
+    assert "REAL" in provider.column_names()
