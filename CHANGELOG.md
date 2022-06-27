@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.14] - 2022-06-27
+
 ### Fixed
 
 - [#1053](https://github.com/equinor/webviz-subsurface/pull/1046) - `SwatinitQC` - Fixed an issue so that relative paths for the `faultlines` argument works.
