@@ -54,7 +54,12 @@ class EnsembleTableProviderFactory(WebvizFactory):
         self,
         csv_file: Path,
     ) -> EnsembleTableProvider:
-        """Create EnsembleTableProvider..."""
+        """Create EnsembleTableProvider from aggregated CSV file.
+        The CSV file is assumed to contain data for a single ensemble and must contain
+        a REAL column.
+        If the CSV file contains an `ENSEMBLE` column it will be ignored, but an exception
+        will be thrown if it is present and it contains multiple ensemble names.
+        """
 
         timer = PerfTimer()
 
@@ -78,6 +83,11 @@ class EnsembleTableProviderFactory(WebvizFactory):
 
         timer.lap_s()
         ensemble_df = pd.read_csv(csv_file)
+
+        if "ENSEMBLE" in ensemble_df.columns:
+            if ensemble_df["ENSEMBLE"].nunique() > 1:
+                raise KeyError("Input data contains more than one unique ensemble name")
+
         et_import_csv_s = timer.lap_s()
 
         if ensemble_df.empty:
@@ -108,7 +118,11 @@ class EnsembleTableProviderFactory(WebvizFactory):
     def create_from_per_realization_csv_file(
         self, ens_path: str, csv_file_rel_path: str
     ) -> EnsembleTableProvider:
-        """Create EnsembleTableProvider ..."""
+        """Create EnsembleTableProvider from per realization CSV files.
+
+        Note that the returned table provider will not be able to return vector
+        metadata.
+        """
 
         timer = PerfTimer()
 
@@ -131,7 +145,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
                 f"Failed to load table provider (per real CSV) for {ens_path}"
             )
 
-        LOGGER.info(f"Importing/saving per real CSV summary data for: {ens_path}")
+        LOGGER.info(f"Importing/saving per real CSV data for: {ens_path}")
 
         timer.lap_s()
 
@@ -163,7 +177,12 @@ class EnsembleTableProviderFactory(WebvizFactory):
     def create_from_per_realization_arrow_file(
         self, ens_path: str, rel_file_pattern: str
     ) -> EnsembleTableProvider:
-        """Create EnsembleTableProvider ..."""
+        """Create EnsembleTableProvider from per realization data in .arrow format.
+
+        The `rel_file_pattern` parameter must specify a relative (per realization) file pattern
+        that will be used to find the wanted .arrow files within each realization. The file
+        pattern is realtive to each realizations's `runpath`.
+        """
 
         timer = PerfTimer()
 
@@ -210,19 +229,19 @@ class EnsembleTableProviderFactory(WebvizFactory):
             raise ValueError(f"Failed to load/create table provider for {ens_path}")
 
         LOGGER.info(
-            f"Saved lazy summary provider to backing store in {timer.elapsed_s():.2f}s ("
+            f"Saved table provider to backing store in {timer.elapsed_s():.2f}s ("
             f"import_smry={et_import_smry_s:.2f}s, write={et_write_s:.2f}s, ens_path={ens_path})"
         )
 
         return provider
 
-    # Function to load the parameters.txt/json file using fmu.ensemble.
-    # Should this be a separate Factory class? Typically both csv files and
-    # the parameter file will be loaded from the same ensemble. Currently the ensembles
-    # will be loaded and deleted twice if that is the case...
     def create_from_per_realization_parameter_file(
         self, ens_path: str
     ) -> EnsembleTableProvider:
+        """Create EnsembleTableProvider from parameter files.
+
+        Note that the returned table provider will not be able to return metadata.
+        """
 
         LOGGER.info("create_provider_from_per_realization_parameter_file() ...")
 

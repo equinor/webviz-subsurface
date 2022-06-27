@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import pandas as pd
 
@@ -18,14 +18,3 @@ class EnsembleTableProvider(abc.ABC):
         self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
     ) -> pd.DataFrame:
         ...
-
-
-class EnsembleTableProviderSet:
-    def __init__(self, provider_dict: Dict[str, EnsembleTableProvider]) -> None:
-        self._provider_dict = provider_dict
-
-    def ensemble_names(self) -> List[str]:
-        return list(self._provider_dict.keys())
-
-    def ensemble_provider(self, ensemble_name: str) -> EnsembleTableProvider:
-        return self._provider_dict[ensemble_name]

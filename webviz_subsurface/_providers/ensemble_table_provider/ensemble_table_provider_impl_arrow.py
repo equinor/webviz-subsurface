@@ -29,6 +29,8 @@ def _sort_table_on_real(table: pa.Table) -> pa.Table:
 
 
 class EnsembleTableProviderImplArrow(EnsembleTableProvider):
+    """This class implements a EnsembleTableProvider"""
+
     def __init__(self, arrow_file_name: Path) -> None:
         self._arrow_file_name = str(arrow_file_name)
 
