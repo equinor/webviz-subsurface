@@ -7,16 +7,9 @@ from webviz_subsurface._providers import (
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
 )
-from webviz_subsurface._providers.ensemble_table_provider_factory import BackingType
-from webviz_subsurface._providers.ensemble_table_provider_impl_arrow import (
+from webviz_subsurface._providers.ensemble_table_provider.ensemble_table_provider_impl_arrow import (
     EnsembleTableProviderImplArrow,
 )
-from webviz_subsurface._providers.ensemble_table_provider_impl_inmem_parquet import (
-    EnsembleTableProviderImplInMemParquet,
-)
-
-BACKING_TYPE_TO_TEST: BackingType = BackingType.ARROW
-
 
 def _create_synthetic_table_provider(
     storage_dir: Path,
@@ -36,23 +29,14 @@ def _create_synthetic_table_provider(
 
     input_df = pd.DataFrame(input_data[1:], columns=input_data[0])
 
-    use_arrow_implementation = True
-
     provider: Optional[EnsembleTableProvider]
-    if use_arrow_implementation:
-        EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
-            storage_dir, "dummy_key", input_df
-        )
-        provider = EnsembleTableProviderImplArrow.from_backing_store(
-            storage_dir, "dummy_key"
-        )
-    else:
-        EnsembleTableProviderImplInMemParquet.write_backing_store_from_ensemble_dataframe(
-            storage_dir, "dummy_key", input_df
-        )
-        provider = EnsembleTableProviderImplInMemParquet.from_backing_store(
-            storage_dir, "dummy_key"
-        )
+
+    EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
+        storage_dir, "dummy_key", input_df
+    )
+    provider = EnsembleTableProviderImplArrow.from_backing_store(
+        storage_dir, "dummy_key"
+    )
 
     if not provider:
         raise ValueError("Failed to create EnsembleTableProvider")
@@ -78,7 +62,7 @@ def test_create_from_aggregated_csv_file_smry_csv(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
     factory = EnsembleTableProviderFactory(
-        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
+        tmp_path, allow_storage_writes=True
     )
     providerset = factory.create_provider_set_from_aggregated_csv_file(
         testdata_folder / "reek_test_data" / "aggregated_data" / "smry.csv"
@@ -104,33 +88,6 @@ def test_create_from_aggregated_csv_file_smry_csv(
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "YEARS"
     assert valdf["REAL"].nunique() == 3
-
-
-def test_create_from_aggregated_csv_file_smry_hm(
-    testdata_folder: Path, tmp_path: Path
-) -> None:
-    factory = EnsembleTableProviderFactory(
-        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
-    )
-    providerset = factory.create_provider_set_from_aggregated_csv_file(
-        testdata_folder / "reek_test_data" / "aggregated_data" / "smry_hm.csv"
-    )
-
-    assert providerset.ensemble_names() == ["iter-0", "iter-3"]
-    provider = providerset.ensemble_provider("iter-0")
-
-    assert len(provider.column_names()) == 474
-    assert provider.column_names()[0] == "DATE"
-    assert provider.column_names()[1] == "BPR:15,28,1"
-    assert provider.column_names()[473] == "YEARS"
-
-    assert len(provider.realizations()) == 10
-
-    valdf = provider.get_column_data(["DATE"])
-    assert len(valdf.columns) == 2
-    assert valdf.columns[0] == "REAL"
-    assert valdf.columns[1] == "DATE"
-    assert valdf["REAL"].nunique() == 10
 
 
 def test_create_from_per_realization_csv_file(
