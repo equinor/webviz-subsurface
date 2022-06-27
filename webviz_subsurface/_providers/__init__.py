@@ -26,10 +26,9 @@ from .ensemble_surface_provider import (
     SurfaceMeta,
     SurfaceServer,
 )
-from .ensemble_table_provider.ensemble_table_provider import (
+from .ensemble_table_provider import (
     EnsembleTableProvider,
-)
-from .ensemble_table_provider.ensemble_table_provider_factory import (
     EnsembleTableProviderFactory,
+    EnsembleTableProviderImplArrow,
 )
 from .well_provider import WellProvider, WellProviderFactory, WellServer

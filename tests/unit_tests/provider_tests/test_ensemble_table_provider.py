@@ -7,7 +7,7 @@ from webviz_subsurface._providers import (
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
 )
-from webviz_subsurface._providers.ensemble_table_provider.ensemble_table_provider_impl_arrow import (
+from webviz_subsurface._providers.ensemble_table_provider import (
     EnsembleTableProviderImplArrow,
 )
 
