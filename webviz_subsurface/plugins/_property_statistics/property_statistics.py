@@ -267,4 +267,4 @@ def create_df_from_table_provider(
         df = provider.get_column_data(column_names=provider.column_names())
         df["ENSEMBLE"] = ens_name
         dfs.append(df)
-    return pd.concat(df)
+    return pd.concat(dfs)
