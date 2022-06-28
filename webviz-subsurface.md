@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.14rc0` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.14` of `webviz-subsurface`.
 
 
 
@@ -1361,15 +1361,17 @@ i.e. negative values means sim is lower than obs and vice versa.
 
 
 
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to include.
 * **`rel_file_pattern`:** path to `.arrow` files with summary data.
-* **`gruptree_file`:** `.csv` with gruptree information.
 * **`sampling`:** Frequency for the data sampling.
 * **`well_attributes_file`:** Path to json file containing info of well attributes.
 The attribute category values can be used for filtering of well collections.
-* **`excl_name_startswith`:** Filter out wells that starts with this string
-* **`excl_name_contains`:** Filter out wells that contains this string
-* **`phase_weights`:** Dict of "Oil", "Water" and "Gas" (inverse) weight factors that
+* **`excl_name_startswith`:** Exclude wells that starts with this string.
+* **`excl_name_endswith`:** Exclude wells that ends with this string.
+* **`excl_name_contains`:** Exclude wells that contains this string.
+* **`phase_weights`:** Dict of "Oil", "Water" and "Gas" inverse weight factors that
 are included as weight option for misfit per real calculation.
 
 
@@ -1382,6 +1384,7 @@ How to use in YAML config file:
         sampling:  # Optional, type str.
         well_attributes_file:  # Optional, type str.
         excl_name_startswith:  # Optional, type list.
+        excl_name_endswith:  # Optional, type list.
         excl_name_contains:  # Optional, type list.
         phase_weights:  # Optional, type dict.
 ```
@@ -3072,7 +3075,7 @@ How to use in YAML config file:
         csvfile:  # Optional, type str.
         ensemble:  # Optional, type Union[str, NoneType].
         realization:  # Optional, type Union[int, NoneType].
-        faultlines:  # Optional, type Union[str (corresponding to a path), NoneType].
+        faultlines:  # Optional, type str (corresponding to a path).
 ```
 
 
