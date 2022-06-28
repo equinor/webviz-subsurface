@@ -116,10 +116,22 @@ def test_create_from_per_realization_arrow_file(
 ) -> None:
 
     factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
-    provider = factory.create_from_per_realization_csv_file(
+    provider = factory.create_from_per_realization_arrow_file(
         str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
         "share/results/unsmry/*arrow",
     )
 
     # valdf = provider.get_column_data(provider.column_names)
+    assert "REAL" in provider.column_names()
+
+
+def test_create_from_per_realization_parameter_file(
+    testdata_folder: Path, tmp_path: Path
+) -> None:
+
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_per_realization_parameter_file(
+        str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
+    )
+
     assert "REAL" in provider.column_names()
