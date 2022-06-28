@@ -167,13 +167,15 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 for ens in ensembles
             }
             table_provider_factory = EnsembleTableProviderFactory.instance()
-            table_provider_set = {
-                ens_name: table_provider_factory.create_from_per_realization_parameter_file(
-                    ens_path
-                )
-                for ens_name, ens_path in self.ens_paths.item()
-            }
-            parameterdf = create_df_from_table_provider(table_provider_set)
+
+            parameterdf = create_df_from_table_provider(
+                provider_set={
+                    ens_name: table_provider_factory.create_from_per_realization_parameter_file(
+                        ens_path
+                    )
+                    for ens_name, ens_path in self.ens_paths.items()
+                }
+            )
 
             if self.response_file:
                 self.responsedf = load_csv(

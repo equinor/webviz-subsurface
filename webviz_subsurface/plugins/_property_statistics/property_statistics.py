@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from dash import Dash, dcc
@@ -13,8 +13,8 @@ from webviz_subsurface._models import (
 )
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
+    EnsembleTableProvider,
     EnsembleTableProviderFactory,
-    EnsembleTableProviderSet,
     Frequency,
 )
 
@@ -108,7 +108,7 @@ differ between individual realizations of an ensemble.
             Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel]
         ] = None
         run_mode_portable = WEBVIZ_INSTANCE_INFO.run_mode == WebvizRunMode.PORTABLE
-        table_provider = EnsembleTableProviderFactory.instance()
+        table_provider_factory = EnsembleTableProviderFactory.instance()
 
         if ensembles is not None:
             ensemble_paths = {
@@ -131,11 +131,14 @@ differ between individual realizations of an ensemble.
                 self._vmodel = ProviderTimeSeriesDataModel(
                     provider_set=provider_set, column_keys=column_keys
                 )
-                property_df = create_df_from_table_provider(
-                    table_provider.create_provider_set_from_per_realization_csv_file(
-                        ensemble_paths, statistics_file
+                table_provider_set = {
+                    ens: table_provider_factory.create_from_per_realization_csv_file(
+                        ens_path, statistics_file
                     )
-                )
+                    for ens, ens_path in ensemble_paths.items()
+                }
+                property_df = create_df_from_table_provider(table_provider_set)
+
             except ValueError as error:
                 message = (
                     f"Some/all ensembles are missing arrow files at {rel_file_pattern}.\n"
@@ -174,7 +177,7 @@ differ between individual realizations of an ensemble.
             # It should be removed in the future together with the support of aggregated csv-files
             try:
                 property_df = create_df_from_table_provider(
-                    table_provider.create_provider_set_from_aggregated_csv_file(
+                    table_provider_factory.create_provider_set_from_aggregated_csv_file(
                         csvfile_statistics
                     )
                 )
@@ -186,7 +189,7 @@ differ between individual realizations of an ensemble.
             if csvfile_smry is not None:
                 try:
                     smry_df = create_df_from_table_provider(
-                        table_provider.create_provider_set_from_aggregated_csv_file(
+                        table_provider_factory.create_provider_set_from_aggregated_csv_file(
                             csvfile_smry
                         )
                     )
@@ -255,12 +258,13 @@ differ between individual realizations of an ensemble.
         return store
 
 
-def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.DataFrame:
+def create_df_from_table_provider(
+    provider_set: Dict[str, EnsembleTableProvider]
+) -> pd.DataFrame:
+    """Aggregates parameters from all ensemble into a common dataframe."""
     dfs = []
-    for ens in provider.ensemble_names():
-        df = provider.ensemble_provider(ens).get_column_data(
-            column_names=provider.ensemble_provider(ens).column_names()
-        )
-        df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+    for ens_name, provider in provider_set.items():
+        df = provider.get_column_data(column_names=provider.column_names())
+        df["ENSEMBLE"] = ens_name
         dfs.append(df)
-    return pd.concat(dfs)
+    return pd.concat(df)

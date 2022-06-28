@@ -1,7 +1,9 @@
 import hashlib
+import json
 import logging
 import os
 from pathlib import Path
+from typing import Dict
 
 import pandas as pd
 from fmu.ensemble import ScratchEnsemble
@@ -295,6 +297,61 @@ class EnsembleTableProviderFactory(WebvizFactory):
         )
 
         return provider
+
+    def create_provider_set_from_aggregated_csv_file(
+        self,
+        aggr_csv_file: Path,
+    ) -> Dict[str, EnsembleTableProvider]:
+
+        LOGGER.info(f"create_provider_set_from_aggregated_csv_file() - {aggr_csv_file}")
+
+        hashval = _make_hash_string(str(aggr_csv_file))
+        main_storage_key = f"aggr_csv__{hashval}"
+
+        storage_keys_to_load: Dict[str, str] = {}
+        json_fn = self._storage_dir / (main_storage_key + ".json")
+        try:
+            with open(json_fn, "r") as file:
+                storage_keys_to_load = json.load(file)
+        except FileNotFoundError:
+            # We can only recover from this if we're allowed to write to storage
+            if not self._allow_storage_writes:
+                raise
+
+        if not storage_keys_to_load and self._allow_storage_writes:
+            aggregated_df = pd.read_csv(aggr_csv_file)
+            ensemble_names = aggregated_df["ENSEMBLE"].unique()
+
+            LOGGER.info(
+                f"Saving {len(ensemble_names)} table providers from aggregated CSV to backing store"
+            )
+
+            for ens_name in ensemble_names:
+                storage_key = main_storage_key + "__" + ens_name
+                ensemble_df = aggregated_df[aggregated_df["ENSEMBLE"] == ens_name]
+                EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
+                    self._storage_dir, storage_key, ensemble_df
+                )
+                storage_keys_to_load[ens_name] = storage_key
+
+            with open(json_fn, "w") as file:
+                json.dump(storage_keys_to_load, file)
+
+        created_providers: Dict[str, EnsembleTableProvider] = {}
+        for ens_name, storage_key in storage_keys_to_load.items():
+            provider = EnsembleTableProviderImplArrow.from_backing_store(
+                self._storage_dir, storage_key
+            )
+            if provider:
+                created_providers[ens_name] = provider
+
+        num_missing_models = len(storage_keys_to_load) - len(created_providers)
+        if num_missing_models > 0:
+            raise ValueError(f"Failed to load data for {num_missing_models} ensembles")
+
+        LOGGER.info(f"Loaded {len(created_providers)} providers from backing store")
+
+        return created_providers
 
 
 def _make_hash_string(string_to_hash: str) -> str:
