@@ -122,6 +122,8 @@ def test_create_from_per_realization_arrow_file(
     )
 
     # valdf = provider.get_column_data(provider.column_names)
+    print(provider.column_names())
+    print(provider.get_column_data(column_names=provider.column_names()))
     assert "REAL" in provider.column_names()
 
 
@@ -133,5 +135,6 @@ def test_create_from_per_realization_parameter_file(
     provider = factory.create_from_per_realization_parameter_file(
         str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
     )
-
+    print(provider.column_names())
+    print(provider.get_column_data(column_names=provider.column_names()))
     assert "REAL" in provider.column_names()
