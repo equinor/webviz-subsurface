@@ -153,4 +153,4 @@ def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
 
     for _, provider in provider_set.items():
         valdf = provider.get_column_data(provider.column_names())
-        assert valdf["REAL"].unique() == [0, 1]
+        assert set(valdf["REAL"].unique()) == {0, 1}
