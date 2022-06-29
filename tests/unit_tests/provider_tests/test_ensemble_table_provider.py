@@ -153,6 +153,4 @@ def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
 
     for ens_name, provider in provider_set.items():
         valdf = provider.get_column_data(provider.column_names())
-        print(valdf)
-        assert valdf["ENSEMBLE"].unique() == [ens_name]
         assert valdf["REAL"].unique() == [0, 1]
