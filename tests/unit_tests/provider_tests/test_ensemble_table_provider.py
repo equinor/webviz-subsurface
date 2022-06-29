@@ -124,7 +124,7 @@ def test_create_from_per_realization_arrow_file(
     valdf = provider.get_column_data(provider.column_names())
     assert valdf.shape[0] == 25284
     assert "FOPT" in valdf.columns
-    assert valdf["REAL"].unique() == 100
+    assert valdf["REAL"].nunique() == 100
 
 
 def test_create_from_per_realization_parameter_file(
@@ -138,10 +138,10 @@ def test_create_from_per_realization_parameter_file(
 
     valdf = provider.get_column_data(provider.column_names())
     assert "GLOBVAR:FAULT_SEAL_SCALING" in valdf.columns
-    assert valdf["REAL"].unique() == 100
+    assert valdf["REAL"].nunique() == 100
 
 
-def create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
+def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
     """This tests importing a csv file with an ensemble column with multiple
     ensembles. It will return a dictionary of providers, one for each ensemble.
     """
