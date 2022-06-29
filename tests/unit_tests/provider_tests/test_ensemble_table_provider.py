@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import pandas as pd
 
@@ -121,10 +121,10 @@ def test_create_from_per_realization_arrow_file(
         "share/results/unsmry/*arrow",
     )
 
-    # valdf = provider.get_column_data(provider.column_names)
-    print(provider.column_names())
-    print(provider.get_column_data(column_names=provider.column_names()))
-    assert "REAL" in provider.column_names()
+    valdf = provider.get_column_data(provider.column_names())
+    assert valdf.shape[0] == 25284
+    assert "FOPT" in valdf.columns
+    assert valdf["REAL"].unique() == 100
 
 
 def test_create_from_per_realization_parameter_file(
@@ -135,6 +135,24 @@ def test_create_from_per_realization_parameter_file(
     provider = factory.create_from_per_realization_parameter_file(
         str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
     )
-    print(provider.column_names())
-    print(provider.get_column_data(column_names=provider.column_names()))
-    assert "REAL" in provider.column_names()
+
+    valdf = provider.get_column_data(provider.column_names())
+    assert "GLOBVAR:FAULT_SEAL_SCALING" in valdf.columns
+    assert valdf["REAL"].unique() == 100
+
+
+def create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
+    """This tests importing a csv file with an ensemble column with multiple
+    ensembles. It will return a dictionary of providers, one for each ensemble.
+    """
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider_set: Dict[
+        str, EnsembleTableProvider
+    ] = factory.create_provider_set_from_aggregated_csv_file("tests/data/volumes.csv")
+    assert set(provider_set.keys()) == {"iter-0", "iter-1"}
+
+    for ens_name, provider in provider_set.items():
+        valdf = provider.get_column_data(provider.column_names())
+        print(valdf)
+        assert valdf["ENSEMBLE"].unique() == [ens_name]
+        assert valdf["REAL"].unique() == [0, 1]
