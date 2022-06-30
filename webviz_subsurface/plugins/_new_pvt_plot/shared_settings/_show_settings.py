@@ -28,11 +28,3 @@ class ShowPlots(SettingsGroupABC):
                 ),
         ]
 
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(self.component_unique_id(ShowPlots.Ids.SHOWPLOTS),'options'),
-            Input(self.component_unique_id(Filter.Ids.COLOR_BY),'value')
-        )
-        def Update_Show_Plots(colorBy: str):
-            plot_settings = ["Formation Volume Factor", "Viscosity", "Density"]
-            return plot_settings
