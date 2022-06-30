@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: webviz-wlf-tutorial
+Version: 0.0.0
+Summary: Webviz Layout Framework Tutorial
+Home-page: UNKNOWN
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Natural Language :: English
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Dash
+Classifier: Framework :: Flask
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Requires-Python: ~=3.6
+Provides-Extra: tests

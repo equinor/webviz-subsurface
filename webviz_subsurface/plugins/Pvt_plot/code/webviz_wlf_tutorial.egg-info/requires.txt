@@ -1,0 +1,8 @@
+webviz-config>=0.1.0
+
+[tests]
+selenium~=3.141
+pylint
+mock
+black
+bandit
