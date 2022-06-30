@@ -10,7 +10,7 @@ from webviz_config import WebvizPluginABC
 from ._error import error
 from .views import PvtView
 from ._plugin_ids import PluginIds
-from .shared_settings import Filter
+from .shared_settings import Filter,ShowPlots
 
 
 class PvtPlotter(WebvizPluginABC):
@@ -54,7 +54,11 @@ class PvtPlotter(WebvizPluginABC):
         )
 
         self.add_shared_settings_group(
-            Filter(self.pvt_df), PluginIds.SharedSettings.FILTER
+            Filter(), PluginIds.SharedSettings.FILTER
+        )
+
+        self.add_shared_settings_group(
+            ShowPlots(), PluginIds.SharedSettings.SHOWPLOTS
         )
 
         self.add_view(

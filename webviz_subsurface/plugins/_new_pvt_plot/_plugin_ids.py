@@ -5,6 +5,7 @@ class PluginIds:
 
     class SharedSettings:
         FILTER = "filter"
+        SHOWPLOTS = "show-plots"
 
     class PvtID:
         GROUP_NAME = "Pvt Analysis"
