@@ -9,7 +9,7 @@ from webviz_config import WebvizPluginABC
 
 from ._error import error
 from .views import PvtView
-from ._pliginIds import PluginIds
+from ._plugin_ids import PluginIds
 from .shared_settings import Filter
 
 

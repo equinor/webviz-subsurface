@@ -1,7 +1,7 @@
 import pandas as pd
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from .._pliginIds import PlugInIds
+from .._plugin_ids import PlugInIds
 from ..view_elements import Graph
 
 
@@ -21,13 +21,9 @@ class PvtView(ViewABC):
         column = self.add_column()
 
         first_row = column.make_row()
-        first_row.add_view_element(Graph(), PopulationIndicators.Ids.POPULATION)
-        first_row.add_view_element(Graph(), PopulationIndicators.Ids.POPULATION_GROWTH)
+        first_row.add_view_element(Graph(), PvtView.Ids.FORMATION_VOLUME_FACTOR)
+        first_row.add_view_element(Graph(), PvtView.Ids.VISCOSITY)
 
         second_row = column.make_row()
-        second_row.add_view_element(
-            Graph(), PopulationIndicators.Ids.RURAL_VS_URBAN_POPULATION
-        )
-        second_row.add_view_element(
-            Graph(), PopulationIndicators.Ids.RURAL_VS_URBAN_POPULATION_GROWTH
-        )
+        second_row.add_view_element(Graph(), PvtView.Ids.DENSITY)
+        second_row.add_view_element(Graph(), PvtView.Ids.GAS_OIL_RATIO)
