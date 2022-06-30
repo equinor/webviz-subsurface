@@ -1,11 +1,12 @@
-from typing import Type
+from typing import Type, List
 from pathlib import Path
 
 from dash.development.base_component import Component
 import pandas as pd
 from pandas.errors import ParserError
 from pandas.errors import EmptyDataError
-from webviz_config import WebvizPluginABC
+from webviz_config import WebvizPluginABC, WebvizSettings
+from dash import Dash, Input, Output, State, callback_context, dcc, html
 
 from ._error import error
 from .views import PvtView
@@ -16,7 +17,12 @@ from .shared_settings import Filter,ShowPlots
 class PvtPlotter(WebvizPluginABC):
     def __init__(
         self,
+        app: Dash,
+        webviz_settings: WebvizSettings,
+        ensembles: List[str],
         pvt_relative_file_path: str = None,
+        read_from_init_file: bool = False,
+        drop_ensemble_duplicates: bool = False,
     ) -> None:
         super().__init__(stretch=True)
 

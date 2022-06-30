@@ -18,39 +18,42 @@ class Filter(SettingsGroupABC):
     def __init__(self) -> None:
         super().__init__("Filter")
 
-        self.color = ["Ensembel","Pvtnum"]
+        self.color = ["Ensembel", "Pvtnum"]
 
-        self.ensembles = ["iter-0","iter-3"]
+        self.ensembles = ["iter-0", "iter-3"]
 
         self.phase = ["Oil (PVTO)", "Gas (PVTG)", "Water (PVTW)"]
 
-    def layout(self) ->List[Component]:
+        self.pvtnum = ["1", "2"]
+
+    def layout(self) -> List[Component]:
         return [
             wcc.RadioItems(
-                id = self.register_component_unique_id(Filter.Ids.COLOR_BY),
+                id=self.register_component_unique_id(Filter.Ids.COLOR_BY),
                 label="Color by",
-                options =[
-                    {"label": x, "value":x} for x in self.color
-                    ],
-                value =self.color[0],
-                vertical= False
-                ),
+                options=[{"label": x, "value": x} for x in self.color],
+                value=self.color[0],
+                vertical=False,
+            ),
             wcc.Checklist(
-                id = self.register_component_unique_id(Filter.Ids.ENSEMBLES),
+                id=self.register_component_unique_id(Filter.Ids.ENSEMBLES),
                 label="Ensembles",
-                options =[
-                    {"label": x, "value":x} for x in self.ensembles
-                    ],
-                value =self.ensembles,
-                vertical= False
-                ),
+                options=[{"label": x, "value": x} for x in self.ensembles],
+                value=self.ensembles,
+                vertical=False,
+            ),
             wcc.Dropdown(
-                id = self.register_component_unique_id(Filter.Ids.PHASE),
+                id=self.register_component_unique_id(Filter.Ids.PHASE),
                 label="Phase",
-                options =[
-                    {"label":x, "value":x} for x in self.phase
-                    ],
-                value =self.phase[0],
-                clearable=False
-            )
+                options=[{"label": x, "value": x} for x in self.phase],
+                value=self.phase[0],
+                clearable=False,
+            ),
+            wcc.Checklist(
+                id=self.register_component_unique_id(Filter.Ids.PVTNUM),
+                label="Pvtnum",
+                options=[{"label": x, "value": x} for x in self.pvtnum],
+                value=self.pvtnum,
+                vertical=False,
+            ),
         ]
