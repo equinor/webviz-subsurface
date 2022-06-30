@@ -16,7 +16,12 @@ from .shared_settings import Filter,ShowPlots
 class PvtPlotter(WebvizPluginABC):
     def __init__(
         self,
+        app: Dash,
+        webviz_settings: WebvizSettings,
+        ensembles: List[str],
         pvt_relative_file_path: str = None,
+        read_from_init_file: bool = False,
+        drop_ensemble_duplicates: bool = False,
     ) -> None:
         super().__init__(stretch=True)
 
