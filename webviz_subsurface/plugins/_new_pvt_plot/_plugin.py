@@ -12,6 +12,7 @@ from ._error import error
 from .views import PvtView
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter,ShowPlots
+from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 
 
 class PvtPlotter(WebvizPluginABC):
