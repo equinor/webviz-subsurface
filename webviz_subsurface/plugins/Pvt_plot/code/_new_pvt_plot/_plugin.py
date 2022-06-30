@@ -18,7 +18,7 @@ class PvtPlotter(WebvizPluginABC):
         self,
         pvt_relative_file_path: str = None,
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
         # Error messages
         self.error_message = ""
