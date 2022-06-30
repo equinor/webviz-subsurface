@@ -16,6 +16,9 @@ from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 
 
 class PvtPlotter(WebvizPluginABC):
+    
+    PHASES = ["OIL", "GAS", "WATER"]
+
     def __init__(
         self,
         app: Dash,
@@ -59,6 +62,29 @@ class PvtPlotter(WebvizPluginABC):
             ).rename(
                 columns={"TYPE": "KEYWORD", "RS": "RATIO", "R": "RATIO", "GOR": "RATIO"}
             )
+
+        # Ensure that the identifier string "KEYWORD" is contained in the header columns
+        if "KEYWORD" not in self.pvt_data_frame.columns:
+            raise ValueError(
+                (
+                    "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword."
+                    "When not providing a csv file, make sure ecl2df is installed."
+                )
+            )
+
+        self.phases_additional_info: List[str] = []
+        if self.pvt_data_frame["KEYWORD"].str.contains("PVTO").any():
+            self.phases_additional_info.append("PVTO")
+        elif self.pvt_data_frame["KEYWORD"].str.contains("PVDO").any():
+            self.phases_additional_info.append("PVDO")
+        elif self.pvt_data_frame["KEYWORD"].str.contains("PVCDO").any():
+            self.phases_additional_info.append("PVCDO")
+        if self.pvt_data_frame["KEYWORD"].str.contains("PVTG").any():
+            self.phases_additional_info.append("PVTG")
+        elif self.pvt_data_frame["KEYWORD"].str.contains("PVDG").any():
+            self.phases_additional_info.append("PVDG")
+        if self.pvt_data_frame["KEYWORD"].str.contains("PVTW").any():
+            self.phases_additional_info.append("PVTW")
 
 
         # Error messages
