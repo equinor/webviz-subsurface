@@ -1,3 +1,0 @@
-[webviz_config_plugins]
-PvtPlotter = _new_pvt_plot:PvtPlotter
-
