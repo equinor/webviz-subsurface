@@ -314,7 +314,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
         main_storage_key = f"aggr_csv__{hashval}"
 
         storage_keys_to_load: Dict[str, str] = {}
-        json_fn = self._storage_dir / (main_storage_key + ".json")
+        json_fn = self._storage_dir / (f"{main_storage_key}.json")
         try:
             with open(json_fn, "r") as file:
                 storage_keys_to_load = json.load(file)
@@ -332,7 +332,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
             )
 
             for ens_name in ensemble_names:
-                storage_key = main_storage_key + "__" + ens_name
+                storage_key = f"{main_storage_key}__{ens_name}"
                 ensemble_df = aggregated_df[aggregated_df["ENSEMBLE"] == ens_name]
                 EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
                     self._storage_dir, storage_key, ensemble_df
