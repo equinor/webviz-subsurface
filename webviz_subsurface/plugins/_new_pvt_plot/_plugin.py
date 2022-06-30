@@ -90,28 +90,7 @@ class PvtPlotter(WebvizPluginABC):
         # Error messages
         self.error_message = ""
 
-        try:
-            self.pvt_df = pd.read_csv(pvt_relative_file_path)
-
-        except PermissionError:
-            self.error_message = f"Access to file '{pvt_relative_file_path}' denied"
-            return
-
-        except FileNotFoundError:
-            self.error_message = f"File '{pvt_relative_file_path}' not found."
-            return
-
-        except ParserError:
-            self.error_message = f"File '{pvt_relative_file_path}' could not be parsed."
-            return
-
-        except EmptyDataError:
-            self.error_message = f"File '{pvt_relative_file_path}' is an empty file."
-
-        except Exception:
-            self.error_message = (
-                f"'Unknown exception when trying to read {pvt_relative_file_path} '"
-            )
+    
 
         self.add_store(
             PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION
