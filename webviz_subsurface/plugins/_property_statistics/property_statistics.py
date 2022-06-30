@@ -204,7 +204,8 @@ differ between individual realizations of an ensemble.
 
         self._surface_renaming = surface_renaming if surface_renaming else {}
         self._surface_table = generate_surface_table(
-            statistics_dframe=self._pmodel.dataframe,
+            zones=self._pmodel.zones,
+            properties=self._pmodel.properties,
             ensembles=self._pmodel.ensembles,
             surface_folders=self._surface_folders,
             surface_renaming=self._surface_renaming,
@@ -244,7 +245,8 @@ differ between individual realizations of an ensemble.
                 generate_surface_table,
                 [
                     {
-                        "statistics_dframe": self._pmodel.dataframe,
+                        "zones": self._pmodel.zones,
+                        "properties": self._pmodel.properties,
                         "ensembles": self._pmodel.ensembles,
                         "surface_folders": self._surface_folders,
                         "surface_renaming": self._surface_renaming,
