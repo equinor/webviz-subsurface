@@ -26,6 +26,40 @@ class PvtPlotter(WebvizPluginABC):
     ) -> None:
         super().__init__(stretch=True)
 
+        self.ensemble_paths = {
+            ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
+            for ensemble in ensembles
+        }
+
+        self.plotly_theme = webviz_settings.theme.plotly_theme
+
+        self.pvt_relative_file_path = pvt_relative_file_path
+
+        self.read_from_init_file = read_from_init_file
+
+        self.drop_ensemble_duplicates = drop_ensemble_duplicates
+
+        if self.pvt_relative_file_path is None:
+            self.pvt_data_frame = load_pvt_dataframe(
+                self.ensemble_paths,
+                use_init_file=read_from_init_file,
+                drop_ensemble_duplicates=drop_ensemble_duplicates,
+            )
+        else:
+            # Load data from all ensembles into a pandas DataFrame
+            self.pvt_data_frame = load_pvt_csv(
+                ensemble_paths=self.ensemble_paths,
+                csv_file=self.pvt_relative_file_path,
+                drop_ensemble_duplicates=drop_ensemble_duplicates,
+            )
+
+            self.pvt_data_frame = self.pvt_data_frame.rename(
+                str.upper, axis="columns"
+            ).rename(
+                columns={"TYPE": "KEYWORD", "RS": "RATIO", "R": "RATIO", "GOR": "RATIO"}
+            )
+
+
         # Error messages
         self.error_message = ""
 
