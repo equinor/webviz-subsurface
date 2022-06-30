@@ -1,11 +1,12 @@
-from typing import Type
+from typing import Type, List
 from pathlib import Path
 
 from dash.development.base_component import Component
 import pandas as pd
 from pandas.errors import ParserError
 from pandas.errors import EmptyDataError
-from webviz_config import WebvizPluginABC
+from webviz_config import WebvizPluginABC, WebvizSettings
+from dash import Dash, Input, Output, State, callback_context, dcc, html
 
 from ._error import error
 from .views import PvtView
