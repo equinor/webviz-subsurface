@@ -1,8 +1,12 @@
 from typing import List
 from dash.development.base_component import Component
+from dash import callback, Input, Output
 
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 import webviz_core_components as wcc
+
+from .._plugin_ids import PluginIds
+from ._filter import Filter
 
 class ShowPlots(SettingsGroupABC):
     class Ids:
@@ -23,3 +27,12 @@ class ShowPlots(SettingsGroupABC):
                 vertical= True
                 ),
         ]
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(self.component_unique_id(ShowPlots.Ids.SHOWPLOTS),'options'),
+            Input(self.component_unique_id(Filter.Ids.COLOR_BY),'value')
+        )
+        def Update_Show_Plots(colorBy: str):
+            plot_settings = ["Formation Volume Factor", "Viscosity", "Density"]
+            return plot_settings
