@@ -302,7 +302,12 @@ class EnsembleTableProviderFactory(WebvizFactory):
         self,
         aggr_csv_file: Path,
     ) -> Dict[str, EnsembleTableProvider]:
+        """Creates a dictionary of table providers from an aggregated CSV file with
+        ENSEMBLE column. The CSV file can have multiple ensembles in the ENSEMBLE column.
+        (This is not accepted by the create_from_ensemble_csv_file function)
 
+        Aggregated csv-files per ensemble is the preferred method.
+        """
         LOGGER.info(f"create_provider_set_from_aggregated_csv_file() - {aggr_csv_file}")
 
         hashval = _make_hash_string(str(aggr_csv_file))
