@@ -55,6 +55,7 @@ setup(
             "ParameterResponseCorrelation = webviz_subsurface.plugins:ParameterResponseCorrelation",
             "ProdMisfit = webviz_subsurface.plugins:ProdMisfit",
             "PropertyStatistics = webviz_subsurface.plugins:PropertyStatistics",
+            "PvtPlotter = webviz_subsurface.plugins:PvtPlotter",
             "PvtPlot = webviz_subsurface.plugins:PvtPlot",
             "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
             "ReservoirSimulationTimeSeries = webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
