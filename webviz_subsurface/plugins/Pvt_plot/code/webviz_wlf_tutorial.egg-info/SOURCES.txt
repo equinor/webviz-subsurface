@@ -1,0 +1,16 @@
+setup.py
+_new_pvt_plot/__init__.py
+_new_pvt_plot/_error.py
+_new_pvt_plot/_pliginIds.py
+_new_pvt_plot/_plugin.py
+_new_pvt_plot/view_elements/__init__.py
+_new_pvt_plot/view_elements/_graph.py
+_new_pvt_plot/views/__init__.py
+_new_pvt_plot/views/_pvt.py
+webviz_wlf_tutorial.egg-info/PKG-INFO
+webviz_wlf_tutorial.egg-info/SOURCES.txt
+webviz_wlf_tutorial.egg-info/dependency_links.txt
+webviz_wlf_tutorial.egg-info/entry_points.txt
+webviz_wlf_tutorial.egg-info/not-zip-safe
+webviz_wlf_tutorial.egg-info/requires.txt
+webviz_wlf_tutorial.egg-info/top_level.txt

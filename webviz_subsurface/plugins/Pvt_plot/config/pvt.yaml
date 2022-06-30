@@ -1,0 +1,10 @@
+title: Pvt Plot
+
+layout:
+  - page: Pvt Plot
+    icon: group
+    content: 
+      - PvtPlotter: 
+          pvt_relative_file_path: /private/jliu/webviz-subsurface/Pvt_plot/config/data/pvt.csv
+
+  
