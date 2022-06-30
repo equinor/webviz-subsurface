@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional, List, Tuple, Set
+
+import geojson
 import numpy as np
 import dash
 from dash import callback, Output, Input, State
@@ -23,6 +25,7 @@ from webviz_subsurface._providers import (
     SurfaceMeta,
     StatisticalSurfaceAddress,
 )
+from . import _plume_extent
 from ._formation_alias import (
     compile_alias_list,
     surface_name_aliases,
@@ -199,15 +202,14 @@ def plugin_callbacks(
         ensemble,
         date_list,
     ):
+        attribute = MapAttribute(attribute)
         if isinstance(realization, int):
             realization = [realization]
         elif len(realization) == 0:
             raise PreventUpdate
-        elif len(realization) > 1 and statistic is None:
-            raise PreventUpdate
         if ensemble is None:
             raise PreventUpdate
-        if MapAttribute(attribute) != MapAttribute.MIGRATION_TIME and date is None:
+        if attribute != MapAttribute.MIGRATION_TIME and date is None:
             raise PreventUpdate
         date = str(date_list[date])
         # Look up formation aliases
@@ -215,7 +217,7 @@ def plugin_callbacks(
             formation_aliases,
             formation,
             ensemble_surface_providers[ensemble],
-            map_attribute_names[MapAttribute(attribute)],
+            map_attribute_names[attribute],
         )
         polygon_name = lookup_fault_polygon_alias(
             formation_aliases, formation, ensemble_fault_polygons_providers[ensemble]
@@ -223,19 +225,40 @@ def plugin_callbacks(
         well_pick_horizon = lookup_well_pick_alias(
             formation_aliases, formation, well_pick_provider
         )
-        if surface_name is not None and len(realization) > 0:
-            surf_address = _derive_surface_address(
-                surface_name, attribute, date, realization, map_attribute_names, statistic
-            )
+        # Surface
+        if surface_name is None:
+            surf_data = None
+        elif len(realization) == 0:
+            surf_data = None
+        elif len(realization) > 1 and statistic is None:
+            surf_data = None
+        else:
             surf_data = _SurfaceData.from_server(
-                surface_server,
+                surface_server=surface_server,
+                surface_provider=ensemble_surface_providers[ensemble],
+                surface_address=_derive_surface_address(
+                    surface_name,
+                    attribute,
+                    date,
+                    realization,
+                    map_attribute_names,
+                    statistic,
+                ),
+                color_map_range=color_map_range,
+                color_map_name=color_map_name,
+            )
+        # Plume polygon
+        if attribute == MapAttribute.MAX_SATURATION and len(realization) > 0:
+            plume_polygon = _get_plume_polygon(
                 ensemble_surface_providers[ensemble],
-                surf_address,
-                color_map_range,
-                color_map_name,
+                realization,
+                surface_name,
+                map_attribute_names[attribute],
+                date,
             )
         else:
-            surf_data = None
+            plume_polygon = None
+        # Create layers and view bounds
         layers, viewport_bounds = create_map_layers(
             surface_data=surf_data,
             fault_polygons_server=fault_polygons_server,
@@ -244,6 +267,7 @@ def plugin_callbacks(
             license_boundary_file=license_boundary_file,
             well_pick_provider=well_pick_provider,
             well_pick_horizon=well_pick_horizon,
+            plume_extent_data=plume_polygon,
         )
         return layers, viewport_bounds
 
@@ -256,6 +280,7 @@ def create_map_layers(
     license_boundary_file: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
     well_pick_horizon: Optional[str],
+    plume_extent_data: Optional[geojson.FeatureCollection],
 ) -> Tuple[List[Dict], List[float]]:
     layers = []
     viewport_bounds = dash.no_update
@@ -308,20 +333,28 @@ def create_map_layers(
                 )
             ),
         })
-    # Convert layers to dictionaries
-    # layers = [json.loads(json.dumps(lay)) for lay in layers]
+    if plume_extent_data is not None:
+        layers.append({
+            "@@type": "GeoJsonLayer",
+            "name": "Plume Contours",
+            "id": LayoutElements.PLUME_POLYGON_LAYER,
+            "data": dict(plume_extent_data),
+            "lineWidthMinPixels": 2,
+            "getLineColor": [150, 150, 150, 255],
+            "getFillColor": [150, 150, 150, 30],
+            # "filled": False,
+        })
     return layers, viewport_bounds
 
 
 def _derive_surface_address(
     surface_name: str,
-    attribute: str,
+    attribute: MapAttribute,
     date: Optional[str],
     realization: List[int],
     map_attribute_names: Dict[MapAttribute, str],
     statistic: str,
 ):
-    attribute = MapAttribute(attribute)
     date = None if attribute == MapAttribute.MIGRATION_TIME else date
     if len(realization) == 1:
         return SimulatedSurfaceAddress(
@@ -348,6 +381,26 @@ def _derive_fault_polygon_address(polygon_name, realization):
     )
 
 
+def _get_plume_polygon(
+    surface_provider: EnsembleSurfaceProvider,
+    realizations: List[int],
+    surface_name: str,
+    surface_attribute: str,
+    datestr: str,
+):
+    threshold = 1e-6
+    surfaces = [
+        surface_provider.get_surface(SimulatedSurfaceAddress(
+            attribute=surface_attribute,
+            name=surface_name,
+            datestr=datestr,
+            realization=r,
+        ))
+        for r in realizations
+    ]
+    return _plume_extent.plume_polygon(surfaces, threshold)
+
+
 def _publish_and_get_surface_metadata(
     surface_server: SurfaceServer,
     surface_provider: EnsembleSurfaceProvider,
@@ -359,6 +412,9 @@ def _publish_and_get_surface_metadata(
     surf_meta = surface_server.get_surface_metadata(qualified_address)
     if not surf_meta:
         # This means we need to compute the surface
+        # TODO: statistical surfaces should be filled first (?) At least the maximum
+        #  saturation one. However, it might be more appropriate to not mask it in the
+        #  first place
         surface = surface_provider.get_surface(address=surface_address)
         if not surface:
             raise ValueError(

@@ -22,6 +22,7 @@ class LayoutElements(str, Enum):
     FAULTPOLYGONSLAYER = "faultpolygonslayer"
     LICENSEBOUNDARYLAYER = "licenseboundarylayer"
     WELLPICKSLAYER = "wellpickslayer"
+    PLUME_POLYGON_LAYER = "plume-polygon-layer"
 
     PROPERTY = "property"
     ENSEMBLEINPUT = "ensembleinput"
