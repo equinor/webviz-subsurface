@@ -1,3 +1,5 @@
+from typing import Callable, Dict, List, Tuple
+
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._models.well_attributes_model import WellAttributesModel
@@ -166,3 +168,10 @@ class WellCompletionsNew(WebvizPluginABC):
             WellCompletionView(self._data_models),
             PluginIds.Views.WELL_COMPLETION_VIEW,
         )
+
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        return [
+            webviz_store_tuple
+            for _, ens_data_model in self._data_models.items()
+            for webviz_store_tuple in ens_data_model.webviz_store
+        ]
