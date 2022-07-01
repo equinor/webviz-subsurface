@@ -1,3 +1,6 @@
+from typing import List
+
+from dash import callback, Input, Output
 import pandas as pd
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
@@ -30,8 +33,17 @@ class PvtView(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-
+            Output(),
+            Input(),
+            Input(),
+            Input(),
+            Input(),
         )
-        def _update_plots() -> dict:
+        def _update_plots(
+            color_by: str,
+            ensembles: List[str],
+            phase: str,
+            pvtnum: List[str]
+        ) -> dict:
             formation_volume_factor = {}
             return formation_volume_factor
