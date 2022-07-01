@@ -21,7 +21,7 @@ class Filter(SettingsGroupABC):
         PVTNUM = "Pvtnum"
         SHOWPLOTS = "Show-plots"
 
-    def __init__(self) -> None:
+    def __init__(self, pvt_df: pd.DataFrame) -> None:
         super().__init__("Filter")
 
         self.color = ["Ensembel", "Pvtnum"]

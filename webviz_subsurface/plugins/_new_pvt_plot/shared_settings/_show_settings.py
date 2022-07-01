@@ -2,6 +2,7 @@ from typing import List
 from dash.development.base_component import Component
 from dash import callback, Input, Output
 
+import pandas as pd
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 import webviz_core_components as wcc
 
@@ -12,7 +13,7 @@ class ShowPlots(SettingsGroupABC):
     class Ids:
         SHOWPLOTS = "show-plots"
 
-    def __init__(self) -> None:
+    def __init__(self, pvt_df: pd.DataFrame) -> None:
         super().__init__("Show Plots")
         self.plot_settings = ["Formation Volume Factor", "Viscosity", "Density", "Gas/Oil Ratio (Rs)"]
 
