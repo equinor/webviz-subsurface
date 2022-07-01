@@ -111,6 +111,8 @@ class PvtPlotter(WebvizPluginABC):
             PvtView(self.pvt_df), PluginIds.PvtID.INDICATORS, PluginIds.PvtID.GROUP_NAME
         )
 
+        print(self.pvt_df)
+
     @property
     def layout(self) -> Type[Component]:
         return error(self.error_message)
