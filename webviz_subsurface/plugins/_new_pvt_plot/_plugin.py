@@ -100,11 +100,11 @@ class PvtPlotter(WebvizPluginABC):
         )
 
         self.add_shared_settings_group(
-            Filter(), PluginIds.SharedSettings.FILTER
+            Filter(self.pvt_df), PluginIds.SharedSettings.FILTER
         )
 
         self.add_shared_settings_group(
-            ShowPlots(), PluginIds.SharedSettings.SHOWPLOTS
+            ShowPlots(self.pvt_df), PluginIds.SharedSettings.SHOWPLOTS
         )
 
         self.add_view(
