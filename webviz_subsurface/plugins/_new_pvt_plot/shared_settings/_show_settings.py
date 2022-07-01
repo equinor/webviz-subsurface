@@ -28,3 +28,10 @@ class ShowPlots(SettingsGroupABC):
                 ),
         ]
 
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS).to_string(),'data'),
+            Input(self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(),'value')
+        )
+        def _update_show_plots(selected_plots: List[str]) -> List[str]:
+            return selected_plots

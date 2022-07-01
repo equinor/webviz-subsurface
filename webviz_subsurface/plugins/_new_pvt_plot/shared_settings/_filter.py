@@ -1,3 +1,7 @@
+from typing import List
+from dash.development.base_component import Component
+from dash import callback, Input, Output
+
 from multiprocessing.sharedctypes import Value
 import pandas as pd
 from typing import List
@@ -5,6 +9,8 @@ from dash.development.base_component import Component
 from requests import options
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 import webviz_core_components as wcc
+
+from .._plugin_ids import PluginIds
 
 
 class Filter(SettingsGroupABC):
@@ -57,3 +63,33 @@ class Filter(SettingsGroupABC):
                 vertical=False,
             ),
         ]
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR).to_string(),'data'),
+            Input(self.component_unique_id(Filter.Ids.COLOR_BY).to_string(),'value')
+        )
+        def _update_color_by(selected_color: str) -> str:
+            return selected_color
+
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES).to_string(),'data'),
+            Input(self.component_unique_id(Filter.Ids.ENSEMBLES).to_string(),'value')
+        )
+        def _update_ensembles(selected_ensembles: List[str]) -> List[str]:
+            return selected_ensembles
+
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE).to_string(),'data'),
+            Input(self.component_unique_id(Filter.Ids.PHASE).to_string(),'value')
+        )
+        def _update_phase(selected_phase: str) -> str:
+            return selected_phase
+
+
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM).to_string(),'data'),
+            Input(self.component_unique_id(Filter.Ids.PVTNUM).to_string(),'value')
+        )
+        def _update_pvtnum(selected_pvtnum: str) -> str:
+            return selected_pvtnum
