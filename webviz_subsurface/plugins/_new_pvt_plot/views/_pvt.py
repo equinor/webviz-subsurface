@@ -27,3 +27,11 @@ class PvtView(ViewABC):
         second_row = column.make_row()
         second_row.add_view_element(Graph(), PvtView.Ids.DENSITY)
         second_row.add_view_element(Graph(), PvtView.Ids.GAS_OIL_RATIO)
+
+    def set_callbacks(self) -> None:
+        @callback(
+
+        )
+        def _update_plots() -> dict:
+            formation_volume_factor = {}
+            return formation_volume_factor
