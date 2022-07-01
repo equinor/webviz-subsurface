@@ -33,10 +33,10 @@ class PvtView(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR)),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
+            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR).component_unique_id(Graph.Ids.GRAPH), "figure"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "value"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "value"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
         )
         def _update_plots(
