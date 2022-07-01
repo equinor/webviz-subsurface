@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from dash import callback, Input, Output
 import pandas as pd
@@ -18,11 +18,11 @@ class PvtView(ViewABC):
         DENSITY = "density"
         GAS_OIL_RATIO = "gas-oil-ratio"
 
-    def __init__(self, pvt_df: pd.DataFrame) -> None:
+    def __init__(self, pvt_df: pd.DataFrame, webviz_settings: WebvizSettings) -> None:
         super().__init__("Pvt View")
 
         self.pvt_df = pvt_df
-        self.plotly_theme = WebvizSettings.theme.plotly_theme
+        self.plotly_theme = webviz_settings.theme.plotly_theme
 
         column = self.add_column()
 
@@ -33,6 +33,31 @@ class PvtView(ViewABC):
         second_row = column.make_row()
         second_row.add_view_element(Graph(), PvtView.Ids.DENSITY)
         second_row.add_view_element(Graph(), PvtView.Ids.GAS_OIL_RATIO)
+
+    @property
+    def ensembles(self) -> List[str]:
+        return list(self.pvt_df["ENSEMBLE"].unique())
+
+    @property
+    def pvtnums(self) -> List[str]:
+        return list(self.pvt_df["PVTNUM"].unique())
+
+    @property
+    def ensemble_colors(self) -> Dict[str, List[str]]:
+        return {
+            ensemble: self.plotly_theme["layout"]["colorway"][
+                self.ensembles.index(ensemble)
+            ]
+            for ensemble in self.ensembles
+        }
+
+    @property
+    def pvtnum_colors(self) -> Dict[str, List[str]]:
+        return {
+            pvtnum: self.plotly_theme["layout"]["colorway"][self.pvtnums.index(pvtnum)]
+            for pvtnum in self.pvtnums
+        }
+
 
     def set_callbacks(self) -> None:
         @callback(
@@ -50,6 +75,11 @@ class PvtView(ViewABC):
         ) -> dict:
 
             PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
+
+            if color_by == "ENSEMBLE":
+                colors = self.ensemble_colors
+            elif color_by == "PVTNUM":
+                colors = self.pvtnum_colors
 
             formation_volume_factor = {
                 "data": create_traces(
