@@ -6,7 +6,7 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
-from ._view_funcions import create_hovertext, create_traces
+from ._view_funcions import create_hovertext, create_traces, plot_layout, filter_data_frame
 
 
 class PvtView(ViewABC):
@@ -47,11 +47,7 @@ class PvtView(ViewABC):
             pvtnum: List[str]
         ) -> dict:
 
-            PVT_df = self.pvt_df
-            PVT_df = PVT_df.loc[PVT_df["ENSEMBLE"].isin(ensembles)]
-            PVT_df = PVT_df.loc[PVT_df["PVTNUM"].isin(pvtnum)]
-            PVT_df = PVT_df.loc[PVT_df["KEYWORD"] == phase]
-            PVT_df = PVT_df.fillna(0)
+            PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
             formation_volume_factor = {
                 "data": create_traces(
@@ -60,7 +56,7 @@ class PvtView(ViewABC):
                             colors,
                             phase,
                             "RATIO",
-                            False,
+                            False,<
                             True,
                             True,
                         ),

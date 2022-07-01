@@ -3,6 +3,48 @@ from typing import Union, Dict,List
 import pandas as pd
 
 
+def plot_layout(
+    color_by: str,
+    theme: dict,
+    x_unit: str,
+    y_unit: str,
+) -> dict:
+    layout = {}
+    layout.update(theme)
+    layout["legend"] = {"title": {"text": color_by.lower().capitalize()}}
+    layout.update(
+        {
+            "xaxis": {
+                "automargin": True,
+                "zeroline": False,
+                "anchor": "y",
+                "domain": [0.0, 1.0],
+                "title": {
+                    "text": x_unit,
+                    "standoff": 15,
+                },
+                "showticklabels": True,
+                "showgrid": True,
+            },
+            "yaxis": {
+                "automargin": True,
+                "ticks": "",
+                "zeroline": False,
+                "anchor": "x",
+                "domain": [0.0, 1.0],
+                "title": {
+                    "text": y_unit,
+                },
+                "type": "linear",
+                "showgrid": True,
+            },
+            "margin": {"t": 20, "b": 0},
+            "plot_bgcolor": "rgba(0,0,0,0)",
+            "hovermode": "closest",
+        }
+    )
+    return layout
+
 def filter_data_frame(
     data_frame: pd.DataFrame, ensembles: List[str], pvtnums: List[str]
 ) -> pd.DataFrame:
