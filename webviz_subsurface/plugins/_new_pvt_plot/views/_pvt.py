@@ -6,6 +6,7 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
+from ._view_funcions import create_hovertext, create_traces
 
 
 class PvtView(ViewABC):
@@ -53,17 +54,16 @@ class PvtView(ViewABC):
             PVT_df = PVT_df.fillna(0)
 
             formation_volume_factor = {
-                "data": [
-                    {
-                        "x": list(
-                            PVT_df["PRESSURE"].to_list()
+                "data": create_traces(
+                            PVT_df,
+                            color_by,
+                            colors,
+                            phase,
+                            "RATIO",
+                            False,
+                            True,
+                            True,
                         ),
-                        "y": list(
-                            PVT_df["VOLUMEFACTOR"].to_list()
-                        ),
-                        "type": "line",
-                    }
-                ],
                 "layout": {"title": "Formation Volume Factor"}
             }
             return formation_volume_factor

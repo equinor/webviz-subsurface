@@ -3,6 +3,15 @@ from typing import Union, Dict,List
 import pandas as pd
 
 
+def filter_data_frame(
+    data_frame: pd.DataFrame, ensembles: List[str], pvtnums: List[str]
+) -> pd.DataFrame:
+
+    data_frame = data_frame.copy()
+    data_frame = data_frame.loc[data_frame["ENSEMBLE"].isin(ensembles)]
+    data_frame = data_frame.loc[data_frame["PVTNUM"].isin(pvtnums)]
+    return data_frame.fillna(0)
+
 def create_hovertext(
     phase: str,
     keyword: str,
