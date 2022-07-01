@@ -45,5 +45,25 @@ class PvtView(ViewABC):
             phase: str,
             pvtnum: List[str]
         ) -> dict:
-            formation_volume_factor = {}
+
+            PVT_df = self.pvt_df
+            PVT_df = PVT_df.loc[PVT_df["ENSEMBLE"].isin(ensembles)]
+            PVT_df = PVT_df.loc[PVT_df["PVTNUM"].isin(pvtnum)]
+            PVT_df = PVT_df.loc[PVT_df["KEYWORD"] == phase]
+            PVT_df.fillna(0)
+
+            formation_volume_factor = {
+                "data": [
+                    {
+                        "x": list(
+                            PVT_df.loc["PRESSURE"]
+                        ),
+                        "y": list(
+                            PVT_df.loc["VOLUME_FACTOR"]
+                        ),
+                        "type": "line",
+                    }
+                ],
+                "layout": {"title": "Formation Volume Factor"}
+            }
             return formation_volume_factor
