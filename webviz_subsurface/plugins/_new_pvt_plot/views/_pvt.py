@@ -1,3 +1,6 @@
+from typing import List
+
+from dash import callback, Input, Output
 import pandas as pd
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
@@ -27,3 +30,20 @@ class PvtView(ViewABC):
         second_row = column.make_row()
         second_row.add_view_element(Graph(), PvtView.Ids.DENSITY)
         second_row.add_view_element(Graph(), PvtView.Ids.GAS_OIL_RATIO)
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR)),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
+        )
+        def _update_plots(
+            color_by: str,
+            ensembles: List[str],
+            phase: str,
+            pvtnum: List[str]
+        ) -> dict:
+            formation_volume_factor = {}
+            return formation_volume_factor
