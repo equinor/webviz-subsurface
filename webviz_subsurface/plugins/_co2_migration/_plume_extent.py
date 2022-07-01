@@ -53,9 +53,13 @@ def _find_contours(xx, yy, zz):
     # using. Direct use is preferred over pyplot.contour to avoid the overhead related to
     # figure/axis creation in MPL.
     from matplotlib import _contour
-    return _contour.QuadContourGenerator(
+    from matplotlib import __version__ as mpl_ver
+    contour_output = _contour.QuadContourGenerator(
         xx, yy, zz, np.zeros_like(zz, dtype=bool), False, 0
-    ).create_contour(0.5)[0]
+    ).create_contour(0.5)
+    if int(mpl_ver[0]) >= 3 and int(mpl_ver[2]) >= 5:
+        contour_output = contour_output[0]
+    return contour_output
 
 
 def _simplify(poly, resolution, factor: float = 1.2):
