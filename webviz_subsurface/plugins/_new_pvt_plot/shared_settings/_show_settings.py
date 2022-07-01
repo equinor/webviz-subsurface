@@ -30,19 +30,18 @@ class ShowPlots(SettingsGroupABC):
             options["ratio"] = "Gas/Oil Ratio (Rs)"
         if phase == "Gas (PVTG)":
             options["ratio"] = "Vaporized Oil Ratio (Rv)"
-        #print(options)
         return options
 
 
     def layout(self) -> List[Component]:
-        print(self.plot_visibility_options())
+        print(list(self.plot_visibility_options().values()))
         return [
                 wcc.Checklist(
                 id = self.register_component_unique_id(ShowPlots.Ids.SHOWPLOTS),
                 options = [
                     {"label": l, "value":v} for v,l in self.plot_visibility_options().items()
                     ],
-                value = [v for v in self.plot_visibility_options().values()],
+                value = [v for v in list(self.plot_visibility_options().keys())],
                 vertical= True
                 ),
         ]
@@ -67,7 +66,6 @@ class ShowPlots(SettingsGroupABC):
             phase: str,
             values: List[str],
         ) -> Tuple[List[dict], List[str]]:
-            print ("Selected phase is ", phase)
             visibility_options = self.plot_visibility_options(phase)
             print ("New option is ", visibility_options)
             return (
