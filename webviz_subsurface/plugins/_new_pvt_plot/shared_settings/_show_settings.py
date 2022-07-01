@@ -26,22 +26,23 @@ class ShowPlots(SettingsGroupABC):
             "viscosity": "Viscosity",
             "density": "Density",
         }
-        if phase == "Water (PVTW)":
+        if phase == "Oil (PVTO)":
             options["ratio"] = "Gas/Oil Ratio (Rs)"
         if phase == "Gas (PVTG)":
             options["ratio"] = "Vaporized Oil Ratio (Rv)"
+        #print(options)
         return options
 
 
     def layout(self) -> List[Component]:
+        print(self.plot_visibility_options())
         return [
                 wcc.Checklist(
                 id = self.register_component_unique_id(ShowPlots.Ids.SHOWPLOTS),
-                options =self.plot_visibility_options(),
-                # [
-                #     {"label": x, "value":x} for x in self.plot_visibility_options().items()
-                #     ],
-                value =["fvf", "viscosity","density","ratio"],
+                options = [
+                    {"label": l, "value":v} for v,l in self.plot_visibility_options().items()
+                    ],
+                value = [v for v in self.plot_visibility_options().values()],
                 vertical= True
                 ),
         ]
@@ -59,17 +60,17 @@ class ShowPlots(SettingsGroupABC):
                 Output(self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(), "options"),
                 Output(self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(), "value"),
             ],
-            Input(self.component_unique_id(Filter.Ids.PHASE).to_string(), "value"),
-            Input(self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(), "value"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"),
         )
         def _set_available_plots(
             phase: str,
             values: List[str],
         ) -> Tuple[List[dict], List[str]]:
+            print ("Selected phase is ", phase)
             visibility_options = self.plot_visibility_options(phase)
-            print(visibility_options)
+            print ("New option is ", visibility_options)
             return (
-                [visibility_options],
-                # [{"label": l, "value": v} for v, l in visibility_options.items()],
+                [{"label": l, "value": v} for v, l in visibility_options.items()],
                 [value for value in values if value in visibility_options],
             )
