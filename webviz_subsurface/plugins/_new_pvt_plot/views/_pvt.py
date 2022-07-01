@@ -33,7 +33,7 @@ class PvtView(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(),
+            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR)),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
