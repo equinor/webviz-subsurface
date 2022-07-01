@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from dash import callback, Input, Output
 import pandas as pd
@@ -33,18 +33,40 @@ class PvtView(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR).component_unique_id(Graph.Ids.GRAPH).to_string(), "figure"),
+            Output(
+                self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Output(
+                self.view_element(PvtView.Ids.VISCOSITY)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Output(
+                self.view_element(PvtView.Ids.DENSITY)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Output(
+                self.view_element(PvtView.Ids.GAS_OIL_RATIO)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"
+            ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
         )
         def _update_plots(
-            color_by: str,
-            ensembles: List[str],
-            phase: str,
-            pvtnum: List[str]
-        ) -> dict:
+            color_by: str, ensembles: List[str], phase: str, pvtnum: List[str]
+        ) -> Tuple[dict, dict, dict, dict]:
 
             PVT_df = self.pvt_df
             PVT_df = PVT_df.loc[PVT_df["ENSEMBLE"].isin(ensembles)]
@@ -55,15 +77,41 @@ class PvtView(ViewABC):
             formation_volume_factor = {
                 "data": [
                     {
-                        "x": list(
-                            PVT_df["PRESSURE"]
-                        ),
-                        "y": list(
-                            PVT_df["VOLUMEFACTOR"]
-                        ),
+                        "x": list(PVT_df["PRESSURE"]),
+                        "y": list(PVT_df["VOLUMEFACTOR"]),
                         "type": "line",
                     }
                 ],
-                "layout": {"title": "Formation Volume Factor"}
+                "layout": {"title": "Formation Volume Factor"},
             }
-            return formation_volume_factor
+            viscosity = {
+                "data": [
+                    {
+                        "x": list(PVT_df["PRESSURE"]),
+                        "y": list(PVT_df["VOLUMEFACTOR"]),
+                        "type": "line",
+                    }
+                ],
+                "layout": {"title": "Viscosity"},
+            }
+            density = {
+                "data": [
+                    {
+                        "x": list(PVT_df["PRESSURE"]),
+                        "y": list(PVT_df["VOLUMEFACTOR"]),
+                        "type": "line",
+                    }
+                ],
+                "layout": {"title": "Density"},
+            }
+            gas_oil_ratio = {
+                "data": [
+                    {
+                        "x": list(PVT_df["PRESSURE"]),
+                        "y": list(PVT_df["VOLUMEFACTOR"]),
+                        "type": "line",
+                    }
+                ],
+                "layout": {"title": "Gas/Oil Ratio"},
+            }
+            return [formation_volume_factor, viscosity, density, gas_oil_ratio]
