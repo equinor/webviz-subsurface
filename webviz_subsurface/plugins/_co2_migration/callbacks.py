@@ -261,9 +261,12 @@ def plugin_callbacks(
         # Create layers and view bounds
         layers, viewport_bounds = create_map_layers(
             surface_data=surf_data,
-            fault_polygons_server=fault_polygons_server,
-            polygon_provider=ensemble_fault_polygons_providers[ensemble],
-            polygon_address=_derive_fault_polygon_address(polygon_name, realization),
+            fault_polygon_url=_extract_fault_polygon_url(
+                server=fault_polygons_server,
+                provider=ensemble_fault_polygons_providers[ensemble],
+                polygon_name=polygon_name,
+                realization=realization,
+            ),
             license_boundary_file=license_boundary_file,
             well_pick_provider=well_pick_provider,
             well_pick_horizon=well_pick_horizon,
@@ -274,9 +277,7 @@ def plugin_callbacks(
 
 def create_map_layers(
     surface_data: Optional[_SurfaceData],
-    fault_polygons_server: FaultPolygonsServer,
-    polygon_provider: EnsembleFaultPolygonsProvider,
-    polygon_address: SimulatedFaultPolygonsAddress,
+    fault_polygon_url: Optional[str],
     license_boundary_file: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
     well_pick_horizon: Optional[str],
@@ -303,15 +304,12 @@ def create_map_layers(
             surface_data.meta_data.x_max,
             surface_data.meta_data.y_max,
         ]
-    if polygon_address.name is not None:
+    if fault_polygon_url is not None:
         layers.append({
             "@@type": "FaultPolygonsLayer",
             "name": "Fault Polygons",
             "id": LayoutElements.FAULTPOLYGONSLAYER,
-            "data": fault_polygons_server.encode_partial_url(
-                provider_id=polygon_provider.provider_id(),
-                fault_polygons_address=polygon_address,
-            ),
+            "data": fault_polygon_url,
         })
     if license_boundary_file is not None:
         layers.append({
@@ -345,6 +343,24 @@ def create_map_layers(
             # "filled": False,
         })
     return layers, viewport_bounds
+
+
+def _extract_fault_polygon_url(
+    server: FaultPolygonsServer,
+    provider: EnsembleFaultPolygonsProvider,
+    polygon_name: Optional[str],
+    realization: List[int],
+) -> Optional[str]:
+    if polygon_name is None:
+        return None
+    if len(realization) == 0:
+        return None
+    # This always returns the url corresponding to the first realization
+    address = _derive_fault_polygon_address(polygon_name, realization[0])
+    return server.encode_partial_url(
+        provider_id=provider.provider_id(),
+        fault_polygons_address=address,
+    )
 
 
 def _derive_surface_address(
