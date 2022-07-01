@@ -34,10 +34,10 @@ class PvtView(ViewABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(),
-            Input(),
-            Input(),
-            Input(),
-            Input(),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
         )
         def _update_plots(
             color_by: str,
