@@ -93,10 +93,21 @@ class PvtPlotter(WebvizPluginABC):
     
 
         self.add_store(
+            PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION
+        )
+
+        self.add_store(
             PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
-            PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.SELECTED_PVTNUM, WebvizPluginABC.StorageType.SESSION
+        )
+        
+        self.add_store(
+            PluginIds.Stores.SELECTED_SHOW_PLOTS, WebvizPluginABC.StorageType.SESSION
         )
 
         self.add_shared_settings_group(
