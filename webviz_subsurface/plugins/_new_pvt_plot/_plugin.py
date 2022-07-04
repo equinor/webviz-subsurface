@@ -122,7 +122,6 @@ class PvtPlotter(WebvizPluginABC):
             PvtView(self.pvt_df, webviz_settings), PluginIds.PvtID.INDICATORS, PluginIds.PvtID.GROUP_NAME
         )
 
-        print(self.pvt_df)
 
     @property
     def layout(self) -> Type[Component]:
