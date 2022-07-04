@@ -3,7 +3,7 @@ import io
 import json
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from webviz_config.webviz_store import webvizstore
 
@@ -54,7 +54,7 @@ class StratigraphyModel:
         self._ens_name = ens_name
         self._ens_path = ens_path
         self._stratigraphy_file = stratigraphy_file
-        self._data = json.load(self._load_data())
+        self._data = list(json.load(self._load_data()))
 
     def __repr__(self) -> str:
         """This is necessary for webvizstore to work on objects"""
@@ -63,9 +63,11 @@ StratigraphyModel({self._ens_name!r}, {self._ens_path!r}, {self._stratigraphy_fi
         """
 
     @property
-    def data(self) -> List[Dict[str, Any]]:
-        """Returns the stratigraphy as a list of dictionaries"""
-        return self._data
+    def data(self) -> Optional[List[Dict[str, Any]]]:
+        """Returns the stratigraphy if the list is not empty. If it is empty return None."""
+        if self._data:
+            return self._data
+        return None
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
@@ -80,10 +82,15 @@ StratigraphyModel({self._ens_name!r}, {self._ens_path!r}, {self._stratigraphy_fi
 
     @webvizstore
     def _load_data(self) -> io.BytesIO:
-        """Descr"""
+        """Reads the stratigraphy file for an ensemble. It returns the data from the first
+        file it finds so it is assumed that the stratigraphy is equal for all realizations.
+
+        If no file is found, it returns a empty list. Because of webvizstore it is not possible
+        to return None.
+        """
 
         for filename in glob.glob(f"{self._ens_path}/{self._stratigraphy_file}"):
             file_content = json.loads(Path(filename).read_text())
             logging.debug(f"Stratigraphy loaded from file: {filename}")
             return io.BytesIO(json.dumps(file_content).encode())
-        return io.BytesIO(json.dumps("{}").encode())
+        return io.BytesIO(json.dumps("").encode())
