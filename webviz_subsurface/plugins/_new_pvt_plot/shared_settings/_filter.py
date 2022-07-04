@@ -35,7 +35,7 @@ class Filter(SettingsGroupABC):
 
         self.pvt_data_frame = pvt_data_frame
 
-        self.color = ["Ensembel", "Pvtnum"]
+        self.color = ["ENSEMBLE", "PVTNUM"]
 
         self.ensembles = list(self.pvt_data_frame["ENSEMBLE"].unique())
 
@@ -93,7 +93,7 @@ class Filter(SettingsGroupABC):
                         }
                         for value, info in self.phases.items()
                         ],
-                value=list(self.phases.items())[0][1],
+                value=list(self.phases.items())[0][0],
                 clearable=False,
             ),
             wcc.FlexBox(
@@ -147,13 +147,9 @@ class Filter(SettingsGroupABC):
             Output(self.component_unique_id(Filter.Ids.ENSEMBLESBOX).to_string(),'children'),
             Output(self.component_unique_id(Filter.Ids.PVTNUMBOX).to_string(),'children'),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR),'data'),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES),'data'),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM),'data'),
         )
-        def _update_ensembles_pvtnum(selected_color_by: str, selected_ensembles: List[str], selected_pvtnum: List[str]) -> List[Component]:
-            print(selected_ensembles)
-            print(selected_pvtnum)
-            if selected_color_by == "Ensembel":
+        def _update_ensembles_pvtnum(selected_color_by: str) -> List[Component]:
+            if selected_color_by == "ENSEMBLE":
                 return [
                         wcc.Checklist(
                             id=self.ensemblesID,  
