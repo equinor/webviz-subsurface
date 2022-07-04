@@ -1,4 +1,5 @@
 from typing import List, Dict, Union
+from click import style
 
 from dash import callback, Input, Output, html
 
@@ -123,6 +124,7 @@ class PvtView(ViewABC):
             plots_visibility: Union[List[str], str],
         ) -> List[Component]:
 
+
             PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
             if color_by == "ENSEMBLE":
@@ -130,11 +132,21 @@ class PvtView(ViewABC):
             elif color_by == "PVTNUM":
                 colors = self.pvtnum_colors
 
+            max_num_columns = 2
+            view_elements = []
+
+            current_row_elements = []
+            current_column = 0
+
             plots_list = []
 
+            current_column = 0
+            figure_index = 0
+
+            graph_height = max(45.0, 90.0 / len(plots_visibility))
+
             for plot in plots_visibility:
-                plots_list.append(
-                    wcc.WebvizViewElement(
+                current_element = wcc.WebvizViewElement(
                             id=self.unique_id(plot),
                             children = create_graph(
                                 PVT_df,
@@ -144,8 +156,24 @@ class PvtView(ViewABC):
                                 plot,
                                 self.plot_visibility_options(self.phases[phase])[plot],
                                 self.plotly_theme,
+                                graph_height,
                             ), ) 
-                )
+                current_row_elements.append(current_element)
+
+                current_column += 1
+
+                if (
+                        current_column >= max_num_columns
+                        or figure_index == len(plots_visibility) - 1
+                    ):
+                        view_elements.append(
+                            wcc.WebvizPluginLayoutRow(current_row_elements)
+                        )
+                        current_row_elements = []
+                        current_column = 0
+                figure_index +=1
+                    
 
 
-            return plots_list
+
+            return view_elements

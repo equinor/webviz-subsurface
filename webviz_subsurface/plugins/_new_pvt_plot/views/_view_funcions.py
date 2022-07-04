@@ -4,7 +4,7 @@ import pandas as pd
 from dash import html
 import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
-
+from dash.development.base_component import Component
 
 def plot_layout(
     color_by: str,
@@ -285,14 +285,15 @@ def create_graph(
     plot: str,
     plot_title: str,
     theme: dict,
-) -> html.Div:
+    graph_height,
+) -> Component:
     return wcc.FlexBox(
         style={
-            "min-width": "500px",
-            "min-height": "400px",
+            "height": f"{graph_height}vh",
+            "min-width": "20vh",
             "text-align": "center",
             "padding": "2%",
-            "flex": "1 1 46%",
+            #"flex": "1 1 46%",
         },
         children=(
             [
