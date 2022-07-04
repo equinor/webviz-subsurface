@@ -3,8 +3,8 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pandas as pd
 
-from ..._datainput.well_completions import get_ecl_unit_system, read_stratigraphy
-from ..._models import WellAttributesModel
+from ..._datainput.well_completions import get_ecl_unit_system
+from ..._models import StratigraphyModel, WellAttributesModel
 from ..._providers import EnsembleTableProvider
 
 
@@ -13,7 +13,7 @@ class WellCompletionsDataModel:
         self,
         ensemble_path: str,
         wellcompletion_provider: EnsembleTableProvider,
-        stratigraphy_file: str,
+        stratigraphy_model: StratigraphyModel,
         well_attributes_model: WellAttributesModel,
         kh_unit: Optional[str],
         kh_decimal_places: int,
@@ -22,6 +22,8 @@ class WellCompletionsDataModel:
         self._kh_unit = kh_unit
         self._kh_decimal_places = kh_decimal_places
         self._theme_colors = theme_colors
+        self._stratigraphy_model = stratigraphy_model
+        self._stratigraphy = self._stratigraphy_model.data
         self._well_attributes_model = well_attributes_model
         self._well_attributes = self._well_attributes_model.data
 
@@ -38,10 +40,6 @@ class WellCompletionsDataModel:
             self._datemap
         )
 
-        self._stratigraphy = read_stratigraphy(
-            ensemble_path=ensemble_path, stratigraphy_file=stratigraphy_file
-        )
-
         if self._kh_unit is None:
             self._kh_unit, self._kh_decimal_places = _get_kh_unit(
                 ensemble_path=ensemble_path
@@ -49,7 +47,10 @@ class WellCompletionsDataModel:
 
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict]]]:
-        return [self._well_attributes_model.webviz_store]
+        return [
+            self._well_attributes_model.webviz_store,
+            self._stratigraphy_model.webviz_store,
+        ]
 
     @property
     def realizations(self) -> List[int]:

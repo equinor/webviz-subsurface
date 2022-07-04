@@ -2,7 +2,7 @@ from typing import Callable, Dict, List, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._models.well_attributes_model import WellAttributesModel
+from webviz_subsurface._models import StratigraphyModel, WellAttributesModel
 
 from ..._providers import EnsembleTableProviderFactory
 from ._business_logic import WellCompletionsDataModel
@@ -155,7 +155,9 @@ class WellCompletionsNew(WebvizPluginABC):
                 wellcompletion_provider=factory.create_from_per_realization_arrow_file(
                     ens_path, wellcompletiondata_file
                 ),
-                stratigraphy_file=stratigraphy_file,
+                stratigraphy_model=StratigraphyModel(
+                    ens_name, ens_path, stratigraphy_file
+                ),
                 well_attributes_model=WellAttributesModel(
                     ens_name, ens_path, well_attributes_file
                 ),

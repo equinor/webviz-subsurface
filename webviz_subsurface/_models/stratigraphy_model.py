@@ -56,6 +56,12 @@ class StratigraphyModel:
         self._stratigraphy_file = stratigraphy_file
         self._data = json.load(self._load_data())
 
+    def __repr__(self) -> str:
+        """This is necessary for webvizstore to work on objects"""
+        return f"""
+StratigraphyModel({self._ens_name!r}, {self._ens_path!r}, {self._stratigraphy_file!r})
+        """
+
     @property
     def data(self) -> List[Dict[str, Any]]:
         """Returns the stratigraphy as a list of dictionaries"""
@@ -78,6 +84,6 @@ class StratigraphyModel:
 
         for filename in glob.glob(f"{self._ens_path}/{self._stratigraphy_file}"):
             file_content = json.loads(Path(filename).read_text())
-            logging.debug(f"Stratigrphy loaded from file: {filename}")
+            logging.debug(f"Stratigraphy loaded from file: {filename}")
             return io.BytesIO(json.dumps(file_content).encode())
-        return io.BytesIO(json.dumps({""}).encode())
+        return io.BytesIO(json.dumps("{}").encode())
