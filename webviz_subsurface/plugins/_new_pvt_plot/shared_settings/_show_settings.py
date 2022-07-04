@@ -26,9 +26,9 @@ class ShowPlots(SettingsGroupABC):
             "viscosity": "Viscosity",
             "density": "Density",
         }
-        if phase == "Oil (PVTO)":
+        if phase == "OIL":
             options["ratio"] = "Gas/Oil Ratio (Rs)"
-        if phase == "Gas (PVTG)":
+        if phase == "GAS":
             options["ratio"] = "Vaporized Oil Ratio (Rv)"
         return options
 
