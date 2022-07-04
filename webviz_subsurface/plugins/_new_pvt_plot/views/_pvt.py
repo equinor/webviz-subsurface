@@ -18,6 +18,8 @@ class PvtView(ViewABC):
         DENSITY = "density"
         GAS_OIL_RATIO = "gas-oil-ratio"
 
+    PHASES = ["OIL", "GAS", "WATER"]
+
     def __init__(self, pvt_df: pd.DataFrame, webviz_settings: WebvizSettings) -> None:
         super().__init__("Pvt View")
 
@@ -47,6 +49,15 @@ class PvtView(ViewABC):
             options["ratio"] = "Vaporized Oil Ratio (Rv)"
         return options
     
+    @property
+    def phases(self) -> Dict[str, str]:
+        phase_descriptions: Dict[str, str] = {}
+        for i, phase in enumerate(PvtView.PHASES):
+            phase_descriptions[phase] = self.phases_additional_info[i]
+        return phase_descriptions
+
+
+
     @property
     def ensembles(self) -> List[str]:
         return list(self.pvt_df["ENSEMBLE"].unique())
