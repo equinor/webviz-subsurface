@@ -11,9 +11,6 @@ import webviz_core_components as wcc
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
 from ._view_funcions import (
-    create_hovertext,
-    create_traces,
-    plot_layout,
     filter_data_frame,
     create_graph,
 )
