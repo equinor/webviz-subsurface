@@ -119,7 +119,7 @@ class PvtPlotter(WebvizPluginABC):
         )
 
         self.add_view(
-            PvtView(self.pvt_df), PluginIds.PvtID.INDICATORS, PluginIds.PvtID.GROUP_NAME
+            PvtView(self.pvt_df, webviz_settings), PluginIds.PvtID.INDICATORS, PluginIds.PvtID.GROUP_NAME
         )
 
         print(self.pvt_df)
