@@ -1,7 +1,10 @@
+import io
 import itertools
+import json
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pandas as pd
+from webviz_config.webviz_store import webvizstore
 
 from ..._datainput.well_completions import get_ecl_unit_system
 from ..._models import StratigraphyModel, WellAttributesModel
@@ -19,6 +22,7 @@ class WellCompletionsDataModel:
         kh_decimal_places: int,
         theme_colors: List[str],
     ) -> None:
+        self._ensemble_path = ensemble_path
         self._kh_unit = kh_unit
         self._kh_decimal_places = kh_decimal_places
         self._theme_colors = theme_colors
@@ -41,8 +45,10 @@ class WellCompletionsDataModel:
         )
 
         if self._kh_unit is None:
-            self._kh_unit, self._kh_decimal_places = _get_kh_unit(
-                ensemble_path=ensemble_path
+            unit_system = json.load(_get_kh_unit(ensemble_path=self._ensemble_path))
+            self._kh_unit, self._kh_decimal_places = (
+                unit_system["unit"],
+                unit_system["decimals"],
             )
 
     @property
@@ -50,6 +56,7 @@ class WellCompletionsDataModel:
         return [
             self._well_attributes_model.webviz_store,
             self._stratigraphy_model.webviz_store,
+            (_get_kh_unit, [{"ensemble_path": self._ensemble_path}]),
         ]
 
     @property
@@ -212,15 +219,16 @@ def _filter_valid_nodes(
     return output, remaining_valid_zones
 
 
-def _get_kh_unit(ensemble_path: str) -> Tuple[str, int]:
+@webvizstore
+def _get_kh_unit(ensemble_path: str) -> io.BytesIO:
     """Returns kh unit and decimal places based on the unit system of the eclipse deck"""
     units = {
-        "METRIC": ("mD·m", 2),
-        "FIELD": ("mD·ft", 2),
-        "LAB": ("mD·cm", 2),
-        "PVT-M": ("mD·m", 2),
+        "METRIC": {"unit": "mD·m", "decimals": 2},
+        "FIELD": {"unit": "mD·ft", "decimals": 2},
+        "LAB": {"unit": "mD·cm", "decimals": 2},
+        "PVT-M": {"unit": "mD·m", "decimals": 2},
     }
     unit_system = get_ecl_unit_system(ensemble_path=ensemble_path)
     if unit_system is not None:
-        return units[unit_system]
-    return ("", 2)
+        return io.BytesIO(json.dumps(units[unit_system]).encode())
+    return io.BytesIO(json.dumps({"unit": "", "decimals": 2}).encode())
