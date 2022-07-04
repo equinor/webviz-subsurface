@@ -7,7 +7,7 @@ from webviz_config import WebvizSettings
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
-from ._view_funcions import create_hovertext, create_traces, plot_layout, filter_data_frame
+from ._view_funcions import create_hovertext, create_traces, plot_layout, filter_data_frame, create_graph
 
 
 class PvtView(ViewABC):
@@ -34,6 +34,19 @@ class PvtView(ViewABC):
         second_row.add_view_element(Graph(), PvtView.Ids.DENSITY)
         second_row.add_view_element(Graph(), PvtView.Ids.GAS_OIL_RATIO)
 
+    @staticmethod
+    def plot_visibility_options(phase: str = "") -> Dict[str, str]:
+        options = {
+            "fvf": "Formation Volume Factor",
+            "viscosity": "Viscosity",
+            "density": "Density",
+        }
+        if phase == "PVTO":
+            options["ratio"] = "Gas/Oil Ratio (Rs)"
+        if phase == "PVTG":
+            options["ratio"] = "Vaporized Oil Ratio (Rv)"
+        return options
+    
     @property
     def ensembles(self) -> List[str]:
         return list(self.pvt_df["ENSEMBLE"].unique())
