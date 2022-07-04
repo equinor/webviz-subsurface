@@ -20,7 +20,7 @@ from ..shared_settings._filter import Filter
 class PvtView(ViewABC):
     class Ids:
         # pylint disable too few arguments
-        FORMATION_VOLUME_FACTOR = "formation-volume-factor"
+        PVT_GRAPHS = "formation-volume-factor"
         VISCOSITY = "viscosity"
         DENSITY = "density"
         GAS_OIL_RATIO = "gas-oil-ratio"
@@ -51,7 +51,7 @@ class PvtView(ViewABC):
 
         column = self.add_column()
 
-        column.add_view_element(Graph(), PvtView.Ids.FORMATION_VOLUME_FACTOR)
+        column.add_view_element(Graph(), PvtView.Ids.PVT_GRAPHS)
 
     @staticmethod
     def plot_visibility_options(phase: str = "") -> Dict[str, str]:
@@ -100,7 +100,7 @@ class PvtView(ViewABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR)
+                self.view_element(PvtView.Ids.PVT_GRAPHS)
                 .component_unique_id(Graph.Ids.GRAPH)
                 .to_string(),
                 "children",
