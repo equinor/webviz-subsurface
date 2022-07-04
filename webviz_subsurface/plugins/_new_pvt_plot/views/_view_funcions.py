@@ -1,6 +1,8 @@
 from typing import Union, Dict,List
 
 import pandas as pd
+from dash import html
+import webviz_core_components as wcc
 
 
 def plot_layout(
@@ -269,3 +271,119 @@ def create_traces(
                 ]
             )
     return traces
+
+
+def create_graph(
+    data_frame: pd.DataFrame,
+    color_by: str,
+    colors: Dict[str, List[str]],
+    phase: str,
+    plot: str,
+    plot_title: str,
+    theme: dict,
+) -> html.Div:
+    return html.Div(
+        style={
+            "min-width": "500px",
+            "min-height": "400px",
+            "text-align": "center",
+            "padding": "2%",
+            "flex": "1 1 46%",
+        },
+        children=(
+            [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                wcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "VOLUMEFACTOR",
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "fvf"
+            else [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                wcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "VISCOSITY",
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "viscosity"
+            else [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                wcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['DENSITY_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "DENSITY",
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "density"
+            else [
+                html.Span(plot_title, style={"font-weight": "bold"}),
+                wcc.Graph(
+                    figure={
+                        "layout": plot_layout(
+                            color_by,
+                            theme,
+                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                            rf"[{data_frame['RATIO_UNIT'].iloc[0]}]",
+                        ),
+                        "data": create_traces(
+                            data_frame,
+                            color_by,
+                            colors,
+                            phase,
+                            "RATIO",
+                            False,
+                            True,
+                            True,
+                        ),
+                    }
+                ),
+            ]
+            if plot == "ratio"
+            else []
+        ),
+    )
