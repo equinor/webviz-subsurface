@@ -34,7 +34,6 @@ class ShowPlots(SettingsGroupABC):
 
 
     def layout(self) -> List[Component]:
-        print(list(self.plot_visibility_options().values()))
         return [
                 wcc.Checklist(
                 id = self.register_component_unique_id(ShowPlots.Ids.SHOWPLOTS),
@@ -67,7 +66,6 @@ class ShowPlots(SettingsGroupABC):
             values: List[str],
         ) -> Tuple[List[dict], List[str]]:
             visibility_options = self.plot_visibility_options(phase)
-            print ("New option is ", visibility_options)
             return (
                 [{"label": l, "value": v} for v, l in visibility_options.items()],
                 [value for value in values if value in visibility_options],
