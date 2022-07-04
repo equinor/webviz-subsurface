@@ -1,6 +1,6 @@
-from typing import List, Dict
+from typing import List, Dict, Union
 
-from dash import callback, Input, Output
+from dash import callback, Input, Output, html
 import pandas as pd
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config import WebvizSettings
@@ -90,12 +90,14 @@ class PvtView(ViewABC):
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"),
         )
         def _update_plots(
             color_by: str,
             ensembles: List[str],
             phase: str,
-            pvtnum: List[str]
+            pvtnum: List[str],
+            plots_visibility: Union[List[str], str],
         ) -> dict:
 
             PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
@@ -105,22 +107,21 @@ class PvtView(ViewABC):
             elif color_by == "PVTNUM":
                 colors = self.pvtnum_colors
 
-            formation_volume_factor = {
-                "data": create_traces(
-                            PVT_df,
-                            color_by,
-                            colors,
-                            phase,
-                            "RATIO",
-                            False,
-                            True,
-                            True,
-                        ),
-                "layout": plot_layout(
-                            color_by,
-                            self.plotly_theme,
-                            rf"Pressure [{PVT_df['PRESSURE_UNIT'].iloc[0]}]",
-                            rf"[{PVT_df['VOLUMEFACTOR_UNIT'].iloc[0]}]",
-                        )
-            }
-            return formation_volume_factor
+            return html.Div(
+                style={
+                    "display": "flex",
+                    "flex-wrap": "wrap",
+                },
+                children=[
+                    create_graph(
+                        PVT_df,
+                        color_by,
+                        colors,
+                        phase,
+                        plot,
+                        self.plot_visibility_options(self.phases[phase])[plot],
+                        self.plotly_theme,
+                    )
+                    for plot in plots_visibility
+                ],
+            )
