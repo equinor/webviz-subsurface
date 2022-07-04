@@ -66,7 +66,7 @@ class ViewSettings(SettingsGroupABC):
         ]
 
 
-class WellCompletionView(ViewABC):
+class WellCompletionsView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         VIEW_ELEMENT = "view-element"
@@ -79,43 +79,43 @@ class WellCompletionView(ViewABC):
 
         self.add_settings_group(
             ViewSettings(list(self._data_models.keys())),
-            WellCompletionView.Ids.SETTINGS,
+            WellCompletionsView.Ids.SETTINGS,
         )
 
         column = self.add_column()
         column.add_view_element(
-            WellCompletionsViewElement(), WellCompletionView.Ids.VIEW_ELEMENT
+            WellCompletionsViewElement(), WellCompletionsView.Ids.VIEW_ELEMENT
         )
         # self.main_column = self.add_column(WellCompletionView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(WellCompletionView.Ids.VIEW_ELEMENT)
+                self.view_element(WellCompletionsView.Ids.VIEW_ELEMENT)
                 .component_unique_id(WellCompletionsViewElement.Ids.COMPONENT)
                 .to_string(),
                 "children",
             ),
             Output(
-                self.view_element(WellCompletionView.Ids.VIEW_ELEMENT)
+                self.view_element(WellCompletionsView.Ids.VIEW_ELEMENT)
                 .component_unique_id(WellCompletionsViewElement.Ids.COMPONENT)
                 .to_string(),
                 "style",
             ),
             Input(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.DATA_MODE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "value",
@@ -142,25 +142,25 @@ class WellCompletionView(ViewABC):
 
         @callback(
             Output(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "options",
             ),
             Output(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             State(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "value",
@@ -178,13 +178,13 @@ class WellCompletionView(ViewABC):
 
         @callback(
             Output(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REAL_BLOCK)
                 .to_string(),
                 component_property="style",
             ),
             Input(
-                self.settings_group(WellCompletionView.Ids.SETTINGS)
+                self.settings_group(WellCompletionsView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.DATA_MODE)
                 .to_string(),
                 "value",

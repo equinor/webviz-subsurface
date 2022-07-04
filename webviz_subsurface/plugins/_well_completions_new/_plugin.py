@@ -7,7 +7,7 @@ from webviz_subsurface._models import StratigraphyModel, WellAttributesModel
 from ..._providers import EnsembleTableProviderFactory
 from ._business_logic import WellCompletionsDataModel
 from ._plugin_ids import PluginIds
-from .views import WellCompletionView
+from .views import WellCompletionsView
 
 
 class WellCompletionsNew(WebvizPluginABC):
@@ -167,7 +167,7 @@ class WellCompletionsNew(WebvizPluginABC):
             )
 
         self.add_view(
-            WellCompletionView(self._data_models),
+            WellCompletionsView(self._data_models),
             PluginIds.Views.WELL_COMPLETION_VIEW,
         )
 
