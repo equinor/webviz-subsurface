@@ -16,6 +16,7 @@ from .._plugin_ids import PluginIds
 class Filter(SettingsGroupABC):
 
     PHASES = ["OIL", "GAS", "WATER"]
+    phases_additional_info: List[str] = []
 
     class Ids:
         COLOR_BY = "select-color"
@@ -43,19 +44,19 @@ class Filter(SettingsGroupABC):
 
         self.pvtnum = list(self.pvt_data_frame["PVTNUM"].unique())
 
-        self.phases_additional_info: List[str] = []
+        #self.phases_additional_info: List[str] = []
         if self.pvt_data_frame["KEYWORD"].str.contains("PVTO").any():
-            self.phases_additional_info.append("PVTO")
+            Filter.phases_additional_info.append("PVTO")
         elif self.pvt_data_frame["KEYWORD"].str.contains("PVDO").any():
-            self.phases_additional_info.append("PVDO")
+            Filter.phases_additional_info.append("PVDO")
         elif self.pvt_data_frame["KEYWORD"].str.contains("PVCDO").any():
-            self.phases_additional_info.append("PVCDO")
+           Filter.phases_additional_info.append("PVCDO")
         if self.pvt_data_frame["KEYWORD"].str.contains("PVTG").any():
-            self.phases_additional_info.append("PVTG")
+            Filter.phases_additional_info.append("PVTG")
         elif self.pvt_data_frame["KEYWORD"].str.contains("PVDG").any():
-            self.phases_additional_info.append("PVDG")
+            Filter.phases_additional_info.append("PVDG")
         if self.pvt_data_frame["KEYWORD"].str.contains("PVTW").any():
-            self.phases_additional_info.append("PVTW")
+            Filter.phases_additional_info.append("PVTW")
 
     @property
     def phases(self) -> Dict[str, str]:

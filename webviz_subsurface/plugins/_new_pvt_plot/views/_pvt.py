@@ -8,7 +8,7 @@ from webviz_config import WebvizSettings
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
 from ._view_funcions import create_hovertext, create_traces, plot_layout, filter_data_frame, create_graph
-
+from ..shared_settings._filter import Filter
 
 class PvtView(ViewABC):
     class Ids:
@@ -22,6 +22,8 @@ class PvtView(ViewABC):
 
     def __init__(self, pvt_df: pd.DataFrame, webviz_settings: WebvizSettings) -> None:
         super().__init__("Pvt View")
+
+        self.phases_additional_info = Filter.phases_additional_info
 
         self.pvt_df = pvt_df
         self.plotly_theme = webviz_settings.theme.plotly_theme
@@ -85,7 +87,7 @@ class PvtView(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR).component_unique_id(Graph.Ids.GRAPH).to_string(), "figure"),
+            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR).component_unique_id(Graph.Ids.GRAPH).to_string(), "children"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),

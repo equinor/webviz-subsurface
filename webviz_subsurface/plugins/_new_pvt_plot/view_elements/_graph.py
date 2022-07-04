@@ -16,8 +16,8 @@ class Graph(ViewElementABC):
         self.height = height
 
     def inner_layout(self) -> Type[Component]:
-        return wcc.Graph(
+        return wcc.FlexBox(
             id=self.register_component_unique_id(Graph.Ids.GRAPH),
-            config={"displayModeBar": False},
+            #config={"displayModeBar": False},
             style={"height": self.height, "min-height": "300px"},
         )
