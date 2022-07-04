@@ -66,7 +66,13 @@ class WellCompletionsDataModel:
     def create_ensemble_dataset(
         self, realization: Optional[int] = None
     ) -> Dict[str, Any]:
+        """Creates the input data set for the WellCompletions component.
 
+        Returns a dictionary on a given format specified here:
+        https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/lib/inputSchema/wellCompletions.json
+
+        if realization is not None, the input dataframe is filtered on realizations.
+        """
         df = self._wellcompletion_df
         if realization is not None:
             df = df[df["REAL"] == realization]
@@ -85,7 +91,7 @@ class WellCompletionsDataModel:
         }
 
     def _extract_wells(self, wellcompletion_df: pd.DataFrame) -> List[Dict[str, Any]]:
-        """Descr..."""
+        """Generates the wells part of the input to the WellCompletions component."""
         well_list = []
         no_real = wellcompletion_df["REAL"].nunique()
         for well_name, well_group in wellcompletion_df.groupby("WELL"):
@@ -99,8 +105,12 @@ class WellCompletionsDataModel:
         return well_list
 
     def _extract_stratigraphy(self) -> List[Dict[str, Any]]:
-        """Returns the stratigraphy part of the data set"""
+        """Returns the stratigraphy part of the input to the WellCompletions component."""
         color_iterator = itertools.cycle(self._theme_colors)
+
+        # If no stratigraphy file is found then the stratigraphy is
+        # created from the unique zones in the wellcompletiondata input.
+        # They will then probably not come in the correct order.
         if self._stratigraphy is None:
             return [
                 {
