@@ -286,7 +286,7 @@ def create_graph(
     plot_title: str,
     theme: dict,
 ) -> html.Div:
-    return html.Div(
+    return wcc.FlexBox(
         style={
             "min-width": "500px",
             "min-height": "400px",

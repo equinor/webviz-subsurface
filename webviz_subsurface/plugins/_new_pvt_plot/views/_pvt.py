@@ -1,9 +1,12 @@
 from typing import List, Dict, Union
 
 from dash import callback, Input, Output, html
+
+from dash.development.base_component import Component
 import pandas as pd
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config import WebvizSettings
+import webviz_core_components as wcc
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
@@ -49,9 +52,9 @@ class PvtView(ViewABC):
         if self.pvt_df["KEYWORD"].str.contains("PVTW").any():
             self.phases_additional_info.append("PVTW")
 
-        column = self.add_column()
+        column = self.add_column(PvtView.Ids.PVT_GRAPHS)
 
-        column.add_view_element(Graph(), PvtView.Ids.PVT_GRAPHS)
+        #column.add_view_element(Graph(), PvtView.Ids.PVT_GRAPHS)
 
     @staticmethod
     def plot_visibility_options(phase: str = "") -> Dict[str, str]:
@@ -100,8 +103,8 @@ class PvtView(ViewABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(PvtView.Ids.PVT_GRAPHS)
-                .component_unique_id(Graph.Ids.GRAPH)
+                self.layout_element(PvtView.Ids.PVT_GRAPHS)
+                .get_unique_id()
                 .to_string(),
                 "children",
             ),
@@ -121,7 +124,7 @@ class PvtView(ViewABC):
             phase: str,
             pvtnum: List[str],
             plots_visibility: Union[List[str], str],
-        ) -> dict:
+        ) -> List[Component]:
 
             PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
@@ -130,21 +133,22 @@ class PvtView(ViewABC):
             elif color_by == "PVTNUM":
                 colors = self.pvtnum_colors
 
-            return html.Div(
-                style={
-                    "display": "flex",
-                    "flex-wrap": "wrap",
-                },
-                children=[
-                    create_graph(
-                        PVT_df,
-                        color_by,
-                        colors,
-                        phase,
-                        plot,
-                        self.plot_visibility_options(self.phases[phase])[plot],
-                        self.plotly_theme,
-                    )
-                    for plot in plots_visibility
-                ],
-            )
+            plots_list = []
+
+            for plot in plots_visibility:
+                plots_list.append(
+                    wcc.WebvizViewElement(
+                            id=self.unique_id(plot),
+                            children = create_graph(
+                                PVT_df,
+                                color_by,
+                                colors,
+                                phase,
+                                plot,
+                                self.plot_visibility_options(self.phases[phase])[plot],
+                                self.plotly_theme,
+                            ), ) 
+                )
+
+
+            return plots_list
