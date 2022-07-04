@@ -26,6 +26,20 @@ class PvtView(ViewABC):
         self.pvt_df = pvt_df
         self.plotly_theme = webviz_settings.theme.plotly_theme
 
+        self.phases_additional_info: List[str] = []
+        if self.pvt_df["KEYWORD"].str.contains("PVTO").any():
+            self.phases_additional_info.append("PVTO")
+        elif self.pvt_df["KEYWORD"].str.contains("PVDO").any():
+            self.phases_additional_info.append("PVDO")
+        elif self.pvt_df["KEYWORD"].str.contains("PVCDO").any():
+            self.phases_additional_info.append("PVCDO")
+        if self.pvt_df["KEYWORD"].str.contains("PVTG").any():
+            self.phases_additional_info.append("PVTG")
+        elif self.pvt_df["KEYWORD"].str.contains("PVDG").any():
+            self.phases_additional_info.append("PVDG")
+        if self.pvt_df["KEYWORD"].str.contains("PVTW").any():
+            self.phases_additional_info.append("PVTW")
+
         column = self.add_column()
 
         first_row = column.make_row()
