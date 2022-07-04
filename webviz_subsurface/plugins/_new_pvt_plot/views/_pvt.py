@@ -7,8 +7,15 @@ from webviz_config import WebvizSettings
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
-from ._view_funcions import create_hovertext, create_traces, plot_layout, filter_data_frame, create_graph
+from ._view_funcions import (
+    create_hovertext,
+    create_traces,
+    plot_layout,
+    filter_data_frame,
+    create_graph,
+)
 from ..shared_settings._filter import Filter
+
 
 class PvtView(ViewABC):
     class Ids:
@@ -44,13 +51,7 @@ class PvtView(ViewABC):
 
         column = self.add_column()
 
-        first_row = column.make_row()
-        first_row.add_view_element(Graph(), PvtView.Ids.FORMATION_VOLUME_FACTOR)
-        first_row.add_view_element(Graph(), PvtView.Ids.VISCOSITY)
-
-        second_row = column.make_row()
-        second_row.add_view_element(Graph(), PvtView.Ids.DENSITY)
-        second_row.add_view_element(Graph(), PvtView.Ids.GAS_OIL_RATIO)
+        column.add_view_element(Graph(), PvtView.Ids.FORMATION_VOLUME_FACTOR)
 
     @staticmethod
     def plot_visibility_options(phase: str = "") -> Dict[str, str]:
@@ -64,15 +65,13 @@ class PvtView(ViewABC):
         if phase == "PVTG":
             options["ratio"] = "Vaporized Oil Ratio (Rv)"
         return options
-    
+
     @property
     def phases(self) -> Dict[str, str]:
         phase_descriptions: Dict[str, str] = {}
         for i, phase in enumerate(PvtView.PHASES):
             phase_descriptions[phase] = self.phases_additional_info[i]
         return phase_descriptions
-
-
 
     @property
     def ensembles(self) -> List[str]:
@@ -98,15 +97,23 @@ class PvtView(ViewABC):
             for pvtnum in self.pvtnums
         }
 
-
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR).component_unique_id(Graph.Ids.GRAPH).to_string(), "children"),
+            Output(
+                self.view_element(PvtView.Ids.FORMATION_VOLUME_FACTOR)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "children",
+            ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"
+            ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"
+            ),
         )
         def _update_plots(
             color_by: str,
