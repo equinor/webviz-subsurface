@@ -1,13 +1,12 @@
 from typing import List, Tuple, Dict
 from dash.development.base_component import Component
-from dash import callback, Input, Output, State
+from dash import callback, Input, Output
 
 import pandas as pd
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 import webviz_core_components as wcc
 
 from .._plugin_ids import PluginIds
-from ._filter import Filter
 
 class ShowPlots(SettingsGroupABC):
     class Ids:

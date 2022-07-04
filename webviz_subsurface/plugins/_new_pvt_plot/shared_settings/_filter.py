@@ -2,11 +2,9 @@ from typing import List, Dict
 from dash.development.base_component import Component
 from dash import callback, Input, Output
 
-from multiprocessing.sharedctypes import Value
 import pandas as pd
 from typing import List
 from dash.development.base_component import Component
-from requests import options
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 import webviz_core_components as wcc
 
