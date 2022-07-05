@@ -12,11 +12,8 @@ class Filter(SettingsGroupABC):
     """
     Added by MoNezhadali 06.22
     """
-<<<<<<< HEAD
-=======
     def __init__(self, relperm_df: pd.DataFrame) -> None:
             super().__init__("Filter")
->>>>>>> origin/relperm
     class Ids:
         class Selectors:
             SATURATION_AXIS="saturation-axis"
@@ -32,90 +29,6 @@ class Filter(SettingsGroupABC):
 
         ## todo: the selectors will be defined here after getting to know the data
 
-<<<<<<< HEAD
-    class Selectors:
-        def __init__(self, rel_perm_df: pd.DataFrame) -> None:
-            self.super().__init__("Selectors")
-
-        def layout(self) -> List(Component):
-            return [
-                wcc.SelectWithLabel(
-                    id=self.register_component_unique_id(Filter.Ids.Selectors.SATURATION_AXIS),
-                    label="Saturation axis",
-                    options=[{"label":i, "value":i} for i in range(self.sat_axes)],
-                    value=self.sat_axes[0],
-                    multi=False,
-                    size=1,
-                ),
-                wcc.SelectWithLabel(
-                    id=self.register_component_unique_id(Filter.Ids.Selectors.COLOR_BY),
-                    label="Color by",
-                    options=[{"label":i, "value":i} for i in range(self.color_options)],
-                    value=self.color_options[0],
-                    multi=False,
-                    size=1,
-                ),
-                wcc.SelectWithLabel(
-                    id=self.register_component_unique_id(Filter.Ids.Selectors.ENSEMBLES),
-                    label="Ensembles",
-                    options=[{"label":i, "value":i} for i in range(self.ensembles)],
-                    value=self.ensembles[0],
-                    multi=True,
-                    size=min(5,len(self.ensembles)),
-                ),
-                # This needs to be checked
-                wcc.SelectWithLabel(
-                    id=self.register_component_unique_id(Filter.Ids.Selectors.CURVES),
-                    label="Curves",
-                    options=[{"label":i, "value":i} for i in range(self.curves)],
-                    value=self.color_options[0],
-                    multi=False,
-                    size=1,
-                ),
-                wcc.SelectWithLabel(
-                    id=self.register_component_unique_id(Filter.Ids.Selectors.SATNUM),
-                    label="Satnum",
-                    options=[{"label":i, "value":i} for i in range(self.satnums)],
-                    value=self.ensembles[0],
-                    multi=True,
-                    size=min(5,len(self.ensembles)),
-                ),
-            ]
-        def set_callbacks(self) -> None:
-            @callback(
-                Output(
-                    self.get_store_unique_id(PlugInIDs.Stores.Selectors.SATURATION_AXIS),"data"
-                ),
-                Input(
-                    self.component_unique_id(Filter.Ids.Selectors.SATURATION_AXIS).to_string(), "value",
-                ),
-            )
-            def _set_saturation_axis(saturation_axis: List[str]) -> List[str]:
-                return saturation_axis
-            
-            @callback(
-                Output(
-                    self.get_store_unique_id(PlugInIDs.Stores.Selectors.COLOR_BY),"data"
-                ),
-                Input(
-                    self.component_unique_id(Filter.Ids.Selectors.COLOR_BY).to_string(), "value",
-                ),
-            )
-            def _set_color_by(color_by: List[str]) -> List[str]:
-                return color_by
-            
-            @callback(
-                Output(
-                    self.get_store_unique_id(PlugInIDs.Stores.Selectors.ENSAMBLES),"data"
-                ),
-                Input(
-                    self.component_unique_id(Filter.Ids.Selectors.ENSEMBLES).to_string(), "value",
-                ),
-            )
-            def _set_ensembles(ensembles: List[str]) -> List[str]:
-                return ensembles
-
-            @callback(
                 Output(
                     self.get_store_unique_id(PlugInIDs.Stores.Selectors.CURVES),"data"
                 ),
@@ -430,6 +343,5 @@ class Scal_recommendation(Filter):
         def _set_scal_recommendation(scal_recommendation: List[str]) -> List[str]:
             return scal_recommendation
     
->>>>>>> origin/relperm
     
     
