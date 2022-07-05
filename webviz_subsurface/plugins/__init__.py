@@ -69,3 +69,4 @@ from ._well_log_viewer import WellLogViewer
 
 
 from ._new_pvt_plot import PvtPlotter
+from ._new_production_network import NewGroupTree

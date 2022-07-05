@@ -58,6 +58,8 @@ class NewGroupTree(WebvizPluginABC):
                 provider, GruptreeModel(ens_name, ens_path, gruptree_file)
             )
 
+            
+
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
             ens_grouptree_data.webviz_store
