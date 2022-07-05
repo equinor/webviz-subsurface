@@ -1,21 +1,23 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Tuple, Callable
 
-from webviz_config import WebvizPluginABC
+from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider, 
     EnsembleSummaryProviderFactory,
     Frequency,
 )
 
-from 
+from ._ensemble_group_tree_data import EnsembleGroupTreeData
 
 
 
 class NewGroupTree(WebvizPluginABC):
 
     def __init__(
-        self, webviz_settings: WebvizSettings,
+        self, 
+        webviz_settings: WebvizSettings,
         ensembles: list,
         gruptree_file: str = "share/results/tables/gruptree.csv",
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
@@ -55,3 +57,9 @@ class NewGroupTree(WebvizPluginABC):
             self._group_tree_data[ens_name] = EnsembleGroupTreeData(
                 provider, GruptreeModel(ens_name, ens_path, gruptree_file)
             )
+
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        return [
+            ens_grouptree_data.webviz_store
+            for _, ens_grouptree_data in self._group_tree_data.items()
+        ]    
