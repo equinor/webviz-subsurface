@@ -57,6 +57,7 @@ setup(
             "PropertyStatistics = webviz_subsurface.plugins:PropertyStatistics",
             "PvtPlot = webviz_subsurface.plugins:PvtPlot",
             "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
+            "RelativePermeabilityNew = webviz_subsurface.plugins:RelativePermeabilityNew",
             "ReservoirSimulationTimeSeries = webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
             "ReservoirSimulationTimeSeriesOneByOne = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
             "ReservoirSimulationTimeSeriesRegional = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",

@@ -65,3 +65,5 @@ from ._well_completions import WellCompletions
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._well_log_viewer import WellLogViewer
+
+from ._relative_permeability_new import RelativePermeabilityNew
