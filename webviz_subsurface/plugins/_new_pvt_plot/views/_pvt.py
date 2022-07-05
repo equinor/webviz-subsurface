@@ -52,7 +52,7 @@ class PvtView(ViewABC):
 
         column = self.add_column(PvtView.Ids.PVT_GRAPHS)
 
-        #column.add_view_element(Graph(), PvtView.Ids.PVT_GRAPHS)
+        # column.add_view_element(Graph(), PvtView.Ids.PVT_GRAPHS)
 
     @staticmethod
     def plot_visibility_options(phase: str = "") -> Dict[str, str]:
@@ -60,11 +60,14 @@ class PvtView(ViewABC):
             "fvf": "Formation Volume Factor",
             "viscosity": "Viscosity",
             "density": "Density",
+            "ratio": "Gas/Oil Ratio (Rs)",
         }
         if phase == "PVTO":
             options["ratio"] = "Gas/Oil Ratio (Rs)"
         if phase == "PVTG":
             options["ratio"] = "Vaporized Oil Ratio (Rv)"
+        if phase == "WATER":
+            options.pop("ratio")
         return options
 
     @property
@@ -101,9 +104,7 @@ class PvtView(ViewABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.layout_element(PvtView.Ids.PVT_GRAPHS)
-                .get_unique_id()
-                .to_string(),
+                self.layout_element(PvtView.Ids.PVT_GRAPHS).get_unique_id().to_string(),
                 "children",
             ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
@@ -124,7 +125,6 @@ class PvtView(ViewABC):
             plots_visibility: Union[List[str], str],
         ) -> List[Component]:
 
-
             PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
             if color_by == "ENSEMBLE":
@@ -138,8 +138,6 @@ class PvtView(ViewABC):
             current_row_elements = []
             current_column = 0
 
-            plots_list = []
-
             current_column = 0
             figure_index = 0
 
@@ -147,33 +145,32 @@ class PvtView(ViewABC):
 
             for plot in plots_visibility:
                 current_element = wcc.WebvizViewElement(
-                            id=self.unique_id(plot),
-                            children = create_graph(
-                                PVT_df,
-                                color_by,
-                                colors,
-                                phase,
-                                plot,
-                                self.plot_visibility_options(self.phases[phase])[plot],
-                                self.plotly_theme,
-                                graph_height,
-                            ), ) 
+                    id=self.unique_id(plot),
+                    children=create_graph(
+                        PVT_df,
+                        color_by,
+                        colors,
+                        phase,
+                        plot,
+                        self.plot_visibility_options(self.phases[phase])[plot],
+                        self.plotly_theme,
+                        graph_height,
+                    ),
+                )
                 current_row_elements.append(current_element)
 
                 current_column += 1
 
                 if (
-                        current_column >= max_num_columns
-                        or figure_index == len(plots_visibility) - 1
-                    ):
-                        view_elements.append(
-                            wcc.WebvizPluginLayoutRow(current_row_elements)
-                        )
-                        current_row_elements = []
-                        current_column = 0
-                figure_index +=1
-                    
+                    current_column >= max_num_columns
+                    or figure_index == len(plots_visibility) - 1
+                ):
+                    view_elements.append(
+                        wcc.WebvizPluginLayoutRow(current_row_elements)
+                    )
+                    current_row_elements = []
+                    current_column = 0
 
-
+                figure_index += 1
 
             return view_elements
