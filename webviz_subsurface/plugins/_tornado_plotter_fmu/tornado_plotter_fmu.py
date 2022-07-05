@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 import webviz_core_components as wcc
 from dash import ALL, Dash, Input, Output, callback_context, html
@@ -51,40 +51,34 @@ class TornadoPlotterFMU(WebvizPluginABC):
         super().__init__()
         self._single_filters = single_value_selectors if single_value_selectors else []
         self._multi_filters = multi_value_selectors if multi_value_selectors else []
-        provider = EnsembleTableProviderFactory.instance()
+        provider_factory = EnsembleTableProviderFactory.instance()
 
         if ensemble is not None and csvfile is not None:
-            ensemble_dict: Dict[str, str] = {
-                ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
-            }
-            self._parameterproviderset = (
-                provider.create_provider_set_from_per_realization_parameter_file(
-                    ensemble_dict
-                )
+            ens_path = webviz_settings.shared_settings["scratch_ensembles"][ensemble]
+            self._parameter_provider = (
+                provider_factory.create_from_per_realization_parameter_file(ens_path)
             )
-            self._tableproviderset = (
-                provider.create_provider_set_from_per_realization_csv_file(
-                    ensemble_dict, csvfile
-                )
+            self._table_provider = (
+                provider_factory.create_from_per_realization_csv_file(ens_path, csvfile)
             )
             self._ensemble_name = ensemble
+
         elif aggregated_csvfile and aggregated_parameterfile is not None:
-            self._tableproviderset = (
-                provider.create_provider_set_from_aggregated_csv_file(
-                    aggregated_csvfile
-                )
+            self._parameter_provider = provider_factory.create_from_ensemble_csv_file(
+                aggregated_parameterfile
             )
-            self._parameterproviderset = (
-                provider.create_provider_set_from_aggregated_csv_file(
-                    aggregated_parameterfile
-                )
+            self._table_provider = provider_factory.create_from_ensemble_csv_file(
+                aggregated_csvfile
             )
-            if len(self._tableproviderset.ensemble_names()) != 1:
-                raise ValueError(
-                    "Csv file has multiple ensembles. "
-                    "This plugin only supports a single ensemble"
+            try:
+                self._ensemble_name = self._table_provider.get_column_data(
+                    column_names=["ENSEMBLE"]
                 )
-            self._ensemble_name = self._tableproviderset.ensemble_names()[0]
+            except KeyError as exc:
+                raise KeyError(
+                    f"'ENSEMBLE' is missing from {aggregated_csvfile}"
+                ) from exc
+
         else:
             raise ValueError(
                 "Specify either ensembles and csvfile or aggregated_csvfile "
@@ -92,9 +86,9 @@ class TornadoPlotterFMU(WebvizPluginABC):
             )
 
         try:
-            design_matrix_df = self._parameterproviderset.ensemble_provider(
-                self._ensemble_name
-            ).get_column_data(column_names=["SENSNAME", "SENSCASE"])
+            design_matrix_df = self._parameter_provider.get_column_data(
+                column_names=["SENSNAME", "SENSCASE"]
+            )
         except KeyError as exc:
             raise KeyError(
                 "Required columns 'SENSNAME' and 'SENSCASE' is missing "
@@ -107,9 +101,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
         self._tornado_widget = TornadoWidget(
             realizations=design_matrix_df, app=app, webviz_settings=webviz_settings
         )
-        self._responses: List[str] = self._tableproviderset.ensemble_provider(
-            self._ensemble_name
-        ).column_names()
+        self._responses: List[str] = self._table_provider.column_names()
         if self._single_filters:
             self._responses = [
                 response
@@ -132,11 +124,8 @@ class TornadoPlotterFMU(WebvizPluginABC):
         """Creates dropdowns for any data columns added as single value filters"""
         elements = []
         for selector in self._single_filters:
-            values = (
-                self._tableproviderset.ensemble_provider(self._ensemble_name)
-                .get_column_data([selector])[selector]
-                .unique()
-            )
+            values = self._table_provider.get_column_data([selector])[selector].unique()
+
             elements.append(
                 wcc.Dropdown(
                     label=selector,
@@ -157,11 +146,8 @@ class TornadoPlotterFMU(WebvizPluginABC):
         """Creates wcc.Selects for any data columns added as multi value filters"""
         elements = []
         for selector in self._multi_filters:
-            values = (
-                self._tableproviderset.ensemble_provider(self._ensemble_name)
-                .get_column_data([selector])[selector]
-                .unique()
-            )
+            values = self._table_provider.get_column_data([selector])[selector].unique()
+
             elements.append(
                 wcc.SelectWithLabel(
                     label=selector,
@@ -234,9 +220,9 @@ class TornadoPlotterFMU(WebvizPluginABC):
         ) -> str:
             """Returns a json dump for the tornado plot with the response values per realization"""
 
-            data = self._tableproviderset.ensemble_provider(
-                self._ensemble_name
-            ).get_column_data([response] + self._single_filters + self._multi_filters)
+            data = self._table_provider.get_column_data(
+                [response] + self._single_filters + self._multi_filters
+            )
 
             # Filter data
             if single_filters is not None:
