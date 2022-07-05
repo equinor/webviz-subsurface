@@ -21,6 +21,7 @@ pages:
 """
 
 from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
+from ._bhp_analyzer import BhpAnalyzer
 from ._bhp_qc import BhpQc
 from ._disk_usage import DiskUsage
 from ._group_tree import GroupTree

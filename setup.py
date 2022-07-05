@@ -38,6 +38,7 @@ setup(
     },
     entry_points={
         "webviz_config_plugins": [
+            "BhAnalyzer = webviz_subsurface.plugins:BhpAnalyzer"
             "BhpQc = webviz_subsurface.plugins:BhpQc",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
             "GroupTree = webviz_subsurface.plugins:GroupTree",
