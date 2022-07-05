@@ -40,6 +40,7 @@ from ._prod_misfit import ProdMisfit
 from ._property_statistics import PropertyStatistics
 from ._pvt_plot import PvtPlot
 from ._relative_permeability import RelativePermeability
+from ._relative_permeability_new import RelativePermeabilityNew
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 from ._reservoir_simulation_timeseries_onebyone import (
     ReservoirSimulationTimeSeriesOneByOne,

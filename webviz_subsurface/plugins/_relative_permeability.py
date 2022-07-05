@@ -113,10 +113,10 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             for ens in ensembles
         }
         self.plotly_theme = webviz_settings.theme.plotly_theme
-        self.relpermfile = relpermfile
+        self.relpermfile = relpermfile # str
         if self.relpermfile is not None:
-            self.satfunc = load_csv(ensemble_paths=self.ens_paths, csv_file=relpermfile)
-            self.satfunc = self.satfunc.rename(str.upper, axis="columns").rename(
+            self.satfunc = load_csv(ensemble_paths=self.ens_paths, csv_file=relpermfile) # csv file
+            self.satfunc = self.satfunc.rename(str.upper, axis="columns").rename( # redefining the csv file (still csv file)
                 columns={"TYPE": "KEYWORD"}
             )
             if "KEYWORD" not in self.satfunc.columns:
@@ -133,7 +133,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                     if key != "Missing"
                 ]
             )
-            self.satfunc = self.satfunc[
+            self.satfunc = self.satfunc[ # taking out the valid columns
                 [col for col in self.satfunc.columns if col in valid_columns]
             ]
         else:
