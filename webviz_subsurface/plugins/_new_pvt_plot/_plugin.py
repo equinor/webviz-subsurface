@@ -1,4 +1,4 @@
-from typing import Type, List
+from typing import Type, List, Tuple, Callable, Dict, Any
 
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -118,6 +118,36 @@ class PvtPlotter(WebvizPluginABC):
             PvtView(self.pvt_df, webviz_settings), PluginIds.PvtID.INDICATORS, PluginIds.PvtID.GROUP_NAME
         )
 
+    def add_webvizstore(
+        self,
+    ) -> List[Tuple[Callable, List[Dict[str, Any]]]]:
+        return (
+            [
+                (
+                    load_pvt_dataframe,
+                    [
+                        {
+                            "ensemble_paths": self.ensemble_paths,
+                            "use_init_file": self.read_from_init_file,
+                            "drop_ensemble_duplicates": self.drop_ensemble_duplicates,
+                        }
+                    ],
+                )
+            ]
+            if self.pvt_relative_file_path is None
+            else [
+                (
+                    load_pvt_csv,
+                    [
+                        {
+                            "ensemble_paths": self.ensemble_paths,
+                            "csv_file": self.pvt_relative_file_path,
+                            "drop_ensemble_duplicates": self.drop_ensemble_duplicates,
+                        }
+                    ],
+                )
+            ]
+        )
 
     @property
     def layout(self) -> Type[Component]:
