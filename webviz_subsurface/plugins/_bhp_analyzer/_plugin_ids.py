@@ -2,9 +2,9 @@ class PluginIds:
     class Stores:
         SELECTED_ENSEMBLE = "selected-ensemble"
         SELECTED_WELLS = "selected-wells"
-        SELECTED_MAX_NUMBER_OF_WELLS = "max-number-of-wells"
-        SELECTED_SORT_BY = "sort-by"
-        SELECTED_ASCENDING_DESCENDING = "ascending-descending"
+        SELECTED_MAX_NUMBER_OF_WELLS = "selected-max-number-of-wells"
+        SELECTED_SORT_BY = "slected-sort-by"
+        SELECTED_ASCENDING_DESCENDING = "selected-ascending-descending"
 
     class SharedSettings:
         FILTER = "filter"

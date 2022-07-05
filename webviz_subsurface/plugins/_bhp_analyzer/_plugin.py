@@ -74,6 +74,7 @@ class BhpAnalyzer(WebvizPluginABC):
         self.smry = pd.concat(dfs)
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
+        
 
     @property
     def tour_steps(self) -> List[dict]:
