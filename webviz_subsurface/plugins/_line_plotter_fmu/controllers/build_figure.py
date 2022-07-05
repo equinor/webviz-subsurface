@@ -7,7 +7,7 @@ from dash.exceptions import PreventUpdate
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import ObservationModel
-from webviz_subsurface._providers import EnsembleTableProviderSet
+from webviz_subsurface._providers import EnsembleTableProvider
 
 from ..figures.plotly_line_plot import PlotlyLinePlot
 
@@ -15,9 +15,9 @@ from ..figures.plotly_line_plot import PlotlyLinePlot
 def build_figure(
     app: Dash,
     get_uuid: Callable,
-    tableproviders: EnsembleTableProviderSet,
+    tableproviders: Dict[str, EnsembleTableProvider],
     observationmodel: Optional[ObservationModel],
-    parameterproviders: EnsembleTableProviderSet,
+    parameterproviders: Dict[str, EnsembleTableProvider],
     colors: Dict,
 ) -> None:
     @app.callback(
@@ -274,7 +274,7 @@ def calc_series_statistics(
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_table_data(
-    tableproviders: EnsembleTableProviderSet,
+    tableproviders: Dict[str, EnsembleTableProvider],
     ensemble_names: List,
     table_column_names: List,
     realization_filter: Dict[str, List],
@@ -285,7 +285,7 @@ def get_table_data(
         if not realization_filter.get(ens_name):
             dframe = pd.DataFrame(columns=["ENSEMBLE", "REAL"] + table_column_names)
         else:
-            provider = tableproviders.ensemble_provider(ens_name)
+            provider = tableproviders[ens_name]
             dframe = provider.get_column_data(
                 table_column_names, realizations=realization_filter.get(ens_name)
             )
