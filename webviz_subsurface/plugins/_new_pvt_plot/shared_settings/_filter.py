@@ -96,6 +96,7 @@ class Filter(SettingsGroupABC):
                 ],
                 value=list(self.phases.items())[0][0],
                 clearable=False,
+                persistence = False
             ),
             wcc.FlexBox(
                 id=self.register_component_unique_id(Filter.Ids.PVTNUMBOX),
