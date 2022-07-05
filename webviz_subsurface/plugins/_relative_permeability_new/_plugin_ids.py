@@ -18,3 +18,6 @@ class PlugInIDs:
 
     class SharedSettings:
         FILTER = "filter"
+        SELECTORS="selectors"
+        VISUALIZATION="visualization"
+        SCAL_RECOMMENDATION="scal_recommendation"

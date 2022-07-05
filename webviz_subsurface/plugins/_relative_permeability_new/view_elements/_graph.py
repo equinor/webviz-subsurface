@@ -9,8 +9,14 @@ class Graph(ViewElementABC):
         #pylint: disable=too-few-public-methods
         GRAPH = "graph"
 
-    def __init__(self,height : str = "88vh") -> None: 
+    def __init__(self,height : str = "43vh", both : bool = True) -> None: 
         super().__init__()
+
+        
+        if both:
+            self.height = height
+        else:
+            self.height = "88vh"
 
     def inner_layout(self) -> Type[Component]: 
         return WccGraph(
