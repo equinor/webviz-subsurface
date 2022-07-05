@@ -2,6 +2,7 @@ from typing import List, Dict, Union
 from click import style
 
 from dash import callback, Input, Output, html
+from dash.exceptions import PreventUpdate
 
 from dash.development.base_component import Component
 import pandas as pd
@@ -124,7 +125,8 @@ class PvtView(ViewABC):
             pvtnum: List[str],
             plots_visibility: Union[List[str], str],
         ) -> List[Component]:
-
+            if len(ensembles) == 0 or len(pvtnum) == 0:
+                raise PreventUpdate
             PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
             if color_by == "ENSEMBLE":
