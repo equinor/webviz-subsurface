@@ -1,14 +1,19 @@
 import io
 import itertools
 import json
+import logging
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pandas as pd
 from webviz_config.webviz_store import webvizstore
 
+from webviz_subsurface._utils.perf_timer import PerfTimer
+
 from ..._datainput.well_completions import get_ecl_unit_system
 from ..._models import StratigraphyModel, WellAttributesModel
 from ..._providers import EnsembleTableProvider
+
+LOGGER = logging.getLogger(__name__)
 
 
 class WellCompletionsDataModel:
@@ -73,11 +78,13 @@ class WellCompletionsDataModel:
 
         if realization is not None, the input dataframe is filtered on realizations.
         """
+        timer = PerfTimer()
+
         df = self._wellcompletion_df
         if realization is not None:
             df = df[df["REAL"] == realization]
 
-        return {
+        dataset = {
             "version": "1.1.0",
             "units": {
                 "kh": {"unit": self._kh_unit, "decimalPlaces": self._kh_decimal_places}
@@ -89,6 +96,10 @@ class WellCompletionsDataModel:
             ],
             "wells": self._extract_wells(df),
         }
+
+        LOGGER.info(f"WellCompletions dataset created in {timer.elapsed_s():.2f}s")
+
+        return dataset
 
     def _extract_wells(self, wellcompletion_df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Generates the wells part of the input to the WellCompletions component."""
