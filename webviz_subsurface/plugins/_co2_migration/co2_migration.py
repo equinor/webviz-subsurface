@@ -82,6 +82,7 @@ def _initialize_map_attribute_names(
             MapAttribute.MIGRATION_TIME: "MigrationTime",
             MapAttribute.MAX_SATURATION: "max_SGAS",
             MapAttribute.EFFECTIVE_COLUMN_HEIGHT: "sum_hcpfdz",
+            MapAttribute.MAX_AMFG: "max_AMFG",
         }
     else:
         return {MapAttribute(key): value for key, value in mapping.items()}

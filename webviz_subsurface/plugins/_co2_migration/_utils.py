@@ -11,6 +11,7 @@ class MapAttribute(Enum):
     MIGRATION_TIME = "Migration Time"
     MAX_SATURATION = "Maximum Saturation"
     EFFECTIVE_COLUMN_HEIGHT = "Effective Plume Height"
+    MAX_AMFG = "Maximum AMFG"
 
 
 def realization_paths(ensemble_path) -> Dict[str, str]:
