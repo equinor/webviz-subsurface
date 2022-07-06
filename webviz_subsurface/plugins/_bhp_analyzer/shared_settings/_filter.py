@@ -29,6 +29,8 @@ class Filter(SettingsGroupABC):
 
         self.bhp_df = bhp_df
 
+        print("filter:", self.wells)
+
 
 
     
@@ -181,7 +183,7 @@ class Filter(SettingsGroupABC):
                 self.component_unique_id(Filter.Ids.WELLS).to_string(), "value"
             ),
         )
-        def _set_countries(selected_wells: List[str]) -> List[str]:
+        def _set_wells(selected_wells: List[set]) -> List[set]:
             return selected_wells
 
 

@@ -27,6 +27,13 @@ class FanView(ViewABC):
         column = self.add_column()
         column.add_view_element(Graph(), FanView.Ids.FAN_CHART)
         self.theme = webviz_settings.theme
+
+        print(self.bhp_df)
+    
+    #ensemble property and colors should be moved
+    @property
+    def ensembles(self) -> List[str]:
+        return list(self.bhp_df["ENSEMBLE"].unique())
     
     @property
     def ens_colors(self) -> dict:
@@ -46,14 +53,13 @@ class FanView(ViewABC):
         )
         def _update_plot(
             ensemble: str,
-            n_wells: int,
-            wells: Union[str, List[str]],
             sort_by: str,
             ascending: bool,
+            n_wells: int,
+            wells: Union[str, List[str]],
         ) -> dict:
-
             wells = wells if isinstance(wells, list) else [wells]
-            df = filter_df(df=self.smry, ensemble=ensemble, wells=wells)
+            df = filter_df(df=self.bhp_df, ensemble=ensemble, wells=wells)
             stat_df = (
                 calc_statistics(df)
                 .sort_values(sort_by, ascending=ascending)

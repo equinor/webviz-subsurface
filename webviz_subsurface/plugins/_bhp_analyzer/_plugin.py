@@ -80,7 +80,6 @@ class BhpAnalyzer(WebvizPluginABC):
 
         self.smry = pd.concat(dfs)
         self.theme = webviz_settings.theme
-        self.set_callbacks(app)
 
         self.add_store(PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.SELECTED_PLOT_TYPE, WebvizPluginABC.StorageType.SESSION)
@@ -91,7 +90,7 @@ class BhpAnalyzer(WebvizPluginABC):
 
         self.add_shared_settings_group(Filter(self.smry), PluginIds.SharedSettings.FILTER)
         self.add_view(
-            FanView(self.smry),
+            FanView(self.smry, webviz_settings),
             PluginIds.BhpID.FAN_CHART,
             PluginIds.BhpID.GROUP_NAME
         )
