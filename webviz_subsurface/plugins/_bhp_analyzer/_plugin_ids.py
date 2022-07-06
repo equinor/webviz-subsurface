@@ -5,6 +5,7 @@ class PluginIds:
         SELECTED_MAX_NUMBER_OF_WELLS = "selected-max-number-of-wells"
         SELECTED_SORT_BY = "slected-sort-by"
         SELECTED_ASCENDING_DESCENDING = "selected-ascending-descending"
+        SELECTED_PLOT_TYPE = "selected-plot-type"
 
     class SharedSettings:
         FILTER = "filter"

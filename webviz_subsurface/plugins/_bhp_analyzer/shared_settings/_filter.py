@@ -96,5 +96,59 @@ class Filter(SettingsGroupABC):
             
         ]
 
-#    def set_callbacks(self) -> None:
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.ENSEMBLE).to_string(), "value"
+            ),
+        )
+        def _set_ensembles(selected_ensemble: str) -> str:
+            return selected_ensemble
+        
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_PLOT_TYPE), "data"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.PLOT_TYPE).to_string(), "value"
+            ),
+        )
+        def _set_plot_type(selected_plot_type: str) -> str:
+            return selected_plot_type
+        
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_ASCENDING_DESCENDING), "data"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.ASCENDING_DESCENDING).to_string(), "value"
+            ),
+        )
+        def _set_ascending_descending(selected_ascending_descending: str) -> str:
+            return selected_ascending_descending
+        
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS), "data"),
+            Input(
+                self.component_unique_id(Filter.Ids.MAX_NUMBER_OF_WELLS_SLIDER).to_string(), "value"
+            ),
+        )
+        def _set_max_number_of_wells(max_number_of_wells_slider: List[int]) -> List[int]:
+            return max_number_of_wells_slider
+        
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS), "data"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.WELLS).to_string(), "value"
+            ),
+        )
+        def _set_countries(selected_wells: List[str]) -> List[str]:
+            return selected_wells
+
+
         
