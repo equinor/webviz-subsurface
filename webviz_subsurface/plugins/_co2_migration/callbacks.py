@@ -111,7 +111,6 @@ def plugin_callbacks(
     def set_formations(ensemble, prop, current_value):
         if ensemble is None:
             return [], None
-        # Dates
         surface_provider = ensemble_surface_providers[ensemble]
         # Map
         prop_name = map_attribute_names[MapAttribute(prop)]
@@ -152,11 +151,11 @@ def plugin_callbacks(
                 # Regarding tooltips: https://github.com/plotly/dash/issues/1846
                 i: {
                     "label": f"{d[:4]}.{d[4:6]}.{d[6:]}",
-                    "style": {"writing-mode": "vertical-rl"},
+                    "style": {"writingMode": "vertical-rl"},
                 }
                 for i, d in enumerate(date_list)
             }
-            initial_date = 0
+            initial_date = max(dates.keys())
         return dates, initial_date, date_list
 
     @callback(
