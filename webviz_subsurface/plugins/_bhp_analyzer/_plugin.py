@@ -82,11 +82,11 @@ class BhpAnalyzer(WebvizPluginABC):
         self.theme = webviz_settings.theme
 
         self.add_store(PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_PLOT_TYPE, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.SELECTED_SORT_BY, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.SELECTED_ASCENDING_DESCENDING, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_STATISTICS, WebvizPluginABC.StorageType.SESSION)
 
         self.add_shared_settings_group(Filter(self.smry), PluginIds.SharedSettings.FILTER)
         self.add_view(

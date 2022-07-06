@@ -19,7 +19,7 @@ class FanView(ViewABC):
     class Ids:
         #pylint: disable=too-few-public-methods
         FAN_CHART = "fan-chart"
-    def __init__(self, bhp_df: pd.DataFrame, webviz_settings: WebvizSettings,) -> None:
+    def __init__(self, bhp_df: pd.DataFrame, webviz_settings: WebvizSettings) -> None:
         super().__init__("Fan chart")
 
         self.bhp_df = bhp_df
@@ -28,8 +28,9 @@ class FanView(ViewABC):
         column.add_view_element(Graph(), FanView.Ids.FAN_CHART)
         self.theme = webviz_settings.theme
 
+
     
-    #ensemble property and colors should be moved
+    
     @property
     def ensembles(self) -> List[str]:
         return list(self.bhp_df["ENSEMBLE"].unique())

@@ -139,3 +139,18 @@ def _get_fanchart_traces(
         legend_group=legend_group,
         hovermode="x",
     )
+
+
+#Properties
+
+def label_map() -> Dict[str, str]:
+        return {
+            "Mean": "mean",
+            "Count (data points)": "count",
+            "Stddev": "std",
+            "Minimum": "min",
+            "Maximum": "max",
+            "P10 (high)": "high_p10",
+            "P50": "p50",
+            "P90 (low)": "low_p90",
+        }

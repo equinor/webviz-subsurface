@@ -12,7 +12,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
-from ._view_functions import filter_df, calc_statistics, BarLineSettings
+from ._view_functions import filter_df, calc_statistics, BarLineSettings, label_map
 from ...._utils.unique_theming import unique_colors
 
 
@@ -32,18 +32,6 @@ class LineView(ViewABC):
         self.theme = webviz_settings.theme
         self.add_settings_group(BarLineSettings(), LineView.Ids.SETTINGS)
 
-    @property
-    def label_map(self) -> Dict[str, str]:
-        return {
-            "Mean": "mean",
-            "Count (data points)": "count",
-            "Stddev": "std",
-            "Minimum": "min",
-            "Maximum": "max",
-            "P10 (high)": "high_p10",
-            "P50": "p50",
-            "P90 (low)": "low_p90",
-        }
 
     def set_callbacks(self) -> None:
         @callback(
@@ -88,7 +76,7 @@ class LineView(ViewABC):
                                 "y": stat_df[stat],
                                 "name": [
                                     key
-                                    for key, value in self.label_map.items()
+                                    for key, value in label_map().items()
                                     if value == stat
                                 ][0],
                                 "yaxis": yaxis,
