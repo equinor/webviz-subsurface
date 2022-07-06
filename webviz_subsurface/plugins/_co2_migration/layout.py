@@ -65,7 +65,7 @@ class LayoutStyle:
     CONTENT_PARENT = {
         "flex": 3,
         "display": "flex",
-        "flex-direction": "column",
+        "flexDirection": "column",
     }
     MAP_VIEW = {
         "flex": 11,
@@ -78,12 +78,12 @@ class LayoutStyle:
     PLOT_VIEW = {
         "flex": 9,
         "display": "flex",
-        "flex-direction": "row",
-        "justify-content": "space-evenly",
+        "flexDirection": "row",
+        "justifyContent": "space-evenly",
     }
     COLORMAP_RANGE = {
         "display": "flex",
-        "flex-direction": "row",
+        "flexDirection": "row",
     }
 
 
@@ -111,6 +111,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                     DeckGLMap(
                                         id=get_uuid(LayoutElements.DECKGLMAP),
                                         layers=[],
+                                        bounds=[0, 0, 1, 1],
                                         coords={"visible": True},
                                         scale={"visible": True},
                                         coordinateUnit="m",
@@ -158,7 +159,7 @@ class FilterSelectorLayout(wcc.Selectors):
                         ),
                     ],
                     style={
-                        "padding-bottom": "50px",
+                        "paddingBottom": "50px",
                     }
                 ),
             ]
@@ -203,7 +204,7 @@ class MapSelectorLayout(wcc.Selectors):
                                     ["Auto"],
                                     ["Auto"],
                                     id=get_uuid(LayoutElements.COLOR_RANGE_MIN_AUTO),
-                                    style={"min-width": "4em"},
+                                    style={"minWidth": "4em"},
                                 ),
                             ],
                             style=LayoutStyle.COLORMAP_RANGE,
@@ -216,7 +217,7 @@ class MapSelectorLayout(wcc.Selectors):
                                     ["Auto"],
                                     ["Auto"],
                                     id=get_uuid(LayoutElements.COLOR_RANGE_MAX_AUTO),
-                                    style={"min-width": "4em"},
+                                    style={"minWidth": "4em"},
                                 ),
                             ],
                             style=LayoutStyle.COLORMAP_RANGE,
@@ -224,9 +225,9 @@ class MapSelectorLayout(wcc.Selectors):
                     ],
                     style={
                         "display": "grid",
-                        "grid-template-columns": "2fr 3fr",
-                        "grid-template-rows": "repeat(5, 1fr)",
-                        "align-items": "center",
+                        "gridTemplateColumns": "2fr 3fr",
+                        "gridTemplateRows": "repeat(5, 1fr)",
+                        "alignItems": "center",
                     }
                 )
             ],
@@ -259,16 +260,16 @@ class PlumeContourLayout(wcc.Selectors):
                             value=0.000001,
                             placeholder="Threshold",
                             style={
-                                "text-align": "right",
+                                "textAlign": "right",
                             },
                         ),
                     ],
                     style={
                         "display": "flex",
-                        "flex-direction": "row",
-                        "justify-content": "space-between",
-                        "padding-top": "5px",
-                        "padding-bottom": "5px",
+                        "flexDirection": "row",
+                        "justifyContent": "space-between",
+                        "paddingTop": "5px",
+                        "paddingBottom": "5px",
                     }
                 ),
                 dcc.Checklist(
@@ -277,7 +278,7 @@ class PlumeContourLayout(wcc.Selectors):
                     id=get_uuid(LayoutElements.CONTOUR_SMOOTHING),
                     style={
                         "display": "flex",
-                        "align-items": "center",
+                        "alignItems": "center",
                     }
                 ),
             ],
