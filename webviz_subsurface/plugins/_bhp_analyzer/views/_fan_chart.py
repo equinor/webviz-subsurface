@@ -28,7 +28,6 @@ class FanView(ViewABC):
         column.add_view_element(Graph(), FanView.Ids.FAN_CHART)
         self.theme = webviz_settings.theme
 
-        print(self.bhp_df)
     
     #ensemble property and colors should be moved
     @property

@@ -21,8 +21,6 @@ class Filter(SettingsGroupABC):
         MAX_NUMBER_OF_WELLS_SLIDER = "max-number-of-wells-slider"
         SORT_BY = "sort-by"
         ASCENDING_DESCENDING = "ascending-descending"
-        PLOT_TYPE = "plot-type"
-
 
     def __init__(self, bhp_df: pd.DataFrame) -> None:
         super().__init__("Filter")
@@ -66,20 +64,6 @@ class Filter(SettingsGroupABC):
                             value=self.ensembles[0],
                             clearable=False,
                             multi=False,
-                        ),
-            wcc.Dropdown(
-                            label="Plot type",
-                            id=self.register_component_unique_id(Filter.Ids.PLOT_TYPE),
-                            options=[
-                                {"label": i, "value": i}
-                                for i in [
-                                    "Fan chart",
-                                    "Bar chart",
-                                    "Line chart",
-                                ]
-                            ],
-                            clearable=False,
-                            value="Fan chart",
                         ),
             wcc.Dropdown(
                             label="Sort by",
@@ -133,16 +117,6 @@ class Filter(SettingsGroupABC):
         def _set_ensembles(selected_ensemble: str) -> str:
             return selected_ensemble
         
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_PLOT_TYPE), "data"
-            ),
-            Input(
-                self.component_unique_id(Filter.Ids.PLOT_TYPE).to_string(), "value"
-            ),
-        )
-        def _set_plot_type(selected_plot_type: str) -> str:
-            return selected_plot_type
         
         @callback(
             Output(
