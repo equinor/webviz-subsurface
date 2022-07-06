@@ -188,6 +188,9 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.STATISTIC_INPUT), "value"),
         Input(get_uuid(LayoutElements.COLORMAP_INPUT), "value"),
         Input(get_uuid(LayoutElements.COLOR_RANGE_STORE), "data"),
+        Input(get_uuid(LayoutElements.CONTOUR_PROPERTY), "value"),
+        Input(get_uuid(LayoutElements.CONTOUR_THRESHOLD), "value"),
+        Input(get_uuid(LayoutElements.CONTOUR_SMOOTHING), "value"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
         State(get_uuid(LayoutElements.DATE_STORE), "data"),
     )
@@ -199,6 +202,9 @@ def plugin_callbacks(
         statistic,
         color_map_name,
         color_map_range,
+        contour_property,
+        contour_threshold,
+        contour_smoothing,
         ensemble,
         date_list,
     ):
@@ -248,13 +254,20 @@ def plugin_callbacks(
                 color_map_name=color_map_name,
             )
         # Plume polygon
-        if attribute == MapAttribute.MAX_SATURATION and len(realization) > 0:
+        if (
+            contour_property is not None
+            and len(realization) > 0
+            and contour_threshold is not None
+            and contour_threshold > 0
+        ):
             plume_polygon = _get_plume_polygon(
                 ensemble_surface_providers[ensemble],
                 realization,
                 surface_name,
-                map_attribute_names[attribute],
+                contour_property,
                 date,
+                len(contour_smoothing) > 0,
+                contour_threshold,
             )
         else:
             plume_polygon = None
@@ -339,8 +352,6 @@ def create_map_layers(
             "data": dict(plume_extent_data),
             "lineWidthMinPixels": 2,
             "getLineColor": [150, 150, 150, 255],
-            "getFillColor": [150, 150, 150, 30],
-            # "filled": False,
         })
     return layers, viewport_bounds
 
@@ -403,8 +414,9 @@ def _get_plume_polygon(
     surface_name: str,
     surface_attribute: str,
     datestr: str,
+    smoothing: bool,
+    threshold: float,
 ):
-    threshold = 1e-6
     surfaces = [
         surface_provider.get_surface(SimulatedSurfaceAddress(
             attribute=surface_attribute,
@@ -414,7 +426,12 @@ def _get_plume_polygon(
         ))
         for r in realizations
     ]
-    return _plume_extent.plume_polygon(surfaces, threshold)
+    return _plume_extent.plume_polygon(
+        surfaces,
+        threshold,
+        smoothing=10.0 if smoothing else 0.0,
+        simplify_factor=1.2 if smoothing else 0.0,
+    )
 
 
 def _publish_and_get_surface_metadata(

@@ -24,6 +24,9 @@ class LayoutElements(str, Enum):
     WELLPICKSLAYER = "wellpickslayer"
     PLUME_POLYGON_LAYER = "plume-polygon-layer"
 
+    CONTOUR_PROPERTY = "contour-property"
+    CONTOUR_THRESHOLD = "contour-threshold"
+    CONTOUR_SMOOTHING = "contour-smoothing"
     PROPERTY = "property"
     ENSEMBLEINPUT = "ensembleinput"
     REALIZATIONINPUT = "realizationinput"
@@ -78,13 +81,9 @@ class LayoutStyle:
         "flex-direction": "row",
         "justify-content": "space-evenly",
     }
-    COLORMAP_MINMAX = {
-        "width": "150px"
-    }
     COLORMAP_RANGE = {
         "display": "flex",
-        "justify-content": "space-between",
-        "padding-top": "10px"
+        "flex-direction": "row",
     }
 
 
@@ -95,7 +94,9 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                 style=LayoutStyle.SIDEBAR,
                 children=[
                     EnsembleSelectorLayout(get_uuid, ensembles),
-                    PropertySelectorLayout(get_uuid),
+                    FilterSelectorLayout(get_uuid),
+                    MapSelectorLayout(get_uuid),
+                    PlumeContourLayout(get_uuid),
                 ]
             ),
             html.Div(
@@ -137,15 +138,42 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
     )
 
 
-class PropertySelectorLayout(html.Div):
+class FilterSelectorLayout(wcc.Selectors):
     def __init__(self, get_uuid: Callable):
-        super().__init__(children=wcc.Selectors(
+        super().__init__(
+            label="Filter Settings",
+            children=[
+                "Formation",
+                wcc.Dropdown(
+                    id=get_uuid(LayoutElements.FORMATION_INPUT),
+                ),
+                "Date",
+                html.Div(
+                    [
+                        dcc.Slider(
+                            id=get_uuid(LayoutElements.DATEINPUT),
+                            step=None,
+                            marks={0: ''},
+                            value=0,
+                        ),
+                    ],
+                    style={
+                        "padding-bottom": "50px",
+                    }
+                ),
+            ]
+        )
+
+
+class MapSelectorLayout(wcc.Selectors):
+    def __init__(self, get_uuid: Callable):
+        super().__init__(
             label="Map Settings",
             open_details=True,
             children=[
                 html.Div(
                     [
-                        "Colored Property",
+                        "Property",
                         wcc.Dropdown(
                             id=get_uuid(LayoutElements.PROPERTY),
                             options=[
@@ -159,24 +187,7 @@ class PropertySelectorLayout(html.Div):
                         wcc.Dropdown(
                             id=get_uuid(LayoutElements.STATISTIC_INPUT),
                             options=[s.value for s in SurfaceStatistic],
-                        ),
-                        "Formation",
-                        wcc.Dropdown(
-                            id=get_uuid(LayoutElements.FORMATION_INPUT),
-                        ),
-                        "Date",
-                        html.Div(
-                            [
-                                dcc.Slider(
-                                    id=get_uuid(LayoutElements.DATEINPUT),
-                                    step=None,
-                                    marks={0: ''},
-                                    value=0,
-                                ),
-                            ],
-                            style={
-                                "padding-bottom": "50px",
-                            }
+                            value=SurfaceStatistic.MEAN,
                         ),
                         "Color Scale",
                         dcc.Dropdown(
@@ -184,31 +195,88 @@ class PropertySelectorLayout(html.Div):
                             options=[d["name"] for d in default_color_tables],
                             value=default_color_tables[0]["name"],
                         ),
+                        "Minimum",
                         html.Div(
                             [
-                                html.Label("Minimum", style=LayoutStyle.COLORMAP_MINMAX),
                                 dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE), type="number"),
                                 dcc.Checklist(["Auto"], ["Auto"], id=get_uuid(LayoutElements.COLOR_RANGE_MIN_AUTO)),
                             ],
                             style=LayoutStyle.COLORMAP_RANGE,
                         ),
+                        "Maximum",
                         html.Div(
                             [
-                                html.Label("Maximum", style=LayoutStyle.COLORMAP_MINMAX),
                                 dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE), type="number"),
                                 dcc.Checklist(["Auto"], ["Auto"], id=get_uuid(LayoutElements.COLOR_RANGE_MAX_AUTO)),
                             ],
                             style=LayoutStyle.COLORMAP_RANGE,
                         ),
-                    ] 
+                    ],
+                    style={
+                        "display": "grid",
+                        "grid-template-columns": "2fr 3fr",
+                        "grid-template-rows": "repeat(5, 1fr)",
+                        "align-items": "center",
+                    }
                 )
-            ]
-        ))
+            ],
+        )
 
 
-class EnsembleSelectorLayout(html.Div):
+class PlumeContourLayout(wcc.Selectors):
+    def __init__(self, get_uuid):
+        super().__init__(
+            label="Plume Contours",
+            children=[
+                dcc.Dropdown(
+                    id=get_uuid(LayoutElements.CONTOUR_PROPERTY),
+                    options=[
+                        dict(label="SGAS", value="max_SGAS"),
+                        dict(label="AMFG", value="max_AMFG"),
+                    ],
+                    placeholder="Contour Property",
+                    style={
+                        "flex": 1
+                    }
+                ),
+                html.Div(
+                    children=[
+                        html.Div("Threshold"),
+                        dcc.Input(
+                            id=get_uuid(LayoutElements.CONTOUR_THRESHOLD),
+                            type="number",
+                            min=0,
+                            value=0.000001,
+                            placeholder="Threshold",
+                            style={
+                                "text-align": "right",
+                            },
+                        ),
+                    ],
+                    style={
+                        "display": "flex",
+                        "flex-direction": "row",
+                        "justify-content": "space-between",
+                        "padding-top": "5px",
+                        "padding-bottom": "5px",
+                    }
+                ),
+                dcc.Checklist(
+                    ["Smooth Contours"],
+                    ["Smooth Contours"],
+                    id=get_uuid(LayoutElements.CONTOUR_SMOOTHING),
+                    style={
+                        "display": "flex",
+                        "align-items": "center",
+                    }
+                ),
+            ],
+        )
+
+
+class EnsembleSelectorLayout(wcc.Selectors):
     def __init__(self, get_uuid: Callable, ensembles: List[str]):
-        super().__init__(children=wcc.Selectors(
+        super().__init__(
             label="Ensemble",
             open_details=True,
             children=[
@@ -227,7 +295,7 @@ class EnsembleSelectorLayout(html.Div):
                     multi=True,
                 ),
             ]
-        ))
+        )
 
 
 class SummaryGraphLayout(html.Div):

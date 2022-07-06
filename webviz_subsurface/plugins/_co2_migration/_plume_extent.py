@@ -9,7 +9,8 @@ import xtgeo
 def plume_polygon(
     surfaces: List[xtgeo.RegularSurface],
     threshold: float,
-    smoothing: float = 10.0,  # TODO: expose to user?
+    smoothing: float = 10.0,
+    simplify_factor: float = 1.2,
 ) -> geojson.FeatureCollection:
     binary = [
         (
@@ -19,15 +20,17 @@ def plume_polygon(
     ]
     fraction = sum(binary) / len(binary)
     fraction = scipy.ndimage.gaussian_filter(fraction, sigma=smoothing, mode="nearest")
-    ref = surfaces[0]
-    x = ref.xori + np.arange(0, ref.ncol) * ref.xinc
-    y = ref.yori + np.arange(0, ref.nrow) * ref.yinc
-    contours = _find_all_contours(x, y, fraction, [0.1, 0.5, 0.9])
+    levels = [0.1]
+    if len(surfaces) > 2:
+        levels.append(0.5)
+    if len(surfaces) > 1:
+        levels.append(0.9)
+    contours = _extract_fraction_contours(fraction, surfaces[0], simplify_factor, levels)
     return geojson.FeatureCollection(
         features=[
             geojson.Feature(
                 id=f"P{level * 100}",
-                geometry=geojson.Polygon([poly]),
+                geometry=geojson.LineString(poly),
             )
             for level, polys in zip(*contours)
             for poly in polys
@@ -35,12 +38,24 @@ def plume_polygon(
     )
 
 
-def _find_all_contours(x, y, zz, levels):
-    xx, yy = np.meshgrid(x, y, indexing="ij")
+def _extract_fraction_contours(
+    fraction: np.ndarray,
+    ref_surface: xtgeo.RegularSurface,
+    simplify_factor: float,
+    levels: List[float],
+):
+    x = ref_surface.xori + np.arange(0, ref_surface.ncol) * ref_surface.xinc
+    y = ref_surface.yori + np.arange(0, ref_surface.nrow) * ref_surface.yinc
     res = np.mean([abs(x[1] - x[0]), abs(y[1] - y[0])])
+    simplify_dist = simplify_factor * res
+    return _find_all_contours(x, y, fraction, levels, simplify_dist)
+
+
+def _find_all_contours(x, y, zz, levels, simplify_dist: float):
+    xx, yy = np.meshgrid(x, y, indexing="ij")
     polys = [
         [
-            _simplify(poly, res)
+            _simplify(poly, simplify_dist)
             for poly in _find_contours(xx, yy, zz >= level)
         ]
         for level in levels
@@ -62,8 +77,7 @@ def _find_contours(xx, yy, zz):
     return contour_output
 
 
-def _simplify(poly, resolution, factor: float = 1.2):
-    # TODO: expose simplification factor?
+def _simplify(poly, simplify_dist: float):
     import shapely.geometry  # TODO: not project requirement. How to handle?
-    ls = shapely.geometry.LineString(poly).simplify(factor * resolution)
+    ls = shapely.geometry.LineString(poly).simplify(simplify_dist)
     return np.array(ls.coords).tolist()
