@@ -6,6 +6,7 @@ class PluginIds:
         SELECTED_SORT_BY = "slected-sort-by"
         SELECTED_ASCENDING_DESCENDING = "selected-ascending-descending"
         SELECTED_PLOT_TYPE = "selected-plot-type"
+        SELECTED_STATISTICS = "selected-statistics"
 
     class SharedSettings:
         FILTER = "filter"

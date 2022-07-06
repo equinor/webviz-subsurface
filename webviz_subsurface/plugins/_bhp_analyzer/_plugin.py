@@ -24,7 +24,7 @@ from .._simulation_time_series.types.provider_set import (
 )
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
-from .views import FanView, BarView
+from .views import FanView, BarView, LineView
 from ._error import error
 
 
@@ -97,6 +97,11 @@ class BhpAnalyzer(WebvizPluginABC):
         self.add_view(
             BarView(self.smry, webviz_settings),
             PluginIds.BhpID.BAR_CHART,
+            PluginIds.BhpID.GROUP_NAME
+        )
+        self.add_view(
+            LineView(self.smry, webviz_settings),
+            PluginIds.BhpID.LINE_CHART,
             PluginIds.BhpID.GROUP_NAME
         )
 

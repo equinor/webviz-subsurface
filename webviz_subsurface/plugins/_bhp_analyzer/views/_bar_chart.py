@@ -12,7 +12,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
-from ._view_functions import filter_df, calc_statistics
+from ._view_functions import filter_df, calc_statistics, BarLineSettings
 from ...._utils.unique_theming import unique_colors
 
 
@@ -20,6 +20,7 @@ class BarView(ViewABC):
     class Ids:
         #pylint: disable=too-few-public-methods
         BAR_CHART = "bar-chart"
+        SETTINGS = "settings"
     def __init__(self, bhp_df: pd.DataFrame, webviz_settings: WebvizSettings,) -> None:
         super().__init__("Bar chart")
 
@@ -28,6 +29,7 @@ class BarView(ViewABC):
         column = self.add_column()
         column.add_view_element(Graph(), BarView.Ids.BAR_CHART)
         self.theme = webviz_settings.theme
+        self.add_settings_group(BarLineSettings(), BarView.Ids.SETTINGS)
 
     @property
     def label_map(self) -> Dict[str, str]:
@@ -53,14 +55,20 @@ class BarView(ViewABC):
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ASCENDING_DESCENDING), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS), "data"),
+            Input(
+                self.settings_group(BarView.Ids.SETTINGS)
+                .component_unique_id(BarLineSettings.Ids.SELECT_STATISTICS)
+                .to_string(),
+                "value",
+            ),
         )
         def _update_plot(
             ensemble: str,
             sort_by: str,
-            stat_bars: Union[str, List[str]],
             ascending: bool,
             n_wells: int,
             wells: Union[str, List[str]],
+            stat_bars: Union[str, List[str]],
         ) -> dict:
 
             wells = wells if isinstance(wells, list) else [wells]
@@ -105,4 +113,4 @@ class BarView(ViewABC):
                     "legend": {"x": 1.05},
                 }
             )
-            return {"data": bar_chart, "layout": layout}   
+            return {"data": bar_chart, "layout": layout}  
