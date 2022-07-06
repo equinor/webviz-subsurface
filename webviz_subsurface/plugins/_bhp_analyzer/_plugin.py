@@ -21,6 +21,8 @@ from ..._utils.unique_theming import unique_colors
 from .._simulation_time_series.types.provider_set import (
     create_lazy_provider_set_from_paths,
 )
+from ._plugin_ids import PluginIds
+from .shared_settings import Filter
 
 
 class BhpAnalyzer(WebvizPluginABC):
@@ -74,7 +76,15 @@ class BhpAnalyzer(WebvizPluginABC):
         self.smry = pd.concat(dfs)
         self.theme = webviz_settings.theme
         self.set_callbacks(app)
-        
+
+        self.add_store(PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_PLOT_TYPE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_SORT_BY, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_ASCENDING_DESCENDING, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION)
+
+        self.add_shared_settings_group(Filter(self.smry), PluginIds.SharedSettings.FILTER)
 
     @property
     def tour_steps(self) -> List[dict]:
@@ -132,85 +142,6 @@ class BhpAnalyzer(WebvizPluginABC):
         return wcc.FlexBox(
             id=self.uuid("layout"),
             children=[
-                wcc.Frame(
-                    style={"flex": 1, "height": "65vh"},
-                    children=[
-                        wcc.Dropdown(
-                            label="Ensemble",
-                            id=self.uuid("ensemble"),
-                            options=[{"label": i, "value": i} for i in self.ensembles],
-                            value=self.ensembles[0],
-                            clearable=False,
-                            multi=False,
-                        ),
-                        wcc.Dropdown(
-                            label="Plot type",
-                            id=self.uuid("plot_type"),
-                            options=[
-                                {"label": i, "value": i}
-                                for i in [
-                                    "Fan chart",
-                                    "Bar chart",
-                                    "Line chart",
-                                ]
-                            ],
-                            clearable=False,
-                            value="Fan chart",
-                        ),
-                        html.Div(
-                            id=self.uuid("select_stat"),
-                            style={"display": "none"},
-                            children=[
-                                wcc.SelectWithLabel(
-                                    label="Select statistics",
-                                    id=self.uuid("stat_bars"),
-                                    options=[
-                                        {"label": key, "value": value}
-                                        for key, value in self.label_map.items()
-                                    ],
-                                    size=8,
-                                    value=["min", "low_p90", "mean", "high_p10", "max"],
-                                ),
-                            ],
-                        ),
-                        wcc.Dropdown(
-                            label="Sort by",
-                            id=self.uuid("sort_by"),
-                            options=[
-                                {"label": key, "value": value}
-                                for key, value in self.label_map.items()
-                            ],
-                            clearable=False,
-                            value="low_p90",
-                        ),
-                        wcc.RadioItems(
-                            vertical=False,
-                            id=self.uuid("ascending"),
-                            options=[
-                                {"label": "Ascending", "value": True},
-                                {"label": "Descending", "value": False},
-                            ],
-                            value=True,
-                            labelStyle={"display": "inline-block"},
-                        ),
-                        wcc.Slider(
-                            label="Max number of wells in plot",
-                            id=self.uuid("n_wells"),
-                            min=1,
-                            max=len(self.wells),
-                            step=1,
-                            value=min(10, len(self.wells)),
-                            marks={1: 1, len(self.wells): len(self.wells)},
-                        ),
-                        wcc.SelectWithLabel(
-                            label="Wells",
-                            id=self.uuid("wells"),
-                            options=[{"label": i, "value": i} for i in self.wells],
-                            size=min([len(self.wells), 20]),
-                            value=self.wells,
-                        ),
-                    ],
-                ),
                 wcc.Frame(
                     color="white",
                     highlight=False,

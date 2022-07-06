@@ -37,6 +37,19 @@ class Filter(SettingsGroupABC):
         return list(self.bhp_df["ENSEMBLE"].unique())
 
     @property
+    def label_map(self) -> Dict[str, str]:
+        return {
+            "Mean": "mean",
+            "Count (data points)": "count",
+            "Stddev": "std",
+            "Minimum": "min",
+            "Maximum": "max",
+            "P10 (high)": "high_p10",
+            "P50": "p50",
+            "P90 (low)": "low_p90",
+        }
+
+    @property
     def wells(self) -> List[set]:
         return sorted(
             list(set(col[5:] for col in self.bhp_df.columns if col.startswith("WBHP:")))
@@ -65,6 +78,16 @@ class Filter(SettingsGroupABC):
                             ],
                             clearable=False,
                             value="Fan chart",
+                        ),
+            wcc.Dropdown(
+                            label="Sort by",
+                            id=self.register_component_unique_id(Filter.Ids.SORT_BY),
+                            options=[
+                                {"label": key, "value": value}
+                                for key, value in self.label_map.items()
+                            ],
+                            clearable=False,
+                            value="low_p90",
                         ),
             wcc.RadioItems(
                             vertical=False,
@@ -119,6 +142,17 @@ class Filter(SettingsGroupABC):
         def _set_plot_type(selected_plot_type: str) -> str:
             return selected_plot_type
         
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_SORT_BY), "data"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.SORT_BY).to_string(), "value"
+            ),
+        )
+        def _set_sort_by(selected_sort_by: List[str]) -> List[str]:
+            return selected_sort_by
+
         @callback(
             Output(
                 self.get_store_unique_id(PluginIds.Stores.SELECTED_ASCENDING_DESCENDING), "data"
