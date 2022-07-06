@@ -199,7 +199,12 @@ class MapSelectorLayout(wcc.Selectors):
                         html.Div(
                             [
                                 dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE), type="number"),
-                                dcc.Checklist(["Auto"], ["Auto"], id=get_uuid(LayoutElements.COLOR_RANGE_MIN_AUTO)),
+                                dcc.Checklist(
+                                    ["Auto"],
+                                    ["Auto"],
+                                    id=get_uuid(LayoutElements.COLOR_RANGE_MIN_AUTO),
+                                    style={"min-width": "4em"},
+                                ),
                             ],
                             style=LayoutStyle.COLORMAP_RANGE,
                         ),
@@ -207,7 +212,12 @@ class MapSelectorLayout(wcc.Selectors):
                         html.Div(
                             [
                                 dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE), type="number"),
-                                dcc.Checklist(["Auto"], ["Auto"], id=get_uuid(LayoutElements.COLOR_RANGE_MAX_AUTO)),
+                                dcc.Checklist(
+                                    ["Auto"],
+                                    ["Auto"],
+                                    id=get_uuid(LayoutElements.COLOR_RANGE_MAX_AUTO),
+                                    style={"min-width": "4em"},
+                                ),
                             ],
                             style=LayoutStyle.COLORMAP_RANGE,
                         ),
