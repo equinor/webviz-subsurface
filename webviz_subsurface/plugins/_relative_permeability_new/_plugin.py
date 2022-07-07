@@ -18,6 +18,7 @@ from ._plugin_ids import PlugInIDs # importing the namespace
 from .shared_settings import Filter, Selectors, Visualization , Scal_recommendation
 from ..._datainput.fmu_input import load_csv
 from ..._datainput.relative_permeability import load_satfunc, load_scal_recommendation
+from .views import RelpermCappres
 
 class TestView(ViewABC):
     class Ids:
