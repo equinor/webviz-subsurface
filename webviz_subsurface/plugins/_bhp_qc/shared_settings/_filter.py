@@ -1,12 +1,11 @@
-from typing import List, Dict
+from typing import Dict, List
 
-from dash.development.base_component import Component
-from dash import callback, Input, Output
-from dash.exceptions import PreventUpdate
 import pandas as pd
-from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 import webviz_core_components as wcc
+from dash import Input, Output, callback
+from dash.development.base_component import Component
+from dash.exceptions import PreventUpdate
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PluginIds
 

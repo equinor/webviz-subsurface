@@ -1,8 +1,8 @@
-from typing import List, Dict
+from typing import Dict, List
 
-from webviz_config.common_cache import CACHE
 import numpy as np
 import pandas as pd
+from webviz_config.common_cache import CACHE
 
 from ...._utils.fanchart_plotting import (
     FanchartData,

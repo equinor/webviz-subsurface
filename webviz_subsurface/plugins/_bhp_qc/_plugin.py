@@ -5,15 +5,16 @@ import pandas as pd
 from dash import Dash
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
+
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
 from .._simulation_time_series.types.provider_set import (
     create_lazy_provider_set_from_paths,
 )
-from ._plugin_ids import PluginIds
-from .shared_settings import Filter, BarLineSettings
-from .views import FanView, BarView, LineView
 from ._error import error
+from ._plugin_ids import PluginIds
+from .shared_settings import BarLineSettings, Filter
+from .views import BarView, FanView, LineView
 
 
 class BhpQc(WebvizPluginABC):

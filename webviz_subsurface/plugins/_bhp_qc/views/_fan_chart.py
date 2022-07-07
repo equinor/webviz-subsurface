@@ -1,14 +1,14 @@
 from typing import List, Union
 
-from dash import callback, Input, Output
 import pandas as pd
+from dash import Input, Output, callback
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
+from ...._utils.unique_theming import unique_colors
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
-from ._view_functions import filter_df, _get_fanchart_traces, calc_statistics
-from ...._utils.unique_theming import unique_colors
+from ._view_functions import _get_fanchart_traces, calc_statistics, filter_df
 
 
 class FanView(ViewABC):
