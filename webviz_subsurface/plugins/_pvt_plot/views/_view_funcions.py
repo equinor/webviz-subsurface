@@ -243,7 +243,7 @@ def create_graph(
     plot: str,
     plot_title: str,
     theme: dict,
-    graph_height,
+    graph_height: float,
 ) -> Component:
     return wcc.FlexBox(
         style={

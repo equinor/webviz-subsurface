@@ -1,20 +1,16 @@
-from typing import List, Dict, Union
+from typing import Dict, List, Union
 
-from dash import callback, Input, Output
-from dash.exceptions import PreventUpdate
-
-from dash.development.base_component import Component
 import pandas as pd
-from webviz_config.webviz_plugin_subclasses import ViewABC
-from webviz_config import WebvizSettings
 import webviz_core_components as wcc
+from dash import Input, Output, callback
+from dash.development.base_component import Component
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizSettings
+from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .._plugin_ids import PluginIds
-from ._view_funcions import (
-    filter_data_frame,
-    create_graph,
-)
 from ..shared_settings._filter import Filter
+from ._view_funcions import create_graph, filter_data_frame
 
 
 class PvtView(ViewABC):
@@ -30,8 +26,6 @@ class PvtView(ViewABC):
 
     def __init__(self, pvt_df: pd.DataFrame, webviz_settings: WebvizSettings) -> None:
         super().__init__("Pvt View")
-
-        self.phases_additional_info = Filter.phases_additional_info
 
         self.pvt_df = pvt_df
         self.plotly_theme = webviz_settings.theme.plotly_theme
