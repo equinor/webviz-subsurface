@@ -1,6 +1,7 @@
 from typing import List, Dict
 from dash.development.base_component import Component
 from dash import callback, Input, Output
+from dash.exceptions import PreventUpdate
 
 import pandas as pd
 from typing import List
@@ -152,6 +153,10 @@ class Filter(SettingsGroupABC):
             Input(self.component_unique_id(Filter.Ids.WELLS).to_string(), "value"),
         )
         def _set_wells(selected_wells: List[set]) -> List[set]:
+            if type(selected_wells) != list:
+                selected_wells = [selected_wells]
+            if selected_wells == []:
+                raise PreventUpdate
             return selected_wells
 
 

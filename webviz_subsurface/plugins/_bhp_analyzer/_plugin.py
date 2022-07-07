@@ -119,19 +119,24 @@ class BhpAnalyzer(WebvizPluginABC):
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.uuid("layout"),
+                "id": self.view(PluginIds.BhpID.BAR_CHART).get_unique_id().to_string(),
                 "content": (
                     "Dashboard for BHP QC:"
                     "Check that simulated bottom hole pressures are realistic."
                 ),
             },
-            {"id": self.uuid("ensemble"), "content": "Select ensemble to QC."},
             {
-                "id": self.uuid("sort_by"),
+                "id": self.view(PluginIds.BhpID.LINE_CHART).get_unique_id().to_string(),
+                "content": "Select ensemble to QC.",
+            },
+            {
+                "id": self.view(PluginIds.BhpID.FAN_CHART).get_unique_id().to_string(),
                 "content": "Sort wells left to right according to this value.",
             },
             {
-                "id": self.uuid("n_wells"),
+                "id": self.shared_settings_group(PluginIds.SharedSettings.FILTER)
+                .get_unique_id()
+                .to_string(),
                 "content": (
                     "Show max selected number of top ranked wells after sorting and filtering."
                 ),

@@ -63,7 +63,7 @@ def _get_fanchart_traces(
     color: str,
     legend_group: str,
 ) -> List[dict]:
-    """Renders a fanchart for an ensemble vector"""
+    """Renders a fanchart for an ensemble vector."""
 
     x = [vec[5:] for vec in ens_stat_df.index]
 
