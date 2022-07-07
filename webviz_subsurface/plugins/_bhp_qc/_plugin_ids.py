@@ -1,4 +1,5 @@
 class PluginIds:
+    # pylint: disable=too-few-public-methods
     class Stores:
         # pylint: disable=too-few-public-methods
         SELECTED_ENSEMBLE = "selected-ensemble"
