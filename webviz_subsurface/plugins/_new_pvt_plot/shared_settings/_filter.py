@@ -14,7 +14,7 @@ class Filter(SettingsGroupABC):
     PHASES = ["OIL", "GAS", "WATER"]
     phases_additional_info: List[str] = []
 
-    # pylint: disable=too-few-arguments
+    # pylint: disable=too-few-public-methods
     class Ids:
         COLOR_BY = "select-color"
         ENSEMBLES = "ensembles"

@@ -19,7 +19,7 @@ from ..shared_settings._filter import Filter
 
 class PvtView(ViewABC):
 
-    # pylint: disable=too-few-arguments
+    # pylint: disable=too-few-public-methods
     class Ids:
         PVT_GRAPHS = "formation-volume-factor"
         VISCOSITY = "viscosity"

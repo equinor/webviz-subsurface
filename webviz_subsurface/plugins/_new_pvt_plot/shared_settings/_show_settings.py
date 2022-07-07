@@ -10,7 +10,7 @@ from .._plugin_ids import PluginIds
 
 class ShowPlots(SettingsGroupABC):
 
-    # pylint: disable=too-few-arguments
+    # pylint: disable=too-few-public-methods
     class Ids:
         SHOWPLOTS = "show-plots"
 

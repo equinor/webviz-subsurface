@@ -1,3 +1,10 @@
+########################################
+#
+#  Copyright (C) 2020-     Equinor ASA
+#
+########################################
+
+
 from typing import Type, List, Tuple, Callable, Dict, Any
 
 from dash.development.base_component import Component
@@ -11,6 +18,49 @@ from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 
 
 class PvtPlotter(WebvizPluginABC):
+    """Visualizes formation volume factor and viscosity data \
+    for oil, gas and water from both **csv**, Eclipse **init** and **include** files.
+
+    !> The plugin supports variations in PVT between ensembles, but not between \
+    realizations in the same ensemble.
+    ---
+
+    * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+    * **`pvt_relative_file_path`:** Local path to a csv file in each \
+        realization with dumped pvt data.
+    * **`read_from_init_file`:** A boolean flag stating if data shall be \
+        read from an Eclipse INIT file instead of an INCLUDE file. \
+        This is only used when **pvt_relative_file_path** is not given.
+    * **`drop_ensemble_duplicates`:** A boolean flag stating if ensembles \
+        which are holding duplicate data of other ensembles shall be dropped. \
+        Defaults to False.
+
+    ---
+    The minimum requirement is to define `ensembles`.
+
+    If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
+    from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2df`.
+    If the `read_from_init_file` flag is set to True, the extraction procedure in
+    `ecl2df` will be replaced by an individual extracting procedure that reads the
+    normalized Eclipse INIT file.
+    Note that the latter two extraction methods can be very slow for larger data and are therefore
+    not recommended unless you have a very simple model/data deck.
+    If the `drop_ensemble_duplicates` flag is set to True, any ensembles which are holding
+    duplicate data of other ensembles will be dropped.
+
+    `pvt_relative_file_path` is a path to a file stored per realization (e.g. in \
+    `share/results/tables/pvt.csv`). `pvt_relative_file_path` columns:
+    * One column named `KEYWORD` or `TYPE`: with Flow/Eclipse style keywords
+        (e.g. `PVTO` and `PVDG`).
+    * One column named `PVTNUM` with integer `PVTNUM` regions.
+    * One column named `RATIO` or `R` with the gas-oil-ratio as the primary variate.
+    * One column named `PRESSURE` with the fluids pressure as the secondary variate.
+    * One column named `VOLUMEFACTOR` as the first covariate.
+    * One column named `VISCOSITY` as the second covariate.
+
+    The file can e.g. be dumped to disc per realization by a forward model in ERT using
+    `ecl2df`.
+    """
 
     PHASES = ["OIL", "GAS", "WATER"]
 
