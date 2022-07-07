@@ -12,7 +12,7 @@ from .._plugin_ids import PluginIds
 
 class Filter(SettingsGroupABC):
     class Ids:
-
+        # pylint: disable=too-few-public-methods
         ENSEMBLE = "ensemble"
         WELLS = "wells"
         MAX_NUMBER_OF_WELLS_SLIDER = "max-number-of-wells-slider"
