@@ -131,15 +131,27 @@ class PvtPlot(WebvizPluginABC):
         # Error messages
         self.error_message = ""
 
-        self.add_store(PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(
+            PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION
+        )
 
-        self.add_store(PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_PVTNUM, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(
+            PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_PVTNUM, WebvizPluginABC.StorageType.SESSION
+        )
 
-        self.add_store(PluginIds.Stores.SELECTED_SHOW_PLOTS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(
+            PluginIds.Stores.SELECTED_SHOW_PLOTS, WebvizPluginABC.StorageType.SESSION
+        )
 
-        self.add_shared_settings_group(Filter(self.pvt_df), PluginIds.SharedSettings.FILTER)
+        self.add_shared_settings_group(
+            Filter(self.pvt_df), PluginIds.SharedSettings.FILTER
+        )
 
         self.add_shared_settings_group(ShowPlots(), PluginIds.SharedSettings.SHOWPLOTS)
 

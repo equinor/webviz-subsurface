@@ -100,11 +100,15 @@ def create_traces(
     )
 
     constant_group = (
-        data_frame["PVTNUM"].iloc[0] if color_by == "ENSEMBLE" else data_frame["ENSEMBLE"].iloc[0]
+        data_frame["PVTNUM"].iloc[0]
+        if color_by == "ENSEMBLE"
+        else data_frame["ENSEMBLE"].iloc[0]
     )
 
     for (group, grouped_data_frame) in data_frame.groupby(color_by):
-        for set_no, set_value in enumerate(grouped_data_frame[dim_column_name].unique()):
+        for set_no, set_value in enumerate(
+            grouped_data_frame[dim_column_name].unique()
+        ):
             for realization_no, (realization, realization_data_frame) in enumerate(
                 grouped_data_frame.groupby("REAL")
             ):
@@ -121,13 +125,19 @@ def create_traces(
                         if phase == "OIL":
                             border_value_dependent[group].append(
                                 realization_data_frame[
-                                    (realization_data_frame[dim_column_name] == set_value)
+                                    (
+                                        realization_data_frame[dim_column_name]
+                                        == set_value
+                                    )
                                 ]["VISCOSITY"].iloc[0]
                             )
                         else:
                             border_value_dependent[group].append(
                                 realization_data_frame[
-                                    (realization_data_frame[dim_column_name] == set_value)
+                                    (
+                                        realization_data_frame[dim_column_name]
+                                        == set_value
+                                    )
                                 ]["VISCOSITY"].max()
                             )
                     else:
@@ -194,7 +204,9 @@ def create_traces(
                                 "name": group,
                                 "legendgroup": group,
                                 "marker": {
-                                    "color": colors.get(group, colors[list(colors.keys())[-1]])
+                                    "color": colors.get(
+                                        group, colors[list(colors.keys())[-1]]
+                                    )
                                 },
                                 "showlegend": realization_no == 0 and set_no == 0,
                             }

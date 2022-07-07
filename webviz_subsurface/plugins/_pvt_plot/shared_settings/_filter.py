@@ -120,7 +120,9 @@ class Filter(SettingsGroupABC):
             return selected_color
 
         @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"
+            ),
             Input(self.ensembles_id, "value"),
         )
         def _update_ensembles(selected_ensembles) -> List[str]:
@@ -149,7 +151,9 @@ class Filter(SettingsGroupABC):
                 self.component_unique_id(Filter.Ids.ENSEMBLESBOX).to_string(),
                 "children",
             ),
-            Output(self.component_unique_id(Filter.Ids.PVTNUMBOX).to_string(), "children"),
+            Output(
+                self.component_unique_id(Filter.Ids.PVTNUMBOX).to_string(), "children"
+            ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
         )
         def _update_ensembles_pvtnum(selected_color_by: str) -> List[Component]:
