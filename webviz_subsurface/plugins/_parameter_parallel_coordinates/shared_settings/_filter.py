@@ -14,26 +14,49 @@ class Filter(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         ENSEMBLE = "ensemble"
-        WELLS = "wells"
-        MAX_NUMBER_OF_WELLS_SLIDER = "max-number-of-wells-slider"
-        SORT_BY = "sort-by"
-        ASCENDING_DESCENDING = "ascending-descending"
+        EXCLUDE_INCLUDE = "exclude-include"
+        PARAMETERS = "parameters"
 
-    def __init__(self, bhp_df: pd.DataFrame) -> None:
+    def __init__(self, parallel_df: pd.DataFrame, ensembles: List[str]) -> None:
         super().__init__("Filter")
 
-        self.bhp_df = bhp_df
+        self.parallel_df = parallel_df
+        self.ensembles = ensembles
 
     def layout(self) -> List[Component]:
         return [
-            wcc.Dropdown(
-                label="Ensemble",
+            wcc.Checklist(
+                label="Ensembles",
                 id=self.register_component_unique_id(Filter.Ids.ENSEMBLE),
-                options=[{"label": i, "value": i} for i in self.ensembles],
-                value=self.ensembles[0],
-                clearable=False,
-                multi=False,
-            )
+                options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                value=self.ensembles,
+            ),
+            wcc.Selectors(
+                label="Parameter filter",
+                children=[
+                    wcc.RadioItems(
+                        id=self.register_component_unique_id(
+                            Filter.Ids.EXCLUDE_INCLUDE
+                        ),
+                        options=[
+                            {"label": "Exclude", "value": "exc"},
+                            {"label": "Include", "value": "inc"},
+                        ],
+                        value="exc",
+                    ),
+                    wcc.SelectWithLabel(
+                        label="Parameters",
+                        id=self.register_component_unique_id(Filter.Ids.PARAMETERS),
+                        options=[
+                            {"label": ens, "value": ens}
+                            for ens in self.parameter_columns
+                        ],
+                        multi=True,
+                        size=min(len(self.parameter_columns), 15),
+                        value=[],
+                    ),
+                ],
+            ),
         ]
 
     def set_callbacks(self) -> None:
