@@ -1,7 +1,6 @@
 from typing import List, Dict, Union
-from click import style
 
-from dash import callback, Input, Output, html
+from dash import callback, Input, Output
 from dash.exceptions import PreventUpdate
 
 from dash.development.base_component import Component
@@ -11,7 +10,6 @@ from webviz_config import WebvizSettings
 import webviz_core_components as wcc
 
 from .._plugin_ids import PluginIds
-from ..view_elements import Graph
 from ._view_funcions import (
     filter_data_frame,
     create_graph,
@@ -20,8 +18,9 @@ from ..shared_settings._filter import Filter
 
 
 class PvtView(ViewABC):
+
+    # pylint disable too few arguments
     class Ids:
-        # pylint disable too few arguments
         PVT_GRAPHS = "formation-volume-factor"
         VISCOSITY = "viscosity"
         DENSITY = "density"
@@ -51,9 +50,7 @@ class PvtView(ViewABC):
         if self.pvt_df["KEYWORD"].str.contains("PVTW").any():
             self.phases_additional_info.append("PVTW")
 
-        column = self.add_column(PvtView.Ids.PVT_GRAPHS)
-
-        # column.add_view_element(Graph(), PvtView.Ids.PVT_GRAPHS)
+        self.add_column(PvtView.Ids.PVT_GRAPHS)
 
     @staticmethod
     def plot_visibility_options(phase: str = "") -> Dict[str, str]:
@@ -127,7 +124,7 @@ class PvtView(ViewABC):
         ) -> List[Component]:
             if len(ensembles) == 0 or len(pvtnum) == 0:
                 raise PreventUpdate
-            PVT_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
+            pvt_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
             if color_by == "ENSEMBLE":
                 colors = self.ensemble_colors
@@ -149,7 +146,7 @@ class PvtView(ViewABC):
                 current_element = wcc.WebvizViewElement(
                     id=self.unique_id(plot),
                     children=create_graph(
-                        PVT_df,
+                        pvt_df,
                         color_by,
                         colors,
                         phase,

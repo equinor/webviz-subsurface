@@ -9,11 +9,12 @@ import webviz_core_components as wcc
 from .._plugin_ids import PluginIds
 
 
+# pylint disable too few arguments
 class ShowPlots(SettingsGroupABC):
     class Ids:
         SHOWPLOTS = "show-plots"
 
-    def __init__(self, pvt_df: pd.DataFrame) -> None:
+    def __init__(self) -> None:
         super().__init__("Show Plots")
 
         self.plot_settings = [
@@ -47,7 +48,7 @@ class ShowPlots(SettingsGroupABC):
                     {"label": l, "value": v}
                     for v, l in self.plot_visibility_options().items()
                 ],
-                value=ist(self.plot_visibility_options().keys()),
+                value=list(self.plot_visibility_options().keys()),
                 vertical=True,
                 persistence=False,
             ),
