@@ -125,7 +125,7 @@ class Filter(SettingsGroupABC):
             ),
             Input(self.ensembles_id, "value"),
         )
-        def _update_ensembles(selected_ensembles) -> List[str]:
+        def _update_ensembles(selected_ensembles: List[str]) -> List[str]:
             if not isinstance(selected_ensembles, list):
                 selected_ensembles = [selected_ensembles]
             return selected_ensembles
@@ -141,7 +141,7 @@ class Filter(SettingsGroupABC):
             Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
             Input(self.pvtnum_id, "value"),
         )
-        def _update_pvtnum(selected_pvtnum) -> List[str]:
+        def _update_pvtnum(selected_pvtnum: List[str]) -> List[str]:
             if not isinstance(selected_pvtnum, list):
                 selected_pvtnum = [selected_pvtnum]
             return selected_pvtnum
