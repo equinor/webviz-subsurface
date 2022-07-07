@@ -47,7 +47,7 @@ class ShowPlots(SettingsGroupABC):
                     {"label": l, "value": v}
                     for v, l in self.plot_visibility_options().items()
                 ],
-                value=[v for v in list(self.plot_visibility_options().keys())],
+                value=ist(self.plot_visibility_options().keys()),
                 vertical=True,
                 persistence=False,
             ),

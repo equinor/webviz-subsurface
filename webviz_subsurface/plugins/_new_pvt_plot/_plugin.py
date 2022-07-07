@@ -2,7 +2,6 @@ from typing import Type, List, Tuple, Callable, Dict, Any
 
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-from dash import Dash
 
 from ._error import error
 from .views import PvtView
@@ -17,7 +16,6 @@ class PvtPlotter(WebvizPluginABC):
 
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: List[str],
         pvt_relative_file_path: str = None,
