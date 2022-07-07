@@ -1,10 +1,10 @@
-from typing import List, Dict
 import pandas as pd
-
-from dash import callback, Input, Output
+from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+
 import webviz_core_components as wcc
+from typing import Dict, List
 
 from .._plugin_ids import PluginIds
 

@@ -1,11 +1,10 @@
-from typing import Union, Dict, List
 import pandas as pd
-
 from dash import html
 from dash.development.base_component import Component
+from webviz_config.common_cache import CACHE
 
 import webviz_core_components as wcc
-from webviz_config.common_cache import CACHE
+from typing import Dict, List, Union
 
 
 def filter_data_frame(

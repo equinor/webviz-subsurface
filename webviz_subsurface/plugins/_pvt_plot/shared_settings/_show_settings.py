@@ -1,9 +1,9 @@
-from typing import List, Tuple, Dict
+from dash import Input, Output, callback
 from dash.development.base_component import Component
-from dash import callback, Input, Output
-
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+
 import webviz_core_components as wcc
+from typing import Dict, List, Tuple
 
 from .._plugin_ids import PluginIds
 

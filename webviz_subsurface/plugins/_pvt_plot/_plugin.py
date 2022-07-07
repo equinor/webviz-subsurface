@@ -5,16 +5,16 @@
 ########################################
 
 
-from typing import Type, List, Tuple, Callable, Dict, Any
-
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
+from typing import Any, Callable, Dict, List, Tuple, Type
+
+from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 from ._error import error
-from .views import PvtView
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter, ShowPlots
-from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
+from .views import PvtView
 
 
 class PvtPlot(WebvizPluginABC):
