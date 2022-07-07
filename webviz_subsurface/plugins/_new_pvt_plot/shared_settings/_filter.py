@@ -14,7 +14,7 @@ class Filter(SettingsGroupABC):
     PHASES = ["OIL", "GAS", "WATER"]
     phases_additional_info: List[str] = []
 
-    # pylint disable too few arguments
+    # pylint: disable=too-few-arguments
     class Ids:
         COLOR_BY = "select-color"
         ENSEMBLES = "ensembles"
@@ -27,9 +27,9 @@ class Filter(SettingsGroupABC):
     def __init__(self, pvt_data_frame: pd.DataFrame) -> None:
         super().__init__("Filter")
 
-        self.pvtnum_ID = self.register_component_unique_id(Filter.Ids.PVTNUM)
+        self.pvtnum_id = self.register_component_unique_id(Filter.Ids.PVTNUM)
 
-        self.ensembles_ID = self.register_component_unique_id(Filter.Ids.ENSEMBLES)
+        self.ensembles_id = self.register_component_unique_id(Filter.Ids.ENSEMBLES)
 
         self.pvt_data_frame = pvt_data_frame
 
@@ -75,7 +75,7 @@ class Filter(SettingsGroupABC):
                 id=self.register_component_unique_id(Filter.Ids.ENSEMBLESBOX),
                 children=[
                     wcc.Checklist(
-                        id=self.ensembles_ID,
+                        id=self.ensembles_id,
                         label="Ensembles",
                         options=[{"label": x, "value": x} for x in self.ensembles],
                         value=self.ensembles,
@@ -101,7 +101,7 @@ class Filter(SettingsGroupABC):
                 id=self.register_component_unique_id(Filter.Ids.PVTNUMBOX),
                 children=[
                     wcc.Checklist(
-                        id=self.pvtnum_ID,
+                        id=self.pvtnum_id,
                         label="Pvtnum",
                         options=[{"label": x, "value": x} for x in self.pvtnum],
                         value=self.pvtnum[0],
@@ -123,7 +123,7 @@ class Filter(SettingsGroupABC):
             Output(
                 self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"
             ),
-            Input(self.ensembles_ID, "value"),
+            Input(self.ensembles_id, "value"),
         )
         def _update_ensembles(selected_ensembles) -> List[str]:
             if not isinstance(selected_ensembles, list):
@@ -139,7 +139,7 @@ class Filter(SettingsGroupABC):
 
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_PVTNUM), "data"),
-            Input(self.pvtnum_ID, "value"),
+            Input(self.pvtnum_id, "value"),
         )
         def _update_pvtnum(selected_pvtnum) -> List[str]:
             if not isinstance(selected_pvtnum, list):
@@ -157,17 +157,18 @@ class Filter(SettingsGroupABC):
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COLOR), "data"),
         )
         def _update_ensembles_pvtnum(selected_color_by: str) -> List[Component]:
+            output_list = []
             if selected_color_by == "ENSEMBLE":
-                return [
+                output_list = [
                     wcc.Checklist(
-                        id=self.ensembles_ID,
+                        id=self.ensembles_id,
                         label="Ensembles",
                         options=[{"label": x, "value": x} for x in self.ensembles],
                         value=self.ensembles,
                         vertical=False,
                     ),
                     wcc.RadioItems(
-                        id=self.pvtnum_ID,
+                        id=self.pvtnum_id,
                         label="Pvtnum",
                         options=[{"label": x, "value": x} for x in self.pvtnum],
                         value=self.pvtnum[0],
@@ -175,19 +176,21 @@ class Filter(SettingsGroupABC):
                     ),
                 ]
             else:
-                return [
+                output_list = [
                     wcc.RadioItems(
-                        id=self.ensembles_ID,
+                        id=self.ensembles_id,
                         label="Ensembles",
                         options=[{"label": x, "value": x} for x in self.ensembles],
                         value=self.ensembles[0],
                         vertical=False,
                     ),
                     wcc.Checklist(
-                        id=self.pvtnum_ID,
+                        id=self.pvtnum_id,
                         label="Pvtnum",
                         options=[{"label": x, "value": x} for x in self.pvtnum],
                         value=self.pvtnum,
                         vertical=False,
                     ),
                 ]
+
+            return output_list
