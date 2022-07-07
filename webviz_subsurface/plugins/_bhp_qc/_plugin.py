@@ -16,7 +16,7 @@ from .views import FanView, BarView, LineView
 from ._error import error
 
 
-class BhpAnalyzer(WebvizPluginABC):
+class BhpQc(WebvizPluginABC):
     """QC simulated bottom hole pressures (BHP) from reservoir simulations.
 
     Can be used to check if your simulated BHPs are in a realistic range.
