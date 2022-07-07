@@ -49,7 +49,7 @@ class ShowPlots(SettingsGroupABC):
                 ],
                 value=[v for v in list(self.plot_visibility_options().keys())],
                 vertical=True,
-                persistence = False
+                persistence=False,
             ),
         ]
 

@@ -6,6 +6,7 @@ import webviz_core_components as wcc
 from webviz_config.common_cache import CACHE
 from dash.development.base_component import Component
 
+
 def plot_layout(
     color_by: str,
     theme: dict,
@@ -293,7 +294,7 @@ def create_graph(
             "min-width": "20vh",
             "text-align": "center",
             "padding": "2%",
-            #"flex": "1 1 46%",
+            # "flex": "1 1 46%",
         },
         children=(
             [

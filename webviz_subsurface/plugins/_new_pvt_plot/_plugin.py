@@ -7,7 +7,7 @@ from dash import Dash
 from ._error import error
 from .views import PvtView
 from ._plugin_ids import PluginIds
-from .shared_settings import Filter,ShowPlots
+from .shared_settings import Filter, ShowPlots
 from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 
 
@@ -53,9 +53,7 @@ class PvtPlotter(WebvizPluginABC):
                 drop_ensemble_duplicates=drop_ensemble_duplicates,
             )
 
-            self.pvt_df = self.pvt_df.rename(
-                str.upper, axis="columns"
-            ).rename(
+            self.pvt_df = self.pvt_df.rename(str.upper, axis="columns").rename(
                 columns={"TYPE": "KEYWORD", "RS": "RATIO", "R": "RATIO", "GOR": "RATIO"}
             )
 
@@ -82,11 +80,8 @@ class PvtPlotter(WebvizPluginABC):
         if self.pvt_df["KEYWORD"].str.contains("PVTW").any():
             self.phases_additional_info.append("PVTW")
 
-
         # Error messages
         self.error_message = ""
-
-    
 
         self.add_store(
             PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION
@@ -101,7 +96,7 @@ class PvtPlotter(WebvizPluginABC):
         self.add_store(
             PluginIds.Stores.SELECTED_PVTNUM, WebvizPluginABC.StorageType.SESSION
         )
-        
+
         self.add_store(
             PluginIds.Stores.SELECTED_SHOW_PLOTS, WebvizPluginABC.StorageType.SESSION
         )
@@ -115,7 +110,9 @@ class PvtPlotter(WebvizPluginABC):
         )
 
         self.add_view(
-            PvtView(self.pvt_df, webviz_settings), PluginIds.PvtID.INDICATORS, PluginIds.PvtID.GROUP_NAME
+            PvtView(self.pvt_df, webviz_settings),
+            PluginIds.PvtID.INDICATORS,
+            PluginIds.PvtID.GROUP_NAME,
         )
 
     def add_webvizstore(
