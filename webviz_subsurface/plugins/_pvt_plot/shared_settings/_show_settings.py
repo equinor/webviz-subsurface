@@ -1,9 +1,9 @@
+from typing import Dict, List, Tuple
+
+import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-
-import webviz_core_components as wcc
-from typing import Dict, List, Tuple
 
 from .._plugin_ids import PluginIds
 
@@ -45,8 +45,7 @@ class ShowPlots(SettingsGroupABC):
             wcc.Checklist(
                 id=self.register_component_unique_id(ShowPlots.Ids.SHOWPLOTS),
                 options=[
-                    {"label": l, "value": v}
-                    for v, l in self.plot_visibility_options().items()
+                    {"label": l, "value": v} for v, l in self.plot_visibility_options().items()
                 ],
                 value=list(self.plot_visibility_options().keys()),
                 vertical=True,
@@ -56,12 +55,8 @@ class ShowPlots(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"
-            ),
-            Input(
-                self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(), "value"
-            ),
+            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"),
+            Input(self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(), "value"),
         )
         def _update_show_plots(selected_plots: List[str]) -> List[str]:
             return selected_plots
@@ -78,9 +73,7 @@ class ShowPlots(SettingsGroupABC):
                 ),
             ],
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"
-            ),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"),
         )
         def _set_available_plots(
             phase: str,

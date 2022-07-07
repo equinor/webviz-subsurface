@@ -5,10 +5,10 @@
 ########################################
 
 
+from typing import Any, Callable, Dict, List, Tuple, Type
+
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-
-from typing import Any, Callable, Dict, List, Tuple, Type
 
 from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 from ._error import error
@@ -131,27 +131,15 @@ class PvtPlot(WebvizPluginABC):
         # Error messages
         self.error_message = ""
 
-        self.add_store(
-            PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION
-        )
+        self.add_store(PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION)
 
-        self.add_store(
-            PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_PVTNUM, WebvizPluginABC.StorageType.SESSION
-        )
+        self.add_store(PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SELECTED_PVTNUM, WebvizPluginABC.StorageType.SESSION)
 
-        self.add_store(
-            PluginIds.Stores.SELECTED_SHOW_PLOTS, WebvizPluginABC.StorageType.SESSION
-        )
+        self.add_store(PluginIds.Stores.SELECTED_SHOW_PLOTS, WebvizPluginABC.StorageType.SESSION)
 
-        self.add_shared_settings_group(
-            Filter(self.pvt_df), PluginIds.SharedSettings.FILTER
-        )
+        self.add_shared_settings_group(Filter(self.pvt_df), PluginIds.SharedSettings.FILTER)
 
         self.add_shared_settings_group(ShowPlots(), PluginIds.SharedSettings.SHOWPLOTS)
 
