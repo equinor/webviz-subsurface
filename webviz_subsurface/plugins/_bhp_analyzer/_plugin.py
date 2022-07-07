@@ -1,29 +1,17 @@
 from pathlib import Path
-from typing import Dict, List, Union, Type
+from typing import Dict, List, Type
 
-import numpy as np
 import pandas as pd
-import webviz_core_components as wcc
-from dash import Dash, Input, Output, html
+from dash import Dash
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
-
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from ..._utils.fanchart_plotting import (
-    FanchartData,
-    FreeLineData,
-    LowHighData,
-    MinMaxData,
-    get_fanchart_traces,
-)
-from ..._utils.unique_theming import unique_colors
 from .._simulation_time_series.types.provider_set import (
     create_lazy_provider_set_from_paths,
 )
 from ._plugin_ids import PluginIds
-from .shared_settings import Filter
+from .shared_settings import Filter, BarLineSettings
 from .views import FanView, BarView, LineView
 from ._error import error
 
@@ -56,7 +44,7 @@ class BhpAnalyzer(WebvizPluginABC):
         super().__init__()
 
         self.error_message = ""
-        
+
         self.ens_paths: Dict[str, Path] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                 ensemble_name
@@ -81,28 +69,50 @@ class BhpAnalyzer(WebvizPluginABC):
         self.smry = pd.concat(dfs)
         self.theme = webviz_settings.theme
 
-        self.add_store(PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_SORT_BY, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_ASCENDING_DESCENDING, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SELECTED_STATISTICS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(
+            PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_SORT_BY, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_ASCENDING_DESCENDING,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_STATISTICS, WebvizPluginABC.StorageType.SESSION
+        )
 
-        self.add_shared_settings_group(Filter(self.smry), PluginIds.SharedSettings.FILTER)
+        self.add_shared_settings_group(
+            Filter(self.smry), PluginIds.SharedSettings.FILTER
+        )
         self.add_view(
             FanView(self.smry, webviz_settings),
             PluginIds.BhpID.FAN_CHART,
-            PluginIds.BhpID.GROUP_NAME
         )
         self.add_view(
             BarView(self.smry, webviz_settings),
             PluginIds.BhpID.BAR_CHART,
-            PluginIds.BhpID.GROUP_NAME
         )
         self.add_view(
             LineView(self.smry, webviz_settings),
             PluginIds.BhpID.LINE_CHART,
-            PluginIds.BhpID.GROUP_NAME
+        )
+        print()
+        self.add_shared_settings_group(
+            BarLineSettings(),
+            PluginIds.SharedSettings.BARLINE_SETTINGS,
+            [
+                self.view(PluginIds.BhpID.BAR_CHART).get_unique_id().to_string(),
+                self.view(PluginIds.BhpID.LINE_CHART).get_unique_id().to_string(),
+            ],
         )
 
     @property
@@ -132,8 +142,6 @@ class BhpAnalyzer(WebvizPluginABC):
     @property
     def layout(self) -> Type[Component]:
         return error(self.error_message)
-
-
 
 
 # ---------------------------

@@ -1,54 +1,57 @@
-from typing import List, Union, Dict
-import math
-import re
+from typing import List, Union
 
 from dash import callback, Input, Output
-from dash.development.base_component import Component
 import pandas as pd
-import plotly.colors
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
-import webviz_core_components as wcc
-from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_config import WebvizSettings
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
-from ._view_functions import filter_df, calc_statistics, BarLineSettings, label_map
-from ...._utils.unique_theming import unique_colors
+from ._view_functions import filter_df, calc_statistics, label_map
 
 
 class BarView(ViewABC):
     class Ids:
-        #pylint: disable=too-few-public-methods
+        # pylint: disable=too-few-public-methods
         BAR_CHART = "bar-chart"
         SETTINGS = "settings"
-    def __init__(self, bhp_df: pd.DataFrame, webviz_settings: WebvizSettings,) -> None:
+
+    def __init__(
+        self,
+        bhp_df: pd.DataFrame,
+        webviz_settings: WebvizSettings,
+    ) -> None:
         super().__init__("Bar chart")
 
         self.bhp_df = bhp_df
-        
+
         column = self.add_column()
         column.add_view_element(Graph(), BarView.Ids.BAR_CHART)
         self.theme = webviz_settings.theme
-        self.add_settings_group(BarLineSettings(), BarView.Ids.SETTINGS)
-
-
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
                 self.view_element(BarView.Ids.BAR_CHART)
-                .component_unique_id(Graph.Ids.GRAPH).to_string(), "figure",
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure",
             ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_SORT_BY), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ASCENDING_DESCENDING), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS), "data"),
+            Input(
+                self.get_store_unique_id(
+                    PluginIds.Stores.SELECTED_ASCENDING_DESCENDING
+                ),
+                "data",
+            ),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS),
+                "data",
+            ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS), "data"),
             Input(
-                self.settings_group(BarView.Ids.SETTINGS)
-                .component_unique_id(BarLineSettings.Ids.SELECT_STATISTICS)
-                .to_string(),
-                "value",
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_STATISTICS), "data"
             ),
         )
         def _update_plot(
@@ -71,19 +74,19 @@ class BarView(ViewABC):
             bar_chart = []
             for stat in stat_bars:
                 yaxis = "y2" if stat == "count" else "y"
-                bar_chart.append({
-                                    "x": [vec[5:] for vec in stat_df.index],  # strip WBHP:
-                                    "y": stat_df[stat],
-                                    "name": [
-                                        key
-                                        for key, value in label_map().items()
-                                        if value == stat
-                                    ][0],
-                                    "yaxis": yaxis,
-                                    "type": "bar",
-                                    "offsetgroup": stat,
-                                    "showlegend": True,
-                                })
+                bar_chart.append(
+                    {
+                        "x": [vec[5:] for vec in stat_df.index],  # strip WBHP:
+                        "y": stat_df[stat],
+                        "name": [
+                            key for key, value in label_map().items() if value == stat
+                        ][0],
+                        "yaxis": yaxis,
+                        "type": "bar",
+                        "offsetgroup": stat,
+                        "showlegend": True,
+                    }
+                )
             layout = self.theme.create_themed_layout(
                 {
                     "yaxis": {
@@ -102,4 +105,4 @@ class BarView(ViewABC):
                     "legend": {"x": 1.05},
                 }
             )
-            return {"data": bar_chart, "layout": layout}  
+            return {"data": bar_chart, "layout": layout}

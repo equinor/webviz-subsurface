@@ -10,6 +10,7 @@ class PluginIds:
 
     class SharedSettings:
         FILTER = "filter"
+        BARLINE_SETTINGS = "barline-settings"
 
     class BhpID:
         GROUP_NAME = "BHP Analyzer"
@@ -19,5 +20,3 @@ class PluginIds:
         FAN_CHART = "fan-chart"
 
         BAR_CHART = "bar-chart"
-
-    
