@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Tuple, Dict
 
-from dash import callback, Input, Output
+from dash import callback, Input, Output, State
 from dash.development.base_component import Component
 import pandas as pd
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
@@ -29,7 +29,7 @@ class Filter(SettingsGroupABC):
 
         ## todo: the selectors will be defined here after getting to know the data
 
-class Selectors(Filter):
+class Selectors(SettingsGroupABC):
     def __init__(self, relperm_df: pd.DataFrame,plotly_theme,sat_axes_maps) -> None:
         super().__init__("Selectors")
         self.satfunc=relperm_df
@@ -137,14 +137,30 @@ class Selectors(Filter):
         
         @callback(
             Output(
+                self.component_unique_id(Filter.Ids.Selectors.ENSEMBLES).to_string(),"multi"
+            ),
+            Output(
+                self.component_unique_id(Filter.Ids.Selectors.ENSEMBLES).to_string(),"value"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.Selectors.COLOR_BY).to_string(), "value",
+            ),
+        )
+        def _set_ensembles_interaction(color_by:str) -> Tuple[bool, List[str]]:
+            if color_by=="ENSEMBLE":
+                return [True, self.ensembles]
+            return [False, self.ensembles[0]]
+        
+        @callback(
+            Output(
                 self.get_store_unique_id(PlugInIDs.Stores.Selectors.ENSAMBLES),"data"
             ),
             Input(
                 self.component_unique_id(Filter.Ids.Selectors.ENSEMBLES).to_string(), "value",
-            ),
+            ), 
         )
-        def _set_ensembles(ensembles: List[str]) -> List[str]:
-            return ensembles
+        def _set_ensembles(stored_ensemble: List[str]) -> List[str]:
+            return stored_ensemble
 
         @callback(
             Output(
@@ -154,8 +170,31 @@ class Selectors(Filter):
                 self.component_unique_id(Filter.Ids.Selectors.CURVES).to_string(), "value",
             ),
         )
-        def _set_curves(curves: List[str]) -> List[str]:
+        def _set_curves(curves: str) -> List[str]:
             return curves
+
+        @callback(
+            Output(
+                self.component_unique_id(Filter.Ids.Selectors.CURVES).to_string(),"value"
+            ),
+            Output(
+                self.component_unique_id(Filter.Ids.Selectors.CURVES).to_string(),"options"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.Selectors.SATURATION_AXIS).to_string(), "value",
+            ),
+        )
+        def _set_curves_interactions(sataxis: str) -> Tuple[List[str],List[Dict]]:
+            return (
+                self.sat_axes_maps[sataxis],
+                [
+                    {
+                        "label": i,
+                        "value": i,
+                    }
+                    for i in self.sat_axes_maps[sataxis]
+                ],
+            )
         
         @callback(
             Output(
@@ -165,11 +204,30 @@ class Selectors(Filter):
                 self.component_unique_id(Filter.Ids.Selectors.SATNUM).to_string(), "value",
             ),
         )
-        def _set_saturation_axis(satnum: List[str]) -> List[str]:
-            return satnum
+        def _set_saturation_axis(stored_satnum: List[str]) -> List[str]:
+            return stored_satnum
+        
+        @callback(
+            Output(
+                self.component_unique_id(Filter.Ids.Selectors.SATNUM).to_string(),"multi"
+            ),
+            Output(
+                self.component_unique_id(Filter.Ids.Selectors.SATNUM).to_string(),"value"
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.Selectors.COLOR_BY).to_string(), "value",
+            ),
+        )
+        def _set_saturation_axis_interactions(color_by: str) -> Tuple[bool, List[str]]:
+            if color_by == "SATNUM":
+                return [True, self.satnums]
+
+            return [
+                False, self.satnums[0],
+            ]
             
         
-class Visualization(Filter):
+class Visualization(SettingsGroupABC):
     def __init__(self, relperm_df: pd.DataFrame) -> None:
         super().__init__("Visualization")
     def layout(self) -> List[Component]:
@@ -215,7 +273,9 @@ class Visualization(Filter):
         def _set_y_axis(y_axis: List[str]) -> List[str]:
             return y_axis
 
-class Scal_recommendation(Filter):
+class Scal_recommendation(SettingsGroupABC):
+    def __init__(self, relperm_df: pd.DataFrame) -> None:
+        super().__init__("SCAL Recommendation")
     '''
     def __init__(self, rel_perm_df: pd.DataFrame) -> None:
         self.super().__init__("SCAL recommendation")
