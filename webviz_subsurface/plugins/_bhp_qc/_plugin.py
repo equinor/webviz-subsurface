@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Dict, List, Type
 
 import pandas as pd
-from dash import Dash
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
@@ -36,7 +35,6 @@ class BhpQc(WebvizPluginABC):
 
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
