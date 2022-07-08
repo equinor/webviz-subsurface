@@ -19,7 +19,7 @@ from ..._datainput.relative_permeability import load_satfunc, load_scal_recommen
 from .views import RelpermCappres
 
 
-class RelativePermeabilityNew(WebvizPluginABC):
+class RelativePermeability(WebvizPluginABC):
     """Visualizes relative permeability and capillary pressure curves for FMU ensembles.
 
 ---

@@ -39,8 +39,7 @@ from ._parameter_response_correlation import ParameterResponseCorrelation
 from ._prod_misfit import ProdMisfit
 from ._property_statistics import PropertyStatistics
 from ._pvt_plot import PvtPlot
-from ._relative_permeability import RelativePermeability
-from ._relative_permeability_new import RelativePermeabilityNew
+from ._relative_permeability_new import RelativePermeability
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 from ._reservoir_simulation_timeseries_onebyone import (
     ReservoirSimulationTimeSeriesOneByOne,
@@ -66,5 +65,3 @@ from ._well_completions import WellCompletions
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._well_log_viewer import WellLogViewer
-
-from ._relative_permeability_new import RelativePermeabilityNew

@@ -1,1 +1,1 @@
-from ._plugin import RelativePermeabilityNew
+from ._plugin import RelativePermeability
