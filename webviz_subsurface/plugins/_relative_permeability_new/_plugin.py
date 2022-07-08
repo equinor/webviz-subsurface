@@ -1,8 +1,7 @@
-# import from python builtin
 from typing import Type, Optional, Union
 from pathlib import Path
+import warnings
 
-# packages from installed packages
 from dash.development.base_component import Component
 import pandas as pd
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -12,92 +11,12 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 
 import webviz_subsurface
 
-# own imports
 from ._error import error
-from ._plugin_ids import PlugInIDs  # importing the namespace
-from .shared_settings import Filter, Selectors, Visualization, Scal_recommendation
+from ._plugin_ids import PlugInIDs
+from .shared_settings import Selectors, Visualization, SCALRecommendation
 from ..._datainput.fmu_input import load_csv
 from ..._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .views import RelpermCappres
-
-
-class TestView(ViewABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
-        TestViewID = "test-view-id"
-
-    def __init__(self, population_df: pd.DataFrame) -> None:
-        super().__init__("Population indicators")
-
-
-"""
-class RelativePermeabilityNew(WebvizPluginABC):
-    
-    '''
-    def __init__(
-        self,
-        webviz_settings: WebvizSettings,
-        ensembles: list,
-        relpermfile: str = None,
-        scalfile: Path = None,
-        sheet_name: Optional[Union[str, int, list]] = None,
-    ):
-    '''
-    def __init__(self, webviz_settings: WebvizSettings,relpermfile: str, ensembles: list, scalfile: Path = None,) -> None:
-    
-    
-        super().__init__() # super refer to class inhereted from, init from ABC
-
-        # set a member, self first for all
-        self.error_message = ""
-
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "block_options.css"
-        )
-
-        # when reading from file must check that these are the keywords, if not raise ValueError
-
-        try:
-            #self.relperm_df = pd.read_csv(path_to_relpermfile) # df = data frame
-            self.ens_paths = {
-            ens: WebvizSettings.shared_settings["scratch_ensembles"][ens]
-            for ens in ensembles
-            }
-            if relpermfile is not None:
-                self.satfunc = load_csv(ensemble_paths=self.ens_paths, csv_file=relpermfile)
-        except PermissionError:
-            self.error_message = (
-                f"Access to file '{relpermfile}' denied. "
-                f"Please check your path for '{relpermfile}' and make sure you have access to it."
-            )
-            return
-        except FileNotFoundError:
-            self.error_message = (
-                f"The file {relpermfile}' not found."
-                "Please check you path"
-            )
-            return
-        except pd.errors.ParserError:
-            self.error_message = (
-                f"The file '{relpermfile}' is not a valid csv file."
-            )
-        except pd.errors.EmptyDataError:
-            self.error_message = (
-                f"The file '{relpermfile}' is an empty file."
-            )
-        except Exception:
-            self.error_message = (
-                f"Unknown exception when trying to read '{relpermfile}"
-            )
-        
-        @property
-        def layout(self) -> Type[Component]:
-            return error(self.error_message)
-    '''
-    """
 
 
 class RelativePermeabilityNew(WebvizPluginABC):
@@ -174,7 +93,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         relpermfile: str = None,
         scalfile: Path = None,
         sheet_name: Optional[Union[str, int, list]] = None,
-    ):  # må sjekke at disse inputsene er rett (samme som ols)
+    ):
 
         super().__init__()
 
@@ -185,12 +104,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             / "block_options.css"
         )
         try:
-            # self.ens_paths = {
-            #     ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-            #     for ens in ensembles
-            # }
-            # if relpermfile is not None:
-            #     self.satfunc = load_csv(ensemble_paths=self.ens_paths, csv_file=relpermfile)
             self.ens_paths = {
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
@@ -322,7 +235,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             PlugInIDs.Stores.Selectors.SATNUM, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            Selectors(self.satfunc, self.plotly_theme, self.sat_axes_maps),
+            Selectors(self.satfunc, self.sat_axes_maps),
             PlugInIDs.SharedSettings.SELECTORS,
         )
 
@@ -334,7 +247,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             PlugInIDs.Stores.Visualization.Y_AXIS, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            Visualization(self.satfunc), PlugInIDs.SharedSettings.VISUALIZATION
+            Visualization(), PlugInIDs.SharedSettings.VISUALIZATION
         )
 
         self.add_store(
@@ -342,7 +255,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             WebvizPluginABC.StorageType.SESSION,
         )
         self.add_shared_settings_group(
-            Scal_recommendation(self.satfunc),
+            SCALRecommendation(),
             PlugInIDs.SharedSettings.SCAL_RECOMMENDATION,
         )
 
