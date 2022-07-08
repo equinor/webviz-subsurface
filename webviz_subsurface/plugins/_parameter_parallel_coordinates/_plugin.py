@@ -14,6 +14,10 @@ from webviz_subsurface._models import (
     caching_ensemble_set_model_factory,
 )
 
+from ._plugin_ids import PluginIds
+from .shared_settings import Filter
+from .views import EnsembleView
+
 
 class ParameterParallelCoordinates(WebvizPluginABC):
     """Visualizes parameters used in FMU ensembles side-by-side. Also supports response coloring.
@@ -226,7 +230,40 @@ folder, to avoid risk of not extracting the right data.
         )
 
         self.theme = webviz_settings.theme
-        self.set_callbacks(app)
+
+        # Stores, views and settings
+        self.add_store(
+            PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_EXCLUDE_INCLUDE,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_PARAMETERS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_RESPONSE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_DATE, WebvizPluginABC.StorageType.SESSION
+        )
+
+        self.add_shared_settings_group(
+            Filter(self.parameterdf, self.ensembles, self.parameter_columns),
+            PluginIds.SharedSettings.FILTER,
+        )
+
+        self.add_view(
+            EnsembleView(
+                self.parameterdf,
+                self.theme,
+                self.parameter_columns,
+                self.ensembles,
+                self.ens_colormap,
+            ),
+            PluginIds.ParallelID.ENSEMBLE_CHART,
+        )
 
     @property
     def ensembles(self):
@@ -245,263 +282,12 @@ folder, to avoid risk of not extracting the right data.
         return colormap
 
     @property
-    def response_layout(self):
-        """Layout to display selectors for response filters"""
-
-        if self.no_responses:
-            return []
-        children = [
-            wcc.Dropdown(
-                label="Response",
-                id=self.uuid("responses"),
-                options=[{"label": ens, "value": ens} for ens in self.response_columns],
-                clearable=False,
-                value=self.response_columns[0],
-                style={"marginBottom": "20px"},
-            ),
-        ]
-
-        if self.response_filters is not None:
-            for col_name, col_type in self.response_filters.items():
-                values = list(self.responsedf[col_name].unique())
-                if col_type == "multi":
-                    children.append(
-                        wcc.SelectWithLabel(
-                            label=col_name,
-                            id=self.uuid(f"filter-{col_name}"),
-                            options=[{"label": val, "value": val} for val in values],
-                            value=values,
-                            multi=True,
-                            size=min(20, len(values)),
-                        )
-                    )
-                elif col_type == "single":
-                    children.append(
-                        wcc.Dropdown(
-                            label=col_name,
-                            id=self.uuid(f"filter-{col_name}"),
-                            options=[{"label": val, "value": val} for val in values],
-                            value=values[0],
-                            multi=False,
-                            clearable=False,
-                        )
-                    )
-
-        return [
-            html.Div(
-                id=self.uuid("view_response"),
-                style={"display": "none"},
-                children=children,
-            ),
-        ]
-
-    @property
-    def control_layout(self):
-        """Layout to select ensembles and parameters"""
-        mode_select = (
-            []
-            if self.no_responses
-            else [
-                wcc.Selectors(
-                    label="Mode",
-                    children=[
-                        wcc.RadioItems(
-                            id=self.uuid("mode"),
-                            options=[
-                                {"label": "Ensemble", "value": "ensemble"},
-                                {"label": "Response", "value": "response"},
-                            ],
-                            value="ensemble",
-                        ),
-                    ],
-                )
-            ]
-        )
-
-        return mode_select + [
-            wcc.Selectors(
-                label="Ensembles",
-                children=wcc.SelectWithLabel(
-                    id=self.uuid("ensembles"),
-                    options=[{"label": ens, "value": ens} for ens in self.ensembles],
-                    multi=True,
-                    value=self.ensembles,
-                    size=min(len(self.ensembles), 10),
-                ),
-            ),
-            wcc.Selectors(
-                label="Parameter filter",
-                children=[
-                    wcc.RadioItems(
-                        id=self.uuid("exclude_include"),
-                        options=[
-                            {"label": "Exclude", "value": "exc"},
-                            {"label": "Include", "value": "inc"},
-                        ],
-                        value="exc",
-                    ),
-                    wcc.SelectWithLabel(
-                        label="Parameters",
-                        id=self.uuid("parameter-list"),
-                        options=[
-                            {"label": ens, "value": ens}
-                            for ens in self.parameter_columns
-                        ],
-                        multi=True,
-                        size=min(len(self.parameter_columns), 15),
-                        value=[],
-                    ),
-                ],
-            ),
-        ]
-
-    @property
     def layout(self):
         """Main layout"""
         return wcc.FlexBox(
             id=self.uuid("layout"),
             style={"height": "90vh"},
-            children=[
-                wcc.Frame(
-                    style={"flex": 1, "height": "90vh"},
-                    children=(self.control_layout + self.response_layout),
-                ),
-                wcc.Frame(
-                    style={"flex": 4, "height": "90vh", "marginRight": "2vw"},
-                    color="white",
-                    highlight=False,
-                    children=wcc.Graph(
-                        id=self.uuid("parcoords"),
-                    ),
-                ),
-            ],
         )
-
-    @property
-    def parcoord_inputs(self):
-        inputs = [
-            Input(self.uuid("ensembles"), "value"),
-            Input(self.uuid("exclude_include"), "value"),
-            Input(self.uuid("parameter-list"), "value"),
-        ]
-        if not self.no_responses:
-            inputs.extend(
-                [
-                    Input(self.uuid("mode"), "value"),
-                    Input(self.uuid("responses"), "value"),
-                ]
-            )
-            if self.response_filters is not None:
-                inputs.extend(
-                    [
-                        Input(self.uuid(f"filter-{col}"), "value")
-                        for col in self.response_filters
-                    ]
-                )
-        return inputs
-
-    @staticmethod
-    def set_grid_layout(columns):
-        return {
-            "display": "grid",
-            "alignContent": "space-around",
-            "justifyContent": "space-between",
-            "gridTemplateColumns": f"{columns}",
-        }
-
-    def set_callbacks(self, app):
-        @app.callback(
-            Output(self.uuid("parcoords"), "figure"),
-            self.parcoord_inputs,
-        )
-        def _update_parcoord(ens, exc_inc, parameter_list, *opt_args):
-            """Updates parallel coordinates plot
-            Filter dataframe for chosen ensembles and parameters
-            Call render_parcoord to render new figure
-            """
-            # Ensure selected ensembles is a list
-            ens = ens if isinstance(ens, list) else [ens]
-            # Ensure selected parameters is a list
-            parameter_list = (
-                parameter_list if isinstance(parameter_list, list) else [parameter_list]
-            )
-            special_columns = ["ENSEMBLE", "REAL"]
-            if exc_inc == "exc":
-                parameterdf = self.parameterdf.drop(parameter_list, axis=1)
-            elif exc_inc == "inc":
-                parameterdf = self.parameterdf[special_columns + parameter_list]
-            params = [
-                param
-                for param in parameterdf.columns
-                if param not in special_columns and param in self.parameter_columns
-            ]
-
-            mode = opt_args[0] if opt_args else "ensemble"
-            # Need a default response
-            response = ""
-
-            if mode == "response":
-                if len(ens) != 1:
-                    # Need to wait for update of ensemble selector to multi=False
-                    raise PreventUpdate
-                df = parameterdf.loc[self.parameterdf["ENSEMBLE"] == ens[0]]
-                response = opt_args[1]
-                response_filter_values = opt_args[2:] if len(opt_args) > 2 else {}
-                filteroptions = parresp.make_response_filters(
-                    response_filters=self.response_filters,
-                    response_filter_values=response_filter_values,
-                )
-                responsedf = parresp.filter_and_sum_responses(
-                    self.responsedf,
-                    ens[0],
-                    response,
-                    filteroptions=filteroptions,
-                    aggregation=self.aggregation,
-                )
-
-                # Renaming to make it clear in plot.
-                responsedf.rename(
-                    columns={response: f"Response: {response}"}, inplace=True
-                )
-                df = pd.merge(responsedf, df, on=["REAL"]).drop(columns=special_columns)
-                df[self.uuid("COLOR")] = df.apply(
-                    lambda row: self.ensembles.index(ens[0]), axis=1
-                )
-            else:
-                # Filter on ensembles (ens) and active parameters (params),
-                # adding the COLOR column to the columns to keep
-                df = self.parameterdf[self.parameterdf["ENSEMBLE"].isin(ens)][
-                    params + ["ENSEMBLE"]
-                ]
-                df[self.uuid("COLOR")] = df.apply(
-                    lambda row: self.ensembles.index(row["ENSEMBLE"]), axis=1
-                )
-            return render_parcoord(
-                df,
-                self.theme,
-                self.ens_colormap,
-                self.uuid("COLOR"),
-                self.ensembles,
-                mode,
-                params,
-                response,
-            )
-
-        @app.callback(
-            [
-                Output(self.uuid("ensembles"), "multi"),
-                Output(self.uuid("ensembles"), "value"),
-                Output(self.uuid("view_response"), "style"),
-            ],
-            [Input(self.uuid("mode"), "value")],
-        )
-        def _update_mode(mode: str):
-            if mode == "ensemble":
-                return True, self.ensembles, {"display": "none"}
-            if mode == "response":
-                return False, self.ensembles[0], {"display": "block"}
-            # The error should never occur
-            raise ValueError("ensemble and response are the only valid modes.")
 
     def add_webvizstore(self):
         functions = []

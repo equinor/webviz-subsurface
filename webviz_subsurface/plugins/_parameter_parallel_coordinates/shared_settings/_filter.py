@@ -17,11 +17,17 @@ class Filter(SettingsGroupABC):
         EXCLUDE_INCLUDE = "exclude-include"
         PARAMETERS = "parameters"
 
-    def __init__(self, parallel_df: pd.DataFrame, ensembles: List[str]) -> None:
+    def __init__(
+        self,
+        parallel_df: pd.DataFrame,
+        ensembles: List[str],
+        parameter_columns: List[str],
+    ) -> None:
         super().__init__("Filter")
 
         self.parallel_df = parallel_df
         self.ensembles = ensembles
+        self.parameter_columns = parameter_columns
 
     def layout(self) -> List[Component]:
         return [
@@ -68,3 +74,25 @@ class Filter(SettingsGroupABC):
         )
         def _set_ensembles(selected_ensemble: str) -> str:
             return selected_ensemble
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_EXCLUDE_INCLUDE),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(Filter.Ids.EXCLUDE_INCLUDE).to_string(),
+                "value",
+            ),
+        )
+        def _set_ensembles(selected_excl_incl: str) -> str:
+            return selected_excl_incl
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_PARAMETERS), "data"
+            ),
+            Input(self.component_unique_id(Filter.Ids.PARAMETERS).to_string(), "value"),
+        )
+        def _set_ensembles(selected_parameters: str) -> str:
+            return selected_parameters
