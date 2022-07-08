@@ -1,9 +1,7 @@
 from typing import Dict
 
-
 import webviz_subsurface_components
 from dash import Input, Output, callback
-from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .._ensemble_group_tree_data import EnsembleGroupTreeData
