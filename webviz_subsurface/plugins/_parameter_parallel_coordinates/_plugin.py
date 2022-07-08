@@ -16,7 +16,7 @@ from webviz_subsurface._models import (
 
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
-from .views import EnsembleView
+from .views import EnsembleView, ResponseView
 
 
 class ParameterParallelCoordinates(WebvizPluginABC):
@@ -265,6 +265,21 @@ folder, to avoid risk of not extracting the right data.
             PluginIds.ParallelID.ENSEMBLE_CHART,
         )
 
+        self.add_view(
+            ResponseView(
+                self.parameterdf,
+                self.theme,
+                self.parameter_columns,
+                self.ensembles,
+                self.ens_colormap,
+                self.response_columns,
+                self.response_filters,
+                self.responsedf,
+            ),
+            PluginIds.ParallelID.RESPONSE_CHART,
+        )
+        print(self.response_filters)
+
     @property
     def ensembles(self):
         """Returns list of ensembles"""
@@ -317,65 +332,6 @@ folder, to avoid risk of not extracting the right data.
             functions.extend(self.emodel.webvizstore)
 
         return functions
-
-
-def render_parcoord(plot_df, theme, colormap, color_col, ens, mode, params, response):
-    """Renders parallel coordinates plot"""
-    colormap = (
-        colormap if mode == "ensemble" else theme.plotly_theme["layout"]["colorway"]
-    )
-    if response:
-        response = f"Response: {response}"
-        params = [response] + params
-    # Create parcoords dimensions (one per parameter)
-    dimensions = [{"label": param, "values": plot_df[param]} for param in params]
-    data = [
-        {
-            "line": {
-                "color": plot_df[color_col].values.tolist(),
-                "colorscale": colormap,
-                "cmin": -0.5,
-                "cmax": len(ens) - 0.5,
-                "showscale": True,
-                "colorbar": {
-                    "tickvals": list(range(0, len(ens))),
-                    "ticktext": ens,
-                    "title": "Ensemble",
-                    "xanchor": "right",
-                    "x": -0.02,
-                    "len": 0.2 * len(ens),
-                },
-            },
-            "dimensions": dimensions,
-            "labelangle": 60,
-            "labelside": "bottom",
-            "type": "parcoords",
-        }
-        if mode == "ensemble"
-        else {
-            "type": "parcoords",
-            "line": {
-                "color": plot_df[response],
-                "colorscale": colormap,
-                "showscale": True,
-                "colorbar": {
-                    "title": {"text": response},
-                    "xanchor": "right",
-                    "x": -0.02,
-                },
-            },
-            "dimensions": dimensions,
-            "labelangle": 60,
-            "labelside": "bottom",
-        }
-        if mode == "response"
-        else {}
-    ]
-
-    # Ensure sufficient spacing between each dimension and margin for labels
-    width = len(dimensions) * 80 + 250
-    layout = {"width": width, "height": 1200, "margin": {"b": 740, "t": 30}}
-    return {"data": data, "layout": theme.create_themed_layout(layout)}
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

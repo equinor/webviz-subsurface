@@ -19,4 +19,4 @@ class PluginIds:
 
         ENSEMBLE_CHART = "ensemble-chart"
 
-        PARALLEL_CHART = "parallel-chart"
+        RESPONSE_CHART = "parallel-chart"

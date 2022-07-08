@@ -1,10 +1,13 @@
-from typing import List, Union
+from typing import List
 
 import pandas as pd
-from dash import Input, Output, callback
+import webviz_core_components as wcc
+from dash import Input, Output, callback, html
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme
-from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+
 import webviz_subsurface._utils.parameter_response as parresp
 
 from ...._utils.unique_theming import unique_colors
@@ -13,10 +16,74 @@ from ..view_elements import Graph
 from ._view_functions import render_parcoord
 
 
+class ViewSettings(SettingsGroupABC):
+    class Ids:
+        # pylint: disable=too-few-public-methods
+        RESPONSE_SETTINGS = "response-settings"
+        RESPONSE = "response"
+        DATE = "date"
+
+    def __init__(
+        self, response_columns, response_filters, responsedf: pd.DataFrame
+    ) -> None:
+        super().__init__("Response Settings")
+
+        self.response_columns = response_columns
+        self.response_filters = response_filters
+        self.responsedf = responsedf
+
+    def layout(self) -> List[Component]:
+        children = [
+            wcc.Dropdown(
+                label="Response",
+                id=self.register_component_unique_id(ViewSettings.Ids.RESPONSE),
+                options=[{"label": ens, "value": ens} for ens in self.response_columns],
+                clearable=False,
+                value=self.response_columns[0],
+                style={"marginBottom": "20px"},
+            ),
+        ]
+        if self.response_filters is not None:
+            for col_name, col_type in self.response_filters.items():
+                values = list(self.responsedf[col_name].unique())
+                if col_type == "multi":
+                    children.append(
+                        wcc.SelectWithLabel(
+                            label=col_name,
+                            id=self.register_component_unique_id(f"filter-{col_name}"),
+                            options=[{"label": val, "value": val} for val in values],
+                            value=values,
+                            multi=True,
+                            size=min(20, len(values)),
+                        )
+                    )
+                elif col_type == "single":
+                    children.append(
+                        wcc.Dropdown(
+                            label=col_name,
+                            id=self.register_component_unique_id(f"filter-{col_name}"),
+                            options=[{"label": val, "value": val} for val in values],
+                            value=values[0],
+                            multi=False,
+                            clearable=False,
+                        )
+                    )
+        return [
+            html.Div(
+                id=self.register_component_unique_id(
+                    ViewSettings.Ids.RESPONSE_SETTINGS
+                ),
+                style={"display": "none"},
+                children=children,
+            ),
+        ]
+
+
 class ResponseView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         RESPONSE_CHART = "response-chart"
+        SETTINGS = "settings"
 
     def __init__(
         self,
@@ -25,6 +92,9 @@ class ResponseView(ViewABC):
         parameter_columns: List[str],
         ensembles: List[str],
         ens_colormap: List[str],
+        response_columns: List[str],
+        response_filters: dict,
+        responsedf: pd.DataFrame,
     ) -> None:
         super().__init__("Response chart")
 
@@ -32,10 +102,31 @@ class ResponseView(ViewABC):
         self.parameter_columns = parameter_columns
         self.ensembles = ensembles
         self.ens_colormap = ens_colormap
+        self.response_columns = response_columns
+        self.response_filters = response_filters
+        self.responsedf = responsedf
 
         column = self.add_column()
         column.add_view_element(Graph(), ResponseView.Ids.RESPONSE_CHART)
+        self.add_settings_group(
+            ViewSettings(self.response_columns, self.response_filters, self.responsedf),
+            ResponseView.Ids.SETTINGS,
+        )
         self.theme = theme
+
+    @property
+    def parcoord_inputs(self):
+        inputs = [
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_RESPONSE), "data"),
+        ]
+        if self.response_filters is not None:
+            inputs.extend(
+                [
+                    Input(self.get_store_unique_id(f"filter-{col}"), "value")
+                    for col in self.response_filters
+                ]
+            )
+        return inputs
 
     def set_callbacks(self) -> None:
         @callback(
@@ -54,21 +145,13 @@ class ResponseView(ViewABC):
                 self.get_store_unique_id(PluginIds.Stores.SELECTED_PARAMETERS),
                 "data",
             ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_RESPONSE),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_DATE),
-                "data",
-            ),
+            self.parcoord_inputs,
         )
         def _update_plot(
             ensemble: List[str],
             exclude_include: str,
             parameters: List[str],
-            response: List[str],
-            date: List[str],
+            *opt_args,
         ) -> dict:
             ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
             parameters = parameters if isinstance(parameters, list) else [parameters]
@@ -114,5 +197,5 @@ class ResponseView(ViewABC):
                 self.ensembles,
                 "response",
                 params,
-                "",
+                response,
             )
