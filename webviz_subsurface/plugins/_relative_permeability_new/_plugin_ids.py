@@ -5,14 +5,14 @@ class PlugInIDs:
             COLOR_BY = "color-by"
             ENSAMBLES = "ensambles"
             CURVES = "curves"
-            SATNUM = "satnum"  # should we change to saturation number? or someting?
+            SATNUM = "satnum"
 
         class Visualization:
             LINE_TRACES = "line-traces"
             Y_AXIS = "y-axis"
 
         class SCALRecomendation:
-            SHOW_SCAL = "show-SCAL"  # doesn't work?
+            SHOW_SCAL = "show-SCAL"
 
     class RelCapViewGroup:
         GROUP_NAME = "relcap"
