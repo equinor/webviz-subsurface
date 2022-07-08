@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.14] - 2022-06-28
+
 ### Fixed
 
 - [#1055](https://github.com/equinor/webviz-subsurface/pull/1055) - `ProdMisfit` - Fixed a bug related to the input argument *excl_name_contains*.
