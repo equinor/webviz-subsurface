@@ -1,26 +1,26 @@
 from pathlib import Path
-from typing import Dict, List, Tuple, Callable, Type
+from typing import Callable, Dict, List, Tuple, Type
 
 from dash import html
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
+
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import (
-    EnsembleSummaryProvider, 
+    EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
     Frequency,
 )
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
 from ._plugin_Ids import PluginIds
-from .shared_settings import Controls, Options, Filters
+from .shared_settings import Controls, Filters, Options
 from .views import GroupTreeGraph
 
 
-class NewGroupTree(WebvizPluginABC):
-
+class GroupTree(WebvizPluginABC):
     def __init__(
-        self, 
+        self,
         webviz_settings: WebvizSettings,
         ensembles: list,
         gruptree_file: str = "share/results/tables/gruptree.csv",
@@ -40,7 +40,7 @@ class NewGroupTree(WebvizPluginABC):
 
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
-        
+
         sampling = Frequency(time_index)
 
         self._ensemble_paths: Dict[str, Path] = {
@@ -68,34 +68,41 @@ class NewGroupTree(WebvizPluginABC):
         self.add_store(PluginIds.Stores.ENSEMBLES, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.TREEMODE, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.STATISTICS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.REALIZATION, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(
+            PluginIds.Stores.REALIZATION, WebvizPluginABC.StorageType.SESSION
+        )
         self.add_store(PluginIds.Stores.FILTER, WebvizPluginABC.StorageType.SESSION)
-        #self.add_store(PluginIds.Stores.OPTIONS, WebvizPluginABC.StorageType.SESSION)
+        # self.add_store(PluginIds.Stores.OPTIONS, WebvizPluginABC.StorageType.SESSION)
 
-        self.add_shared_settings_group( Controls(self._ensembles), PluginIds.SharedSettings.CONTROLS)
-        self.add_shared_settings_group( Options(self._group_tree_data), PluginIds.SharedSettings.OPTIONS)
-        self.add_shared_settings_group( Filters(), PluginIds.SharedSettings.FILTERS)
+        self.add_shared_settings_group(
+            Controls(self._ensembles), PluginIds.SharedSettings.CONTROLS
+        )
+        self.add_shared_settings_group(
+            Options(self._group_tree_data), PluginIds.SharedSettings.OPTIONS
+        )
+        self.add_shared_settings_group(Filters(), PluginIds.SharedSettings.FILTERS)
 
         self.add_view(
-            GroupTreeGraph(self._group_tree_data, webviz_settings), PluginIds.ProductionNetworkID.GROUP_TREE, PluginIds.ProductionNetworkID.GROUP_NAME
+            GroupTreeGraph(self._group_tree_data, webviz_settings),
+            PluginIds.ProductionNetworkID.GROUP_TREE,
+            PluginIds.ProductionNetworkID.GROUP_NAME,
         )
 
         print(Filters().component_unique_id(Filters.Ids.FILTER).to_string())
-
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
             ens_grouptree_data.webviz_store
             for _, ens_grouptree_data in self._group_tree_data.items()
-        ]   
+        ]
 
     # @property
     # def layout(self) -> Type[Component]:
-    #     return html.Div() 
+    #     return html.Div()
 
     # @property
     # def tour_steps(self) -> List[dict]:
-        
+
     #     return [
     #         # {
     #         #     "id": PluginIds.SharedSettings.CONTROLS,
