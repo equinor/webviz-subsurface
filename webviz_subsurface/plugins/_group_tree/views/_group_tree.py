@@ -12,6 +12,7 @@ from .._types import NodeType, StatOptions, TreeModeOptions
 
 
 class GroupTreeGraph(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         GRAPH = "graph"
         GROUPTREE = "group-tree"
