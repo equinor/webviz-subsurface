@@ -1,6 +1,6 @@
 from typing import Dict
 
-import webviz_core_components as wcc
+
 import webviz_subsurface_components
 from dash import Input, Output, callback
 from webviz_config import WebvizSettings
@@ -17,13 +17,9 @@ class GroupTreeGraph(ViewABC):
         GRAPH = "graph"
         GROUPTREE = "group-tree"
 
-    def __init__(
-        self,
-        group_tree_data: Dict[str, EnsembleGroupTreeData],
-        webviz_settings: WebvizSettings,
-    ) -> None:
+    def __init__(self, group_tree_data: Dict[str, EnsembleGroupTreeData]) -> None:
         super().__init__("")
-        column = self.add_column(GroupTreeGraph.Ids.GRAPH)
+        self.add_column(GroupTreeGraph.Ids.GRAPH)
         self.group_tree_data = group_tree_data
 
     def set_callbacks(self) -> None:

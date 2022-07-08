@@ -1,15 +1,13 @@
-from typing import Dict, List, Type
+from typing import Dict, List
 
 import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
-from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._ensemble_group_tree_data import EnsembleGroupTreeData
 from .._plugin_ids import PluginIds
 from .._types import StatOptions, TreeModeOptions
-from ._control import Controls
 
 
 class Options(SettingsGroupABC):
@@ -38,30 +36,18 @@ class Options(SettingsGroupABC):
             Input(
                 self.component_unique_id(Options.Ids.STATISTICS).to_string(), "value"
             ),
-            Input(self.get_store_unique_id(PluginIds.Stores.TREEMODE), "data"),
         )
-        def _update_statics_store(selected_options: str, selected_mode: str) -> str:
-            # if selected_mode == TreeModeOptions.STATISTICS.value:
+        def _update_statics_store(selected_options: str) -> str:
             return selected_options
-
-        # else:
-        #    raise PreventUpdate
 
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.REALIZATION), "data"),
             Input(
                 self.component_unique_id(Options.Ids.REALIZATION).to_string(), "value"
             ),
-            Input(self.get_store_unique_id(PluginIds.Stores.TREEMODE), "data"),
         )
-        def _update_realization_store(
-            selected_options: List[str], selected_mode: str
-        ) -> List[str]:
-            # if selected_mode == TreeModeOptions.SINGLE_REAL.value:
+        def _update_realization_store(selected_options: List[str]) -> List[str]:
             return selected_options
-
-        # else:
-        #   raise PreventUpdate
 
         @callback(
             Output(

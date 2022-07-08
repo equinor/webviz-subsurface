@@ -1,8 +1,6 @@
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple, Type
+from typing import Callable, Dict, List, Tuple
 
-from dash import html
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._models import GruptreeModel
@@ -112,7 +110,7 @@ class GroupTree(WebvizPluginABC):
         self.add_shared_settings_group(Filters(), PluginIds.SharedSettings.FILTERS)
 
         self.add_view(
-            GroupTreeGraph(self._group_tree_data, webviz_settings),
+            GroupTreeGraph(self._group_tree_data),
             PluginIds.ProductionNetworkID.GROUP_TREE,
             PluginIds.ProductionNetworkID.GROUP_NAME,
         )
@@ -146,7 +144,9 @@ class GroupTree(WebvizPluginABC):
     #         #     "content": "Menu for filtering options.",
     #         # },
     #         # {
-    #         #     "id": GroupTreeGraph.layout_element(GroupTreeGraph.Ids.GRAPH).get_unique_id().to_string(),
+    #         #     "id": GroupTreeGraph.layout_element(GroupTreeGraph.Ids.GRAPH)
+    # .get_unique_id()
+    # .to_string(),
     #         #     "content": "Vizualisation of network tree.",
     #         # },
     #     ]
