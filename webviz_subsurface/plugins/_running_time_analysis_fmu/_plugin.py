@@ -3,71 +3,57 @@ from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-import webviz_core_components as wcc
-from dash import Dash, Input, Output, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from .._datainput.fmu_input import load_ensemble_set, load_parameters
+from ..._datainput.fmu_input import load_ensemble_set, load_parameters
 
 
 class RunningTimeAnalysisFMU(WebvizPluginABC):
     """Can e.g. be used to investigate which jobs that are important for the running
-time of realizations, and if specific parameter combinations increase running time or chance of
-realization failure. Systematic realization failure could introduce bias to assisted history
-matching.
+    time of realizations, and if specific parameter combinations increase running time or chance of
+    realization failure. Systematic realization failure could introduce bias to assisted history
+    matching.
 
-Visualizations:
-* Running time matrix, a heatmap of job running times relative to:
-    * Same job in ensemble
-    * Slowest job in ensemble
-    * Slowest job in realization
-* Parameter parallel coordinates plot:
-    * Analyze running time and successful/failed run together with input parameters.
+    Visualizations:
+    * Running time matrix, a heatmap of job running times relative to:
+        * Same job in ensemble
+        * Slowest job in ensemble
+        * Slowest job in realization
+    * Parameter parallel coordinates plot:
+        * Analyze running time and successful/failed run together with input parameters.
 
----
+    ---
 
-* **`ensembles`:** Which ensembles in `shared_settings` to include in check. Only required input.
-* **`filter_shorter`:** Filters jobs with maximum run time in ensemble less than X seconds \
-    (default: 10). Can be checked on/off interactively, this only sets the filtering value.
-* **`status_file`:** Name of json file local per realization with job status \
-    (default: `status.json`).
-* **`visual_parameters`:** List of default visualized parameteres in parallel coordinates plot \
-    (default: all parameters).
+    * **`ensembles`:** Which ensembles in `shared_settings` to include in check. Only required input.
+    * **`filter_shorter`:** Filters jobs with maximum run time in ensemble less than X seconds \
+        (default: 10). Can be checked on/off interactively, this only sets the filtering value.
+    * **`status_file`:** Name of json file local per realization with job status \
+        (default: `status.json`).
+    * **`visual_parameters`:** List of default visualized parameteres in parallel coordinates plot \
+        (default: all parameters).
 
----
+    ---
 
-Parameters are picked up automatically from `parameters.txt` in individual realizations in
-defined ensembles using `fmu-ensemble`.
+    Parameters are picked up automatically from `parameters.txt` in individual realizations in
+    defined ensembles using `fmu-ensemble`.
 
-The `status.json` file is the standard status file when running
-[`ERT`](https://github.com/Equinor/ert) runs. If defining a different name, it still has to be
-on the same format [(example file)](https://github.com/equinor/webviz-subsurface-testdata/\
-blob/master/reek_history_match/realization-0/iter-0/status.json).
-"""
-
-    COLOR_MATRIX_BY_LABELS = [
-        "Same job in ensemble",
-        "Slowest job in realization",
-        "Slowest job in ensemble",
-    ]
-
-    COLOR_PARCOORD_BY_LABELS = [
-        "Successful/failed realization",
-        "Running time of realization",
-    ]
+    The `status.json` file is the standard status file when running
+    [`ERT`](https://github.com/Equinor/ert) runs. If defining a different name, it still has to be
+    on the same format [(example file)](https://github.com/equinor/webviz-subsurface-testdata/\
+    blob/master/reek_history_match/realization-0/iter-0/status.json).
+    """
 
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         filter_shorter: Union[int, float] = 10,
         status_file: str = "status.json",
         visual_parameters: Optional[list] = None,
-    ):
-        super().__init__()
+    ) -> None:
+        super().__init__(stretch=True)
         self.filter_shorter = filter_shorter
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
@@ -89,26 +75,6 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         self.visual_parameters = (
             visual_parameters if visual_parameters else self.parameters
         )
-        self.set_callbacks(app)
-
-    @property
-    def tour_steps(self) -> List[dict]:
-        return [
-            {
-                "id": self.uuid("mode"),
-                "content": (
-                    "Switch between job running time matrix and parameter parallel coordinates."
-                ),
-            },
-            {
-                "id": self.uuid("ensemble"),
-                "content": ("Display the realizations from the selected ensemble. "),
-            },
-            {
-                "id": self.uuid("relative_runtime"),
-                "content": ("Make the colorscale relative to the selected option."),
-            },
-        ]
 
     @property
     def parameters(self) -> List[str]:
@@ -119,257 +85,6 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
             .dropna(how="all", axis="columns")
             .columns
         )
-
-    @property
-    def plot_fig(self) -> html.Div:
-        return html.Div(
-            style={
-                "overflowX": "hidden",
-                "width": "100%",
-            },
-            children=[
-                html.Div(
-                    id=self.uuid("plot_fig"),
-                    style={"overflowX": "auto", "width": "100%"},
-                    children=wcc.Graph(id=self.uuid("fig")),
-                ),
-                # Blank div: Makes sure that horizontal scrollbar is moved straight under the
-                # figure instead of the figure div getting padded by whitespace down to height of
-                # outer div.
-                html.Div(style={"width": "100%"}),
-            ],
-        )
-
-    @property
-    def control_div(self) -> html.Div:
-        return html.Div(
-            children=[
-                wcc.Selectors(
-                    label="Mode",
-                    children=[
-                        wcc.RadioItems(
-                            id=self.uuid("mode"),
-                            options=[
-                                {
-                                    "label": "Running time matrix",
-                                    "value": "running_time_matrix",
-                                },
-                                {
-                                    "label": "Parameter parallel coordinates",
-                                    "value": "parallel_coordinates",
-                                },
-                            ],
-                            value="running_time_matrix",
-                        ),
-                    ],
-                ),
-                wcc.Selectors(
-                    label="Ensemble",
-                    children=[
-                        wcc.Dropdown(
-                            id=self.uuid("ensemble"),
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
-                            ],
-                            value=self.ensembles[0],
-                            clearable=False,
-                        ),
-                    ],
-                ),
-                wcc.Selectors(
-                    label="Coloring",
-                    children=[
-                        html.Div(
-                            id=self.uuid("matrix_color"),
-                            children=[
-                                wcc.Dropdown(
-                                    label="Color jobs relative to running time of:",
-                                    id=self.uuid("relative_runtime"),
-                                    options=[
-                                        {"label": rel, "value": rel}
-                                        for rel in RunningTimeAnalysisFMU.COLOR_MATRIX_BY_LABELS
-                                    ],
-                                    value=RunningTimeAnalysisFMU.COLOR_MATRIX_BY_LABELS[
-                                        0
-                                    ],
-                                    clearable=False,
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.uuid("parcoords_color"),
-                            style={"display": "none"},
-                            children=[
-                                wcc.Dropdown(
-                                    label="Color realizations relative to:",
-                                    id=self.uuid("relative_real"),
-                                    options=[
-                                        {"label": rel, "value": rel}
-                                        for rel in RunningTimeAnalysisFMU.COLOR_PARCOORD_BY_LABELS
-                                    ],
-                                    value=RunningTimeAnalysisFMU.COLOR_PARCOORD_BY_LABELS[
-                                        0
-                                    ],
-                                    clearable=False,
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                wcc.Selectors(
-                    label="Filtering",
-                    children=[
-                        html.Div(
-                            id=self.uuid("parameter_dropdown"),
-                            style={"display": "none"},
-                            children=[
-                                wcc.SelectWithLabel(
-                                    id=self.uuid("parameters"),
-                                    style={"overflowX": "auto", "fontSize": "0.97rem"},
-                                    options=[
-                                        {"label": param, "value": param}
-                                        for param in self.parameters
-                                    ],
-                                    multi=True,
-                                    value=self.visual_parameters,
-                                    size=min(50, len(self.visual_parameters)),
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            id=self.uuid("filter_short_checkbox"),
-                            children=[
-                                wcc.Checklist(
-                                    label="Filter jobs",
-                                    id=self.uuid("filter_short"),
-                                    options=[
-                                        {
-                                            "label": "Slowest in ensemble less than "
-                                            f"{self.filter_shorter}s",
-                                            "value": "filter_short",
-                                        },
-                                    ],
-                                    value=["filter_short"],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-            ]
-        )
-
-    @property
-    def layout(self) -> wcc.FlexBox:
-        return wcc.FlexBox(
-            children=[
-                wcc.Frame(
-                    style={"flex": "1", "height": "90vh"}, children=self.control_div
-                ),
-                wcc.Frame(
-                    color="white",
-                    highlight=False,
-                    style={"flex": "6", "height": "90vh"},
-                    children=self.plot_fig,
-                ),
-            ],
-        )
-
-    def set_callbacks(self, app: Dash) -> None:
-        @app.callback(
-            Output(self.uuid("fig"), "figure"),
-            [
-                Input(self.uuid("ensemble"), "value"),
-                Input(self.uuid("mode"), "value"),
-                Input(self.uuid("relative_runtime"), "value"),
-                Input(self.uuid("relative_real"), "value"),
-                Input(self.uuid("parameters"), "value"),
-                Input(self.uuid("filter_short"), "value"),
-            ],
-        )
-        def _update_fig(
-            ens: str,
-            mode: str,
-            rel_runtime: str,
-            rel_real: str,
-            params: Union[str, List[str]],
-            filter_short: List[str],
-        ) -> dict:
-            """Update main figure
-            Dependent on `mode` it will call rendering of the chosen form of visualization
-            """
-            if mode == "running_time_matrix" and "filter_short" in filter_short:
-                return render_matrix(
-                    self.job_status_df[
-                        (self.job_status_df["ENSEMBLE"] == ens)
-                        & (self.job_status_df["JOB_MAX_RUNTIME"] >= self.filter_shorter)
-                    ],
-                    rel_runtime,
-                    self.plotly_theme,
-                )
-            if mode == "running_time_matrix":
-                return render_matrix(
-                    self.job_status_df[(self.job_status_df["ENSEMBLE"] == ens)],
-                    rel_runtime,
-                    self.plotly_theme,
-                )
-
-            # Otherwise: parallel coordinates
-            # Ensure selected parameters is a list
-            params = params if isinstance(params, list) else [params]
-            # Color by success or runtime, for runtime drop unsuccesful
-            colormap_labels: Union[List[str], None]
-            if rel_real == "Successful/failed realization":
-                plot_df = self.real_status_df[self.real_status_df["ENSEMBLE"] == ens]
-                colormap = make_colormap(
-                    self.plotly_theme["layout"]["colorway"], discrete=2
-                )
-                color_by_col = "STATUS_BOOL"
-                colormap_labels = ["Failed", "Success"]
-            else:
-                plot_df = self.real_status_df[
-                    (self.real_status_df["ENSEMBLE"] == ens)
-                    & (self.real_status_df["STATUS_BOOL"] == 1)
-                ]
-                colormap = self.plotly_theme["layout"]["colorscale"]["sequential"]
-                color_by_col = "RUNTIME"
-                colormap_labels = None
-
-            # Call rendering of parallel coordinate plot
-            return render_parcoord(
-                plot_df,
-                params,
-                self.plotly_theme,
-                colormap,
-                color_by_col,
-                colormap_labels,
-            )
-
-        @app.callback(
-            [
-                Output(self.uuid("matrix_color"), "style"),
-                Output(self.uuid("parcoords_color"), "style"),
-                Output(self.uuid("parameter_dropdown"), "style"),
-                Output(self.uuid("filter_short_checkbox"), "style"),
-            ],
-            [Input(self.uuid("mode"), "value")],
-        )
-        def _update_mode(mode: str) -> Tuple[dict, dict, dict, dict]:
-            """Switch displayed mode between running time matrix and parallel coordinates"""
-            if mode == "running_time_matrix":
-                style = (
-                    {"display": "block"},
-                    {"display": "none"},
-                    {"display": "none"},
-                    {"display": "block"},
-                )
-            else:
-                style = (
-                    {"display": "none"},
-                    {"display": "block"},
-                    {"display": "block"},
-                    {"display": "none"},
-                )
-            return style
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
