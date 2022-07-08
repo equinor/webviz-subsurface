@@ -61,22 +61,14 @@ class ViewSettings(SettingsGroupABC):
                     children.append(
                         wcc.Dropdown(
                             label=col_name,
-                            id=self.register_component_unique_id(f"filter-{col_name}"),
+                            id=self.register_component_unique_id(ViewSettings.Ids.DATE),
                             options=[{"label": val, "value": val} for val in values],
                             value=values[0],
                             multi=False,
                             clearable=False,
                         )
                     )
-        return [
-            html.Div(
-                id=self.register_component_unique_id(
-                    ViewSettings.Ids.RESPONSE_SETTINGS
-                ),
-                style={"display": "none"},
-                children=children,
-            ),
-        ]
+        return children
 
 
 class ResponseView(ViewABC):
@@ -95,6 +87,7 @@ class ResponseView(ViewABC):
         response_columns: List[str],
         response_filters: dict,
         responsedf: pd.DataFrame,
+        aggregation: str,
     ) -> None:
         super().__init__("Response chart")
 
@@ -105,6 +98,7 @@ class ResponseView(ViewABC):
         self.response_columns = response_columns
         self.response_filters = response_filters
         self.responsedf = responsedf
+        self.aggregation = aggregation
 
         column = self.add_column()
         column.add_view_element(Graph(), ResponseView.Ids.RESPONSE_CHART)
@@ -116,14 +110,25 @@ class ResponseView(ViewABC):
 
     @property
     def parcoord_inputs(self):
+        for col in self.response_filters:
+            print(col)
         inputs = [
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_RESPONSE), "data"),
+            Input(
+                self.settings_group(ResponseView.Ids.SETTINGS)
+                .component_unique_id(ViewSettings.Ids.RESPONSE)
+                .to_string(),
+                "value",
+            ),
         ]
         if self.response_filters is not None:
             inputs.extend(
                 [
-                    Input(self.get_store_unique_id(f"filter-{col}"), "value")
-                    for col in self.response_filters
+                    Input(
+                        self.settings_group(ResponseView.Ids.SETTINGS)
+                        .component_unique_id(ViewSettings.Ids.DATE)
+                        .to_string(),
+                        "value",
+                    )
                 ]
             )
         return inputs
@@ -156,6 +161,7 @@ class ResponseView(ViewABC):
             ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
             parameters = parameters if isinstance(parameters, list) else [parameters]
             special_columns = ["ENSEMBLE", "REAL"]
+            print(opt_args)
             if exclude_include == "exc":
                 parallel_df = self.parallel_df.drop(parameters, axis=1)
             elif exclude_include == "inc":
@@ -169,12 +175,13 @@ class ResponseView(ViewABC):
                 # Need to wait for update of ensemble selector to multi=False
                 raise PreventUpdate
             df = parallel_df.loc[self.parallel_df["ENSEMBLE"] == ensemble[0]]
-            response = opt_args[1]
+            response = opt_args[0]
             response_filter_values = opt_args[2:] if len(opt_args) > 2 else {}
             filteroptions = parresp.make_response_filters(
                 response_filters=self.response_filters,
                 response_filter_values=response_filter_values,
             )
+            print(self.responsedf)
             responsedf = parresp.filter_and_sum_responses(
                 self.responsedf,
                 ensemble[0],

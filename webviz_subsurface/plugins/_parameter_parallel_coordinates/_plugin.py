@@ -275,6 +275,7 @@ folder, to avoid risk of not extracting the right data.
                 self.response_columns,
                 self.response_filters,
                 self.responsedf,
+                self.aggregation,
             ),
             PluginIds.ParallelID.RESPONSE_CHART,
         )
