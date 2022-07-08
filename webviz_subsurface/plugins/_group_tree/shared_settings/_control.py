@@ -5,7 +5,7 @@ from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_Ids import PluginIds
+from .._plugin_ids import PluginIds
 from .._types import TreeModeOptions
 
 
@@ -44,7 +44,7 @@ class Controls(SettingsGroupABC):
                 id=self.register_component_unique_id(self.Ids.TREEMODE),
                 label="Statistics or realization",
                 options=self.tree_mode_options,
-                value=self.tree_mode_options[0]["value"],
+                value=self.tree_mode_options[1]["value"],
             ),
         ]
 

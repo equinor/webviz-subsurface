@@ -13,7 +13,7 @@ from webviz_subsurface._providers import (
 )
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
-from ._plugin_Ids import PluginIds
+from ._plugin_ids import PluginIds
 from .shared_settings import Controls, Filters, Options
 from .views import GroupTreeGraph
 

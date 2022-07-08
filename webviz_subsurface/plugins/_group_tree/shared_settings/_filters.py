@@ -5,7 +5,7 @@ from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_Ids import PluginIds
+from .._plugin_ids import PluginIds
 from .._types import NodeType
 
 

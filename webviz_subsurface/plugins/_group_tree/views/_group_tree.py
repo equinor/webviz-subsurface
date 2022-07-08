@@ -7,7 +7,7 @@ from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .._ensemble_group_tree_data import EnsembleGroupTreeData
-from .._plugin_Ids import PluginIds
+from .._plugin_ids import PluginIds
 from .._types import NodeType, StatOptions, TreeModeOptions
 
 
