@@ -159,7 +159,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             "KRG": "#ff0000",
             "KROG": "#00aa00",
             "KROW": "#00aa00",
-            "PCOW": "#555555",  # Reserving #000000 for reference envelope (scal rec)
+            "PCOW": "#555555",  # Reserving #000000 for the reference envelope (scal rec)
             "PCOG": "#555555",
         }
 
