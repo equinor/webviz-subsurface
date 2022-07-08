@@ -1,4 +1,5 @@
 from fcntl import LOCK_WRITE
+from logging import Filter
 from pydoc import doc
 from typing import List, Tuple, Optional, Union
 from pathlib import Path
@@ -14,34 +15,29 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ..._plugin_ids import PlugInIDs
 from ...view_elements import Graph
-from ....._utils.fanchart_plotting import FanchartData, FreeLineData, LowHighData, MinMaxData, get_fanchart_traces
+from ....._utils.fanchart_plotting import (
+    FanchartData,
+    FreeLineData,
+    LowHighData,
+    MinMaxData,
+    get_fanchart_traces,
+)
+from ...shared_settings._filter import (
+    Filter,
+    Selectors,
+    Scal_recommendation,
+    Visualization,
+)
+
 
 class RelpermCappres(ViewABC):
-    '''Add comment descibring the plugin'''
+    """Add comment descibring the plugin"""
+
     class IDs:
-        '''Different curves to be shown in the view'''
-        #pylint: disable=too-few-public-methods
+        # pylint: disable=too-few-public-methods
         RELATIVE_PERMEABILIY = "reative-permeability"
 
-        # don't think I need these
-        '''KRW = "KRW"
-        KROW = "KROW"
-        POW = "POW"
-
-        class Saturations:
-            SW = "SW"
-            SO = "SO"
-            SG = "SG"
-            SL = "SL"
-        class RelpermFamilies: # the possible keywords in the data files needed in list
-            SWOF = "SWOF"
-            SGOF = "SGOF"
-            SLGOF = "SLGOF"
-            SWFN = "SWFN"
-            SGFN = "SGFN"
-            SOF3 = "SOF3"'''
-
-        
+    # må sjekke om jeg egt trenger disse
     SATURATIONS = ["SW", "SO", "SG", "SL"]
     RELPERM_FAMILIES = {
         1: ["SWOF", "SGOF", "SLGOF"],
@@ -56,19 +52,16 @@ class RelpermCappres(ViewABC):
         "PCOW": "#555555",  # Reserving #000000 for reference envelope (scal rec)
         "PCOG": "#555555",
     }
-    
-    # this might change when there is a different dataset
-    ''' ENSAMBLES = ["iter-0","iter-3"]
-    GRAPHS = ["KRW","KRG","KROG","KROW","PCOW","PCOG"] '''
 
-
-    def __init__(self, relperm_df: pd.DataFrame, webviz_settings : WebvizSettings) -> None: 
-        # scalfile: Path = None,sheet_name: Optional[Union[str, int, list]] = None) -> None:
-        # scalfile: Path = None; sets the scal file to be used, if any
-        # sheet_name: Optional[Union[str, int, list]] = None which shet to use for the scalfile if it is xlsx formate
+    def __init__(
+        self,
+        relperm_df: pd.DataFrame,
+        webviz_settings: WebvizSettings,
+        scal: pd.DataFrame,
+    ) -> None:
         super().__init__("Relatve permeability")
 
-        ''' Data funksjonaliteter
+        """ Data funksjonaliteter
 
             Dataen er fordelt mellom de som er saturated in w og g (guess water and gass)
             -> Sat ax Sw: kan velge mellom KRW, KROW og POW (tre grupper)
@@ -93,8 +86,8 @@ class RelpermCappres(ViewABC):
             -> KROx: oppe fra venstre og ned til høyre
             -> KRx: nede fra venstre og opp til høyre
             -> POx: 
-        '''
-        ''' Data i fil
+        """
+        """ Data i fil
             Filene er sortert etter realization; 
             each realization has iter-0 and iter-3
             share -> results -> relperm.csv
@@ -104,45 +97,44 @@ class RelpermCappres(ViewABC):
             Så er det listet data først for SW og å for SG or alle satnums
 
             X-aksen til plottene er definer ut ifra SG og SW som går fra 0 til 1
-        '''
-        
+        """
+
         self.relperm_df = relperm_df
         # file with columns: ['ENSEMBLE', 'REAL', 'SW', 'KRW', 'KROW', 'PCOW', 'SATNUM', 'KEYWORD','SG', 'KRG', 'KROG', 'PCOG']
 
         self.plotly_theme = webviz_settings.theme.plotly_theme
 
-        # the first setting that ou have to choose is between  gaas and  water, you never have both so can split the dataset in two
-        self.SW_df = self.relperm_df[self.relperm_df["KEYWORD"] == "SWOF"]
-        self.SW_df = self.relperm_df[self.relperm_df["KEYWORD"] == "SGOF"]
+        self.scal = scal
 
         # creating the columns and row to define the setup of the view
         column = self.add_column()
 
         first_row = column.make_row()
-        first_row.add_view_element(Graph(),RelpermCappres.IDs.RELATIVE_PERMEABILIY) 
-    
+        first_row.add_view_element(Graph(), RelpermCappres.IDs.RELATIVE_PERMEABILIY)
+
+    # nå er disse her og i filter, burde kanskje flyttes til plugin.py? også ha de felles?
     @property
-    def sat_axes(self):
-        """List of all possible saturation axes in dataframe"""
-        return [sat for sat in self.sat_axes_maps if sat in self.satfunc.columns]
+    def sat_axes(self) -> List[str]:
+        """List of all saturation axes in the dataframe"""
+        return [sat for sat in self.sat_axes_maps if sat in self.relperm_df.columns]
 
     @property
     def ensembles(self):
-        '''List of al possible unique ensembles'''
-        return list(self.satfunc["ENSEMBLE"].unique())
+        """List of all ensembles in the dataframe"""
+        return list(self.relperm_df["ENSEMBLE"].unique())
 
     @property
     def satnums(self):
-        '''List of all posible satnums'''
-        return list(self.satfunc["SATNUM"].unique())
+        """List of all satnums in the dataframe"""
+        return list(self.relperm_df["SATNUM"].unique())
 
     @property
-    def color_options(self):
+    def color_options(self) -> List[str]:
         """Options to color by"""
         return ["ENSEMBLE", "CURVE", "SATNUM"]
 
     @property
-    def ens_colors(self):
+    def ens_colors(self) -> dict:
         return {
             ens: self.plotly_theme["layout"]["colorway"][self.ensembles.index(ens)]
             for ens in self.ensembles
@@ -151,52 +143,91 @@ class RelpermCappres(ViewABC):
     @property
     def satnum_colors(self):
         return {
-            satnum: self.plotly_theme["layout"]["colorway"][self.satnums.index(satnum)]
+            satnum: (
+                self.plotly_theme["layout"]["colorway"][self.satnums.index(satnum) % 10]
+                # if self.satnums.index(satnum) < 10
+                # else self.plotly_theme["layout"]["colorway"][
+                #    self.satnums.index(satnum) - 10
+                # ]
+            )
+            # self.plotly_theme har bare 10 farger, trenger minst to til...?
             for satnum in self.satnums
         }
 
     def set_callbacks(self) -> None:
-        '''Defines the callbacks for the view element'''
-        @callback( 
-            Output(self.view_element(RelpermCappres.IDs.RELATIVE_PERMEABILIY).component_unique_id(Graph.IDs.GRAPH).to_string(),"figure"),
+        """Defines the callback for the view element"""
 
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Selectors.SATURATION_AXIS),"data"),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Selectors.COLOR_BY),"data"),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Selectors.ENSAMBLES),"data"),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Selectors.CURVES),"data"),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Selectors.SATNUM),"data"),
-
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Visualization.LINE_TRACES),"data"),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Visualization.Y_AXIS),"data"),
-
-            Input(self.get_store_unique_id(PlugInIDs.Stores.SCALRecomendation.SHOW_SCAL),"data"),
+        @callback(
+            Output(
+                self.view_element(RelpermCappres.IDs.RELATIVE_PERMEABILIY)
+                .component_unique_id(Graph.IDs.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Selectors.SATURATION_AXIS),
+                "data",
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Selectors.COLOR_BY), "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Selectors.ENSAMBLES), "data"
+            ),
+            Input(self.get_store_unique_id(PlugInIDs.Stores.Selectors.CURVES), "data"),
+            Input(self.get_store_unique_id(PlugInIDs.Stores.Selectors.SATNUM), "data"),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Visualization.LINE_TRACES),
+                "data",
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Visualization.Y_AXIS), "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.SCALRecomendation.SHOW_SCAL),
+                "data",
+            ),
         )
-        def _update_graph(sataxis : List[str], color_by : List[str], ensembles : List[str], curves : List[str], satnums : List[str], 
-                            line_traces : List[str], y_axis : List[str], scal : List[str]) -> dict:
-            ensemble_colors = {"iter-0":"#285d93","iter-3":"#e48c16"}
-            curve_colors = {"KRW":"#0000aa","KRG":"#ff0000","KROG":"#00aa00","KROW":"#00aa00","PCOW":"#555555","PCOG":"#555555"}
-            satnum_colors = {
-                "1": "#285d93",
-                "2": "#e48c16",
-                "3": "#00aa00",
-                "4": "#cc0000",
-                "5": "#9f66bb",
-                "6": "#b17750",
-                "7": "#d59bc5",
-                "8": "#555555",
-                "9": "#b9c15b",
-                "10": "#5bf2e6",
-                "11": "#ff0000",
-                "12": "#45f03a"
-            }
-            colors = {"ensemble": ensemble_colors, "curve": curve_colors, "satnum": satnum_colors}
+        def _update_graph(
+            sataxis: str,
+            color_by: List[str],
+            ensembles: List[str],
+            curves: List[str],
+            satnums: List[int],
+            line_traces: List[str],
+            y_axis: str,
+            scal: List[str],  # kanskje ikke list?
+        ) -> dict:
+
+            # sataxis = "SG"
+            # color_by = "SATNUM"
+            # ensembles = ["iter-0"]
+            # curves = ["KRG", "KROG", "PCOG"]
+            # satnums = [1, 2, 3, 4, 5]
+            # line_traces = "individual-realizations"
+            # y_axis = "linear"
 
             if not curves or not satnums:  # Curve and satnum has to be defined
                 raise PreventUpdate
             if ensembles is None:  # Allowing no ensembles to plot only SCAL data
                 ensembles = []
-            
-            df = self.SG_df if sataxis[0].upper() == "SG" else self.SW_df
+            if not isinstance(ensembles, list):
+                ensembles = [ensembles]
+            if not isinstance(curves, list):
+                curves = [curves]
+            if not isinstance(satnums, list):
+                satnums = [satnums]
+            if not isinstance(sataxis, str):
+                sataxis = sataxis[0]
+
+            df = filter_df(self.relperm_df, ensembles, curves, satnums, sataxis)
+
+            if color_by == "ENSEMBLE":
+                colors = self.ens_colors
+            elif color_by == "SATNUM":
+                colors = self.satnum_colors
+            else:
+                colors = RelpermCappres.SCAL_COLORMAP
 
             nplots = (
                 2
@@ -205,32 +236,77 @@ class RelpermCappres(ViewABC):
                 else 1
             )
 
-            layout = plot_layout(nplots,curves,sataxis,color_by,y_axis)
+            layout = plot_layout(
+                nplots, curves, sataxis, color_by, y_axis, self.plotly_theme["layout"]
+            )
 
-            if line_traces[0].lower() == "individual realization" and not df.empty:
-                data = realization_traces(df, sataxis, color_by, ensembles, curves, satnums, line_traces, y_axis, scal, colors, nplots)
-            elif line_traces[0].lower() == "statistical fanchart" and not df.empty:
-                data = statistic_traces(df, sataxis, color_by, ensembles, curves, satnums, line_traces, y_axis, scal, colors, nplots)
+            if line_traces.lower() == "individual-realizations" and not df.empty:
+                data = realization_traces(
+                    df,
+                    sataxis,
+                    color_by,
+                    ensembles,
+                    curves,
+                    satnums,
+                    line_traces,
+                    y_axis,
+                    scal,
+                    colors,
+                    nplots,
+                )
+            elif line_traces.lower() == "statistical-fanchart" and not df.empty:
+                data = statistic_traces(
+                    df,
+                    sataxis,
+                    color_by,
+                    ensembles,
+                    curves,
+                    satnums,
+                    line_traces,
+                    y_axis,
+                    scal,
+                    colors,
+                    nplots,
+                )
+            else:
+                data = []
 
             if self.scal is not None and "show_scal" in scal:
-                scal_df = filter_scal_df(self.scal, curves, satnums, sataxis[0])
-                data.extend(add_scal_traces(scal_df, curves, sataxis[0], nplots))
+                scal_df = filter_scal_df(self.scal, curves, satnums, sataxis)
+                data.extend(add_scal_traces(scal_df, curves, sataxis, nplots))
 
             return {"data": data, "layout": layout}
 
-        
-            
-            
+        def filter_df(
+            df: pd.DataFrame,
+            ensembles: List[str],
+            curves: List[str],
+            # det er feil i filter.py hvor options er feil liste
+            satnums: List[int],
+            sataxis: str,
+        ):
+            df = df.copy()
+            df = df.loc[df["ENSEMBLE"].isin(ensembles)]
+            df = df.loc[df["SATNUM"].isin(satnums)]
+            columns = ["ENSEMBLE", "REAL", "SATNUM"] + [sataxis] + curves
+            # nå e sataxis en liste med et element eller av og til er det en str?? hmm..
+            return df[columns].dropna(axis="columns", how="all")
 
-        def realization_traces(df: pd.DataFrame, sataxis : List[str], color_by : List[str], ensembles : List[str], 
-                            curves : List[str], satnums : List[str], line_traces : List[str], y_axis : List[str], 
-                            scal : List[str], colorslist : dict, nplots : int) -> List:
-            realizatoins = df["REAL"].unique() # list of all possible realizations
-            # traces = [i for i in range(len(realizatoins))]
-            colors = colorslist[color_by[0].lower()]
-
+        def realization_traces(
+            df: pd.DataFrame,
+            sataxis: str,
+            color_by: List[str],
+            ensembles: List[str],
+            curves: List[str],
+            satnums: List[str],
+            line_traces: List[str],
+            y_axis: List[str],
+            scal: List[str],
+            colors,
+            nplots: int,
+        ) -> List:
             # my version
-            '''
+            """
             if color_by[0].lower() == "ensemble":
                 data = [
                     {
@@ -247,7 +323,7 @@ class RelpermCappres(ViewABC):
                     for iter in ensembles
                     for curvenum,curve in enumerate(curves)
                 ]
-                layout = plot_layout(nplots,curves,sataxis,color_by,y_axis), 
+                layout = plot_layout(nplots,curves,sataxis,color_by,y_axis),
             elif color_by[0].lower() == "curve":
                 data = [
                     { # trenger man tolist() og list? og må man ha med [0]
@@ -279,7 +355,7 @@ class RelpermCappres(ViewABC):
                     for realization_iter,realization in enumerate(realizatoins)
                     for curvenum,curve in enumerate(curves)
                 ]
-            '''
+            """
 
             data = []
 
@@ -294,22 +370,26 @@ class RelpermCappres(ViewABC):
                         [
                             {
                                 "type": "scatter",
-                                "x": real_df[sataxis[0]],
+                                "x": real_df[sataxis],
                                 "y": real_df[curve],
                                 "xaxis": xaxis,
                                 "yaxis": yaxis,
                                 "hovertext": (
-                                    f"{curve}, Satnum: {satnum[0]}<br>"
+                                    f"{curve}, Satnum: {satnum}<br>"
                                     f"Realization: {real}, Ensemble: {ensemble}"
                                 ),
                                 "name": curve,
                                 "legendgroup": curve,
                                 "marker": {
-                                    "color": colors.get(curve, colors[list(colors.keys())[0]])
+                                    "color": colors.get(
+                                        curve, colors[list(colors.keys())[0]]
+                                    )
                                 },
                                 "showlegend": real_no == 0,
                             }
-                            for real_no, (real, real_df) in enumerate(df.groupby("REAL"))
+                            for real_no, (real, real_df) in enumerate(
+                                df.groupby("REAL")
+                            )
                         ]
                     )
                 else:
@@ -322,24 +402,26 @@ class RelpermCappres(ViewABC):
                         [
                             {
                                 "type": "scatter",
-                                "x": real_df[sataxis[0]],
+                                "x": real_df[sataxis],
                                 "y": real_df[curve],
                                 "xaxis": xaxis,
                                 "yaxis": yaxis,
                                 "hovertext": (
                                     f"{curve}, Satnum: "
-                                    f"{group if color_by[0].upper() == 'SATNUM' else constant_group}<br>"
+                                    f"{group if color_by.upper() == 'SATNUM' else constant_group}<br>"
                                     f"Realization: {real}, Ensemble: "
-                                    f"{group if color_by[0].upper() == 'ENSEMBLE' else constant_group}"
+                                    f"{group if color_by.upper() == 'ENSEMBLE' else constant_group}"
                                 ),
                                 "name": group,
                                 "legendgroup": group,
                                 "marker": {
-                                    "color": colors.get(group, colors[list(colors.keys())[-1]])
+                                    "color": colors.get(
+                                        group, colors[list(colors.keys())[-1]]
+                                    )
                                 },
                                 "showlegend": real_no == 0 and curve_no == 0,
                             }
-                            for (group, grouped_df) in df.groupby(color_by[0])
+                            for (group, grouped_df) in df.groupby(color_by)
                             for real_no, (real, real_df) in enumerate(
                                 grouped_df.groupby("REAL")
                             )
@@ -347,8 +429,19 @@ class RelpermCappres(ViewABC):
                     )
             return data
 
-        def statistic_traces(df : pd.DataFrame, sataxis : List[str], color_by : List[str], ensembles : List[str], curves : List[str], satnums : List[str], 
-                            line_traces : List[str], y_axis : List[str], scal : List[str], colorslist: dict, nplots : int) -> List:
+        def statistic_traces(
+            df: pd.DataFrame,
+            sataxis: str,
+            color_by: List[str],
+            ensembles: List[str],
+            curves: List[str],
+            satnums: List[str],
+            line_traces: List[str],
+            y_axis: List[str],
+            scal: List[str],
+            colors,
+            nplots: int,
+        ) -> List:
             # Switched P10 and P90 due to convetion in petroleum industry
             def p10(x):
                 return np.nanpercentile(x, q=90)
@@ -356,13 +449,17 @@ class RelpermCappres(ViewABC):
             def p90(x):
                 return np.nanpercentile(x, q=10)
 
-            data = []           # str       #pd.Dataframe
+            data = (
+                []
+            )  # dataen her gir fine x-verdier, men bare nan på y-verdiene for alle
             for ensemble_no, (ensemble, ensemble_df) in enumerate(
-                df[["ENSEMBLE", "SATNUM"] + [sataxis[0]] + curves].groupby(["ENSEMBLE"])
-            ):                  # int
-                for satnum_no, (satnum, satnum_df) in enumerate(ensemble_df.groupby("SATNUM")):
+                df[["ENSEMBLE", "SATNUM"] + [sataxis] + curves].groupby(["ENSEMBLE"])
+            ):
+                for satnum_no, (satnum, satnum_df) in enumerate(
+                    ensemble_df.groupby("SATNUM")
+                ):
                     df_stat = (
-                        satnum_df.groupby(sataxis[0])
+                        satnum_df.groupby(sataxis)
                         .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90])
                         .stack()
                         .swaplevel()
@@ -372,45 +469,63 @@ class RelpermCappres(ViewABC):
                         xaxis = "x" if yaxis == "y" else "x2"
                         legend_group = (
                             curve
-                            if color_by[0].upper() == "CURVE"
+                            if color_by.upper() == "CURVE"
                             else ensemble
-                            if color_by[0].upper() == "ENSEMBLE"
+                            if color_by.upper() == "ENSEMBLE"
                             else satnum
                         )
                         show_legend = (
-                            bool(color_by == "CURVE" and ensemble_no == 0 and satnum_no == 0)
-                            or bool(color_by == "ENSEMBLE" and curve_no == 0 and satnum_no == 0)
-                            or bool(color_by == "SATNUM" and curve_no == 0 and ensemble_no == 0)
+                            bool(
+                                color_by == "CURVE"
+                                and ensemble_no == 0
+                                and satnum_no == 0
+                            )
+                            or bool(
+                                color_by == "ENSEMBLE"
+                                and curve_no == 0
+                                and satnum_no == 0
+                            )
+                            or bool(
+                                color_by == "SATNUM"
+                                and curve_no == 0
+                                and ensemble_no == 0
+                            )
                         )
-                        color = (
-                            colorslist[color_by[0].lower()][ensemble] 
-                            if color_by[0].upper() == "ENSEMBLE"
-                            else colorslist[color_by[0].lower()][curve] 
-                            if color_by[0].upper() == "ENSEMBLE"
-                            else colorslist[color_by[0].lower()][satnum] 
-                        )
+
                         data.extend(
                             _get_fanchart_traces(
                                 df_stat[curve],
-                                color, # str
+                                colors.get(
+                                    legend_group, colors[list(colors.keys())[0]]
+                                ),
                                 xaxis,
                                 yaxis,
                                 legend_group,
                                 show_legend,
-                                curve, # str
-                                ensemble, # str
-                                satnum, # int
+                                curve,  # str
+                                ensemble,  # str
+                                satnum,  # int
                             )
                         )
-            
+
             return data
 
-        def _get_fanchart_traces(curve_stats :pd.DataFrame, color : str, xaxis : str, yaxis : str, 
-            legend_group: str, show_legend: bool, curve : str, ensemble : str, satnum  : int) -> List :
+        def _get_fanchart_traces(
+            curve_stats: pd.DataFrame,
+            color: str,
+            xaxis: str,
+            yaxis: str,
+            legend_group: str,
+            show_legend: bool,
+            curve: str,
+            ensemble: str,
+            satnum: int,
+        ) -> List:
             """Renders a fanchart"""
 
             # Retrieve indices from one of the keys in series
             x = curve_stats["nanmax"].index.tolist()
+            # over tar ut x-verdier som er verdien for SG
             data = FanchartData(
                 samples=x,
                 low_high=LowHighData(
@@ -438,10 +553,15 @@ class RelpermCappres(ViewABC):
                 show_legend=show_legend,
             )
 
-        def plot_layout(nplots : int, curves : List[str], sataxis : List[str], color_by : List[str], y_axis : List[str]):
-            """
-            Constructing plot layout from scratch as it is more responsive than plotly subplots package.
-            """
+        def plot_layout(
+            nplots: int,
+            curves: List[str],
+            sataxis: str,
+            color_by: List[str],
+            y_axis: str,
+            theme,
+        ):
+
             titles = (
                 ["Relative Permeability", "Capillary Pressure"]
                 if nplots == 2
@@ -449,10 +569,14 @@ class RelpermCappres(ViewABC):
                 if any(curve.startswith("KR") for curve in curves)
                 else ["Capillary Pressure"]
             )
-            layout = {
+            layout = {}
+            layout.update(theme)
+            layout.update(
+                {
                     "hovermode": "closest",
-                    "uirevision": f"sa:{sataxis}_{y_axis[0]}_curves:{'_'.join(sorted(curves))}",
+                    "uirevision": f"sa:{sataxis}_{y_axis}_curves:{'_'.join(sorted(curves))}",
                 }
+            )
             # create subplots
             layout.update(
                 {
@@ -501,7 +625,7 @@ class RelpermCappres(ViewABC):
                 else {}
             )
 
-            layout["legend"] = {"title": {"text": color_by[0].lower().capitalize()}}
+            layout["legend"] = {"title": {"text": color_by.lower().capitalize()}}
             # format axes
             if nplots == 1:
                 layout.update(
@@ -513,7 +637,10 @@ class RelpermCappres(ViewABC):
                             "range": [0, 1],
                             "anchor": "y",
                             "domain": [0.0, 1.0],
-                            "title": {"text": sataxis[0].lower().capitalize(), "standoff": 15},
+                            "title": {
+                                "text": sataxis.lower().capitalize(),
+                                "standoff": 15,
+                            },
                             "showgrid": False,
                             "tickmode": "auto",
                         },
@@ -523,7 +650,7 @@ class RelpermCappres(ViewABC):
                             "zeroline": False,
                             "anchor": "x",
                             "domain": [0.0, 1.0],
-                            "type": y_axis[0],
+                            "type": y_axis,  # her tror jeg ikke [0] er nødvendig
                             "showgrid": False,
                         },
                         "margin": {"t": 20, "b": 0},
@@ -554,7 +681,7 @@ class RelpermCappres(ViewABC):
                             "range": [0, 1],
                             "anchor": "y2",
                             "domain": [0.0, 1.0],
-                            "title": {"text": sataxis[0].lower().capitalize()},
+                            "title": {"text": sataxis.lower().capitalize()},
                             "showgrid": False,
                         },
                         "yaxis": {
@@ -564,7 +691,7 @@ class RelpermCappres(ViewABC):
                             "anchor": "x",
                             "domain": [0.525, 1.0],
                             "title": {"text": "kr"},
-                            "type": y_axis[0],
+                            "type": y_axis,
                             "showgrid": False,
                         },
                         "yaxis2": {
@@ -574,7 +701,7 @@ class RelpermCappres(ViewABC):
                             "anchor": "x2",
                             "domain": [0.0, 0.475],
                             "title": {"text": "Pc"},
-                            "type": y_axis[0],
+                            "type": y_axis,
                             "showgrid": False,
                         },
                         "margin": {"t": 20, "b": 0},
@@ -582,7 +709,9 @@ class RelpermCappres(ViewABC):
                 )
             return layout
 
-        def filter_scal_df(df : pd.DataFrame, curves : List[str], satnums : List[str], sataxis : str):
+        def filter_scal_df(
+            df: pd.DataFrame, curves: List[str], satnums: List[str], sataxis: str
+        ):
             df = df.copy()
             df = df.loc[df["SATNUM"].isin(satnums)]
             columns = (
@@ -592,7 +721,9 @@ class RelpermCappres(ViewABC):
             )
             return df[columns].dropna()
 
-        def add_scal_traces(df : pd.DataFrame, curves : List[str], sataxis : str, nplots : int):
+        def add_scal_traces(
+            df: pd.DataFrame, curves: List[str], sataxis: str, nplots: int
+        ):
             """Renders scal recommendation traces"""
             traces = []
             for curve_no, curve in enumerate(
@@ -609,7 +740,8 @@ class RelpermCappres(ViewABC):
                             "xaxis": xaxis,
                             "yaxis": yaxis,
                             "hovertext": (
-                                f"{curve}, Satnum: {satnum}<br>" f"{case.lower().capitalize()}"
+                                f"{curve}, Satnum: {satnum}<br>"
+                                f"{case.lower().capitalize()}"
                             ),
                             "name": "SCAL",
                             "legendgroup": "SCAL",
@@ -617,10 +749,16 @@ class RelpermCappres(ViewABC):
                                 "color": "black",
                             },
                             "line": {"dash": "dash"},
-                            "showlegend": curve_no == 0 and satnum_no == 0 and case_no == 0,
+                            "showlegend": curve_no == 0
+                            and satnum_no == 0
+                            and case_no == 0,
                         }
-                        for satnum_no, (satnum, satnum_df) in enumerate(df.groupby("SATNUM"))
-                        for case_no, (case, case_df) in enumerate(satnum_df.groupby("CASE"))
+                        for satnum_no, (satnum, satnum_df) in enumerate(
+                            df.groupby("SATNUM")
+                        )
+                        for case_no, (case, case_df) in enumerate(
+                            satnum_df.groupby("CASE")
+                        )
                     ]
                 )
             return traces

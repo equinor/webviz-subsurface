@@ -14,11 +14,12 @@ import webviz_subsurface
 
 # own imports
 from ._error import error
-from ._plugin_ids import PlugInIDs # importing the namespace
-from .shared_settings import Filter, Selectors, Visualization , Scal_recommendation
+from ._plugin_ids import PlugInIDs  # importing the namespace
+from .shared_settings import Filter, Selectors, Visualization, Scal_recommendation
 from ..._datainput.fmu_input import load_csv
 from ..._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from .views import RelpermCappres
+
 
 class TestView(ViewABC):
     class Ids:
@@ -27,6 +28,8 @@ class TestView(ViewABC):
 
     def __init__(self, population_df: pd.DataFrame) -> None:
         super().__init__("Population indicators")
+
+
 """
 class RelativePermeabilityNew(WebvizPluginABC):
     
@@ -147,6 +150,7 @@ reek_history_match/realization-0/iter-0/share/results/tables/relperm.csv).
 * [Example of scalfile](https://github.com/equinor/\
 webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.csv).
 """
+
     class PlotOptions:
         SATURATIONS = ["SW", "SO", "SG", "SL"]
         RELPERM_FAMILIES = {
@@ -170,7 +174,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         relpermfile: str = None,
         scalfile: Path = None,
         sheet_name: Optional[Union[str, int, list]] = None,
-    ):
+    ):  # må sjekke at disse inputsene er rett (samme som ols)
 
         super().__init__()
 
@@ -188,13 +192,15 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             # if relpermfile is not None:
             #     self.satfunc = load_csv(ensemble_paths=self.ens_paths, csv_file=relpermfile)
             self.ens_paths = {
-            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-            for ens in ensembles
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                for ens in ensembles
             }
             self.plotly_theme = webviz_settings.theme.plotly_theme
             self.relpermfile = relpermfile
             if self.relpermfile is not None:
-                self.satfunc = load_csv(ensemble_paths=self.ens_paths, csv_file=relpermfile)
+                self.satfunc = load_csv(
+                    ensemble_paths=self.ens_paths, csv_file=relpermfile
+                )
                 self.satfunc = self.satfunc.rename(str.upper, axis="columns").rename(
                     columns={"TYPE": "KEYWORD"}
                 )
@@ -217,16 +223,16 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 ]
             else:
                 self.satfunc = load_satfunc(self.ens_paths)
-            
+
             if any(
-            keyword in self.PlotOptions.RELPERM_FAMILIES[1]
-            for keyword in self.satfunc["KEYWORD"].unique()
-                ):
+                keyword in self.PlotOptions.RELPERM_FAMILIES[1]
+                for keyword in self.satfunc["KEYWORD"].unique()
+            ):
                 self.family = 1
                 if any(
                     keyword in self.PlotOptions.RELPERM_FAMILIES[2]
                     for keyword in self.satfunc["KEYWORD"].unique()
-                    ):
+                ):
                     warnings.warn(
                         (
                             "Mix of keyword family 1 and 2, currently only support one family at the "
@@ -259,8 +265,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                         "SL": ["KRG", "KROG", "PCOG"],
                     }
             elif not all(
-            keyword in self.PlotOptions.RELPERM_FAMILIES[2]
-            for keyword in self.satfunc["KEYWORD"].unique()
+                keyword in self.PlotOptions.RELPERM_FAMILIES[2]
+                for keyword in self.satfunc["KEYWORD"].unique()
             ):
                 raise ValueError(
                     "Unrecognized saturation table keyword in data. This should not occur unless "
@@ -280,7 +286,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 if self.scalfile is not None
                 else None
             )
-            
 
         except PermissionError:
             self.error_message = (
@@ -290,46 +295,63 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             return
         except FileNotFoundError:
             self.error_message = (
-                f"The file {relpermfile}' not found."
-                "Please check you path"
+                f"The file {relpermfile}' not found." "Please check you path"
             )
             return
         except pd.errors.ParserError:
-            self.error_message = (
-                f"The file '{relpermfile}' is not a valid csv file."
-            )
+            self.error_message = f"The file '{relpermfile}' is not a valid csv file."
         except pd.errors.EmptyDataError:
-            self.error_message = (
-                f"The file '{relpermfile}' is an empty file."
-            )
+            self.error_message = f"The file '{relpermfile}' is an empty file."
         except Exception:
-            self.error_message = (
-                f"Unknown exception when trying to read '{relpermfile}"
-            )
-        
-        self.add_store(PlugInIDs.Stores.Selectors.SATURATION_AXIS,WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PlugInIDs.Stores.Selectors.COLOR_BY,WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PlugInIDs.Stores.Selectors.ENSAMBLES,WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PlugInIDs.Stores.Selectors.CURVES,WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PlugInIDs.Stores.Selectors.SATNUM,WebvizPluginABC.StorageType.SESSION)
-        self.add_shared_settings_group(Selectors(self.satfunc,self.plotly_theme,self.sat_axes_maps),
-                    PlugInIDs.SharedSettings.SELECTORS)
+            self.error_message = f"Unknown exception when trying to read '{relpermfile}"
 
-        
-        self.add_store(PlugInIDs.Stores.Visualization.LINE_TRACES,WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PlugInIDs.Stores.Visualization.Y_AXIS,WebvizPluginABC.StorageType.SESSION)
-        self.add_shared_settings_group(Visualization(self.satfunc),PlugInIDs.SharedSettings.VISUALIZATION)
-        '''
-        self.add_store(PlugInIDs.Stores.SCALRecomendation.SHOW_SCAL,WebvizPluginABC.StorageType.SESSION)
-        self.add_shared_settings_group(Scal_recommendation(self.satfunc),PlugInIDs.SharedSettings.SCAL_RECOMMENDATION)
-        '''
-        self.add_view(TestView(self.satfunc),PlugInIDs.RelCapViewGroup.RELCAP,PlugInIDs.RelCapViewGroup.GROUP_NAME)
+        self.add_store(
+            PlugInIDs.Stores.Selectors.SATURATION_AXIS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PlugInIDs.Stores.Selectors.COLOR_BY, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PlugInIDs.Stores.Selectors.ENSAMBLES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PlugInIDs.Stores.Selectors.CURVES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PlugInIDs.Stores.Selectors.SATNUM, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_shared_settings_group(
+            Selectors(self.satfunc, self.plotly_theme, self.sat_axes_maps),
+            PlugInIDs.SharedSettings.SELECTORS,
+        )
 
-        
+        self.add_store(
+            PlugInIDs.Stores.Visualization.LINE_TRACES,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PlugInIDs.Stores.Visualization.Y_AXIS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_shared_settings_group(
+            Visualization(self.satfunc), PlugInIDs.SharedSettings.VISUALIZATION
+        )
 
-        
+        self.add_store(
+            PlugInIDs.Stores.SCALRecomendation.SHOW_SCAL,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_shared_settings_group(
+            Scal_recommendation(self.satfunc),
+            PlugInIDs.SharedSettings.SCAL_RECOMMENDATION,
+        )
+
+        self.add_view(
+            RelpermCappres(self.satfunc, webviz_settings, self.scal),
+            PlugInIDs.RelCapViewGroup.RELCAP,
+            PlugInIDs.RelCapViewGroup.GROUP_NAME,
+        )
+
         @property
         def layout(self) -> Type[Component]:
             return error(self.error_message)
-        
-        
