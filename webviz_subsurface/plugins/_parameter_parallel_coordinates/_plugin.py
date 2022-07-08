@@ -136,7 +136,6 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list = None,
         parameter_csv: Path = None,
@@ -279,7 +278,6 @@ folder, to avoid risk of not extracting the right data.
             ),
             PluginIds.ParallelID.RESPONSE_CHART,
         )
-        print(self.response_filters)
 
     @property
     def ensembles(self):

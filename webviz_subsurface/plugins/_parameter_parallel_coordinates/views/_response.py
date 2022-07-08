@@ -110,8 +110,6 @@ class ResponseView(ViewABC):
 
     @property
     def parcoord_inputs(self):
-        for col in self.response_filters:
-            print(col)
         inputs = [
             Input(
                 self.settings_group(ResponseView.Ids.SETTINGS)
@@ -176,12 +174,11 @@ class ResponseView(ViewABC):
                 raise PreventUpdate
             df = parallel_df.loc[self.parallel_df["ENSEMBLE"] == ensemble[0]]
             response = opt_args[0]
-            response_filter_values = opt_args[2:] if len(opt_args) > 2 else {}
+            response_filter_values = opt_args[1:] if len(opt_args) > 1 else {}
             filteroptions = parresp.make_response_filters(
                 response_filters=self.response_filters,
                 response_filter_values=response_filter_values,
             )
-            print(self.responsedf)
             responsedf = parresp.filter_and_sum_responses(
                 self.responsedf,
                 ensemble[0],
