@@ -177,6 +177,7 @@ class ResponseView(ViewABC):
             # Output(
             #    self.get_store_unique_id(PluginIds.Stores.INITIAL_PARAMETER), "data"
             # ),
+            self.correlation_input_callbacks,
         )
         def _update_correlation_plot(
             ensemble: str,

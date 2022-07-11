@@ -223,7 +223,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         # add views
         # self.add_store(PluginIds.Stores.INITIAL_PARAMETER, WebvizPluginABC.StorageType.SESSION)
 
-        self.add_shared_settings_group(
+        """self.add_shared_settings_group(
             Filter(
                 self.responsedf,
                 self.ensembles,
@@ -234,9 +234,9 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 self.corr_method,
             ),
             PluginIds.SharedSettings.FILTER,
-        )
+        )"""
 
-        """self.add_view(
+        self.add_view(
             ResponseView(
                 self.responsedf,
                 webviz_settings,
@@ -249,7 +249,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 self.parameterdf,
             ),
             PluginIds.ResponseID.RESPONSE_CHART,
-        )"""
+        )
 
     @property
     def tour_steps(self) -> List[Dict[str, Any]]:
