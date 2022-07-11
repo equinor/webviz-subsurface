@@ -15,6 +15,7 @@ class Filter(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         # Controls
+        CONTROLS = "controls"
         ENSEMBLE = "ensemble"
         RESPONSE = "response"
         CORRELATION_METHOD = "correlation-method"
@@ -22,9 +23,12 @@ class Filter(SettingsGroupABC):
         CORRELATION_CUTOFF = "correlation-cutoff"
         MAX_NUMBER_PARAMETERS = "max-number-parameters"
         # Filters
+        FILTERS = "filters"
         ZONE = "zone"
         REGION = "region"
         PARAMETERS = "parameters"
+
+        VIEW_BY = "view-by"
 
     def __init__(
         self,
@@ -167,12 +171,22 @@ class Filter(SettingsGroupABC):
                 [
                     wcc.Selectors(
                         label="Filters",
-                        id=self.uuid("filters"),
+                        id=self.register_component_unique_id(Filter.Ids.FILTERS),
                         children=self.filter_layout,
                     )
                 ]
                 if self.response_filters
-                else []
+                else [
+                    wcc.RadioItems(
+                        id=self.register_component_unique_id(Filter.Ids.VIEW_BY),
+                        label="View by",
+                        options=[
+                            {"label": "Age group", "value": "age-group"},
+                            {"label": "Country", "value": "country"},
+                        ],
+                        value="age-group",
+                    ),
+                ]
             ),
         ]
 

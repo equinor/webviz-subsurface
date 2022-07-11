@@ -14,6 +14,8 @@ class PluginIds:
         SELECTED_REGION = "selected-region"
         SELECTED_PARAMETERS = "selected-parameters"
 
+        INITIAL_PARAMETER = "initial-parameter"
+
     class SharedSettings:
         # pylint: disable=too-few-public-methods
         FILTER = "filter"
