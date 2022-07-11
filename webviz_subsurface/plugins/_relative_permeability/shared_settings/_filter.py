@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
 from dash import callback, Input, Output, State
 from dash.development.base_component import Component
