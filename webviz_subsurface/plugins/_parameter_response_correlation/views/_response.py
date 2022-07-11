@@ -1,14 +1,12 @@
-from typing import List, Tuple, Union
+from typing import List
 
 import pandas as pd
 from dash import Input, Output, callback
-from importlib_metadata import distribution
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 import webviz_subsurface._utils.parameter_response as parresp
 
-from ...._utils.unique_theming import unique_colors
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
 from ._filter import Filter

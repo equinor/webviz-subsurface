@@ -1,19 +1,14 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Type
 
 import pandas as pd
-import webviz_core_components as wcc
-from dash import Input, Output, dcc, html
 from dash.development.base_component import Component
-from plotly.subplots import make_subplots
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface._utils.parameter_response as parresp
 from webviz_subsurface._datainput.fmu_input import load_csv
-from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import ParametersModel
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
@@ -26,7 +21,7 @@ from webviz_subsurface._providers import (
 
 from ._error import error
 from ._plugin_ids import PluginIds
-from .views import Filter, ResponseView
+from .views import ResponseView
 
 
 class ParameterResponseCorrelation(WebvizPluginABC):
@@ -224,19 +219,6 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         self.add_store(
             PluginIds.Stores.INITIAL_PARAMETER, WebvizPluginABC.StorageType.SESSION
         )
-
-        """self.add_shared_settings_group(
-            Filter(
-                self.responsedf,
-                self.ensembles,
-                self.response_filters,
-                self.parameter_columns,
-                self.response_columns,
-                self.aggregation,
-                self.corr_method,
-            ),
-            PluginIds.SharedSettings.FILTER,
-        )"""
 
         self.add_view(
             ResponseView(

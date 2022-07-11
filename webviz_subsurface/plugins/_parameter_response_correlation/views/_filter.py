@@ -1,14 +1,11 @@
-from typing import Any, Dict, List
+from typing import Any, List
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, callback, html
+from dash import html
 from dash.development.base_component import Component
-from dash.exceptions import PreventUpdate
 from webviz_config.utils import calculate_slider_step
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-
-from .._plugin_ids import PluginIds
 
 
 class Filter(SettingsGroupABC):
@@ -28,8 +25,6 @@ class Filter(SettingsGroupABC):
         REGION = "region"
         PARAMETERS = "parameters"
 
-        VIEW_BY = "view-by"
-
     def __init__(
         self,
         response_df: pd.DataFrame,
@@ -39,6 +34,7 @@ class Filter(SettingsGroupABC):
         response_columns: List[str],
         aggregation: str,
         corr_method: str,
+        mode: str,
     ) -> None:
         super().__init__("Settings")
 
@@ -49,8 +45,7 @@ class Filter(SettingsGroupABC):
         self.response_columns = response_columns
         self.aggregation = aggregation
         self.corr_method = corr_method
-        self.a = 1
-        self.b = 2
+        self.mode = mode
 
     @property
     def filter_layout(self) -> List[Any]:
