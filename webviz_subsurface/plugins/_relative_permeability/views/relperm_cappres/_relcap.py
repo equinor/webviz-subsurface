@@ -26,7 +26,7 @@ class RelpermCappres(ViewABC):
         RELATIVE_PERMEABILIY = "reative-permeability"
 
     SCAL_COLORMAP = {
-        "Missing": "#ffff00",  # Using yellow if the curve couldn't be found
+        "Missing": "#ffff00",  # Using yellow if the curve can't be found
         "KRW": "#0000aa",
         "KRG": "#ff0000",
         "KROG": "#00aa00",
