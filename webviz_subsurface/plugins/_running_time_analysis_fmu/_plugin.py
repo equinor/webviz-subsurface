@@ -3,7 +3,7 @@ from typing import Callable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
-from dash import html, Input, Output, callback
+from dash import Input, Output, callback, html
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE

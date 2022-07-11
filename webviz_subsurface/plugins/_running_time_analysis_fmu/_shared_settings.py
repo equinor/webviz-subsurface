@@ -7,6 +7,7 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ._plugin_ids import PluginIds
 
+
 class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
     
     # pylint: disable=too-few-public-methods
