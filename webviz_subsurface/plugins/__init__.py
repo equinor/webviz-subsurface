@@ -32,8 +32,7 @@ from ._line_plotter_fmu.line_plotter_fmu import LinePlotterFMU
 from ._map_viewer_fmu import MapViewerFMU
 from ._morris_plot import MorrisPlot
 from ._parameter_analysis import ParameterAnalysis
-
-# from ._parameter_correlation import ParameterCorrelation
+from ._parameter_correlation import ParameterCorrelation
 from ._parameter_distribution import ParameterDistribution
 from ._parameter_parallel_coordinates import ParameterParallelCoordinates
 from ._parameter_response_correlation import ParameterResponseCorrelation
