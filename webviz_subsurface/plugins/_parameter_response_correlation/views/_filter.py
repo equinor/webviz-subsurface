@@ -27,20 +27,31 @@ class Filter(SettingsGroupABC):
         PARAMETERS = "parameters"
 
     def __init__(
-        self, response_df: pd.DataFrame, ensembles: List[str], response_filters: dict
+        self,
+        response_df: pd.DataFrame,
+        ensembles: List[str],
+        response_filters: dict,
+        parameter_columns: list,
+        response_columns: List[str],
+        aggregation: str,
+        corr_method: str,
     ) -> None:
         super().__init__("Settings")
 
-        self.response_df = response_df
+        self.responsedf = response_df
         self.ensembles = ensembles
         self.response_filters = response_filters
+        self.parameter_columns = parameter_columns
+        self.response_columns = response_columns
+        self.aggregation = aggregation
+        self.corr_method = corr_method
 
     @property
     def filter_layout(self) -> List[Any]:
         """Layout to display selectors for response filters"""
         children = []
         for col_name, col_type in self.response_filters.items():
-            domid = self.uuid(f"filter-{col_name}")
+            domid = self.register_component_unique_id(f"filter-{col_name}")
             values = list(self.responsedf[col_name].unique())
             if col_type == "multi":
                 selector = wcc.SelectWithLabel(
@@ -70,7 +81,7 @@ class Filter(SettingsGroupABC):
         children.append(
             wcc.SelectWithLabel(
                 label="Parameters:",
-                id=self.uuid("parameter-filter"),
+                id=self.register_component_unique_id(Filter.Ids.PARAMETERS),
                 options=[
                     {"label": val, "value": val} for val in self.parameter_columns
                 ],
@@ -90,21 +101,21 @@ class Filter(SettingsGroupABC):
         return [
             wcc.Dropdown(
                 label="Ensemble:",
-                id=self.uuid("ensemble"),
+                id=self.register_component_unique_id(Filter.Ids.ENSEMBLE),
                 options=[{"label": ens, "value": ens} for ens in self.ensembles],
                 clearable=False,
                 value=self.ensembles[0],
             ),
             wcc.Dropdown(
                 label="Response:",
-                id=self.uuid("responses"),
+                id=self.register_component_unique_id(Filter.Ids.RESPONSE),
                 options=[{"label": col, "value": col} for col in self.response_columns],
                 clearable=False,
                 value=self.response_columns[0],
             ),
             wcc.RadioItems(
                 label="Correlation method:",
-                id=self.uuid("correlation-method"),
+                id=self.register_component_unique_id(Filter.Ids.CORRELATION_METHOD),
                 options=[
                     {"label": opt.capitalize(), "value": opt}
                     for opt in ["pearson", "spearman"]
@@ -114,7 +125,7 @@ class Filter(SettingsGroupABC):
             ),
             wcc.RadioItems(
                 label="Response aggregation:",
-                id=self.uuid("aggregation"),
+                id=self.register_component_unique_id(Filter.Ids.RESPONSE_AGGREGATION),
                 options=[
                     {"label": opt.capitalize(), "value": opt} for opt in ["sum", "mean"]
                 ],
@@ -124,7 +135,7 @@ class Filter(SettingsGroupABC):
             html.Div(
                 wcc.Slider(
                     label="Correlation cut-off (abs):",
-                    id=self.uuid("correlation-cutoff"),
+                    id=self.register_component_unique_id(Filter.Ids.CORRELATION_CUTOFF),
                     min=0,
                     max=1,
                     step=0.1,
@@ -136,7 +147,9 @@ class Filter(SettingsGroupABC):
             html.Div(
                 wcc.Slider(
                     label="Max number of parameters:",
-                    id=self.uuid("max-params"),
+                    id=self.register_component_unique_id(
+                        Filter.Ids.MAX_NUMBER_PARAMETERS
+                    ),
                     min=1,
                     max=max_params,
                     step=1,
@@ -162,16 +175,6 @@ class Filter(SettingsGroupABC):
                 else []
             ),
         ]
-
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"
-            ),
-            Input(self.component_unique_id(Filter.Ids.ENSEMBLE).to_string(), "value"),
-        )
-        def _set_ensembles(selected_ensemble: str) -> str:
-            return selected_ensemble
 
 
 def make_range_slider(domid, values, col_name) -> wcc.RangeSlider:
