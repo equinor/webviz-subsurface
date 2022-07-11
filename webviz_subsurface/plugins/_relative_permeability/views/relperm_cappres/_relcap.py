@@ -1,7 +1,7 @@
 from typing import List
 
-from dash.exceptions import PreventUpdate
 from dash import callback, Input, Output
+from dash.exceptions import PreventUpdate
 import pandas as pd
 import numpy as np
 from webviz_config import WebvizSettings

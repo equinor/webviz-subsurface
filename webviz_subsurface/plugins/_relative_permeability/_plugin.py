@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type, Optional, Union
+from typing import Optional, Type, Union
 import warnings
 
 from dash.development.base_component import Component
