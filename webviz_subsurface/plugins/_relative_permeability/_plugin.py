@@ -83,7 +83,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             "KRG": "#ff0000",
             "KROG": "#00aa00",
             "KROW": "#00aa00",
-            "PCOW": "#555555",  # Reserving #000000 for the reference envelope (scal rec)
+            "PCOW": "#555555",  # Reserving #000000 for reference envelope (scal rec)
             "PCOG": "#555555",
         }
 
@@ -95,6 +95,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         scalfile: Path = None,
         sheet_name: Optional[Union[str, int, list]] = None,
     ):
+        # pylint: disable=too-many-statements
 
         super().__init__()
 
@@ -120,8 +121,8 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 )
                 if "KEYWORD" not in self.satfunc.columns:
                     raise ValueError(
-                        "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword: "
-                        "e.g SWOF, SGOF and etc."
+                        "There has to be a KEYWORD or TYPE column with "
+                        "corresponding Eclipse keyword: e.g SWOF, SGOF and etc."
                     )
                 valid_columns = (
                     ["ENSEMBLE", "REAL", "KEYWORD", "SATNUM"]
@@ -149,9 +150,10 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 ):
                     warnings.warn(
                         (
-                            "Mix of keyword family 1 and 2, currently only support one family at the "
-                            "time. Dropping all data of family 2 ('SWFN', 'SGFN', 'SGWFN', 'SOF2', "
-                            "'SOF3', 'SOF32D') and continues with family 1 ('SWOF', 'SGOF', 'SLGOF')."
+                            "Mix of keyword family 1 and 2, currently only support "
+                            "one family at the time. Dropping all data of family 2 "
+                            "('SWFN', 'SGFN', 'SGWFN', 'SOF2', 'SOF3', 'SOF32D') "
+                            "and continues with family 1 ('SWOF', 'SGOF', 'SLGOF')."
                         ),
                     )
                     self.satfunc = self.satfunc[
