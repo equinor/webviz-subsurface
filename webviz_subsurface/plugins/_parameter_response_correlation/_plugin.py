@@ -221,7 +221,9 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         self.error_message = ""
 
         # add views
-        # self.add_store(PluginIds.Stores.INITIAL_PARAMETER, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(
+            PluginIds.Stores.INITIAL_PARAMETER, WebvizPluginABC.StorageType.SESSION
+        )
 
         """self.add_shared_settings_group(
             Filter(

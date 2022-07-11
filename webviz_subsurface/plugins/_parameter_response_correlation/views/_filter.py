@@ -57,7 +57,6 @@ class Filter(SettingsGroupABC):
         """Layout to display selectors for response filters"""
         children = []
         for col_name, col_type in self.response_filters.items():
-            print("col name: ", col_name)
             domid = self.register_component_unique_id(f"filter-{col_name}")
             values = list(self.responsedf[col_name].unique())
             if col_type == "multi":
@@ -168,7 +167,6 @@ class Filter(SettingsGroupABC):
         ]
 
     def layout(self) -> List[Component]:
-        print("laying out")
         return [
             wcc.Selectors(label="Controls", children=self.control_layout),
             (

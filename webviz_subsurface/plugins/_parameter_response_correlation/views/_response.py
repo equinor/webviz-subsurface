@@ -61,8 +61,8 @@ class ResponseView(ViewABC):
 
         column = self.add_column()
         first_row = column.make_row()
-        first_row.add_view_element(Graph(), ResponseView.Ids.CORRELATIONS)
-        first_row.add_view_element(Graph(), ResponseView.Ids.DISTRIBUTIONS)
+        first_row.add_view_element(Graph("80vh"), ResponseView.Ids.CORRELATIONS)
+        first_row.add_view_element(Graph("80vh"), ResponseView.Ids.DISTRIBUTIONS)
         self.theme = webviz_settings.theme
 
     @property
@@ -134,7 +134,7 @@ class ResponseView(ViewABC):
                 .to_string(),
                 "clickData",
             ),
-            # Input(self.get_store_unique_id(PluginIds.Stores.INITIAL_PARAMETER), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.INITIAL_PARAMETER), "data"),
             Input(
                 self.settings_group(ResponseView.Ids.SETTINGS)
                 .component_unique_id(Filter.Ids.ENSEMBLE)
@@ -174,9 +174,9 @@ class ResponseView(ViewABC):
                 .to_string(),
                 "figure",
             ),
-            # Output(
-            #    self.get_store_unique_id(PluginIds.Stores.INITIAL_PARAMETER), "data"
-            # ),
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.INITIAL_PARAMETER), "data"
+            ),
             self.correlation_input_callbacks,
         )
         def _update_correlation_plot(
@@ -206,7 +206,6 @@ class ResponseView(ViewABC):
 
             df = pd.merge(responsedf, parameterdf, on=["REAL"])
             corrdf = correlate(df, response=response, method=correlation_method)
-            return {}
             try:
                 corr_response = (
                     corrdf[response]
@@ -247,9 +246,9 @@ class ResponseView(ViewABC):
             self.distribution_input_callbacks,
         )
         def _update_distribution_graph(
-            clickdata, ensemble, response, aggregation, *filters
+            clickdata, initial_parameter, ensemble, response, aggregation, *filters
         ):
-            return {}
+
             if clickdata:
                 parameter = clickdata["points"][0]["y"]
             elif initial_parameter:
