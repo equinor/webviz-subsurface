@@ -266,6 +266,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             PlugInIDs.RelCapViewGroup.GROUP_NAME,
         )
 
-        @property
-        def layout(self) -> Type[Component]:
-            return error(self.error_message)
+    @property
+    def layout(self) -> Type[Component]:
+        return error(self.error_message)
