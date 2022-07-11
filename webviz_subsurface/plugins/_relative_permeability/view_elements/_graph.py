@@ -1,5 +1,6 @@
-from dash.development.base_component import Component
 from typing import Type
+
+from dash.development.base_component import Component
 
 from webviz_core_components import Graph as WccGraph
 from webviz_config.webviz_plugin_subclasses import ViewElementABC

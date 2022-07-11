@@ -3,10 +3,10 @@ from typing import Type, Optional, Union
 import warnings
 
 import pandas as pd
-import webviz_subsurface
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
+import webviz_subsurface
 
 from ._error import error
 from ._plugin_ids import PlugInIDs
