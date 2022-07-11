@@ -170,20 +170,15 @@ class Filter(SettingsGroupABC):
     def layout(self) -> List[Component]:
         print("laying out")
         return [
-            wcc.Frame(
-                style={"height": "80vh"},
-                children=[wcc.Selectors(label="Controls", children=self.control_layout)]
-                + (
-                    [
-                        wcc.Selectors(
-                            label="Filters",
-                            id=self.register_component_unique_id(Filter.Ids.FILTERS),
-                            children=self.filter_layout,
-                        )
-                    ]
-                    if self.response_filters
-                    else []
-                ),
+            wcc.Selectors(label="Controls", children=self.control_layout),
+            (
+                wcc.Selectors(
+                    label="Filters",
+                    id=self.register_component_unique_id(Filter.Ids.FILTERS),
+                    children=self.filter_layout,
+                )
+                if self.response_filters
+                else []
             ),
         ]
 
