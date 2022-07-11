@@ -1,14 +1,13 @@
 from typing import List
 
-import pandas as pd
-import numpy as np
 from dash.exceptions import PreventUpdate
 from dash import callback, Input, Output
+import pandas as pd
+import numpy as np
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ..._plugin_ids import PlugInIDs
-from ...view_elements import Graph
 from ....._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
@@ -16,6 +15,7 @@ from ....._utils.fanchart_plotting import (
     LowHighData,
     MinMaxData,
 )
+from ...view_elements import Graph
 
 
 class RelpermCappres(ViewABC):

@@ -1,9 +1,9 @@
 from typing import List, Tuple, Dict
 
-import pandas as pd
-import webviz_core_components as wcc
 from dash import callback, Input, Output
 from dash.development.base_component import Component
+import pandas as pd
+import webviz_core_components as wcc
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PlugInIDs
