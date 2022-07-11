@@ -1,5 +1,7 @@
 from typing import List, Tuple, Union
 
+import numpy as np
+import pandas as pd
 import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
@@ -26,7 +28,12 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
     "Successful/failed realization",
     "Running time of realization",
     ]
-    def __init__(self, ensembles: list, visual_parameters :list, plugin_paratamters:List[str], filter_shorter: Union[int, float] = 10) -> None:
+    def __init__(
+        self, ensembles: list, 
+        visual_parameters :list, 
+        plugin_paratamters:List[str],
+        filter_shorter: Union[int, float] = 10
+        ) -> None:
         super().__init__("Data filter")
         self.ensembles = ensembles
         self.filter_shorter = filter_shorter
@@ -132,6 +139,15 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                 selected_fparams: str
                 ) -> str:
             return selected_fparams
+
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.REMOVE_CONSTANT), 'data'),
+            Input(self.component_unique_id("remove_constant").to_string(), 'value')
+        )
+        def _update_remove_store(
+                selected_remove: str
+                ) -> str:
+            return selected_remove
             
         @callback(
             Output(self.component_unique_id(self.Ids.FILTERING).to_string(),"children"),
@@ -165,8 +181,19 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                         ]
                 value = self.COLOR_MATRIX_BY_LABELS[0]
             else:
-                children = wcc.SelectWithLabel(
-                                    label= "Filtering",
+                children = [
+                            wcc.Checklist(
+                                label= "Filtering",
+                                id=self.register_component_unique_id("remove_constant"),
+                                options=[
+                                    {
+                                        "label": " Remove constant ",
+                                        "value": "remove_constant",
+                                    },
+                                ],
+                                value=[],
+                            ),
+                            wcc.SelectWithLabel(
                                     id=self.register_component_unique_id("filter_params"),
                                     style={"overflowX": "auto", "fontSize": "0.97rem"},
                                     options=[
@@ -177,6 +204,7 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                                     value=self.visual_parameters,
                                     size=min(50, len(self.visual_parameters)),
                                 )
+                                ]
                 label = "Color realizations relative to:"
                 options = [
                             {"label": rel, "value": rel}
@@ -185,3 +213,6 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                 value = self.COLOR_PARCOORD_BY_LABELS[0]
                 
             return (children, label,options,value)
+
+
+                

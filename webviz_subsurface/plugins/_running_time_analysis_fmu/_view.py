@@ -1,6 +1,7 @@
 from typing import Callable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
+import numpy as np
 import webviz_core_components as wcc
 import webviz_subsurface_components
 from dash import Input, Output, callback
@@ -28,7 +29,6 @@ class RunTimeAnalysisGraph(ViewABC):
             ) -> None:
         super().__init__("name")
         self.add_column(RunTimeAnalysisGraph.Ids.RUNTIMEANALYSIS)
-        #column.add_view_element(wcc.Graph( ), RunTimeAnalysisGraph.Ids.GRAPH)
         self.plotly_theme = plotly_theme
         self.job_status_df = job_status_df
         self.real_status_df = real_status_df
@@ -46,7 +46,8 @@ class RunTimeAnalysisGraph(ViewABC):
             Input(self.get_store_unique_id(PluginIds.Stores.ENSEMBLE), 'data'),
             Input(self.get_store_unique_id(PluginIds.Stores.COLORING), 'data'),
             Input(self.get_store_unique_id(PluginIds.Stores.FILTERING_SHORT), 'data'),
-            Input(self.get_store_unique_id(PluginIds.Stores.FILTERING_PARAMS), 'data')
+            Input(self.get_store_unique_id(PluginIds.Stores.FILTERING_PARAMS), 'data'),
+            Input(self.get_store_unique_id(PluginIds.Stores.REMOVE_CONSTANT), 'data'),
         )
         def _update_fig(
             mode: str,
@@ -54,6 +55,7 @@ class RunTimeAnalysisGraph(ViewABC):
             coloring: str,
             filter_short: List[str],
             params: Union[str, List[str]],
+            remove_constant: str
         ) -> dict:
             """Update main figure
             Dependent on `mode` it will call rendering of the chosen form of visualization
@@ -106,13 +108,13 @@ class RunTimeAnalysisGraph(ViewABC):
                     self.plotly_theme,
                     colormap,
                     color_by_col,
-                    colormap_labels,
+                    remove_constant,
+                    colormap_labels, 
                 )
             return wcc.Graph(
                 id = "run-time-analysis-fmu-graph",
                 figure = plot_info    
             )
-
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_matrix(status_df: pd.DataFrame, rel: str, theme: dict) -> dict:
@@ -192,13 +194,31 @@ def render_parcoord(
     theme: dict,
     colormap: Union[List[str], List[list]],
     color_col: str,
-    colormap_labels: Union[List[str], None] = None,
+    remove_constant: str,
+    colormap_labels: Union[List[str], None] = None,   
 ) -> dict:
+
+    # return {"data": [data], "layout": layout}
     """Renders parallel coordinates plot"""
     # Create parcoords dimensions (one per parameter)
-    dimensions = [
-        {"label": param, "values": plot_df[param].values.tolist()} for param in params
-    ]
+
+    dimensions = []
+    dimentions_params = []
+
+
+    if remove_constant == ["remove_constant"]:
+        for param in params:
+            if len(np.unique(plot_df[param].values)) >1:
+                dimentions_params.append(param)
+
+        dimensions = [
+            {"label": param, "values": plot_df[param].values.tolist()} for param in dimentions_params
+        ]
+
+    else:
+        dimensions = [
+            {"label": param, "values": plot_df[param].values.tolist()} for param in params
+        ]
 
     # Parcoords data dict
     data: dict = {
@@ -210,7 +230,7 @@ def render_parcoord(
         "dimensions": dimensions,
         "labelangle": -90,
         "labelside": "bottom",
-        "type": "parcoords",
+        "type": "parcoords"
     }
     if color_col == "STATUS_BOOL":
         data["line"].update(

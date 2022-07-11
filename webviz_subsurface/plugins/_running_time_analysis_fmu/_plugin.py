@@ -65,10 +65,6 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
             for ens in ensembles
         }
 
-        print("plugin ID is", self._plugin_unique_id.to_string())
-
-        print("active ID is",self._active_view_id)
-
         self.plotly_theme = webviz_settings.theme.plotly_theme
         self.ensembles = ensembles
         self.status_file = status_file
@@ -92,6 +88,7 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
         self.add_store(PluginIds.Stores.COLORING, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.FILTERING_SHORT, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.FILTERING_PARAMS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.REMOVE_CONSTANT, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.ACTIVE_ID, WebvizPluginABC.StorageType.SESSION)
 
         
