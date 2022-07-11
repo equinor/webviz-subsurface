@@ -1,20 +1,20 @@
 from typing import List
 
-from dash.exceptions import PreventUpdate
-from dash import callback, Input, Output
 import pandas as pd
 import numpy as np
-from webviz_config.webviz_plugin_subclasses import ViewABC
+from dash.exceptions import PreventUpdate
+from dash import callback, Input, Output
 from webviz_config import WebvizSettings
+from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ..._plugin_ids import PlugInIDs
 from ...view_elements import Graph
 from ....._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
+    get_fanchart_traces,
     LowHighData,
     MinMaxData,
-    get_fanchart_traces,
 )
 
 

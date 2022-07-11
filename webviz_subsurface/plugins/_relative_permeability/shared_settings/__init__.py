@@ -1,1 +1,1 @@
-from ._filter import Selectors, Visualization, SCALRecommendation
+from ._filter import Selectors, SCALRecommendation, Visualization
