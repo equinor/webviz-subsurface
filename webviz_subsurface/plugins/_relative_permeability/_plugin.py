@@ -10,8 +10,7 @@ import webviz_subsurface
 from typing import Optional, Type, Union
 
 from ..._datainput.fmu_input import load_csv
-from ..._datainput.relative_permeability import (load_satfunc,
-                                                 load_scal_recommendation)
+from ..._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from ._error import error
 from ._plugin_ids import PlugInIDs
 from .shared_settings import SCALRecommendation, Selectors, Visualization

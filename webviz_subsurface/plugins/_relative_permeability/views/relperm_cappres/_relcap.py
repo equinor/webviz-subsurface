@@ -7,9 +7,13 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from typing import List
 
-from ....._utils.fanchart_plotting import (FanchartData, FreeLineData,
-                                           LowHighData, MinMaxData,
-                                           get_fanchart_traces)
+from ....._utils.fanchart_plotting import (
+    FanchartData,
+    FreeLineData,
+    LowHighData,
+    MinMaxData,
+    get_fanchart_traces,
+)
 from ..._plugin_ids import PlugInIDs
 from ...view_elements import Graph
 
