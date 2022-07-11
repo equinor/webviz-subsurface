@@ -5,10 +5,7 @@ import warnings
 from dash.development.base_component import Component
 import pandas as pd
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
-from webviz_config.webviz_plugin_subclasses import ViewABC
-
 import webviz_subsurface
 
 from ._error import error

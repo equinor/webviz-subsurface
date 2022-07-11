@@ -1,12 +1,10 @@
 from typing import List, Tuple, Dict
 
-from dash import callback, Input, Output, State
+from dash import callback, Input, Output
 from dash.development.base_component import Component
 import pandas as pd
-from webviz_config import WebvizPluginABC
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 import webviz_core_components as wcc
-from dash import dcc
 
 from .._plugin_ids import PlugInIDs
 
@@ -15,7 +13,7 @@ class Selectors(SettingsGroupABC):
     """Settings group for Selectors"""
 
     class IDs:
-        # pylint: disable=too.few-public-methods
+        # pylint: disable=too-few-public-methods
         SATURATION_AXIS = "saturation-axis"
         COLOR_BY = "color-by"
         ENSEMBLES = "ensembles"
@@ -218,7 +216,7 @@ class Visualization(SettingsGroupABC):
     """Settings group for Visualizations"""
 
     class IDs:
-        # pylint: disable=too.few-public-methods
+        # pylint: disable=too-few-public-methods
         LINE_TRACES = "line-traces"
         Y_AXIS = "y-axis"
 
@@ -283,7 +281,7 @@ class SCALRecommendation(SettingsGroupABC):
     """Settings group for SCAL Recomendations"""
 
     class IDs:
-        # pylint: disable=too.few-public-methods
+        # pylint: disable=too-few-public-methods
         SHOW_SCAL = "show-scal"
 
     def __init__(self) -> None:

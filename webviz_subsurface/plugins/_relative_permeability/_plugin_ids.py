@@ -1,4 +1,5 @@
 class PlugInIDs:
+    # pylint: disable=too-few-public-methods
     class Stores:
         # pylint: disable=too-few-public-methods
         class Selectors:
