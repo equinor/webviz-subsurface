@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config import WebvizSettings
-
 from dash.exceptions import PreventUpdate
+
 from ..._plugin_ids import PlugInIDs
 from ...view_elements import Graph
 from ....._utils.fanchart_plotting import (
@@ -97,6 +97,7 @@ class RelpermCappres(ViewABC):
 
     def set_callbacks(self) -> None:
         """Defines the callback for changing the graphs"""
+        # pylint: disable=too-many-statements
 
         @callback(
             Output(
@@ -311,7 +312,7 @@ class RelpermCappres(ViewABC):
             colors: dict,
             nplots: int,
         ) -> List:
-            # pylint: disable=too-local-variables
+            # pylint: disable=[too-many-local-variables,too-many-arguments]
             """Creating graphs in the case of statistcal traces"""
             # Switched P10 and P90 due to convetion in petroleum industry
             def p10(x):
