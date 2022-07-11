@@ -71,6 +71,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
 """
 
     class PlotOptions:
+        # pylint: disable=too-few-public-methods
         SATURATIONS = ["SW", "SO", "SG", "SL"]
         RELPERM_FAMILIES = {
             1: ["SWOF", "SGOF", "SLGOF"],
@@ -215,8 +216,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             self.error_message = f"The file '{relpermfile}' is not a valid csv file."
         except pd.errors.EmptyDataError:
             self.error_message = f"The file '{relpermfile}' is an empty file."
-        except Exception:
-            self.error_message = f"Unknown exception when trying to read '{relpermfile}"
 
         self.add_store(
             PlugInIDs.Stores.Selectors.SATURATION_AXIS,
