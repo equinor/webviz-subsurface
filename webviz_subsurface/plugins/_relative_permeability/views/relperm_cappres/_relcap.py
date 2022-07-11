@@ -1,14 +1,12 @@
 from typing import List
 
 from dash import callback, Input, Output
-from matplotlib.pyplot import figure
 import pandas as pd
 import numpy as np
-import plotly.colors
-from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config import WebvizSettings
 
+from dash.exceptions import PreventUpdate
 from ..._plugin_ids import PlugInIDs
 from ...view_elements import Graph
 from ....._utils.fanchart_plotting import (
@@ -42,12 +40,14 @@ class RelpermCappres(ViewABC):
         relperm_df: pd.DataFrame,
         webviz_settings: WebvizSettings,
         scal: pd.DataFrame,
+        sat_axes_maps: dict,
     ) -> None:
         super().__init__("Relatve permeability")
 
         self.relperm_df = relperm_df
         self.plotly_theme = webviz_settings.theme.plotly_theme
         self.scal = scal
+        self.sat_axes_maps = sat_axes_maps
 
         # Creating the column and row for the setup of the view
         column = self.add_column()
@@ -267,7 +267,7 @@ class RelpermCappres(ViewABC):
                         ]
                     )
                 else:
-                    constant_group = (
+                    const_group = (
                         df["SATNUM"].iloc[0]
                         if color_by == "ENSEMBLE"
                         else df["ENSEMBLE"].iloc[0]
@@ -282,9 +282,9 @@ class RelpermCappres(ViewABC):
                                 "yaxis": yaxis,
                                 "hovertext": (
                                     f"{curve}, Satnum: "
-                                    f"{group if color_by.upper() == 'SATNUM' else constant_group}<br>"
+                                    f"{group if color_by.upper() == 'SATNUM' else const_group}<br>"
                                     f"Realization: {real}, Ensemble: "
-                                    f"{group if color_by.upper() == 'ENSEMBLE' else constant_group}"
+                                    f"{group if color_by.upper() == 'ENSEMBLE' else const_group}"
                                 ),
                                 "name": group,
                                 "legendgroup": group,
@@ -311,6 +311,7 @@ class RelpermCappres(ViewABC):
             colors: dict,
             nplots: int,
         ) -> List:
+            # pylint: disable=too-local-variables
             """Creating graphs in the case of statistcal traces"""
             # Switched P10 and P90 due to convetion in petroleum industry
             def p10(x):
@@ -389,6 +390,7 @@ class RelpermCappres(ViewABC):
             ensemble: str,
             satnum: int,
         ) -> List:
+            # pylint: disable=too-many-arguments
             """Renders a fanchart"""
 
             # Retrieve indices from one of the keys in series

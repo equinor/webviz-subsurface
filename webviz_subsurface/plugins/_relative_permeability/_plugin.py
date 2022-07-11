@@ -258,7 +258,9 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         )
 
         self.add_view(
-            RelpermCappres(self.satfunc, webviz_settings, self.scal),
+            RelpermCappres(
+                self.satfunc, webviz_settings, self.scal, self.sat_axes_maps
+            ),
             PlugInIDs.RelCapViewGroup.RELCAP,
             PlugInIDs.RelCapViewGroup.GROUP_NAME,
         )
