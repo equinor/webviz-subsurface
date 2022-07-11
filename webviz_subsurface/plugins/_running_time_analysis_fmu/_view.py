@@ -11,7 +11,6 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ._plugin_ids import PluginIds
 from ._shared_settings import RunningTimeAnalysisFmuSettings
-from ._view_element import Graph
 
 
 class RunTimeAnalysisGraph(ViewABC):
