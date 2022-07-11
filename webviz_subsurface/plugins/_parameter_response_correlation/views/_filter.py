@@ -49,12 +49,15 @@ class Filter(SettingsGroupABC):
         self.response_columns = response_columns
         self.aggregation = aggregation
         self.corr_method = corr_method
+        self.a = 1
+        self.b = 2
 
     @property
     def filter_layout(self) -> List[Any]:
         """Layout to display selectors for response filters"""
         children = []
         for col_name, col_type in self.response_filters.items():
+            print("col name: ", col_name)
             domid = self.register_component_unique_id(f"filter-{col_name}")
             values = list(self.responsedf[col_name].unique())
             if col_type == "multi":
@@ -165,28 +168,22 @@ class Filter(SettingsGroupABC):
         ]
 
     def layout(self) -> List[Component]:
+        print("laying out")
         return [
-            [wcc.Selectors(label="Controls", children=self.control_layout)]
-            + (
-                [
-                    wcc.Selectors(
-                        label="Filters",
-                        id=self.register_component_unique_id(Filter.Ids.FILTERS),
-                        children=self.filter_layout,
-                    )
-                ]
-                if self.response_filters
-                else [
-                    wcc.RadioItems(
-                        id=self.register_component_unique_id(Filter.Ids.VIEW_BY),
-                        label="View by",
-                        options=[
-                            {"label": "Age group", "value": "age-group"},
-                            {"label": "Country", "value": "country"},
-                        ],
-                        value="age-group",
-                    ),
-                ]
+            wcc.Frame(
+                style={"height": "80vh"},
+                children=[wcc.Selectors(label="Controls", children=self.control_layout)]
+                + (
+                    [
+                        wcc.Selectors(
+                            label="Filters",
+                            id=self.register_component_unique_id(Filter.Ids.FILTERS),
+                            children=self.filter_layout,
+                        )
+                    ]
+                    if self.response_filters
+                    else []
+                ),
             ),
         ]
 
