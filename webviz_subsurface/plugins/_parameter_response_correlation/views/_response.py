@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import pandas as pd
 from dash import Input, Output, callback
@@ -8,51 +8,70 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 from ...._utils.unique_theming import unique_colors
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
+from ._filter import Filter
 
 
-class FanView(ViewABC):
+class ResponseView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
-        FAN_CHART = "fan-chart"
+        CORRELATIONS = "correlations"
+        DISTRIBUTIONS = "distributions"
+        SETTINGS = "settings"
 
-    def __init__(self, bhp_df: pd.DataFrame, webviz_settings: WebvizSettings) -> None:
-        super().__init__("Fan chart")
+    def __init__(
+        self,
+        response_df: pd.DataFrame,
+        webviz_settings: WebvizSettings,
+        ensembles: List[str],
+        response_filters: dict,
+        parameter_columns: list,
+        response_columns: List[str],
+        aggregation: str,
+        corr_method: str,
+    ) -> None:
+        super().__init__("Response chart")
 
-        self.bhp_df = bhp_df
+        self.responsedf = response_df
+        self.ensembles = ensembles
+        self.response_filters = response_filters
+        self.parameter_columns = parameter_columns
+        self.response_columns = response_columns
+        self.aggregation = aggregation
+        self.corr_method = corr_method
+
+        self.add_settings_group(
+            Filter(
+                self.responsedf,
+                self.ensembles,
+                self.response_filters,
+                self.parameter_columns,
+                self.response_columns,
+                self.aggregation,
+                self.corr_method,
+            ),
+            ResponseView.Ids.SETTINGS,
+        )
 
         column = self.add_column()
-        column.add_view_element(Graph(), FanView.Ids.FAN_CHART)
+        column.add_view_element(Graph(), ResponseView.Ids.CORRELATIONS)
+        column.add_view_element(Graph(), ResponseView.Ids.DISTRIBUTIONS)
         self.theme = webviz_settings.theme
-
-    @property
-    def ensembles(self) -> List[str]:
-        return list(self.bhp_df["ENSEMBLE"].unique())
-
-    @property
-    def ens_colors(self) -> dict:
-        return unique_colors(self.ensembles, self.theme)
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(FanView.Ids.FAN_CHART)
+                self.view_element(ResponseView.Ids.CORRELATIONS)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Output(
+                self.view_element(ResponseView.Ids.DISTRIBUTIONS)
                 .component_unique_id(Graph.Ids.GRAPH)
                 .to_string(),
                 "figure",
             ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_SORT_BY), "data"),
-            Input(
-                self.get_store_unique_id(
-                    PluginIds.Stores.SELECTED_ASCENDING_DESCENDING
-                ),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_MAX_NUMBER_OF_WELLS),
-                "data",
-            ),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS), "data"),
         )
         def _update_plot(
             ensemble: str,
@@ -60,35 +79,5 @@ class FanView(ViewABC):
             ascending: bool,
             n_wells: int,
             wells: Union[str, List[str]],
-        ) -> dict:
-            wells = wells if isinstance(wells, list) else [wells]
-            df = filter_df(df=self.bhp_df, ensemble=ensemble, wells=wells)
-            stat_df = (
-                calc_statistics(df)
-                .sort_values(sort_by, ascending=ascending)
-                .iloc[0:n_wells, :]
-            )
-            fan_traces = _get_fanchart_traces(
-                ens_stat_df=stat_df,
-                color=self.ens_colors[ensemble],
-                legend_group=ensemble,
-            )
-            layout = self.theme.create_themed_layout(
-                {
-                    "yaxis": {
-                        "side": "left",
-                        "title": "Bottom hole pressure",
-                        "showgrid": True,
-                    },
-                    "yaxis2": {
-                        "side": "right",
-                        "overlaying": "y",
-                        "title": "Count (data points)",
-                        "showgrid": False,
-                    },
-                    "xaxis": {"showgrid": False},
-                    "barmode": "group",
-                    "legend": {"x": 1.05},
-                }
-            )
-            return {"data": fan_traces, "layout": layout}
+        ) -> Tuple[dict, dict]:
+            return {}

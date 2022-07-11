@@ -23,6 +23,9 @@ from webviz_subsurface._providers import (
     get_matching_vector_names,
 )
 
+from ._plugin_ids import PluginIds
+from .views import ResponseView
+
 
 class ParameterResponseCorrelation(WebvizPluginABC):
     """Visualizes correlations between numerical input parameters and responses.
@@ -213,7 +216,21 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         )
 
         self.theme = webviz_settings.theme
-        self.set_callbacks(app)
+
+        # add views
+        self.add_view(
+            ResponseView(
+                self.responsedf,
+                webviz_settings,
+                self.ensembles,
+                self.response_filters,
+                self.parameter_columns,
+                self.response_columns,
+                self.aggregation,
+                self.corr_method,
+            ),
+            PluginIds.ResponseID.RESPONSE_CHART,
+        )
 
     @property
     def tour_steps(self) -> List[Dict[str, Any]]:
@@ -285,176 +302,9 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         return list(self.parameterdf["ENSEMBLE"].unique())
 
     @property
-    def filter_layout(self) -> List[Any]:
-        """Layout to display selectors for response filters"""
-        children = []
-        for col_name, col_type in self.response_filters.items():
-            domid = self.uuid(f"filter-{col_name}")
-            values = list(self.responsedf[col_name].unique())
-            if col_type == "multi":
-                selector = wcc.SelectWithLabel(
-                    label=f"{col_name}:",
-                    id=domid,
-                    options=[{"label": val, "value": val} for val in values],
-                    value=values,
-                    multi=True,
-                    size=min(10, len(values)),
-                    collapsible=True,
-                )
-            elif col_type == "single":
-                selector = wcc.Dropdown(
-                    label=f"{col_name}:",
-                    id=domid,
-                    options=[{"label": val, "value": val} for val in values],
-                    value=values[-1],
-                    multi=False,
-                    clearable=False,
-                )
-            elif col_type == "range":
-                selector = make_range_slider(domid, self.responsedf[col_name], col_name)
-            else:
-                return children
-            children.append(selector)
-
-        children.append(
-            wcc.SelectWithLabel(
-                label="Parameters:",
-                id=self.uuid("parameter-filter"),
-                options=[
-                    {"label": val, "value": val} for val in self.parameter_columns
-                ],
-                value=self.parameter_columns,
-                multi=True,
-                size=min(10, len(self.parameter_columns)),
-                collapsible=True,
-            )
-        )
-
-        return children
-
-    @property
-    def control_layout(self) -> List[Any]:
-        """Layout to select e.g. iteration and response"""
-        max_params = len(self.parameter_columns)
-        return [
-            wcc.Dropdown(
-                label="Ensemble:",
-                id=self.uuid("ensemble"),
-                options=[{"label": ens, "value": ens} for ens in self.ensembles],
-                clearable=False,
-                value=self.ensembles[0],
-            ),
-            wcc.Dropdown(
-                label="Response:",
-                id=self.uuid("responses"),
-                options=[{"label": col, "value": col} for col in self.response_columns],
-                clearable=False,
-                value=self.response_columns[0],
-            ),
-            wcc.RadioItems(
-                label="Correlation method:",
-                id=self.uuid("correlation-method"),
-                options=[
-                    {"label": opt.capitalize(), "value": opt}
-                    for opt in ["pearson", "spearman"]
-                ],
-                vertical=False,
-                value=self.corr_method,
-            ),
-            wcc.RadioItems(
-                label="Response aggregation:",
-                id=self.uuid("aggregation"),
-                options=[
-                    {"label": opt.capitalize(), "value": opt} for opt in ["sum", "mean"]
-                ],
-                vertical=False,
-                value=self.aggregation,
-            ),
-            html.Div(
-                wcc.Slider(
-                    label="Correlation cut-off (abs):",
-                    id=self.uuid("correlation-cutoff"),
-                    min=0,
-                    max=1,
-                    step=0.1,
-                    marks={"0": 0, "1": 1},
-                    value=0,
-                ),
-                style={"margin-top": "10px"},
-            ),
-            html.Div(
-                wcc.Slider(
-                    label="Max number of parameters:",
-                    id=self.uuid("max-params"),
-                    min=1,
-                    max=max_params,
-                    step=1,
-                    marks={1: "1", max_params: str(max_params)},
-                    value=max_params,
-                ),
-                style={"marginTop": "10px"},
-            ),
-        ]
-
-    @property
     def layout(self) -> wcc.FlexBox:
         """Main layout"""
-        return wcc.FlexBox(
-            id=self.uuid("layout"),
-            children=[
-                wcc.FlexColumn(
-                    flex=1,
-                    children=wcc.Frame(
-                        style={"height": "80vh"},
-                        children=[
-                            wcc.Selectors(
-                                label="Controls", children=self.control_layout
-                            )
-                        ]
-                        + (
-                            [
-                                wcc.Selectors(
-                                    label="Filters",
-                                    id=self.uuid("filters"),
-                                    children=self.filter_layout,
-                                )
-                            ]
-                            if self.response_filters
-                            else []
-                        ),
-                    ),
-                ),
-                wcc.FlexColumn(
-                    flex=3,
-                    children=wcc.Frame(
-                        color="white",
-                        highlight=False,
-                        style={"height": "80vh"},
-                        children=[
-                            wcc.Graph(
-                                style={"height": "75vh"},
-                                id=self.uuid("correlation-graph"),
-                            ),
-                            dcc.Store(
-                                id=self.uuid("initial-parameter"),
-                                storage_type="session",
-                            ),
-                        ],
-                    ),
-                ),
-                wcc.FlexColumn(
-                    flex=3,
-                    children=wcc.Frame(
-                        color="white",
-                        highlight=False,
-                        style={"height": "80vh"},
-                        children=wcc.Graph(
-                            style={"height": "75vh"}, id=self.uuid("distribution-graph")
-                        ),
-                    ),
-                ),
-            ],
-        )
+        return wcc.FlexBox()
 
     @property
     def correlation_input_callbacks(self) -> List[Input]:
@@ -487,153 +337,6 @@ Responses are extracted automatically from the `.arrow` files in the individual 
             for col_name in self.response_filters:
                 callbacks.append(Input(self.uuid(f"filter-{col_name}"), "value"))
         return callbacks
-
-    def set_callbacks(self, app) -> None:
-        @app.callback(
-            [
-                Output(self.uuid("correlation-graph"), "figure"),
-                Output(self.uuid("initial-parameter"), "data"),
-            ],
-            self.correlation_input_callbacks,
-        )
-        def _update_correlation_graph(
-            ensemble: str,
-            response: str,
-            max_parameters: int,
-            selected_parameters: List[str],
-            correlation_method: str,
-            aggregation: str,
-            correlation_cutoff: float,
-            *filters,
-        ):
-            """Callback to update correlation graph
-
-            1. Filters and aggregates response dataframe per realization
-            2. Filters parameters dataframe on selected ensemble
-            3. Merge parameter and response dataframe
-            4. Correlate merged dataframe
-            5. Sort correlation for selected response by absolute values
-            6. Remove nan values return correlation graph
-            """
-
-            filteroptions = parresp.make_response_filters(
-                response_filters=self.response_filters,
-                response_filter_values=filters,
-            )
-            responsedf = parresp.filter_and_sum_responses(
-                self.responsedf,
-                ensemble,
-                response,
-                filteroptions=filteroptions,
-                aggregation=aggregation,
-            )
-            parameterdf = self.parameterdf[
-                ["ENSEMBLE", "REAL"] + selected_parameters
-            ].loc[self.parameterdf["ENSEMBLE"] == ensemble]
-
-            df = pd.merge(responsedf, parameterdf, on=["REAL"])
-            corrdf = correlate(df, response=response, method=correlation_method)
-            try:
-                corr_response = (
-                    corrdf[response]
-                    .dropna()
-                    .drop(["REAL", response], axis=0)
-                    .tail(n=max_parameters)
-                )
-                corr_response = corr_response[corr_response.abs() >= correlation_cutoff]
-                return (
-                    make_correlation_plot(
-                        corr_response,
-                        response,
-                        self.theme,
-                        correlation_method,
-                        correlation_cutoff,
-                        max_parameters,
-                    ),
-                    corr_response.index[-1],
-                )
-            except (KeyError, ValueError):
-                return (
-                    {
-                        "layout": {
-                            "title": "<b>Cannot calculate correlation for given selection</b><br>"
-                            "Select a different response or filter setting."
-                        }
-                    },
-                    None,
-                )
-
-        @app.callback(
-            Output(self.uuid("distribution-graph"), "figure"),
-            self.distribution_input_callbacks,
-        )
-        def _update_distribution_graph(
-            clickdata, initial_parameter, ensemble, response, aggregation, *filters
-        ):
-            """Callback to update distribution graphs.
-
-            1. Filters and aggregates response dataframe per realization
-            2. Filters parameters dataframe on selected ensemble
-            3. Merge parameter and response dataframe
-            4. Generate scatterplot and histograms
-            """
-            if clickdata:
-                parameter = clickdata["points"][0]["y"]
-            elif initial_parameter:
-                parameter = initial_parameter
-            else:
-                return {}
-            filteroptions = parresp.make_response_filters(
-                response_filters=self.response_filters,
-                response_filter_values=filters,
-            )
-            responsedf = parresp.filter_and_sum_responses(
-                self.responsedf,
-                ensemble,
-                response,
-                filteroptions=filteroptions,
-                aggregation=aggregation,
-            )
-            parameterdf = self.parameterdf.loc[self.parameterdf["ENSEMBLE"] == ensemble]
-            df = pd.merge(responsedf, parameterdf, on=["REAL"])[
-                ["REAL", parameter, response]
-            ]
-            return make_distribution_plot(df, parameter, response, self.theme)
-
-    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
-        if self.parameter_csv and self.response_csv:
-            return [
-                (
-                    read_csv,
-                    [
-                        {
-                            "csv_file": self.parameter_csv,
-                        }
-                    ],
-                ),
-                (
-                    read_csv,
-                    [
-                        {
-                            "csv_file": self.response_csv,
-                        }
-                    ],
-                ),
-            ]
-        if self.response_file:
-            return [
-                (
-                    load_csv,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "csv_file": self.response_file,
-                            "ensemble_set_name": "EnsembleSet",
-                        }
-                    ],
-                )
-            ]
-        return []
 
 
 def correlate(inputdf, response, method="pearson") -> pd.DataFrame:
