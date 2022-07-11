@@ -1,6 +1,6 @@
 from typing import List
 
-from dash import callback, Input, Output
+from dash import Input, Output, callback
 from dash.exceptions import PreventUpdate
 import numpy as np
 import pandas as pd
@@ -11,9 +11,9 @@ from ..._plugin_ids import PlugInIDs
 from ....._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
-    get_fanchart_traces,
     LowHighData,
     MinMaxData,
+    get_fanchart_traces,
 )
 from ...view_elements import Graph
 
