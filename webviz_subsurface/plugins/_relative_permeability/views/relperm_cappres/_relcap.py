@@ -2,8 +2,8 @@ from typing import List
 
 from dash import callback, Input, Output
 from dash.exceptions import PreventUpdate
-import pandas as pd
 import numpy as np
+import pandas as pd
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
