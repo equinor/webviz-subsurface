@@ -70,3 +70,8 @@ def render_parcoord(
     width = len(dimensions) * 80 + 250
     layout = {"width": width, "height": 1200, "margin": {"b": 740, "t": 30}}
     return {"data": data, "layout": theme.create_themed_layout(layout)}
+
+
+def remove_constants(df: pd.DataFrame):
+    for i in range(len(df.columns)):
+        print(i)

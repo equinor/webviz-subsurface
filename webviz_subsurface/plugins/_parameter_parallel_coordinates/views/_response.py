@@ -159,7 +159,6 @@ class ResponseView(ViewABC):
             ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
             parameters = parameters if isinstance(parameters, list) else [parameters]
             special_columns = ["ENSEMBLE", "REAL"]
-            print(opt_args)
             if exclude_include == "exc":
                 parallel_df = self.parallel_df.drop(parameters, axis=1)
             elif exclude_include == "inc":

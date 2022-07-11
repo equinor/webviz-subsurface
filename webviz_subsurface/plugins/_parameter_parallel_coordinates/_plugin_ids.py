@@ -7,6 +7,7 @@ class PluginIds:
         SELECTED_PARAMETERS = "selected-parameters"
         SELECTED_RESPONSE = "slected-response"
         SELECTED_DATE = "selected-date"
+        ACTIVE_VIEW = "active-view"
 
     class SharedSettings:
         # pylint: disable=too-few-public-methods
@@ -15,8 +16,10 @@ class PluginIds:
 
     class ParallelID:
         # pylint: disable=too-few-public-methods
-        GROUP_NAME = ""
+        GROUP_NAME1 = "Ensemble"
+
+        GROUP_NAME2 = "Response"
 
         ENSEMBLE_CHART = "ensemble-chart"
 
-        RESPONSE_CHART = "parallel-chart"
+        RESPONSE_CHART = "response-chart"

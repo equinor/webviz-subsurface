@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, html
+from dash import Dash, Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -136,6 +136,7 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list = None,
         parameter_csv: Path = None,
@@ -247,9 +248,16 @@ folder, to avoid risk of not extracting the right data.
         self.add_store(
             PluginIds.Stores.SELECTED_DATE, WebvizPluginABC.StorageType.SESSION
         )
+        self.add_store(
+            PluginIds.Stores.ACTIVE_VIEW, WebvizPluginABC.StorageType.SESSION
+        )
 
         self.add_shared_settings_group(
-            Filter(self.parameterdf, self.ensembles, self.parameter_columns),
+            Filter(
+                self.parameterdf,
+                self.ensembles,
+                self.parameter_columns,
+            ),
             PluginIds.SharedSettings.FILTER,
         )
 
@@ -262,6 +270,7 @@ folder, to avoid risk of not extracting the right data.
                 self.ens_colormap,
             ),
             PluginIds.ParallelID.ENSEMBLE_CHART,
+            PluginIds.ParallelID.GROUP_NAME1,
         )
 
         self.add_view(
@@ -277,6 +286,7 @@ folder, to avoid risk of not extracting the right data.
                 self.aggregation,
             ),
             PluginIds.ParallelID.RESPONSE_CHART,
+            PluginIds.ParallelID.GROUP_NAME2,
         )
 
     @property
@@ -302,6 +312,17 @@ folder, to avoid risk of not extracting the right data.
             id=self.uuid("layout"),
             style={"height": "90vh"},
         )
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.ACTIVE_VIEW), "data"),
+            Input(
+                self.active_view_id,
+                "value",
+            ),
+        )
+        def _update_view_id(view_id):
+            return view_id
 
     def add_webvizstore(self):
         functions = []

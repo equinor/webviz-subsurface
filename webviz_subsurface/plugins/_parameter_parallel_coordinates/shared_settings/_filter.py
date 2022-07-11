@@ -16,6 +16,7 @@ class Filter(SettingsGroupABC):
         ENSEMBLE = "ensemble"
         EXCLUDE_INCLUDE = "exclude-include"
         PARAMETERS = "parameters"
+        ACTIVE_VIEW = "active-view"
 
     def __init__(
         self,
@@ -74,6 +75,14 @@ class Filter(SettingsGroupABC):
         )
         def _set_ensembles(selected_ensemble: str) -> str:
             return selected_ensemble
+
+        @callback(
+            Output(self.get_store_unique_id(Filter.Ids.ACTIVE_VIEW), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.ACTIVE_VIEW), "data"),
+        )
+        def _scream_ensembles(active_view: str) -> str:
+            print(active_view)
+            return active_view
 
         @callback(
             Output(
