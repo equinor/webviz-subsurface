@@ -1,11 +1,11 @@
 from typing import List
 
+from dash.exceptions import PreventUpdate
 from dash import callback, Input, Output
 import pandas as pd
 import numpy as np
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config import WebvizSettings
-from dash.exceptions import PreventUpdate
 
 from ..._plugin_ids import PlugInIDs
 from ...view_elements import Graph
@@ -312,7 +312,7 @@ class RelpermCappres(ViewABC):
             colors: dict,
             nplots: int,
         ) -> List:
-            # pylint: disable=[too-many-local-variables,too-many-arguments]
+            # pylint: disable=too-many-locals
             """Creating graphs in the case of statistcal traces"""
             # Switched P10 and P90 due to convetion in petroleum industry
             def p10(x):
