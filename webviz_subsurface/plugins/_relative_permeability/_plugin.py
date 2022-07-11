@@ -3,11 +3,11 @@ from pathlib import Path
 from typing import Optional, Type, Union
 
 import pandas as pd
-import webviz_subsurface
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 
+import webviz_subsurface
 from ..._datainput.fmu_input import load_csv
 from ..._datainput.relative_permeability import load_satfunc, load_scal_recommendation
 from ._error import error
