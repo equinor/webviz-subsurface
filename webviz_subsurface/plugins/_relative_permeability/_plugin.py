@@ -181,6 +181,9 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             / "css"
             / "block_options.css"
         )
+
+        self.error_message = ""
+
         try:
             # self.ens_paths = {
             #     ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
