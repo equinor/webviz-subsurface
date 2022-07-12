@@ -167,8 +167,7 @@ class Filter(SettingsGroupABC):
             return self.control_layout
         if self.mode == "Filters":
             return self.filter_layout
-        else:
-            return []
+        return []
 
 
 def make_range_slider(domid, values, col_name) -> wcc.RangeSlider:
