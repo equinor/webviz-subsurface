@@ -186,6 +186,9 @@ class ProdMisfit(WebvizPluginABC):
         self.all_phases = list(sorted(set(self.all_phases)))
         self.all_wells = list(sorted(set(self.all_wells)))
         self.all_realizations = list(sorted(set(self.all_realizations)))
+        self.all_well_collection_names = []
+        for collection_name in self.well_collections.keys():
+            self.all_well_collection_names.append(collection_name)
 #-----------------------------------------------------------------------------------------------
         #add views, settings and stores
 
@@ -216,7 +219,7 @@ class ProdMisfit(WebvizPluginABC):
             self.all_phases,
             self.all_wells,
             self.all_realizations,
-            self.well_collections), PluginIds.SharedSettings.FILTER)
+            self.all_well_collection_names), PluginIds.SharedSettings.FILTER)
 
     
     @property
