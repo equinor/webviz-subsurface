@@ -26,7 +26,7 @@ class BothPlots(SettingsGroupABC):
                 id=self.register_component_unique_id(BothPlots.IDs.ENSEMBLE),
                 label="",
                 options=[{"label": k, "value": v} for k, v in self.ensembles.items()],
-                value=self.ensembles.values()[0],
+                value=list(self.ensembles.values())[0],
                 multi=False,
                 clearable=False,
             ),
@@ -35,7 +35,7 @@ class BothPlots(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(PlugInIDs.Stores.BothPlots.ENSEMBLE, "data"),
-            Input(BothPlots.IDs.ENSEMBLE.to_string(), "value"),
+            Input(BothPlots.IDs.ENSEMBLE, "value"),
         )
         def _set_both_ensemble(ensemble: str) -> str:
             return ensemble
@@ -75,14 +75,14 @@ class Horizontal(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(PlugInIDs.Stores.Horizontal.PARAMETER, "data"),
-            Input(Horizontal.IDs.PARAMETER.to_string(), "value"),
+            Input(Horizontal.IDs.PARAMETER, "value"),
         )
         def _set_horizontal_parameter(parameter: str) -> str:
             return parameter
 
         @callback(
             Output(PlugInIDs.Stores.Horizontal.ENSEMBLE, "data"),
-            Input(Horizontal.IDs.ENSEMBLE.to_string(), "value"),
+            Input(Horizontal.IDs.ENSEMBLE, "value"),
         )
         def _set_horizontal_ensemble(ensemble: str) -> str:
             return ensemble
@@ -111,11 +111,11 @@ class Vertical(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 id=self.register_component_unique_id(Vertical.IDs.ENSEMBLE),
-                labal="Ensemble",
+                label="Ensemble",
                 options=[{"label": k, "value": v} for k, v in self.ensembles.items()],
                 value=list(self.ensembles.values())[0],
                 multi=False,
-                cleable=False,
+                clearable=False,
             ),
         ]
 
@@ -152,7 +152,7 @@ class Options(SettingsGroupABC):
                 label="Color by",
                 options=[{"label": p, "value": p} for p in self.p_cols],
                 value=self.p_cols[0],
-                mulit=False,
+                multi=False,
                 clearable=True,
             ),
             wcc.Checklist(
@@ -170,14 +170,14 @@ class Options(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(PlugInIDs.Stores.Options.COLOR_BY, "data"),
-            Input(Options.IDs.COLOR_BY.to_string(), "value"),
+            Input(Options.IDs.COLOR_BY, "value"),
         )
         def _set_option_color_by(parameter: str) -> str:
             return parameter
 
         @callback(
             Output(PlugInIDs.Stores.Options.SHOW_SCATTER, "data"),
-            Input(Options.IDs.SHOW_SCATTER.to_string(), "value"),
+            Input(Options.IDs.SHOW_SCATTER, "value"),
         )
         def _set_optrion_scatter(scatter: str) -> str:
             return scatter
