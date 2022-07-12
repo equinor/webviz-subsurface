@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import pandas as pd
 from dash import dcc
@@ -13,8 +13,8 @@ from webviz_subsurface._models import (
 )
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
+    EnsembleTableProvider,
     EnsembleTableProviderFactory,
-    EnsembleTableProviderSet,
     Frequency,
 )
 
@@ -100,7 +100,7 @@ realizations if you have defined `ensembles`.
         ] = None
 
         run_mode_portable = WEBVIZ_INSTANCE_INFO.run_mode == WebvizRunMode.PORTABLE
-        table_provider = EnsembleTableProviderFactory.instance()
+        table_provider_factory = EnsembleTableProviderFactory.instance()
 
         if ensembles is not None:
             ensemble_paths = {
@@ -123,11 +123,16 @@ realizations if you have defined `ensembles`.
                 self.vmodel = ProviderTimeSeriesDataModel(
                     provider_set=provider_set, column_keys=column_keys
                 )
+
                 parameter_df = create_df_from_table_provider(
-                    table_provider.create_provider_set_from_per_realization_parameter_file(
-                        ensemble_paths
-                    )
+                    provider_set={
+                        ens_name: table_provider_factory.create_from_per_realization_parameter_file(
+                            ens_path
+                        )
+                        for ens_name, ens_path in ensemble_paths.items()
+                    }
                 )
+
             except ValueError as error:
                 message = (
                     f"Some/all ensembles are missing arrow files at {rel_file_pattern}.\n"
@@ -159,8 +164,10 @@ realizations if you have defined `ensembles`.
             # It should be removed in the future together with the support of aggregated csv-files
             try:
                 parameter_df = create_df_from_table_provider(
-                    table_provider.create_provider_set_from_aggregated_csv_file(
-                        csvfile_parameters
+                    provider_set=(
+                        table_provider_factory.create_provider_set_from_aggregated_csv_file(
+                            csvfile_parameters
+                        )
                     )
                 )
             except FileNotFoundError:
@@ -171,8 +178,10 @@ realizations if you have defined `ensembles`.
             if csvfile_smry is not None:
                 try:
                     smry_df = create_df_from_table_provider(
-                        table_provider.create_provider_set_from_aggregated_csv_file(
-                            csvfile_smry
+                        provider_set=(
+                            table_provider_factory.create_provider_set_from_aggregated_csv_file(
+                                csvfile_smry
+                            )
                         )
                     )
                 except FileNotFoundError:
@@ -210,12 +219,13 @@ realizations if you have defined `ensembles`.
             )
 
 
-def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.DataFrame:
+def create_df_from_table_provider(
+    provider_set: Dict[str, EnsembleTableProvider]
+) -> pd.DataFrame:
+    """Aggregates parameters from all ensemble into a common dataframe."""
     dfs = []
-    for ens in provider.ensemble_names():
-        df = provider.ensemble_provider(ens).get_column_data(
-            column_names=provider.ensemble_provider(ens).column_names()
-        )
-        df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+    for ens_name, provider in provider_set.items():
+        df = provider.get_column_data(column_names=provider.column_names())
+        df["ENSEMBLE"] = ens_name
         dfs.append(df)
     return pd.concat(dfs)

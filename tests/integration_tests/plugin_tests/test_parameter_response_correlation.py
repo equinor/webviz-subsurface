@@ -4,7 +4,6 @@ from webviz_config.plugins import ParameterResponseCorrelation
 
 def test_parameter_response_correlation(dash_duo, app, shared_settings) -> None:
     plugin = ParameterResponseCorrelation(
-        app,
         shared_settings["HM_SETTINGS"],
         ensembles=shared_settings["HM_ENSEMBLES"],
         response_file="share/results/volumes/geogrid--vol.csv",
