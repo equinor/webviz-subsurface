@@ -121,7 +121,6 @@ Responses are extracted automatically from the `.arrow` files in the individual 
     # pylint:disable=too-many-arguments, too-many-locals
     def __init__(
         self,
-        app,
         webviz_settings: WebvizSettings,
         parameter_csv: Path = None,
         response_csv: Path = None,
