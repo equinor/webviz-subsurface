@@ -26,3 +26,8 @@ class PlugInIDs:
         HORIZONTAL = "horiontal"
         VERTICAL = "vertical"
         OPTIONS = "options"
+
+    class ParaCorrGroups:
+        # pylint: disable=too-few-public-methods
+        GROUPNAME = "parameter-correlation-group"
+        PARACORR = "paracorr"
