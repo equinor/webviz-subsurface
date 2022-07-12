@@ -13,8 +13,8 @@ from webviz_subsurface._models import ParametersModel
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
+    EnsembleTableProvider,
     EnsembleTableProviderFactory,
-    EnsembleTableProviderSet,
     Frequency,
     get_matching_vector_names,
 )
@@ -167,9 +167,12 @@ Responses are extracted automatically from the `.arrow` files in the individual 
             }
             table_provider_factory = EnsembleTableProviderFactory.instance()
             parameterdf = create_df_from_table_provider(
-                table_provider_factory.create_provider_set_from_per_realization_parameter_file(
-                    self.ens_paths
-                )
+                provider_set={
+                    ens_name: table_provider_factory.create_from_per_realization_parameter_file(
+                        ens_path
+                    )
+                    for ens_name, ens_path in self.ens_paths.items()
+                }
             )
             if self.response_file:
                 self.responsedf = load_csv(
@@ -315,14 +318,14 @@ def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
 
 
-def create_df_from_table_provider(provider: EnsembleTableProviderSet) -> pd.DataFrame:
+def create_df_from_table_provider(
+    provider_set: Dict[str, EnsembleTableProvider]
+) -> pd.DataFrame:
     """Aggregates parameters from all ensemble into a common dataframe."""
     dfs = []
-    for ens in provider.ensemble_names():
-        df = provider.ensemble_provider(ens).get_column_data(
-            column_names=provider.ensemble_provider(ens).column_names()
-        )
-        df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
+    for ens_name, provider in provider_set.items():
+        df = provider.get_column_data(column_names=provider.column_names())
+        df["ENSEMBLE"] = ens_name
         dfs.append(df)
     return pd.concat(dfs)
 
