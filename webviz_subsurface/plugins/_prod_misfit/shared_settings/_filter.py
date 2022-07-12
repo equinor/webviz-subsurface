@@ -29,7 +29,7 @@ class Filter(SettingsGroupABC):
         phases: List[str],
         wells: List[str],
         realizations: List[int],
-        well_collections: Dict[str, List[str]], 
+        all_well_collection_names: List[str], 
     ) -> None:
         super().__init__("Filter")
 
@@ -38,10 +38,8 @@ class Filter(SettingsGroupABC):
         self.phases = phases
         self.wells = wells
         self.realizations = realizations
-        self.well_collections = well_collections
-        self.all_well_collection_names = []
-        for collection_name in well_collections.keys():
-            self.all_well_collection_names.append(collection_name)
+        self.all_well_collection_names = all_well_collection_names
+        
 
 
     def layout(self) -> List[Component]:
@@ -109,7 +107,7 @@ class Filter(SettingsGroupABC):
                         for collection in self.all_well_collection_names
                     ],
                     value=self.all_well_collection_names,
-                    size=min([len(self.wells), 5]),
+                    size=min([len(self.all_well_collection_names), 5]),
                 ),
             wcc.SelectWithLabel(
                     label="Realization selector",
