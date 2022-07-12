@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 import dash
-import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._models import WellAttributesModel
