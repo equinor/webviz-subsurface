@@ -10,7 +10,7 @@ class Graph(ViewElementABC):
         # pylint: disable=too-few-public-methods
         GRAPH = "graph"
 
-    def __init__(self, height: str = "88vh") -> None:
+    def __init__(self, height: str = "43vh") -> None:
         super().__init__()
 
         self.height = height
