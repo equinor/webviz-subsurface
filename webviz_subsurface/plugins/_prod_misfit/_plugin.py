@@ -175,16 +175,48 @@ class ProdMisfit(WebvizPluginABC):
             self.wells, self._well_attributes
         )
 #-----------------------------------------------------------------------------------------------
+        #some calculations
+        self.all_dates, self.all_phases, self.all_wells, self.all_realizations = [], [], [], []
+        for ens_name in self.ensemble_names:
+            self.all_dates.extend(self.dates[ens_name])
+            self.all_phases.extend(self.phases[ens_name])
+            self.all_wells.extend(self.wells[ens_name])
+            self.all_realizations.extend(self.realizations[ens_name])
+        self.all_dates = list(sorted(set(self.all_dates)))
+        self.all_phases = list(sorted(set(self.all_phases)))
+        self.all_wells = list(sorted(set(self.all_wells)))
+        self.all_realizations = list(sorted(set(self.all_realizations)))
+#-----------------------------------------------------------------------------------------------
         #add views, settings and stores
 
         self.add_store(
-            PluginIds.Stores.SELECTED_COUNTRIES, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
-            PluginIds.Stores.SELECTED_YEARS, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.SELECTED_DATES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_COMBINE_WELLS_COLLECTION, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_WELL_COLLECTIONS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_REALIZATIONS, WebvizPluginABC.StorageType.SESSION
         )
 
-        self.add_shared_settings_group(Filter(), PluginIds.SharedSettings.FILTER)
+        self.add_shared_settings_group(Filter(self.ensemble_names,
+            self.all_dates,
+            self.all_phases,
+            self.all_wells,
+            self.all_realizations,
+            self.well_collections), PluginIds.SharedSettings.FILTER)
 
     
     @property
