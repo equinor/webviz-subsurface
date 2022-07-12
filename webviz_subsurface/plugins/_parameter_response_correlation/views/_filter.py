@@ -36,7 +36,7 @@ class Filter(SettingsGroupABC):
         corr_method: str,
         mode: str,
     ) -> None:
-        super().__init__("Settings")
+        super().__init__(mode)
 
         self.responsedf = response_df
         self.ensembles = ensembles
@@ -162,18 +162,13 @@ class Filter(SettingsGroupABC):
         ]
 
     def layout(self) -> List[Component]:
-        return [
-            wcc.Selectors(label="Controls", children=self.control_layout),
-            (
-                wcc.Selectors(
-                    label="Filters",
-                    id=self.register_component_unique_id(Filter.Ids.FILTERS),
-                    children=self.filter_layout,
-                )
-                if self.response_filters
-                else []
-            ),
-        ]
+        if self.mode == "Controls":
+            return self.control_layout
+        elif self.mode == "Filters":
+            return self.filter_layout
+        else:
+            print("sorryyy")
+            return []
 
 
 def make_range_slider(domid, values, col_name) -> wcc.RangeSlider:

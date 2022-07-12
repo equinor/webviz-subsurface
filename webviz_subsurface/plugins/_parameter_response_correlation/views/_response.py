@@ -18,7 +18,8 @@ class ResponseView(ViewABC):
         # pylint: disable=too-few-public-methods
         CORRELATIONS = "correlations-chart"
         DISTRIBUTIONS = "distributions-chart"
-        SETTINGS = "settings"
+        CONTROLS_SETTINGS = "controls-settings"
+        FILTERS_SETTINGS = "filter-settings"
         # INITIAL_PARAMETER = "initial-parameter"
 
     def __init__(
@@ -53,8 +54,22 @@ class ResponseView(ViewABC):
                 self.response_columns,
                 self.aggregation,
                 self.corr_method,
+                "Controls",
             ),
-            ResponseView.Ids.SETTINGS,
+            ResponseView.Ids.CONTROLS_SETTINGS,
+        )
+        self.add_settings_group(
+            Filter(
+                self.responsedf,
+                self.ensembles,
+                self.response_filters,
+                self.parameter_columns,
+                self.response_columns,
+                self.aggregation,
+                self.corr_method,
+                "Filters",
+            ),
+            ResponseView.Ids.FILTERS_SETTINGS,
         )
 
         column = self.add_column()
@@ -68,43 +83,43 @@ class ResponseView(ViewABC):
         """List of Inputs for correlation callback"""
         callbacks = [
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.RESPONSE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.CORRELATION_METHOD)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.RESPONSE_AGGREGATION)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.CORRELATION_CUTOFF)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.MAX_NUMBER_PARAMETERS)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.FILTERS_SETTINGS)
                 .component_unique_id(Filter.Ids.PARAMETERS)
                 .to_string(),
                 "value",
@@ -114,7 +129,7 @@ class ResponseView(ViewABC):
             for col_name in self.response_filters:
                 callbacks.append(
                     Input(
-                        self.settings_group(ResponseView.Ids.SETTINGS)
+                        self.settings_group(ResponseView.Ids.FILTERS_SETTINGS)
                         .component_unique_id(f"filter-{col_name}")
                         .to_string(),
                         "value",
@@ -134,19 +149,19 @@ class ResponseView(ViewABC):
             ),
             Input(self.get_store_unique_id(PluginIds.Stores.INITIAL_PARAMETER), "data"),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.RESPONSE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ResponseView.Ids.SETTINGS)
+                self.settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
                 .component_unique_id(Filter.Ids.RESPONSE_AGGREGATION)
                 .to_string(),
                 "value",
@@ -156,7 +171,7 @@ class ResponseView(ViewABC):
             for col_name in self.response_filters:
                 callbacks.append(
                     Input(
-                        self.settings_group(ResponseView.Ids.SETTINGS)
+                        self.settings_group(ResponseView.Ids.FILTERS_SETTINGS)
                         .component_unique_id(f"filter-{col_name}")
                         .to_string(),
                         "value",
