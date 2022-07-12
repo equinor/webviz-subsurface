@@ -9,6 +9,7 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
 class Filter(SettingsGroupABC):
+    # pylint: disable=too-many-arguments
     class Ids:
         # pylint: disable=too-few-public-methods
         # Controls
@@ -164,10 +165,9 @@ class Filter(SettingsGroupABC):
     def layout(self) -> List[Component]:
         if self.mode == "Controls":
             return self.control_layout
-        elif self.mode == "Filters":
+        if self.mode == "Filters":
             return self.filter_layout
         else:
-            print("sorryyy")
             return []
 
 

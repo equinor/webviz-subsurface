@@ -14,6 +14,7 @@ from ._view_functions import correlate, make_correlation_plot, make_distribution
 
 
 class ResponseView(ViewABC):
+    # pylint: disable=too-many-arguments
     class Ids:
         # pylint: disable=too-few-public-methods
         CORRELATIONS = "correlations-chart"
