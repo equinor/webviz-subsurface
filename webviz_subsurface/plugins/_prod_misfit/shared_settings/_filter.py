@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List
+from typing import List
 
 import pandas as pd
 import webviz_core_components as wcc

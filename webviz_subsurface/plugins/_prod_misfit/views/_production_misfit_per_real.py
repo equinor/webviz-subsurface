@@ -1,13 +1,9 @@
-from datetime import datetime
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Union
 
-import pandas as pd
-import plotly.colors
 import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
-from webviz_wlf_tutorial.plugins.population_analysis.views import population
 
 from ..._simulation_time_series.types.provider_set import ProviderSet
 from .._plugin_ids import PluginIds
