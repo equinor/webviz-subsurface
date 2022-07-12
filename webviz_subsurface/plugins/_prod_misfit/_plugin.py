@@ -13,6 +13,8 @@ from webviz_subsurface._providers import Frequency
 from .._simulation_time_series.types.provider_set import (
     create_presampled_provider_set_from_paths,
 )
+from ._plugin_ids import PluginIds
+from .shared_settings import Filter
 
 #from ._callbacks import plugin_callbacks
 #from ._layout import main_layout
@@ -172,6 +174,17 @@ class ProdMisfit(WebvizPluginABC):
         self.well_collections = _get_well_collections_from_attr(
             self.wells, self._well_attributes
         )
+#-----------------------------------------------------------------------------------------------
+        #add views, settings and stores
+
+        self.add_store(
+            PluginIds.Stores.SELECTED_COUNTRIES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_YEARS, WebvizPluginABC.StorageType.SESSION
+        )
+
+        self.add_shared_settings_group(Filter(), PluginIds.SharedSettings.FILTER)
 
     
     @property
