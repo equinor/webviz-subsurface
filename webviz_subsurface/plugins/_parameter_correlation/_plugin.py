@@ -45,7 +45,7 @@ class ParameterCorrelation(WebvizPluginABC):
             PlugInIDs.Stores.Horizontal.PARAMETER, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            Horizontal(self.ensembles, self.p_cols), PlugInIDs.SharedSettings.VERTICAL
+            Horizontal(self.ensembles, self.p_cols), PlugInIDs.SharedSettings.HORIZONTAL
         )
 
         self.add_store(
