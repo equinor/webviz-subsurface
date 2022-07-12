@@ -34,8 +34,12 @@ class BothPlots(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(PlugInIDs.Stores.BothPlots.ENSEMBLE, "data"),
-            Input(BothPlots.IDs.ENSEMBLE, "value"),
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.BothPlots.ENSEMBLE), "data"
+            ),
+            Input(
+                self.component_unique_id(BothPlots.IDs.ENSEMBLE).to_string(), "value"
+            ),
         )
         def _set_both_ensemble(ensemble: str) -> str:
             return ensemble
@@ -74,15 +78,23 @@ class Horizontal(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(PlugInIDs.Stores.Horizontal.PARAMETER, "data"),
-            Input(Horizontal.IDs.PARAMETER, "value"),
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.PARAMETER), "data"
+            ),
+            Input(
+                self.component_unique_id(Horizontal.IDs.PARAMETER).to_string(), "value"
+            ),
         )
         def _set_horizontal_parameter(parameter: str) -> str:
             return parameter
 
         @callback(
-            Output(PlugInIDs.Stores.Horizontal.ENSEMBLE, "data"),
-            Input(Horizontal.IDs.ENSEMBLE, "value"),
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.ENSEMBLE), "data"
+            ),
+            Input(
+                self.component_unique_id(Horizontal.IDs.ENSEMBLE).to_string(), "value"
+            ),
         )
         def _set_horizontal_ensemble(ensemble: str) -> str:
             return ensemble
@@ -121,15 +133,21 @@ class Vertical(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(PlugInIDs.Stores.Vertical.PARAMETER, "data"),
-            Input(Vertical.IDs.PARAMETER, "value"),
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.Vertical.PARAMETER), "data"
+            ),
+            Input(
+                self.component_unique_id(Vertical.IDs.PARAMETER).to_string(), "value"
+            ),
         )
         def _set_vertical_parameter(parameter: str) -> str:
             return parameter
 
         @callback(
-            Output(PlugInIDs.Stores.Vertical.ENSEMBLE, "data"),
-            Input(Vertical.IDs.ENSEMBLE, "value"),
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.Vertical.ENSEMBLE), "data"
+            ),
+            Input(self.component_unique_id(Vertical.IDs.ENSEMBLE).to_string(), "value"),
         )
         def _set_vertical_ensemble(ensemble: str) -> str:
             return ensemble
@@ -169,15 +187,19 @@ class Options(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(PlugInIDs.Stores.Options.COLOR_BY, "data"),
-            Input(Options.IDs.COLOR_BY, "value"),
+            Output(self.get_store_unique_id(PlugInIDs.Stores.Options.COLOR_BY), "data"),
+            Input(self.component_unique_id(Options.IDs.COLOR_BY).to_string(), "value"),
         )
         def _set_option_color_by(parameter: str) -> str:
             return parameter
 
         @callback(
-            Output(PlugInIDs.Stores.Options.SHOW_SCATTER, "data"),
-            Input(Options.IDs.SHOW_SCATTER, "value"),
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.Options.SHOW_SCATTER), "data"
+            ),
+            Input(
+                self.component_unique_id(Options.IDs.SHOW_SCATTER).to_string(), "value"
+            ),
         )
         def _set_optrion_scatter(scatter: str) -> str:
             return scatter

@@ -10,6 +10,7 @@ from ..._datainput.fmu_input import scratch_ensemble
 from ._error import error
 from ._plugin_ids import PlugInIDs
 from .shared_settings import BothPlots, Horizontal, Options, Vertical
+from .views import MatrixPlot, ScatterPlot
 
 
 class ParameterCorrelation(WebvizPluginABC):
@@ -24,10 +25,16 @@ class ParameterCorrelation(WebvizPluginABC):
         super().__init__()
 
         self.error_message = ""
-        self.ensembles = {
-            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-            for ens in ensembles
-        }
+
+        try:
+            self.ensembles = {
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                for ens in ensembles
+            }
+            self.p_cols
+        except:
+            self.error_message = "Error has occurd"
+
         self.drop_constants = drop_constants
         self.plotly_theme = webviz_settings.theme.plotly_theme
 
@@ -66,6 +73,17 @@ class ParameterCorrelation(WebvizPluginABC):
         )
         self.add_shared_settings_group(
             Options(self.p_cols), PlugInIDs.SharedSettings.OPTIONS
+        )
+
+        self.add_view(
+            MatrixPlot(self.ensembles, self.p_cols, webviz_settings, drop_constants),
+            PlugInIDs.ParaCorrGroups.MATRIX,
+            PlugInIDs.ParaCorrGroups.GROUPNAME,
+        )
+        self.add_view(
+            ScatterPlot(self.ensembles, self.p_cols, webviz_settings),
+            PlugInIDs.ParaCorrGroups.SCATTER,
+            PlugInIDs.ParaCorrGroups.GROUPNAME,
         )
 
     @property

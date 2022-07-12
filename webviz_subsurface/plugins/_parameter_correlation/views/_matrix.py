@@ -4,7 +4,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 from dash import Input, Output, callback
-from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
@@ -18,15 +17,27 @@ class MatrixPlot(ViewABC):
         # pylint: disable=too-few-public-methods
         MATRIXPLOT = "matrixplot"
 
-    def __init__(self, ensembles: dict, p_cols: List) -> None:
+    def __init__(
+        self,
+        ensembles: dict,
+        p_cols: List,
+        webviz_settings: WebvizSettings,
+        drop_constants: bool = True,
+    ) -> None:
         super().__init__("Matrix plot")
 
         self.ensembles = ensembles
         self.p_cols = p_cols
+        self.plotly_theme = webviz_settings.theme.plotly_theme
+        self.drop_constants = drop_constants
 
+        # Creating the column and row for the setup of the view
         column = self.add_column()
-        first_row = column.add_row()
-        first_row.add_view_element(Graph(), MatrixPlot.IDs.MATRIXPLOT)
+        first_row = column.make_row()
+        first_row.add_view_element(
+            Graph(),
+            MatrixPlot.IDs.MATRIXPLOT,
+        )
 
     def set_callbacks(self) -> None:
         @callback(
@@ -36,12 +47,17 @@ class MatrixPlot(ViewABC):
                 .to_string(),
                 "figure",
             ),
-            Input(PlugInIDs.Stores.BothPlots.ENSEMBLE, "data"),
-            Input(PlugInIDs.Stores.Horizontal.PARAMETER, "data"),
-            Input(PlugInIDs.Stores.Vertical.PARAMETER, "data"),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.BothPlots.ENSEMBLE), "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.PARAMETER), "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Vertical.PARAMETER), "data"
+            ),
         )
         def _update_matrix(
-            self,
             both_ensemble: str,
             horizontal_paramter: str,
             vertical_parameter: str,
@@ -51,6 +67,7 @@ class MatrixPlot(ViewABC):
                 theme=self.plotly_theme,
                 drop_constants=self.drop_constants,
             )
+            vertical_parameter = horizontal_paramter
             # Finds index of the currently selected cell
             x_index = list(fig["data"][0]["x"]).index(horizontal_paramter)
             y_index = list(fig["data"][0]["y"]).index(vertical_parameter)
