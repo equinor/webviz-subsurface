@@ -222,7 +222,14 @@ class ProdMisfit(WebvizPluginABC):
             self.all_realizations,
             self.all_well_collection_names), PluginIds.SharedSettings.FILTER)
 
-        self.add_view(MisfitPerRealView(),PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+        self.add_view(MisfitPerRealView(
+            input_provider_set=self._input_provider_set,
+            ens_vectors=self.vectors,
+            ens_realizations=self.realizations,
+            well_collections=self.well_collections,
+            weight_reduction_factor_oil=self.weight_reduction_factor_oil,
+            weight_reduction_factor_wat=self.weight_reduction_factor_wat,
+            weight_reduction_factor_gas=self.weight_reduction_factor_gas,),PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
 
     
     @property

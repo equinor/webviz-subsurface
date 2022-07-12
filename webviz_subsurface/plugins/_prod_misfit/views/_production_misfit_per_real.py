@@ -103,110 +103,189 @@ class PlotSettings(SettingsGroupABC):
         ]
 
 
+class MisfitOptions(SettingsGroupABC):
+    class Ids:
+        # pylint: disable=too-few-public-methods
+        MISFIT_WEIGHT = "misfit-weight"
+        MISFIT_EXPONENT = "misfit-exponent"
+
+    def __init__(self) -> None:
+        super().__init__("Misfit options")
+
+    def layout(self) -> List[Component]:
+        return [
+            wcc.Dropdown(
+                label="Misfit weight",
+                id=self.register_component_unique_id(MisfitOptions.Ids.MISFIT_WEIGHT),
+                options=[
+                    {
+                        "label": "Phase weights",
+                        "value": -1.0,
+                    },
+                    {"label": "None", "value": 0.0},
+                    {
+                        "label": "10% obs error (min=1000)",
+                        "value": 0.10,
+                    },
+                    {
+                        "label": "20% obs error (min=1000)",
+                        "value": 0.20,
+                    },
+                ],
+                value=-1.0,
+                clearable=False,
+                persistence=True,
+                persistence_type="memory",
+            ),
+            wcc.Dropdown(
+                label="Misfit exponent",
+                id=self.register_component_unique_id(MisfitOptions.Ids.MISFIT_EXPONENT),
+                options=[
+                    {
+                        "label": "Linear sum",
+                        "value": 1.0,
+                    },
+                    {
+                        "label": "Squared sum",
+                        "value": 2.0,
+                    },
+                ],
+                value=1.0,
+                clearable=False,
+                persistence=True,
+                persistence_type="memory",
+            ),
+        ]
+
 class MisfitPerRealView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         MISFIT_GRAPH = "misfit-graph"
         PLOT_SETTINGS = "plot-settings"
+        MISFIT_OPTIONS = "misfit-options"
     
     def __init__(self, 
-        # ensemble_names: List[str],
-        # dates: List[datetime],
-        # phases: List[str],
-        # wells: List[str],
-        # all_well_collection_names: List[str],
-        # realizations: List[int],
-        # input_provider_set: ProviderSet,
-        # ens_vectors: Dict[str, List[str]],
-        # ens_realizations: Dict[str, List[int]],
-        # well_collections: Dict[str, List[str]],
-        # weight_reduction_factor_oil: float,
-        # weight_reduction_factor_wat: float,
-        # weight_reduction_factor_gas: float,
+        input_provider_set: ProviderSet,
+        ens_vectors: Dict[str, List[str]],
+        ens_realizations: Dict[str, List[int]],
+        well_collections: Dict[str, List[str]],
+        weight_reduction_factor_oil: float,
+        weight_reduction_factor_wat: float,
+        weight_reduction_factor_gas: float,
     ) -> None:
         super().__init__("Production misfit per real")
 
-        # self.ensemble_names = ensemble_names
-        # self.dates = dates
-        # self.phases = phases
-        # self.wells = wells
-        # self.realizations = realizations
-        # self.all_well_collection_names = all_well_collection_names
-        # self.input_provider_set = input_provider_set
-        # self.ens_vectors = ens_vectors
-        # self.ens_realizations = ens_realizations
-        # self.well_collections = well_collections
-        # self.weight_reduction_factor_oil = weight_reduction_factor_oil
-        # self.weight_reduction_factor_wat = weight_reduction_factor_wat
-        # self.weight_reduction_factor_gas = weight_reduction_factor_gas
+        self.input_provider_set = input_provider_set
+        self.ens_vectors = ens_vectors
+        self.ens_realizations = ens_realizations
+        self.well_collections = well_collections
+        self.weight_reduction_factor_oil = weight_reduction_factor_oil
+        self.weight_reduction_factor_wat = weight_reduction_factor_wat
+        self.weight_reduction_factor_gas = weight_reduction_factor_gas
 
 
         self.add_settings_group(PlotSettings(), MisfitPerRealView.Ids.PLOT_SETTINGS)
+        self.add_settings_group(MisfitOptions(), MisfitPerRealView.Ids.MISFIT_OPTIONS)
         column = self.add_column()
         column.add_view_element(Graph(), MisfitPerRealView.Ids.MISFIT_GRAPH)
 
-    # def set_callbacks(self) -> None:
-    #     @callback(
-    #         Output(self.view_element(MisfitPerRealView.Ids.MISFIT_GRAPH)
-    #             .component_unique_id(Graph.Ids.GRAPH)
-    #             .to_string(),
-    #             "figure",),
-    #         Input(),
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(self.view_element(MisfitPerRealView.Ids.MISFIT_GRAPH)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure",),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_DATES), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELL_COLLECTIONS), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COMBINE_WELLS_COLLECTION), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_REALIZATIONS), "data"),
+            Input(
+                self.settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettings.Ids.COLORBY)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettings.Ids.SORTING_RANKING)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettings.Ids.FIG_LAYOUT_HEIGHT)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(MisfitPerRealView.Ids.MISFIT_OPTIONS)
+                .component_unique_id(MisfitOptions.Ids.MISFIT_WEIGHT)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(MisfitPerRealView.Ids.MISFIT_OPTIONS)
+                .component_unique_id(MisfitOptions.Ids.MISFIT_EXPONENT)
+                .to_string(),
+                "value",
+            ),
+        )
+        def _update_plots(
+            ensemble_names: List[str],
+            selector_dates: list,
+            selector_phases: list,
+            selector_well_names: list,
+            selector_well_collection_names: list,
+            selector_well_combine_type: str,
+            selector_realizations: List[int],
+            colorby: str,
+            sorting: str,
+            figheight: int,
+            obs_error_weight: float,
+            misfit_exponent: float,
+        ) -> List[wcc.Graph]:
 
-    #     )
-    #     def _update_plots(
-    #         ensemble_names: List[str],
-    #         selector_dates: list,
-    #         selector_phases: list,
-    #         selector_well_names: list,
-    #         selector_well_collection_names: list,
-    #         selector_well_combine_type: str,
-    #         selector_realizations: List[int],
-    #         colorby: str,
-    #         sorting: str,
-    #         figheight: int,
-    #         obs_error_weight: float,
-    #         misfit_exponent: float,
-    #     ) -> Union[str, List[wcc.Graph]]:
+            if not ensemble_names:
+                return "No ensembles selected"
 
-    #         if not ensemble_names:
-    #             return "No ensembles selected"
+            well_names = _get_well_names_combined(
+                self.well_collections,
+                selector_well_collection_names,
+                selector_well_names,
+                selector_well_combine_type,
+            )
 
-    #         well_names = _get_well_names_combined(
-    #             self.well_collections,
-    #             selector_well_collection_names,
-    #             selector_well_names,
-    #             selector_well_combine_type,
-    #         )
+            dframe = makedf.get_df_diff(
+                makedf.get_df_smry(
+                    self.input_provider_set,
+                    ensemble_names,
+                    self.ens_vectors,
+                    self.ens_realizations,
+                    selector_realizations,
+                    well_names,
+                    selector_phases,
+                    selector_dates,
+                ),
+                obs_error_weight,
+                self.weight_reduction_factor_oil,
+                self.weight_reduction_factor_wat,
+                self.weight_reduction_factor_gas,
+                misfit_exponent,
+            )
 
-    #         dframe = makedf.get_df_diff(
-    #             makedf.get_df_smry(
-    #                 self.input_provider_set,
-    #                 ensemble_names,
-    #                 self.ens_vectors,
-    #                 self.ens_realizations,
-    #                 selector_realizations,
-    #                 well_names,
-    #                 selector_phases,
-    #                 selector_dates,
-    #             ),
-    #             obs_error_weight,
-    #             self.weight_reduction_factor_oil,
-    #             self.weight_reduction_factor_wat,
-    #             self.weight_reduction_factor_gas,
-    #             misfit_exponent,
-    #         )
+            figures = makefigs.prod_misfit_plot(
+                dframe,
+                selector_phases,
+                colorby,
+                sorting,
+                figheight,
+                misfit_exponent,
+                # misfit_normalization,
+            )
 
-    #         figures = makefigs.prod_misfit_plot(
-    #             dframe,
-    #             selector_phases,
-    #             colorby,
-    #             sorting,
-    #             figheight,
-    #             misfit_exponent,
-    #             # misfit_normalization,
-    #         )
-
-    #         return figures
+            return figures
 
         
