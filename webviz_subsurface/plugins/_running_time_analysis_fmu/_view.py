@@ -28,7 +28,8 @@ class RunTimeAnalysisGraph(ViewABC):
             filter_shorter: Union[int, float] = 10
             ) -> None:
         super().__init__("name")
-        self.add_column(RunTimeAnalysisGraph.Ids.RUNTIMEANALYSIS)
+        column = self.add_column()
+        column.make_row(RunTimeAnalysisGraph.Ids.RUNTIMEANALYSIS)
         self.plotly_theme = plotly_theme
         self.job_status_df = job_status_df
         self.real_status_df = real_status_df
@@ -56,7 +57,7 @@ class RunTimeAnalysisGraph(ViewABC):
             filter_short: List[str],
             params: Union[str, List[str]],
             remove_constant: str
-        ) -> dict:
+        ) -> List[dict]:
             """Update main figure
             Dependent on `mode` it will call rendering of the chosen form of visualization
             """
@@ -78,43 +79,54 @@ class RunTimeAnalysisGraph(ViewABC):
                         self.plotly_theme,
                     )
 
-            else: 
-
-                # Otherwise: parallel coordinates
-                # Ensure selected parameters is a list
-                params = params if isinstance(params, list) else [params]
-                # Color by success or runtime, for runtime drop unsuccesful
-                colormap_labels: Union[List[str], None]
-                if coloring == "Successful/failed realization":
-                    plot_df = self.real_status_df[self.real_status_df["ENSEMBLE"] == ens]
-                    colormap = make_colormap(
-                        self.plotly_theme["layout"]["colorway"], discrete=2
-                    )
-                    color_by_col = "STATUS_BOOL"
-                    colormap_labels = ["Failed", "Success"]
-                else:
-                    plot_df = self.real_status_df[
-                        (self.real_status_df["ENSEMBLE"] == ens)
-                        & (self.real_status_df["STATUS_BOOL"] == 1)
-                    ]
-                    colormap = self.plotly_theme["layout"]["colorscale"]["sequential"]
-                    color_by_col = "RUNTIME"
-                    colormap_labels = None
-
-                # Call rendering of parallel coordinate plot
-                plot_info = render_parcoord(
-                    plot_df,
-                    params,
-                    self.plotly_theme,
-                    colormap,
-                    color_by_col,
-                    remove_constant,
-                    colormap_labels, 
+                return wcc.Graph(
+                    id = "run-time-analysis-fmu-graph",
+                    figure = plot_info    
                 )
-            return wcc.Graph(
-                id = "run-time-analysis-fmu-graph",
-                figure = plot_info    
+
+
+            # Otherwise: parallel coordinates
+            # Ensure selected parameters is a list
+            params = params if isinstance(params, list) else [params]
+            # Color by success or runtime, for runtime drop unsuccesful
+            colormap_labels: Union[List[str], None]
+            if coloring == "Successful/failed realization":
+                plot_df = self.real_status_df[self.real_status_df["ENSEMBLE"] == ens]
+                colormap = make_colormap(
+                    self.plotly_theme["layout"]["colorway"], discrete=2
+                )
+                color_by_col = "STATUS_BOOL"
+                colormap_labels = ["Failed", "Success"]
+            else:
+                plot_df = self.real_status_df[
+                    (self.real_status_df["ENSEMBLE"] == ens)
+                    & (self.real_status_df["STATUS_BOOL"] == 1)
+                ]
+                colormap = self.plotly_theme["layout"]["colorscale"]["sequential"]
+                color_by_col = "RUNTIME"
+                colormap_labels = None
+
+            # Call rendering of parallel coordinate plot
+            # plot_info = render_parcoord(
+            #     plot_df,
+            #     params,
+            #     self.plotly_theme,
+            #     colormap,
+            #     color_by_col,
+            #     remove_constant,
+            #     colormap_labels, 
+            # )
+            plot_info = render_parcoord(
+                plot_df,
+                params,
+                self.plotly_theme,
+                colormap,
+                color_by_col,
+                remove_constant,
+                colormap_labels, 
             )
+            return plot_info
+            
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_matrix(status_df: pd.DataFrame, rel: str, theme: dict) -> dict:
@@ -202,7 +214,7 @@ def render_parcoord(
     """Renders parallel coordinates plot"""
     # Create parcoords dimensions (one per parameter)
 
-    dimensions = []
+    dimensions = {}
     dimentions_params = []
 
 
@@ -210,61 +222,183 @@ def render_parcoord(
         for param in params:
             if len(np.unique(plot_df[param].values)) >1:
                 dimentions_params.append(param)
-
-        dimensions = [
-            {"label": param, "values": plot_df[param].values.tolist()} for param in dimentions_params
-        ]
-
     else:
-        dimensions = [
-            {"label": param, "values": plot_df[param].values.tolist()} for param in params
-        ]
+        dimentions_params = params
 
-    # Parcoords data dict
-    data: dict = {
-        "line": {
-            "color": plot_df[color_col].values.tolist(),
-            "colorscale": colormap,
-            "showscale": True,
-        },
-        "dimensions": dimensions,
-        "labelangle": -90,
-        "labelside": "bottom",
-        "type": "parcoords"
-    }
-    if color_col == "STATUS_BOOL":
-        data["line"].update(
-            {
-                "cmin": -0.5,
-                "cmax": 1.5,
-                "colorbar": {
-                    "tickvals": [0, 1],
-                    "ticktext": colormap_labels,
-                    "title": "Status",
-                    "xanchor": "right",
-                    "x": -0.02,
-                    "len": 0.3,
-                },
+    
+    for param in dimentions_params: 
+        dimensions [param] = plot_df[param].values.tolist()
+    
+        # dimensions = [
+        #     {"label": param, "values": plot_df[param].values.tolist()} for param in params
+        # ]
+    output_element = []
+    print(plot_df[color_col].values.tolist())
+
+    for param in dimentions_params:
+        data = {
+                'x': list(range(0,100)), 
+                'y':  dimensions[param],
+                'type': 'line',
+                'name': param,
+                'line': {
+                        # "color": plot_df[color_col].values.tolist(),
+                        # "colorscale": colormap,
+                        # "showscale": True,
+                    },
+            }
+        layout = {}
+        layout.update(theme["layout"])
+        width = len(dimensions) * 100 + 250
+        margin_b = max([len(param) for param in params]) * 8
+        layout.update({
+            "paper_bgcolor": "rgba(0,0,0,0)",
+            "plot_bgcolor": "rgba(0,0,0,0)",
+            "margin": {"b": 0, "t": 0, 'r': '6vh'},
+            'xaxis': {
+                    'visible': False,
+                    'showticklabels': False},
+            'yaxis': {
+                    'visible': True,
+                    'showticklabels': True},
             },
-        )
-    else:
-        data["line"].update(
-            {
-                "colorbar": {
-                    "title": "Running time",
-                    "xanchor": "right",
-                    "x": -0.02,
-                },
-            },
+            )
+        layout.update ({
+            'title':{
+                'text': param,
+                'y': '0.5',
+                'x':'0',
+                'font':{'size':'8'}
+            }
+        })
+
+        figure = {'data':[data], 'layout':layout}
+        output_element.append(
+            wcc.Graph(
+                id = "run-time-analysis-fmu-graph"+param,
+                figure = figure,
+                style={"height": '10vh'},
+            )
         )
 
-    layout = {}
-    layout.update(theme["layout"])
-    # Ensure sufficient spacing between each dimension and margin for labels
-    width = len(dimensions) * 100 + 250
-    margin_b = max([len(param) for param in params]) * 8
-    layout.update({"width": width, "height": 800, "margin": {"b": margin_b, "t": 30}})
-    return {"data": [data], "layout": layout}
+        # if color_col == "STATUS_BOOL":
+        #     data["line"].update(
+        #         {
+        #             "cmin": -0.5,
+        #             "cmax": 1.5,
+        #             "colorbar": {
+        #                 "tickvals": [0, 1],
+        #                 "ticktext": colormap_labels,
+        #                 "title": "Status",
+        #                 "xanchor": "right",
+        #                 "x": -0.02,
+        #                 "len": 0.3,
+        #             },
+        #         },
+        #     )
+        # else:
+        #     data["line"].update(
+        #         {
+        #             "colorbar": {
+        #                 "title": "Running time",
+        #                 "xanchor": "right",
+        #                 "x": -0.02,
+        #             },
+        #         },
+        #     )
+
+        
+        
+
+    
+    return output_element
+
+    # # Parcoords data dict
+    # data: dict = {
+    #     "line": {
+    #         "color": plot_df[color_col].values.tolist(),
+    #         "colorscale": colormap,
+    #         "showscale": True,
+    #     },
+    #     "dimensions": dimensions,
+    #     "labelangle": -90,
+    #     "labelside": "bottom",
+    #     "type": "line"
+    # }
+    # if color_col == "STATUS_BOOL":
+    #     data["line"].update(
+    #         {
+    #             "cmin": -0.5,
+    #             "cmax": 1.5,
+    #             "colorbar": {
+    #                 "tickvals": [0, 1],
+    #                 "ticktext": colormap_labels,
+    #                 "title": "Status",
+    #                 "xanchor": "right",
+    #                 "x": -0.02,
+    #                 "len": 0.3,
+    #             },
+    #         },
+    #     )
+    # else:
+    #     data["line"].update(
+    #         {
+    #             "colorbar": {
+    #                 "title": "Running time",
+    #                 "xanchor": "right",
+    #                 "x": -0.02,
+    #             },
+    #         },
+    #     )
+
+    
+
+    # # Parcoords data dict
+    # data: dict = {
+    #     "line": {
+    #         "color": plot_df[color_col].values.tolist(),
+    #         "colorscale": colormap,
+    #         "showscale": True,
+    #     },
+    #     "dimensions": dimensions,
+    #     "labelangle": -90,
+    #     "labelside": "bottom",
+    #     "type": "parcoords"
+    # }
+    # if color_col == "STATUS_BOOL":
+    #     data["line"].update(
+    #         {
+    #             "cmin": -0.5,
+    #             "cmax": 1.5,
+    #             "colorbar": {
+    #                 "tickvals": [0, 1],
+    #                 "ticktext": colormap_labels,
+    #                 "title": "Status",
+    #                 "xanchor": "right",
+    #                 "x": -0.02,
+    #                 "len": 0.3,
+    #             },
+    #         },
+    #     )
+    # else:
+    #     data["line"].update(
+    #         {
+    #             "colorbar": {
+    #                 "title": "Running time",
+    #                 "xanchor": "right",
+    #                 "x": -0.02,
+    #             },
+    #         },
+    #     )
+
+    # layout = {}
+    # layout.update(theme["layout"])
+    # # Ensure sufficient spacing between each dimension and margin for labels
+    # width = len(dimensions) * 100 + 250
+    # margin_b = max([len(param) for param in params]) * 8
+    # layout.update({"width": width, "height": 800, "margin": {"b": margin_b, "t": 30}})
+    
+    #return {"data": [data], "layout": layout}
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def make_colormap(color_array: list, discrete: int = None) -> list:

@@ -213,6 +213,3 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                 value = self.COLOR_PARCOORD_BY_LABELS[0]
                 
             return (children, label,options,value)
-
-
-                
