@@ -15,6 +15,7 @@ from .._simulation_time_series.types.provider_set import (
 )
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
+from .views import MisfitPerRealView
 
 #from ._callbacks import plugin_callbacks
 #from ._layout import main_layout
@@ -220,6 +221,8 @@ class ProdMisfit(WebvizPluginABC):
             self.all_wells,
             self.all_realizations,
             self.all_well_collection_names), PluginIds.SharedSettings.FILTER)
+
+        self.add_view(MisfitPerRealView(),PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
 
     
     @property
