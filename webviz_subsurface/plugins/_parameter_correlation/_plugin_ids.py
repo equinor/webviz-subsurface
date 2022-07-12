@@ -19,3 +19,10 @@ class PlugInIDs:
             # pylint: disable=too-few-public-methods
             COLOR_BY = "color-by"
             SHOW_SCATTER = "show-scatter"
+
+    class SharedSettings:
+        # pylint: disable=too-few-public-methods
+        BOTHPLOTS = "both-plots"
+        HORIZONTAL = "horiontal"
+        VERTICAL = "vertical"
+        OPTIONS = "options"
