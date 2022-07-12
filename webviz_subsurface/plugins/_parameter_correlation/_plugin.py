@@ -10,7 +10,7 @@ from ..._datainput.fmu_input import scratch_ensemble
 from ._error import error
 from ._plugin_ids import PlugInIDs
 from .shared_settings import BothPlots, Horizontal, Options, Vertical
-from .views import MatrixPlot, ScatterPlot
+from .views import ParameterPlot
 
 
 class ParameterCorrelation(WebvizPluginABC):
@@ -76,12 +76,7 @@ class ParameterCorrelation(WebvizPluginABC):
         )
 
         self.add_view(
-            MatrixPlot(self.ensembles, self.p_cols, webviz_settings, drop_constants),
-            PlugInIDs.ParaCorrGroups.MATRIX,
-            PlugInIDs.ParaCorrGroups.GROUPNAME,
-        )
-        self.add_view(
-            ScatterPlot(self.ensembles, self.p_cols, webviz_settings),
+            ParameterPlot(self.ensembles, self.p_cols, webviz_settings, drop_constants),
             PlugInIDs.ParaCorrGroups.SCATTER,
             PlugInIDs.ParaCorrGroups.GROUPNAME,
         )

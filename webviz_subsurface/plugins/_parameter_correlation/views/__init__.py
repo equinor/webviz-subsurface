@@ -1,2 +1,1 @@
-from ._matrix import MatrixPlot
-from ._scatter import ScatterPlot
+from ._parameter_plot import ParameterPlot
