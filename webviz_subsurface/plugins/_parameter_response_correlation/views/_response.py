@@ -144,7 +144,7 @@ class ResponseView(ViewABC):
         callbacks = [
             Input(
                 self.view_element(ResponseView.Ids.CORRELATIONS)
-                .get_unique_id()
+                .component_unique_id(Graph.Ids.GRAPH)
                 .to_string(),
                 "clickData",
             ),
@@ -262,7 +262,7 @@ class ResponseView(ViewABC):
         def _update_distribution_graph(
             clickdata, initial_parameter, ensemble, response, aggregation, *filters
         ):
-
+        
             if clickdata:
                 parameter = clickdata["points"][0]["y"]
             elif initial_parameter:
