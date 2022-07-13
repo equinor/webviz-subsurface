@@ -2,8 +2,6 @@ from pathlib import Path
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, callback, html
-from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -136,7 +134,6 @@ folder, to avoid risk of not extracting the right data.
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: list = None,
         parameter_csv: Path = None,
@@ -312,17 +309,6 @@ folder, to avoid risk of not extracting the right data.
             id=self.uuid("layout"),
             style={"height": "90vh"},
         )
-
-    # def set_callbacks(self) -> None:
-    #     @callback(
-    #         Output(self.get_store_unique_id(PluginIds.Stores.ACTIVE_VIEW), "data"),
-    #         Input("webviz-content-manager", "activeViewId"),
-    #         Input("webviz-content-manager", "activePluginId"),
-    #     )
-    #     def _update_view_id(view_id, plugin_id):
-    #         print("pluginID:", plugin_id)
-    #         print("viewID:", view_id)
-    #         return view_id
 
     def add_webvizstore(self):
         functions = []

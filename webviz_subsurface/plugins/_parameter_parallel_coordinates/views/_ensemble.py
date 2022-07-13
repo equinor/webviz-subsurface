@@ -1,11 +1,10 @@
-from typing import List, Union
+from typing import List
 
 import pandas as pd
 from dash import Input, Output, callback
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ...._utils.unique_theming import unique_colors
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
 from ._view_functions import render_parcoord
