@@ -26,7 +26,7 @@ class ParameterPlot(ViewABC):
         webviz_settings: WebvizSettings,
         drop_constants: bool = True,
     ) -> None:
-        super().__init__("Scatter plot")
+        super().__init__("Parameter Correlation")
 
         self.ensembles = ensembles
         self.p_cols = p_cols
@@ -34,12 +34,16 @@ class ParameterPlot(ViewABC):
         self.drop_constants = drop_constants
 
         column = self.add_column()
+
         first_row = column.make_row()
         first_row.add_view_element(Graph(), ParameterPlot.IDs.MATRIXPLOT)
+
         second_row = column.make_row()
         second_row.add_view_element(Graph(), ParameterPlot.IDs.SCATTERPLOT)
 
     def set_callbacks(self) -> None:
+        print("run matrix callback")
+
         @callback(
             Output(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
@@ -62,12 +66,21 @@ class ParameterPlot(ViewABC):
             horizontal_paramter: str,
             vertical_parameter: str,
         ) -> dict:
+            print("running update matrix")
             fig = render_matrix(
                 both_ensemble,
                 theme=self.plotly_theme,
                 drop_constants=self.drop_constants,
             )
-            vertical_parameter = horizontal_paramter
+            print(
+                "both ens: ",
+                both_ensemble,
+                "param hor:",
+                horizontal_paramter,
+                "vert param: ",
+                vertical_parameter,
+            )
+            print(fig)
             # Finds index of the currently selected cell
             x_index = list(fig["data"][0]["x"]).index(horizontal_paramter)
             y_index = list(fig["data"][0]["y"]).index(vertical_parameter)
@@ -111,13 +124,14 @@ class ParameterPlot(ViewABC):
             ),
         )
         def _update_scatter(
-            hor_ens: str,
             hor_param: str,
-            ver_ens: str,
+            hor_ens: str,
             ver_param: str,
+            ver_ens: str,
             color_by: Union[str, None],
             scatter: List[str],
-        ):
+        ) -> dict:
+            print("running update scatter")
             return render_scatter(
                 hor_ens,
                 hor_param,
@@ -177,7 +191,7 @@ def render_scatter(
         real_text = [f"Realization:{r}" for r in get_parameters(ens1)["REAL"]]
     else:
         real_text = [f"Realization:{r}(x)" for r in get_parameters(ens2)["REAL"]]
-    # nå er det noe feil med den get parameter
+
     x = get_parameters(ens1)[x_col]
     y = get_parameters(ens2)[y_col]
     color = get_parameters(ens1)[color] if color else None
@@ -300,6 +314,7 @@ def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFra
     )
 
 
+@webvizstore
 def get_parameters(ensemble_path: Path) -> pd.DataFrame:
     return (
         scratch_ensemble("", ensemble_path)

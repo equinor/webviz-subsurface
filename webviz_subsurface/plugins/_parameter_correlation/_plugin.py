@@ -4,7 +4,7 @@ from typing import Type
 import pandas as pd
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from webviz_config.webviz_store import webvizstore
 
 from ..._datainput.fmu_input import scratch_ensemble
 from ._error import error
@@ -26,15 +26,10 @@ class ParameterCorrelation(WebvizPluginABC):
 
         self.error_message = ""
 
-        try:
-            self.ensembles = {
-                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-                for ens in ensembles
-            }
-            self.p_cols
-        except:
-            self.error_message = "Error has occurd"
-
+        self.ensembles = {
+            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+            for ens in ensembles
+        }
         self.drop_constants = drop_constants
         self.plotly_theme = webviz_settings.theme.plotly_theme
 
@@ -77,7 +72,7 @@ class ParameterCorrelation(WebvizPluginABC):
 
         self.add_view(
             ParameterPlot(self.ensembles, self.p_cols, webviz_settings, drop_constants),
-            PlugInIDs.ParaCorrGroups.SCATTER,
+            PlugInIDs.ParaCorrGroups.PARACORR,
             PlugInIDs.ParaCorrGroups.GROUPNAME,
         )
 
@@ -120,6 +115,7 @@ def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFra
     )
 
 
+@webvizstore
 def get_parameters(ensemble_path: Path) -> pd.DataFrame:
     return (
         scratch_ensemble("", ensemble_path)
