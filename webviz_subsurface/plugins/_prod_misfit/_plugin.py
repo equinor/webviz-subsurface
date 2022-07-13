@@ -14,7 +14,7 @@ from .._simulation_time_series.types.provider_set import (
 )
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
-from .views import MisfitPerRealView
+from .views import MisfitPerRealView, ProdCoverageView
 
 #from ._callbacks import plugin_callbacks
 #from ._layout import main_layout
@@ -229,7 +229,11 @@ class ProdMisfit(WebvizPluginABC):
             weight_reduction_factor_oil=self.weight_reduction_factor_oil,
             weight_reduction_factor_wat=self.weight_reduction_factor_wat,
             weight_reduction_factor_gas=self.weight_reduction_factor_gas,),PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
-
+        self.add_view(ProdCoverageView(
+            input_provider_set=self._input_provider_set,
+            ens_vectors=self.vectors,
+            ens_realizations=self.realizations,
+            well_collections=self.well_collections,), PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
     
     @property
     def layout(self):
