@@ -16,9 +16,6 @@ from ._plugin_ids import PluginIds
 from .shared_settings import Filter
 from .views import MisfitPerRealView, ProdCoverageView, ProdHeatmapView
 
-#from ._callbacks import plugin_callbacks
-#from ._layout import main_layout
-
 
 class ProdMisfit(WebvizPluginABC):
     """Visualizes production data misfit at selected date(s).
@@ -174,9 +171,14 @@ class ProdMisfit(WebvizPluginABC):
         self.well_collections = _get_well_collections_from_attr(
             self.wells, self._well_attributes
         )
-#-----------------------------------------------------------------------------------------------
-        #some calculations
-        self.all_dates, self.all_phases, self.all_wells, self.all_realizations = [], [], [], []
+        # -----------------------------------------------------------------------------------------------
+        # some calculations
+        self.all_dates, self.all_phases, self.all_wells, self.all_realizations = (
+            [],
+            [],
+            [],
+            [],
+        )
         for ens_name in self.ensemble_names:
             self.all_dates.extend(self.dates[ens_name])
             self.all_phases.extend(self.phases[ens_name])
@@ -189,8 +191,8 @@ class ProdMisfit(WebvizPluginABC):
         self.all_well_collection_names = []
         for collection_name in self.well_collections.keys():
             self.all_well_collection_names.append(collection_name)
-#-----------------------------------------------------------------------------------------------
-        #add views, settings and stores
+        # -----------------------------------------------------------------------------------------------
+        # add views, settings and stores
 
         self.add_store(
             PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION
@@ -205,41 +207,60 @@ class ProdMisfit(WebvizPluginABC):
             PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
-            PluginIds.Stores.SELECTED_COMBINE_WELLS_COLLECTION, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.SELECTED_COMBINE_WELLS_COLLECTION,
+            WebvizPluginABC.StorageType.SESSION,
         )
         self.add_store(
-            PluginIds.Stores.SELECTED_WELL_COLLECTIONS, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.SELECTED_WELL_COLLECTIONS,
+            WebvizPluginABC.StorageType.SESSION,
         )
         self.add_store(
             PluginIds.Stores.SELECTED_REALIZATIONS, WebvizPluginABC.StorageType.SESSION
         )
 
-        self.add_shared_settings_group(Filter(self.ensemble_names,
-            self.all_dates,
-            self.all_phases,
-            self.all_wells,
-            self.all_realizations,
-            self.all_well_collection_names), PluginIds.SharedSettings.FILTER)
+        self.add_shared_settings_group(
+            Filter(
+                self.ensemble_names,
+                self.all_dates,
+                self.all_phases,
+                self.all_wells,
+                self.all_realizations,
+                self.all_well_collection_names,
+            ),
+            PluginIds.SharedSettings.FILTER,
+        )
 
-        self.add_view(MisfitPerRealView(
-            input_provider_set=self._input_provider_set,
-            ens_vectors=self.vectors,
-            ens_realizations=self.realizations,
-            well_collections=self.well_collections,
-            weight_reduction_factor_oil=self.weight_reduction_factor_oil,
-            weight_reduction_factor_wat=self.weight_reduction_factor_wat,
-            weight_reduction_factor_gas=self.weight_reduction_factor_gas,),PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
-        self.add_view(ProdCoverageView(
-            input_provider_set=self._input_provider_set,
-            ens_vectors=self.vectors,
-            ens_realizations=self.realizations,
-            well_collections=self.well_collections,), PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
-        self.add_view(ProdHeatmapView(
-            input_provider_set=self._input_provider_set,
-            ens_vectors=self.vectors,
-            ens_realizations=self.realizations,
-            well_collections=self.well_collections,), PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP)
-    
+        self.add_view(
+            MisfitPerRealView(
+                input_provider_set=self._input_provider_set,
+                ens_vectors=self.vectors,
+                ens_realizations=self.realizations,
+                well_collections=self.well_collections,
+                weight_reduction_factor_oil=self.weight_reduction_factor_oil,
+                weight_reduction_factor_wat=self.weight_reduction_factor_wat,
+                weight_reduction_factor_gas=self.weight_reduction_factor_gas,
+            ),
+            PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL,
+        )
+        self.add_view(
+            ProdCoverageView(
+                input_provider_set=self._input_provider_set,
+                ens_vectors=self.vectors,
+                ens_realizations=self.realizations,
+                well_collections=self.well_collections,
+            ),
+            PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE,
+        )
+        self.add_view(
+            ProdHeatmapView(
+                input_provider_set=self._input_provider_set,
+                ens_vectors=self.vectors,
+                ens_realizations=self.realizations,
+                well_collections=self.well_collections,
+            ),
+            PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP,
+        )
+
     @property
     def layout(self):
         return
