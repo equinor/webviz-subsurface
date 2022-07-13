@@ -261,10 +261,6 @@ class ProdMisfit(WebvizPluginABC):
             PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP,
         )
 
-    @property
-    def layout(self):
-        return
-
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return (
             [self._well_attributes.webviz_store]
