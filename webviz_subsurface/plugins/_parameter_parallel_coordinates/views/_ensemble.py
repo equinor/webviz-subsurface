@@ -75,7 +75,7 @@ class EnsembleView(ViewABC):
             df = self.parallel_df[self.parallel_df["ENSEMBLE"].isin(ensemble)][
                 params + ["ENSEMBLE"]
             ]
-            print("ensemble", self.ensembles)
+
             df["COLOR"] = df.apply(
                 lambda row: self.ensembles.index(row["ENSEMBLE"]), axis=1
             )

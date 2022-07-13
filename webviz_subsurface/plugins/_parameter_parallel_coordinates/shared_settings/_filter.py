@@ -17,6 +17,7 @@ class Filter(SettingsGroupABC):
         EXCLUDE_INCLUDE = "exclude-include"
         PARAMETERS = "parameters"
         ACTIVE_VIEW = "active-view"
+        ENSEMBLE_BOX = "ensemble-box"
 
     def __init__(
         self,
@@ -29,14 +30,22 @@ class Filter(SettingsGroupABC):
         self.parallel_df = parallel_df
         self.ensembles = ensembles
         self.parameter_columns = parameter_columns
+        self.ensemble_id = self.register_component_unique_id(Filter.Ids.ENSEMBLE)
 
     def layout(self) -> List[Component]:
         return [
-            wcc.Checklist(
-                label="Ensembles",
-                id=self.register_component_unique_id(Filter.Ids.ENSEMBLE),
-                options=[{"label": ens, "value": ens} for ens in self.ensembles],
-                value=self.ensembles,
+            wcc.FlexBox(
+                id=self.register_component_unique_id(Filter.Ids.ENSEMBLE_BOX),
+                children=[
+                    wcc.Checklist(
+                        id=self.ensemble_id,
+                        label="Ensembles",
+                        options=[
+                            {"label": ens, "value": ens} for ens in self.ensembles
+                        ],
+                        value=self.ensembles,
+                    )
+                ],
             ),
             wcc.Selectors(
                 label="Parameter filter",
@@ -71,18 +80,46 @@ class Filter(SettingsGroupABC):
             Output(
                 self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"
             ),
-            Input(self.component_unique_id(Filter.Ids.ENSEMBLE).to_string(), "value"),
+            Input(self.ensemble_id, "value"),
         )
         def _set_ensembles(selected_ensemble: str) -> str:
             return selected_ensemble
 
         @callback(
-            Output(self.get_store_unique_id(Filter.Ids.ACTIVE_VIEW), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.ACTIVE_VIEW), "data"),
+            Output(
+                self.component_unique_id(Filter.Ids.ENSEMBLE_BOX).to_string(),
+                "children",
+            ),
+            Input("webviz-content-manager", "activeViewId"),
+            Input("webviz-content-manager", "activePluginId"),
         )
-        def _scream_ensembles(active_view: str) -> str:
-            print(active_view)
-            return active_view
+        def _update_ensembles_box(
+            active_view: str, active_plugin: str
+        ) -> List[Component]:
+            if active_view:
+                if "ensemble-chart" in active_view:
+                    return [
+                        wcc.Checklist(
+                            id=self.ensemble_id,
+                            label="Ensembles",
+                            options=[
+                                {"label": ens, "value": ens} for ens in self.ensembles
+                            ],
+                            value=self.ensembles,
+                        )
+                    ]
+                if "response-chart" in active_view:
+                    return [
+                        wcc.RadioItems(
+                            id=self.ensemble_id,
+                            label="Ensembles",
+                            options=[
+                                {"label": ens, "value": ens} for ens in self.ensembles
+                            ],
+                            value=self.ensembles[0],
+                        ),
+                    ]
+            PreventUpdate
 
         @callback(
             Output(

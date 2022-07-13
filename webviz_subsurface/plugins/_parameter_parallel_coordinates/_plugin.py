@@ -313,16 +313,16 @@ folder, to avoid risk of not extracting the right data.
             style={"height": "90vh"},
         )
 
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.ACTIVE_VIEW), "data"),
-            Input(
-                self.active_view_id,
-                "value",
-            ),
-        )
-        def _update_view_id(view_id):
-            return view_id
+    # def set_callbacks(self) -> None:
+    #     @callback(
+    #         Output(self.get_store_unique_id(PluginIds.Stores.ACTIVE_VIEW), "data"),
+    #         Input("webviz-content-manager", "activeViewId"),
+    #         Input("webviz-content-manager", "activePluginId"),
+    #     )
+    #     def _update_view_id(view_id, plugin_id):
+    #         print("pluginID:", plugin_id)
+    #         print("viewID:", view_id)
+    #         return view_id
 
     def add_webvizstore(self):
         functions = []
