@@ -302,14 +302,6 @@ folder, to avoid risk of not extracting the right data.
 
         return colormap
 
-    @property
-    def layout(self):
-        """Main layout"""
-        return wcc.FlexBox(
-            id=self.uuid("layout"),
-            style={"height": "90vh"},
-        )
-
     def add_webvizstore(self):
         functions = []
         if self.parameter_csv:
