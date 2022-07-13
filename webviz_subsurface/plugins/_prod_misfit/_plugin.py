@@ -14,7 +14,7 @@ from .._simulation_time_series.types.provider_set import (
 )
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
-from .views import MisfitPerRealView, ProdCoverageView
+from .views import MisfitPerRealView, ProdCoverageView, ProdHeatmapView
 
 #from ._callbacks import plugin_callbacks
 #from ._layout import main_layout
@@ -234,6 +234,11 @@ class ProdMisfit(WebvizPluginABC):
             ens_vectors=self.vectors,
             ens_realizations=self.realizations,
             well_collections=self.well_collections,), PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
+        self.add_view(ProdHeatmapView(
+            input_provider_set=self._input_provider_set,
+            ens_vectors=self.vectors,
+            ens_realizations=self.realizations,
+            well_collections=self.well_collections,), PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP)
     
     @property
     def layout(self):

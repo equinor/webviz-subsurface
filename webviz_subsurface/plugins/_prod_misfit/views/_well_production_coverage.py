@@ -128,7 +128,7 @@ class ProdCoverageView(ViewABC):
         ens_realizations: Dict[str, List[int]],
         well_collections: Dict[str, List[str]],
     ) -> None:
-        super().__init__("Production misfit per real")
+        super().__init__("Well production coverage")
 
         self.input_provider_set = input_provider_set
         self.ens_vectors = ens_vectors

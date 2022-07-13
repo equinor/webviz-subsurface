@@ -1,2 +1,3 @@
 from ._production_misfit_per_real import MisfitPerRealView
 from ._well_production_coverage import ProdCoverageView
+from ._well_production_heatmap import ProdHeatmapView
