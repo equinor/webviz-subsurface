@@ -156,7 +156,6 @@ class MisfitOptions(SettingsGroupABC):
 class MisfitPerRealView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
-        MISFIT_GRAPH = "misfit-graph"
         PLOT_SETTINGS = "plot-settings"
         MISFIT_OPTIONS = "misfit-options"
         MAIN_COLUMN = "main-column"
