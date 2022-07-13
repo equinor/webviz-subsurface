@@ -30,5 +30,4 @@ class PlugInIDs:
     class ParaCorrGroups:
         # pylint: disable=too-few-public-methods
         GROUPNAME = "parameter-correlation-group"
-        MATRIX = "matrix"
-        SCATTER = "scatter"
+        PARACORR = "paracorr"
