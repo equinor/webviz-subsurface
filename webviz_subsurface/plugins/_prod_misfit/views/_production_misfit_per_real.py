@@ -159,6 +159,7 @@ class MisfitPerRealView(ViewABC):
         MISFIT_GRAPH = "misfit-graph"
         PLOT_SETTINGS = "plot-settings"
         MISFIT_OPTIONS = "misfit-options"
+        MAIN_COLUMN = "main-column"
     
     def __init__(self, 
         input_provider_set: ProviderSet,
@@ -182,15 +183,14 @@ class MisfitPerRealView(ViewABC):
 
         self.add_settings_group(PlotSettings(), MisfitPerRealView.Ids.PLOT_SETTINGS)
         self.add_settings_group(MisfitOptions(), MisfitPerRealView.Ids.MISFIT_OPTIONS)
-        column = self.add_column()
-        column.add_view_element(Graph(), MisfitPerRealView.Ids.MISFIT_GRAPH)
+        self.main_column = self.add_column(MisfitPerRealView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.view_element(MisfitPerRealView.Ids.MISFIT_GRAPH)
-                .component_unique_id(Graph.Ids.GRAPH)
+            Output(self.layout_element(MisfitPerRealView.Ids.MAIN_COLUMN)
+                .get_unique_id()
                 .to_string(),
-                "figure",),
+                "children",),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_DATES), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
@@ -242,7 +242,7 @@ class MisfitPerRealView(ViewABC):
             figheight: int,
             obs_error_weight: float,
             misfit_exponent: float,
-        ) -> List[wcc.Graph]:
+        ) -> List[Component]:
 
             if not ensemble_names:
                 return "No ensembles selected"
