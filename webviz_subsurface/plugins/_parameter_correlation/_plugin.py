@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import Type
+from typing import Callable, List, Tuple, Type
 
 import pandas as pd
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from ..._datainput.fmu_input import scratch_ensemble
@@ -32,6 +33,9 @@ class ParameterCorrelation(WebvizPluginABC):
         }
         self.drop_constants = drop_constants
         self.plotly_theme = webviz_settings.theme.plotly_theme
+        self.plot = ParameterPlot(
+            self.ensembles, self.p_cols, webviz_settings, drop_constants
+        )
 
         self.add_store(
             PlugInIDs.Stores.BothPlots.ENSEMBLE, WebvizPluginABC.StorageType.SESSION
@@ -47,7 +51,8 @@ class ParameterCorrelation(WebvizPluginABC):
             PlugInIDs.Stores.Horizontal.PARAMETER, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            Horizontal(self.ensembles, self.p_cols), PlugInIDs.SharedSettings.HORIZONTAL
+            Horizontal(self.ensembles, self.p_cols, self.plot),
+            PlugInIDs.SharedSettings.HORIZONTAL,
         )
 
         self.add_store(
@@ -57,7 +62,8 @@ class ParameterCorrelation(WebvizPluginABC):
             PlugInIDs.Stores.Vertical.PARAMETER, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            Vertical(self.ensembles, self.p_cols), PlugInIDs.SharedSettings.VERTICAL
+            Vertical(self.ensembles, self.p_cols, self.plot),
+            PlugInIDs.SharedSettings.VERTICAL,
         )
 
         self.add_store(
@@ -71,7 +77,7 @@ class ParameterCorrelation(WebvizPluginABC):
         )
 
         self.add_view(
-            ParameterPlot(self.ensembles, self.p_cols, webviz_settings, drop_constants),
+            self.plot,
             PlugInIDs.ParaCorrGroups.PARACORR,
             PlugInIDs.ParaCorrGroups.GROUPNAME,
         )
@@ -87,7 +93,13 @@ class ParameterCorrelation(WebvizPluginABC):
     def layout(self) -> Type[Component]:
         return error(self.error_message)
 
+    def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        return [
+            (get_parameters, [{"ensemble_path": v} for v in self.ensembles.values()])
+        ]
 
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFrame:
     """
     if drop_constants:
@@ -115,6 +127,7 @@ def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFra
     )
 
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_parameters(ensemble_path: Path) -> pd.DataFrame:
     return (

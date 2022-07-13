@@ -1,14 +1,13 @@
 from typing import List
 
 import webviz_core_components as wcc
-from dash import Input, Output, callback
+from dash import Input, Output, callback, callback_context
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PlugInIDs
-
-# må også legge inn at det å klikke på figuren skal gi en callbakc
-# må legge det inn som en ekstr input i callback funksjoenene
+from ..view_elements import Graph
+from ..views import ParameterPlot
 
 
 class BothPlots(SettingsGroupABC):
@@ -51,10 +50,11 @@ class Horizontal(SettingsGroupABC):
         PARAMETER = "parameter-horizontal"
         ENSEMBLE = "ensemble-horizontal"
 
-    def __init__(self, ensembles: dict, p_cols: List) -> None:
+    def __init__(self, ensembles: dict, p_cols: List, plot: ParameterPlot) -> None:
         super().__init__("Distribution plot on horizontal axis")
         self.ensembles = ensembles
         self.p_cols = p_cols
+        self.plot = plot
 
     def layout(self) -> List[Component]:
         return [
@@ -81,12 +81,28 @@ class Horizontal(SettingsGroupABC):
             Output(
                 self.get_store_unique_id(PlugInIDs.Stores.Horizontal.PARAMETER), "data"
             ),
+            Output(
+                self.component_unique_id(Horizontal.IDs.PARAMETER).to_string(), "value"
+            ),
             Input(
                 self.component_unique_id(Horizontal.IDs.PARAMETER).to_string(), "value"
             ),
+            Input(
+                self.plot.view_element(ParameterPlot.IDs.MATRIXPLOT)
+                .component_unique_id(Graph.IDs.GRAPH)
+                .to_string(),
+                "clickData",
+            ),
         )
-        def _set_horizontal_parameter(parameter: str) -> str:
-            return parameter
+        def _set_horizontal_parameter(parameter: str, cell_data: dict) -> str:
+            if (
+                callback_context.triggered_id
+                == self.component_unique_id(Horizontal.IDs.PARAMETER).to_string()
+                or cell_data is None
+            ):
+                return parameter, parameter
+            else:
+                return cell_data["points"][0]["x"], cell_data["points"][0]["x"]
 
         @callback(
             Output(
@@ -106,10 +122,11 @@ class Vertical(SettingsGroupABC):
         PARAMETER = "parameter-vertical"
         ENSEMBLE = "ensemble-vertical"
 
-    def __init__(self, ensembles: dict, p_cols: List) -> None:
+    def __init__(self, ensembles: dict, p_cols: List, plot: ParameterPlot) -> None:
         super().__init__("Distribution plot on vertical axis")
         self.ensembles = ensembles
         self.p_cols = p_cols
+        self.plot = plot
 
     def layout(self) -> List[Component]:
         return [
@@ -136,12 +153,28 @@ class Vertical(SettingsGroupABC):
             Output(
                 self.get_store_unique_id(PlugInIDs.Stores.Vertical.PARAMETER), "data"
             ),
+            Output(
+                self.component_unique_id(Vertical.IDs.PARAMETER).to_string(), "value"
+            ),
             Input(
                 self.component_unique_id(Vertical.IDs.PARAMETER).to_string(), "value"
             ),
+            Input(
+                self.plot.view_element(ParameterPlot.IDs.MATRIXPLOT)
+                .component_unique_id(Graph.IDs.GRAPH)
+                .to_string(),
+                "clickData",
+            ),
         )
-        def _set_vertical_parameter(parameter: str) -> str:
-            return parameter
+        def _set_vertical_parameter(parameter: str, cell_data: dict) -> str:
+            if (
+                callback_context.triggered_id
+                == self.component_unique_id(Vertical.IDs.PARAMETER).to_string()
+                or cell_data is None
+            ):
+                return parameter, parameter
+            else:
+                return cell_data["points"][0]["y"], cell_data["points"][0]["y"]
 
         @callback(
             Output(
