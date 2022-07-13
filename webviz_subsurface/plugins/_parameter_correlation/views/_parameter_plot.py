@@ -3,8 +3,9 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
-from dash import Input, Output, callback
+from dash import Input, Output, callback, callback_context
 from webviz_config import WebvizSettings
+from webviz_config.common_cache import CACHE
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config.webviz_store import webvizstore
 
@@ -42,8 +43,6 @@ class ParameterPlot(ViewABC):
         second_row.add_view_element(Graph(), ParameterPlot.IDs.SCATTERPLOT)
 
     def set_callbacks(self) -> None:
-        print("run matrix callback")
-
         @callback(
             Output(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
@@ -60,30 +59,40 @@ class ParameterPlot(ViewABC):
             Input(
                 self.get_store_unique_id(PlugInIDs.Stores.Vertical.PARAMETER), "data"
             ),
+            Input(
+                self.view_element(ParameterPlot.IDs.MATRIXPLOT)
+                .component_unique_id(Graph.IDs.GRAPH)
+                .to_string(),
+                "clickData",
+            ),
         )
         def _update_matrix(
             both_ensemble: str,
             horizontal_paramter: str,
             vertical_parameter: str,
+            cell_data: dict,
         ) -> dict:
-            print("running update matrix")
             fig = render_matrix(
                 both_ensemble,
                 theme=self.plotly_theme,
                 drop_constants=self.drop_constants,
             )
-            print(
-                "both ens: ",
-                both_ensemble,
-                "param hor:",
-                horizontal_paramter,
-                "vert param: ",
-                vertical_parameter,
-            )
-            print(fig)
             # Finds index of the currently selected cell
-            x_index = list(fig["data"][0]["x"]).index(horizontal_paramter)
-            y_index = list(fig["data"][0]["y"]).index(vertical_parameter)
+            if (
+                not callback_context.triggered_id
+                == self.view_element(ParameterPlot.IDs.MATRIXPLOT)
+                .component_unique_id(Graph.IDs.GRAPH)
+                .to_string()
+                or cell_data is None
+            ):
+                x_index = list(fig["data"][0]["x"]).index(horizontal_paramter)
+                y_index = list(fig["data"][0]["y"]).index(vertical_parameter)
+            else:
+                horizontal_paramter = cell_data["points"][0]["x"]
+                vertical_parameter = cell_data["points"][0]["y"]
+                x_index = list(fig["data"][0]["x"]).index(horizontal_paramter)
+                y_index = list(fig["data"][0]["y"]).index(vertical_parameter)
+
             # Adds a shape to highlight the selected cell
             shape = [
                 {
@@ -98,9 +107,9 @@ class ParameterPlot(ViewABC):
                 }
             ]
             fig["layout"]["shapes"] = shape
+
             return fig
 
-    def set_callbacks(self) -> None:
         @callback(
             Output(
                 self.view_element(ParameterPlot.IDs.SCATTERPLOT)
@@ -122,27 +131,53 @@ class ParameterPlot(ViewABC):
             Input(
                 self.get_store_unique_id(PlugInIDs.Stores.Options.SHOW_SCATTER), "data"
             ),
+            Input(
+                self.view_element(ParameterPlot.IDs.MATRIXPLOT)
+                .component_unique_id(Graph.IDs.GRAPH)
+                .to_string(),
+                "clickData",
+            ),
         )
         def _update_scatter(
-            hor_param: str,
-            hor_ens: str,
-            ver_param: str,
-            ver_ens: str,
+            horizontal_paramter: str,
+            horizontal_ensemble: str,
+            vertical_parameter: str,
+            vertical_ensemble: str,
             color_by: Union[str, None],
             scatter: List[str],
+            cell_data: dict,
         ) -> dict:
-            print("running update scatter")
-            return render_scatter(
-                hor_ens,
-                hor_param,
-                ver_ens,
-                ver_param,
-                color_by,
-                scatter,
-                self.plotly_theme,
-            )
+            if (
+                not callback_context.triggered_id
+                == self.view_element(ParameterPlot.IDs.MATRIXPLOT)
+                .component_unique_id(Graph.IDs.GRAPH)
+                .to_string()
+                or cell_data is None
+            ):
+                return render_scatter(
+                    horizontal_ensemble,
+                    horizontal_paramter,
+                    vertical_ensemble,
+                    vertical_parameter,
+                    color_by,
+                    scatter,
+                    self.plotly_theme,
+                )
+            else:
+                horizontal_paramter = cell_data["points"][0]["x"]
+                vertical_parameter = cell_data["points"][0]["y"]
+                return render_scatter(
+                    horizontal_ensemble,
+                    horizontal_paramter,
+                    vertical_ensemble,
+                    vertical_parameter,
+                    color_by,
+                    scatter,
+                    self.plotly_theme,
+                )
 
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_matrix(ensemble_path: str, theme: dict, drop_constants: bool = True) -> dict:
     corrdf = get_corr_data(ensemble_path, drop_constants)
     corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool_))
@@ -178,6 +213,7 @@ def render_matrix(ensemble_path: str, theme: dict, drop_constants: bool = True) 
     return {"data": [data], "layout": layout}
 
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def render_scatter(
     ens1: str,
     x_col: str,
@@ -287,6 +323,7 @@ def theme_layout(theme: dict, specific_layout: dict) -> dict:
     return layout
 
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFrame:
     """
     if drop_constants:
@@ -314,6 +351,7 @@ def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFra
     )
 
 
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def get_parameters(ensemble_path: Path) -> pd.DataFrame:
     return (
