@@ -262,7 +262,7 @@ class ResponseView(ViewABC):
         def _update_distribution_graph(
             clickdata, initial_parameter, ensemble, response, aggregation, *filters
         ):
-        
+
             if clickdata:
                 parameter = clickdata["points"][0]["y"]
             elif initial_parameter:
