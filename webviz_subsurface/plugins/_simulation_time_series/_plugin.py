@@ -1,11 +1,12 @@
 import copy
 import warnings
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Type
 
 import dash
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
+from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -35,6 +36,9 @@ from webviz_subsurface._utils.vector_selector import (
 )
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
+from ._plugin_ids import PluginIds
+from ._shared_settings import SimulationTimeSeriesFilters
+from ._view import SimulationTimeSeriesView
 from .types import VisualizationOptions
 from .types.provider_set import (
     create_lazy_provider_set_from_paths,
@@ -309,6 +313,63 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "vectors are kept for initially selected vectors - the remaining are neglected."
             )
         self._initial_vectors = initial_vectors[:3]
+
+        self.add_store(PluginIds.Stores.ENSEMBLES_DROPDOWN, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.VECTOR_SELECTOR, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.RELATIVE_DATE_DROPDOWN, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.CREATED_DELTA_ENSEMBLES, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS, WebvizPluginABC.StorageType.SESSION)
+
+        self.add_shared_settings_group(
+            SimulationTimeSeriesFilters(
+                ensemble_names=self._input_provider_set.names(),
+                vector_selector_data=self._initial_vector_selector_data,
+                vector_calculator_data=self._vector_calculator_data,
+                predefined_expressions=self._predefined_expressions,
+                custom_vector_definitions=self._custom_vector_definitions,
+                realizations=self._input_provider_set.all_realizations(),
+                disable_resampling_dropdown=self._presampled_frequency is not None,
+                selected_resampling_frequency=self._sampling,
+                selected_visualization=self._initial_visualization_selection,
+                ensembles_dates=self._input_provider_set.all_dates(self._sampling),
+                get_data_output=self.plugin_data_output,
+                get_data_requested=self.plugin_data_requested,
+                input_provider_set=self._input_provider_set,
+                theme=self._theme,
+                initial_selected_vectors=self._initial_vectors,
+                vector_selector_base_data=self._vector_selector_base_data,
+                custom_vector_definitions_base=self._custom_vector_definitions_base,
+                observations=self._observations,
+                user_defined_vector_definitions=self._user_defined_vector_definitions,
+                line_shape_fallback=self._line_shape_fallback,
+                selected_vectors=self._initial_vectors,
+            ),
+            PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+        )
+
+        self.add_view(SimulationTimeSeriesView(
+            initial_selected_vectors=self._initial_vectors,
+            input_provider_set=self._input_provider_set,
+            theme=self._theme,
+            user_defined_vector_definitions=self._user_defined_vector_definitions,
+            observations=self._observations,
+            line_shape_fallback=self._line_shape_fallback,
+        ),PluginIds.SimulationTimeSeries.VIEW_NAME,
+        PluginIds.SimulationTimeSeries.GROUP_NAME)
+
+    @property
+    def layout(self) -> Type[Component]:
+        return dash.html.Div()
 
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
