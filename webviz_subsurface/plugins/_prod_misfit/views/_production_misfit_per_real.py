@@ -68,7 +68,9 @@ class PlotSettings(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Fig layout - height",
-                id=self.register_component_unique_id(PlotSettings.Ids.FIG_LAYOUT_HEIGHT),
+                id=self.register_component_unique_id(
+                    PlotSettings.Ids.FIG_LAYOUT_HEIGHT
+                ),
                 options=[
                     {
                         "label": "Very small",
@@ -153,14 +155,16 @@ class MisfitOptions(SettingsGroupABC):
             ),
         ]
 
+
 class MisfitPerRealView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         PLOT_SETTINGS = "plot-settings"
         MISFIT_OPTIONS = "misfit-options"
         MAIN_COLUMN = "main-column"
-    
-    def __init__(self, 
+
+    def __init__(
+        self,
         input_provider_set: ProviderSet,
         ens_vectors: Dict[str, List[str]],
         ens_realizations: Dict[str, List[int]],
@@ -179,24 +183,37 @@ class MisfitPerRealView(ViewABC):
         self.weight_reduction_factor_wat = weight_reduction_factor_wat
         self.weight_reduction_factor_gas = weight_reduction_factor_gas
 
-
         self.add_settings_group(PlotSettings(), MisfitPerRealView.Ids.PLOT_SETTINGS)
         self.add_settings_group(MisfitOptions(), MisfitPerRealView.Ids.MISFIT_OPTIONS)
         self.main_column = self.add_column(MisfitPerRealView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.layout_element(MisfitPerRealView.Ids.MAIN_COLUMN)
+            Output(
+                self.layout_element(MisfitPerRealView.Ids.MAIN_COLUMN)
                 .get_unique_id()
                 .to_string(),
-                "children",),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"),
+                "children",
+            ),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLES), "data"
+            ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_DATES), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELL_COLLECTIONS), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_COMBINE_WELLS_COLLECTION), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_REALIZATIONS), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_WELL_COLLECTIONS),
+                "data",
+            ),
+            Input(
+                self.get_store_unique_id(
+                    PluginIds.Stores.SELECTED_COMBINE_WELLS_COLLECTION
+                ),
+                "data",
+            ),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SELECTED_REALIZATIONS), "data"
+            ),
             Input(
                 self.settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
                 .component_unique_id(PlotSettings.Ids.COLORBY)
@@ -241,7 +258,7 @@ class MisfitPerRealView(ViewABC):
             figheight: int,
             obs_error_weight: float,
             misfit_exponent: float,
-        ) -> List[Component]:
+        ) -> Union[str, List[Component]]:
 
             if not ensemble_names:
                 return "No ensembles selected"
@@ -282,5 +299,3 @@ class MisfitPerRealView(ViewABC):
             )
 
             return figures
-
-        

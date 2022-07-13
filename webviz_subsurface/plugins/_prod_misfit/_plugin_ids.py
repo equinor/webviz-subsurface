@@ -10,8 +10,6 @@ class PluginIds:
 
         SELECTED_FIG_LAYOUT_HEIGHT = "selected-fig-layout-height"
 
-
-
     class SharedSettings:
         FILTER = "filter"
 
