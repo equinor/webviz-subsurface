@@ -11,11 +11,11 @@ from ..views import ParameterPlot
 
 
 class BothPlots(SettingsGroupABC):
-    """Settings class for picking ensewmble in both plots"""
+    """Settings class for picking ensemble in both plots"""
 
     class IDs:
         # pylint: disable=too-few-public-methods
-        ENSEMBLE = "ensemble"
+        ENSEMBLE = "ensemble-all"
 
     def __init__(self, ensembles: dict) -> None:
         super().__init__("Ensemble in both plots")
