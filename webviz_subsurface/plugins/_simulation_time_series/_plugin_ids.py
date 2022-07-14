@@ -1,10 +1,10 @@
 class PluginIds:
- 
+
     # pylint: disable=too-few-public-methods
     class Stores:
         GRAPH_DATA_HAS_CHANGED_TRIGGER = (
-        "graph_data_has_changed_trigger"  # NOTE: To force re-render of graph
-    )
+            "graph_data_has_changed_trigger"  # NOTE: To force re-render of graph
+        )
         ENSEMBLES_DROPDOWN = "ensembles_dropdown"
         ENSEMBLES_DROPDOWN_OPTIONS = "ensembles_dropdown-options"
         VECTOR_SELECTOR = "vector_selector"
@@ -53,7 +53,6 @@ class PluginIds:
     # pylint: disable=too-few-public-methods
     class SharedSettings:
         SIMULATIONTIMESERIESSETTINGS = "simulation-time-series-settings"
-
 
     # pylint: disable=too-few-public-methods
     class SimulationTimeSeries:

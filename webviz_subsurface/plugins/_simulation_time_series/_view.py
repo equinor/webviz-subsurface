@@ -64,8 +64,8 @@ class SimulationTimeSeriesView(ViewABC):
         self.input_provider_set = input_provider_set
         self.theme = theme
         self.line_shape_fallback = line_shape_fallback
-        self.user_defined_vector_definitions= user_defined_vector_definitions
-        self.observations= observations
+        self.user_defined_vector_definitions = user_defined_vector_definitions
+        self.observations = observations
 
     def set_callbacks(self) -> None:
         @callback(
@@ -79,17 +79,23 @@ class SimulationTimeSeriesView(ViewABC):
                 self.get_store_unique_id(PluginIds.Stores.VECTOR_SELECTOR),
                 "data",
             ),
-            Input(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN), "data"
+            ),
             Input(
                 self.get_store_unique_id(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS),
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST),
+                self.get_store_unique_id(
+                    PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                ),
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST),
+                self.get_store_unique_id(
+                    PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST
+                ),
                 "data",
             ),
             Input(
@@ -97,14 +103,21 @@ class SimulationTimeSeriesView(ViewABC):
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),
+                self.get_store_unique_id(
+                    PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
+                ),
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN),
+                self.get_store_unique_id(
+                    PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN
+                ),
                 "data",
             ),
-            Input(self.get_store_unique_id(PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR),
+                "data",
+            ),
             Input(
                 self.get_store_unique_id(PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS),
                 "data",
@@ -114,7 +127,9 @@ class SimulationTimeSeriesView(ViewABC):
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER),
+                self.get_store_unique_id(
+                    PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                ),
                 "data",
             ),
             State(
@@ -122,11 +137,16 @@ class SimulationTimeSeriesView(ViewABC):
                 "data",
             ),
             State(
-                self.get_store_unique_id(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS),
+                self.get_store_unique_id(
+                    PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS
+                ),
                 "data",
             ),
-            #State(SimulationTimeSeriesFilters.component_unique_id(self, SimulationTimeSeriesFilters.Ids.ENSEMBLES_DROPDOWN).to_string(), 'options')
-            Input(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),"data"),
+            # State(SimulationTimeSeriesFilters.component_unique_id(self, SimulationTimeSeriesFilters.Ids.ENSEMBLES_DROPDOWN).to_string(), 'options')
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),
+                "data",
+            ),
         )
         def _update_graph(
             vectors: List[str],
@@ -181,10 +201,16 @@ class SimulationTimeSeriesView(ViewABC):
             fanchart_options = [FanchartOptions(elm) for elm in fanchart_option_values]
             trace_options = [TraceOptions(elm) for elm in trace_option_values]
             subplot_owner = SubplotGroupByOptions(subplot_owner_options_value)
-            resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+            resampling_frequency = Frequency.from_string_value(
+                resampling_frequency_value
+            )
 
-            all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
-            statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
+            all_ensemble_names = [
+                option["value"] for option in ensemble_dropdown_options
+            ]
+            statistics_from_option = StatisticsFromOptions(
+                statistics_calculated_from_value
+            )
 
             relative_date: Optional[datetime.datetime] = (
                 None
@@ -197,10 +223,10 @@ class SimulationTimeSeriesView(ViewABC):
             ctx = dash.callback_context.triggered
             trigger_id = ctx[0]["prop_id"].split(".")[0]
             if (
-                trigger_id == SimulationTimeSeriesFilters.component_unique_id(
-                    self,
-                    SimulationTimeSeriesFilters.Ids.REALIZATIONS_FILTER_SELECTOR
-                    ).to_string()
+                trigger_id
+                == SimulationTimeSeriesFilters.component_unique_id(
+                    self, SimulationTimeSeriesFilters.Ids.REALIZATIONS_FILTER_SELECTOR
+                ).to_string()
                 and statistics_from_option is StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization
                 in [
@@ -301,7 +327,9 @@ class SimulationTimeSeriesView(ViewABC):
                 vectors_df_list: List[pd.DataFrame] = []
                 if accessor.has_provider_vectors():
                     vectors_df_list.append(
-                        accessor.get_provider_vectors_df(realizations=realizations_query)
+                        accessor.get_provider_vectors_df(
+                            realizations=realizations_query
+                        )
                     )
                 if accessor.has_per_interval_and_per_day_vectors():
                     vectors_df_list.append(
@@ -327,7 +355,9 @@ class SimulationTimeSeriesView(ViewABC):
                         figure_builder.add_realizations_traces(
                             vectors_df
                             if realizations_query
-                            else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
+                            else vectors_df[
+                                vectors_df["REAL"].isin(selected_realizations)
+                            ],
                             ensemble,
                         )
                     if visualization == VisualizationOptions.STATISTICS:
@@ -344,7 +374,10 @@ class SimulationTimeSeriesView(ViewABC):
                             ensemble,
                             fanchart_options,
                         )
-                    if visualization == VisualizationOptions.STATISTICS_AND_REALIZATIONS:
+                    if (
+                        visualization
+                        == VisualizationOptions.STATISTICS_AND_REALIZATIONS
+                    ):
                         # Configure line width and color scaling to easier separate
                         # statistics traces and realization traces.
                         # Show selected realizations - only filter df if realizations filter
@@ -352,7 +385,9 @@ class SimulationTimeSeriesView(ViewABC):
                         figure_builder.add_realizations_traces(
                             vectors_df
                             if realizations_query
-                            else vectors_df[vectors_df["REAL"].isin(selected_realizations)],
+                            else vectors_df[
+                                vectors_df["REAL"].isin(selected_realizations)
+                            ],
                             ensemble,
                             color_lightness_scale=150.0,
                         )
@@ -388,7 +423,9 @@ class SimulationTimeSeriesView(ViewABC):
                 for vector in vectors:
                     vector_observations = self.observations.get(vector)
                     if vector_observations:
-                        figure_builder.add_vector_observations(vector, vector_observations)
+                        figure_builder.add_vector_observations(
+                            vector, vector_observations
+                        )
 
             # Add history trace
             # TODO: Improve when new history vector input format is in place
@@ -419,7 +456,9 @@ class SimulationTimeSeriesView(ViewABC):
                     for name, provider in selected_input_providers.items():
                         vector_names = provider.vector_names()
 
-                        provider_vectors = [elm for elm in vectors if elm in vector_names]
+                        provider_vectors = [
+                            elm for elm in vectors if elm in vector_names
+                        ]
                         if provider_vectors:
                             history_vectors_df = create_history_vectors_df(
                                 provider, provider_vectors, resampling_frequency
@@ -437,9 +476,10 @@ class SimulationTimeSeriesView(ViewABC):
             # Create legends when all data is added to figure
             figure_builder.create_graph_legends()
 
-            return  wcc.Graph(
-                        style={"height": "85vh"},
-                        id="time-series-graph",
-                        figure = figure_builder.get_serialized_figure()
-                    ),
-                            
+            return (
+                wcc.Graph(
+                    style={"height": "85vh"},
+                    id="time-series-graph",
+                    figure=figure_builder.get_serialized_figure(),
+                ),
+            )

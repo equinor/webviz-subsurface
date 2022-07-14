@@ -63,6 +63,7 @@ def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, s
         )
     return None
 
+
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
     # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
@@ -79,7 +80,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         predefined_expressions: str = None,
         user_defined_vector_definitions: str = None,
         line_shape_fallback: str = "linear",
-        ) -> None:
+    ) -> None:
         super().__init__()
 
         # NOTE: Temporary css, pending on new wcc modal component.
@@ -313,21 +314,63 @@ class SimulationTimeSeries(WebvizPluginABC):
             )
         self._initial_vectors = initial_vectors[:3]
 
-        self.add_store(PluginIds.Stores.ENSEMBLES_DROPDOWN, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.VECTOR_SELECTOR, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.RELATIVE_DATE_DROPDOWN, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.CREATED_DELTA_ENSEMBLES, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(
+            PluginIds.Stores.ENSEMBLES_DROPDOWN, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.VECTOR_SELECTOR, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.VISUALIZATION_RADIO_ITEMS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.RELATIVE_DATE_DROPDOWN, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.CREATED_DELTA_ENSEMBLES,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
 
         self.add_shared_settings_group(
             SimulationTimeSeriesFilters(
@@ -353,23 +396,25 @@ class SimulationTimeSeries(WebvizPluginABC):
                 line_shape_fallback=self._line_shape_fallback,
                 selected_vectors=self._initial_vectors,
             ),
-            PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+            PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS,
         )
 
-        self.add_view(SimulationTimeSeriesView(
-            initial_selected_vectors=self._initial_vectors,
-            input_provider_set=self._input_provider_set,
-            theme=self._theme,
-            user_defined_vector_definitions=self._user_defined_vector_definitions,
-            observations=self._observations,
-            line_shape_fallback=self._line_shape_fallback,
-        ),PluginIds.SimulationTimeSeries.VIEW_NAME,
-        PluginIds.SimulationTimeSeries.GROUP_NAME)
+        self.add_view(
+            SimulationTimeSeriesView(
+                initial_selected_vectors=self._initial_vectors,
+                input_provider_set=self._input_provider_set,
+                theme=self._theme,
+                user_defined_vector_definitions=self._user_defined_vector_definitions,
+                observations=self._observations,
+                line_shape_fallback=self._line_shape_fallback,
+            ),
+            PluginIds.SimulationTimeSeries.VIEW_NAME,
+            PluginIds.SimulationTimeSeries.GROUP_NAME,
+        )
 
     @property
     def layout(self) -> Type[Component]:
         return dash.html.Div()
-
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions: List[Tuple[Callable, list]] = []
@@ -385,4 +430,3 @@ class SimulationTimeSeries(WebvizPluginABC):
 
     def _set_callbacks(self) -> None:
         return super()._set_callbacks()
-

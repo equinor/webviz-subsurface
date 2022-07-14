@@ -44,9 +44,9 @@ from .utils.delta_ensemble_utils import create_delta_ensemble_names
 
 class SimulationTimeSeriesFilters(SettingsGroupABC):
     class Ids:
-         # NOTE: To force re-render of graph
-        GRAPH_DATA_HAS_CHANGED_TRIGGER = "graph_data_has_changed_trigger" 
-    
+        # NOTE: To force re-render of graph
+        GRAPH_DATA_HAS_CHANGED_TRIGGER = "graph_data_has_changed_trigger"
+
         ENSEMBLES_DROPDOWN = "ensembles_dropdown"
         VECTOR_SELECTOR = "vector_selector"
 
@@ -114,58 +114,59 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         user_defined_vector_definitions: Dict[str, VectorDefinition],
         line_shape_fallback: str = "linear",
         selected_vectors: Optional[List[str]] = None,
-
     ) -> None:
         super().__init__("Data Filter")
-        self.ensembles=ensemble_names
-        self.vector_selector_data=vector_selector_data
-        self.vector_calculator_data=vector_calculator_data
-        self.predefined_expressions=predefined_expressions
-        self.custom_vector_definitions=custom_vector_definitions
-        self.realizations=realizations
-        self.disable_resampling_dropdown=disable_resampling_dropdown
-        self.selected_resampling_frequency=selected_resampling_frequency
-        self.selected_visualization=selected_visualization
-        self.ensembles_dates=ensembles_dates
-        self.selected_vectors=selected_vectors
+        self.ensembles = ensemble_names
+        self.vector_selector_data = vector_selector_data
+        self.vector_calculator_data = vector_calculator_data
+        self.predefined_expressions = predefined_expressions
+        self.custom_vector_definitions = custom_vector_definitions
+        self.realizations = realizations
+        self.disable_resampling_dropdown = disable_resampling_dropdown
+        self.selected_resampling_frequency = selected_resampling_frequency
+        self.selected_visualization = selected_visualization
+        self.ensembles_dates = ensembles_dates
+        self.selected_vectors = selected_vectors
 
-        self.get_data_output= get_data_output
-        self.get_data_requested= get_data_requested
-        self.input_provider_set= input_provider_set
-        self.theme= theme
-        self.initial_selected_vectors= initial_selected_vectors
-        self.vector_selector_base_data= vector_selector_base_data
-        self.custom_vector_definitions_base= custom_vector_definitions_base
-        self.observations= observations
-        self.user_defined_vector_definitions= user_defined_vector_definitions
-        self.line_shape_fallback= line_shape_fallback
-
+        self.get_data_output = get_data_output
+        self.get_data_requested = get_data_requested
+        self.input_provider_set = input_provider_set
+        self.theme = theme
+        self.initial_selected_vectors = initial_selected_vectors
+        self.vector_selector_base_data = vector_selector_base_data
+        self.custom_vector_definitions_base = custom_vector_definitions_base
+        self.observations = observations
+        self.user_defined_vector_definitions = user_defined_vector_definitions
+        self.line_shape_fallback = line_shape_fallback
 
     def layout(self) -> List[Component]:
         return [
             wcc.Selectors(
-                label ="Group by",
-                children = wcc.RadioItems(
-                        id=self.register_component_unique_id(self.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),                        
-                        options=[
-                            {
-                                "label": "Time Series",
-                                "value": SubplotGroupByOptions.VECTOR.value,
-                            },
-                            {
-                                "label": "Ensemble",
-                                "value": SubplotGroupByOptions.ENSEMBLE.value,
-                            },
-                        ],
-                        value=SubplotGroupByOptions.VECTOR.value,
+                label="Group by",
+                children=wcc.RadioItems(
+                    id=self.register_component_unique_id(
+                        self.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
                     ),
-
-            ),                   
+                    options=[
+                        {
+                            "label": "Time Series",
+                            "value": SubplotGroupByOptions.VECTOR.value,
+                        },
+                        {
+                            "label": "Ensemble",
+                            "value": SubplotGroupByOptions.ENSEMBLE.value,
+                        },
+                    ],
+                    value=SubplotGroupByOptions.VECTOR.value,
+                ),
+            ),
             wcc.Selectors(
                 label="Resampling frequency",
                 children=[
                     wcc.Dropdown(
-                        id=self.register_component_unique_id(self.Ids.RESAMPLING_FREQUENCY_DROPDOWN),
+                        id=self.register_component_unique_id(
+                            self.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                        ),
                         clearable=False,
                         disabled=self.disable_resampling_dropdown,
                         options=[
@@ -189,7 +190,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     wcc.Dropdown(
                         clearable=True,
                         disabled=self.disable_resampling_dropdown,
-                        id=self.register_component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN),
+                        id=self.register_component_unique_id(
+                            self.Ids.RELATIVE_DATE_DROPDOWN
+                        ),
                         options=[
                             {
                                 "label": datetime_utils.to_str(_date),
@@ -211,7 +214,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 children=[
                     wcc.Dropdown(
                         label="Selected ensembles",
-                        id=self.register_component_unique_id(self.Ids.ENSEMBLES_DROPDOWN),
+                        id=self.register_component_unique_id(
+                            self.Ids.ENSEMBLES_DROPDOWN
+                        ),
                         clearable=False,
                         multi=True,
                         options=[
@@ -222,7 +227,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     ),
                     wcc.Selectors(
                         label="Delta Ensembles",
-                        id=self.register_component_unique_id(self.Ids.TOUR_STEP_DELTA_ENSEMBLE),
+                        id=self.register_component_unique_id(
+                            self.Ids.TOUR_STEP_DELTA_ENSEMBLE
+                        ),
                         open_details=False,
                         children=[
                             self.__delta_ensemble_creator_layout(
@@ -250,7 +257,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     ),
                     html.Button(
                         "Vector Calculator",
-                        id=self.register_component_unique_id(self.Ids.VECTOR_CALCULATOR_OPEN_BUTTON),
+                        id=self.register_component_unique_id(
+                            self.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
+                        ),
                         style={
                             "margin-top": "5px",
                             "margin-bottom": "5px",
@@ -262,7 +271,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 label="Visualization",
                 children=[
                     wcc.RadioItems(
-                        id=self.register_component_unique_id(self.Ids.VISUALIZATION_RADIO_ITEMS),
+                        id=self.register_component_unique_id(
+                            self.Ids.VISUALIZATION_RADIO_ITEMS
+                        ),
                         options=[
                             {
                                 "label": "Individual realizations",
@@ -285,7 +296,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     ),
                     wcc.Selectors(
                         label="Options",
-                        id=self.register_component_unique_id(self.Ids.TOUR_STEP_OPTIONS),
+                        id=self.register_component_unique_id(
+                            self.Ids.TOUR_STEP_OPTIONS
+                        ),
                         children=self.__plot_options_layout(
                             selected_visualization=self.selected_visualization,
                         ),
@@ -301,17 +314,23 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 predefined_expressions=self.predefined_expressions,
             ),
             dcc.Store(
-                id=self.register_component_unique_id(self.Ids.VECTOR_CALCULATOR_EXPRESSIONS),
+                id=self.register_component_unique_id(
+                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
+                ),
                 data=self.predefined_expressions,
             ),
             dcc.Store(
-                id=self.register_component_unique_id(self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG),
+                id=self.register_component_unique_id(
+                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
+                ),
                 data=self.predefined_expressions,
             ),
             dcc.Store(
                 # NOTE:Used to trigger graph update callback if data has
                 # changed, i.e. no change of regular INPUT html-elements
-                id=self.register_component_unique_id(self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER),
+                id=self.register_component_unique_id(
+                    self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                ),
                 data=0,
             ),
         ]
@@ -329,7 +348,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     style={"height": "60vh"},
                     children=[
                         wsc.VectorCalculator(
-                            id=self.register_component_unique_id(self.Ids.VECTOR_CALCULATOR),
+                            id=self.register_component_unique_id(
+                                self.Ids.VECTOR_CALCULATOR
+                            ),
                             vectors=vector_data,
                             expressions=predefined_expressions,
                         )
@@ -338,17 +359,14 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ],
         )
 
-
-    def __delta_ensemble_creator_layout(
-        self, ensembles: List[str]
-    ) -> html.Div:
+    def __delta_ensemble_creator_layout(self, ensembles: List[str]) -> html.Div:
         return html.Div(
             children=[
                 wcc.Dropdown(
                     label="Ensemble A",
                     id=self.register_component_unique_id(
                         self.Ids.DELTA_ENSEMBLE_A_DROPDOWN
-                        ),
+                    ),
                     clearable=False,
                     options=[{"label": i, "value": i} for i in self.ensembles],
                     value=self.ensembles[0],
@@ -358,7 +376,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     label="Ensemble B",
                     id=self.register_component_unique_id(
                         self.Ids.DELTA_ENSEMBLE_B_DROPDOWN
-                        ),
+                    ),
                     clearable=False,
                     options=[{"label": i, "value": i} for i in self.ensembles],
                     value=self.ensembles[-1],
@@ -368,7 +386,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     "Create",
                     id=self.register_component_unique_id(
                         self.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
-                        ),
+                    ),
                     n_clicks=0,
                     style={
                         "margin-top": "5px",
@@ -378,16 +396,19 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 ),
                 self.__delta_ensemble_table_layout(),
                 dcc.Store(
-                    id=self.register_component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES),
+                    id=self.register_component_unique_id(
+                        self.Ids.CREATED_DELTA_ENSEMBLES
+                    ),
                     data=[],
                 ),  # TODO: Add predefined deltas?
             ]
         )
 
-
     def __delta_ensemble_table_layout(self) -> dash_table.DataTable:
         return dash_table.DataTable(
-            id=self.register_component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE),
+            id=self.register_component_unique_id(
+                self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
+            ),
             columns=(
                 [
                     {
@@ -410,10 +431,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             editable=False,
         )
 
-
-    def __realization_filters(
-        self, realizations: List[int]
-    ) -> html.Div:
+    def __realization_filters(self, realizations: List[int]) -> html.Div:
         return html.Div(
             children=[
                 html.Div(
@@ -424,7 +442,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                             style={"font-weight": "bold"},
                         ),
                         html.Label(
-                            id=self.register_component_unique_id(self.Ids.REALIZATIONS_FILTER_SPAN),
+                            id=self.register_component_unique_id(
+                                self.Ids.REALIZATIONS_FILTER_SPAN
+                            ),
                             style={
                                 "margin-left": "10px",
                                 "margin-bottom": "5px",
@@ -435,7 +455,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 ),
                 wcc.RadioItems(
                     label="Statistics calculated from:",
-                    id=self.register_component_unique_id(self.Ids.STATISTICS_FROM_RADIO_ITEMS),
+                    id=self.register_component_unique_id(
+                        self.Ids.STATISTICS_FROM_RADIO_ITEMS
+                    ),
                     style={"margin-bottom": "10px"},
                     options=[
                         {
@@ -452,7 +474,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 ),
                 html.Div(
                     children=wcc.Select(
-                        id=self.register_component_unique_id(self.Ids.REALIZATIONS_FILTER_SELECTOR),
+                        id=self.register_component_unique_id(
+                            self.Ids.REALIZATIONS_FILTER_SELECTOR
+                        ),
                         options=[{"label": i, "value": i} for i in realizations],
                         value=realizations,
                         size=min(10, len(realizations)),
@@ -461,7 +485,6 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ],
         )
 
-
     def __plot_options_layout(
         self,
         selected_visualization: VisualizationOptions,
@@ -469,7 +492,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         return html.Div(
             children=[
                 wcc.Checklist(
-                    id=self.register_component_unique_id(self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST),
+                    id=self.register_component_unique_id(
+                        self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST
+                    ),
                     style={"display": "block"},
                     options=[
                         {"label": "History", "value": TraceOptions.HISTORY.value},
@@ -481,7 +506,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     value=[TraceOptions.HISTORY.value, TraceOptions.OBSERVATIONS.value],
                 ),
                 wcc.Checklist(
-                    id=self.register_component_unique_id(self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST),
+                    id=self.register_component_unique_id(
+                        self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                    ),
                     style={"display": "block"}
                     if selected_visualization
                     in [
@@ -513,7 +540,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     ],
                 ),
                 wcc.Checklist(
-                    id=self.register_component_unique_id(self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST),
+                    id=self.register_component_unique_id(
+                        self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
+                    ),
                     style={"display": "block"}
                     if VisualizationOptions.FANCHART == selected_visualization
                     else {"display": "none"},
@@ -542,134 +571,255 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_SELECTOR),'data'),
-            Input(self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),'selectedNodes')
-        )
-        def __update_store_vector_selector(selected_value: List[str])-> List[str]:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN),'data'),
-            Input(self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(), "value"),
-        )
-        def __update_store_ensemble_dropdown(selected_value: str)-> str:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),'data'),
-            Input(self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES).to_string(), "data"),
-        )
-        def __update_store_delta_ensemble(selected_value: str)-> str:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS), 'data'),
-            Input(self.component_unique_id(self.Ids.VISUALIZATION_RADIO_ITEMS).to_string(),'value')
-        )
-        def __update_store_visualization_ratio(selected_value: List[str])-> List[str]:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST),'data'),
-            Input(self.component_unique_id(self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST).to_string(),'value'),
-        )
-        def __update_store_static_checklist(selected_value: List[str])-> List[str]:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST),'data'),
+            Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_SELECTOR), "data"),
             Input(
-            self.component_unique_id(self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST).to_string(),'value')
+                self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                "selectedNodes",
+            ),
         )
-        def __update_store_fanchart_checklist(selected_value: List[str])-> List[str]:
-            return selected_value
-            
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST),'data'),
-            Input(
-            self.component_unique_id(self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST).to_string(),'value'),
-        
-        )
-        def __update_store_plot_checklist(selected_value: List[str])-> List[str]:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),'data'),
-            Input(
-            self.component_unique_id(self.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS).to_string(),'value'),
-        )
-        def __update_store_subplot_items(selected_value: str)-> str:
-            return selected_value
-        
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN),'data'),
-            Input(
-            self.component_unique_id(self.Ids.RESAMPLING_FREQUENCY_DROPDOWN).to_string(),'value'),
-        )
-        def __update_store_resampling_dropdown(selected_value: str)-> str:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR),'data'),
-            Input(self.component_unique_id(self.Ids.REALIZATIONS_FILTER_SELECTOR).to_string(), "value"),
-        )
-        def _update_store_realization_selector(selected_value: List[int])-> List[int]:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS), 'data'),
-            Input(self.component_unique_id(self.Ids.STATISTICS_FROM_RADIO_ITEMS).to_string(),'value'),
-        )
-        def __update_store_static_items(selected_value: str)-> str:
-            return selected_value
-        
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.RELATIVE_DATE_DROPDOWN),'data'),
-            Input(
-            self.component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN).to_string(),'value'),
-        )
-        def __update_store_relative_dropdown (selected_value: str)-> str:
-            return selected_value           
-        
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER),'data'),
-            Input(
-            self.component_unique_id(self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER).to_string(),'data'),
-        )
-        def __update_store_graph_trigger(selected_value: int)-> int:
-            return selected_value         
-        
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS),'data'),
-            Input(
-            self.component_unique_id(self.Ids.VECTOR_CALCULATOR_EXPRESSIONS).to_string(),'data'),
-        )
-        def __update_store_vector_calculator(selected_value : List[DeltaEnsemble] ) -> List[DeltaEnsemble]:
-            return selected_value
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),"data"),
-            Input(self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(), 'options')
-        )
-        def __update_store_ensemble_dropdown_options(selected_value: List[Dict])-> List[Dict]:
+        def __update_store_vector_selector(selected_value: List[str]) -> List[str]:
             return selected_value
 
         @callback(
             Output(
-                self.component_unique_id(self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST).to_string(),
-                "style",
+                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN), "data"
             ),
-            Output(
-                self.component_unique_id(self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST).to_string(),
-                "style",
-            ),
-            
             Input(
-                self.component_unique_id(self.Ids.VISUALIZATION_RADIO_ITEMS).to_string(),
+                self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(),
                 "value",
-            )
+            ),
         )
-        def _update_statistics_options_layout(selected_visualization: str) -> List[dict]:
+        def __update_store_ensemble_dropdown(selected_value: str) -> str:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES).to_string(),
+                "data",
+            ),
+        )
+        def __update_store_delta_ensemble(selected_value: str) -> str:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.VISUALIZATION_RADIO_ITEMS
+                ).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_visualization_ratio(selected_value: List[str]) -> List[str]:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(
+                    PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                ),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                ).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_static_checklist(selected_value: List[str]) -> List[str]:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(
+                    PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST
+                ),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
+                ).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_fanchart_checklist(selected_value: List[str]) -> List[str]:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST
+                ).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_plot_checklist(selected_value: List[str]) -> List[str]:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(
+                    PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
+                ),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
+                ).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_subplot_items(selected_value: str) -> str:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(
+                    PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN
+                ),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                ).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_resampling_dropdown(selected_value: str) -> str:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.REALIZATIONS_FILTER_SELECTOR
+                ).to_string(),
+                "value",
+            ),
+        )
+        def _update_store_realization_selector(selected_value: List[int]) -> List[int]:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.STATISTICS_FROM_RADIO_ITEMS
+                ).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_static_items(selected_value: str) -> str:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.RELATIVE_DATE_DROPDOWN),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN).to_string(),
+                "value",
+            ),
+        )
+        def __update_store_relative_dropdown(selected_value: str) -> str:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(
+                    PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                ),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                ).to_string(),
+                "data",
+            ),
+        )
+        def __update_store_graph_trigger(selected_value: int) -> int:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(
+                    PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS
+                ),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
+                ).to_string(),
+                "data",
+            ),
+        )
+        def __update_store_vector_calculator(
+            selected_value: List[DeltaEnsemble],
+        ) -> List[DeltaEnsemble]:
+            return selected_value
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(),
+                "options",
+            ),
+        )
+        def __update_store_ensemble_dropdown_options(
+            selected_value: List[Dict],
+        ) -> List[Dict]:
+            return selected_value
+
+        @callback(
+            Output(
+                self.component_unique_id(
+                    self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                ).to_string(),
+                "style",
+            ),
+            Output(
+                self.component_unique_id(
+                    self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
+                ).to_string(),
+                "style",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.VISUALIZATION_RADIO_ITEMS
+                ).to_string(),
+                "value",
+            ),
+        )
+        def _update_statistics_options_layout(
+            selected_visualization: str,
+        ) -> List[dict]:
             """Only show statistics checklist if in statistics mode"""
 
             # Convert to enum type
@@ -695,11 +845,15 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         @callback(
             [
                 Output(
-                    self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES).to_string(),
+                    self.component_unique_id(
+                        self.Ids.CREATED_DELTA_ENSEMBLES
+                    ).to_string(),
                     "data",
                 ),
                 Output(
-                    self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE).to_string(),
+                    self.component_unique_id(
+                        self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
+                    ).to_string(),
                     "data",
                 ),
                 Output(
@@ -709,7 +863,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ],
             [
                 Input(
-                    self.component_unique_id(self.Ids.DELTA_ENSEMBLE_CREATE_BUTTON).to_string(),
+                    self.component_unique_id(
+                        self.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
+                    ).to_string(),
                     "n_clicks",
                 )
             ],
@@ -719,11 +875,15 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     "options",
                 ),
                 State(
-                    self.component_unique_id(self.Ids.DELTA_ENSEMBLE_A_DROPDOWN).to_string(),
+                    self.component_unique_id(
+                        self.Ids.DELTA_ENSEMBLE_A_DROPDOWN
+                    ).to_string(),
                     "value",
                 ),
                 State(
-                    self.component_unique_id(self.Ids.DELTA_ENSEMBLE_B_DROPDOWN).to_string(),
+                    self.component_unique_id(
+                        self.Ids.DELTA_ENSEMBLE_B_DROPDOWN
+                    ).to_string(),
                     "value",
                 ),
             ],
@@ -744,26 +904,32 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ]
 
             new_delta_ensembles = []
-            table_data =[]
+            table_data = []
 
             if n_clicks == 0:
-                pass                
+                pass
             else:
 
-                delta_ensemble = DeltaEnsemble(ensemble_a=ensemble_a, ensemble_b=ensemble_b)
-                
+                delta_ensemble = DeltaEnsemble(
+                    ensemble_a=ensemble_a, ensemble_b=ensemble_b
+                )
+
                 if delta_ensemble in existing_delta_ensembles:
                     raise PreventUpdate
 
-                #new_delta_ensembles = existing_delta_ensembles
+                # new_delta_ensembles = existing_delta_ensembles
                 new_delta_ensembles = []
                 new_delta_ensembles.append(delta_ensemble)
 
                 # Create delta ensemble names
-                new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
+                new_delta_ensemble_names = create_delta_ensemble_names(
+                    new_delta_ensembles
+                )
 
                 table_data = self._create_delta_ensemble_table_column_data(
-                    self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN).to_string(),
+                    self.component_unique_id(
+                        self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
+                    ).to_string(),
                     new_delta_ensemble_names,
                 )
 
@@ -774,12 +940,25 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
 
         @callback(
             Output(
-                self.component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG).to_string(), 
-                "open"),
+                self.component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG).to_string(),
+                "open",
+            ),
             [
-                Input(self.component_unique_id(self.Ids.VECTOR_CALCULATOR_OPEN_BUTTON).to_string(), "n_clicks"),
+                Input(
+                    self.component_unique_id(
+                        self.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
+                    ).to_string(),
+                    "n_clicks",
+                ),
             ],
-            [State(self.component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG).to_string(), "open")],
+            [
+                State(
+                    self.component_unique_id(
+                        self.Ids.VECTOR_CALCULATOR_DIALOG
+                    ).to_string(),
+                    "open",
+                )
+            ],
         )
         def _toggle_vector_calculator_dialog_open(
             n_open_clicks: int, is_open: bool
@@ -789,8 +968,14 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             raise PreventUpdate
 
         @callback(
-            Output(self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(), "externalParseData"),
-            Input(self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(), "externalParseExpression"),
+            Output(
+                self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(),
+                "externalParseData",
+            ),
+            Input(
+                self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(),
+                "externalParseExpression",
+            ),
         )
         def _parse_vector_calculator_expression(
             expression: ExpressionInfo,
@@ -801,33 +986,61 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
 
         @callback(
             [
-                #Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS),'data'),
-
+                # Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS),'data'),
                 Output(
-                    self.component_unique_id(self.Ids.VECTOR_CALCULATOR_EXPRESSIONS).to_string(),
+                    self.component_unique_id(
+                        self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
+                    ).to_string(),
                     "data",
                 ),
-                Output(self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(), "data"),
-                Output(self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(), "selectedTags"),
-                Output(self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(), "customVectorDefinitions"),
                 Output(
-                    self.component_unique_id(self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER).to_string(), "data"
+                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    "data",
+                ),
+                Output(
+                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    "selectedTags",
+                ),
+                Output(
+                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    "customVectorDefinitions",
+                ),
+                Output(
+                    self.component_unique_id(
+                        self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                    ).to_string(),
+                    "data",
                 ),
             ],
-            Input(self.component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG).to_string(), "open"),
+            Input(
+                self.component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG).to_string(),
+                "open",
+            ),
             [
                 State(
-                    self.component_unique_id(self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG).to_string(),
+                    self.component_unique_id(
+                        self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
+                    ).to_string(),
                     "data",
                 ),
                 State(
-                    self.component_unique_id(self.Ids.VECTOR_CALCULATOR_EXPRESSIONS).to_string(),
+                    self.component_unique_id(
+                        self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
+                    ).to_string(),
                     "data",
                 ),
-                State(self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(), "selectedNodes"),
-                State(self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(), "customVectorDefinitions"),
                 State(
-                    self.component_unique_id(self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER).to_string(),
+                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    "selectedNodes",
+                ),
+                State(
+                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    "customVectorDefinitions",
+                ),
+                State(
+                    self.component_unique_id(
+                        self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                    ).to_string(),
                     "data",
                 ),
             ],
@@ -909,10 +1122,15 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
 
         @callback(
             Output(
-                self.component_unique_id(self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG).to_string(),
+                self.component_unique_id(
+                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
+                ).to_string(),
                 "data",
             ),
-            Input(self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(), "expressions"),
+            Input(
+                self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(),
+                "expressions",
+            ),
         )
         def _update_vector_calculator_expressions_when_dialog_open(
             expressions: List[ExpressionInfo],
@@ -923,8 +1141,16 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             return new_expressions
 
         @callback(
-            Output(self.component_unique_id(self.Ids.REALIZATIONS_FILTER_SPAN).to_string(), "children"),
-            Input(self.component_unique_id(self.Ids.REALIZATIONS_FILTER_SELECTOR).to_string(), "value"),
+            Output(
+                self.component_unique_id(self.Ids.REALIZATIONS_FILTER_SPAN).to_string(),
+                "children",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.REALIZATIONS_FILTER_SELECTOR
+                ).to_string(),
+                "value",
+            ),
         )
         def _update_realization_range(realizations: List[int]) -> Optional[str]:
             if not realizations:
@@ -936,18 +1162,40 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
 
         @callback(
             [
-                Output(self.component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN).to_string(), "options"),
-                Output(self.component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN).to_string(), "value"),
-            ],
-            [
-                Input(
-                    self.component_unique_id(self.Ids.RESAMPLING_FREQUENCY_DROPDOWN).to_string(),
+                Output(
+                    self.component_unique_id(
+                        self.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
+                    "options",
+                ),
+                Output(
+                    self.component_unique_id(
+                        self.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
                     "value",
                 ),
             ],
             [
-                State(self.component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN).to_string(), "options"),
-                State(self.component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN).to_string(), "value"),
+                Input(
+                    self.component_unique_id(
+                        self.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                    ).to_string(),
+                    "value",
+                ),
+            ],
+            [
+                State(
+                    self.component_unique_id(
+                        self.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
+                    "options",
+                ),
+                State(
+                    self.component_unique_id(
+                        self.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
+                    "value",
+                ),
             ],
         )
         def _update_relative_date_dropdown(
@@ -960,7 +1208,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             If dates are not existing for a provider, the data accessor must handle invalid
             relative date selection!
             """
-            resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
+            resampling_frequency = Frequency.from_string_value(
+                resampling_frequency_value
+            )
             dates_union = self.input_provider_set.all_dates(resampling_frequency)
 
             # Create dropdown options:
@@ -993,13 +1243,17 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         @callback(
             [
                 Output(
-                    self.component_unique_id(self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST).to_string(),
+                    self.component_unique_id(
+                        self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST
+                    ).to_string(),
                     "style",
                 ),
             ],
             [
                 Input(
-                    self.component_unique_id(self.Ids.RELATIVE_DATE_DROPDOWN).to_string(),
+                    self.component_unique_id(
+                        self.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
                     "value",
                 )
             ],
@@ -1019,23 +1273,30 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             if relative_date:
                 return [{"display": "none"}]
             return [{"display": "block"}]
-        
+
         @callback(
-            Output(self.component_unique_id(self.Ids.STATISTICS_FROM_RADIO_ITEMS).to_string(), "value"),
-            Input(self.component_unique_id(self.Ids.REALIZATIONS_FILTER_SELECTOR).to_string(), "value")
+            Output(
+                self.component_unique_id(
+                    self.Ids.STATISTICS_FROM_RADIO_ITEMS
+                ).to_string(),
+                "value",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.REALIZATIONS_FILTER_SELECTOR
+                ).to_string(),
+                "value",
+            ),
         )
-        def _update_realization_option (selected_value: List[int]) -> str:
+        def _update_realization_option(selected_value: List[int]) -> str:
             if len(selected_value) == len(self.realizations):
                 return StatisticsFromOptions.ALL_REALIZATIONS.value
             return StatisticsFromOptions.SELECTED_REALIZATIONS.value
-
-
 
     def _create_delta_ensemble_table_column_data(
         self, column_name: str, ensemble_names: List[str]
     ) -> List[Dict[str, str]]:
         return [{column_name: elm} for elm in ensemble_names]
-
 
     def _create_new_selected_vectors(
         self,
@@ -1056,7 +1317,11 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             # Find id among new expressions to get new/edited name
             if dropdown_id:
                 new_vector = next(
-                    (elm["name"] for elm in new_expressions if elm["id"] == dropdown_id),
+                    (
+                        elm["name"]
+                        for elm in new_expressions
+                        if elm["id"] == dropdown_id
+                    ),
                     None,
                 )
 
@@ -1066,4 +1331,3 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ):
                 valid_selections.append(new_vector)
         return valid_selections
-               

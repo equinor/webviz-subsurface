@@ -1,1 +1,1 @@
-from ._plugin import SimulationTimeSeries 
+from ._plugin import SimulationTimeSeries
