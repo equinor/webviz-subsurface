@@ -45,7 +45,7 @@ class ParameterCorrelation(WebvizPluginABC):
             self.plotly_theme = webviz_settings.theme.plotly_theme
         except TypeError:
             self.error_message = "WebvizSettings not iterable"
-            self.ensembles = ["iter-0", "iter-3"]
+            self.ensembles = {"iter-0": "iter-0", "iter-3": "iter-3"}
         except AttributeError:
             self.error_message = "'Dash' object has no attribute 'theme'"
 
