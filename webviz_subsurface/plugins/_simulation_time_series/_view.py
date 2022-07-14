@@ -485,10 +485,8 @@ class SimulationTimeSeriesView(ViewABC):
             # Create legends when all data is added to figure
             figure_builder.create_graph_legends()
 
-            return (
-                wcc.Graph(
-                    style={"height": "85vh"},
-                    id="time-series-graph",
-                    figure=figure_builder.get_serialized_figure(),
-                ),
+            return wcc.Graph(
+                style={"height": "85vh"},
+                id="time-series-graph",
+                figure=figure_builder.get_serialized_figure(),
             )
