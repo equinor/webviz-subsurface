@@ -94,7 +94,7 @@ class ProdMisfit(WebvizPluginABC):
         excl_name_contains: list = None,
         phase_weights: dict = None,
     ):
-        # pylint disable=too-many-statements
+        # pylint: disable=too-many-statements
 
         super().__init__()
 

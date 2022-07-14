@@ -133,6 +133,7 @@ class ProdHeatmapView(ViewABC):
         PLOT_SETTINGS = "plot-settings"
         MAIN_COLUMN = "main-column"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         input_provider_set: ProviderSet,

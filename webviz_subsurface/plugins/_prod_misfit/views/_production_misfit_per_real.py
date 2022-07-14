@@ -162,6 +162,7 @@ class MisfitPerRealView(ViewABC):
         MISFIT_OPTIONS = "misfit-options"
         MAIN_COLUMN = "main-column"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         input_provider_set: ProviderSet,
@@ -245,7 +246,6 @@ class MisfitPerRealView(ViewABC):
             ),
         )
         def _update_plots(
-            # pylint disable=too-many-arguments
             ensemble_names: List[str],
             selector_dates: list,
             selector_phases: list,
