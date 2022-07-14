@@ -37,10 +37,14 @@ class ParameterCorrelation(WebvizPluginABC):
 
         self.error_message = ""
 
-        self.ensembles = {
-            ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
-            for ens in ensembles
-        }
+        try:
+            self.ensembles = {
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                for ens in ensembles
+            }
+        except TypeError:
+            self.error_message = "WebvizSettings not iterable"
+
         self.drop_constants = drop_constants
         self.plotly_theme = webviz_settings.theme.plotly_theme
         self.plot = ParameterPlot(
