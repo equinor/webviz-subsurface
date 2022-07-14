@@ -1,4 +1,5 @@
 class PluginIds:
+    # pylint disable=too-few-public-methods
     class Stores:
         SELECTED_ENSEMBLES = "selected-ensembles"
         SELECTED_DATES = "selected-dates"
