@@ -34,7 +34,10 @@ class ParameterPlot(ViewABC):
 
         self.ensembles = ensembles
         self.p_cols = p_cols
-        self.plotly_theme = webviz_settings.theme.plotly_theme
+        try:
+            self.plotly_theme = webviz_settings.theme.plotly_theme
+        except AttributeError:
+            raise AttributeError("'Dash' has no attribute 'theme'")
         self.drop_constants = drop_constants
 
         column = self.add_column()
