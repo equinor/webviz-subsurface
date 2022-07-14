@@ -36,7 +36,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         dash_duo.start_server(app)
 
         my_component = dash_duo.find_element(
-            f"#{parameter_correlation.ids('ensemble-all')}"
+            f"#{parameter_correlation.shared_settings_group(PlugInIDs.SharedSettings.BOTHPLOTS).component_unique_id(BothPlots.IDs.ENSEMBLE).to_string()}"
         )
 
         if not my_component.text.startswith("iter-0"):
