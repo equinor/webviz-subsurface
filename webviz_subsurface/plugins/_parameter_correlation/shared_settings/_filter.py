@@ -101,8 +101,8 @@ class Horizontal(SettingsGroupABC):
                 or cell_data is None
             ):
                 return parameter, parameter
-            else:
-                return cell_data["points"][0]["x"], cell_data["points"][0]["x"]
+
+            return cell_data["points"][0]["x"], cell_data["points"][0]["x"]
 
         @callback(
             Output(
@@ -173,8 +173,8 @@ class Vertical(SettingsGroupABC):
                 or cell_data is None
             ):
                 return parameter, parameter
-            else:
-                return cell_data["points"][0]["y"], cell_data["points"][0]["y"]
+
+            return cell_data["points"][0]["y"], cell_data["points"][0]["y"]
 
         @callback(
             Output(
