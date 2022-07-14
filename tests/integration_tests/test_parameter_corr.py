@@ -30,13 +30,18 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
     with mock.patch(GET_PARAMETERS) as mock_parameters:
         mock_parameters.return_value = pd.read_csv("tests/data/parameters.csv")
 
-        parameter_correlation = ParameterCorrelation(app, webviz_settings, ensembles)
+        parameter_correlation = ParameterCorrelation(webviz_settings, ensembles)
 
         app.layout = parameter_correlation.layout
         dash_duo.start_server(app)
 
         my_component = dash_duo.find_element(
-            f"#{parameter_correlation.shared_settings_group(PlugInIDs.SharedSettings.BOTHPLOTS).component_unique_id(BothPlots.IDs.ENSEMBLE).to_string()}"
+            f"#{parameter_correlation.shared_settings_group(
+                    parameter_correlationPlugInIDs.SharedSettings.BOTHPLOTS
+                )
+                .component_unique_id(
+                    parameter_correlation.BothPlots.IDs.ENSEMBLE
+                ).to_string()}"
         )
 
         if not my_component.text.startswith("iter-0"):
