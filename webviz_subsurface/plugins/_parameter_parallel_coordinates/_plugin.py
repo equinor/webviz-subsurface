@@ -1,6 +1,8 @@
 from pathlib import Path
+from typing import Type
 
 import pandas as pd
+from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -11,6 +13,7 @@ from webviz_subsurface._models import (
     caching_ensemble_set_model_factory,
 )
 
+from ._error import error
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
 from .views import EnsembleView, ResponseView
@@ -150,6 +153,8 @@ folder, to avoid risk of not extracting the right data.
     ):
 
         super().__init__()
+
+        self.error_message = ""
 
         self.parameter_csv = parameter_csv if parameter_csv else None
         self.response_csv = response_csv if response_csv else None
@@ -304,8 +309,8 @@ folder, to avoid risk of not extracting the right data.
         return colormap
 
     @property
-    def layout(self):
-        return
+    def layout(self) -> Type[Component]:
+        return error(self.error_message)
 
     def add_webvizstore(self):
         functions = []
