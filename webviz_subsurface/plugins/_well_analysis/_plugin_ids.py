@@ -15,12 +15,8 @@ class PluginIds:
         FILTER = "filter"
         BARLINE_SETTINGS = "barline-settings"
 
-    class BhpID:
+    class ViewID:
         # pylint: disable=too-few-public-methods
-        GROUP_NAME = "BHP Analyzer"
-
-        LINE_CHART = "line-chart"
-
-        FAN_CHART = "fan-chart"
+        WELL_OVERVIEW = "well-overview"
 
         BAR_CHART = "bar-chart"

@@ -18,6 +18,8 @@ from ..._providers import (
 # from ._callbacks import well_control_callbacks, well_overview_callbacks
 from ._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from ._error import error
+from ._plugin_ids import PluginIds
+from ._views import OverviewView
 
 # from ._layout import clientside_stores, main_layout
 
@@ -114,7 +116,8 @@ class WellAnalysis(WebvizPluginABC):
                 filter_out_startswith=filter_out_startswith,
             )
         
-        print(self._data_models)
+        self.add_view(OverviewView(self._data_models), PluginIds.ViewID.WELL_OVERVIEW)
+
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
             webviz_store_tuple
