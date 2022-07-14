@@ -16,7 +16,7 @@ class Filter(SettingsGroupABC):
         ENSEMBLE = "ensemble"
         EXCLUDE_INCLUDE = "exclude-include"
         PARAMETERS = "parameters"
-        ACTIVE_VIEW = "active-view"
+        ACTIVE_PLUGIN = "active-plugin"
         ENSEMBLE_BOX = "ensemble-box"
         REMOVE_CONSTANT = "remove-constant"
 
@@ -105,33 +105,37 @@ class Filter(SettingsGroupABC):
             ),
             Input("webviz-content-manager", "activeViewId"),
             Input("webviz-content-manager", "activePluginId"),
+            Input(self.get_store_unique_id(PluginIds.Stores.ACTIVE_PLUGIN), "data"),
         )
         def _update_ensembles_box(
-            active_view: str, active_plugin: str
+            active_view: str, active_plugin: str, this_plugin: str
         ) -> List[Component]:
-            if active_view:
-                if "ensemble-chart" in active_view:
-                    return [
-                        wcc.Checklist(
-                            id=self.ensemble_id,
-                            label="Ensembles",
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
-                            ],
-                            value=self.ensembles,
-                        )
-                    ]
-                if "response-chart" in active_view:
-                    return [
-                        wcc.RadioItems(
-                            id=self.ensemble_id,
-                            label="Ensembles",
-                            options=[
-                                {"label": ens, "value": ens} for ens in self.ensembles
-                            ],
-                            value=self.ensembles[0],
-                        ),
-                    ]
+            if this_plugin == active_plugin:
+                if active_view:
+                    if "ensemble-chart" in active_view:
+                        return [
+                            wcc.Checklist(
+                                id=self.ensemble_id,
+                                label="Ensembles",
+                                options=[
+                                    {"label": ens, "value": ens}
+                                    for ens in self.ensembles
+                                ],
+                                value=self.ensembles,
+                            )
+                        ]
+                    if "response-chart" in active_view:
+                        return [
+                            wcc.RadioItems(
+                                id=self.ensemble_id,
+                                label="Ensembles",
+                                options=[
+                                    {"label": ens, "value": ens}
+                                    for ens in self.ensembles
+                                ],
+                                value=self.ensembles[0],
+                            ),
+                        ]
             PreventUpdate
 
         @callback(
@@ -165,3 +169,14 @@ class Filter(SettingsGroupABC):
         )
         def _update_remove_store(selected_remove: str) -> str:
             return selected_remove
+
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.ACTIVE_PLUGIN), "data"),
+            Input("webviz-content-manager", "activePluginId"),
+            Input(self.get_store_unique_id(PluginIds.Stores.ACTIVE_PLUGIN), "data"),
+        )
+        def _check_active_plugin(active_plugin: str, this_plugin: str) -> str:
+            if this_plugin == None:
+                this_plugin = active_plugin
+                return this_plugin
+            PreventUpdate

@@ -246,7 +246,7 @@ folder, to avoid risk of not extracting the right data.
             PluginIds.Stores.SELECTED_DATE, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
-            PluginIds.Stores.ACTIVE_VIEW, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.ACTIVE_PLUGIN, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
             PluginIds.Stores.REMOVE_CONSTANT, WebvizPluginABC.StorageType.SESSION
@@ -270,7 +270,6 @@ folder, to avoid risk of not extracting the right data.
                 self.ens_colormap,
             ),
             PluginIds.ParallelID.ENSEMBLE_CHART,
-            PluginIds.ParallelID.GROUP_NAME1,
         )
 
         self.add_view(
@@ -286,7 +285,6 @@ folder, to avoid risk of not extracting the right data.
                 self.aggregation,
             ),
             PluginIds.ParallelID.RESPONSE_CHART,
-            PluginIds.ParallelID.GROUP_NAME2,
         )
 
     @property
