@@ -42,11 +42,13 @@ class ParameterCorrelation(WebvizPluginABC):
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
+            self.plotly_theme = webviz_settings.theme.plotly_theme
         except TypeError:
             self.error_message = "WebvizSettings not iterable"
+        except AttributeError:
+            self.error_message = "'Dash' object has no attribute 'theme'"
 
         self.drop_constants = drop_constants
-        self.plotly_theme = webviz_settings.theme.plotly_theme
         self.plot = ParameterPlot(
             self.ensembles, self.p_cols, webviz_settings, drop_constants
         )
