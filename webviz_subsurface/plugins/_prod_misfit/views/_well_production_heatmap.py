@@ -203,7 +203,6 @@ class ProdHeatmapView(ViewABC):
             ),
             # prevent_initial_call=True,
         )
-        # pylint disable=too-many-arguments
         def _update_plots(
             ensemble_names: List[str],
             selector_dates: list,
@@ -217,6 +216,7 @@ class ProdHeatmapView(ViewABC):
             selector_figheight: int,
             selector_scale_col_range: float,
         ) -> Union[str, List[Component]]:
+            # pylint disable=too-many-arguments
 
             if not ensemble_names:
                 return "No ensembles selected"

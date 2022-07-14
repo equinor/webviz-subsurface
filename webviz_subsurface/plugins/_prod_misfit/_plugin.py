@@ -16,8 +16,8 @@ from .shared_settings import Filter
 from .views import MisfitPerRealView, ProdCoverageView, ProdHeatmapView
 
 
-# pylint disable=too-many-instance-attributes
 class ProdMisfit(WebvizPluginABC):
+    # pylint disable=too-many-instance-attributes
     """Visualizes production data misfit at selected date(s).
 
     When not dealing with absolute value of differences, difference plots are
@@ -82,7 +82,6 @@ class ProdMisfit(WebvizPluginABC):
     ```
     """
 
-    # pylint disable=too-many-statements
     def __init__(
         self,
         webviz_settings: WebvizSettings,
@@ -95,6 +94,7 @@ class ProdMisfit(WebvizPluginABC):
         excl_name_contains: list = None,
         phase_weights: dict = None,
     ):
+        # pylint disable=too-many-statements
 
         super().__init__()
 

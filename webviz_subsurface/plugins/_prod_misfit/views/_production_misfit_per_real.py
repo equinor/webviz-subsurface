@@ -9,7 +9,6 @@ from ..._simulation_time_series.types.provider_set import ProviderSet
 from .._plugin_ids import PluginIds
 from ..utils import make_dataframes as makedf
 from ..utils import make_figures as makefigs
-from ..view_elements import Graph
 from ._view_functions import _get_well_names_combined
 
 
@@ -246,6 +245,7 @@ class MisfitPerRealView(ViewABC):
             ),
         )
         def _update_plots(
+            # pylint disable=too-many-arguments
             ensemble_names: List[str],
             selector_dates: list,
             selector_phases: list,
