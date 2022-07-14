@@ -107,6 +107,8 @@ class Filter(SettingsGroupABC):
             Input("webviz-content-manager", "activePluginId"),
             Input(self.get_store_unique_id(PluginIds.Stores.ACTIVE_PLUGIN), "data"),
         )
+        # pylint disable=inconsistent-return-statements
+        # pylint disable=pointless-statement
         def _update_ensembles_box(
             active_view: str, active_plugin: str, this_plugin: str
         ) -> List[Component]:
@@ -173,7 +175,10 @@ class Filter(SettingsGroupABC):
             Input("webviz-content-manager", "activePluginId"),
             Input(self.get_store_unique_id(PluginIds.Stores.ACTIVE_PLUGIN), "data"),
         )
+        # pylint disable=inconsistent-return-statements
+        # pylint disable=pointless-statement
         def _check_active_plugin(active_plugin: str, this_plugin: str) -> str:
             if this_plugin is None:
                 this_plugin = active_plugin
                 return this_plugin
+            PreventUpdate
