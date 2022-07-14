@@ -15,7 +15,7 @@ from .views import ParameterPlot
 
 
 class ParameterCorrelation(WebvizPluginABC):
-    """Shows parameter correlations using a correlation matrix,
+    """Showing parameter correlations using a correlation matrix,
     and scatter plot for any given pair of parameters.
 
     ---
