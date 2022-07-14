@@ -7,7 +7,7 @@ import webviz_core_components as wcc
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 from webviz_config._theme_class import WebvizConfigTheme
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_subsurface_components import ExpressionInfo, VectorDefinition
 
 from webviz_subsurface._providers import Frequency
@@ -20,7 +20,6 @@ from ._property_serialization import (
     GraphFigureBuilderBase,
     VectorSubplotBuilder,
 )
-from ._shared_settings import SimulationTimeSeriesFilters
 from .types import (
     DeltaEnsemble,
     DerivedVectorsAccessor,
