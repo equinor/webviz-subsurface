@@ -123,6 +123,8 @@ class ProdCoverageView(ViewABC):
         PLOT_SETTINGS = "plot-settings"
         MAIN_COLUMN = "main-column"
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         input_provider_set: ProviderSet,
@@ -199,8 +201,6 @@ class ProdCoverageView(ViewABC):
             ),
             # prevent_initial_call=True,
         )
-        # pylint disable=too-many-arguments
-        # pylint disable=too-many-locals
         def _update_plots(
             ensemble_names: List[str],
             selector_dates: List[str],
