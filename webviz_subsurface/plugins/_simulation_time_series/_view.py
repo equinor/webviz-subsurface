@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 import datetime
 from typing import Dict, List, Optional
 
@@ -6,7 +5,6 @@ import dash
 import pandas as pd
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback
-from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import ViewABC
@@ -45,6 +43,7 @@ from .utils.vector_statistics import create_vectors_statistics_df
 
 
 class SimulationTimeSeriesView(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CLOUMN = "column"
         GRAPH = "graph"
@@ -67,6 +66,7 @@ class SimulationTimeSeriesView(ViewABC):
         self.user_defined_vector_definitions = user_defined_vector_definitions
         self.observations = observations
 
+    # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
         @callback(
             Output(
@@ -142,12 +142,16 @@ class SimulationTimeSeriesView(ViewABC):
                 ),
                 "data",
             ),
-            # State(SimulationTimeSeriesFilters.component_unique_id(self, SimulationTimeSeriesFilters.Ids.ENSEMBLES_DROPDOWN).to_string(), 'options')
             Input(
                 self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),
                 "data",
             ),
         )
+        # pylint: disable=too-few-public-methods
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-statements
         def _update_graph(
             vectors: List[str],
             selected_ensembles: List[str],
@@ -179,8 +183,8 @@ class SimulationTimeSeriesView(ViewABC):
             * Create/build property serialization in FigureBuilder by use of business logic data
 
             NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
-            graphs data has changed and re-render of graph is necessary. E.g. when a selected expression
-            from the VectorCalculator gets edited without changing the expression name - i.e.
+            graphs data has changed and re-render of graph is necessary. E.g. when a selected
+            expression from the VectorCalculator gets edited without changing the expression name - i.e.
             VectorSelector selectedNodes remain unchanged.
             """
             if not isinstance(selected_ensembles, list):

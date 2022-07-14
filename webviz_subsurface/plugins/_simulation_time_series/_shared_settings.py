@@ -577,7 +577,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "selectedNodes",
             ),
         )
-        def __update_store_vector_selector(selected_value: List[str]) -> List[str]:
+        def update_store_vector_selector(selected_value: List[str]) -> List[str]:
             return selected_value
 
         @callback(
@@ -589,7 +589,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_ensemble_dropdown(selected_value: str) -> str:
+        def update_store_ensemble_dropdown(selected_value: str) -> str:
             return selected_value
 
         @callback(
@@ -602,7 +602,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "data",
             ),
         )
-        def __update_store_delta_ensemble(selected_value: str) -> str:
+        def update_store_delta_ensemble(selected_value: str) -> str:
             return selected_value
 
         @callback(
@@ -617,7 +617,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_visualization_ratio(selected_value: List[str]) -> List[str]:
+        def update_store_visualization_ratio(selected_value: List[str]) -> List[str]:
             return selected_value
 
         @callback(
@@ -634,7 +634,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_static_checklist(selected_value: List[str]) -> List[str]:
+        def update_store_static_checklist(selected_value: List[str]) -> List[str]:
             return selected_value
 
         @callback(
@@ -651,7 +651,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_fanchart_checklist(selected_value: List[str]) -> List[str]:
+        def update_store_fanchart_checklist(selected_value: List[str]) -> List[str]:
             return selected_value
 
         @callback(
@@ -666,7 +666,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_plot_checklist(selected_value: List[str]) -> List[str]:
+        def update_store_plot_checklist(selected_value: List[str]) -> List[str]:
             return selected_value
 
         @callback(
@@ -683,7 +683,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_subplot_items(selected_value: str) -> str:
+        def update_store_subplot_items(selected_value: str) -> str:
             return selected_value
 
         @callback(
@@ -700,7 +700,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_resampling_dropdown(selected_value: str) -> str:
+        def update_store_resampling_dropdown(selected_value: str) -> str:
             return selected_value
 
         @callback(
@@ -715,7 +715,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def _update_store_realization_selector(selected_value: List[int]) -> List[int]:
+        def update_store_realization_selector(selected_value: List[int]) -> List[int]:
             return selected_value
 
         @callback(
@@ -730,7 +730,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_static_items(selected_value: str) -> str:
+        def update_store_static_items(selected_value: str) -> str:
             return selected_value
 
         @callback(
@@ -743,7 +743,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "value",
             ),
         )
-        def __update_store_relative_dropdown(selected_value: str) -> str:
+        def update_store_relative_dropdown(selected_value: str) -> str:
             return selected_value
 
         @callback(
@@ -760,7 +760,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "data",
             ),
         )
-        def __update_store_graph_trigger(selected_value: int) -> int:
+        def update_store_graph_trigger(selected_value: int) -> int:
             return selected_value
 
         @callback(
@@ -777,7 +777,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "data",
             ),
         )
-        def __update_store_vector_calculator(
+        def update_store_vector_calculator(
             selected_value: List[DeltaEnsemble],
         ) -> List[DeltaEnsemble]:
             return selected_value
@@ -792,7 +792,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 "options",
             ),
         )
-        def __update_store_ensemble_dropdown_options(
+        def update_store_ensemble_dropdown_options(
             selected_value: List[Dict],
         ) -> List[Dict]:
             return selected_value
@@ -986,7 +986,6 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
 
         @callback(
             [
-                # Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS),'data'),
                 Output(
                     self.component_unique_id(
                         self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
@@ -1076,7 +1075,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             )
 
             # Create new selected vectors - from new expressions
-            new_selected_vectors = self._create_new_selected_vectors(
+            new_selected_vectors = _create_new_selected_vectors(
                 current_selected_vectors,
                 current_expressions,
                 new_expressions,
@@ -1103,7 +1102,8 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             if new_selected_vectors == current_selected_vectors:
                 new_selected_vectors = dash.no_update
 
-            # If selected expressions are edited - Only trigger graph data update property when needed,
+            # If selected expressions are edited
+            # - Only trigger graph data update property when needed,
             # i.e. names are unchanged and selectedNodes for VectorSelector remains unchanged.
             new_graph_data_has_changed_counter = dash.no_update
             if (
@@ -1293,41 +1293,38 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 return StatisticsFromOptions.ALL_REALIZATIONS.value
             return StatisticsFromOptions.SELECTED_REALIZATIONS.value
 
-    def _create_delta_ensemble_table_column_data(
-        self, column_name: str, ensemble_names: List[str]
-    ) -> List[Dict[str, str]]:
-        return [{column_name: elm} for elm in ensemble_names]
 
-    def _create_new_selected_vectors(
-        self,
-        existing_selected_vectors: List[str],
-        existing_expressions: List[ExpressionInfo],
-        new_expressions: List[ExpressionInfo],
-        new_vector_selector_data: list,
-    ) -> List[str]:
-        valid_selections: List[str] = []
-        for vector in existing_selected_vectors:
-            new_vector: Optional[str] = vector
+def _create_delta_ensemble_table_column_data(
+    column_name: str, ensemble_names: List[str]
+) -> List[Dict[str, str]]:
+    return [{column_name: elm} for elm in ensemble_names]
 
-            # Get id if vector is among existing expressions
-            dropdown_id = next(
-                (elm["id"] for elm in existing_expressions if elm["name"] == vector),
+
+def _create_new_selected_vectors(
+    existing_selected_vectors: List[str],
+    existing_expressions: List[ExpressionInfo],
+    new_expressions: List[ExpressionInfo],
+    new_vector_selector_data: list,
+) -> List[str]:
+    valid_selections: List[str] = []
+    for vector in existing_selected_vectors:
+        new_vector: Optional[str] = vector
+
+        # Get id if vector is among existing expressions
+        dropdown_id = next(
+            (elm["id"] for elm in existing_expressions if elm["name"] == vector),
+            None,
+        )
+        # Find id among new expressions to get new/edited name
+        if dropdown_id:
+            new_vector = next(
+                (elm["name"] for elm in new_expressions if elm["id"] == dropdown_id),
                 None,
             )
-            # Find id among new expressions to get new/edited name
-            if dropdown_id:
-                new_vector = next(
-                    (
-                        elm["name"]
-                        for elm in new_expressions
-                        if elm["id"] == dropdown_id
-                    ),
-                    None,
-                )
 
-            # Append if vector name exist among data
-            if new_vector is not None and is_vector_name_in_vector_selector_data(
-                new_vector, new_vector_selector_data
-            ):
-                valid_selections.append(new_vector)
-        return valid_selections
+        # Append if vector name exist among data
+        if new_vector is not None and is_vector_name_in_vector_selector_data(
+            new_vector, new_vector_selector_data
+        ):
+            valid_selections.append(new_vector)
+    return valid_selections

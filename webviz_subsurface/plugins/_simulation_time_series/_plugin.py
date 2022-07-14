@@ -427,6 +427,3 @@ class SimulationTimeSeries(WebvizPluginABC):
                 (get_path, [{"path": self._user_defined_vector_descriptions_path}])
             )
         return functions
-
-    def _set_callbacks(self) -> None:
-        return super()._set_callbacks()
