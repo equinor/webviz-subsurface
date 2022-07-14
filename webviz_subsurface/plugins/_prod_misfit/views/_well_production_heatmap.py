@@ -9,7 +9,6 @@ from ..._simulation_time_series.types.provider_set import ProviderSet
 from .._plugin_ids import PluginIds
 from ..utils import make_dataframes as makedf
 from ..utils import make_figures as makefigs
-from ..view_elements import Graph
 from ._view_functions import _get_well_names_combined
 
 
@@ -204,6 +203,7 @@ class ProdHeatmapView(ViewABC):
             ),
             # prevent_initial_call=True,
         )
+        # pylint disable=too-many-arguments
         def _update_plots(
             ensemble_names: List[str],
             selector_dates: list,

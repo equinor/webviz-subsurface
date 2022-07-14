@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List
 
-import pandas as pd
 import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component

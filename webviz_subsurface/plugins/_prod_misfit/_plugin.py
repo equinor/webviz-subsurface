@@ -3,7 +3,6 @@ import logging
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import dash
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._models import WellAttributesModel
@@ -17,6 +16,7 @@ from .shared_settings import Filter
 from .views import MisfitPerRealView, ProdCoverageView, ProdHeatmapView
 
 
+# pylint disable=too-many-instance-attributes
 class ProdMisfit(WebvizPluginABC):
     """Visualizes production data misfit at selected date(s).
 
@@ -82,9 +82,9 @@ class ProdMisfit(WebvizPluginABC):
     ```
     """
 
+    # pylint disable=too-many-statements
     def __init__(
         self,
-        app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
@@ -171,8 +171,8 @@ class ProdMisfit(WebvizPluginABC):
         self.well_collections = _get_well_collections_from_attr(
             self.wells, self._well_attributes
         )
-        # -----------------------------------------------------------------------------------------------
-        # some calculations
+        # ------------------------------------------------------------
+        # calculations for settings
         self.all_dates, self.all_phases, self.all_wells, self.all_realizations = (
             [],
             [],
@@ -191,7 +191,7 @@ class ProdMisfit(WebvizPluginABC):
         self.all_well_collection_names = []
         for collection_name in self.well_collections.keys():
             self.all_well_collection_names.append(collection_name)
-        # -----------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------
         # add views, settings and stores
 
         self.add_store(
