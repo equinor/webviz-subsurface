@@ -303,6 +303,10 @@ folder, to avoid risk of not extracting the right data.
 
         return colormap
 
+    @property
+    def layout(self):
+        return
+
     def add_webvizstore(self):
         functions = []
         if self.parameter_csv:
