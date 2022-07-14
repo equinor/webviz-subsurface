@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import copy
 import datetime
 from typing import Dict, List, Optional, Tuple
@@ -41,8 +42,9 @@ from .types import (
 from .utils import datetime_utils
 from .utils.delta_ensemble_utils import create_delta_ensemble_names
 
-
+# pylint: disable=too-many-instance-attributes
 class SimulationTimeSeriesFilters(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         # NOTE: To force re-render of graph
         GRAPH_DATA_HAS_CHANGED_TRIGGER = "graph_data_has_changed_trigger"
@@ -91,6 +93,8 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         TOUR_STEP_DELTA_ENSEMBLE = "tour_step_delta_ensemble"
         TOUR_STEP_OPTIONS = "tour_step_options"
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         ensemble_names: List[str],
@@ -231,11 +235,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                             self.Ids.TOUR_STEP_DELTA_ENSEMBLE
                         ),
                         open_details=False,
-                        children=[
-                            self.__delta_ensemble_creator_layout(
-                                ensembles=self.ensembles,
-                            )
-                        ],
+                        children=[self.__delta_ensemble_creator_layout()],
                     ),
                 ],
             ),
@@ -359,7 +359,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ],
         )
 
-    def __delta_ensemble_creator_layout(self, ensembles: List[str]) -> html.Div:
+    def __delta_ensemble_creator_layout(self) -> html.Div:
         return html.Div(
             children=[
                 wcc.Dropdown(
@@ -569,6 +569,8 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ],
         )
 
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_SELECTOR), "data"),
@@ -926,7 +928,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     new_delta_ensembles
                 )
 
-                table_data = self._create_delta_ensemble_table_column_data(
+                table_data = _create_delta_ensemble_table_column_data(
                     self.component_unique_id(
                         self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
                     ).to_string(),

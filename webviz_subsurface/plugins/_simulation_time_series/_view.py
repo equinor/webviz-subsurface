@@ -147,7 +147,7 @@ class SimulationTimeSeriesView(ViewABC):
                 "data",
             ),
         )
-        # pylint: disable=too-few-public-methods
+
         # pylint: disable=too-many-arguments
         # pylint: disable=too-many-locals
         # pylint: disable=too-many-branches
@@ -184,7 +184,8 @@ class SimulationTimeSeriesView(ViewABC):
 
             NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
             graphs data has changed and re-render of graph is necessary. E.g. when a selected
-            expression from the VectorCalculator gets edited without changing the expression name - i.e.
+            expression from the VectorCalculator gets edited without changing the expression
+            name - i.e.
             VectorSelector selectedNodes remain unchanged.
             """
             if not isinstance(selected_ensembles, list):
