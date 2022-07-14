@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import webviz_core_components as wcc
 from dash import Input, Output, callback, callback_context
@@ -94,15 +94,17 @@ class Horizontal(SettingsGroupABC):
                 "clickData",
             ),
         )
-        def _set_horizontal_parameter(parameter: str, cell_data: dict) -> str:
+        def _set_horizontal_parameter(
+            parameter: str, cell_data: dict
+        ) -> Tuple[str, str]:
             if (
                 callback_context.triggered_id
                 == self.component_unique_id(Horizontal.IDs.PARAMETER).to_string()
                 or cell_data is None
             ):
-                return parameter, parameter
+                return [parameter, parameter]
 
-            return cell_data["points"][0]["x"], cell_data["points"][0]["x"]
+            return [cell_data["points"][0]["x"], cell_data["points"][0]["x"]]
 
         @callback(
             Output(
@@ -166,15 +168,15 @@ class Vertical(SettingsGroupABC):
                 "clickData",
             ),
         )
-        def _set_vertical_parameter(parameter: str, cell_data: dict) -> str:
+        def _set_vertical_parameter(parameter: str, cell_data: dict) -> Tuple[str, str]:
             if (
                 callback_context.triggered_id
                 == self.component_unique_id(Vertical.IDs.PARAMETER).to_string()
                 or cell_data is None
             ):
-                return parameter, parameter
+                return [parameter, parameter]
 
-            return cell_data["points"][0]["y"], cell_data["points"][0]["y"]
+            return [cell_data["points"][0]["y"], cell_data["points"][0]["y"]]
 
         @callback(
             Output(
