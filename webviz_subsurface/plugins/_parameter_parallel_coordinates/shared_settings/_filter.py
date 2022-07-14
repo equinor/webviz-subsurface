@@ -18,6 +18,7 @@ class Filter(SettingsGroupABC):
         PARAMETERS = "parameters"
         ACTIVE_VIEW = "active-view"
         ENSEMBLE_BOX = "ensemble-box"
+        REMOVE_CONSTANT = "remove-constant"
 
     def __init__(
         self,
@@ -69,6 +70,18 @@ class Filter(SettingsGroupABC):
                         ],
                         multi=True,
                         size=min(len(self.parameter_columns), 15),
+                        value=[],
+                    ),
+                    wcc.Checklist(
+                        id=self.register_component_unique_id(
+                            Filter.Ids.REMOVE_CONSTANT
+                        ),
+                        options=[
+                            {
+                                "label": " Remove constant values",
+                                "value": "remove_constant",
+                            },
+                        ],
                         value=[],
                     ),
                 ],
@@ -142,3 +155,13 @@ class Filter(SettingsGroupABC):
         )
         def _set_ensembles(selected_parameters: str) -> str:
             return selected_parameters
+
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.REMOVE_CONSTANT), "data"),
+            Input(
+                self.component_unique_id(Filter.Ids.REMOVE_CONSTANT).to_string(),
+                "value",
+            ),
+        )
+        def _update_remove_store(selected_remove: str) -> str:
+            return selected_remove

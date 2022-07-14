@@ -8,6 +8,7 @@ class PluginIds:
         SELECTED_RESPONSE = "slected-response"
         SELECTED_DATE = "selected-date"
         ACTIVE_VIEW = "active-view"
+        REMOVE_CONSTANT = "remove-constant"
 
     class SharedSettings:
         # pylint: disable=too-few-public-methods

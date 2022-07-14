@@ -147,12 +147,14 @@ class ResponseView(ViewABC):
                 self.get_store_unique_id(PluginIds.Stores.SELECTED_PARAMETERS),
                 "data",
             ),
+            Input(self.get_store_unique_id(PluginIds.Stores.REMOVE_CONSTANT), "data"),
             self.parcoord_inputs,
         )
         def _update_plot(
             ensemble: List[str],
             exclude_include: str,
             parameters: List[str],
+            remove_constant: str,
             *opt_args,
         ) -> dict:
             ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
@@ -200,4 +202,5 @@ class ResponseView(ViewABC):
                 "response",
                 params,
                 response,
+                remove_constant,
             )

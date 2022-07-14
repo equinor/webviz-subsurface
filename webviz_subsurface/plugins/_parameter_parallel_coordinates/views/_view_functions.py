@@ -1,5 +1,4 @@
-from typing import List
-
+import numpy as np
 import pandas as pd
 from webviz_config import WebvizConfigTheme
 
@@ -13,8 +12,29 @@ def render_parcoord(
     mode: str,
     params: list,
     response: str,
+    remove_constant: str,
 ):
     """Renders parallel coordinates plot"""
+
+    dimensions = []
+    dimentions_params = []
+
+    if remove_constant == ["remove_constant"]:
+        for param in params:
+            if len(np.unique(plot_df[param].values)) > 1:
+                dimentions_params.append(param)
+
+        dimensions = [
+            {"label": param, "values": plot_df[param].values.tolist()}
+            for param in dimentions_params
+        ]
+
+    else:
+        dimensions = [
+            {"label": param, "values": plot_df[param].values.tolist()}
+            for param in params
+        ]
+
     colormap = (
         colormap if mode == "ensemble" else theme.plotly_theme["layout"]["colorway"]
     )
@@ -22,7 +42,6 @@ def render_parcoord(
         response = f"Response: {response}"
         params = [response] + params
     # Create parcoords dimensions (one per parameter)
-    dimensions = [{"label": param, "values": plot_df[param]} for param in params]
     data = [
         {
             "line": {
@@ -70,8 +89,3 @@ def render_parcoord(
     width = len(dimensions) * 80 + 250
     layout = {"width": width, "height": 1200, "margin": {"b": 740, "t": 30}}
     return {"data": data, "layout": theme.create_themed_layout(layout)}
-
-
-def remove_constants(df: pd.DataFrame):
-    for i in range(len(df.columns)):
-        print(i)

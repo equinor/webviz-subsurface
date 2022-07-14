@@ -51,11 +51,13 @@ class EnsembleView(ViewABC):
                 self.get_store_unique_id(PluginIds.Stores.SELECTED_PARAMETERS),
                 "data",
             ),
+            Input(self.get_store_unique_id(PluginIds.Stores.REMOVE_CONSTANT), "data"),
         )
         def _update_plot(
             ensemble: str,
             exclude_include: str,
             parameters: List[str],
+            remove_constant: str,
         ) -> dict:
             ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
             parameters = parameters if isinstance(parameters, list) else [parameters]
@@ -87,4 +89,5 @@ class EnsembleView(ViewABC):
                 "ensemble",
                 params,
                 "",
+                remove_constant,
             )

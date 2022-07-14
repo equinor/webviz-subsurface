@@ -248,6 +248,9 @@ folder, to avoid risk of not extracting the right data.
         self.add_store(
             PluginIds.Stores.ACTIVE_VIEW, WebvizPluginABC.StorageType.SESSION
         )
+        self.add_store(
+            PluginIds.Stores.REMOVE_CONSTANT, WebvizPluginABC.StorageType.SESSION
+        )
 
         self.add_shared_settings_group(
             Filter(
