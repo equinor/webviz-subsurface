@@ -232,9 +232,6 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     ),
                     wcc.Selectors(
                         label="Delta Ensembles",
-                        id=self.register_component_unique_id(
-                            self.Ids.TOUR_STEP_DELTA_ENSEMBLE
-                        ),
                         open_details=False,
                         children=[self.__delta_ensemble_creator_layout()],
                     ),
@@ -473,15 +470,13 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     value=StatisticsFromOptions.ALL_REALIZATIONS.value,
                     vertical=False,
                 ),
-                html.Div(
-                    children=wcc.Select(
-                        id=self.register_component_unique_id(
-                            self.Ids.REALIZATIONS_FILTER_SELECTOR
-                        ),
-                        options=[{"label": i, "value": i} for i in realizations],
-                        value=realizations,
-                        size=min(10, len(realizations)),
+                wcc.Select(
+                    id=self.register_component_unique_id(
+                        self.Ids.REALIZATIONS_FILTER_SELECTOR
                     ),
+                    options=[{"label": i, "value": i} for i in realizations],
+                    value=realizations,
+                    size=min(10, len(realizations)),
                 ),
             ],
         )
@@ -906,8 +901,8 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                 for ensemble in self.input_provider_set.names()
             ]
 
-            new_delta_ensembles = []
-            table_data = []
+            new_delta_ensembles: List = []
+            table_data: List = []
 
             if n_clicks == 0:
                 pass
