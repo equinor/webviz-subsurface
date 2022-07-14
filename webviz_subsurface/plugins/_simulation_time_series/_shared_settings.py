@@ -3,42 +3,44 @@ import datetime
 from typing import Dict, List, Optional, Tuple
 
 import dash
-from dash import callback_context
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, dash_table, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-from webviz_subsurface_components import ExpressionInfo, ExternalParseData, VectorDefinition
 from webviz_config._theme_class import WebvizConfigTheme
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+from webviz_subsurface_components import (
+    ExpressionInfo,
+    ExternalParseData,
+    VectorDefinition,
+)
 
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.formatting import printable_int_list
-
-from ._plugin_ids import PluginIds
-from .types import (
-    DeltaEnsemble,
-    FanchartOptions,
-    StatisticsFromOptions,
-    StatisticsOptions,
-    SubplotGroupByOptions,
-    TraceOptions,
-    VisualizationOptions,
-    ProviderSet,
-
-)
-from .utils import datetime_utils
-from .utils.delta_ensemble_utils import create_delta_ensemble_names
-from webviz_subsurface._utils.vector_selector import (
-    is_vector_name_in_vector_selector_data,
-)
-
 from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
     get_selected_expressions,
     get_vector_definitions_from_expressions,
 )
+from webviz_subsurface._utils.vector_selector import (
+    is_vector_name_in_vector_selector_data,
+)
+
+from ._plugin_ids import PluginIds
+from .types import (
+    DeltaEnsemble,
+    FanchartOptions,
+    ProviderSet,
+    StatisticsFromOptions,
+    StatisticsOptions,
+    SubplotGroupByOptions,
+    TraceOptions,
+    VisualizationOptions,
+)
+from .utils import datetime_utils
+from .utils.delta_ensemble_utils import create_delta_ensemble_names
+
 
 class SimulationTimeSeriesFilters(SettingsGroupABC):
     class Ids:

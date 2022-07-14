@@ -1,5 +1,5 @@
 class PluginIds:
-
+ 
     # pylint: disable=too-few-public-methods
     class Stores:
         GRAPH_DATA_HAS_CHANGED_TRIGGER = (

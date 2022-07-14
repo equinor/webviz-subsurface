@@ -1,40 +1,28 @@
 # pylint: disable=too-many-lines
-import copy
 import datetime
-from typing import Callable, Dict, List, Optional, Tuple, Union
-import webviz_core_components as wcc
+from typing import Dict, List, Optional
+
 import dash
-from dash import Input, Output, State, callback, dash_table, dcc, html
 import pandas as pd
-import webviz_subsurface_components as wsc
+import webviz_core_components as wcc
+from dash import Input, Output, State, callback
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import ViewABC
-from webviz_subsurface_components import (
-    ExpressionInfo,
-    ExternalParseData,
-    VectorDefinition,
-)
+from webviz_subsurface_components import ExpressionInfo, VectorDefinition
 
 from webviz_subsurface._providers import Frequency
-from webviz_subsurface._utils.formatting import printable_int_list
 from webviz_subsurface._utils.unique_theming import unique_colors
-from webviz_subsurface._utils.vector_calculator import (
-    add_expressions_to_vector_selector_data,
-    get_selected_expressions,
-    get_vector_definitions_from_expressions,
-)
-from webviz_subsurface._utils.vector_selector import (
-    is_vector_name_in_vector_selector_data,
-)
+from webviz_subsurface._utils.vector_calculator import get_selected_expressions
 
+from ._plugin_ids import PluginIds
 from ._property_serialization import (
     EnsembleSubplotBuilder,
     GraphFigureBuilderBase,
     VectorSubplotBuilder,
 )
+from ._shared_settings import SimulationTimeSeriesFilters
 from .types import (
     DeltaEnsemble,
     DerivedVectorsAccessor,
@@ -47,20 +35,14 @@ from .types import (
     VisualizationOptions,
 )
 from .utils import datetime_utils
-from .utils.delta_ensemble_utils import create_delta_ensemble_names
 from .utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
-)
-from .utils.from_timeseries_cumulatives import (
-    datetime_to_intervalstr,
-    is_per_interval_or_per_day_vector,
 )
 from .utils.history_vectors import create_history_vectors_df
 from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from .utils.trace_line_shape import get_simulation_line_shape
 from .utils.vector_statistics import create_vectors_statistics_df
-from ._shared_settings import SimulationTimeSeriesFilters
-from ._plugin_ids import PluginIds
+
 
 class SimulationTimeSeriesView(ViewABC):
     class Ids:

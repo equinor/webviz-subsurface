@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Type
 
 import dash
-import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
