@@ -569,6 +569,23 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
     # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
         @callback(
+            Output(
+                self.get_store_unique_id(
+                    PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR_ID
+                ),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(
+                    self.Ids.REALIZATIONS_FILTER_SELECTOR
+                ).to_string(),
+                "id",
+            ),
+        )
+        def get_selector_id(selected_value: str) -> str:
+            return selected_value
+
+        @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_SELECTOR), "data"),
             Input(
                 self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),

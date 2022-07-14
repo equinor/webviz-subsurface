@@ -50,6 +50,8 @@ class PluginIds:
         TOUR_STEP_DELTA_ENSEMBLE = "tour_step_delta_ensemble"
         TOUR_STEP_OPTIONS = "tour_step_options"
 
+        REALIZATIONS_FILTER_SELECTOR_ID = "realizations_filter_selector_id"
+
     # pylint: disable=too-few-public-methods
     class SharedSettings:
         SIMULATIONTIMESERIESSETTINGS = "simulation-time-series-settings"

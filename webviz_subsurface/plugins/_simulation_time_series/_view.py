@@ -7,7 +7,7 @@ import webviz_core_components as wcc
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 from webviz_config._theme_class import WebvizConfigTheme
-from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 from webviz_subsurface_components import ExpressionInfo, VectorDefinition
 
 from webviz_subsurface._providers import Frequency
@@ -146,6 +146,12 @@ class SimulationTimeSeriesView(ViewABC):
                 self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),
                 "data",
             ),
+            Input(
+                self.get_store_unique_id(
+                    PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR_ID
+                ),
+                "data",
+            ),
         )
 
         # pylint: disable=too-many-arguments
@@ -168,6 +174,7 @@ class SimulationTimeSeriesView(ViewABC):
             delta_ensembles: List[DeltaEnsemble],
             vector_calculator_expressions: List[ExpressionInfo],
             ensemble_dropdown_options: List[dict],
+            realization_selector_id: str,
         ) -> dict:
             """Callback to update all graphs based on selections
 
@@ -227,11 +234,9 @@ class SimulationTimeSeriesView(ViewABC):
             # TODO: Refactor code or create utility for getting trigger ID in a "cleaner" way?
             ctx = dash.callback_context.triggered
             trigger_id = ctx[0]["prop_id"].split(".")[0]
+
             if (
-                trigger_id
-                == SimulationTimeSeriesFilters.component_unique_id(
-                    self, SimulationTimeSeriesFilters.Ids.REALIZATIONS_FILTER_SELECTOR
-                ).to_string()
+                trigger_id == realization_selector_id
                 and statistics_from_option is StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization
                 in [

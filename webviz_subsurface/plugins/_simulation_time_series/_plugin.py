@@ -372,6 +372,11 @@ class SimulationTimeSeries(WebvizPluginABC):
             WebvizPluginABC.StorageType.SESSION,
         )
 
+        self.add_store(
+            PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR_ID,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+
         self.add_shared_settings_group(
             SimulationTimeSeriesFilters(
                 ensemble_names=self._input_provider_set.names(),
