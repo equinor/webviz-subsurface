@@ -17,7 +17,7 @@ from .views import MisfitPerRealView, ProdCoverageView, ProdHeatmapView
 
 
 class ProdMisfit(WebvizPluginABC):
-    # pylint disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
     """Visualizes production data misfit at selected date(s).
 
     When not dealing with absolute value of differences, difference plots are
@@ -179,6 +179,7 @@ class ProdMisfit(WebvizPluginABC):
             [],
             [],
         )
+        # pylint: disable=consider-iterating-dictionary
         for ens_name in self.ensemble_names:
             self.all_dates.extend(self.dates[ens_name])
             self.all_phases.extend(self.phases[ens_name])
