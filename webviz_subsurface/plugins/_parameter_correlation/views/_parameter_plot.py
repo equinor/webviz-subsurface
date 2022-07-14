@@ -37,10 +37,12 @@ class ParameterPlot(ViewABC):
         column = self.add_column()
 
         first_row = column.make_row()
-        first_row.add_view_element(Graph(), ParameterPlot.IDs.MATRIXPLOT)
+        first_row.add_view_element(
+            Graph(self.p_cols, matrix=True), ParameterPlot.IDs.MATRIXPLOT
+        )
 
         second_row = column.make_row()
-        second_row.add_view_element(Graph(), ParameterPlot.IDs.SCATTERPLOT)
+        second_row.add_view_element(Graph(self.p_cols), ParameterPlot.IDs.SCATTERPLOT)
 
     def set_callbacks(self) -> None:
         @callback(
@@ -163,18 +165,17 @@ class ParameterPlot(ViewABC):
                     scatter,
                     self.plotly_theme,
                 )
-            else:
-                horizontal_paramter = cell_data["points"][0]["x"]
-                vertical_parameter = cell_data["points"][0]["y"]
-                return render_scatter(
-                    horizontal_ensemble,
-                    horizontal_paramter,
-                    vertical_ensemble,
-                    vertical_parameter,
-                    color_by,
-                    scatter,
-                    self.plotly_theme,
-                )
+            horizontal_paramter = cell_data["points"][0]["x"]
+            vertical_parameter = cell_data["points"][0]["y"]
+            return render_scatter(
+                horizontal_ensemble,
+                horizontal_paramter,
+                vertical_ensemble,
+                vertical_parameter,
+                color_by,
+                scatter,
+                self.plotly_theme,
+            )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
