@@ -7,6 +7,6 @@ def test_parameter_parallel_coordinates(dash_duo, app, shared_settings) -> None:
         shared_settings["HM_SETTINGS"],
         ensembles=shared_settings["HM_ENSEMBLES"],
     )
-    app.layout = plugin.layout
+    # app.layout = plugin.layout
     dash_duo.start_server(app)
     assert dash_duo.get_logs() == []
