@@ -20,6 +20,7 @@ class Graph(ViewElementABC):
         self.p_cols = p_cols
 
     def inner_layout(self) -> Type[Component]:
+        """If the graph is a matrix plot, the parameter "clickData" must be included"""
         if self.matrix:
             return WccGraph(
                 id=self.register_component_unique_id(Graph.IDs.GRAPH),

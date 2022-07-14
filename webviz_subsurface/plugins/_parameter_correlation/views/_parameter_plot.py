@@ -15,6 +15,9 @@ from ..view_elements import Graph
 
 
 class ParameterPlot(ViewABC):
+    """Class for the two view elements in the Parameter
+    Correlation plugin"""
+
     class IDs:
         # pylint: disable=too-few-public-methods
         MATRIXPLOT = "matrixplot"
@@ -74,6 +77,13 @@ class ParameterPlot(ViewABC):
             vertical_parameter: str,
             cell_data: dict,
         ) -> dict:
+            """Renders correlation matrix.
+            Currently also re-renders matrix to update currently
+            selected cell. This is not optimal, but hard to prevent
+            as an Output object only can have one callback attached,
+            and it is not possible to assign callbacks to individual
+            elements of a Plotly graph object
+            """
             fig = render_matrix(
                 both_ensemble,
                 theme=self.plotly_theme,
