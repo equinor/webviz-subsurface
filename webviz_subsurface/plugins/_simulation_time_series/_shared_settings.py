@@ -138,24 +138,27 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         self.user_defined_vector_definitions= user_defined_vector_definitions
         self.line_shape_fallback= line_shape_fallback
 
+
     def layout(self) -> List[Component]:
         return [
-            
-            wcc.RadioItems(
-                id=self.register_component_unique_id(self.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),
+            wcc.Selectors(
                 label ="Group by",
-                options=[
-                    {
-                        "label": "Time Series",
-                        "value": SubplotGroupByOptions.VECTOR.value,
-                    },
-                    {
-                        "label": "Ensemble",
-                        "value": SubplotGroupByOptions.ENSEMBLE.value,
-                    },
-                ],
-                value=SubplotGroupByOptions.VECTOR.value,
-            ),
+                children = wcc.RadioItems(
+                        id=self.register_component_unique_id(self.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS),                        
+                        options=[
+                            {
+                                "label": "Time Series",
+                                "value": SubplotGroupByOptions.VECTOR.value,
+                            },
+                            {
+                                "label": "Ensemble",
+                                "value": SubplotGroupByOptions.ENSEMBLE.value,
+                            },
+                        ],
+                        value=SubplotGroupByOptions.VECTOR.value,
+                    ),
+
+            ),                   
             wcc.Selectors(
                 label="Resampling frequency",
                 children=[
@@ -321,7 +324,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             max_width="lg",
             children=[
                 html.Div(
-                    style={"height": "40vh"},
+                    style={"height": "60vh"},
                     children=[
                         wsc.VectorCalculator(
                             id=self.register_component_unique_id(self.Ids.VECTOR_CALCULATOR),
@@ -372,10 +375,10 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     },
                 ),
                 self.__delta_ensemble_table_layout(),
-                # dcc.Store(
-                #     id=self.register_component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES),
-                #     data=[],
-                # ),  # TODO: Add predefined deltas?
+                dcc.Store(
+                    id=self.register_component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES),
+                    data=[],
+                ),  # TODO: Add predefined deltas?
             ]
         )
 
@@ -551,6 +554,13 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             return selected_value
 
         @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),'data'),
+            Input(self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES).to_string(), "data"),
+        )
+        def __update_store_delta_ensemble(selected_value: str)-> str:
+            return selected_value
+
+        @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS), 'data'),
             Input(self.component_unique_id(self.Ids.VISUALIZATION_RADIO_ITEMS).to_string(),'value')
         )
@@ -575,7 +585,8 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST),'data'),
             Input(
-            self.component_unique_id(self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST).to_string(),'value')
+            self.component_unique_id(self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST).to_string(),'value'),
+        
         )
         def __update_store_plot_checklist(selected_value: List[str])-> List[str]:
             return selected_value
@@ -624,15 +635,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             self.component_unique_id(self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER).to_string(),'data'),
         )
         def __update_store_graph_trigger(selected_value: int)-> int:
-            return selected_value
-
-        # @callback(
-        #     Output(self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),'data'),
-        #     Input(
-        #     self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES).to_string(),'data'),
-        # )
-        # def __update_store_created_ensembles(selected_value: List[DeltaEnsemble])-> List[DeltaEnsemble]:
-        #     return selected_value            
+            return selected_value         
         
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS),'data'),
@@ -646,8 +649,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             Output(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),"data"),
             Input(self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(), 'options')
         )
-        def __update_store_ensemble_dropdown(selected_value: List[Dict])-> List[Dict]:
-            print("known options are", selected_value)
+        def __update_store_ensemble_dropdown_options(selected_value: List[Dict])-> List[Dict]:
             return selected_value
 
         @callback(
@@ -691,7 +693,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         @callback(
             [
                 Output(
-                    self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),
+                    self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES).to_string(),
                     "data",
                 ),
                 Output(
@@ -711,8 +713,8 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ],
             [
                 State(
-                    self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),
-                    "data",
+                    self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(),
+                    "options",
                 ),
                 State(
                     self.component_unique_id(self.Ids.DELTA_ENSEMBLE_A_DROPDOWN).to_string(),
@@ -730,33 +732,41 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             ensemble_a: str,
             ensemble_b: str,
         ) -> Tuple[List[DeltaEnsemble], List[Dict[str, str]], List[Dict[str, str]]]:
+
             if n_clicks is None or n_clicks < 0:
                 raise PreventUpdate
 
-            delta_ensemble = DeltaEnsemble(ensemble_a=ensemble_a, ensemble_b=ensemble_b)
-
-            if existing_delta_ensembles == None:
-                existing_delta_ensembles = []
-            if delta_ensemble in existing_delta_ensembles:
-                raise PreventUpdate
-
-            new_delta_ensembles = existing_delta_ensembles
-            new_delta_ensembles.append(delta_ensemble)
-
-            # Create delta ensemble names
-            new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
-
-            table_data = self._create_delta_ensemble_table_column_data(
-                self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN).to_string(),
-                new_delta_ensemble_names,
-            )
-
             ensemble_options = [
                 {"label": ensemble, "value": ensemble}
-                for ensemble in self.ensembles
+                for ensemble in self.input_provider_set.names()
             ]
-            for elm in new_delta_ensemble_names:
-                ensemble_options.append({"label": elm, "value": elm})
+
+            new_delta_ensembles = []
+            table_data =[]
+
+            if n_clicks == 0:
+                pass                
+            else:
+
+                delta_ensemble = DeltaEnsemble(ensemble_a=ensemble_a, ensemble_b=ensemble_b)
+                
+                if delta_ensemble in existing_delta_ensembles:
+                    raise PreventUpdate
+
+                #new_delta_ensembles = existing_delta_ensembles
+                new_delta_ensembles = []
+                new_delta_ensembles.append(delta_ensemble)
+
+                # Create delta ensemble names
+                new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
+
+                table_data = self._create_delta_ensemble_table_column_data(
+                    self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN).to_string(),
+                    new_delta_ensemble_names,
+                )
+
+                for elm in new_delta_ensemble_names:
+                    ensemble_options.append({"label": elm, "value": elm})
 
             return (new_delta_ensembles, table_data, ensemble_options)
 
@@ -1007,7 +1017,15 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
             if relative_date:
                 return [{"display": "none"}]
             return [{"display": "block"}]
-
+        
+        @callback(
+            Output(self.component_unique_id(self.Ids.STATISTICS_FROM_RADIO_ITEMS).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.REALIZATIONS_FILTER_SELECTOR).to_string(), "value")
+        )
+        def _update_realization_option (selected_value: List[int]) -> str:
+            if len(selected_value) == len(self.realizations):
+                return StatisticsFromOptions.ALL_REALIZATIONS.value
+            return StatisticsFromOptions.SELECTED_REALIZATIONS.value
 
 
 

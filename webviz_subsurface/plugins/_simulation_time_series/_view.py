@@ -201,7 +201,6 @@ class SimulationTimeSeriesView(ViewABC):
             subplot_owner = SubplotGroupByOptions(subplot_owner_options_value)
             resampling_frequency = Frequency.from_string_value(resampling_frequency_value)
 
-            print(ensemble_dropdown_options)
             all_ensemble_names = [option["value"] for option in ensemble_dropdown_options]
             statistics_from_option = StatisticsFromOptions(statistics_calculated_from_value)
 

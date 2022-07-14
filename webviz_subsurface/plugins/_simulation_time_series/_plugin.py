@@ -384,3 +384,6 @@ class SimulationTimeSeries(WebvizPluginABC):
             )
         return functions
 
+    def _set_callbacks(self) -> None:
+        return super()._set_callbacks()
+
