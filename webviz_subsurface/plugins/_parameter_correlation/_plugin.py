@@ -15,7 +15,17 @@ from .views import ParameterPlot
 
 
 class ParameterCorrelation(WebvizPluginABC):
-    """Descibtion of plugin"""
+    """Shows parameter correlations using a correlation matrix,
+    and scatter plot for any given pair of parameters.
+
+    ---
+
+    * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+    * **`drop_constants`:** Drop constant parameters.
+
+    ---
+    Parameter values are extracted automatically from the `parameters.txt` files in the individual
+    realizations of your defined `ensembles`, using the `fmu-ensemble` library."""
 
     def __init__(
         self,

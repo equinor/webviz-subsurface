@@ -11,6 +11,8 @@ from ..views import ParameterPlot
 
 
 class BothPlots(SettingsGroupABC):
+    """Settings class for picking ensewmble in both plots"""
+
     class IDs:
         # pylint: disable=too-few-public-methods
         ENSEMBLE = "ensemble"
@@ -45,6 +47,8 @@ class BothPlots(SettingsGroupABC):
 
 
 class Horizontal(SettingsGroupABC):
+    """Settings class for picking distribution plot along hotizontal axis"""
+
     class IDs:
         # pylint: disable=too-few-public-methods
         PARAMETER = "parameter-horizontal"
@@ -119,6 +123,8 @@ class Horizontal(SettingsGroupABC):
 
 
 class Vertical(SettingsGroupABC):
+    """Settings class for picking distribution plot along vertical axis"""
+
     class IDs:
         # pylint: disable=too-few-public-methods
         PARAMETER = "parameter-vertical"
@@ -189,6 +195,8 @@ class Vertical(SettingsGroupABC):
 
 
 class Options(SettingsGroupABC):
+    """Settings class for picking distribution plot options"""
+
     class IDs:
         # pylint: disable=too-few-public-methods
         COLOR_BY = "color-by"
