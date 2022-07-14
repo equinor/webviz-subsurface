@@ -1,1 +1,1 @@
-from ._plugin import ParameterCorrelation
+from ._plugin import ParameterCorrelation, get_parameters
