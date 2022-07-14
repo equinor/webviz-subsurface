@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pandas as pd
-import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -132,6 +131,7 @@ folder, to avoid risk of not extracting the right data.
 """
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-statements
     def __init__(
         self,
         webviz_settings: WebvizSettings,

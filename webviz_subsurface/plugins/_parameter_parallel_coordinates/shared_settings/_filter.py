@@ -110,33 +110,31 @@ class Filter(SettingsGroupABC):
         def _update_ensembles_box(
             active_view: str, active_plugin: str, this_plugin: str
         ) -> List[Component]:
-            if this_plugin == active_plugin:
-                if active_view:
-                    if "ensemble-chart" in active_view:
-                        return [
-                            wcc.Checklist(
-                                id=self.ensemble_id,
-                                label="Ensembles",
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in self.ensembles
-                                ],
-                                value=self.ensembles,
-                            )
-                        ]
-                    if "response-chart" in active_view:
-                        return [
-                            wcc.RadioItems(
-                                id=self.ensemble_id,
-                                label="Ensembles",
-                                options=[
-                                    {"label": ens, "value": ens}
-                                    for ens in self.ensembles
-                                ],
-                                value=self.ensembles[0],
-                            ),
-                        ]
-            PreventUpdate
+            if this_plugin != active_plugin:
+                PreventUpdate
+            if active_view:
+                if "ensemble-chart" in active_view:
+                    return [
+                        wcc.Checklist(
+                            id=self.ensemble_id,
+                            label="Ensembles",
+                            options=[
+                                {"label": ens, "value": ens} for ens in self.ensembles
+                            ],
+                            value=self.ensembles,
+                        )
+                    ]
+                if "response-chart" in active_view:
+                    return [
+                        wcc.RadioItems(
+                            id=self.ensemble_id,
+                            label="Ensembles",
+                            options=[
+                                {"label": ens, "value": ens} for ens in self.ensembles
+                            ],
+                            value=self.ensembles[0],
+                        ),
+                    ]
 
         @callback(
             Output(
@@ -176,7 +174,6 @@ class Filter(SettingsGroupABC):
             Input(self.get_store_unique_id(PluginIds.Stores.ACTIVE_PLUGIN), "data"),
         )
         def _check_active_plugin(active_plugin: str, this_plugin: str) -> str:
-            if this_plugin == None:
+            if this_plugin is None:
                 this_plugin = active_plugin
                 return this_plugin
-            PreventUpdate

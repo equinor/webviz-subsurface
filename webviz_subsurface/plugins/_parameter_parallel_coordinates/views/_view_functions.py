@@ -3,6 +3,7 @@ import pandas as pd
 from webviz_config import WebvizConfigTheme
 
 
+# pylint: disable=too-many-arguments
 def render_parcoord(
     plot_df: pd.DataFrame,
     theme: WebvizConfigTheme,

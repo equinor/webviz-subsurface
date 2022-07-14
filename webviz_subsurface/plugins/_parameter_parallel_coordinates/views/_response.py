@@ -76,6 +76,7 @@ class ResponseView(ViewABC):
         RESPONSE_CHART = "response-chart"
         SETTINGS = "settings"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         parallel_df: pd.DataFrame,
