@@ -42,6 +42,7 @@ from .types import (
 from .utils import datetime_utils
 from .utils.delta_ensemble_utils import create_delta_ensemble_names
 
+
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeriesFilters(SettingsGroupABC):
     # pylint: disable=too-few-public-methods
