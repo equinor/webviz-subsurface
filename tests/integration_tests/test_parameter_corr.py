@@ -43,7 +43,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
 
         my_component = dash_duo.find_element(
             f"""#
-            {shared_settingsgroup(
+            {parameter_correlation.shared_settings_group(
                     PlugInIDs.SharedSettings.BOTHPLOTS
             )
             .component_unique_id(
