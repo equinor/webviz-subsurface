@@ -36,12 +36,13 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         dash_duo.start_server(app)
 
         my_component = dash_duo.find_element(
-            f"{parameter_correlation.shared_settings_group(
+            f"""#
+            {parameter_correlation.shared_settings_group(
                     parameter_correlationPlugInIDs.SharedSettings.BOTHPLOTS
                 )
                 .component_unique_id(
                     parameter_correlation.BothPlots.IDs.ENSEMBLE
-                ).to_string()}"
+                ).to_string()}"""
         )
 
         if not my_component.text.startswith("iter-0"):
