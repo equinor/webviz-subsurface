@@ -7,11 +7,13 @@ from webviz_config.common_cache import CACHE
 
 # pylint: disable=no-name-in-module
 from webviz_config.plugins import ParameterCorrelation
+from webviz_config.themes import default_theme
+
 from ...webviz_subsurface.plugins._parameter_correlation._plugin_ids import PlugInIDs
 from ...webviz_subsurface.plugins._parameter_correlation.shared_settings import (
     BothPlots,
 )
-from webviz_config.themes import default_theme
+
 
 # pylint: enable=no-name-in-module
 
@@ -41,7 +43,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
 
         my_component = dash_duo.find_element(
             f"""#
-            {shared_settings_group(
+            {shared_settingsgroup(
                     PlugInIDs.SharedSettings.BOTHPLOTS
             )
             .component_unique_id(
