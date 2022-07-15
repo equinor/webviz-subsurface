@@ -7,7 +7,7 @@ from webviz_config.common_cache import CACHE
 
 # pylint: disable=no-name-in-module
 from webviz_config.plugins import ParameterCorrelation
-from ...webviz-subsurface.plugins._parameter_correlation import PluginIDs
+from ...webviz-subsurface.plugins._parameter_correlation import PlugInIDs
 from ...webviz-subsurface.plugins._parameter_correlation.shared_settings import BothPlots
 from webviz_config.themes import default_theme
 
