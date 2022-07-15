@@ -85,7 +85,7 @@ setup(
     },
     install_requires=[
         "flask-caching<1.11",  # https://github.com/equinor/webviz-subsurface/issues/1043
-        "dash>=2.0.0",
+        "dash>=2.0.0,<2.6.0",
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
