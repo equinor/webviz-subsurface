@@ -151,8 +151,8 @@ class WellOverviewFigure:
 
 def format_well_overview_figure(
     figure: go.Figure,
-    charttype: str,
-    settings: str,
+    charttype: ChartType,
+    settings: List[str],
     sumvec: str,
     prod_after_date: Union[str, None],
 ) -> go.Figure:
@@ -163,7 +163,7 @@ def format_well_overview_figure(
     settings are changed. See in the well_overview_callbacks how it is used.
     """
 
-    if charttype == "pie":
+    if charttype == ChartType.PIE:
         figure.update_traces(
             texttemplate=(
                 "%{label}<br>%{value:.2s}"
@@ -172,7 +172,7 @@ def format_well_overview_figure(
             )
         )
 
-    elif charttype == "area":
+    elif charttype == ChartType.BAR:
         figure.update_layout(
             barmode=("overlay" if "overlay_bars" in settings else "group")
         )
