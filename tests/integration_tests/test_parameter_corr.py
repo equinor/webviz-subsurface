@@ -9,6 +9,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.plugins import ParameterCorrelation
 from webviz_config.themes import default_theme
 
+# pylint: disable=relative-beyond-top-level
 from ...webviz_subsurface.plugins._parameter_correlation._plugin_ids import PlugInIDs
 from ...webviz_subsurface.plugins._parameter_correlation.shared_settings import (
     BothPlots,
