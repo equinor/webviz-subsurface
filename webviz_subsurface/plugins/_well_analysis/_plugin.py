@@ -115,8 +115,20 @@ class WellAnalysis(WebvizPluginABC):
                 WellAttributesModel(ens_name, ens_path, well_attributes_file),
                 filter_out_startswith=filter_out_startswith,
             )
-        
-        self.add_view(OverviewView(self._data_models), PluginIds.ViewID.WELL_OVERVIEW)
+
+        self.add_store(
+            PluginIds.Stores.SELECTED_PLOT_LAYOUT, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_WELL_ATTR, WebvizPluginABC.StorageType.SESSION
+        )
+
+        self.add_view(
+            OverviewView(self._data_models, self._theme), PluginIds.ViewID.WELL_OVERVIEW
+        )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
