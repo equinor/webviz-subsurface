@@ -15,7 +15,6 @@ from ...webviz_subsurface.plugins._parameter_correlation.shared_settings import 
     BothPlots,
 )
 
-
 # pylint: enable=no-name-in-module
 
 # mocked functions
