@@ -50,11 +50,11 @@ class OverviewPlotSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(OverviewPlotSettings.Ids.PLOT_TYPE),
                 label="Plot type",
                 options=[
-                    {"label": "Bar chart", "value": "bar-chart"},
-                    {"label": "Pie chart", "value": "pie-chart"},
-                    {"label": "Stacked area chart", "value": "stacked-chart"},
+                    {"label": "Bar chart", "value": "bar"},
+                    {"label": "Pie chart", "value": "pie"},
+                    {"label": "Stacked area chart", "value": "stacked"},
                 ],
-                value="bar-chart",
+                value="bar",
                 vertical=True,
             ),
             wcc.Dropdown(
@@ -116,7 +116,7 @@ class OverviewPlotSettings(SettingsGroupABC):
         )
         def _update_checkbox(selected_plot: str) -> List[Component]:
             box_list = []
-            if selected_plot == "bar-chart":
+            if selected_plot == "bar":
                 box_list = [
                     wcc.Checklist(
                         id=self.plot_layout_id ,
@@ -130,7 +130,7 @@ class OverviewPlotSettings(SettingsGroupABC):
                         
                     )
                 ]
-            if selected_plot == "pie-chart":
+            if selected_plot == "pie":
                 box_list = [
                     wcc.Checklist(
                         id=self.plot_layout_id ,
@@ -142,7 +142,7 @@ class OverviewPlotSettings(SettingsGroupABC):
                         
                     )
                 ]
-            if selected_plot == "stacked-chart":
+            if selected_plot == "area":
                 box_list = [
                     wcc.Checklist(
                         id=self.plot_layout_id ,
