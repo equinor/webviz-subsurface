@@ -176,4 +176,4 @@ class RftPlotter(WebvizPluginABC):
     #             .get_unique_id(),
     #             "content": """ formation  """    
     #         }
-    #     ]
+    #     ] 

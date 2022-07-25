@@ -28,7 +28,7 @@ class RftMap(ViewABC):
                 self.Ids.MAP_PLOT_SETTINGS: MapPlotSelector(self.datamodel),
                 self.Ids.FORMATION_PLOT_SETTINGS: FormationPlotSelector(self.datamodel),
             }
-        )
+        ) 
 
         row = self.add_row()
         row.make_column(RftMap.Ids.MAP_GRAPH)

@@ -9,7 +9,7 @@ from .._business_logic import RftPlotterDataModel, filter_frame
 
 
 class FormationPlotSelector(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods 
     class Ids:
         FORMATIONS_ENSEMBLE = "formations-ensemble"
         FORMATIONS_WELL = "formations-well"

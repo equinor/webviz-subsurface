@@ -12,7 +12,7 @@ from .._shared_settings import ParameterResponseSettings
 
 
 class ParameterResponseView(ViewABC):
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods 
     class Ids:
         PARAMRESP_SETTINGS = "paramresp-settings"
         PARAMRESP_FORMATIONS = "paramresp-formations"

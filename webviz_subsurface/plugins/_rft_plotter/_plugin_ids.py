@@ -8,3 +8,4 @@ class PluginIds:
         RFT_CROSSPLOT = "rft-crossplot"
         RFT_MISFIT_PER_OBSERVATION = "rft-misfit-per-observation"
         PARAMETER_RESPONSE = "parameter-response"
+ 

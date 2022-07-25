@@ -9,7 +9,7 @@ from ...._components.parameter_filter import ParameterFilter
 from .._business_logic import RftPlotterDataModel
 
 
-class ParameterResponseSettings(SettingsGroupABC):
+class ParameterResponseSettings(SettingsGroupABC): 
     # pylint: disable=too-few-public-methods
     class Ids:
         PARAMRESP_ENSEMBLE = "param-response-ensemble"

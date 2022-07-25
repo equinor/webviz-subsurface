@@ -18,7 +18,7 @@ class RftMisfitPerReal (ViewABC):
     def __init__(self, datamodel: RftPlotterDataModel, tab: str) -> None:
         super().__init__("RTF misfit per real")
         self.datamodel = datamodel
-        self.tab = tab
+        self.tab = tab 
 
         self.add_settings_group(
             FilterLayout(self.datamodel, self.tab),
