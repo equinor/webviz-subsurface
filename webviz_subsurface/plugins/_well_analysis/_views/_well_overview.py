@@ -3,7 +3,7 @@ from typing import Dict, List, Set, Tuple, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import ALL, Input, Output, State, callback, callback_context
+from dash import Input, Output, State, callback, callback_context
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import ViewABC
