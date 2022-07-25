@@ -1,9 +1,7 @@
-import datetime
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List
 
-import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import ALL, Input, Output, State, callback, callback_context
+from dash import ALL, Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import ViewABC
@@ -11,8 +9,7 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import create_well_control_figure
 from .._plugin_ids import PluginIds
-from .._types import ChartType, PressurePlotMode
-from .._view_elements import Graph
+from .._types import PressurePlotMode
 from ._settings import ControlPressureOptions, ControlSettings
 
 

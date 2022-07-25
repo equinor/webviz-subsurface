@@ -24,6 +24,7 @@ class OverviewView(ViewABC):
         FILTER = "filter"
         MAIN_COLUMN = "main-column"
         GRAPH = "graph"
+        FIGURE = "figure"
 
     def __init__(
         self,
@@ -71,6 +72,8 @@ class OverviewView(ViewABC):
                 .to_string(),
                 "children",
             ),
+            Output(self.get_store_unique_id(PluginIds.Stores.CURRENT_FIG), "value"),
+            Output(self.get_store_unique_id(PluginIds.Stores.PREV_PLOT_TYPE), "value"),
             Input(
                 self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
                 .component_unique_id(OverviewPlotSettings.Ids.SELECTED_ENSEMBLES)
@@ -109,10 +112,8 @@ class OverviewView(ViewABC):
                 self.get_store_unique_id(PluginIds.Stores.SELECTED_WELL_ATTR),
                 "value",
             ),
-            # State(
-            #     self.unique_id(OverviewView.Ids.GRAPH),
-            #     "figure",
-            # ),
+            State(self.get_store_unique_id(PluginIds.Stores.CURRENT_FIG), "value"),
+            State(self.get_store_unique_id(PluginIds.Stores.PREV_PLOT_TYPE), "value"),
         )
         def _update_graph(
             ensembles: List[str],
@@ -122,20 +123,19 @@ class OverviewView(ViewABC):
             chart_selected: ChartType,
             wells_selected: List[str],
             well_attr_selected: List[str],
-            # current_fig_dict: dict,
-        ) -> List[Component]:
+            current_fig_dict: dict,
+            prev_plot: ChartType,
+        ) -> Tuple[List[Component], dict, ChartType]:
             # pylint: disable=too-many-locals
             # pylint: disable=too-many-arguments
 
             """Updates the well overview graph with selected input (f.ex chart type)"""
-            ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
+            ctx = callback_context.triggered[0]["prop_id"]
             settings = checklist_values
             layout_trigger = False
 
-            print(ctx)
-            if "plot-layout" in ctx:
+            if "plot-layout" in ctx and chart_selected == prev_plot:
                 layout_trigger = True
-                print("yeeeeah")
 
             if well_attr_selected:
                 well_attributes_selected: Dict[str, List[str]] = {}
@@ -164,39 +164,43 @@ class OverviewView(ViewABC):
             # If the event is a plot settings event, then we only update the formatting
             # and not the figure data
             chart_selected_type = ChartType(chart_selected)
-            # if current_fig_dict is not None and layout_trigger:
-            #     fig_dict = format_well_overview_figure(
-            #         go.Figure(current_fig_dict),
-            #         chart_selected_type,
-            #         settings,
-            #         sumvec,
-            #         prod_after_date,
-            #     )
-            # else:
-            figure = WellOverviewFigure(
-                ensembles,
-                self.data_models,
-                sumvec,
-                datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
-                if prod_after_date is not None
-                else None,
-                chart_selected_type,
-                filtered_wells,
-                self.theme,
-            )
-
-            fig_dict = format_well_overview_figure(
-                figure.figure,
-                chart_selected_type,
-                settings,
-                sumvec,
-                prod_after_date,
-            )
-
-            return [
-                wcc.Graph(
-                    id=self.unique_id(OverviewView.Ids.GRAPH),
-                    style={"height": "87vh"},
-                    figure=fig_dict,
+            if current_fig_dict is not None and layout_trigger:
+                fig_dict = format_well_overview_figure(
+                    go.Figure(current_fig_dict),
+                    chart_selected_type,
+                    settings,
+                    sumvec,
+                    prod_after_date,
                 )
-            ]
+            else:
+                figure = WellOverviewFigure(
+                    ensembles,
+                    self.data_models,
+                    sumvec,
+                    datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
+                    if prod_after_date is not None
+                    else None,
+                    chart_selected_type,
+                    filtered_wells,
+                    self.theme,
+                )
+
+                fig_dict = format_well_overview_figure(
+                    figure.figure,
+                    chart_selected_type,
+                    settings,
+                    sumvec,
+                    prod_after_date,
+                )
+
+            return (
+                [
+                    wcc.Graph(
+                        id=self.unique_id(OverviewView.Ids.FIGURE),
+                        style={"height": "87vh"},
+                        figure=fig_dict,
+                    )
+                ],
+                fig_dict,
+                chart_selected,
+            )
