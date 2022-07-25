@@ -24,7 +24,7 @@ class RftCrossplot(ViewABC):
         self.add_settings_groups(
             {
                 self.Ids.CROSSPLOT_FILTERS: FilterLayout(self.datamodel, self.tab),
-                self.Ids.CROSSPLOT_PLOT_SETTINGS: SizeColorLayout(self.datamodel),
+                self.Ids.CROSSPLOT_PLOT_SETTINGS: SizeColorLayout(),
             }
         )
 

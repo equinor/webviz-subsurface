@@ -1,4 +1,3 @@
-# pylint: disable=too-few-public-methods
 class PluginIds:
     # pylint: disable=too-few-public-methods
     class Views:

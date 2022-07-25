@@ -13,7 +13,7 @@ class SizeColorLayout(SettingsGroupABC):
         CROSSPLOT_COLOR_BY = "crossplot-color-by"
         CROSSPLOT_SIZE_BY = "crossplot-size-by"
 
-    def __init__(self, datamodel: RftPlotterDataModel) -> None:
+    def __init__(self) -> None:
         super().__init__("Plot settings")
 
     def layout(self) -> List[Component]:

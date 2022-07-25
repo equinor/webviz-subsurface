@@ -88,26 +88,26 @@ class ParameterResponseView(ViewABC):
                 ),
                 "value",
             ),
-            State(
-                self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_DATE
-                ),
-                "value",
-            ),
-            State(
-                self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_ZONE
-                ),
-                "value",
-            ),
+            # State(
+            #     self.get_settings_element_id(
+            #         ParameterResponseSettings.Ids.PARAMRESP_DATE
+            #     ),
+            #     "value",
+            # ),
+            # State(
+            #     self.get_settings_element_id(
+            #         ParameterResponseSettings.Ids.PARAMRESP_ZONE
+            #     ),
+            #     "value",
+            # ),
             prevent_initial_call=True,
         )
         def _update_selections_from_clickdata(
             corr_vector_clickdata: Union[None, dict],
             well: str,
             corrtype: str,
-            date: str,
-            zone: str,
+            # date: str,
+            # zone: str,
         ) -> str:
             """Update well, date and zone from clickdata"""
             if corr_vector_clickdata is None or corrtype == "sim_vs_param":
@@ -116,7 +116,7 @@ class ParameterResponseView(ViewABC):
             clickdata = corr_vector_clickdata.get("points", [{}])[0].get("y")
             ls_clickdata = clickdata.split()
             print("click dat ais: ", ls_clickdata)
-            dates_in_well, zones_in_well = self.datamodel.well_dates_and_zones(well)
+            # dates_in_well, zones_in_well = self.datamodel.well_dates_and_zones(well)
             return ls_clickdata[0]
 
         @callback(

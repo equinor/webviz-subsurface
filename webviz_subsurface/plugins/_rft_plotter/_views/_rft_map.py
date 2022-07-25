@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import List, Union
 
 import webviz_core_components as wcc
-from dash import Input, Output, State, callback
+from dash import Input, Output, callback
 from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from .._business_logic import RftPlotterDataModel, correlate
+from .._business_logic import RftPlotterDataModel
 from .._figures._formation_figure import FormationFigure
 from .._figures._map_figure import MapFigure
 from .._shared_settings import FormationPlotSelector, MapPlotSelector
