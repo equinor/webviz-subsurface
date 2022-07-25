@@ -288,6 +288,7 @@ class ControlSettings(SettingsGroupABC):
                 options=[{"label": col, "value": col} for col in self.ensembles],
                 value=self.ensembles[0],
                 multi=False,
+                clearable=False,
             ),
             wcc.Dropdown(
                 label="Well",
@@ -295,6 +296,7 @@ class ControlSettings(SettingsGroupABC):
                 options=[{"label": well, "value": well} for well in self.wells],
                 value=self.wells[0],
                 multi=False,
+                clearable=False,
             ),
             wcc.Checklist(
                 id=self.register_component_unique_id(ControlSettings.Ids.SHARED_X_AXIS),
