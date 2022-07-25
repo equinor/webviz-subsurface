@@ -35,7 +35,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         app.layout = parameter_correlation.layout
         dash_duo.start_server(app)
 
-        # Using str literals driectly, not IDs from the plugin as intended because
+        # Using str literals directly, not IDs from the plugin as intended because
         # the run test did not accept the imports
         my_component = dash_duo.find_element(
             f"""#{parameter_correlation.shared_settings_group(
