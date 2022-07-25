@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
+from dash import html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ._business_logic import RftPlotterDataModel
@@ -157,6 +158,10 @@ class RftPlotter(WebvizPluginABC):
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return self._datamodel.webviz_store
+
+    @property
+    def layout(self) -> html.Div:
+        return html.Div()
 
     # @property
     # def tour_steps(self) -> List[dict]:

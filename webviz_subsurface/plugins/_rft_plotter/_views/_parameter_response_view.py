@@ -76,38 +76,17 @@ class ParameterResponseView(ViewABC):
                 "value",
             ),
             Input(self.Ids.PARAMRESP_CORR_BARCHART_FIGURE, "clickData"),
-            # State(
-            #     self.get_settings_element_id(
-            #         ParameterResponseSettings.Ids.PARAMRESP_WELL
-            #     ),
-            #     "value",
-            # ),
             State(
                 self.get_settings_element_id(
                     ParameterResponseSettings.Ids.PARAMRESP_CORRTYPE
                 ),
                 "value",
             ),
-            # State(
-            #     self.get_settings_element_id(
-            #         ParameterResponseSettings.Ids.PARAMRESP_DATE
-            #     ),
-            #     "value",
-            # ),
-            # State(
-            #     self.get_settings_element_id(
-            #         ParameterResponseSettings.Ids.PARAMRESP_ZONE
-            #     ),
-            #     "value",
-            # ),
             prevent_initial_call=True,
         )
         def _update_selections_from_clickdata(
             corr_vector_clickdata: Union[None, dict],
-            # well: str,
             corrtype: str,
-            # date: str,
-            # zone: str,
         ) -> str:
             """Update well, date and zone from clickdata"""
             if corr_vector_clickdata is None or corrtype == "sim_vs_param":
@@ -116,7 +95,6 @@ class ParameterResponseView(ViewABC):
             clickdata = corr_vector_clickdata.get("points", [{}])[0].get("y")
             ls_clickdata = clickdata.split()
             print("click dat ais: ", ls_clickdata)
-            # dates_in_well, zones_in_well = self.datamodel.well_dates_and_zones(well)
             return ls_clickdata[0]
 
         @callback(
@@ -315,108 +293,3 @@ class ParameterResponseView(ViewABC):
                     figure=formations_figure.figure,
                 ),
             ]
-
-    #     # @callback(
-    #     #     Output(
-    #     #         self.settings_group(self.Ids.PARAM_FILTER_WRAPPER)
-    #     #         .component_unique_id(ParameterResponseSettings.Ids.PARAMRESP_PARAM)
-    #     #         .to_string(),
-    #     #         "value",
-    #     #     ),
-    #     #     Input(
-    #     #         self.layout_element(
-    #     #             self.Ids.PARAMRESP_CORR_BARCHART
-    #     #         ).component_unique_id(),
-    #     #         "clickData",
-    #     #     ),
-    #     #     State(self.component_unique_id(self.Ids.PARAMRESP_CORRTYPE), "value"),
-    #     #     prevent_initial_call=True,
-    #     # )
-    #     # def _update_param_from_clickdata(
-    #     #     corr_vector_clickdata: Union[None, dict],
-    #     #     corrtype: str,
-    #     # ) -> str:
-    #     #     """Update the selected parameter from clickdata"""
-    #     #     if corr_vector_clickdata is None or corrtype == "param_vs_sim":
-    #     #         raise PreventUpdate
-    #     #     return corr_vector_clickdata.get("points", [{}])[0].get("y")
-
-    #     # @callback(
-    #     #     Output(self.component_unique_id(self.Ids.PARAMRESP_WELL), "value"),
-    #     #     Output(
-    #     #         self.component_unique_id(self.Ids.PARAMRESP_DATE_DROPDOWN), "children"
-    #     #     ),
-    #     #     Output(
-    #     #         self.component_unique_id(self.Ids.PARAMRESP_ZONE_DROPDOWN), "children"
-    #     #     ),
-    #     #     Input(
-    #     #         self.component_unique_id(self.Ids.PARAMRESP_CORR_BARCHART_FIGURE),
-    #     #         "clickData",
-    #     #     ),
-    #     #     State(self.component_unique_id(self.Ids.PARAMRESP_CORRTYPE), "value"),
-    #     #     State(self.component_unique_id(self.Ids.PARAMRESP_WELL), "value"),
-    #     #     State(self.component_unique_id(self.Ids.PARAMRESP_DATE), "value"),
-    #     #     State(self.component_unique_id(self.Ids.PARAMRESP_ZONE), "value"),
-    #     #     prevent_initial_call=True,
-    #     # )
-    #     # def _update_selections_from_clickdata(
-    #     #     corr_vector_clickdata: Union[None, dict],
-    #     #     corrtype: str,
-    #     #     well: str,
-    #     #     date: str,
-    #     #     zone: str,
-    #     # ) -> Tuple[str, wcc.Dropdown, wcc.Dropdown]:
-    #     #     """Update well, date and zone from clickdata"""
-    #     #     if corr_vector_clickdata is None or corrtype == "sim_vs_param":
-    #     #         raise PreventUpdate
-
-    #     #     clickdata = corr_vector_clickdata.get("points", [{}])[0].get("y")
-    #     #     ls_clickdata = clickdata.split()
-
-    #     #     dates_in_well, zones_in_well = datamodel.well_dates_and_zones(well)
-    #     #     dates_dropdown = wcc.Dropdown(
-    #     #         label="Date",
-    #     #         id=self.component_unique_id(self.Ids.PARAMRESP_DATE),
-    #     #         options=[{"label": date, "value": date} for date in dates_in_well],
-    #     #         value=ls_clickdata[1],
-    #     #         clearable=False,
-    #     #     )
-    #     #     zones_dropdown = wcc.Dropdown(
-    #     #         label="Zone",
-    #     #         id=self.component_unique_id(self.Ids.PARAMRESP_ZONE),
-    #     #         options=[{"label": zone, "value": zone} for zone in zones_in_well],
-    #     #         value=ls_clickdata[2],
-    #     #         clearable=False,
-    #     #     )
-
-    #     #     return ls_clickdata[0], dates_dropdown, zones_dropdown
-
-    #     # @callback(
-    #     #     Output(self.component_unique_id(self.Ids.PARAMRESP_DATE), "options"),
-    #     #     Output(self.component_unique_id(self.Ids.PARAMRESP_DATE), "value"),
-    #     #     Output(self.component_unique_id(self.Ids.PARAMRESP_ZONE), "options"),
-    #     #     Output(self.component_unique_id(self.Ids.PARAMRESP_ZONE), "value"),
-    #     #     Input(self.component_unique_id(self.Ids.PARAMRESP_WELL), "value"),
-    #     #     State(self.component_unique_id(self.Ids.PARAMRESP_ZONE), "value"),
-    #     # )
-    #     # def _update_date_and_zone(
-    #     #     well: str, zone_state: str
-    #     # ) -> Tuple[List[Dict[str, str]], str, List[Dict[str, str]], str]:
-    #     #     """Update dates and zones when selecting well. If the current
-    #     #     selected zone is also present in the new well it will be kept as value.
-    #     #     """
-    #     #     dates_in_well, zones_in_well = datamodel.well_dates_and_zones(well)
-    #     #     return (
-    #     #         [{"label": date, "value": date} for date in dates_in_well],
-    #     #         dates_in_well[0],
-    #     #         [{"label": zone, "value": zone} for zone in zones_in_well],
-    #     #         zone_state if zone_state in zones_in_well else zones_in_well[0],
-    #     #     )
-
-    #     # @callback(
-    #     #     Output(self.component_unique_id(self.Ids.PARAM_FILTER_WRAPPER), "style"),
-    #     #     Input(self.component_unique_id(self.Ids.DISPLAY_PARAM_FILTER), "value"),
-    #     # )
-    #     # def _show_hide_parameter_filter(display_param_filter: list) -> Dict[str, Any]:
-    #     #     """Display/hide parameter filter"""
-    #     #     return {"display": "block" if display_param_filter else "none", "flex": 1}
