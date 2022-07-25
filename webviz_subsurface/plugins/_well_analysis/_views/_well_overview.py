@@ -110,9 +110,7 @@ class OverviewView(ViewABC):
                 "value",
             ),
             # State(
-            #     self.view_element(OverviewView.Ids.GRAPH)
-            #     .component_unique_id(Graph.Ids.GRAPH)
-            #     .to_string(),
+            #     self.unique_id(OverviewView.Ids.GRAPH),
             #     "figure",
             # ),
         )
@@ -133,7 +131,6 @@ class OverviewView(ViewABC):
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
             settings = checklist_values
             layout_trigger = False
-            current_fig_dict = {}
 
             print(ctx)
             if "plot-layout" in ctx:
@@ -149,8 +146,6 @@ class OverviewView(ViewABC):
                             if attr in value:
                                 attr_list.append(attr)
                     well_attributes_selected[category] = attr_list
-
-            print("selected: ", well_attributes_selected)
 
             # Make set of wells that match the well_attributes
             # Well attributes that does not exist in one ensemble will be ignored
