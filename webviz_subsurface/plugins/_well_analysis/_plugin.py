@@ -19,7 +19,7 @@ from ..._providers import (
 from ._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from ._error import error
 from ._plugin_ids import PluginIds
-from ._views import OverviewView
+from ._views import ControlView, OverviewView
 
 # from ._layout import clientside_stores, main_layout
 
@@ -125,9 +125,21 @@ class WellAnalysis(WebvizPluginABC):
         self.add_store(
             PluginIds.Stores.SELECTED_WELL_ATTR, WebvizPluginABC.StorageType.SESSION
         )
+        self.add_store(
+            PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_REALIZATION, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.DISPLAY_CTRL_MODE_BAR, WebvizPluginABC.StorageType.SESSION
+        )
 
         self.add_view(
             OverviewView(self._data_models, self._theme), PluginIds.ViewID.WELL_OVERVIEW
+        )
+        self.add_view(
+            ControlView(self._data_models, self._theme), PluginIds.ViewID.WELL_CONTROL
         )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
