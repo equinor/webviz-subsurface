@@ -12,7 +12,6 @@ from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import WellOverviewFigure, format_well_overview_figure
 from .._plugin_ids import PluginIds
 from .._types import ChartType
-from .._view_elements import Graph
 from ._settings import OverviewFilter, OverviewPlotSettings
 
 
@@ -61,8 +60,6 @@ class OverviewView(ViewABC):
         )
 
         self.main_column = self.add_column(OverviewView.Ids.MAIN_COLUMN)
-
-        self.main_column.add_view_element(Graph(), OverviewView.Ids.GRAPH)
 
     def set_callbacks(self) -> None:
         @callback(
