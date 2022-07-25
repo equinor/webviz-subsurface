@@ -38,8 +38,8 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         # Using str literals directly, not IDs from the plugin as intended because
         # the run test did not accept the imports
         my_component = dash_duo.find_element(
-            parameter_correlation.shared_settings_group('both-plots')
-            .component_unique_id('ensemble').to_string()
+            parameter_correlation.shared_settings_group("both-plots")
+            .component_unique_id("ensemble").to_string()
         )
 
         if not my_component.text.startswith("iter-0"):
