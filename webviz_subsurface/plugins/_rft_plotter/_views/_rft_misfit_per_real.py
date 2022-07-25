@@ -9,7 +9,7 @@ from .._figures._misfit_figure import update_misfit_plot
 from .._shared_settings import FilterLayout
 
 
-class RftMisfitPerReal (ViewABC):
+class RftMisfitPerReal(ViewABC):
     # pylint: disable=too-few-public-methods
     class Ids:
         MISFITPLOT_SETTINGS = "misfitplot-settings"
@@ -18,17 +18,16 @@ class RftMisfitPerReal (ViewABC):
     def __init__(self, datamodel: RftPlotterDataModel, tab: str) -> None:
         super().__init__("RTF misfit per real")
         self.datamodel = datamodel
-        self.tab = tab 
+        self.tab = tab
 
         self.add_settings_group(
-            FilterLayout(self.datamodel, self.tab),
-            self.Ids.MISFITPLOT_SETTINGS
+            FilterLayout(self.datamodel, self.tab), self.Ids.MISFITPLOT_SETTINGS
         )
 
         column = self.add_column()
         column.make_row(self.Ids.MISFITPLOT_GRAPH)
-    
-    def get_settings_element_id(self,element_id: str) -> str:
+
+    def get_settings_element_id(self, element_id: str) -> str:
         return (
             self.settings_group(self.Ids.MISFITPLOT_SETTINGS)
             .component_unique_id(element_id)
@@ -40,12 +39,27 @@ class RftMisfitPerReal (ViewABC):
             Output(
                 self.layout_element(self.Ids.MISFITPLOT_GRAPH)
                 .get_unique_id()
-                .to_string()
-                , "children"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_WELLS[self.tab]), "value"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_ZONES[self.tab]), "value"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_DATES[self.tab]), "value"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_ENSEMBLES[self.tab]), "value"),
+                .to_string(),
+                "children",
+            ),
+            Input(
+                self.get_settings_element_id(FilterLayout.Ids.FILTER_WELLS[self.tab]),
+                "value",
+            ),
+            Input(
+                self.get_settings_element_id(FilterLayout.Ids.FILTER_ZONES[self.tab]),
+                "value",
+            ),
+            Input(
+                self.get_settings_element_id(FilterLayout.Ids.FILTER_DATES[self.tab]),
+                "value",
+            ),
+            Input(
+                self.get_settings_element_id(
+                    FilterLayout.Ids.FILTER_ENSEMBLES[self.tab]
+                ),
+                "value",
+            ),
         )
         def _misfit_plot(
             wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
@@ -58,4 +72,3 @@ class RftMisfitPerReal (ViewABC):
                 return "No data matching the given filter criterias"
 
             return update_misfit_plot(df, self.datamodel.enscolors)
-    

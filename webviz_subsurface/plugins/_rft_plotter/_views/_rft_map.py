@@ -28,54 +28,60 @@ class RftMap(ViewABC):
                 self.Ids.MAP_PLOT_SETTINGS: MapPlotSelector(self.datamodel),
                 self.Ids.FORMATION_PLOT_SETTINGS: FormationPlotSelector(self.datamodel),
             }
-        ) 
+        )
 
         row = self.add_row()
         row.make_column(RftMap.Ids.MAP_GRAPH)
         row.make_column(RftMap.Ids.FORMATION_GRAPH)
 
-    def get_settings_element_id(self, setting_id, element_id: str) -> str:
+    def get_settings_element_id(self, setting_id: str, element_id: str) -> str:
         return (
-            self.settings_group(setting_id)
-            .component_unique_id(element_id)
-            .to_string()
+            self.settings_group(setting_id).component_unique_id(element_id).to_string()
         )
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.layout_element(self.Ids.MAP_GRAPH)
-                .get_unique_id()
-                .to_string()            
-                , "children"),
+                self.layout_element(self.Ids.MAP_GRAPH).get_unique_id().to_string(),
+                "children",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.MAP_PLOT_SETTINGS,
-                MapPlotSelector.Ids.MAP_ENSEMBLE)
-                , "value"),
+                    self.Ids.MAP_PLOT_SETTINGS, MapPlotSelector.Ids.MAP_ENSEMBLE
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.MAP_PLOT_SETTINGS,
-                MapPlotSelector.Ids.MAP_SIZE_BY)
-                , "value"),
+                    self.Ids.MAP_PLOT_SETTINGS, MapPlotSelector.Ids.MAP_SIZE_BY
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.MAP_PLOT_SETTINGS,
-                MapPlotSelector.Ids.MAP_COLOR_BY)
-                , "value"),
+                    self.Ids.MAP_PLOT_SETTINGS, MapPlotSelector.Ids.MAP_COLOR_BY
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.MAP_PLOT_SETTINGS,
-                MapPlotSelector.Ids.MAP_DATE_RANGE)
-                , "value"),
+                    self.Ids.MAP_PLOT_SETTINGS, MapPlotSelector.Ids.MAP_DATE_RANGE
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.MAP_PLOT_SETTINGS,
-                MapPlotSelector.Ids.MAP_ZONES)
-                , "value"),
+                    self.Ids.MAP_PLOT_SETTINGS, MapPlotSelector.Ids.MAP_ZONES
+                ),
+                "value",
+            ),
         )
         def _update_map(
-            ensemble: str, sizeby: str, colorby: str, dates: List[float], zones: List[str]
+            ensemble: str,
+            sizeby: str,
+            colorby: str,
+            dates: List[float],
+            zones: List[str],
         ) -> Union[str, List[wcc.Graph]]:
             figure = MapFigure(self.datamodel.ertdatadf, ensemble, zones)
             if self.datamodel.faultlinesdf is not None:
@@ -85,7 +91,7 @@ class RftMap(ViewABC):
             return [
                 wcc.Graph(
                     style={"height": "84vh"},
-                    figure={"data": figure.traces, "layout": figure.layout}
+                    figure={"data": figure.traces, "layout": figure.layout},
                 )
             ]
 
@@ -93,33 +99,44 @@ class RftMap(ViewABC):
             Output(
                 self.layout_element(self.Ids.FORMATION_GRAPH)
                 .get_unique_id()
-                .to_string()            
-                , "children"),
+                .to_string(),
+                "children",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.FORMATION_PLOT_SETTINGS,
-                FormationPlotSelector.Ids.FORMATIONS_WELL)
-                , "value"),
+                    self.Ids.FORMATION_PLOT_SETTINGS,
+                    FormationPlotSelector.Ids.FORMATIONS_WELL,
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.FORMATION_PLOT_SETTINGS,
-                FormationPlotSelector.Ids.FORMATIONS_DATE)
-                , "value"),
+                    self.Ids.FORMATION_PLOT_SETTINGS,
+                    FormationPlotSelector.Ids.FORMATIONS_DATE,
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.FORMATION_PLOT_SETTINGS,
-                FormationPlotSelector.Ids.FORMATIONS_ENSEMBLE)
-                , "value"),
+                    self.Ids.FORMATION_PLOT_SETTINGS,
+                    FormationPlotSelector.Ids.FORMATIONS_ENSEMBLE,
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.FORMATION_PLOT_SETTINGS,
-                FormationPlotSelector.Ids.FORMATIONS_LINETYPE)
-                , "value"),
+                    self.Ids.FORMATION_PLOT_SETTINGS,
+                    FormationPlotSelector.Ids.FORMATIONS_LINETYPE,
+                ),
+                "value",
+            ),
             Input(
                 self.get_settings_element_id(
-                self.Ids.FORMATION_PLOT_SETTINGS,
-                FormationPlotSelector.Ids.FORMATIONS_DEPTHOPTION)
-                , "value"),
+                    self.Ids.FORMATION_PLOT_SETTINGS,
+                    FormationPlotSelector.Ids.FORMATIONS_DEPTHOPTION,
+                ),
+                "value",
+            ),
         )
         def _update_formation_plot(
             well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
@@ -157,6 +174,3 @@ class RftMap(ViewABC):
                     figure=figure.figure,
                 )
             ]
-
-
-

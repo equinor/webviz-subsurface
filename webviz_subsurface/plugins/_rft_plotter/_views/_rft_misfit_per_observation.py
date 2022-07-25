@@ -9,7 +9,7 @@ from .._figures._errorplot_figure import update_errorplot
 from .._shared_settings import FilterLayout
 
 
-class RftMisfitPerObservation (ViewABC):
+class RftMisfitPerObservation(ViewABC):
     # pylint: disable=too-few-public-methods
     class Ids:
         ERRORPLOT_SETTINGS = "errorplot-settings"
@@ -18,16 +18,15 @@ class RftMisfitPerObservation (ViewABC):
     def __init__(self, datamodel: RftPlotterDataModel, tab: str) -> None:
         super().__init__("RTF misfit per observation")
         self.datamodel = datamodel
-        self.tab = tab 
+        self.tab = tab
 
         self.add_settings_group(
-            FilterLayout(self.datamodel, self.tab),
-            self.Ids.ERRORPLOT_SETTINGS
+            FilterLayout(self.datamodel, self.tab), self.Ids.ERRORPLOT_SETTINGS
         )
 
         self.add_column(self.Ids.ERRORPLOT_GRAPH)
-    
-    def get_settings_element_id(self,element_id: str) -> str:
+
+    def get_settings_element_id(self, element_id: str) -> str:
         return (
             self.settings_group(self.Ids.ERRORPLOT_SETTINGS)
             .component_unique_id(element_id)
@@ -39,12 +38,27 @@ class RftMisfitPerObservation (ViewABC):
             Output(
                 self.layout_element(self.Ids.ERRORPLOT_GRAPH)
                 .get_unique_id()
-                .to_string()
-                , "children"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_WELLS[self.tab]), "value"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_ZONES[self.tab]), "value"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_DATES[self.tab]), "value"),
-            Input(self.get_settings_element_id(FilterLayout.Ids.FILTER_ENSEMBLES[self.tab]), "value"),
+                .to_string(),
+                "children",
+            ),
+            Input(
+                self.get_settings_element_id(FilterLayout.Ids.FILTER_WELLS[self.tab]),
+                "value",
+            ),
+            Input(
+                self.get_settings_element_id(FilterLayout.Ids.FILTER_ZONES[self.tab]),
+                "value",
+            ),
+            Input(
+                self.get_settings_element_id(FilterLayout.Ids.FILTER_DATES[self.tab]),
+                "value",
+            ),
+            Input(
+                self.get_settings_element_id(
+                    FilterLayout.Ids.FILTER_ENSEMBLES[self.tab]
+                ),
+                "value",
+            ),
         )
         def _errorplot(
             wells: List[str], zones: List[str], dates: List[str], ensembles: List[str]
@@ -56,4 +70,3 @@ class RftMisfitPerObservation (ViewABC):
             if df.empty:
                 return "No data matching the given filter criterias"
             return [update_errorplot(df, self.datamodel.enscolors)]
-        

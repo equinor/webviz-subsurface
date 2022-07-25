@@ -9,7 +9,7 @@ from .._business_logic import RftPlotterDataModel, filter_frame
 
 
 class FormationPlotSelector(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods 
+    # pylint: disable=too-few-public-methods
     class Ids:
         FORMATIONS_ENSEMBLE = "formations-ensemble"
         FORMATIONS_WELL = "formations-well"
@@ -85,12 +85,28 @@ class FormationPlotSelector(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.component_unique_id(self.Ids.FORMATIONS_LINETYPE).to_string(), "options"),
-            Output(self.component_unique_id(self.Ids.FORMATIONS_LINETYPE).to_string(), "value"),
-            Input(self.component_unique_id(self.Ids.FORMATIONS_DEPTHOPTION).to_string(), "value"),
-            State(self.component_unique_id(self.Ids.FORMATIONS_LINETYPE).to_string(), "value"),
-            State(self.component_unique_id(self.Ids.FORMATIONS_WELL).to_string(), "value"),
-            State(self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(), "value"),
+            Output(
+                self.component_unique_id(self.Ids.FORMATIONS_LINETYPE).to_string(),
+                "options",
+            ),
+            Output(
+                self.component_unique_id(self.Ids.FORMATIONS_LINETYPE).to_string(),
+                "value",
+            ),
+            Input(
+                self.component_unique_id(self.Ids.FORMATIONS_DEPTHOPTION).to_string(),
+                "value",
+            ),
+            State(
+                self.component_unique_id(self.Ids.FORMATIONS_LINETYPE).to_string(),
+                "value",
+            ),
+            State(
+                self.component_unique_id(self.Ids.FORMATIONS_WELL).to_string(), "value"
+            ),
+            State(
+                self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(), "value"
+            ),
         )
         def _update_linetype(
             depth_option: str,
@@ -128,14 +144,24 @@ class FormationPlotSelector(SettingsGroupABC):
             ], "realization"
 
         @callback(
-            Output(self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(), "options"),
-            Output(self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(), "value"),
-            Input(self.component_unique_id(self.Ids.FORMATIONS_WELL).to_string(), "value"),
-            State(self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(), "value"),
+            Output(
+                self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(),
+                "options",
+            ),
+            Output(
+                self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(), "value"
+            ),
+            Input(
+                self.component_unique_id(self.Ids.FORMATIONS_WELL).to_string(), "value"
+            ),
+            State(
+                self.component_unique_id(self.Ids.FORMATIONS_DATE).to_string(), "value"
+            ),
         )
-        def _update_date(well: str, current_date: str) -> Tuple[List[Dict[str, str]], str]:
+        def _update_date(
+            well: str, current_date: str
+        ) -> Tuple[List[Dict[str, str]], str]:
             dates = self.datamodel.date_in_well(well)
             available_dates = [{"label": date, "value": date} for date in dates]
             date = current_date if current_date in dates else dates[0]
             return available_dates, date
-

@@ -98,6 +98,7 @@ class RftPlotter(WebvizPluginABC):
     forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
     """
+
     # pylint: disable=too-few-public-methods
     class Tabs:
         MISFIT_PLOT = "misfitplot"
@@ -128,35 +129,33 @@ class RftPlotter(WebvizPluginABC):
         )
 
         self.add_view(
-            RftMap(self._datamodel),
-            PluginIds.Views.RFT_MAP,
-            PluginIds.Views.GROUP_NAME
+            RftMap(self._datamodel), PluginIds.Views.RFT_MAP, PluginIds.Views.GROUP_NAME
         )
 
         self.add_view(
             RftMisfitPerReal(self._datamodel, self.Tabs.MISFIT_PLOT),
             PluginIds.Views.RFT_MISFIT_PER_REAL,
-            PluginIds.Views.GROUP_NAME
+            PluginIds.Views.GROUP_NAME,
         )
 
         self.add_view(
             RftCrossplot(self._datamodel, self.Tabs.CROSS_PLOT),
             PluginIds.Views.RFT_CROSSPLOT,
-            PluginIds.Views.GROUP_NAME
+            PluginIds.Views.GROUP_NAME,
         )
 
         self.add_view(
             RftMisfitPerObservation(self._datamodel, self.Tabs.ERROR_PLOT),
             PluginIds.Views.RFT_MISFIT_PER_OBSERVATION,
-            PluginIds.Views.GROUP_NAME
+            PluginIds.Views.GROUP_NAME,
         )
 
         if not self._datamodel.param_model.sensrun:
             self.add_view(
                 ParameterResponseView(self._datamodel),
                 PluginIds.Views.PARAMETER_RESPONSE,
-                PluginIds.Views.GROUP_NAME
-        )
+                PluginIds.Views.GROUP_NAME,
+            )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return self._datamodel.webviz_store
@@ -168,12 +167,12 @@ class RftPlotter(WebvizPluginABC):
     #             "id": self.view(PluginIds.Views.RFT_MAP)
     #             .layout_element(RftMap.Ids.MAP_GRAPH)
     #             .get_unique_id(),
-    #             "content": """ map """    
+    #             "content": """ map """
     #         },
     #         {
     #             "id": self.view(PluginIds.Views.RFT_MAP)
     #             .layout_element(RftMap.Ids.FORMATION_GRAPH)
     #             .get_unique_id(),
-    #             "content": """ formation  """    
+    #             "content": """ formation  """
     #         }
-    #     ] 
+    #     ]

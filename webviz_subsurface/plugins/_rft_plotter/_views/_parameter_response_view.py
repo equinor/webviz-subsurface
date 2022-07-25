@@ -12,7 +12,7 @@ from .._shared_settings import ParameterResponseSettings
 
 
 class ParameterResponseView(ViewABC):
-    # pylint: disable=too-few-public-methods 
+    # pylint: disable=too-few-public-methods
     class Ids:
         PARAMRESP_SETTINGS = "paramresp-settings"
         PARAMRESP_FORMATIONS = "paramresp-formations"
@@ -35,7 +35,6 @@ class ParameterResponseView(ViewABC):
 
         self.add_column(self.Ids.PARAMRESP_FORMATIONS)
 
-
     def get_settings_element_id(self, element_id: str) -> str:
         return (
             self.settings_group(self.Ids.PARAMRESP_SETTINGS)
@@ -45,11 +44,19 @@ class ParameterResponseView(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_PARAM), "value"),
+            Output(
+                self.get_settings_element_id(
+                    ParameterResponseSettings.Ids.PARAMRESP_PARAM
+                ),
+                "value",
+            ),
             Input(self.Ids.PARAMRESP_CORR_BARCHART_FIGURE, "clickData"),
-            State(self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_CORRTYPE), "value"),
+            State(
+                self.get_settings_element_id(
+                    ParameterResponseSettings.Ids.PARAMRESP_CORRTYPE
+                ),
+                "value",
+            ),
             prevent_initial_call=True,
         )
         def _update_param_from_clickdata(
@@ -62,17 +69,37 @@ class ParameterResponseView(ViewABC):
             return corr_vector_clickdata.get("points", [{}])[0].get("y")
 
         @callback(
-            Output(self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_WELL), "value"),
+            Output(
+                self.get_settings_element_id(
+                    ParameterResponseSettings.Ids.PARAMRESP_WELL
+                ),
+                "value",
+            ),
             Input(self.Ids.PARAMRESP_CORR_BARCHART_FIGURE, "clickData"),
-            State(self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_WELL), "value"),
-            State(self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_CORRTYPE), "value"),
-            State(self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_DATE), "value"),
-            State(self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_ZONE), "value"),
+            State(
+                self.get_settings_element_id(
+                    ParameterResponseSettings.Ids.PARAMRESP_WELL
+                ),
+                "value",
+            ),
+            State(
+                self.get_settings_element_id(
+                    ParameterResponseSettings.Ids.PARAMRESP_CORRTYPE
+                ),
+                "value",
+            ),
+            State(
+                self.get_settings_element_id(
+                    ParameterResponseSettings.Ids.PARAMRESP_DATE
+                ),
+                "value",
+            ),
+            State(
+                self.get_settings_element_id(
+                    ParameterResponseSettings.Ids.PARAMRESP_ZONE
+                ),
+                "value",
+            ),
             prevent_initial_call=True,
         )
         def _update_selections_from_clickdata(
@@ -88,11 +115,10 @@ class ParameterResponseView(ViewABC):
 
             clickdata = corr_vector_clickdata.get("points", [{}])[0].get("y")
             ls_clickdata = clickdata.split()
-            print("click dat ais: ",ls_clickdata)
+            print("click dat ais: ", ls_clickdata)
             dates_in_well, zones_in_well = self.datamodel.well_dates_and_zones(well)
-            return  ls_clickdata[0]
-                        
-        
+            return ls_clickdata[0]
+
         @callback(
             Output(
                 self.layout_element(self.Ids.PARAMRESP_CORR_BARCHART)
@@ -149,10 +175,10 @@ class ParameterResponseView(ViewABC):
                 "value",
             ),
             Input(
-                 {
-                    "id": ParameterResponseSettings.Ids.PARAM_FILTER, 
-                    "type": "data-store"
-                }, 
+                {
+                    "id": ParameterResponseSettings.Ids.PARAM_FILTER,
+                    "type": "data-store",
+                },
                 "data",
             ),
             Input(
@@ -195,7 +221,6 @@ class ParameterResponseView(ViewABC):
             )
             current_key = f"{well} {date} {zone}"
 
-            
             if df is None:
                 # This happens if the filtering criterias returns no data
                 # Could f.ex happen when there are ensembles with different well names
@@ -227,7 +252,7 @@ class ParameterResponseView(ViewABC):
                 style={"height": "40vh"},
                 config={"displayModeBar": False},
                 figure=corrfig.figure,
-                id = self.Ids.PARAMRESP_CORR_BARCHART_FIGURE
+                id=self.Ids.PARAMRESP_CORR_BARCHART_FIGURE,
             )
 
             # Scatter plot
