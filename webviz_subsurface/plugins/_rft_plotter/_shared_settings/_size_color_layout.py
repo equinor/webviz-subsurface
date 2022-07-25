@@ -4,8 +4,6 @@ import webviz_core_components as wcc
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._business_logic import RftPlotterDataModel
-
 
 class SizeColorLayout(SettingsGroupABC):
     # pylint: disable=too-few-public-methods

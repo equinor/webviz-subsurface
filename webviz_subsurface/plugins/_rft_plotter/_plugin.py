@@ -25,7 +25,7 @@ class RftPlotter(WebvizPluginABC):
     * Depth vs pressure plot showing simulated RFT data along wells together
     with observation points.
 
-    * Barchart showing sum of mean misfit for ERT observations per realization. 
+    * Barchart showing sum of mean misfit for ERT observations per realization.
     One plot per ensemble.
 
     * Crossplot of simulated RFT vs observed value per ERT observation. One plot per ensemble.
@@ -47,7 +47,7 @@ class RftPlotter(WebvizPluginABC):
     [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
     01_drogon_ahm/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
-    * **`rft.csv`**: 
+    * **`rft.csv`**:
     A csv file containing simulated RFT data extracted from ECLIPSE RFT output files \
     using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) \
     [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
@@ -77,7 +77,7 @@ class RftPlotter(WebvizPluginABC):
     [(example file))](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
     01_drogon_ahm/realization-0/iter-0/share/results/tables/formations.csv).
 
-    * **`faultlines`**: 
+    * **`faultlines`**:
     A csv file containing faultpolygons to be visualized together with the map view.
     Export format from [xtgeo.xyz.polygons.dataframe](
     https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.polygons.Polygons.dataframe

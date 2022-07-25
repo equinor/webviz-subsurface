@@ -76,12 +76,12 @@ class ParameterResponseView(ViewABC):
                 "value",
             ),
             Input(self.Ids.PARAMRESP_CORR_BARCHART_FIGURE, "clickData"),
-            State(
-                self.get_settings_element_id(
-                    ParameterResponseSettings.Ids.PARAMRESP_WELL
-                ),
-                "value",
-            ),
+            # State(
+            #     self.get_settings_element_id(
+            #         ParameterResponseSettings.Ids.PARAMRESP_WELL
+            #     ),
+            #     "value",
+            # ),
             State(
                 self.get_settings_element_id(
                     ParameterResponseSettings.Ids.PARAMRESP_CORRTYPE
@@ -104,7 +104,7 @@ class ParameterResponseView(ViewABC):
         )
         def _update_selections_from_clickdata(
             corr_vector_clickdata: Union[None, dict],
-            well: str,
+            # well: str,
             corrtype: str,
             # date: str,
             # zone: str,
