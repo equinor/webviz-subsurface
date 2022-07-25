@@ -10,6 +10,7 @@ from .._shared_settings import FilterLayout, SizeColorLayout
 
 
 class RftCrossplot (ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CROSSPLOT_FILTERS = "crossplot-filters"
         CROSSPLOT_PLOT_SETTINGS = "crossplot-plot-settings"

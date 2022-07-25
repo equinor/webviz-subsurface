@@ -10,6 +10,7 @@ from .._shared_settings import FilterLayout
 
 
 class RftMisfitPerObservation (ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         ERRORPLOT_SETTINGS = "errorplot-settings"
         ERRORPLOT_GRAPH = "errorplot-graph"

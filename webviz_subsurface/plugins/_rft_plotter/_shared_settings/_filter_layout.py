@@ -8,6 +8,7 @@ from .._business_logic import RftPlotterDataModel
 
 
 class FilterLayout(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         FILTER_ENSEMBLES = {
             "misfitplot": "ensembles-misfit",

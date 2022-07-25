@@ -8,6 +8,7 @@ from .._business_logic import RftPlotterDataModel
 
 
 class MapPlotSelector(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         MAP_ENSEMBLE = "map-ensemble"
         MAP_SIZE_BY = "map-size-by"

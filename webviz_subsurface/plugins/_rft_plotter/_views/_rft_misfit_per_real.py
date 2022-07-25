@@ -10,6 +10,7 @@ from .._shared_settings import FilterLayout
 
 
 class RftMisfitPerReal (ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         MISFITPLOT_SETTINGS = "misfitplot-settings"
         MISFITPLOT_GRAPH = "misfitplot-graph"

@@ -10,6 +10,7 @@ from .._business_logic import RftPlotterDataModel
 
 
 class ParameterResponseSettings(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         PARAMRESP_ENSEMBLE = "param-response-ensemble"
         PARAMRESP_WELL = "param-response-well"

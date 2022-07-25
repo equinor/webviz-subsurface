@@ -8,6 +8,7 @@ from .._business_logic import RftPlotterDataModel
 
 
 class SizeColorLayout(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CROSSPLOT_COLOR_BY = "crossplot-color-by"
         CROSSPLOT_SIZE_BY = "crossplot-size-by"

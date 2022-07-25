@@ -12,6 +12,7 @@ from .._shared_settings import FormationPlotSelector, MapPlotSelector
 
 
 class RftMap(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         MAP_PLOT_SETTINGS = "map-plot-settings"
         FORMATION_PLOT_SETTINGS = "formation-pliot-settings"

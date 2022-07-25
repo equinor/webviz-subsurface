@@ -129,7 +129,7 @@ class RftPlotter(WebvizPluginABC):
 
         self.add_view(
             RftMap(self._datamodel),
-            PluginIds.Views.RFTMAP,
+            PluginIds.Views.RFT_MAP,
             PluginIds.Views.GROUP_NAME
         )
 
@@ -162,12 +162,18 @@ class RftPlotter(WebvizPluginABC):
         return self._datamodel.webviz_store
 
     # @property
-    # def layout(self) -> wcc.Tabs:
-    #     return main_layout(self.uuid, self._datamodel)
-
-    # def set_callbacks(self, app: Dash) -> None:
-    #     plugin_callbacks(app, self.uuid, self._datamodel)
-
-    #     # It this is not a sensitivity run, add the parameter response callbacks
-    #     if not self._datamodel.param_model.sensrun:
-    #         paramresp_callbacks(app, self.uuid, self._datamodel)
+    # def tour_steps(self) -> List[dict]:
+    #     return [
+    #         {
+    #             "id": self.view(PluginIds.Views.RFT_MAP)
+    #             .layout_element(RftMap.Ids.MAP_GRAPH)
+    #             .get_unique_id(),
+    #             "content": """ map """    
+    #         },
+    #         {
+    #             "id": self.view(PluginIds.Views.RFT_MAP)
+    #             .layout_element(RftMap.Ids.FORMATION_GRAPH)
+    #             .get_unique_id(),
+    #             "content": """ formation  """    
+    #         }
+    #     ]
