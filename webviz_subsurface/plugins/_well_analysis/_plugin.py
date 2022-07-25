@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Type
 
-from dash import Dash
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
@@ -65,7 +64,6 @@ class WellAnalysis(WebvizPluginABC):
 
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         webviz_settings: WebvizSettings,
