@@ -1,12 +1,9 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Type
 
-from dash import Dash, html
+from dash import Dash
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
-
-import webviz_subsurface
 
 from ..._models import GruptreeModel, WellAttributesModel
 from ..._providers import (
@@ -71,7 +68,6 @@ class WellAnalysis(WebvizPluginABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: Optional[List[str]] = None,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
@@ -133,6 +129,12 @@ class WellAnalysis(WebvizPluginABC):
         )
         self.add_store(
             PluginIds.Stores.DISPLAY_CTRL_MODE_BAR, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.CURRENT_FIG, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.PREV_PLOT_TYPE, WebvizPluginABC.StorageType.SESSION
         )
 
         self.add_view(

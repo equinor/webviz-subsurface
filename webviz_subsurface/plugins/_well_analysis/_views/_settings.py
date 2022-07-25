@@ -1,5 +1,5 @@
 import datetime
-from typing import Callable, Dict, List, Set
+from typing import Dict, List, Set
 
 import webviz_core_components as wcc
 from dash import ALL, Input, Output, State, callback, html

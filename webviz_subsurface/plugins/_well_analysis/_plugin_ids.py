@@ -5,14 +5,11 @@ class PluginIds:
         SELECTED_ENSEMBLE = "selected-ensemble"
         SELECTED_WELLS = "selected-wells"
         SELECTED_WELL_ATTR = "selected-well-attr"
-        # SELECTED_MAX_NUMBER_OF_WELLS = "selected-max-number-of-wells"
-        # SELECTED_SORT_BY = "slected-sort-by"
-        # SELECTED_ASCENDING_DESCENDING = "selected-ascending-descending"
-        # SELECTED_PLOT_TYPE = "selected-plot-type"
-        # SELECTED_STATISTICS = "selected-statistics"
         SELECTED_PLOT_LAYOUT = "selected-plot-layout"
         SELECTED_REALIZATION = "selected-realization"
         DISPLAY_CTRL_MODE_BAR = "display-ctrl-mode-bar"
+        CURRENT_FIG = "current_fig"
+        PREV_PLOT_TYPE = "prev-plot-type"
 
     class SharedSettings:
         # pylint: disable=too-few-public-methods
