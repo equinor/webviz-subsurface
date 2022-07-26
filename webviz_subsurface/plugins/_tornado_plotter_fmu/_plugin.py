@@ -4,9 +4,7 @@ from typing import List, Type
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._components.tornado.tornado_widget import TornadoWidget
 from webviz_subsurface._datainput.fmu_input import find_sens_type
 from webviz_subsurface._providers import EnsembleTableProviderFactory
 

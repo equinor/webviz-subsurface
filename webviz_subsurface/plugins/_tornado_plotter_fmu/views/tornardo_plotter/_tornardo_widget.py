@@ -18,10 +18,11 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 import webviz_subsurface
+from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
+from webviz_subsurface._components.tornado._tornado_data import TornadoData
+from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
 from ..._plugin_ids import PlugInIDs
-from ...view_elements._tornado_table import TornadoData, TornadoTable
-from ...view_elements._tornardo_bar_chart import TornadoBarChart
 from ...view_elements._tornardo_view_element import TornadoViewElement
 
 
