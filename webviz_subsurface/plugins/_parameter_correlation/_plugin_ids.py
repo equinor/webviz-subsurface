@@ -19,7 +19,7 @@ class PlugInIDs:
             # pylint: disable=too-few-public-methods
             COLOR_BY = "color-by"
             SHOW_SCATTER = "show-scatter"
-        
+
         class Data:
             # pylint: disable=too-few-public-methods
             CLICK_DATA = "click-data"

@@ -52,9 +52,7 @@ class ParameterPlot(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"
-            ),
+            Output(self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"),
             Input(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
                 .component_unique_id(Graph.IDs.GRAPH)
