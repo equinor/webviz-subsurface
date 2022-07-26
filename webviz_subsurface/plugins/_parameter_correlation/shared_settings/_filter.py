@@ -91,9 +91,7 @@ class Horizontal(SettingsGroupABC):
             Input(
                 self.component_unique_id(Horizontal.IDs.PARAMETER).to_string(), "value"
             ),
-            Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"
-            ),
+            Input(self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"),
         )
         def _set_horizontal_parameter(
             parameter: str, cell_data: dict
@@ -164,9 +162,7 @@ class Vertical(SettingsGroupABC):
             Input(
                 self.component_unique_id(Vertical.IDs.PARAMETER).to_string(), "value"
             ),
-            Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"
-            ),
+            Input(self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"),
         )
         def _set_vertical_parameter(parameter: str, cell_data: dict) -> Tuple[str, str]:
             if (
