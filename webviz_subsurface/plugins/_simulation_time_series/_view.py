@@ -56,7 +56,7 @@ class SimulationTimeSeriesView(ViewABC):
         observations: dict,  # TODO: Improve typehint?
         line_shape_fallback: str = "linear",
     ) -> None:
-        super().__init__("")
+        super().__init__("Simulation time series analysis")
         self.add_column(SimulationTimeSeriesView.Ids.GRAPH)
         self.initial_selected_vectors = initial_selected_vectors
         self.input_provider_set = input_provider_set

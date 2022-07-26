@@ -148,6 +148,7 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
         return [
             wcc.Selectors(
                 label="Group by",
+                id=self.register_component_unique_id(self.Ids.TOUR_STEP_GROUP_BY),
                 children=wcc.RadioItems(
                     id=self.register_component_unique_id(
                         self.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
@@ -232,6 +233,9 @@ class SimulationTimeSeriesFilters(SettingsGroupABC):
                     ),
                     wcc.Selectors(
                         label="Delta Ensembles",
+                        id=self.register_component_unique_id(
+                            self.Ids.TOUR_STEP_DELTA_ENSEMBLE
+                        ),
                         open_details=False,
                         children=[self.__delta_ensemble_creator_layout()],
                     ),
