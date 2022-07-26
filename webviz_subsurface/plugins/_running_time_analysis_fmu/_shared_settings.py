@@ -3,38 +3,44 @@ from typing import List, Tuple, Union
 import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, callback
+from dash import Input, Output, State, callback
 from dash.development.base_component import Component
+from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-
-from ._plugin_ids import PluginIds
 
 
 class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
-    
+
     # pylint: disable=too-few-public-methods
     class Ids:
         MODE = "mode-1"
-        ENSEMBLE = "ensemble-1"
-        COLORING = "coloring-1"
+        ENSEMBLE = "ensemble"
+        COLORING = "coloring"
         FILTERING = "filtering"
+        FILTER_SHORT = "filter-short"
+        REMOVE_CONSTANT = "remove-constant"
+        FILTER_PARAMS = "filter-params"
 
     COLOR_MATRIX_BY_LABELS = [
-    "Same job in ensemble",
-    "Slowest job in realization",
-    "Slowest job in ensemble",
+        "Same job in ensemble",
+        "Slowest job in realization",
+        "Slowest job in ensemble",
     ]
     COLOR_PARCOORD_BY_LABELS = [
-    "Successful/failed realization",
-    "Running time of realization",
+        "Successful/failed realization",
+        "Running time of realization",
     ]
+
     def __init__(
-        self, ensembles: list, 
-        visual_parameters :list, 
-        plugin_paratamters:List[str],
-        filter_shorter: Union[int, float] = 10
-        ) -> None:
+        self,
+        real_status_df: pd.DataFrame,
+        ensembles: list,
+        visual_parameters: list,
+        plugin_paratamters: List[str],
+        filter_shorter: Union[int, float] = 10,
+    ) -> None:
         super().__init__("Data filter")
+        self.real_status_df = real_status_df
         self.ensembles = ensembles
         self.filter_shorter = filter_shorter
         self.parameters = plugin_paratamters
@@ -43,26 +49,24 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
     def layout(self) -> List[Component]:
         return [
             wcc.RadioItems(
-                label = "Mode",
-                id = self.register_component_unique_id(self.Ids.MODE),
+                label="Mode",
+                id=self.register_component_unique_id(self.Ids.MODE),
                 options=[
-                        {
-                            "label": "Running time matrix",
-                            "value": "running_time_matrix",
-                        },
-                        {
-                            "label": "Parameter parallel coordinates",
-                            "value": "parallel_coordinates",
-                        },
-                    ],
+                    {
+                        "label": "Running time matrix",
+                        "value": "running_time_matrix",
+                    },
+                    {
+                        "label": "Parameter parallel coordinates",
+                        "value": "parallel_coordinates",
+                    },
+                ],
                 value="running_time_matrix",
             ),
             wcc.Dropdown(
-                label = "Ensemble",
+                label="Ensemble",
                 id=self.register_component_unique_id(self.Ids.ENSEMBLE),
-                options=[
-                    {"label": ens, "value": ens} for ens in self.ensembles
-                ],
+                options=[{"label": ens, "value": ens} for ens in self.ensembles],
                 value=self.ensembles[0],
                 clearable=False,
             ),
@@ -70,146 +74,145 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                 label="Color jobs relative to running time of:",
                 id=self.register_component_unique_id(self.Ids.COLORING),
                 options=[
-                    {"label": rel, "value": rel}
-                    for rel in self.COLOR_MATRIX_BY_LABELS
+                    {"label": rel, "value": rel} for rel in self.COLOR_MATRIX_BY_LABELS
                 ],
                 value=self.COLOR_MATRIX_BY_LABELS[0],
                 clearable=False,
             ),
-            wcc.FlexBox(
-                id = self.register_component_unique_id(self.Ids.FILTERING),
-                children = wcc.Checklist(
-                                label="Filtering",
-                                id=self.register_component_unique_id("filter_short"),
-                                options=[
-                                    {
-                                        "label": "Slowest in ensemble less than "
-                                        f"{self.filter_shorter}s",
-                                        "value": "filter_short",
-                                    },
-                                ],
-                                value=["filter_short"],
-                            ),
-            )
+            wcc.Selectors(
+                label="Filtering jobs",
+                id=self.register_component_unique_id(self.Ids.FILTERING),
+                children=[
+                    wcc.Checklist(
+                        id=self.register_component_unique_id(self.Ids.FILTER_SHORT),
+                        labelStyle={"display": "block"},
+                        options=[
+                            {
+                                "label": "Slowest in ensemble less than "
+                                f"{self.filter_shorter}s",
+                                "value": "filter_short",
+                            },
+                        ],
+                        value=["filter_short"],
+                    ),
+                    wcc.Checklist(
+                        id=self.register_component_unique_id(self.Ids.REMOVE_CONSTANT),
+                        labelStyle={"display": "none"},
+                        options=[
+                            {
+                                "label": " Remove constant ",
+                                "value": "remove_constant",
+                            },
+                        ],
+                        value=[],
+                    ),
+                    wcc.SelectWithLabel(
+                        id=self.register_component_unique_id(self.Ids.FILTER_PARAMS),
+                        style={"display": "none"},
+                        options=[
+                            {"label": param, "value": param}
+                            for param in self.parameters
+                        ],
+                        multi=True,
+                        value=self.visual_parameters,
+                        size=min(50, len(self.visual_parameters)),
+                    ),
+                ],
+            ),
         ]
 
     def set_callbacks(self) -> None:
+        @callback(
+            Output(
+                self.component_unique_id(self.Ids.FILTER_PARAMS).to_string(), "options"
+            ),
+            Output(
+                self.component_unique_id(self.Ids.FILTER_PARAMS).to_string(), "value"
+            ),
+            Input(
+                self.component_unique_id(self.Ids.REMOVE_CONSTANT).to_string(), "value"
+            ),
+            State(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.COLORING).to_string(), "value"),
+        )
+        def _update_filter_parameters(
+            remove_constant: str, ens: str, coloring: str
+        ) -> Tuple:
+            if remove_constant == None:
+                raise PreventUpdate
+
+            dimentions_params = []
+
+            if coloring == "Successful/failed realization":
+                plot_df = self.real_status_df[self.real_status_df["ENSEMBLE"] == ens]
+            else:
+                plot_df = self.real_status_df[
+                    (self.real_status_df["ENSEMBLE"] == ens)
+                    & (self.real_status_df["STATUS_BOOL"] == 1)
+                ]
+            if remove_constant == ["remove_constant"]:
+                for param in self.parameters:
+                    if len(np.unique(plot_df[param].values)) > 1:
+                        dimentions_params.append(param)
+            else:
+                dimentions_params = self.parameters
+
+            filter_parame_options = [
+                {"label": param, "value": param} for param in dimentions_params
+            ]
+            filter_parame_value = dimentions_params
+
+            return (filter_parame_options, filter_parame_value)
 
         @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.MODE), 'data'),
-            Input(self.component_unique_id(self.Ids.MODE).to_string(), 'value')
-        )
-        def _update_mode_store(
-                selected_mode: str
-                ) -> str:
-            return selected_mode
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.ENSEMBLE), 'data'),
-            Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), 'value')
-        )
-        def _update_ensemble_store(
-                selected_ensemble: str
-                ) -> str:
-            return selected_ensemble
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.COLORING), 'data'),
-            Input(self.component_unique_id(self.Ids.COLORING).to_string(), 'value')
-        )
-        def _update_coloring_store(
-                selected_coloring: str
-                ) -> str:
-            return selected_coloring
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.FILTERING_SHORT), 'data'),
-            Input(self.component_unique_id("filter_short").to_string(), 'value')
-        )
-        def _update_fshort_store(
-                selected_filtering_short: str
-                ) -> str:
-            return selected_filtering_short
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.FILTERING_PARAMS), 'data'),
-            Input(self.component_unique_id("filter_params").to_string(), 'value')
-        )
-        def _update_fparms_store(
-                selected_fparams: str
-                ) -> str:
-            return selected_fparams
-
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.REMOVE_CONSTANT), 'data'),
-            Input(self.component_unique_id("remove_constant").to_string(), 'value')
-        )
-        def _update_remove_store(
-                selected_remove: str
-                ) -> str:
-            return selected_remove
-            
-        @callback(
-            Output(self.component_unique_id(self.Ids.FILTERING).to_string(),"children"),
-            Output(self.component_unique_id(self.Ids.COLORING).to_string(),'label'),
-            Output(self.component_unique_id(self.Ids.COLORING).to_string(),'options'),
-            Output(self.component_unique_id(self.Ids.COLORING).to_string(),'value'),
-            Input(self.component_unique_id(self.Ids.MODE).to_string(),'value')
+            Output(
+                self.component_unique_id(self.Ids.FILTER_SHORT).to_string(),
+                "labelStyle",
+            ),
+            Output(
+                self.component_unique_id(self.Ids.REMOVE_CONSTANT).to_string(),
+                "labelStyle",
+            ),
+            Output(
+                self.component_unique_id(self.Ids.FILTER_PARAMS).to_string(),
+                "style",
+            ),
+            Output(self.component_unique_id(self.Ids.COLORING).to_string(), "label"),
+            Output(self.component_unique_id(self.Ids.COLORING).to_string(), "options"),
+            Output(self.component_unique_id(self.Ids.COLORING).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.MODE).to_string(), "value"),
         )
         def _update_color(selected_mode: str) -> Tuple:
-            children = None
             label = None
-            optons = None
             value = None
+
             if selected_mode == "running_time_matrix":
-                children = wcc.Checklist(
-                                label="Filtering jobs",
-                                id=self.register_component_unique_id("filter_short"),
-                                options=[
-                                    {
-                                        "label": "Slowest in ensemble less than "
-                                        f"{self.filter_shorter}s",
-                                        "value": "filter_short",
-                                    },
-                                ],
-                                value=["filter_short"],
-                            )
                 label = "Color jobs relative to running time of:"
                 options = [
-                            {"label": rel, "value": rel}
-                            for rel in self.COLOR_MATRIX_BY_LABELS
-                        ]
+                    {"label": rel, "value": rel} for rel in self.COLOR_MATRIX_BY_LABELS
+                ]
                 value = self.COLOR_MATRIX_BY_LABELS[0]
-            else:
-                children = [
-                            wcc.Checklist(
-                                label= "Filtering",
-                                id=self.register_component_unique_id("remove_constant"),
-                                options=[
-                                    {
-                                        "label": " Remove constant ",
-                                        "value": "remove_constant",
-                                    },
-                                ],
-                                value=[],
-                            ),
-                            wcc.SelectWithLabel(
-                                    id=self.register_component_unique_id("filter_params"),
-                                    style={"overflowX": "auto", "fontSize": "0.97rem"},
-                                    options=[
-                                        {"label": param, "value": param}
-                                        for param in self.parameters
-                                    ],
-                                    multi=True,
-                                    value=self.visual_parameters,
-                                    size=min(50, len(self.visual_parameters)),
-                                )
-                                ]
-                label = "Color realizations relative to:"
-                options = [
-                            {"label": rel, "value": rel}
-                            for rel in self.COLOR_PARCOORD_BY_LABELS
-                        ]
-                value = self.COLOR_PARCOORD_BY_LABELS[0]
-                
-            return (children, label,options,value)
+
+                return (
+                    {"display": "block"},
+                    {"display": "none"},
+                    {"display": "none"},
+                    label,
+                    options,
+                    value,
+                )
+
+            label = "Color realizations relative to:"
+            options = [
+                {"label": rel, "value": rel} for rel in self.COLOR_PARCOORD_BY_LABELS
+            ]
+            value = self.COLOR_PARCOORD_BY_LABELS[0]
+
+            return (
+                {"display": "none"},
+                {"display": "block"},
+                {"display": "block"},
+                label,
+                options,
+                value,
+            )

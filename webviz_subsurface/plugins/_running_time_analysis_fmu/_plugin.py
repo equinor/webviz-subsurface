@@ -1,17 +1,14 @@
 import json
-from typing import Callable, List, Optional, Tuple, Type, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from dash import Input, Output, callback, html
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from ..._datainput.fmu_input import load_ensemble_set, load_parameters
 from ._plugin_ids import PluginIds
-from ._shared_settings import RunningTimeAnalysisFmuSettings
 from ._view import RunTimeAnalysisGraph
 
 
@@ -83,42 +80,43 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
         )
         self.plugin_parameters = self.parameters
 
-        self.add_store(PluginIds.Stores.MODE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.ENSEMBLE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.COLORING, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.FILTERING_SHORT, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.FILTERING_PARAMS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.REMOVE_CONSTANT, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.ACTIVE_ID, WebvizPluginABC.StorageType.SESSION)
+        # self.add_store(PluginIds.Stores.MODE, WebvizPluginABC.StorageType.SESSION)
+        # self.add_store(PluginIds.Stores.ENSEMBLE, WebvizPluginABC.StorageType.SESSION)
+        # self.add_store(PluginIds.Stores.COLORING, WebvizPluginABC.StorageType.SESSION)
+        # self.add_store(
+        #     PluginIds.Stores.FILTERING_SHORT, WebvizPluginABC.StorageType.SESSION
+        # )
+        # self.add_store(
+        #     PluginIds.Stores.FILTERING_PARAMS, WebvizPluginABC.StorageType.SESSION
+        # )
+        # self.add_store(
+        #     PluginIds.Stores.REMOVE_CONSTANT, WebvizPluginABC.StorageType.SESSION
+        # )
+        # self.add_store(PluginIds.Stores.ACTIVE_ID, WebvizPluginABC.StorageType.SESSION)
 
-        
-        self.add_shared_settings_group(
-            RunningTimeAnalysisFmuSettings(self.ensembles, self.visual_parameters,self.plugin_parameters, self.filter_shorter),
-            PluginIds.SharedSettings.SHARED_SETTINGS_GROUP,
-        )
+        # self.add_shared_settings_group(
+        #     RunningTimeAnalysisFmuSettings(
+        #         self.ensembles,
+        #         self.visual_parameters,
+        #         self.plugin_parameters,
+        #         self.filter_shorter,
+        #     ),
+        #     PluginIds.SharedSettings.SHARED_SETTINGS_GROUP,
+        # )
 
         self.add_view(
-            RunTimeAnalysisGraph(self.plotly_theme, self.job_status_df, self.real_status_df, self.filter_shorter), 
-            PluginIds.RunTimeAnalysisView.RUN_TIME_FMU, 
-            PluginIds.RunTimeAnalysisView.GROUP_NAME
+            RunTimeAnalysisGraph(
+                self.plotly_theme,
+                self.job_status_df,
+                self.real_status_df,
+                self.ensembles,
+                self.visual_parameters,
+                self.plugin_parameters,
+                self.filter_shorter,
+            ),
+            PluginIds.RunTimeAnalysisView.RUN_TIME_FMU,
+            PluginIds.RunTimeAnalysisView.GROUP_NAME,
         )
-        
-
-    def _set_callbacks(self) -> None:
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.ACTIVE_ID), 'data'),
-            Input(self._plugin_unique_id.to_string(), 'active_view_id')
-        )
-        def update_store(value:str) -> str:
-            print(value)
-            return value
-
-
-
-
-    @property
-    def layout(self) -> Type[Component]:
-        return html.Div()
 
     @property
     def parameters(self) -> List[str]:
@@ -151,7 +149,6 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
                 ],
             ),
         ]
-
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
@@ -312,5 +309,3 @@ def make_status_df(
     )
     # Has to be stored in one df due to webvizstore, see issue #206 in webviz-config
     return pd.concat([job_status_df, real_status_df], keys=["job", "real"], sort=False)
-
-

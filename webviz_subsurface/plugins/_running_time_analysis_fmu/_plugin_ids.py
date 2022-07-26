@@ -1,15 +1,4 @@
 class PluginIds:
-
-    # pylint: disable=too-few-public-methods
-    class Stores:
-        MODE = "mode"
-        ENSEMBLE = "ensemble"
-        COLORING = "coloring"
-        FILTERING_SHORT = "filtering-short"
-        FILTERING_PARAMS = "filtering-params"
-        REMOVE_CONSTANT = "remove-constant"
-        ACTIVE_ID = "active-view-id"
-
     # pylint: disable=too-few-public-methods
     class SharedSettings:
         SHARED_SETTINGS_GROUP = "shared-settings-group"

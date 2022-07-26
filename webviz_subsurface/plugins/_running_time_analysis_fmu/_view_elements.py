@@ -149,6 +149,65 @@ def render_parcoord(
     return {"data": [data], "layout": layout}
 
 
+# dimensions = {}
+# # dimentions_params = []
+
+# if remove_constant == ["remove_constant"]:
+#     for param in params:
+#         if len(np.unique(plot_df[param].values)) > 1:
+#             dimentions_params.append(param)
+# else:
+#     dimentions_params = params
+
+# for param in dimentions_params:
+#     dimensions[param] = plot_df[param].values.tolist()
+
+# # dimensions = [
+# #     {"label": param, "values": plot_df[param].values.tolist()} for param in params
+# # ]
+# #
+# # print(plot_df[color_col].values.tolist())
+# output_element = []
+# for param in dimentions_params:
+#     data = {
+#         "x": list(range(0, 100)),
+#         "y": dimensions[param],
+#         "type": "line",
+#         "name": param,
+#         "line": {
+#             # "color": plot_df[color_col].values.tolist(),
+#             # "colorscale": colormap,
+#             # "showscale": True,
+#         },
+#     }
+#     layout = {}
+#     layout.update(theme["layout"])
+#     width = len(dimensions) * 100 + 250
+#     margin_b = max([len(param) for param in params]) * 8
+#     layout.update(
+#         {
+#             "paper_bgcolor": "rgba(0,0,0,0)",
+#             "plot_bgcolor": "rgba(0,0,0,0)",
+#             "margin": {"b": 0, "t": 0, "r": "6vh"},
+#             "xaxis": {"visible": False, "showticklabels": False},
+#             "yaxis": {"visible": True, "showticklabels": True},
+#         },
+#     )
+#     layout.update(
+#         {"title": {"text": param, "y": "0.5", "x": "0", "font": {"size": "8"}}}
+#     )
+
+#     figure = {"data": [data], "layout": layout}
+#     output_element.append(
+#         wcc.Graph(
+#             id="run-time-analysis-fmu-graph" + param,
+#             figure=figure,
+#             style={"height": "10vh"},
+#         )
+#     )
+# return output_element
+
+
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def make_colormap(color_array: list, discrete: int = None) -> list:
     """
