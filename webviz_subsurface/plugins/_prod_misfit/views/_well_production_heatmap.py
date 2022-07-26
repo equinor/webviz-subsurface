@@ -12,7 +12,7 @@ from ..utils import make_figures as makefigs
 from ._view_functions import _get_well_names_combined
 
 
-class PlotSettings(SettingsGroupABC):
+class PlotSettingsHeatmap(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         COLOR_RANGE_SCALING = "color-range-scaling"
@@ -28,7 +28,7 @@ class PlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Show wells with largest misfit",
                 id=self.register_component_unique_id(
-                    PlotSettings.Ids.SHOW_WELLS_LARGEST_MISFIT
+                    PlotSettingsHeatmap.Ids.SHOW_WELLS_LARGEST_MISFIT
                 ),
                 options=[
                     {"label": "Show all", "value": 0},
@@ -50,7 +50,7 @@ class PlotSettings(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Plot type",
-                id=self.register_component_unique_id(PlotSettings.Ids.PLOT_TYPE),
+                id=self.register_component_unique_id(PlotSettingsHeatmap.Ids.PLOT_TYPE),
                 options=[
                     {"label": "Mean misfit", "value": "diffplot"},
                     {
@@ -67,7 +67,7 @@ class PlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Fig layout - height",
                 id=self.register_component_unique_id(
-                    PlotSettings.Ids.FIG_LAYOUT_HEIGHT
+                    PlotSettingsHeatmap.Ids.FIG_LAYOUT_HEIGHT
                 ),
                 options=[
                     {
@@ -99,7 +99,7 @@ class PlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Color range scaling (relative to max)",
                 id=self.register_component_unique_id(
-                    PlotSettings.Ids.COLOR_RANGE_SCALING
+                    PlotSettingsHeatmap.Ids.COLOR_RANGE_SCALING
                 ),
                 options=[
                     {"label": f"{x:.0%}", "value": x}
@@ -148,7 +148,9 @@ class ProdHeatmapView(ViewABC):
         self.ens_realizations = ens_realizations
         self.well_collections = well_collections
 
-        self.add_settings_group(PlotSettings(), ProdHeatmapView.Ids.PLOT_SETTINGS)
+        self.add_settings_group(
+            PlotSettingsHeatmap(), ProdHeatmapView.Ids.PLOT_SETTINGS
+        )
         self.main_column = self.add_column(ProdHeatmapView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
@@ -180,25 +182,25 @@ class ProdHeatmapView(ViewABC):
             ),
             Input(
                 self.settings_group(ProdHeatmapView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.SHOW_WELLS_LARGEST_MISFIT)
+                .component_unique_id(PlotSettingsHeatmap.Ids.SHOW_WELLS_LARGEST_MISFIT)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(ProdHeatmapView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.PLOT_TYPE)
+                .component_unique_id(PlotSettingsHeatmap.Ids.PLOT_TYPE)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(ProdHeatmapView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.FIG_LAYOUT_HEIGHT)
+                .component_unique_id(PlotSettingsHeatmap.Ids.FIG_LAYOUT_HEIGHT)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(ProdHeatmapView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.COLOR_RANGE_SCALING)
+                .component_unique_id(PlotSettingsHeatmap.Ids.COLOR_RANGE_SCALING)
                 .to_string(),
                 "value",
             ),

@@ -12,7 +12,7 @@ from ..utils import make_figures as makefigs
 from ._view_functions import _get_well_names_combined
 
 
-class PlotSettings(SettingsGroupABC):
+class PlotSettingsCoverage(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         COLORBY = "colorby"
@@ -28,7 +28,7 @@ class PlotSettings(SettingsGroupABC):
         return [
             wcc.Dropdown(
                 label="Colorby",
-                id=self.register_component_unique_id(PlotSettings.Ids.COLORBY),
+                id=self.register_component_unique_id(PlotSettingsCoverage.Ids.COLORBY),
                 options=[
                     {
                         "label": "Ensemble",
@@ -45,7 +45,9 @@ class PlotSettings(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Plot type",
-                id=self.register_component_unique_id(PlotSettings.Ids.PLOT_TYPE),
+                id=self.register_component_unique_id(
+                    PlotSettingsCoverage.Ids.PLOT_TYPE
+                ),
                 options=[
                     {"label": "Diff plot", "value": "diffplot"},
                     {
@@ -63,7 +65,7 @@ class PlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Fig layout - height",
                 id=self.register_component_unique_id(
-                    PlotSettings.Ids.FIG_LAYOUT_HEIGHT
+                    PlotSettingsCoverage.Ids.FIG_LAYOUT_HEIGHT
                 ),
                 options=[
                     {
@@ -94,7 +96,9 @@ class PlotSettings(SettingsGroupABC):
             ),
             wcc.RadioItems(
                 label="Colorby grouping",
-                id=self.register_component_unique_id(PlotSettings.Ids.COLORBY_GROUPING),
+                id=self.register_component_unique_id(
+                    PlotSettingsCoverage.Ids.COLORBY_GROUPING
+                ),
                 options=[
                     {"label": "Side by side", "value": "group"},
                     {"label": "Overlay", "value": "overlay"},
@@ -103,7 +107,9 @@ class PlotSettings(SettingsGroupABC):
             ),
             wcc.RadioItems(
                 label="Show points",
-                id=self.register_component_unique_id(PlotSettings.Ids.SHOW_POINTS),
+                id=self.register_component_unique_id(
+                    PlotSettingsCoverage.Ids.SHOW_POINTS
+                ),
                 options=[
                     {"label": "Outliers only", "value": "outliers"},
                     {"label": "All points", "value": "all"},
@@ -139,7 +145,9 @@ class ProdCoverageView(ViewABC):
         self.ens_realizations = ens_realizations
         self.well_collections = well_collections
 
-        self.add_settings_group(PlotSettings(), ProdCoverageView.Ids.PLOT_SETTINGS)
+        self.add_settings_group(
+            PlotSettingsCoverage(), ProdCoverageView.Ids.PLOT_SETTINGS
+        )
         self.main_column = self.add_column(ProdCoverageView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
@@ -171,31 +179,31 @@ class ProdCoverageView(ViewABC):
             ),
             Input(
                 self.settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.COLORBY)
+                .component_unique_id(PlotSettingsCoverage.Ids.COLORBY)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.PLOT_TYPE)
+                .component_unique_id(PlotSettingsCoverage.Ids.PLOT_TYPE)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.FIG_LAYOUT_HEIGHT)
+                .component_unique_id(PlotSettingsCoverage.Ids.FIG_LAYOUT_HEIGHT)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.COLORBY_GROUPING)
+                .component_unique_id(PlotSettingsCoverage.Ids.COLORBY_GROUPING)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.SHOW_POINTS)
+                .component_unique_id(PlotSettingsCoverage.Ids.SHOW_POINTS)
                 .to_string(),
                 "value",
             ),

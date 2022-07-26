@@ -12,7 +12,7 @@ from ..utils import make_figures as makefigs
 from ._view_functions import _get_well_names_combined
 
 
-class PlotSettings(SettingsGroupABC):
+class PlotSettingsMisfit(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         COLORBY = "colorby"
@@ -26,7 +26,7 @@ class PlotSettings(SettingsGroupABC):
         return [
             wcc.Dropdown(
                 label="Colorby",
-                id=self.register_component_unique_id(PlotSettings.Ids.COLORBY),
+                id=self.register_component_unique_id(PlotSettingsMisfit.Ids.COLORBY),
                 options=[
                     {
                         "label": "Total misfit",
@@ -44,7 +44,9 @@ class PlotSettings(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Sorting/ranking",
-                id=self.register_component_unique_id(PlotSettings.Ids.SORTING_RANKING),
+                id=self.register_component_unique_id(
+                    PlotSettingsMisfit.Ids.SORTING_RANKING
+                ),
                 options=[
                     {
                         "label": "None",
@@ -68,7 +70,7 @@ class PlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Fig layout - height",
                 id=self.register_component_unique_id(
-                    PlotSettings.Ids.FIG_LAYOUT_HEIGHT
+                    PlotSettingsMisfit.Ids.FIG_LAYOUT_HEIGHT
                 ),
                 options=[
                     {
@@ -183,7 +185,9 @@ class MisfitPerRealView(ViewABC):
         self.weight_reduction_factor_wat = weight_reduction_factor_wat
         self.weight_reduction_factor_gas = weight_reduction_factor_gas
 
-        self.add_settings_group(PlotSettings(), MisfitPerRealView.Ids.PLOT_SETTINGS)
+        self.add_settings_group(
+            PlotSettingsMisfit(), MisfitPerRealView.Ids.PLOT_SETTINGS
+        )
         self.add_settings_group(MisfitOptions(), MisfitPerRealView.Ids.MISFIT_OPTIONS)
         self.main_column = self.add_column(MisfitPerRealView.Ids.MAIN_COLUMN)
 
@@ -216,19 +220,19 @@ class MisfitPerRealView(ViewABC):
             ),
             Input(
                 self.settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.COLORBY)
+                .component_unique_id(PlotSettingsMisfit.Ids.COLORBY)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.SORTING_RANKING)
+                .component_unique_id(PlotSettingsMisfit.Ids.SORTING_RANKING)
                 .to_string(),
                 "value",
             ),
             Input(
                 self.settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
-                .component_unique_id(PlotSettings.Ids.FIG_LAYOUT_HEIGHT)
+                .component_unique_id(PlotSettingsMisfit.Ids.FIG_LAYOUT_HEIGHT)
                 .to_string(),
                 "value",
             ),
