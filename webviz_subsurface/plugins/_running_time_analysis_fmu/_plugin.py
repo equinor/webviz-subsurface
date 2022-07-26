@@ -9,6 +9,7 @@ from webviz_config.webviz_store import webvizstore
 
 from ..._datainput.fmu_input import load_ensemble_set, load_parameters
 from ._plugin_ids import PluginIds
+from ._shared_settings import RunningTimeAnalysisFmuSettings
 from ._view import RunTimeAnalysisGraph
 
 
@@ -117,6 +118,31 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
             PluginIds.RunTimeAnalysisView.RUN_TIME_FMU,
             PluginIds.RunTimeAnalysisView.GROUP_NAME,
         )
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(PluginIds.RunTimeAnalysisView.RUN_TIME_FMU)
+                .settings_group(RunTimeAnalysisGraph.Ids.RUN_TIME_SETTINGS)
+                .component_unique_id(RunningTimeAnalysisFmuSettings.Ids.MODE),
+                "content": (
+                    "Switch between job running time matrix and parameter parallel coordinates."
+                ),
+            },
+            {
+                "id": self.view(PluginIds.RunTimeAnalysisView.RUN_TIME_FMU)
+                .settings_group(RunTimeAnalysisGraph.Ids.RUN_TIME_SETTINGS)
+                .component_unique_id(RunningTimeAnalysisFmuSettings.Ids.ENSEMBLE),
+                "content": ("Display the realizations from the selected ensemble. "),
+            },
+            {
+                "id": self.view(PluginIds.RunTimeAnalysisView.RUN_TIME_FMU)
+                .settings_group(RunTimeAnalysisGraph.Ids.RUN_TIME_SETTINGS)
+                .component_unique_id(RunningTimeAnalysisFmuSettings.Ids.COLORING),
+                "content": ("Make the colorscale relative to the selected option."),
+            },
+        ]
 
     @property
     def parameters(self) -> List[str]:

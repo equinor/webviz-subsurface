@@ -26,7 +26,7 @@ class RunTimeAnalysisGraph(ViewABC):
         plugin_paratamters: List[str],
         filter_shorter: Union[int, float] = 10,
     ) -> None:
-        super().__init__("Group tree")
+        super().__init__("Settings")
 
         self.plotly_theme = plotly_theme
         self.job_status_df = job_status_df
