@@ -18,11 +18,9 @@ from ._settings import OverviewFilter, OverviewPlotSettings
 class OverviewView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
-        BAR_CHART = "bar-chart"
         PLOT_SETTINGS = "plot-settings"
         FILTER = "filter"
         MAIN_COLUMN = "main-column"
-        GRAPH = "graph"
         FIGURE = "figure"
 
     def __init__(

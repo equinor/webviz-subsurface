@@ -16,12 +16,9 @@ from ._settings import ControlPressureOptions, ControlSettings
 class ControlView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
-        BAR_CHART = "bar-chart"
         PLOT_SETTINGS = "plot-settings"
         CONTROL_OPTIONS = "control-options"
-        FILTER = "filter"
         MAIN_COLUMN = "main-column"
-        GRAPH = "graph"
 
     def __init__(
         self,
