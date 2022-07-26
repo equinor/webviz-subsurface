@@ -1,11 +1,9 @@
 import copy
 import warnings
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Type
+from typing import Callable, Dict, List, Optional, Tuple
 
-import dash
 import webviz_subsurface_components as wsc
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
