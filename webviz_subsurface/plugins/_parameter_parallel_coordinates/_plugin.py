@@ -341,14 +341,16 @@ folder, to avoid risk of not extracting the right data.
                     PluginIds.SharedSettings.FILTER
                 ).component_unique_id(Filter.Ids.ENSEMBLE_BOX),
                 "content": """Choose to view data on different ensembles.
-                            In the Ensembles chart you can view several ensembles in the same chart,
+                            In the Ensembles chart you can view several ensembles
+                             in the same chart,
                             in the Response chart you can only select one.""",
             },
             {
                 "id": self.shared_settings_group(
                     PluginIds.SharedSettings.FILTER
                 ).component_unique_id(Filter.Ids.EXCLUDE_INCLUDE),
-                "content": """You can choose to include or exclude the parameters selected below.""",
+                "content": """You can choose to include or exclude
+                             the parameters selected below.""",
             },
             {
                 "id": self.shared_settings_group(
