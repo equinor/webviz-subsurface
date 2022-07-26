@@ -5,13 +5,11 @@
 ########################################
 
 
-from typing import Any, Callable, Dict, List, Tuple, Type
+from typing import Any, Callable, Dict, List, Tuple
 
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
-from ._error import error
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter, ShowPlots
 from .views import PvtView
