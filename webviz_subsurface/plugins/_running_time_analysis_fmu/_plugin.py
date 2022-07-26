@@ -29,7 +29,8 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
 
     ---
 
-    * **`ensembles`:** Which ensembles in `shared_settings` to include in check. Only required input.
+    * **`ensembles`:** Which ensembles in `shared_settings` to include in check. 
+                       Only required input.
     * **`filter_shorter`:** Filters jobs with maximum run time in ensemble less than X seconds \
         (default: 10). Can be checked on/off interactively, this only sets the filtering value.
     * **`status_file`:** Name of json file local per realization with job status \

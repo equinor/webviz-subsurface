@@ -138,7 +138,7 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
         def _update_filter_parameters(
             remove_constant: str, ens: str, coloring: str
         ) -> Tuple:
-            if remove_constant == None:
+            if remove_constant is None:
                 raise PreventUpdate
 
             dimentions_params = []
