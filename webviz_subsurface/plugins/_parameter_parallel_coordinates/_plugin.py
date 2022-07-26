@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type
+from typing import List, Type
 
 import pandas as pd
 from dash.development.base_component import Component
@@ -16,7 +16,8 @@ from webviz_subsurface._models import (
 from ._error import error
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
-from .views import EnsembleView, ResponseView
+from .view_elements import Graph
+from .views import EnsembleView, ResponseView, ViewSettings
 
 
 class ParameterParallelCoordinates(WebvizPluginABC):
@@ -167,12 +168,20 @@ folder, to avoid risk of not extracting the right data.
         self.response_columns = []
 
         if response_ignore and response_include:
+            self.error_message = (
+                'Incorrent argument. Either provide "response_include", '
+                '"response_ignore" or neither'
+            )
             raise ValueError(
                 'Incorrent argument. Either provide "response_include", '
                 '"response_ignore" or neither'
             )
         if parameter_csv:
             if ensembles or response_file:
+                self.error_message = (
+                    'Incorrect arguments. Either provide "parameter_csv" or '
+                    '"ensembles and/or response_file".'
+                )
                 raise ValueError(
                     'Incorrect arguments. Either provide "parameter_csv" or '
                     '"ensembles and/or response_file".'
@@ -181,11 +190,16 @@ folder, to avoid risk of not extracting the right data.
                 if self.response_csv:
                     self.responsedf = read_csv(self.response_csv)
                 else:
+                    self.error_message = "Incorrect arguments. Missing response_csv."
                     raise ValueError("Incorrect arguments. Missing response_csv.")
             self.parameterdf = read_csv(self.parameter_csv)
 
         elif ensembles:
             if self.response_csv:
+                self.error_message = (
+                    'Incorrect arguments. Either provide "response_csv" or '
+                    '"ensembles and/or response_file".'
+                )
                 raise ValueError(
                     'Incorrect arguments. Either provide "response_csv" or '
                     '"ensembles and/or response_file".'
@@ -208,6 +222,10 @@ folder, to avoid risk of not extracting the right data.
                     self.responsedf = self.emodel.get_or_load_smry_cached()
                     self.response_filters["DATE"] = "single"
         else:
+            self.error_message = (
+                "Incorrect arguments."
+                'You have to define at least "ensembles" or "parameter_csv".'
+            )
             raise ValueError(
                 "Incorrect arguments."
                 'You have to define at least "ensembles" or "parameter_csv".'
@@ -307,6 +325,64 @@ folder, to avoid risk of not extracting the right data.
             colormap.append([(i + 1) / len(self.ensembles), colors[i]])
 
         return colormap
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(PluginIds.ParallelID.ENSEMBLE_CHART)
+                .view_element(EnsembleView.Ids.ENSEMBLE_CHART)
+                .component_unique_id(Graph.Ids.GRAPH),
+                "content": """Visualizes parameters used in FMU ensembles side-by-side
+                            in a parallel coordinates plot.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.ENSEMBLE_BOX),
+                "content": """Choose to view data on different ensembles.
+                            In the Ensembles chart you can view several ensembles in the same chart,
+                            in the Response chart you can only select one.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.EXCLUDE_INCLUDE),
+                "content": """You can choose to include or exclude the parameters selected below.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.PARAMETERS),
+                "content": """Choose which parameters to be included or excluded.
+                            Several parameters can be selected""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.REMOVE_CONSTANT),
+                "content": """Option to remove the constant values in the plot""",
+            },
+            {
+                "id": self.view(PluginIds.ParallelID.RESPONSE_CHART)
+                .view_element(ResponseView.Ids.RESPONSE_CHART)
+                .component_unique_id(Graph.Ids.GRAPH),
+                "content": """Colors the response
+                            in a parallel coordinates plot.""",
+            },
+            {
+                "id": self.view(PluginIds.ParallelID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.SETTINGS)
+                .component_unique_id(ViewSettings.Ids.RESPONSE),
+                "content": """Select different responses the graph will be colored by.""",
+            },
+            {
+                "id": self.view(PluginIds.ParallelID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.SETTINGS)
+                .component_unique_id(ViewSettings.Ids.DATE),
+                "content": """Select which date to view the data.""",
+            },
+        ]
 
     @property
     def layout(self) -> Type[Component]:

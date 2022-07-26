@@ -1,2 +1,2 @@
 from ._ensemble import EnsembleView
-from ._response import ResponseView
+from ._response import ResponseView, ViewSettings
