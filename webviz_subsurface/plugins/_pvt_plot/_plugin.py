@@ -72,7 +72,7 @@ class PvtPlot(WebvizPluginABC):
         read_from_init_file: bool = False,
         drop_ensemble_duplicates: bool = False,
     ) -> None:
-        super().__init__(stretch=True)
+        super().__init__(stretch = True)
 
         self.ensemble_paths = {
             ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
