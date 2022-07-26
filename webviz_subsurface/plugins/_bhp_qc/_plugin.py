@@ -13,6 +13,7 @@ from .._simulation_time_series.types.provider_set import (
 from ._error import error
 from ._plugin_ids import PluginIds
 from .shared_settings import BarLineSettings, Filter
+from .view_elements import Graph
 from .views import BarView, FanView, LineView
 
 
@@ -118,29 +119,53 @@ class BhpQc(WebvizPluginABC):
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.view(PluginIds.BhpID.BAR_CHART).get_unique_id().to_string(),
+                "id": self.view(PluginIds.BhpID.FAN_CHART)
+                .view_element(FanView.Ids.FAN_CHART)
+                .component_unique_id(Graph.Ids.GRAPH),
                 "content": (
                     "Dashboard for BHP QC:"
                     "Check that simulated bottom hole pressures are realistic."
+                    " Can be viewed in a Fan chart,"
                 ),
             },
             {
-                "id": self.view(PluginIds.BhpID.LINE_CHART).get_unique_id().to_string(),
+                "id": self.view(PluginIds.BhpID.LINE_CHART)
+                .view_element(LineView.Ids.LINE_CHART)
+                .component_unique_id(Graph.Ids.GRAPH),
+                "content": ("Line chart"),
+            },
+            {
+                "id": self.view(PluginIds.BhpID.BAR_CHART)
+                .view_element(BarView.Ids.BAR_CHART)
+                .component_unique_id(Graph.Ids.GRAPH),
+                "content": ("and Bar chart."),
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.ENSEMBLE),
                 "content": "Select ensemble to QC.",
             },
             {
-                "id": self.view(PluginIds.BhpID.FAN_CHART).get_unique_id().to_string(),
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.SORT_BY),
                 "content": "Sort wells left to right according to this value.",
             },
             {
-                "id": self.shared_settings_group(PluginIds.SharedSettings.FILTER)
-                .get_unique_id()
-                .to_string(),
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.MAX_NUMBER_OF_WELLS_SLIDER),
                 "content": (
                     "Show max selected number of top ranked wells after sorting and filtering."
                 ),
             },
-            {"id": self.uuid("wells"), "content": "Filter wells."},
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.WELLS),
+                "content": "Filter wells.",
+            },
         ]
 
     @property
