@@ -29,10 +29,6 @@ class TornadoWidget(ViewABC):
     class IDs:
         # pylint: disable=too-few-public-methods
         TORNADO_WIDGET = "tornado-widget"
-        BARS = "bars"
-        BAR_WRAPPER = "bar-wrapper"
-        TABLE = "table"
-        TABLE_WRAPPER = "table-wrapper"
         LABEL = "label"
         RESET_BUTTON = "reset-button"
 
@@ -64,7 +60,6 @@ class TornadoWidget(ViewABC):
 
         viewcolumn = self.add_column()
         first_row = viewcolumn.make_row()
-        # Nå vises begge to parallelt, må då den ene til å skules
         first_row.add_view_element(
             TornadoViewElement(), TornadoWidget.IDs.TORNADO_WIDGET
         )

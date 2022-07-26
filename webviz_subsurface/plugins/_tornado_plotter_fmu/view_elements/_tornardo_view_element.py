@@ -21,7 +21,6 @@ class TornadoViewElement(ViewElementABC):
     ) -> None:
         super().__init__()
 
-    # skal vi ha med div?
     def inner_layout(self) -> html.Div:
         return html.Div(
             style={"marginLeft": "10px", "height": "90vh"},
@@ -42,7 +41,6 @@ class TornadoViewElement(ViewElementABC):
                 html.Div(
                     style={"overflowY": "auto", "height": "85vh"},
                     children=[
-                        # graph
                         html.Div(
                             id=self.register_component_unique_id(
                                 TornadoViewElement.IDs.BAR_WRAPPER
@@ -50,9 +48,7 @@ class TornadoViewElement(ViewElementABC):
                             style={"display": "inline"},
                             # The graph element that shows the data (bars)
                             children=wcc.Graph(
-                                id=self.register_component_unique_id(
-                                    TornadoViewElement.IDs.TORNADO_BAR
-                                ),
+                                id=self.register_component_unique_id(TornadoViewElement.IDs.TORNADO_BAR),
                                 config={"displayModeBar": False},
                             ),
                         ),
