@@ -72,7 +72,7 @@ class PvtPlot(WebvizPluginABC):
         read_from_init_file: bool = False,
         drop_ensemble_duplicates: bool = False,
     ) -> None:
-        super().__init__(stretch = True)
+        super().__init__(stretch=True)
 
         self.ensemble_paths = {
             ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
@@ -127,9 +127,6 @@ class PvtPlot(WebvizPluginABC):
             self.phases_additional_info.append("PVDG")
         if self.pvt_df["KEYWORD"].str.contains("PVTW").any():
             self.phases_additional_info.append("PVTW")
-
-        # Error messages
-        self.error_message = ""
 
         self.add_store(
             PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION
@@ -191,7 +188,3 @@ class PvtPlot(WebvizPluginABC):
                 )
             ]
         )
-
-    @property
-    def layout(self) -> Type[Component]:
-        return error(self.error_message)
