@@ -13,7 +13,15 @@ from .._simulation_time_series.types.provider_set import (
 )
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
-from .views import MisfitPerRealView, ProdCoverageView, ProdHeatmapView
+from .views import (
+    MisfitOptions,
+    MisfitPerRealView,
+    PlotSettingsCoverage,
+    PlotSettingsHeatmap,
+    PlotSettingsMisfit,
+    ProdCoverageView,
+    ProdHeatmapView,
+)
 
 
 class ProdMisfit(WebvizPluginABC):
@@ -261,6 +269,120 @@ class ProdMisfit(WebvizPluginABC):
             ),
             PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP,
         )
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .layout_element(MisfitPerRealView.Ids.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": """Shows production misfit per realization.
+                             Several ensembles can be shown at the same time.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.ENSEMBLE_SELECTOR),
+                "content": """Select which ensembles to view graphs of.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.DATE_SELECTOR),
+                "content": """Choose a single or several dates.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.PHASE_SELECTOR),
+                "content": """Select what phases to be shown in the plot.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.WELL_SELECTOR),
+                "content": """Select what wells to include in the data.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.COMBINE_WELL_AND_COLLECTION_AS),
+                "content": """Combine the well and collection data as union or intersection.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.WELL_COLLECTION_SELECTOR),
+                "content": """Choose what collection data to include.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.REALIZATION_SELECTOR),
+                "content": """Choose how many realizations to include in the plot.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsMisfit.Ids.COLORBY),
+                "content": """Color plot by phases, date or total misfit.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsMisfit.Ids.SORTING_RANKING),
+                "content": """Rank data by ascending or descending value.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsMisfit.Ids.FIG_LAYOUT_HEIGHT),
+                "content": """Select the size of the plot.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.MISFIT_OPTIONS)
+                .component_unique_id(MisfitOptions.Ids.MISFIT_WEIGHT),
+                "content": """Select how to weigh misfits.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.MISFIT_OPTIONS)
+                .component_unique_id(MisfitOptions.Ids.MISFIT_EXPONENT),
+                "content": """Choose between linear or square sum of misfit exponent.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
+                .layout_element(ProdCoverageView.Ids.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": """Shows well production coverage in a crossplot.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
+                .settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsCoverage.Ids.COLORBY_GROUPING),
+                "content": """Choose to have the ensembles in the plot overlay or side by side.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
+                .settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsCoverage.Ids.SHOW_POINTS),
+                "content": """Select how many points to show.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP)
+                .layout_element(ProdHeatmapView.Ids.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": """Shows cummulative misfit in heatmap.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP)
+                .settings_group(ProdHeatmapView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsHeatmap.Ids.COLOR_RANGE_SCALING),
+                "content": """Select the scale of the color range relative to max.""",
+            },
+        ]
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return (
