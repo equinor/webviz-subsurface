@@ -167,7 +167,7 @@ class WellAnalysis(WebvizPluginABC):
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
                 .settings_group(OverviewView.Ids.PLOT_SETTINGS)
                 .component_unique_id(OverviewPlotSettings.Ids.SELECTED_ENSEMBLES),
-                "content": """Lets you choose between different ensembles. 
+                "content": """Lets you choose between different ensembles.
                             Several can be selected at the same time.""",
             },
             {
@@ -195,7 +195,7 @@ class WellAnalysis(WebvizPluginABC):
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
                 .settings_group(OverviewView.Ids.FILTER)
                 .component_unique_id(OverviewFilter.Ids.SLECTED_WELLS),
-                "content": """You can choose to view the production for all the wells or 
+                "content": """You can choose to view the production for all the wells or
                                 select only the ones you are interested in.""",
             },
             {
@@ -210,14 +210,14 @@ class WellAnalysis(WebvizPluginABC):
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
                 .settings_group(ControlView.Ids.PLOT_SETTINGS)
                 .component_unique_id(ControlSettings.Ids.SELECTED_ENSEMBLE),
-                "content": """You can choose to view data on different ensembles. 
+                "content": """You can choose to view data on different ensembles.
                             Only one can be selected.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
                 .settings_group(ControlView.Ids.PLOT_SETTINGS)
                 .component_unique_id(ControlSettings.Ids.SELECTED_WELL),
-                "content": """You can also view data on different wells. 
+                "content": """You can also view data on different wells.
                             Only one can be selected.""",
             },
             {
