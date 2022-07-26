@@ -113,30 +113,31 @@ class GroupTree(WebvizPluginABC):
             PluginIds.ProductionNetworkID.GROUP_NAME,
         )
 
-
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
             ens_grouptree_data.webviz_store
             for _, ens_grouptree_data in self._group_tree_data.items()
         ]
 
-
     @property
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.shared_settings_group(PluginIds.SharedSettings.CONTROLS)
-                .component_unique_id(Controls.Ids.CONTROLS),
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.CONTROLS
+                ).component_unique_id(Controls.Ids.CONTROLS),
                 "content": "Menu for selecting ensemble and tree mode.",
             },
             {
-                "id": self.shared_settings_group(PluginIds.SharedSettings.OPTIONS)
-                .component_unique_id(Options.Ids.OPTIONS),
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.OPTIONS
+                ).component_unique_id(Options.Ids.OPTIONS),
                 "content": "Menu for statistical options or realization.",
             },
             {
-                "id": self.shared_settings_group(PluginIds.SharedSettings.FILTERS)
-                .component_unique_id(Filters.Ids.FILTER),
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTERS
+                ).component_unique_id(Filters.Ids.FILTER),
                 "content": "Menu for filtering options.",
             },
             {
