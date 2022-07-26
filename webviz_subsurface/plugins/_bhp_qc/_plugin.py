@@ -64,7 +64,6 @@ class BhpQc(WebvizPluginABC):
         except PermissionError:
             self.error_message = f"Access to files '{rel_file_pattern}' denied."
             "Please check your path for 'rel_file_pattern'"
-            "and make sure your application has permission to access it."
             return
         except FileNotFoundError:
             self.error_message = f"Files '{rel_file_pattern}' not found."
