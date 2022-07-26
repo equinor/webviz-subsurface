@@ -12,6 +12,7 @@ from .._types import TreeModeOptions
 class Controls(SettingsGroupABC):
     # pylint: disable=too-few-public-methods
     class Ids:
+        CONTROLS = "controls"
         ENSEMBLE = "ensemble"
         TREEMODE = "tree-mode"
 
@@ -31,22 +32,41 @@ class Controls(SettingsGroupABC):
             },
         ]
 
-    def layout(self) -> List[Component]:
-        return [
-            wcc.Dropdown(
-                id=self.register_component_unique_id(self.Ids.ENSEMBLE),
-                label="Ensemble",
-                options=[{"label": ens, "value": ens} for ens in self.ensembles],
-                clearable=False,
-                value=self.ensembles[0],
-            ),
-            wcc.RadioItems(
-                id=self.register_component_unique_id(self.Ids.TREEMODE),
-                label="Statistics or realization",
-                options=self.tree_mode_options,
-                value=self.tree_mode_options[1]["value"],
-            ),
-        ]
+    def layout(self) -> Component:
+        return wcc.FlexBox(
+            id=self.register_component_unique_id(self.Ids.CONTROLS),
+            children = [
+                    wcc.Dropdown(
+                        id=self.register_component_unique_id(self.Ids.ENSEMBLE),
+                        label="Ensemble",
+                        options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                        clearable=False,
+                        value=self.ensembles[0],
+                    ),
+                    wcc.RadioItems(
+                        id=self.register_component_unique_id(self.Ids.TREEMODE),
+                        label="Statistics or realization",
+                        options=self.tree_mode_options,
+                        value=self.tree_mode_options[1]["value"],
+                    ),
+                ]
+            )
+    # def layout(self) -> List[Component]:
+    #     return [
+    #         wcc.Dropdown(
+    #             id=self.register_component_unique_id(self.Ids.ENSEMBLE),
+    #             label="Ensemble",
+    #             options=[{"label": ens, "value": ens} for ens in self.ensembles],
+    #             clearable=False,
+    #             value=self.ensembles[0],
+    #         ),
+    #         wcc.RadioItems(
+    #             id=self.register_component_unique_id(self.Ids.TREEMODE),
+    #             label="Statistics or realization",
+    #             options=self.tree_mode_options,
+    #             value=self.tree_mode_options[1]["value"],
+    #         ),
+    #     ]
 
     def set_callbacks(self) -> None:
         @callback(

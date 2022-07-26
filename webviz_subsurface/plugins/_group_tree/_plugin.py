@@ -56,8 +56,6 @@ class GroupTree(WebvizPluginABC):
     ) -> None:
         super().__init__(stretch=True)
 
-        self.error_message = ""
-
         assert time_index in [
             "monthly",
             "yearly",
@@ -115,7 +113,6 @@ class GroupTree(WebvizPluginABC):
             PluginIds.ProductionNetworkID.GROUP_NAME,
         )
 
-        print(Filters().component_unique_id(Filters.Ids.FILTER).to_string())
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
@@ -123,30 +120,29 @@ class GroupTree(WebvizPluginABC):
             for _, ens_grouptree_data in self._group_tree_data.items()
         ]
 
-    # @property
-    # def layout(self) -> Type[Component]:
-    #     return html.Div()
 
-    # @property
-    # def tour_steps(self) -> List[dict]:
-
-    #     return [
-    #         # {
-    #         #     "id": PluginIds.SharedSettings.CONTROLS,
-    #         #     "content": "Menu for selecting ensemble and tree mode.",
-    #         # },
-    #         {
-    #             "id":Filters.component_unique_id(Filters(), Filters.Ids.FILTER).to_string(),
-    #             "content": "Menu for statistical options or realization.",
-    #         },
-    #         # {
-    #         #     "id": self.uuid(PluginIds.SharedSettings.FILTERS),
-    #         #     "content": "Menu for filtering options.",
-    #         # },
-    #         # {
-    #         #     "id": GroupTreeGraph.layout_element(GroupTreeGraph.Ids.GRAPH)
-    # .get_unique_id()
-    # .to_string(),
-    #         #     "content": "Vizualisation of network tree.",
-    #         # },
-    #     ]
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.shared_settings_group(PluginIds.SharedSettings.CONTROLS)
+                .component_unique_id(Controls.Ids.CONTROLS),
+                "content": "Menu for selecting ensemble and tree mode.",
+            },
+            {
+                "id": self.shared_settings_group(PluginIds.SharedSettings.OPTIONS)
+                .component_unique_id(Options.Ids.OPTIONS),
+                "content": "Menu for statistical options or realization.",
+            },
+            {
+                "id": self.shared_settings_group(PluginIds.SharedSettings.FILTERS)
+                .component_unique_id(Filters.Ids.FILTER),
+                "content": "Menu for filtering options.",
+            },
+            {
+                "id": self.view(PluginIds.ProductionNetworkID.GROUP_TREE)
+                .layout_element(GroupTreeGraph.Ids.GRAPH)
+                .get_unique_id(),
+                "content": "Vizualisation of network tree.",
+            },
+        ]

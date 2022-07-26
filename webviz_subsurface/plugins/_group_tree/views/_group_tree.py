@@ -16,7 +16,7 @@ class GroupTreeGraph(ViewABC):
         GROUPTREE = "group-tree"
 
     def __init__(self, group_tree_data: Dict[str, EnsembleGroupTreeData]) -> None:
-        super().__init__("")
+        super().__init__("Group tree")
         self.add_column(GroupTreeGraph.Ids.GRAPH)
         self.group_tree_data = group_tree_data
 

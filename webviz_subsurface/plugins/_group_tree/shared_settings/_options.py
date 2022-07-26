@@ -22,12 +22,8 @@ class Options(SettingsGroupABC):
     def __init__(self, ensembles: Dict[str, EnsembleGroupTreeData]) -> None:
         super().__init__("Options")
         self.ensembles = ensembles
-        self.options_id = self.register_component_unique_id(self.Ids.OPTIONS)
-        self.statistic_id = self.register_component_unique_id(self.Ids.STATISTICS)
-        self.realization_id = self.register_component_unique_id(self.Ids.REALIZATION)
 
     def layout(self) -> Component:
-
         return wcc.FlexBox(id=self.register_component_unique_id(Options.Ids.OPTIONS))
 
     def set_callbacks(self) -> None:
@@ -53,10 +49,6 @@ class Options(SettingsGroupABC):
             Output(
                 self.component_unique_id(Options.Ids.OPTIONS).to_string(), "children"
             ),
-            # Output(self.component_unique_id(Options.Ids.STATISTICS).to_string(), 'style'),
-            # Output(self.component_unique_id(Options.Ids.REALIZATION).to_string(), 'style'),
-            # Output(self.component_unique_id(Options.Ids.REALIZATION).to_string(), 'options'),
-            # Output(self.component_unique_id(Options.Ids.REALIZATION).to_string(), 'value'),
             Input(self.get_store_unique_id(PluginIds.Stores.REALIZATION), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.TREEMODE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES), "data"),
