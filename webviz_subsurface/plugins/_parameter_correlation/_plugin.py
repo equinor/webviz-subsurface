@@ -93,6 +93,10 @@ class ParameterCorrelation(WebvizPluginABC):
             Options(self.p_cols), PlugInIDs.SharedSettings.OPTIONS
         )
 
+        self.add_store(
+            PlugInIDs.Stores.Data.CLICK_DATA, WebvizPluginABC.StorageType.SESSION
+        )
+
         self.add_view(
             self.plot,
             PlugInIDs.ParaCorrGroups.PARACORR,

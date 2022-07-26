@@ -92,10 +92,7 @@ class Horizontal(SettingsGroupABC):
                 self.component_unique_id(Horizontal.IDs.PARAMETER).to_string(), "value"
             ),
             Input(
-                self.plot.view_element(ParameterPlot.IDs.MATRIXPLOT)
-                .component_unique_id(Graph.IDs.GRAPH)
-                .to_string(),
-                "clickData",
+                self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"
             ),
         )
         def _set_horizontal_parameter(
@@ -168,10 +165,7 @@ class Vertical(SettingsGroupABC):
                 self.component_unique_id(Vertical.IDs.PARAMETER).to_string(), "value"
             ),
             Input(
-                self.plot.view_element(ParameterPlot.IDs.MATRIXPLOT)
-                .component_unique_id(Graph.IDs.GRAPH)
-                .to_string(),
-                "clickData",
+                self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"
             ),
         )
         def _set_vertical_parameter(parameter: str, cell_data: dict) -> Tuple[str, str]:
