@@ -21,7 +21,8 @@ from webviz_subsurface._providers import (
 
 from ._error import error
 from ._plugin_ids import PluginIds
-from .views import ResponseView
+from .view_elements import Graph
+from .views import Filter, ResponseView
 
 
 class ParameterResponseCorrelation(WebvizPluginABC):
@@ -241,14 +242,9 @@ Responses are extracted automatically from the `.arrow` files in the individual 
     def tour_steps(self) -> List[Dict[str, Any]]:
         steps = [
             {
-                "id": self.uuid("layout"),
-                "content": (
-                    "Dashboard displaying correlation between selected "
-                    "response and input parameters."
-                ),
-            },
-            {
-                "id": self.uuid("correlation-graph"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .view_element(ResponseView.Ids.CORRELATIONS)
+                .component_unique_id(Graph.Ids.GRAPH),
                 "content": (
                     "Visualization of the correlations between currently selected "
                     "response and input parameters ranked by the absolute correlation "
@@ -257,44 +253,60 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 ),
             },
             {
-                "id": self.uuid("distribution-graph"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .view_element(ResponseView.Ids.DISTRIBUTIONS)
+                .component_unique_id(Graph.Ids.GRAPH),
                 "content": (
                     "Visualization of the distribution of the response and the selected "
                     "input parameter in the correlation chart."
                 ),
             },
             {
-                "id": self.uuid("ensemble"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
+                .component_unique_id(Filter.Ids.ENSEMBLE),
                 "content": ("Select the active ensemble."),
             },
             {
-                "id": self.uuid("responses"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
+                .component_unique_id(Filter.Ids.RESPONSE),
                 "content": ("Select the active response."),
             },
             {
-                "id": self.uuid("correlation-method"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
+                .component_unique_id(Filter.Ids.CORRELATION_METHOD),
                 "content": ("Select Pearson or Spearman correlation."),
             },
             {
-                "id": self.uuid("aggregation"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
+                .component_unique_id(Filter.Ids.RESPONSE_AGGREGATION),
                 "content": (
                     "Select whether the response after filtering should be aggregated "
                     "by summation or mean."
                 ),
             },
             {
-                "id": self.uuid("correlation-cutoff"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
+                .component_unique_id(Filter.Ids.CORRELATION_CUTOFF),
                 "content": (
                     "Slider to set a minimum correlation factor for parameters shown "
                     "in plots."
                 ),
             },
             {
-                "id": self.uuid("max-params"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.CONTROLS_SETTINGS)
+                .component_unique_id(Filter.Ids.MAX_NUMBER_PARAMETERS),
                 "content": ("Slider to set a maximum number of parameters shown"),
             },
             {
-                "id": self.uuid("filters"),
+                "id": self.view(PluginIds.ResponseID.RESPONSE_CHART)
+                .settings_group(ResponseView.Ids.FILTERS_SETTINGS)
+                .get_unique_id(),
                 "content": ("Filters for response and parameters to correlate with."),
             },
         ]
