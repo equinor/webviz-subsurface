@@ -45,6 +45,10 @@ class BhpQc(WebvizPluginABC):
 
         self.error_message = ""
 
+        if ensembles is None:
+            self.error_message = "Enembles needs to be provided"
+            raise ValueError("Enembles needs to be provided")
+
         self.ens_paths: Dict[str, Path] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                 ensemble_name
@@ -52,10 +56,20 @@ class BhpQc(WebvizPluginABC):
             for ensemble_name in ensembles
         }
 
-        self._input_provider_set = create_lazy_provider_set_from_paths(
-            self.ens_paths,
-            rel_file_pattern,
-        )
+        try:
+            self._input_provider_set = create_lazy_provider_set_from_paths(
+                self.ens_paths,
+                rel_file_pattern,
+            )
+        except PermissionError:
+            self.error_message = f"Access to files '{rel_file_pattern}' denied."
+            "Please check your path for 'rel_file_pattern'"
+            "and make sure your application has permission to access it."
+            return
+        except FileNotFoundError:
+            self.error_message = f"Files '{rel_file_pattern}' not found."
+            "Please check your path for 'rel_file_pattern'."
+            return
 
         dfs = []
         column_keys = {}
