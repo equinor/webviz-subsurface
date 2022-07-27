@@ -1,16 +1,15 @@
 from unittest import mock
 
 import dash
-from dash import html
 import pandas as pd
+import webviz_core_components as wcc
+
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 
 # pylint: disable=no-name-in-module
 from webviz_config.plugins import ParameterCorrelation
 from webviz_config.themes import default_theme
-
-import webviz_core_components as wcc
 
 # pylint: enable=no-name-in-module
 
@@ -35,7 +34,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
 
         parameter_correlation = ParameterCorrelation(webviz_settings, ensembles)
 
-        app.layout = html.Div(
+        app.layout = dash.html.Div(
             className="layoutWrapper",
             children=[
                 wcc.WebvizContentManager(
