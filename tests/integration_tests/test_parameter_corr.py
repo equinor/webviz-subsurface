@@ -40,7 +40,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         my_component = dash_duo.find_element(
             "#"
             + parameter_correlation.shared_settings_group("both-plots")
-            .component_unique_id("ensemble")
+            .component_unique_id("ensemble-both")
             .to_string()
         )
 
