@@ -1,8 +1,9 @@
+# isort: skip_file
 from unittest import mock
 
 import dash
 import pandas as pd
-import webviz_core_components as wcc  # isort:skip
+import webviz_core_components as wcc
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 
