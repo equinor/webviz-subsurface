@@ -2,12 +2,15 @@ from unittest import mock
 
 import dash
 import pandas as pd
+import webviz_core_components as wcc  # isort:skip
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config.themes import default_theme
-import webviz_core_components as wcc
 
-from webviz_subsurface.plugins import ParameterCorrelation
+# pylint: disable=no-name-in-module
+from webviz_config.plugins import ParameterCorrelation
+from webviz_config.themes import default_theme
+
+# pylint: enable=no-name-in-module
 
 # mocked functions
 GET_PARAMETERS = "webviz_subsurface.plugins._parameter_correlation.get_parameters"
