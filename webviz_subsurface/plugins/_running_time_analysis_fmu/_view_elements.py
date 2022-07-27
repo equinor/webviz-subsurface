@@ -121,10 +121,14 @@ def render_parcoord(
                 "colorbar": {
                     "tickvals": [0, 1],
                     "ticktext": colormap_labels,
-                    "title": "Status",
-                    "xanchor": "right",
-                    "x": -0.02,
-                    "len": 0.3,
+                    "tickangle": -90,
+                    "title": {"text": "Status", "side": "top"},
+                    "orientation": "h",
+                    "yanchor": "bottom",
+                    "y": 0.6,
+                    "xanchor": "left",
+                    "x": 0,
+                    "len": 0.1,
                 },
             },
         )
@@ -132,9 +136,19 @@ def render_parcoord(
         data["line"].update(
             {
                 "colorbar": {
-                    "title": "Running time",
-                    "xanchor": "right",
-                    "x": -0.02,
+                    "tickvals": [0, 1],
+                    "ticktext": colormap_labels,
+                    "tickangle": -90,
+                    "title": {"text": "Running time", "side": "top"},
+                    "orientation": "h",
+                    "yanchor": "bottom",
+                    "y": 0.6,
+                    "xanchor": "left",
+                    "x": 0,
+                    "len": 0.1,
+                    # "title": "Running time",
+                    # "xanchor": "right",
+                    # "x": -0.02,
                 },
             },
         )
@@ -144,7 +158,13 @@ def render_parcoord(
     # Ensure sufficient spacing between each dimension and margin for labels
     width = len(dimensions) * 100 + 250
     margin_b = max([len(param) for param in params]) * 8
-    layout.update({"width": width, "height": 800, "margin": {"b": margin_b, "t": 30}})
+    layout.update(
+        {
+            "width": width,
+            "height": 800,
+            "margin": {"b": margin_b, "t": 30},
+        },
+    )
 
     return {"data": [data], "layout": layout}
 

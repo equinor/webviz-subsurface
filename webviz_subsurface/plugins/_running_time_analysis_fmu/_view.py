@@ -1,3 +1,4 @@
+from distutils.command.config import config
 from typing import List, Union
 
 import pandas as pd
@@ -37,7 +38,8 @@ class RunTimeAnalysisGraph(ViewABC):
         self.visual_parameters = visual_parameters
         self.plugin_parameters = plugin_paratamters
 
-        self.add_column(self.Ids.RUNTIME_ANALYSIS)
+        column = self.add_column()
+        column.make_row(self.Ids.RUNTIME_ANALYSIS, flex_grow=4)
 
         self.add_settings_group(
             RunningTimeAnalysisFmuSettings(
@@ -128,38 +130,42 @@ class RunTimeAnalysisGraph(ViewABC):
                         self.plotly_theme,
                     )
 
-            else:
-                # Otherwise: parallel coordinates
-                # Ensure selected parameters is a list
-                params = params if isinstance(params, list) else [params]
-                # Color by success or runtime, for runtime drop unsuccesful
-                colormap_labels: Union[List[str], None]
-                if coloring == "Successful/failed realization":
-                    plot_df = self.real_status_df[
-                        self.real_status_df["ENSEMBLE"] == ens
-                    ]
-                    colormap = make_colormap(
-                        self.plotly_theme["layout"]["colorway"], discrete=2
-                    )
-                    color_by_col = "STATUS_BOOL"
-                    colormap_labels = ["Failed", "Success"]
-                else:
-                    plot_df = self.real_status_df[
-                        (self.real_status_df["ENSEMBLE"] == ens)
-                        & (self.real_status_df["STATUS_BOOL"] == 1)
-                    ]
-                    colormap = self.plotly_theme["layout"]["colorscale"]["sequential"]
-                    color_by_col = "RUNTIME"
-                    colormap_labels = None
-
-                # Call rendering of parallel coordinate plot
-                plot_info = render_parcoord(
-                    plot_df,
-                    params,
-                    self.plotly_theme,
-                    colormap,
-                    color_by_col,
-                    remove_constant,
-                    colormap_labels,
+                return wcc.Graph(figure=plot_info)
+            # Otherwise: parallel coordinates
+            # Ensure selected parameters is a list
+            params = params if isinstance(params, list) else [params]
+            # Color by success or runtime, for runtime drop unsuccesful
+            colormap_labels: Union[List[str], None]
+            if coloring == "Successful/failed realization":
+                plot_df = self.real_status_df[self.real_status_df["ENSEMBLE"] == ens]
+                colormap = make_colormap(
+                    self.plotly_theme["layout"]["colorway"], discrete=2
                 )
-            return wcc.Graph(figure=plot_info)
+                color_by_col = "STATUS_BOOL"
+                colormap_labels = ["Failed", "Success"]
+            else:
+                plot_df = self.real_status_df[
+                    (self.real_status_df["ENSEMBLE"] == ens)
+                    & (self.real_status_df["STATUS_BOOL"] == 1)
+                ]
+                colormap = self.plotly_theme["layout"]["colorscale"]["sequential"]
+                color_by_col = "RUNTIME"
+                colormap_labels = None
+
+            # Call rendering of parallel coordinate plot
+            plot_info = render_parcoord(
+                plot_df,
+                params,
+                self.plotly_theme,
+                colormap,
+                color_by_col,
+                remove_constant,
+                colormap_labels,
+            )
+
+            return wcc.Graph(
+                figure=plot_info, style={"transform": "rotate(90deg)", "width": 900}
+            )
+
+
+#
