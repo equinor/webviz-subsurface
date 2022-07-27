@@ -4,14 +4,10 @@ import dash
 import pandas as pd
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
-
-# pylint: disable=no-name-in-module
-from webviz_config.plugins import ParameterCorrelation
 from webviz_config.themes import default_theme
 
 import webviz_core_components as wcc
-
-# pylint: enable=no-name-in-module
+from webviz_subsurface.plugins import ParameterCorrelation
 
 # mocked functions
 GET_PARAMETERS = "webviz_subsurface.plugins._parameter_correlation.get_parameters"
