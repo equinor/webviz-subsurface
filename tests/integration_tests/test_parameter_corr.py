@@ -1,6 +1,7 @@
 from unittest import mock
 
 import dash
+from dash import html
 import pandas as pd
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -8,6 +9,8 @@ from webviz_config.common_cache import CACHE
 # pylint: disable=no-name-in-module
 from webviz_config.plugins import ParameterCorrelation
 from webviz_config.themes import default_theme
+
+import webviz_core_components as wcc
 
 # pylint: enable=no-name-in-module
 
@@ -30,16 +33,36 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
     with mock.patch(GET_PARAMETERS) as mock_parameters:
         mock_parameters.return_value = pd.read_csv("tests/data/parameters.csv")
 
-        parameter_correlation = ParameterCorrelation(app, webviz_settings, ensembles)
+        parameter_correlation = ParameterCorrelation(webviz_settings, ensembles)
 
-        app.layout = parameter_correlation.layout
+        settings = parameter_correlation.get_all_settings()
+
+        app.layout = html.Div(
+            className="layoutWrapper", 
+            children=[
+                wcc.WebvizContentManager(
+                    id="webviz-content-manager",
+                    children=[
+                        wcc.WebvizSettingsDrawer(
+                            id="settings-drawer",
+                            children=[settings for settings in parameter_correlation.get_all_settings()],
+                        ),
+                        wcc.WebvizPluginsWrapper(
+                            id="plugins-wrapper",
+                            children=parameter_correlation.plugin_layout(),
+                        )
+                    ]
+                ),
+            ]
+        )
         dash_duo.start_server(app)
+
+        dash_duo.find_element(".WebvizSettingsDrawer__ToggleOpen").click()
 
         # Using str literals directly, not IDs from the plugin as intended because
         # the run test did not accept the imports
         my_component = dash_duo.find_element(
-            "#"
-            + parameter_correlation.shared_settings_group("both-plots")
+            "#" + parameter_correlation.shared_settings_group("both-plots")
             .component_unique_id("ensemble-both")
             .to_string()
         )
