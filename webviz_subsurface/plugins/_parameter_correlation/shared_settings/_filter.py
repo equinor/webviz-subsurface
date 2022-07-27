@@ -6,7 +6,6 @@ from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PlugInIDs
-from ..view_elements import Graph
 from ..views import ParameterPlot
 
 
