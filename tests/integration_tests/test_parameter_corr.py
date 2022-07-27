@@ -5,8 +5,8 @@ import pandas as pd
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.themes import default_theme
-
 import webviz_core_components as wcc
+
 from webviz_subsurface.plugins import ParameterCorrelation
 
 # mocked functions
