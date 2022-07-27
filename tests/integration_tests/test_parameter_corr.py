@@ -34,9 +34,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         mock_parameters.return_value = pd.read_csv("tests/data/parameters.csv")
 
         parameter_correlation = ParameterCorrelation(webviz_settings, ensembles)
-
-        settings = parameter_correlation.get_all_settings()
-
+        
         app.layout = html.Div(
             className="layoutWrapper",
             children=[
