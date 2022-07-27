@@ -4,6 +4,7 @@ import dash
 import pandas as pd
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
+
 # pylint: disable=no-name-in-module
 from webviz_config.plugins import ParameterCorrelation
 from webviz_config.themes import default_theme
