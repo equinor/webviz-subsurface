@@ -10,7 +10,7 @@ class Graph(ViewElementABC):
         # pylint: disable=too-few-public-methods
         GRAPH = "graph"
 
-    def __init__(self, height: str = "90vh") -> None:
+    def __init__(self, height: str = "120vh") -> None:
         super().__init__()
 
         self.height = height
@@ -18,5 +18,10 @@ class Graph(ViewElementABC):
     def inner_layout(self) -> Type[Component]:
         return WccGraph(
             id=self.register_component_unique_id(Graph.Ids.GRAPH),
-            style={"height": self.height, "min-height": "300px"},
+            style={
+                # "height": self.height,
+                "width": "200vh",
+                # "min-height": "300px",
+                "transform": "rotate(-90deg)",
+            },
         )

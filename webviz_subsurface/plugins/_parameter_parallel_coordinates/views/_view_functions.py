@@ -89,4 +89,7 @@ def render_parcoord(
     # Ensure sufficient spacing between each dimension and margin for labels
     width = len(dimensions) * 80 + 250
     layout = {"width": width, "height": 1200, "margin": {"b": 740, "t": 30}}
-    return {"data": data, "layout": theme.create_themed_layout(layout)}
+    return {
+        "data": data,
+        "layout": theme.create_themed_layout(layout),
+    }

@@ -4,6 +4,7 @@ import pandas as pd
 from dash import Input, Output, callback
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_core_components import Graph as WccGraph
 
 from .._plugin_ids import PluginIds
 from ..view_elements import Graph
@@ -31,16 +32,16 @@ class EnsembleView(ViewABC):
         self.ens_colormap = ens_colormap
 
         column = self.add_column()
-        column.add_view_element(Graph(), EnsembleView.Ids.ENSEMBLE_CHART)
+        column.make_row(EnsembleView.Ids.ENSEMBLE_CHART)
         self.theme = theme
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(EnsembleView.Ids.ENSEMBLE_CHART)
-                .component_unique_id(Graph.Ids.GRAPH)
+                self.layout_element(EnsembleView.Ids.ENSEMBLE_CHART)
+                .get_unique_id()
                 .to_string(),
-                "figure",
+                "children",
             ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"),
             Input(
@@ -80,14 +81,22 @@ class EnsembleView(ViewABC):
             df["COLOR"] = df.apply(
                 lambda row: self.ensembles.index(row["ENSEMBLE"]), axis=1
             )
-            return render_parcoord(
-                df,
-                self.theme,
-                self.ens_colormap,
-                "COLOR",
-                self.ensembles,
-                "ensemble",
-                params,
-                "",
-                remove_constant,
+            return WccGraph(
+                style={
+                    "width": "200vh",
+                    # "min-height": "300px",
+                    "transform": "rotate(-90deg)",
+                    "padding": "300px",
+                },
+                figure=render_parcoord(
+                    df,
+                    self.theme,
+                    self.ens_colormap,
+                    "COLOR",
+                    self.ensembles,
+                    "ensemble",
+                    params,
+                    "",
+                    remove_constant,
+                ),
             )

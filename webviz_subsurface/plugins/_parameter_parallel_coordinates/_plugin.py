@@ -331,8 +331,8 @@ folder, to avoid risk of not extracting the right data.
         return [
             {
                 "id": self.view(PluginIds.ParallelID.ENSEMBLE_CHART)
-                .view_element(EnsembleView.Ids.ENSEMBLE_CHART)
-                .component_unique_id(Graph.Ids.GRAPH),
+                .layout_element(EnsembleView.Ids.ENSEMBLE_CHART)
+                .get_unique_id(),
                 "content": """Visualizes parameters used in FMU ensembles side-by-side
                             in a parallel coordinates plot.""",
             },
