@@ -11,11 +11,13 @@ from dash import (
     callback,
     callback_context,
     clientside_callback,
+    dash_table,
+    html,
 )
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
-from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 
 import webviz_subsurface
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
@@ -30,6 +32,10 @@ class TornadoWidget(ViewABC):
     class IDs:
         # pylint: disable=too-few-public-methods
         TORNADO_WIDGET = "tornado-widget"
+        BARS = "bars"
+        BAR_WRAPPER = "bar-wrapper"
+        TABLE = "table"
+        TABLE_WRAPPER = "talbe-wrapper" 
         LABEL = "label"
         RESET_BUTTON = "reset-button"
 
@@ -60,11 +66,12 @@ class TornadoWidget(ViewABC):
         )
 
         viewcolumn = self.add_column()
+
         first_row = viewcolumn.make_row()
         first_row.add_view_element(
             TornadoViewElement(), TornadoWidget.IDs.TORNADO_WIDGET
         )
-
+    
     def set_callbacks(self) -> None:
         @callback(
             Output(
@@ -79,20 +86,19 @@ class TornadoWidget(ViewABC):
         def _disable_label(plot_options: List) -> bool:
             if plot_options is None:
                 return False  # usikker på om denne skal bære ture eller false, den skal hvertfall være skult tror jeg
-            else:
-                return "Show realization points" in plot_options
+            return "Show realization points" in plot_options
 
         # denne bytter mellom tabell og graf: funker ikke
         @callback(
             Output(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.BAR_WRAPPER)
+                .component_unique_id(TornadoWidget.IDs.BAR_WRAPPER)
                 .to_string(),
                 "style",
             ),
             Output(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.TABLE_WRAPPER)
+                .component_unique_id(TornadoWidget.IDs.TABLE_WRAPPER)
                 .to_string(),
                 "style",
             ),
@@ -103,17 +109,17 @@ class TornadoWidget(ViewABC):
             # trengs egt disse?
             State(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.BAR_WRAPPER)
+                .component_unique_id(TornadoWidget.IDs.BAR_WRAPPER)
                 .to_string(),
                 "style",
             ),
             State(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.TABLE_WRAPPER)
+                .component_unique_id(TornadoWidget.IDs.TABLE_WRAPPER)
                 .to_string(),
                 "style",
             ),
-        )
+        ) 
         def _set_visualization(
             viz_type: str, graph_style: dict, table_style: dict
         ) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -145,9 +151,7 @@ class TornadoWidget(ViewABC):
             # men hvis jeg legger inn wrapperne og bars og table som view element
             # så blir de vel lagt inn dobbelt opp?
             Output(
-                self.view_element(
-                    TornadoWidget.IDs.TORNADO_WIDGET
-                )  # tester med wrappers her
+                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.TORNADO_BAR)
                 .to_string(),
                 "figure",
@@ -270,17 +274,15 @@ class TornadoWidget(ViewABC):
                     "data",
                 ),
                 Input(
-                    self.view_element(
-                        TornadoWidget.IDs.TORNADO_WIDGET
-                    )  # tester med wrapper her og
-                    .component_unique_id(TornadoViewElement.IDs.TORNADO_BAR)
+                    self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                    .component_unique_id(TornadoWidget.IDs.BARS)
                     .to_string(),
                     "clickData",
-                ),  # vet ikke om dette view elementet har "clickData som en egenskap?"
+                ),  
                 Input(
                     self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.RESET),
                     "n_clicks",
-                ),  # dette er den kanppens om ikke vises på demoen
+                ),  # dette er den kanppen som ikke vises på demoen
                 State(
                     self.get_store_unique_id(PlugInIDs.Stores.DataStores.HIGH_LOW),
                     "data",

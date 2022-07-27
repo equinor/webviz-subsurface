@@ -1,4 +1,3 @@
-from subprocess import call
 from typing import List, Optional
 
 import webviz_core_components as wcc
@@ -11,6 +10,7 @@ from webviz_subsurface._providers import EnsembleTableProviderFactory
 from .._plugin_ids import PlugInIDs
 
 
+# denne funker tror jeg
 class PlotPicker(SettingsGroupABC):
     class IDs:
         # pylint: disable=too-few-public-methods
@@ -128,9 +128,23 @@ class SingleFilters(SettingsGroupABC):
             )
         return elements
 
+    def set_callbacks(self) -> None:
+        for ID in self._single_filters_IDs.values():
+            @callback(
+                Output(
+                    self.get_store_unique_id(ID), "data"
+                ),
+                Input(
+                    self.component_unique_id(ID).to_string(), "value"
+                ), # blir det feil å bruke ID på begge?
+            )
+            def _set_selector(selected):
+                print(selected)
+                return selected
+
 
 # MultiFIlters er alle filtrene som kan ha flere valg
-class MultiFilters(SettingsGroupABC):
+class MultiFilters(SettingsGroupABC): 
     def __init__(
         self,
         table_provider: EnsembleTableProviderFactory,
@@ -165,7 +179,22 @@ class MultiFilters(SettingsGroupABC):
             )
         return elements
 
-    def uuid(self, element: Optional[str] = None) -> str:
+    # Metoden under fungerer ikke
+    """def set_callbacks(self) -> None:
+        for ID in self._multi_filters_IDs.values():
+            print("callback for store ID: ", ID)
+            @callback(
+                Output(
+                    self.get_store_unique_id(ID), "data"
+                ),
+                Input(
+                    self.component_unique_id(ID).to_string(), "value"
+                )
+            )
+            def _set_selector(selected):
+                return selected"""
+
+    def uuid(self, element: Optional[str] = None) -> str: #vet ikke om jeg egt trenger denne eller omden funker?
         """Typically used to get a unique ID for some given element/component in
         a plugins layout. If the element string is unique within the plugin, this
         function returns a string which is guaranteed to be unique also across the
@@ -188,7 +217,7 @@ class MultiFilters(SettingsGroupABC):
         )
 
 
-class ViewSettings(SettingsGroupABC):
+class ViewSettings(SettingsGroupABC): 
     """Describtion"""
 
     class IDs:
@@ -206,7 +235,7 @@ class ViewSettings(SettingsGroupABC):
         reference: str = "rms_seed",  # vet ikke helt hva dette er, men den settes ikke i orginalen så hmm
         allow_click: bool = False,
     ) -> None:
-        super().__init__("Plottion Options")
+        super().__init__("View Settings")
 
         self.sensnames = list(realizations["SENSNAME"].unique())
         self.scales = [
@@ -280,7 +309,7 @@ class ViewSettings(SettingsGroupABC):
                     "fontSize": "10px",
                     "marginTop": "10px",
                 }
-                if self.allow_click
+                if self.allow_click # allow click = false, så knappen skules
                 else {"display": "none"},
                 children="Clear selected",
             ),
@@ -299,3 +328,70 @@ class ViewSettings(SettingsGroupABC):
                 clearable=False,
             ),
         ]
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.REFERENCE), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.REFERENCE).to_string(), "value"
+            ),
+        )
+        def _set_reference(ref: str) -> str:
+            return ref
+        
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SCALE), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.SCALE).to_string(), "value"
+            ),
+        )
+        def _set_scale(scale: str) -> str:
+            return scale
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SENSITIVITIES), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.SENSITIVITEIS).to_string(), "value"
+            )
+        )
+        def _set_sensitivities(sens: List[str]) -> List[str]:
+            return sens
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.RESET), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.RESET_BUTTON).to_string(), "n_clicks"
+            ),
+        )
+        def _set_button(n_clicks):
+            return n_clicks # litt usikker på denne
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.PLOT_OPTIONS).to_string(), "value"
+            )
+        )
+        def _set_plot_options(picked_options: List[str]) -> List[str]:
+            return picked_options
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.LABEL).to_string(), "value"
+            )
+        )
+        def _set_label(label: str) -> str:
+            return label

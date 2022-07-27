@@ -17,6 +17,7 @@ from .shared_settings import (
     SingleFilters,
     ViewSettings,
 )
+
 from .views import TornadoWidget
 
 
@@ -45,14 +46,15 @@ class TornadoPlotterFMU(WebvizPluginABC):
         self._multi_filters = multi_value_selectors if multi_value_selectors else []
 
         # Undefined number of single and multifilter so IDs have to be arbitrarily defined
-        self._single_filter_IDs = (
-            {filter_num: filter + str(filter_num)}
-            for filter_num, filter in enumerate(self._single_filters)
-        )
-        self._multi_filters_IDs = {
-            filter_num: filter + str(filter_num)
-            for filter_num, filter in enumerate(self._multi_filters)
-        }
+        self._single_filter_IDs = {}
+        for filter_num, filter_str in enumerate(self._single_filters):
+            self._single_filter_IDs.update({filter_num: filter_str})
+    
+        self._multi_filters_IDs = {}
+        for filter_num, filter in enumerate(self._multi_filters):
+            self._multi_filters_IDs.update({filter_num: filter})
+
+        print("multi: ", self._multi_filters_IDs)
 
         provider_factory = EnsembleTableProviderFactory.instance()
         self.error_message = ""
@@ -133,7 +135,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PlotPicker(), PlugInIDs.SharedSettings.PLOTPICKER
         )
 
-        # Settingsgroup for Selectors
+        # Settingsgroup for Selector
         self.add_store(
             PlugInIDs.Stores.Selectors.RESPONSE, WebvizPluginABC.StorageType.SESSION
         )
@@ -143,8 +145,9 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
 
         # Settingsgroup for the single valued filters
-        for ID in self._single_filter_IDs:
+        for ID in self._single_filter_IDs.values():
             self.add_store(ID, WebvizPluginABC.StorageType.SESSION)
+            print("added store with ID: ", ID)
 
         self.add_shared_settings_group(
             SingleFilters(
@@ -206,7 +209,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PlugInIDs.Stores.DataStores.CLIENT_HIGH_PIXELS,
             WebvizPluginABC.StorageType.SESSION,
         )
-
+        
         self.add_view(
             self._tornado_widget,
             PlugInIDs.TornardoPlotGroup.TORNPLOT,
