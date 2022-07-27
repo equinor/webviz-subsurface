@@ -25,7 +25,14 @@ class Graph(ViewElementABC):
             return WccGraph(
                 id=self.register_component_unique_id(Graph.IDs.GRAPH),
                 style={"height": self.height, "min-height": "300px"},
-                clickData={"points": [{"x": self.p_cols[0], "y": self.p_cols[0]}]},
+                clickData={
+                    "points": [
+                        {
+                            "x": self.p_cols[0] if len(self.p_cols) > 0 else "",
+                            "y": self.p_cols[0] if len(self.p_cols) > 0 else "",
+                        }
+                    ]
+                },
             )
         return WccGraph(
             id=self.register_component_unique_id(Graph.IDs.GRAPH),
