@@ -1,0 +1,61 @@
+class PluginIds:
+    # pylint: disable=too-few-public-methods
+    class Stores:
+        # pylint: disable=too-few-public-methods
+
+        #intersection controls
+        X_LINE = "x-line"
+        Y_LINE = "y-line"
+        STEP = "step"
+        WELL = "well"
+        SURFACE_ATTR = "surface-attr"
+        SURFACE_NAMES = "surface-names"
+        SHOW_SURFACES = "show-surfaces"
+        UPDATE_INTERSECTION = "update-intersection"
+        UNCERTAINTY_TABLE = "uncertainty-table"
+
+        #-settings
+        RESOLUTION = "resolution"
+        EXTENSION = "extension"
+        DEPTH_RANGE = "depth-range"
+        TRUNKATE_LOCK = "trunkate-lock"
+        KEEP_ZOOM = "keep-zoom"
+        INTERSECTION_COLORS = "intersection-colors"
+
+        #map controls
+
+        #-surface A
+        SURFACE_ATTRIBUTE_A = "surface-attribute-a"
+        SURFACE_NAME_A = "surface-name-a"
+        CALCULATION_REAL_A = "calculation-real-a"
+        CALCULATE_WELL_INTER_A = "calculate-well-inter-a"
+
+        #-surface B
+        SURFACE_ATTRIBUTE_B = "surface-attribute-b"
+        SURFACE_NAME_B = "surface-name-b"
+        CALCULATION_REAL_B = "calculation-real-b"
+        CALCULATE_WELL_INTER_B = "calculate-well-inter-b"
+
+
+        #-settings
+        AUTO_COMP_DIFF = "auto-comp-diff"
+        COLOR_RANGES = "color-ranges"
+        SURFACE_A_MIN_MAX = "surface-a-min-max"
+        SURFACE_B_MIN_MAX = "surface-b-min-max"
+        SYNC_RANGE_ON_MAPS = "sync-range-on-maps"
+
+        #-filter
+        REAL_FILTER = "real-filter"
+
+    class SharedSettings:
+        # pylint: disable=too-few-public-methods
+        INTERSECTION_CONTROLS = "intersection-controls"
+        MAP_CONTROLS = "map-controls"
+
+    class ViewID:
+        # pylint: disable=too-few-public-methods
+
+        INTERSECT_POLYLINE = "intersect-polyline"
+        INTERSECT_X_LINE = "intersect-x-line"
+        INTERSECT_Y_LINE = "intersect-y-line"
+        INTERSECT_WELL = "intersect-well"

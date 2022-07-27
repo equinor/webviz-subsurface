@@ -14,8 +14,7 @@ from webviz_subsurface._datainput.fmu_input import find_surfaces, get_realizatio
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
-from ._tour_steps import generate_tour_steps
-from .controllers import (
+from ._controllers import (
     open_dialogs,
     update_intersection,
     update_intersection_source,
@@ -23,7 +22,8 @@ from .controllers import (
     update_realizations,
     update_uncertainty_table,
 )
-from .views import (
+from ._tour_steps import generate_tour_steps
+from ._views import (
     clientside_stores,
     dialog,
     intersection_and_map_layout,
@@ -248,7 +248,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.first_surface_geometry = self._surface_ensemble_set_model[
             self.ensembles[0]
         ].first_surface_geometry
-        self.set_callbacks(app)
 
     @property
     def tour_steps(self) -> List[Dict]:
@@ -256,149 +255,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
     @property
     def layout(self) -> wcc.FlexBox:
-        return html.Div(
-            id=self.uuid("layout"),
-            children=[
-                clientside_stores(
-                    get_uuid=self.uuid,
-                    realizations=self._realizations,
-                    initial_settings=self._initial_settings,
-                ),
-                wcc.FlexBox(
-                    children=[
-                        wcc.FlexColumn(
-                            wcc.Frame(
-                                style={
-                                    "height": "91vh",
-                                },
-                                children=[
-                                    html.Div(
-                                        children=[
-                                            wcc.Selectors(
-                                                label="Intersection controls",
-                                                children=intersection_data_layout(
-                                                    get_uuid=self.uuid,
-                                                    surface_attributes=self._surf_attrs,
-                                                    surface_names=self._surfacenames,
-                                                    ensembles=self.ensembles,
-                                                    use_wells=self._use_wells,
-                                                    well_names=self._well_set_model.well_names
-                                                    if self._well_set_model
-                                                    else [],
-                                                    surface_geometry=self.first_surface_geometry,
-                                                    initial_settings=self._initial_settings.get(
-                                                        "intersection_data", {}
-                                                    ),
-                                                ),
-                                            ),
-                                            html.Div(
-                                                id=self.uuid(
-                                                    "surface-settings-wrapper"
-                                                ),
-                                                children=wcc.Selectors(
-                                                    label="Map controls",
-                                                    children=[
-                                                        map_data_layout(
-                                                            uuid=self.uuid(
-                                                                "map-settings"
-                                                            ),
-                                                            surface_attributes=self._surf_attrs,
-                                                            surface_names=self._surfacenames,
-                                                            ensembles=self.ensembles,
-                                                            realizations=self._realizations,
-                                                            use_wells=self._use_wells,
-                                                        )
-                                                    ],
-                                                ),
-                                            ),
-                                            wcc.Selectors(
-                                                label="Filters",
-                                                children=[
-                                                    dialog.open_dialog_layout(
-                                                        uuid=self.uuid("dialog"),
-                                                        dialog_id="realization-filter",
-                                                        title="Realization filter",
-                                                    ),
-                                                ],
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                            )
-                        ),
-                        wcc.FlexColumn(
-                            flex=6,
-                            children=intersection_and_map_layout(get_uuid=self.uuid),
-                        ),
-                    ]
-                ),
-                dialog.dialog_layout(
-                    uuid=self.uuid("dialog"),
-                    dialog_id="color",
-                    title="Color settings",
-                    size="lg",
-                    children=[
-                        html.Div(
-                            children=[self._color_picker.layout],
-                        ),
-                    ],
-                ),
-                dialog.dialog_layout(
-                    uuid=self.uuid("dialog"),
-                    dialog_id="realization-filter",
-                    title="Filter realizations",
-                    children=[
-                        realization_layout(
-                            uuid=self.uuid("intersection-data"),
-                            realizations=self._realizations,
-                            value=self._initial_settings.get(
-                                "intersection_data", {}
-                            ).get("realizations", self._realizations),
-                        ),
-                        dialog.clear_all_apply_dialog_buttons(
-                            uuid=self.uuid("dialog"), dialog_id="realization-filter"
-                        ),
-                    ],
-                ),
-                dialog.dialog_layout(
-                    uuid=self.uuid("dialog"),
-                    dialog_id="uncertainty-table",
-                    title="Uncertainty table",
-                    children=[
-                        uncertainty_table_layout(
-                            uuid=self.uuid("uncertainty-table"),
-                        )
-                    ],
-                ),
-            ],
-        )
-
-    def set_callbacks(self, app: Dash) -> None:
-        open_dialogs(app=app, get_uuid=self.uuid)
-        update_realizations(app=app, get_uuid=self.uuid)
-        update_intersection(
-            app=app,
-            get_uuid=self.uuid,
-            surface_set_models=self._surface_ensemble_set_model,
-            well_set_model=self._well_set_model,
-            zonelog=self._zonelog,
-            color_picker=self._color_picker,
-        )
-        update_maps(
-            app=app,
-            get_uuid=self.uuid,
-            surface_set_models=self._surface_ensemble_set_model,
-            well_set_model=self._well_set_model,
-        )
-        update_uncertainty_table(
-            app=app,
-            get_uuid=self.uuid,
-            surface_set_models=self._surface_ensemble_set_model,
-            well_set_model=self._well_set_model,
-        )
-        update_intersection_source(
-            app=app, get_uuid=self.uuid, surface_geometry=self.first_surface_geometry
-        )
+        return 
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         store_functions: List[Tuple[Callable, list]] = []
