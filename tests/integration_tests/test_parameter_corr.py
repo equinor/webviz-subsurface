@@ -45,10 +45,7 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
                     children=[
                         wcc.WebvizSettingsDrawer(
                             id="settings-drawer",
-                            children=[
-                                settings
-                                for settings in parameter_correlation.get_all_settings()
-                            ],
+                            children=parameter_correlation.get_all_settings(),
                         ),
                         wcc.WebvizPluginsWrapper(
                             id="plugins-wrapper",
