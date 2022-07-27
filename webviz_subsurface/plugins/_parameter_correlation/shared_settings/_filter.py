@@ -14,7 +14,7 @@ class BothPlots(SettingsGroupABC):
 
     class IDs:
         # pylint: disable=too-few-public-methods
-        ENSEMBLE = "ensemble"
+        ENSEMBLE = "ensemble-both"
 
     def __init__(self, ensembles: dict) -> None:
         super().__init__("Ensemble in both plots")
