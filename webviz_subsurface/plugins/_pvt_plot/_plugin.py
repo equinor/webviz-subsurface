@@ -7,6 +7,8 @@
 
 from typing import Any, Callable, Dict, List, Tuple
 
+from dash import html
+from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
@@ -155,6 +157,15 @@ class PvtPlot(WebvizPluginABC):
             PluginIds.PvtID.INDICATORS,
             PluginIds.PvtID.GROUP_NAME,
         )
+
+    @property
+    def layout(self) -> Component:
+        """
+        This method is only going to be called when no views have been added to the plugin,
+        i.e. when the data could not be read and the '__init__' method terminated with setting
+        the 'error_message' member.
+        """
+        return html.Div("error")
 
     def add_webvizstore(
         self,
