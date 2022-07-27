@@ -73,7 +73,9 @@ class Horizontal(SettingsGroupABC):
                 id=self.register_component_unique_id(Horizontal.IDs.ENSEMBLE),
                 label="Ensemble",
                 options=[{"label": k, "value": v} for k, v in self.ensembles.items()],
-                value=list(self.ensembles.values())[0] if len(self.ensembles.values()) > 0 else "",
+                value=list(self.ensembles.values())[0]
+                if len(self.ensembles.values()) > 0
+                else "",
                 multi=False,
                 clearable=False,
             ),
@@ -144,7 +146,9 @@ class Vertical(SettingsGroupABC):
                 id=self.register_component_unique_id(Vertical.IDs.ENSEMBLE),
                 label="Ensemble",
                 options=[{"label": k, "value": v} for k, v in self.ensembles.items()],
-                value=list(self.ensembles.values())[0] if len(self.ensembles.values()) > 0 else "",
+                value=list(self.ensembles.values())[0]
+                if len(self.ensembles.values()) > 0
+                else "",
                 multi=False,
                 clearable=False,
             ),

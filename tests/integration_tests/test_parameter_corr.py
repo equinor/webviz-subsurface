@@ -38,22 +38,25 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         settings = parameter_correlation.get_all_settings()
 
         app.layout = html.Div(
-            className="layoutWrapper", 
+            className="layoutWrapper",
             children=[
                 wcc.WebvizContentManager(
                     id="webviz-content-manager",
                     children=[
                         wcc.WebvizSettingsDrawer(
                             id="settings-drawer",
-                            children=[settings for settings in parameter_correlation.get_all_settings()],
+                            children=[
+                                settings
+                                for settings in parameter_correlation.get_all_settings()
+                            ],
                         ),
                         wcc.WebvizPluginsWrapper(
                             id="plugins-wrapper",
                             children=parameter_correlation.plugin_layout(),
-                        )
-                    ]
+                        ),
+                    ],
                 ),
-            ]
+            ],
         )
         dash_duo.start_server(app)
 
@@ -62,7 +65,8 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
         # Using str literals directly, not IDs from the plugin as intended because
         # the run test did not accept the imports
         my_component = dash_duo.find_element(
-            "#" + parameter_correlation.shared_settings_group("both-plots")
+            "#"
+            + parameter_correlation.shared_settings_group("both-plots")
             .component_unique_id("ensemble-both")
             .to_string()
         )
