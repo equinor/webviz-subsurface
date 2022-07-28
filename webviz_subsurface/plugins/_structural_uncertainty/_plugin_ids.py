@@ -3,7 +3,8 @@ class PluginIds:
     class Stores:
         # pylint: disable=too-few-public-methods
 
-        #intersection controls
+        # intersection controls
+        SOURCE = "source"
         X_LINE = "x-line"
         Y_LINE = "y-line"
         STEP_X = "step-x"
@@ -15,7 +16,7 @@ class PluginIds:
         UPDATE_INTERSECTION = "update-intersection"
         UNCERTAINTY_TABLE = "uncertainty-table"
 
-        #-settings
+        # -settings
         RESOLUTION = "resolution"
         EXTENSION = "extension"
         DEPTH_RANGE = "depth-range"
@@ -25,30 +26,35 @@ class PluginIds:
         KEEP_ZOOM = "keep-zoom"
         INTERSECTION_COLORS = "intersection-colors"
 
-        #map controls
+        # map controls
 
-        #-surface A
+        # -surface A
         SURFACE_ATTRIBUTE_A = "surface-attribute-a"
         SURFACE_NAME_A = "surface-name-a"
         CALCULATION_REAL_A = "calculation-real-a"
         CALCULATE_WELL_INTER_A = "calculate-well-inter-a"
 
-        #-surface B
+        # -surface B
         SURFACE_ATTRIBUTE_B = "surface-attribute-b"
         SURFACE_NAME_B = "surface-name-b"
         CALCULATION_REAL_B = "calculation-real-b"
         CALCULATE_WELL_INTER_B = "calculate-well-inter-b"
 
-
-        #-settings
+        # -settings
+        ENSEMBLES = "ensembles"
         AUTO_COMP_DIFF = "auto-comp-diff"
         COLOR_RANGES = "color-ranges"
-        SURFACE_A_MIN_MAX = "surface-a-min-max"
-        SURFACE_B_MIN_MAX = "surface-b-min-max"
+        SURFACE_A_MIN = "surface-a-min"
+        SURFACE_B_MIN = "surface-b-min"
+        SURFACE_A_MAX = "surface-a-max"
+        SURFACE_B_MAX = "surface-b-max"
         SYNC_RANGE_ON_MAPS = "sync-range-on-maps"
 
-        #-filter
+        # -filter
         REAL_FILTER = "real-filter"
+
+        # Graphs
+        INTERSECTION_DATA = "intersection-data"
 
     class SharedSettings:
         # pylint: disable=too-few-public-methods

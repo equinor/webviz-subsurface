@@ -24,7 +24,9 @@ from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 # )
 from ._plugin_ids import PluginIds
 from ._shared_settings._intersection_controls import IntersectionControls
+from ._shared_settings._map_controls import MapControls
 from ._tour_steps import generate_tour_steps
+from ._views._struct_view import StructView
 
 # from ._views import (
 #     clientside_stores,
@@ -254,21 +256,12 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
         # ------------- Stores ------------------
 
-        self.add_store(
-            PluginIds.Stores.X_LINE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.Y_LINE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.STEP_X, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.STEP_Y, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.WELL, WebvizPluginABC.StorageType.SESSION
-        )
+        self.add_store(PluginIds.Stores.SOURCE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.X_LINE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.Y_LINE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.STEP_X, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.STEP_Y, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.WELL, WebvizPluginABC.StorageType.SESSION)
         self.add_store(
             PluginIds.Stores.SURFACE_ATTR, WebvizPluginABC.StorageType.SESSION
         )
@@ -279,12 +272,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             PluginIds.Stores.SHOW_SURFACES, WebvizPluginABC.StorageType.SESSION
         )
         # Buttons
-        self.add_store(
-            PluginIds.Stores.RESOLUTION, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.EXTENSION, WebvizPluginABC.StorageType.SESSION
-        )
+        self.add_store(PluginIds.Stores.RESOLUTION, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.EXTENSION, WebvizPluginABC.StorageType.SESSION)
         self.add_store(
             PluginIds.Stores.Z_RANGE_MIN, WebvizPluginABC.StorageType.SESSION
         )
@@ -294,24 +283,91 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.add_store(
             PluginIds.Stores.TRUNKATE_LOCK, WebvizPluginABC.StorageType.SESSION
         )
-        self.add_store(
-            PluginIds.Stores.KEEP_ZOOM, WebvizPluginABC.StorageType.SESSION
-        )
+        self.add_store(PluginIds.Stores.KEEP_ZOOM, WebvizPluginABC.StorageType.SESSION)
         # Button
-        
+
+        # Map Controls
+        self.add_store(
+            PluginIds.Stores.SURFACE_ATTRIBUTE_A, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_NAME_A, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.CALCULATION_REAL_A, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.CALCULATE_WELL_INTER_A, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_ATTRIBUTE_B, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_NAME_B, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.CALCULATION_REAL_B, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.CALCULATE_WELL_INTER_B, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.AUTO_COMP_DIFF, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_A_MIN, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_A_MAX, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_B_MIN, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_B_MAX, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SYNC_RANGE_ON_MAPS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.ENSEMBLES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.REAL_FILTER, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.INTERSECTION_DATA, WebvizPluginABC.StorageType.SESSION
+        )
 
         # ------------- Shared settings ------------------
 
-        self.add_shared_settings_group(IntersectionControls(self._surf_attrs,
-                                                            self._surfacenames,
-                                                            self.ensembles,
-                                                            self._use_wells,
-                                                            self._well_set_model.well_names,
-                                                            self.first_surface_geometry,
-                                                            self._initial_settings)
-                                        ,PluginIds.SharedSettings.INTERSECTION_CONTROLS)
+        self.add_shared_settings_group(
+            IntersectionControls(
+                self._surf_attrs,
+                self._surfacenames,
+                self.ensembles,
+                self._use_wells,
+                self._well_set_model.well_names,
+                self.first_surface_geometry,
+                self._initial_settings,
+            ),
+            PluginIds.SharedSettings.INTERSECTION_CONTROLS,
+        )
+
+        self.add_shared_settings_group(
+            MapControls(
+                self._surf_attrs,
+                self._surfacenames,
+                self.ensembles,
+                self._realizations,
+                self._use_wells,
+            ),
+            PluginIds.SharedSettings.MAP_CONTROLS,
+        )
 
         # ------------- Views ------------------
+
+        self.add_view(StructView(), PluginIds.ViewID.INTERSECT_POLYLINE)
 
     @property
     def tour_steps(self) -> List[Dict]:
@@ -319,7 +375,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
     @property
     def layout(self) -> wcc.FlexBox:
-        return 
+        return
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         store_functions: List[Tuple[Callable, list]] = []
