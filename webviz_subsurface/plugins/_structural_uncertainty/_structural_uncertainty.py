@@ -14,24 +14,27 @@ from webviz_subsurface._datainput.fmu_input import find_surfaces, get_realizatio
 from webviz_subsurface._models import SurfaceSetModel, WellSetModel
 from webviz_subsurface._utils.webvizstore_functions import find_files, get_path
 
-from ._controllers import (
-    open_dialogs,
-    update_intersection,
-    update_intersection_source,
-    update_maps,
-    update_realizations,
-    update_uncertainty_table,
-)
+# from ._controllers import (
+#     open_dialogs,
+#     update_intersection,
+#     update_intersection_source,
+#     update_maps,
+#     update_realizations,
+#     update_uncertainty_table,
+# )
+from ._plugin_ids import PluginIds
+from ._shared_settings._intersection_controls import IntersectionControls
 from ._tour_steps import generate_tour_steps
-from ._views import (
-    clientside_stores,
-    dialog,
-    intersection_and_map_layout,
-    intersection_data_layout,
-    map_data_layout,
-    realization_layout,
-    uncertainty_table_layout,
-)
+
+# from ._views import (
+#     clientside_stores,
+#     dialog,
+#     intersection_and_map_layout,
+#     intersection_data_layout,
+#     map_data_layout,
+#     realization_layout,
+#     uncertainty_table_layout,
+# )
 
 
 class StructuralUncertainty(WebvizPluginABC):
@@ -248,6 +251,67 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.first_surface_geometry = self._surface_ensemble_set_model[
             self.ensembles[0]
         ].first_surface_geometry
+
+        # ------------- Stores ------------------
+
+        self.add_store(
+            PluginIds.Stores.X_LINE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.Y_LINE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.STEP_X, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.STEP_Y, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.WELL, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_ATTR, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SURFACE_NAMES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SHOW_SURFACES, WebvizPluginABC.StorageType.SESSION
+        )
+        # Buttons
+        self.add_store(
+            PluginIds.Stores.RESOLUTION, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.EXTENSION, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.Z_RANGE_MIN, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.Z_RANGE_MAX, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.TRUNKATE_LOCK, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.KEEP_ZOOM, WebvizPluginABC.StorageType.SESSION
+        )
+        # Button
+        
+
+        # ------------- Shared settings ------------------
+
+        self.add_shared_settings_group(IntersectionControls(self._surf_attrs,
+                                                            self._surfacenames,
+                                                            self.ensembles,
+                                                            self._use_wells,
+                                                            self._well_set_model.well_names,
+                                                            self.first_surface_geometry,
+                                                            self._initial_settings)
+                                        ,PluginIds.SharedSettings.INTERSECTION_CONTROLS)
+
+        # ------------- Views ------------------
 
     @property
     def tour_steps(self) -> List[Dict]:

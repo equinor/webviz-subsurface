@@ -3,7 +3,7 @@ from typing import Callable, Dict, List, Optional
 import webviz_core_components as wcc
 from dash import dcc, html
 
-from .dialog import open_dialog_layout
+from ._dialog import open_dialog_layout
 
 
 def intersection_data_layout(

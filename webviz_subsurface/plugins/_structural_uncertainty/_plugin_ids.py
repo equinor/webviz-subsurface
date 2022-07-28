@@ -6,7 +6,8 @@ class PluginIds:
         #intersection controls
         X_LINE = "x-line"
         Y_LINE = "y-line"
-        STEP = "step"
+        STEP_X = "step-x"
+        STEP_Y = "step-y"
         WELL = "well"
         SURFACE_ATTR = "surface-attr"
         SURFACE_NAMES = "surface-names"
@@ -18,6 +19,8 @@ class PluginIds:
         RESOLUTION = "resolution"
         EXTENSION = "extension"
         DEPTH_RANGE = "depth-range"
+        Z_RANGE_MIN = "z-range-min"
+        Z_RANGE_MAX = "z-range-max"
         TRUNKATE_LOCK = "trunkate-lock"
         KEEP_ZOOM = "keep-zoom"
         INTERSECTION_COLORS = "intersection-colors"

@@ -1,14 +1,16 @@
-from typing import List
+from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, callback
+from _intersection_data import intersection_data_layout
+from dash import Input, Output, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from intersection_data import intersection_data_layout
+from pyparsing import line
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PluginIds
+from ._dialog import open_dialog_layout
 
 
 class IntersectionControls(SettingsGroupABC):
@@ -16,20 +18,27 @@ class IntersectionControls(SettingsGroupABC):
         # pylint: disable=too-few-public-methods
 
         #intersection controls
+        X_LINE_BOX = "x-line-box"
         X_LINE = "x-line"
+        Y_LINE_BOX = "y-line-box"
         Y_LINE = "y-line"
-        STEP = "step"
+        STEP_X = "step-x"
+        STEP_Y = "step-y"
+        WELL_BOX = "well-box"
         WELL = "well"
         SURFACE_ATTR = "surface-attr"
         SURFACE_NAMES = "surface-names"
         SHOW_SURFACES = "show-surfaces"
         UPDATE_INTERSECTION = "update-intersection"
         UNCERTAINTY_TABLE = "uncertainty-table"
+        ENSEMBLES = "ensembles"
 
         #-settings
         RESOLUTION = "resolution"
         EXTENSION = "extension"
         DEPTH_RANGE = "depth-range"
+        Z_RANGE_MIN = "z-range-min"
+        Z_RANGE_MAX = "z-range-max"
         TRUNKATE_LOCK = "trunkate-lock"
         KEEP_ZOOM = "keep-zoom"
         INTERSECTION_COLORS = "intersection-colors"
@@ -37,26 +46,408 @@ class IntersectionControls(SettingsGroupABC):
 
 
     def __init__(
-        
+        self,
+        surface_attributes: List[str],
+        surface_names: List[str],
+        ensembles: List[str],
+        use_wells: bool,
+        well_names: List[str],
+        surface_geometry: Dict,
+        initial_settings: Dict,
     ) -> None:
         super().__init__("Filter")
+
+        self.surface_attributes = surface_attributes
+        self.surface_names = surface_names
+        self.ensembles = ensembles
+        self.use_wells = use_wells
+        self.well_names = well_names
+        self.surface_geometry = surface_geometry
+        self.initial_settings = initial_settings
+
 
         
 
     def layout(self) -> List[Component]:
         return [
+            #X-line
+            html.Div(
+                style={
+                    "display": "none",
+                },
+                id=self.register_component_unique_id(IntersectionControls.Ids.X_LINE_BOX),
+                children=[
+                    html.Label("X-Line:"),
+                    wcc.FlexBox(
+                        style={"fontSize": "0.8em"},
+                        children=[
+                            dcc.Input(
+                                id=self.register_component_unique_id(IntersectionControls.Ids.X_LINE),
+                                style={"flex": 3, "minWidth": "100px"},
+                                type="number",
+                                value=round(self.surface_geometry["xmin"]),
+                                min=round(self.surface_geometry["xmin"]),
+                                max=round(self.surface_geometry["xmax"]),
+                                step=500,
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                            wcc.Label(
+                                style={"flex": 1, "marginLeft": "10px", "minWidth": "20px"},
+                                children="Step:",
+                            ),
+                            dcc.Input(
+                                id=self.register_component_unique_id(IntersectionControls.Ids.STEP_X),
+                                style={"flex": 2, "minWidth": "20px"},
+                                value=500,
+                                type="number",
+                                min=1,
+                                max=round(self.surface_geometry["xmax"])
+                                - round(self.surface_geometry["xmin"]),
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            #Y-line
+            html.Div(
+                style={
+                    "display": "none",
+                },
+                id=self.register_component_unique_id(IntersectionControls.Ids.Y_LINE_BOX),
+                children=[
+                    html.Label("Y-Line:"),
+                    wcc.FlexBox(
+                        style={"fontSize": "0.8em"},
+                        children=[
+                            dcc.Input(
+                                id=self.register_component_unique_id(IntersectionControls.Ids.Y_LINE),
+                                style={"flex": 3, "minWidth": "100px"},
+                                type="number",
+                                value=round(self.surface_geometry["ymin"]),
+                                min=round(self.surface_geometry["ymin"]),
+                                max=round(self.surface_geometry["ymax"]),
+                                step=50,
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                            wcc.Label(
+                                style={"flex": 1, "marginLeft": "10px", "minWidth": "20px"},
+                                children="Step:",
+                            ),
+                            dcc.Input(
+                                id=self.register_component_unique_id(IntersectionControls.Ids.STEP_Y),
+                                style={"flex": 2, "minWidth": "20px"},
+                                value=50,
+                                type="number",
+                                min=1,
+                                max=round(self.surface_geometry["ymax"])
+                                - round(self.surface_geometry["ymin"]),
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            # Well
+            html.Div(
+                style={
+                    "display": "none",
+                }
+                ,
+                id=self.register_component_unique_id(IntersectionControls.Ids.WELL_BOX),
+                children=wcc.Dropdown(
+                    label="Well",
+                    id=self.register_component_unique_id(IntersectionControls.Ids.WELL),
+                    options=[{"label": well, "value": well} for well in self.well_names],
+                    value=self.well_names[0],
+                    clearable=False,
+                ),
+            ),
+            # Surface attr
+            wcc.Dropdown(
+                label="Surface attribute",
+                id=self.register_component_unique_id(IntersectionControls.Ids.SURFACE_ATTR),
+                options=[
+                    {"label": attribute, "value": attribute} for attribute in self.surface_attributes
+                ],
+                value=self.surface_attributes[0],
+                clearable=False,
+                multi=False,
+            ),
+            # Surface names
+            wcc.SelectWithLabel(
+                label="Surface names",
+                id=self.register_component_unique_id(IntersectionControls.Ids.SURFACE_NAMES),
+                options=[
+                    {"label": attribute, "value": attribute} for attribute in self.surface_names
+                ],
+                value=self.surface_names,
+                multi=True,
+                size=min(len(self.surface_names), 5),
+            ),
+            # Ensembles
+            html.Div(
+                style={
+                    "marginTop": "5px",
+                    "display": ("inline" if len(self.ensembles) > 1 else "none"),
+                },
+                children=wcc.SelectWithLabel(
+                    label="Ensembles",
+                    id=self.register_component_unique_id(IntersectionControls.Ids.ENSEMBLES),
+                    options=[{"label": ens, "value": ens} for ens in self.ensembles],
+                    value=(self.ensembles[0] if self.ensembles else None),
+                    size=min(len(self.ensembles), 3),
+                ),
+            ),
+            # Show surfaces
+            wcc.Checklist(
+                label="Show surfaces",
+                id=self.register_component_unique_id(IntersectionControls.Ids.SHOW_SURFACES),
+                options=[
+                    {"label": "Mean", "value": "Mean"},
+                    {"label": "Min", "value": "Min"},
+                    {"label": "Max", "value": "Max"},
+                    {"label": "Realizations", "value": "Realizations"},
+                    {
+                        "label": "Uncertainty envelope",
+                        "value": "Uncertainty envelope",
+                    },
+                ],
+                value="Uncertainty envelope",
+            ),
+            # Update intersection button ----------------------
+            html.Button(
+                title="Update intersection",
+                className="webviz-structunc-blue-apply-btn",
+                id=self.register_component_unique_id(IntersectionControls.Ids.UPDATE_INTERSECTION),
+            ),
+            # Uncertainty table button --------------------------
+            # open_dialog_layout(
+            #     dialog_id="uncertainty-table",
+            #     uuid=get_uuid("dialog"),
+            #     title="Uncertainty table",
+            # ),
+
+            # -Settings
+            wcc.Selectors(
+                open_details=False,
+                label="⚙️ Settings",
+                children=[
+                    html.Div(
+                        children=[
+                            wcc.Label(
+                                "Resolution (m) ",
+                            ),
+                            dcc.Input(
+                                className="webviz-structunc-range-input",
+                                id=self.register_component_unique_id(IntersectionControls.Ids.RESOLUTION),
+                                type="number",
+                                required=True,
+                                value=10,
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                        ],
+                    ),
+                    html.Div(
+                        children=[
+                            wcc.Label(
+                                "Extension (m) ",
+                            ),
+                            dcc.Input(
+                                className="webviz-structunc-range-input",
+                                id=self.register_component_unique_id(IntersectionControls.Ids.EXTENSION),
+                                type="number",
+                                step=25,
+                                required=True,
+                                value=500,
+                                persistence=True,
+                                persistence_type="session",
+                            ),
+                        ],
+                    ),
+                    html.Div(
+                        style={"margin-top": "10px"},
+                        children=[
+                            wcc.Label("Depth range settings:"),
+                            wcc.FlexBox(
+                                style={"display": "flex"},
+                                children=[
+                                    dcc.Input(
+                                        id=self.register_component_unique_id(IntersectionControls.Ids.Z_RANGE_MIN),
+                                        style={"flex": 1, "minWidth": "70px"},
+                                        type="number",
+                                        value=None,
+                                        debounce=True,
+                                        placeholder="Min",
+                                        persistence=True,
+                                        persistence_type="session",
+                                    ),
+                                    dcc.Input(
+                                        id=self.register_component_unique_id(IntersectionControls.Ids.Z_RANGE_MAX),
+                                        style={"flex": 1, "minWidth": "70px"},
+                                        type="number",
+                                        value=None,
+                                        debounce=True,
+                                        placeholder="Max",
+                                        persistence=True,
+                                        persistence_type="session",
+                                    ),
+                                ],
+                            ),
+                            wcc.RadioItems(
+                                id=self.register_component_unique_id(IntersectionControls.Ids.TRUNKATE_LOCK),
+                                options=[
+                                    {
+                                        "label": "Truncate range",
+                                        "value": "truncate",
+                                    },
+                                    {
+                                        "label": "Lock range",
+                                        "value": "lock",
+                                    },
+                                ],
+                                value="truncate",
+                            ),
+                            wcc.Checklist(
+                                id=self.register_component_unique_id(IntersectionControls.Ids.KEEP_ZOOM),
+                                options=[
+                                    {"label": "Keep zoom state", "value": "uirevision"},
+                                ],
+                                value=[],
+                            ),
+                        ],
+                    ),
+                    # open_dialog_layout(
+                    #     dialog_id="color",
+                    #     uuid=get_uuid("dialog"),
+                    #     title="Intersection colors",
+                    # ),
+                ],),
             
-        ]
+        ],
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"
+                self.get_store_unique_id(PluginIds.Stores.X_LINE), "data"
             ),
-            Input(self.ensemble_id, "value"),
+            Input(self.component_unique_id(IntersectionControls.Ids.X_LINE), "value"),
         )
-        def _set_ensembles(selected_ensemble: str) -> str:
-            return selected_ensemble
+        def _set_x_line(x_line: int) -> int:
+            return x_line
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.STEP_X), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.STEP_X), "value"),
+        )
+        def _set_x_step(x_step: int) -> int:
+            return x_step
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.Y_LINE), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.Y_LINE), "value"),
+        )
+        def _set_y_line(y_line: int) -> int:
+            return y_line
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.STEP_Y), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.STEP_Y), "value"),
+        )
+        def _set_y_step(y_step: int) -> int:
+            return y_step
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.WELL), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.WELL), "value"),
+        )
+        def _set_well(well: str) -> str:
+            return well
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SURFACE_ATTR), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.SURFACE_ATTR), "value"),
+        )
+        def _set_surf_attr(surf_attr: str) -> str:
+            return surf_attr
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SURFACE_NAMES), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.SURFACE_NAMES), "value"),
+        )
+        def _set_surf_names(names: List[str]) -> List[str]:
+            return names
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SHOW_SURFACES), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.SHOW_SURFACES), "value"),
+        )
+        def _set_surface(surf: List[str]) -> List[str]:
+            return surf
+        # Buttons
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.RESOLUTION), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.RESOLUTION), "value"),
+        )
+        def _set_resolution(res: int) -> int:
+            return res
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.EXTENSION), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.EXTENSION), "value"),
+        )
+        def _set_extension(ext: int) -> int:
+            return ext
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.Z_RANGE_MIN), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.Z_RANGE_MIN), "value"),
+        )
+        def _set_min(min: int) -> int:
+            return min
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.Z_RANGE_MAX), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.Z_RANGE_MAX), "value"),
+        )
+        def _set_max(max: int) -> int:
+            return max
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.TRUNKATE_LOCK), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.TRUNKATE_LOCK), "value"),
+        )
+        def _set_trunk(trunk: str) -> str:
+            return trunk
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.KEEP_ZOOM), "data"
+            ),
+            Input(self.component_unique_id(IntersectionControls.Ids.KEEP_ZOOM), "value"),
+        )
+        def _set_keep_zoom(keep: str) -> str:
+            return keep
+        # Button
+
+
 
 
 
