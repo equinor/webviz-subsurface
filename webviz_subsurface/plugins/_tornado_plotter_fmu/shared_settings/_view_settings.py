@@ -22,8 +22,8 @@ class ViewSettings(SettingsGroupABC):
 
     def __init__(
         self,
-        realizations: List[str],  # design_matrix_df
-        reference: str = "rms_seed",  # vet ikke helt hva dette er, men den settes ikke i orginalen så hmm
+        realizations: List[str],
+        reference: str = "rms_seed",
         allow_click: bool = False,
     ) -> None:
         super().__init__("View Settings")
@@ -85,7 +85,7 @@ class ViewSettings(SettingsGroupABC):
                 value=self.scales[0],
                 multi=False,
                 clearable=False,
-            ),  # mulig jeg skal endre denne til å være dropdown også, litt penere? og enklere å bruke for å velge flere
+            ),
             wcc.SelectWithLabel(
                 id=self.register_component_unique_id(ViewSettings.IDs.SENSITIVITEIS),
                 label="Select sensitivities",
@@ -100,7 +100,7 @@ class ViewSettings(SettingsGroupABC):
                     "fontSize": "10px",
                     "marginTop": "10px",
                 }
-                if self.allow_click  # allow click = false, så knappen skules
+                if self.allow_click
                 else {"display": "none"},
                 children="Clear selected",
             ),
@@ -168,7 +168,7 @@ class ViewSettings(SettingsGroupABC):
             ),
         )
         def _set_button(n_clicks):
-            return n_clicks  # litt usikker på denne
+            return n_clicks
 
         @callback(
             Output(
