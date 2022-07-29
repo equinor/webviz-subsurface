@@ -1,5 +1,6 @@
 from typing import List
 
+import pandas as pd
 import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
@@ -22,20 +23,17 @@ class ViewSettings(SettingsGroupABC):
 
     def __init__(
         self,
-        realizations: List[str],
+        realizations: pd.DataFrame,  # tror ikke dette er en Lisa
         reference: str = "rms_seed",
         allow_click: bool = False,
     ) -> None:
         super().__init__("View Settings")
 
-        print("realixations: ")
-        print(realizations)
+        print("realixationstype: ")
+        print(type(realizations))
         print("realizations['SENSNAME']: ")
-        print(realizations["SENSNAME"])
-        print("realizations['SENSNAME'].unique(): ")
-        print(realizations["SENSNAME"].unique())
-        print("List - realizations['SENSNAME'].unique(): ")
-        print(list(realizations["SENSNAME"].unique()))
+        print(realizations["SENSNAME"])  # denne som feiler
+
         unique_realizations = realizations["SENSNAME"].unique()
         self.sensnames = list(unique_realizations)
         self.scales = [
