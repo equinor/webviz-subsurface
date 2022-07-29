@@ -167,7 +167,7 @@ class ViewSettings(SettingsGroupABC):
                 "n_clicks",
             ),
         )
-        def _set_button(n_clicks):
+        def _set_button(n_clicks: int) -> int:
             return n_clicks
 
         @callback(
