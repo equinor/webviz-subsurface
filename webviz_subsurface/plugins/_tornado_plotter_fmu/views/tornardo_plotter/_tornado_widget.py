@@ -215,11 +215,9 @@ class TornadoWidget(ViewABC):
             client_height: Optional[int],
         ) -> Tuple[dict, dict]:
             if not data:
-                print("not data")
                 raise PreventUpdate
             plot_options = plot_options if plot_options else []
             data = json.loads(data)
-            print("calc torn data: ", data)
             if not isinstance(sens_filter, List):
                 sens_filter = [sens_filter]
             if not isinstance(data, dict):

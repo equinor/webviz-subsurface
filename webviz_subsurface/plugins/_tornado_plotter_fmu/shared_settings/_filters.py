@@ -109,7 +109,6 @@ class Filters(SettingsGroupABC):
             data = self._table_provider.get_column_data(
                 [response] + self._single_filters + self._multi_filters
             )
-            print("data from filter: ", data)
 
             # Filter data
             if single_filters is not None:
@@ -122,9 +121,6 @@ class Filters(SettingsGroupABC):
                     multi_filters, callback_context.inputs_list[2]
                 ):
                     data = data.loc[data[input_dict["id"]["name"]].isin(value)]
-
-            print("filter data etter: ", data)
-            print("")
 
             return json.dumps(
                 {

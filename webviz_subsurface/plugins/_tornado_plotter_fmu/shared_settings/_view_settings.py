@@ -28,7 +28,16 @@ class ViewSettings(SettingsGroupABC):
     ) -> None:
         super().__init__("View Settings")
 
-        self.sensnames = list(realizations["SENSNAME"].unique())
+        print("realixations: ")
+        print(realizations)
+        print("realizations['SENSNAME']: ")
+        print(realizations["SENSNAME"])
+        print("realizations['SENSNAME'].unique(): ")
+        print(realizations["SENSNAME"].unique())
+        print("List - realizations['SENSNAME'].unique(): ")
+        print(list(realizations["SENSNAME"].unique()))
+        unique_realizations = realizations["SENSNAME"].unique()
+        self.sensnames = list(unique_realizations)
         self.scales = [
             "Relative value (%)",
             "Relative value",
