@@ -31,8 +31,6 @@ class ViewSettings(SettingsGroupABC):
 
         print("realixationstype: ")
         print(type(realizations))
-        print("realizations['SENSNAME']: ")
-        print(realizations["SENSNAME"])  # denne som feiler
 
         unique_realizations = realizations["SENSNAME"].unique()
         self.sensnames = list(unique_realizations)
