@@ -1,7 +1,10 @@
+# pylint: disable=too-few-public-methods
 class PluginIds:
+    # pylint: disable=too-few-public-methods
     class SharedSettings:
         CASE_SETTINGS = "case-settings"
 
+    # pylint: disable=too-few-public-methods
     class ViewsIds:
         VIEWS_GROUP = "Seismic"
         OBS_DATA = "obs-data"

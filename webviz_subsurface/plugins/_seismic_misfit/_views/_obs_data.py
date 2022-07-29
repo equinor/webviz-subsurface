@@ -73,6 +73,7 @@ class ObsFilterSettings(SettingsGroupABC):
 
 
 class RawPlotSettings(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         OBS_ERROR = "obs-error"
         HISTOGRAM = "histogram"
@@ -132,6 +133,7 @@ class RawPlotSettings(SettingsGroupABC):
 
 
 class ObsData(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CASE_SETTINGS = "case-setting"
         FILTER_SETTINGS = "filter-settings"
@@ -212,8 +214,10 @@ class ObsData(ViewABC):
             ),
             Input("webviz-content-manager", "activeViewId"),
         )
-        def _update_case_settings(viewId: str) -> Tuple:
-            return (False, self.ens_names[0])
+        def _update_case_settings(view_id: str) -> Tuple:
+            if view_id == self.get_unique_id().to_string():
+                return (False, self.ens_names[0])
+            return (True, self.ens_names)
 
         # --- Seismic obs data ---
         @callback(
@@ -313,6 +317,8 @@ class ObsData(ViewABC):
             ),
             # prevent_initial_call=True,
         )
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         def _update_obsdata_graph(
             attr_name: str,
             ens_name: str,

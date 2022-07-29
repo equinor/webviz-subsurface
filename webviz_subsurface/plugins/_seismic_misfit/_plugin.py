@@ -8,10 +8,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from ._plugin_ids import PluginIds
 from ._shared_settings import CaseSettings, MapPlotSettings
 from ._supporting_files._dataframe_functions import make_polygon_df, makedf
-from ._supporting_files._support_functions import (
-    _compare_dfs_obs,
-    _map_initial_marker_size,
-)
+from ._supporting_files._support_functions import _compare_dfs_obs
 from ._views import Crossplot, ErrorbarPlots, MapPlot, MisfitPerReal, ObsData
 from ._views._obs_data import ObsFilterSettings, RawPlotSettings
 
@@ -117,6 +114,7 @@ class SeismicMisfit(WebvizPluginABC):
     ```
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         webviz_settings: WebvizSettings,

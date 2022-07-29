@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 class ColorScales:
     SEISMIC_SYMMETRIC = [
         [0, "yellow"],

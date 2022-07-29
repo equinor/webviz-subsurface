@@ -11,6 +11,7 @@ from .._supporting_files._plot_functions import update_misfit_plot
 
 
 class MisfitOptions(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         WEIGHT = "weight"
         EXPONENT = "exponent"
@@ -79,6 +80,7 @@ class MisfitOptions(SettingsGroupABC):
 
 
 class PerRealPlotSettingsAndLayout(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         SORTING = "sorting"
         HEIGHT = "height"
@@ -141,6 +143,7 @@ class PerRealPlotSettingsAndLayout(SettingsGroupABC):
 
 
 class MisfitPerReal(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CASE_SETTINGS = "case-setting"
         FILTER_SETTINGS = "filter-settings"
@@ -241,6 +244,7 @@ class MisfitPerReal(ViewABC):
             ),
             # prevent_initial_call=True,
         )
+        # pylint: disable=too-many-arguments
         def _update_misfit_graph(
             attr_name: str,
             ens_names: List,

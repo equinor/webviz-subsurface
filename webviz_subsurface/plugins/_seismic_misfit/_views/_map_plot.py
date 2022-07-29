@@ -83,6 +83,7 @@ class MapPlot(ViewABC):
         PLOT_FIGS = "plot-figs"
         PLOT_SLICE = "plot-slice"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         attributes: List[str],
@@ -94,7 +95,7 @@ class MapPlot(ViewABC):
         df_polygons: pd.DataFrame,
         caseinfo: str,
     ) -> None:
-        super().__init__("Errorbar - sim vs obs")
+        super().__init__("Map plot - sim vs obs")
         self.attributes = attributes
         self.ens_names = ens_names
         self.region_names = region_names
@@ -173,8 +174,10 @@ class MapPlot(ViewABC):
             ),
             Input("webviz-content-manager", "activeViewId"),
         )
-        def _update_case_settings(viewId: str) -> Tuple:
-            return (False, self.ens_names[0])
+        def _update_case_settings(view_id: str) -> Tuple:
+            if view_id == self.get_unique_id().to_string():
+                return (False, self.ens_names[0])
+            return (True, self.ens_names)
 
         @callback(
             Output(
@@ -209,31 +212,70 @@ class MapPlot(ViewABC):
             ),
             Input("webviz-content-manager", "activeViewId"),
         )
-        def _update_map_plot_settings(viewId: str) -> Tuple:
+        def _update_map_plot_settings(view_id: str) -> Tuple:
+            if view_id == self.get_unique_id().to_string():
+                return (
+                    "Show difference or coverage plot",
+                    [
+                        {
+                            "label": "Difference plot",
+                            "value": 0,
+                        },
+                        {
+                            "label": "Coverage plot",
+                            "value": 1,
+                        },
+                        {
+                            "label": "Coverage plot (obs error adjusted)",
+                            "value": 2,
+                        },
+                        {
+                            "label": "Region plot",
+                            "value": 3,
+                        },
+                    ],
+                    0,
+                    [
+                        {"label": f"{val:.0%}", "value": val}
+                        for val in [
+                            0.1,
+                            0.2,
+                            0.3,
+                            0.4,
+                            0.5,
+                            0.6,
+                            0.7,
+                            0.8,
+                            0.9,
+                            1.0,
+                            1.5,
+                            2,
+                            5,
+                            10,
+                        ]
+                    ],
+                    0.8,
+                )
             return (
-                "Show difference or coverage plot",
+                "Color by",
                 [
                     {
-                        "label": "Difference plot",
-                        "value": 0,
+                        "label": "region",
+                        "value": "region",
                     },
                     {
-                        "label": "Coverage plot",
-                        "value": 1,
+                        "label": "obs",
+                        "value": "obs",
                     },
                     {
-                        "label": "Coverage plot (obs error adjusted)",
-                        "value": 2,
-                    },
-                    {
-                        "label": "Region plot",
-                        "value": 3,
+                        "label": "obs error",
+                        "value": "obs_error",
                     },
                 ],
-                0,
+                "obs",
                 [
-                    {"label": f"{val:.0%}", "value": val}
-                    for val in [
+                    {"label": f"{x:.0%}", "value": x}
+                    for x in [
                         0.1,
                         0.2,
                         0.3,
@@ -244,10 +286,6 @@ class MapPlot(ViewABC):
                         0.8,
                         0.9,
                         1.0,
-                        1.5,
-                        2,
-                        5,
-                        10,
                     ]
                 ],
                 0.8,
@@ -331,6 +369,8 @@ class MapPlot(ViewABC):
             ),
             # prevent_initial_call=True,
         )
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         def _update_map_plot_obs_and_sim(
             attr_name: str,
             ens_name: str,

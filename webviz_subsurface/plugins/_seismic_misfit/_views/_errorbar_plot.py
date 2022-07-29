@@ -14,6 +14,7 @@ from .._supporting_files._plot_functions import (
 
 
 class ErrorbarPlotOptions(SettingsGroupABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         COLOR_BY = "color-br"
         SIM_ERRORBAR = "sim-errorbar"
@@ -319,6 +320,7 @@ class ErrorbarPlots(ViewABC):
             ),
             # prevent_initial_call=True,
         )
+        # pylint: disable=too-many-arguments
         def _update_errorbar_graph(
             attr_name: str,
             ens_names: List[str],

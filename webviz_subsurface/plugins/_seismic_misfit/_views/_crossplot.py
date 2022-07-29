@@ -15,6 +15,7 @@ from .._supporting_files._plot_functions import update_crossplot
 
 
 class Crossplot(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CASE_SETTINGS = "case-setting"
         FILTER_SETTINGS = "filter-settings"
@@ -115,6 +116,7 @@ class Crossplot(ViewABC):
             ),
             # prevent_initial_call=True,
         )
+        # pylint: disable=too-many-arguments
         def _update_crossplot_graph(
             attr_name: str,
             ens_names: List[str],

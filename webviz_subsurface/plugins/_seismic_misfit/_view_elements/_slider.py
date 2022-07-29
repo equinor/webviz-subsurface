@@ -6,6 +6,7 @@ from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
 class SeismicSlider(ViewElementABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         SLIDER = "slider"
 
