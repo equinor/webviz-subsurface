@@ -6,7 +6,7 @@ from dash import ALL, Input, Output, callback, callback_context
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import LayoutUniqueId, SettingsGroupABC
 
-from webviz_subsurface._providers import EnsembleTableProviderFactory
+from webviz_subsurface._providers import EnsembleTableProvider
 
 from .._plugin_ids import PlugInIDs
 
@@ -21,7 +21,7 @@ class Filters(SettingsGroupABC):
 
     def __init__(
         self,
-        table_provider: EnsembleTableProviderFactory,
+        table_provider: EnsembleTableProvider,
         single_filters: List[str],
         multi_filters: List[str],
         ensemble_name: str,
