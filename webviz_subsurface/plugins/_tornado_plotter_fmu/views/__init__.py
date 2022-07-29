@@ -1,1 +1,1 @@
-from .tornardo_plotter._tornardo_widget import TornadoWidget
+from .tornardo_plotter._tornado_widget import TornadoWidget

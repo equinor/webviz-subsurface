@@ -3,31 +3,40 @@ from typing import List, Type
 
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._datainput.fmu_input import find_sens_type
 from webviz_subsurface._providers import EnsembleTableProviderFactory
 
 from ._error import error
 from ._plugin_ids import PlugInIDs
-from .shared_settings import (
-    MultiFilters,
-    PlotPicker,
-    Selectors,
-    SingleFilters,
-    ViewSettings,
-)
-
+from .shared_settings import Filters, PlotPicker, Selectors, ViewSettings
 from .views import TornadoWidget
 
 
 class TornadoPlotterFMU(WebvizPluginABC):
-    """Descibtion"""
+    """Tornado plotter for FMU data from csv file og responses
+    * **`ensemble`:** Which ensemble in `shared_settings` to visualize.
+    * **`csvfile`:** Relative ensemble path to csv file with responses
+    * **`aggregated_csvfile`:** Alternative to ensemble + csvfile with
+    aggregated responses. Requires REAL and ENSEMBLE columns
+    * **`aggregated_parameterfile`:** Necessary when aggregated_csvfile
+    is specified. File with sensitivity specification for each realization.
+    Requires columns REAL, ENSEMBLE, SENSNAME and SENSCASE.
+    * **`initial_response`:** Initialize plugin with this response column
+    visualized
+    * **`single_value_selectors`:** List of columns in response csv file
+    that should be used to select/filter data. E.g. for UNSMRY data the DATE
+    column can be used. For each entry a Dropdown is shown with all unique
+    values and a single value can be selected at a time.
+    * **`multi_value_selectors`:** List of columns in response csv file
+    to filter/select data. For each entry a Select is shown with
+    all unique values. Multiple values can be selected at a time,
+    and a tornado plot will be shown from the matching response rows.
+    Used e.g. for volumetrics data, to select a subset of ZONES and
+    REGIONS.
+    """
 
-    class IDs:
-        # pylint: disable=too-few-public-methods
-        TORNADO_PLUGIN = "tornado-plugin"
-
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         webviz_settings: WebvizSettings,
@@ -44,17 +53,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
         # Defining members
         self._single_filters = single_value_selectors if single_value_selectors else []
         self._multi_filters = multi_value_selectors if multi_value_selectors else []
-
-        # Undefined number of single and multifilter so IDs have to be arbitrarily defined
-        self._single_filter_IDs = {}
-        for filter_num, filter_str in enumerate(self._single_filters):
-            self._single_filter_IDs.update({filter_num: filter_str})
-    
-        self._multi_filters_IDs = {}
-        for filter_num, filter in enumerate(self._multi_filters):
-            self._multi_filters_IDs.update({filter_num: filter})
-
-        print("multi: ", self._multi_filters_IDs)
 
         provider_factory = EnsembleTableProviderFactory.instance()
         self.error_message = ""
@@ -144,30 +142,18 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PlugInIDs.SharedSettings.SELECTORS,
         )
 
-        # Settingsgroup for the single valued filters
-        for ID in self._single_filter_IDs.values():
-            self.add_store(ID, WebvizPluginABC.StorageType.SESSION)
-            print("added store with ID: ", ID)
-
+        # Settingsgroup for filters
         self.add_shared_settings_group(
-            SingleFilters(
-                self._table_provider, self._single_filters, self._single_filter_IDs
+            Filters(
+                self._table_provider,
+                self._single_filters,
+                self._multi_filters,
+                self._ensemble_name,
             ),
-            PlugInIDs.SharedSettings.SINGLE_FILTER,
+            PlugInIDs.SharedSettings.FILTERS,
         )
 
-        # Settingsgroup for the multi valued filters
-        for ID in self._multi_filters_IDs:
-            self.add_store(ID, WebvizPluginABC.StorageType.SESSION)
-
-        self.add_shared_settings_group(
-            MultiFilters(
-                self._table_provider, self._multi_filters, self._multi_filters_IDs
-            ),
-            PlugInIDs.SharedSettings.MULTI_FILTER,
-        )
-
-        # Settingsgroup for the plotting options
+        # Settingsgroup for the view options
         self.add_store(
             PlugInIDs.Stores.ViewSetttings.REFERENCE,
             WebvizPluginABC.StorageType.SESSION,
@@ -194,7 +180,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             ViewSettings(design_matrix_df), PlugInIDs.SharedSettings.PLOTOPTIONS
         )
 
-        # vet enda ikke helt hva disse skal brukes til
+        # Stores for data
         self.add_store(
             PlugInIDs.Stores.DataStores.TORNADO_DATA,
             WebvizPluginABC.StorageType.SESSION,
@@ -209,7 +195,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PlugInIDs.Stores.DataStores.CLIENT_HIGH_PIXELS,
             WebvizPluginABC.StorageType.SESSION,
         )
-        
+
         self.add_view(
             self._tornado_widget,
             PlugInIDs.TornardoPlotGroup.TORNPLOT,

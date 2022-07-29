@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from dash import (
+    ALL,
     ClientsideFunction,
     Input,
     Output,
@@ -17,7 +18,7 @@ from dash import (
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
-from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
+from webviz_config.webviz_plugin_subclasses import ViewABC
 
 import webviz_subsurface
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
@@ -25,19 +26,22 @@ from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
 from ..._plugin_ids import PlugInIDs
-from ...view_elements._tornardo_view_element import TornadoViewElement
+from ...view_elements._tornardo_view_element import Label, TornadoViewElement
 
 
 class TornadoWidget(ViewABC):
+    """### TornadoWidget
+
+    Edited version of the TornadoWidget in webviz subsurface components.
+    Edits have been made to suuprot the WLF framework and it is spescified for the
+    Tornado plotter FMU plugin
+
+    """
+
     class IDs:
         # pylint: disable=too-few-public-methods
-        TORNADO_WIDGET = "tornado-widget"
-        BARS = "bars"
-        BAR_WRAPPER = "bar-wrapper"
-        TABLE = "table"
-        TABLE_WRAPPER = "talbe-wrapper" 
         LABEL = "label"
-        RESET_BUTTON = "reset-button"
+        TORNADO_WIDGET = "tornado-widget"
 
     def __init__(
         self,
@@ -68,65 +72,54 @@ class TornadoWidget(ViewABC):
         viewcolumn = self.add_column()
 
         first_row = viewcolumn.make_row()
-        first_row.add_view_element(
+        first_row.add_view_element(Label(), TornadoWidget.IDs.LABEL)
+        second_row = viewcolumn.make_row()
+        second_row.add_view_element(
             TornadoViewElement(), TornadoWidget.IDs.TORNADO_WIDGET
         )
-    
+
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL),
-                "disabled",
-            ),  # skjønner ikke helt hva denne her gjør???
-            Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
-                "value",  # denne er NoneType
-            ),
-        )
-        def _disable_label(plot_options: List) -> bool:
-            if plot_options is None:
-                return False  # usikker på om denne skal bære ture eller false, den skal hvertfall være skult tror jeg
-            return "Show realization points" in plot_options
-
-        # denne bytter mellom tabell og graf: funker ikke
-        @callback(
-            Output(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoWidget.IDs.BAR_WRAPPER)
+                .component_unique_id(TornadoViewElement.IDs.BARS)
                 .to_string(),
                 "style",
             ),
             Output(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoWidget.IDs.TABLE_WRAPPER)
+                .component_unique_id(TornadoViewElement.IDs.TABLE_WRAPPER)
                 .to_string(),
                 "style",
             ),
             Input(
                 self.get_store_unique_id(PlugInIDs.Stores.PlotPicker.BARS_OR_TABLE),
-                "value",
+                "data",
             ),
-            # trengs egt disse?
             State(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoWidget.IDs.BAR_WRAPPER)
+                .component_unique_id(TornadoViewElement.IDs.BARS)
                 .to_string(),
                 "style",
             ),
             State(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoWidget.IDs.TABLE_WRAPPER)
+                .component_unique_id(TornadoViewElement.IDs.TABLE_WRAPPER)
                 .to_string(),
                 "style",
             ),
-        ) 
+        )
         def _set_visualization(
             viz_type: str, graph_style: dict, table_style: dict
         ) -> Tuple[Dict[str, str], Dict[str, str]]:
             if viz_type == "bars":
-                return ({"display": "inline"}, {"display": "none"})
+                graph_style.update({"display": "inline"})
+                table_style.update({"display": "none"})
+                return (graph_style, table_style)
             if viz_type == "table":
-                return ({"display": "none"}, {"display": "inline"})
+                graph_style.update({"display": "none"})
+                table_style.update({"display": "inline"})
+                return (graph_style, table_style)
 
         clientside_callback(
             ClientsideFunction(
@@ -145,26 +138,36 @@ class TornadoWidget(ViewABC):
         )
 
         @callback(
-            # usikker på hva jeg skal gjøre med view elementsene her
-            # for kun wrapperne som er larget som view element, men de har children
-            # som er bars og table, som er egt de so er brukt her
-            # men hvis jeg legger inn wrapperne og bars og table som view element
-            # så blir de vel lagt inn dobbelt opp?
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL),
+                "disabled",
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
+                "value",
+            ),
+        )
+        def _disable_label(plot_options: List) -> bool:
+            if plot_options is None:
+                return False
+            return "Show realization points" in plot_options
+
+        @callback(
             Output(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.TORNADO_BAR)
+                .component_unique_id(TornadoViewElement.IDs.BARS)
                 .to_string(),
                 "figure",
             ),
             Output(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.TORNADO_TABLE)
+                .component_unique_id(TornadoViewElement.IDs.TABLE)
                 .to_string(),
                 "data",
             ),
             Output(
                 self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.TORNADO_TABLE)
+                .component_unique_id(TornadoViewElement.IDs.TABLE)
                 .to_string(),
                 "columns",
             ),
@@ -172,30 +175,26 @@ class TornadoWidget(ViewABC):
                 self.get_store_unique_id(PlugInIDs.Stores.DataStores.HIGH_LOW), "data"
             ),
             Input(
-                self.get_store_unique_id(
-                    PlugInIDs.Stores.ViewSetttings.REFERENCE
-                ),  # må finne ut om det er data eller value på disse
-                "value",
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.REFERENCE),
+                "data",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SCALE), "value"
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SCALE), "data"
             ),
             Input(
                 self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
-                "value",
+                "data",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL), "value"
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL), "data"
             ),
             Input(
-                self.get_store_unique_id(
-                    PlugInIDs.Stores.DataStores.TORNADO_DATA
-                ),  # her var det opprinnelig "storage". litt usiker på hva d er
+                self.get_store_unique_id(PlugInIDs.Stores.DataStores.TORNADO_DATA),
                 "data",
             ),
             Input(
                 self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SENSITIVITIES),
-                "value",
+                "data",
             ),
             State(
                 self.get_store_unique_id(
@@ -214,9 +213,13 @@ class TornadoWidget(ViewABC):
             client_height: Optional[int],
         ) -> Tuple[dict, dict]:
             if not data:
+                print("not data")
                 raise PreventUpdate
             plot_options = plot_options if plot_options else []
             data = json.loads(data)
+            print("calc torn data: ", data)
+            if not isinstance(sens_filter, List):
+                sens_filter = [sens_filter]
             if not isinstance(data, dict):
                 raise PreventUpdate
             values = pd.DataFrame(data["data"], columns=["REAL", "VALUE"])
@@ -278,11 +281,11 @@ class TornadoWidget(ViewABC):
                     .component_unique_id(TornadoWidget.IDs.BARS)
                     .to_string(),
                     "clickData",
-                ),  
+                ),
                 Input(
                     self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.RESET),
                     "n_clicks",
-                ),  # dette er den kanppen som ikke vises på demoen
+                ),
                 State(
                     self.get_store_unique_id(PlugInIDs.Stores.DataStores.HIGH_LOW),
                     "data",

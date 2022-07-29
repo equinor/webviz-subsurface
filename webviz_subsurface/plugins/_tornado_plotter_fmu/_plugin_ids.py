@@ -30,11 +30,14 @@ class PlugInIDs:
         # pylint: disable=too-few-public-methods
         PLOTPICKER = "plotpicker"
         SELECTORS = "selectors"
-        SINGLE_FILTER = "single-filters"
-        MULTI_FILTER = "multi-filter"
+        FILTERS = "filters"
         PLOTOPTIONS = "plot-options"
 
     class TornardoPlotGroup:
         # pylint: disable=too-few-public-methods
-        TORNPLOT = "tornplot"
-        GROUPNAME = "tornardo-plot"
+        TORNPLOT = "tornado-plot"
+        GROUPNAME = "tornardo-plot-group"
+
+    class PlugIn:
+        # pylint: disable=too-few-public-methods
+        PLUGIN_ID = "plugin-id"
