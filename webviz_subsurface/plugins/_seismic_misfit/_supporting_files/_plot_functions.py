@@ -777,7 +777,7 @@ def update_errorbarplot(
     reset_index: bool = False,
     fig_columns: int = 1,
     figheight: int = 450,
-) -> Optional[List[wcc.Graph]]:
+) -> Any:
     """Create errorbar plot of ensemble sim versus obs,
     one value per seismic datapoint."""
 
@@ -919,7 +919,7 @@ def update_errorbarplot_superimpose(
     showerrorbarobs: Optional[str] = None,
     reset_index: bool = True,
     figheight: int = 450,
-) -> Optional[List[wcc.Graph]]:
+) -> Any:
     """Create errorbar plot of ensemble sim versus obs,
     one value per seismic datapoint."""
 
