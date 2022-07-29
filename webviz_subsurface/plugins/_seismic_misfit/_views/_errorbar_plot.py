@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
 from dash import Input, Output, callback, dcc
@@ -334,7 +334,7 @@ class ErrorbarPlots(ViewABC):
             superimpose: bool,
             figcols: int,
             figheight: int,
-        ) -> Tuple[Optional[List], Dict[str, str], Dict[str, str]]:
+        ) -> Tuple:
 
             if not regions:
                 raise PreventUpdate
@@ -383,6 +383,7 @@ class ErrorbarPlots(ViewABC):
                     fig_columns=figcols,
                     figheight=figheight,
                 )
+
             return (
                 figures
                 + [

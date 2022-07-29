@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
 from dash import Input, Output, callback, dcc
@@ -127,7 +127,7 @@ class Crossplot(ViewABC):
             showerrbar: Optional[str],
             figcols: int,
             figheight: int,
-        ) -> Optional[List[wcc.Graph]]:
+        ) -> Tuple:
 
             if not regions:
                 raise PreventUpdate
@@ -163,7 +163,8 @@ class Crossplot(ViewABC):
                 fig_columns=figcols,
                 figheight=figheight,
             )
-            return figures + [
+            return (
+                figures,
                 wcc.Selectors(
                     label="Ensemble info",
                     children=[
@@ -174,5 +175,5 @@ class Crossplot(ViewABC):
                             },
                         ),
                     ],
-                )
-            ]
+                ),
+            )
