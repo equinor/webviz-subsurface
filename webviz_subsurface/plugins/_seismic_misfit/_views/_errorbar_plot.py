@@ -383,7 +383,7 @@ class ErrorbarPlots(ViewABC):
                     fig_columns=figcols,
                     figheight=figheight,
                 )
-            if figures == None:
+            if figures is None:
                 figures = []
 
             return (
