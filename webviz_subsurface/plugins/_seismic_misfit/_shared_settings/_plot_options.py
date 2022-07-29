@@ -1,7 +1,8 @@
 from typing import List
+
+import webviz_core_components as wcc
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-import webviz_core_components as wcc
 
 
 class PlotOptions(SettingsGroupABC):
