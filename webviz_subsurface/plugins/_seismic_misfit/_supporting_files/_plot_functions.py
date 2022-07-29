@@ -255,7 +255,7 @@ def update_obsdata_map(
 
 
 # -------------------------------
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
 def update_obs_sim_map_plot(
     df: pd.DataFrame,
