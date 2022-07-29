@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import logging
 from typing import Any, List, Optional, Tuple, Union
 
@@ -254,6 +255,8 @@ def update_obsdata_map(
 
 
 # -------------------------------
+# pylint: disable=too-many-statements
+# pylint: disable=too-many-locals
 def update_obs_sim_map_plot(
     df: pd.DataFrame,
     ens_name: str,
@@ -642,6 +645,7 @@ def update_obs_sim_map_plot(
 
 
 # -------------------------------
+# pylint: disable=too-many-locals
 def update_crossplot(
     df: pd.DataFrame,
     colorby: Optional[str] = None,
@@ -764,6 +768,7 @@ def update_crossplot(
 
 # -------------------------------
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-locals
 def update_errorbarplot(
     df: pd.DataFrame,
     colorby: Optional[str] = None,

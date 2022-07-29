@@ -6,12 +6,12 @@ from typing import List, Optional
 
 import numpy as np
 import pandas as pd
-from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
 
 # -------------------------------
 @webvizstore
+# pylint: disable=too-many-locals
 def makedf(
     ensemble_set: dict,
     attribute_name: str,
@@ -138,6 +138,7 @@ def makedf_seis_obs_meta(
     return dframe
 
 
+# pylint: disable=too-many-locals
 def makedf_seis_addsim(
     df: pd.DataFrame,
     ens_path: str,
@@ -200,6 +201,7 @@ def makedf_seis_addsim(
     return df_addsim
 
 
+# pylint: disable=too-many-locals
 def df_seis_ens_stat(
     df: pd.DataFrame, ens_name: str, obs_error_weight: bool = False
 ) -> pd.DataFrame:
