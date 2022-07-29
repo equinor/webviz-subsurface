@@ -11,7 +11,7 @@ class FilterSettings(SettingsGroupABC):
         REGION_SELECTOR = "region-selector"
         REALIZATION_SELECTOR = "realization-selector"
 
-    def __init__(self, region_names, realizations) -> None:
+    def __init__(self, region_names: List[int], realizations: List) -> None:
         super().__init__("Filter sttings")
         self.region_names = region_names
         self.realizations = realizations
