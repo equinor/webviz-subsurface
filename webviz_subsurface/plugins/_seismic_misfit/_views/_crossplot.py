@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
 from dash import Input, Output, callback, dcc
