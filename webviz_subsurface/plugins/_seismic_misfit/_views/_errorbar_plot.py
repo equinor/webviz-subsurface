@@ -196,6 +196,7 @@ class ErrorbarPlotSettingsAndLayout(SettingsGroupABC):
 
 
 class ErrorbarPlots(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CASE_SETTINGS = "case-setting"
         FILTER_SETTINGS = "filter-settings"

@@ -74,6 +74,7 @@ class SliceSettings(SettingsGroupABC):
 
 
 class MapPlot(ViewABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         CASE_SETTINGS = "case-setting"
         FILTER_SETTINGS = "filter-settings"
