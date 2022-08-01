@@ -25,10 +25,10 @@ from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarC
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
-from ..._plugin_ids import PlugInIDs
-from ...shared_settings import ViewSettings
-from ...view_elements._label import Label
-from ...view_elements._tornardo_view_element import TornadoViewElement
+from .._plugin_ids import PlugInIDs
+from ..shared_settings import ViewSettings
+from ..view_elements._label import Label
+from ..view_elements._tornardo_view_element import TornadoViewElement
 
 
 class TornadoWidget(ViewABC):
