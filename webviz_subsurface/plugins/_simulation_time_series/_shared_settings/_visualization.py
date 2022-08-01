@@ -4,7 +4,6 @@ from typing import List, Optional
 import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
-from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PluginIds

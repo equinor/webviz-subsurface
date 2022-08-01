@@ -45,7 +45,6 @@ from ._shared_settings import (
     VisualizationSettings,
 )
 
-# from ._shared_settings import SimulationTimeSeriesFilters
 from ._view import SimulationTimeSeriesView
 from .types import VisualizationOptions
 from .types.provider_set import (
