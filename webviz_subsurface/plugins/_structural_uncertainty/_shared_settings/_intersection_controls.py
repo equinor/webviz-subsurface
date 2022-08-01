@@ -1,7 +1,7 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from pyparsing import line
@@ -50,6 +50,7 @@ class IntersectionControls(SettingsGroupABC):
         well_names: List[str],
         surface_geometry: Dict,
         initial_settings: Dict,
+        realizations: List[Union[str, int]],
     ) -> None:
         super().__init__("Intersection Controls")
 
@@ -60,6 +61,14 @@ class IntersectionControls(SettingsGroupABC):
         self.well_names = well_names
         self.surface_geometry = surface_geometry
         self.initial_settings = initial_settings
+        self.realizations = realizations
+        self.source_opt = [
+                    {"label": "Intersect polyline from Surface A", "value": "polyline"},
+                    {"label": "Intersect x-line from Surface A", "value": "xline"},
+                    {"label": "Intersect y-line from Surface A", "value": "yline"},
+                ]
+        if use_wells:
+                    self.source_opt.append({"label": "Intersect well", "value": "well"})
 
     def layout(self) -> List[Component]:
         return [
@@ -67,11 +76,7 @@ class IntersectionControls(SettingsGroupABC):
             wcc.Dropdown(
                 label="Intersection source",
                 id=self.register_component_unique_id(IntersectionControls.Ids.SOURCE),
-                options=[
-                    {"label": "Intersect polyline from Surface A", "value": "polyline"},
-                    {"label": "Intersect x-line from Surface A", "value": "xline"},
-                    {"label": "Intersect y-line from Surface A", "value": "yline"},
-                ],
+                options=self.source_opt,
                 value="well" if self.use_wells else "polyline",
                 clearable=False,
             ),
@@ -233,7 +238,7 @@ class IntersectionControls(SettingsGroupABC):
                         IntersectionControls.Ids.ENSEMBLES
                     ),
                     options=[{"label": ens, "value": ens} for ens in self.ensembles],
-                    value=(self.ensembles[0] if self.ensembles else None),
+                    value=[self.ensembles[0] if self.ensembles else None],
                     size=min(len(self.ensembles), 3),
                 ),
             ),
@@ -385,6 +390,46 @@ class IntersectionControls(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.SOURCE), "data"),
+            Output(self.get_store_unique_id(PluginIds.Stores.FIRST_CALL), "data"),
+            Input(
+                self.component_unique_id(IntersectionControls.Ids.SOURCE).to_string(),
+                "value",
+            ),
+            State(self.get_store_unique_id(PluginIds.Stores.FIRST_CALL), "value")
+        )
+        def _set_source_and_first(src: str, first: int) -> Tuple[str, int]:
+            if first != 1:
+                return (src, 1)
+            return (src)
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.INIT_INTERSECTION_LAYOUT), "data"),
+            Output(self.get_store_unique_id(PluginIds.Stores.REAL_STORE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.FIRST_CALL), "value")
+        )
+        def _set_real_and_layout(first: int) -> Tuple[Optional[dict], List[str]]:
+            return (self.initial_settings.get("intersection_layout", {}), self.initial_settings.get("intersection-data", {}).get(
+                "realizations", self.realizations) )
+        @callback(
+            Output(self.component_unique_id(IntersectionControls.Ids.WELL_BOX).to_string(), "style"),
+            Output(self.component_unique_id(IntersectionControls.Ids.X_LINE_BOX).to_string(), "style"),
+            Output(self.component_unique_id(IntersectionControls.Ids.Y_LINE_BOX).to_string(), "style"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SOURCE),
+                "data",
+            ),
+        )
+        def _set_style(source: str) -> Tuple[Dict, Dict, Dict]:
+            hide = {"display": "none"}
+            show = {"display": "inline"}
+            if source == "well":
+                return show, hide, hide
+            if source == "xline":
+                return hide, show, hide
+            if source == "yline":
+                return hide, hide, show
+            return [hide, hide, hide]
+        @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.X_LINE), "data"),
             Input(
                 self.component_unique_id(IntersectionControls.Ids.X_LINE).to_string(),
@@ -394,6 +439,18 @@ class IntersectionControls(SettingsGroupABC):
         def _set_x_line(x_line: int) -> int:
             return x_line
 
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.MAP_STORED_XLINE), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.X_LINE),
+                "value",
+            ),
+        )
+        def _set_map_xline(x_value: Union[float, int]) -> List:
+            return [
+                [x_value, self.surface_geometry["ymin"]],
+                [x_value, self.surface_geometry["ymax"]],
+            ]
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.STEP_X), "data"),
             Input(
@@ -413,6 +470,19 @@ class IntersectionControls(SettingsGroupABC):
         )
         def _set_y_line(y_line: int) -> int:
             return y_line
+
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.MAP_STORED_YLINE), "data"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.Y_LINE),
+                "value",
+            ),
+        )
+        def _set_map_yline(y_value: Union[float, int]) -> List:
+            return [
+                [self.surface_geometry["xmin"], y_value],
+                [self.surface_geometry["xmax"], y_value],
+            ]
 
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.STEP_Y), "data"),
@@ -542,5 +612,17 @@ class IntersectionControls(SettingsGroupABC):
         )
         def _set_keep_zoom(keep: str) -> str:
             return keep
+        @callback(
+            Output(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES), "data"),
+            Input(
+                self.component_unique_id(
+                    IntersectionControls.Ids.ENSEMBLES
+                ).to_string(),
+                "value",
+            ),
+        )
+        def _set_ensembles(ens: List[str]) -> List[str]:
+            return ens
+        
 
         # Button

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -498,3 +498,26 @@ class MapControls(SettingsGroupABC):
         )
         def _set_sync(sync: List[str]) -> List[str]:
             return sync
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.ENSEMBLE_A), "data"
+            ),
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.ENSEMBLE_B), "data"
+            ),
+            Input(
+                self.component_unique_id(
+                    MapControls.Ids.ENSEMBLE_A
+                ).to_string(),
+                "value",
+            ),
+            Input(
+                self.component_unique_id(
+                    MapControls.Ids.ENSEMBLE_B
+                ).to_string(),
+                "value",
+            ),
+        )
+        def _set_ensembles(ens_a: str, ens_b: str) -> Tuple[str, str]:
+            return [ens_a, ens_b]
+        

@@ -5,8 +5,11 @@ class PluginIds:
 
         # intersection controls
         SOURCE = "source"
+        STORED_POLYLINE = "stored-polyline"
         X_LINE = "x-line"
+        MAP_STORED_XLINE = "map-stored-xline"
         Y_LINE = "y-line"
+        MAP_STORED_YLINE = "map-stored-yline"
         STEP_X = "step-x"
         STEP_Y = "step-y"
         WELL = "well"
@@ -33,12 +36,14 @@ class PluginIds:
         SURFACE_NAME_A = "surface-name-a"
         CALCULATION_REAL_A = "calculation-real-a"
         CALCULATE_WELL_INTER_A = "calculate-well-inter-a"
+        ENSEMBLE_A = "ensemble-a"
 
         # -surface B
         SURFACE_ATTRIBUTE_B = "surface-attribute-b"
         SURFACE_NAME_B = "surface-name-b"
         CALCULATION_REAL_B = "calculation-real-b"
         CALCULATE_WELL_INTER_B = "calculate-well-inter-b"
+        ENSEMBLE_B = "ensemble-b"
 
         # -settings
         ENSEMBLES = "ensembles"
@@ -52,9 +57,13 @@ class PluginIds:
 
         # -filter
         REAL_FILTER = "real-filter"
+        REAL_STORE = "real-store"
 
         # Graphs
         INTERSECTION_DATA = "intersection-data"
+        FIRST_CALL = "first-call"
+        INIT_INTERSECTION_LAYOUT = "init-intersection-layout"
+        INTERSECTION_LAYOUT = "intersection-layout"
 
     class SharedSettings:
         # pylint: disable=too-few-public-methods

@@ -257,8 +257,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         # ------------- Stores ------------------
 
         self.add_store(PluginIds.Stores.SOURCE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.STORED_POLYLINE, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.X_LINE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.MAP_STORED_XLINE, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.Y_LINE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(PluginIds.Stores.MAP_STORED_YLINE, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.STEP_X, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.STEP_Y, WebvizPluginABC.StorageType.SESSION)
         self.add_store(PluginIds.Stores.WELL, WebvizPluginABC.StorageType.SESSION)
@@ -315,6 +318,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             PluginIds.Stores.AUTO_COMP_DIFF, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
+            PluginIds.Stores.COLOR_RANGES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
             PluginIds.Stores.SURFACE_A_MIN, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
@@ -336,7 +342,25 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             PluginIds.Stores.REAL_FILTER, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
+            PluginIds.Stores.REAL_STORE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
             PluginIds.Stores.INTERSECTION_DATA, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.INIT_INTERSECTION_LAYOUT, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.ENSEMBLE_A, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.ENSEMBLE_B, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.FIRST_CALL, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.INTERSECTION_LAYOUT, WebvizPluginABC.StorageType.SESSION
         )
 
         # ------------- Shared settings ------------------
@@ -350,6 +374,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 self._well_set_model.well_names,
                 self.first_surface_geometry,
                 self._initial_settings,
+                self._realizations
             ),
             PluginIds.SharedSettings.INTERSECTION_CONTROLS,
         )
@@ -367,8 +392,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
         # ------------- Views ------------------
 
-        self.add_view(StructView(), PluginIds.ViewID.INTERSECT_POLYLINE)
-
+        self.add_view(StructView(self._surface_ensemble_set_model, self._well_set_model,self._color_picker , self._zonelog), PluginIds.ViewID.INTERSECT_POLYLINE)
+        
     @property
     def tour_steps(self) -> List[Dict]:
         return generate_tour_steps(get_uuid=self.uuid)
