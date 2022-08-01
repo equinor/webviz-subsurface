@@ -28,10 +28,6 @@ class ViewSettings(SettingsGroupABC):
         allow_click: bool = False,
     ) -> None:
         super().__init__("View Settings")
-
-        print("realixationstype: ")
-        print(type(realizations))
-
         unique_realizations = realizations["SENSNAME"].unique()
         self.sensnames = list(unique_realizations)
         self.scales = [

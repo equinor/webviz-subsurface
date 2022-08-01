@@ -40,6 +40,7 @@ class TornadoWidget(ViewABC):
         # pylint: disable=too-few-public-methods
         LABEL = "label"
         TORNADO_WIDGET = "tornado-widget"
+        MAIN_COLUMN = "main-comlun"
 
     def __init__(
         self,
@@ -67,7 +68,7 @@ class TornadoWidget(ViewABC):
             / "clientside_functions.js"
         )
 
-        viewcolumn = self.add_column()
+        viewcolumn = self.add_column(TornadoWidget.IDs.MAIN_COLUMN)
 
         first_row = viewcolumn.make_row()
         first_row.add_view_element(Label(), TornadoWidget.IDs.LABEL)

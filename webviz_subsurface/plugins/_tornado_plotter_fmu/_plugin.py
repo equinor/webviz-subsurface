@@ -206,9 +206,9 @@ class TornadoPlotterFMU(WebvizPluginABC):
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT)
-                .layout_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .get_unique_id(),
+                "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT).layout_element(
+                    TornadoWidget.IDs.MAIN_COLUMN
+                ),
                 "content": ("Shows tornado plot."),
             },
             {
