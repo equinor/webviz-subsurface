@@ -114,10 +114,9 @@ class TornadoWidget(ViewABC):
                 graph_style.update({"display": "inline"})
                 table_style.update({"display": "none"})
                 return (graph_style, table_style)
-            else:
-                graph_style.update({"display": "none"})
-                table_style.update({"display": "inline"})
-                return (graph_style, table_style)
+            graph_style.update({"display": "none"})
+            table_style.update({"display": "inline"})
+            return (graph_style, table_style)
 
         clientside_callback(
             ClientsideFunction(

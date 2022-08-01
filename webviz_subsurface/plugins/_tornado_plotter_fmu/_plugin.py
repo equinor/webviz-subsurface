@@ -177,7 +177,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PlugInIDs.Stores.ViewSetttings.LABEL, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            ViewSettings(design_matrix_df), PlugInIDs.SharedSettings.PLOTOPTIONS
+            ViewSettings(design_matrix_df), PlugInIDs.SharedSettings.VIEWSETTINGS
         )
 
         # Stores for data
