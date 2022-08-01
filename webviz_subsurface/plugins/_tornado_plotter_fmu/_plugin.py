@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, List, Type
+from typing import List, Type
 
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -203,7 +203,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
 
     @property
-    def tour_steps(self) -> List[dict[str, Any]]:
+    def tour_steps(self) -> List[dict]:
         return [
             {
                 "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT)
@@ -216,6 +216,58 @@ class TornadoPlotterFMU(WebvizPluginABC):
                     PlugInIDs.SharedSettings.PLOTPICKER
                 ).component_unique_id(PlotPicker.IDs.BARS_OR_TABLE),
                 "content": "Choose between showing the data with bars og in a table",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.SELECTORS
+                ).component_unique_id(Selectors.IDs.RESPONSE),
+                "content": "Choose the respose for the data",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.FILTERS
+                ).component_unique_id(Filters.IDs.SINGLE_FILTER),
+                "content": "Single valued filters",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.FILTERS
+                ).component_unique_id(Filters.IDs.MULTI_FILTER),
+                "content": "Multi values filters",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                ).component_unique_id(ViewSettings.IDs.REFERENCE),
+                "content": (
+                    "Set reference sensitivity for which to calculate tornado plot"
+                ),
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                ).component_unique_id(ViewSettings.IDs.SCALE),
+                "content": (
+                    "Set tornadoplot scale to either percentage or absolute values"
+                ),
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                ).component_unique_id(ViewSettings.IDs.SENSITIVITEIS),
+                "content": ("Pick sensitivities to be displayed"),
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                ).component_unique_id(ViewSettings.IDs.PLOT_OPTIONS),
+                "content": "Options for dispaying the bars",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                ).component_unique_id(ViewSettings.IDs.LABEL),
+                "content": "Plick settings for the label at the bars",
             },
         ]
 
