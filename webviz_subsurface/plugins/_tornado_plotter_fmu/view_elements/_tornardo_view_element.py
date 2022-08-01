@@ -1,13 +1,6 @@
-from typing import List
-
 import webviz_core_components as wcc
-from click import style
-from dash import dash_table, dcc, html
-from dash.development.base_component import Component
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from dash import dash_table, html
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
-
-from .._plugin_ids import PlugInIDs
 
 
 class TornadoViewElement(ViewElementABC):

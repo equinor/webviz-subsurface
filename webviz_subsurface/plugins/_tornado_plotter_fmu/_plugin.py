@@ -206,9 +206,9 @@ class TornadoPlotterFMU(WebvizPluginABC):
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT).layout_element(
-                    TornadoWidget.IDs.MAIN_COLUMN
-                ),
+                "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT)
+                .layout_element(TornadoWidget.IDs.MAIN_COLUMN)
+                .get_unique_id(),
                 "content": ("Shows tornado plot."),
             },
             {
@@ -223,18 +223,19 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 ).component_unique_id(Selectors.IDs.RESPONSE),
                 "content": "Choose the respose for the data",
             },
-            {
-                "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.FILTERS
-                ).component_unique_id(Filters.IDs.SINGLE_FILTER),
-                "content": "Single valued filters",
-            },
-            {
-                "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.FILTERS
-                ).component_unique_id(Filters.IDs.MULTI_FILTER),
-                "content": "Multi values filters",
-            },
+            # Filters funker ikke://
+            # {
+            #    "id": self.shared_settings_group(
+            #        PlugInIDs.SharedSettings.FILTERS
+            #    ).component_unique_id(Filters.IDs.SINGLE_FILTER),
+            #    "content": "Single valued filters",
+            # },
+            # {
+            #    "id": self.shared_settings_group(
+            #        PlugInIDs.SharedSettings.FILTERS
+            #    ).component_unique_id(Filters.IDs.MULTI_FILTER),
+            #    "content": "Multi values filters",
+            # },
             {
                 "id": self.shared_settings_group(
                     PlugInIDs.SharedSettings.VIEWSETTINGS
