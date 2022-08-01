@@ -64,6 +64,7 @@ class PluginIds:
         FIRST_CALL = "first-call"
         INIT_INTERSECTION_LAYOUT = "init-intersection-layout"
         INTERSECTION_LAYOUT = "intersection-layout"
+        COLOR_PICKER = "color-picker"
 
     class SharedSettings:
         # pylint: disable=too-few-public-methods

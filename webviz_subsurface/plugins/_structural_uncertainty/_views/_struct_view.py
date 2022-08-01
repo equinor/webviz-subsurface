@@ -58,8 +58,8 @@ class StructView(ViewABC):
 
         self.surface_set_models = surface_set_models
         self.well_set_model = well_set_model
-        self.color_picker = color_picker
         self.zonelog = zonelog
+        self.color_picker = color_picker
 
     
         main_column = self.add_column()
@@ -70,31 +70,7 @@ class StructView(ViewABC):
         self.row_bottom.make_column(StructView.Ids.MAP2)
         self.row_bottom.make_column(StructView.Ids.MAP3)
 
-        # row_bottom.add_view_element(map_layout(
-        #                             uuid=StructView.Ids.MAP1,
-        #                             leaflet_id=StructView.Ids.LEAFLET_MAP1,
-        #                             synced_uuids=[
-        #                                 StructView.Ids.LEAFLET_MAP2,
-        #                                 StructView.Ids.LEAFLET_MAP3,
-        #                             ],
-        #                             draw_polyline=True,
-        #                         ), StructView.Ids.SURFACE_A)
-        # row_bottom.add_view_element(map_layout(
-        #                             uuid=StructView.Ids.MAP2,
-        #                             leaflet_id=StructView.Ids.LEAFLET_MAP2,
-        #                             synced_uuids=[
-        #                                 StructView.Ids.LEAFLET_MAP1,
-        #                                 StructView.Ids.LEAFLET_MAP3,
-        #                             ],
-        #                         ), StructView.Ids.SURFACE_B)
-        # row_bottom.add_view_element(map_layout(
-        #                             uuid=StructView.Ids.MAP3,
-        #                             leaflet_id=StructView.Ids.LEAFLET_MAP3,
-        #                             synced_uuids=[
-        #                                 StructView.Ids.LEAFLET_MAP1,
-        #                                 StructView.Ids.LEAFLET_MAP2,
-        #                             ],
-        #                         ), StructView.Ids.SURFACE_A_B)
+       
 
     
 
@@ -509,6 +485,7 @@ class StructView(ViewABC):
             State(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES), "data"),
             State(self.get_store_unique_id(PluginIds.Stores.RESOLUTION), "data"),
             State(self.get_store_unique_id(PluginIds.Stores.EXTENSION), "data"),
+            State(self.color_picker.color_store_id, "data")
         )
         # pylint: disable=too-many-arguments: disable=too-many-branches, too-many-locals
         def _store_intersection_traces(
@@ -525,6 +502,7 @@ class StructView(ViewABC):
             ensembles: List[str],
             resolution: float,
             extension: int,
+            color_list: List[str],
         ) -> List:
             """Generate plotly traces for intersection figure and store clientside"""
 
@@ -537,7 +515,7 @@ class StructView(ViewABC):
             print("polyline:", polyline)
             print("xline", xline)
             print("yline", yline)
-            color_list = self.color_picker.color_store_id
+            print("color_list: ",color_list)
 
             if any(val is None for val in [resolution, extension]):
                 raise PreventUpdate
@@ -574,6 +552,7 @@ class StructView(ViewABC):
                 print("ITERATION: ", ensemble)
                 surfset = self.surface_set_models[ensemble]
                 for surfacename in surfacenames:
+                    print("surfacename: ", surfacename)
                     color = self.color_picker.get_color(
                         color_list=color_list,
                         filter_query={

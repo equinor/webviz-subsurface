@@ -247,7 +247,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         ]
         self._color_picker = ColorPicker(
             app=app,
-            uuid=self.uuid("colorpicker"),
+            uuid=PluginIds.Stores.COLOR_PICKER,
             dframe=pd.DataFrame(self._surfacecolors),
         )
         self.first_surface_geometry = self._surface_ensemble_set_model[

@@ -258,7 +258,7 @@ class IntersectionControls(SettingsGroupABC):
                         "value": "Uncertainty envelope",
                     },
                 ],
-                value="Uncertainty envelope",
+                value=["Uncertainty envelope"],
             ),
             # Update intersection button ----------------------
             html.Button(
@@ -443,7 +443,7 @@ class IntersectionControls(SettingsGroupABC):
             Output(self.get_store_unique_id(PluginIds.Stores.MAP_STORED_XLINE), "data"),
             Input(
                 self.get_store_unique_id(PluginIds.Stores.X_LINE),
-                "value",
+                "data",
             ),
         )
         def _set_map_xline(x_value: Union[float, int]) -> List:
@@ -475,7 +475,7 @@ class IntersectionControls(SettingsGroupABC):
             Output(self.get_store_unique_id(PluginIds.Stores.MAP_STORED_YLINE), "data"),
             Input(
                 self.get_store_unique_id(PluginIds.Stores.Y_LINE),
-                "value",
+                "data",
             ),
         )
         def _set_map_yline(y_value: Union[float, int]) -> List:
