@@ -204,6 +204,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
     @property
     def tour_steps(self) -> List[dict]:
+        """Tour of the plugin"""
         return [
             {
                 "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT)
@@ -223,19 +224,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 ).component_unique_id(Selectors.IDs.RESPONSE),
                 "content": "Choose the respose for the data",
             },
-            # Filters funker ikke://
-            # {
-            #    "id": self.shared_settings_group(
-            #        PlugInIDs.SharedSettings.FILTERS
-            #    ).component_unique_id(Filters.IDs.SINGLE_FILTER),
-            #    "content": "Single valued filters",
-            # },
-            # {
-            #    "id": self.shared_settings_group(
-            #        PlugInIDs.SharedSettings.FILTERS
-            #    ).component_unique_id(Filters.IDs.MULTI_FILTER),
-            #    "content": "Multi values filters",
-            # },
             {
                 "id": self.shared_settings_group(
                     PlugInIDs.SharedSettings.VIEWSETTINGS

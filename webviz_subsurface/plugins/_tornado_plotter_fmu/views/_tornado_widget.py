@@ -23,8 +23,7 @@ from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
 from .._plugin_ids import PlugInIDs
-from ..view_elements._label import Label
-from ..view_elements._tornardo_view_element import TornadoViewElement
+from ..view_elements import Label, TornadoViewElement
 
 
 class TornadoWidget(ViewABC):
