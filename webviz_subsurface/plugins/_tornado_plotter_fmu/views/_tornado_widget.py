@@ -109,12 +109,12 @@ class TornadoWidget(ViewABC):
         )
         def _set_visualization(
             viz_type: str, graph_style: dict, table_style: dict
-        ) -> Tuple[dict, dict]:
+        ) -> Tuple[Dict[str, str], Dict[str, str]]:
             if viz_type == "bars":
                 graph_style.update({"display": "inline"})
                 table_style.update({"display": "none"})
                 return (graph_style, table_style)
-            if viz_type == "table":
+            else:
                 graph_style.update({"display": "none"})
                 table_style.update({"display": "inline"})
                 return (graph_style, table_style)
