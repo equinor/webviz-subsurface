@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 import webviz_subsurface_components as wsc
+from dash import html
+from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -34,7 +36,16 @@ from webviz_subsurface._utils.vector_selector import (
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
 from ._plugin_ids import PluginIds
-from ._shared_settings import SimulationTimeSeriesFilters
+from ._shared_settings import (
+    EnsemblesSettings,
+    FilterRealizationSettings,
+    GroupBySettings,
+    ResamplingFrequencySettings,
+    TimeSeriesSettings,
+    VisualizationSettings,
+)
+
+# from ._shared_settings import SimulationTimeSeriesFilters
 from ._view import SimulationTimeSeriesView
 from .types import VisualizationOptions
 from .types.provider_set import (
@@ -313,10 +324,37 @@ class SimulationTimeSeries(WebvizPluginABC):
         self._initial_vectors = initial_vectors[:3]
 
         self.add_store(
+            PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
             PluginIds.Stores.ENSEMBLES_DROPDOWN, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
+            PluginIds.Stores.RELATIVE_DATE_DROPDOWN, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.CREATED_DELTA_ENSEMBLES,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
             PluginIds.Stores.VECTOR_SELECTOR, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS,
+            WebvizPluginABC.StorageType.SESSION,
         )
         self.add_store(
             PluginIds.Stores.VISUALIZATION_RADIO_ITEMS,
@@ -335,38 +373,11 @@ class SimulationTimeSeries(WebvizPluginABC):
             WebvizPluginABC.StorageType.SESSION,
         )
         self.add_store(
-            PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
             PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR,
             WebvizPluginABC.StorageType.SESSION,
         )
         self.add_store(
             PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PluginIds.Stores.RELATIVE_DATE_DROPDOWN, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PluginIds.Stores.CREATED_DELTA_ENSEMBLES,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS,
             WebvizPluginABC.StorageType.SESSION,
         )
 
@@ -376,30 +387,42 @@ class SimulationTimeSeries(WebvizPluginABC):
         )
 
         self.add_shared_settings_group(
-            SimulationTimeSeriesFilters(
-                ensemble_names=self._input_provider_set.names(),
-                vector_selector_data=self._initial_vector_selector_data,
-                vector_calculator_data=self._vector_calculator_data,
-                predefined_expressions=self._predefined_expressions,
-                custom_vector_definitions=self._custom_vector_definitions,
-                realizations=self._input_provider_set.all_realizations(),
-                disable_resampling_dropdown=self._presampled_frequency is not None,
-                selected_resampling_frequency=self._sampling,
-                selected_visualization=self._initial_visualization_selection,
-                ensembles_dates=self._input_provider_set.all_dates(self._sampling),
-                get_data_output=self.plugin_data_output,
-                get_data_requested=self.plugin_data_requested,
-                input_provider_set=self._input_provider_set,
-                theme=self._theme,
-                initial_selected_vectors=self._initial_vectors,
-                vector_selector_base_data=self._vector_selector_base_data,
-                custom_vector_definitions_base=self._custom_vector_definitions_base,
-                observations=self._observations,
-                user_defined_vector_definitions=self._user_defined_vector_definitions,
-                line_shape_fallback=self._line_shape_fallback,
-                selected_vectors=self._initial_vectors,
+            GroupBySettings(), PluginIds.SharedSettings.GROUP_BY
+        )
+        self.add_shared_settings_group(
+            ResamplingFrequencySettings(
+                self._presampled_frequency is not None,
+                self._sampling,
+                self._input_provider_set.all_dates(self._sampling),
+                self._input_provider_set,
             ),
-            PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS,
+            PluginIds.SharedSettings.RESAMPLING_FREQUENCY,
+        )
+        self.add_shared_settings_group(
+            EnsemblesSettings(
+                self._input_provider_set.names(), self._input_provider_set
+            ),
+            PluginIds.SharedSettings.ENSEMBLES,
+        )
+        self.add_shared_settings_group(
+            TimeSeriesSettings(
+                self._initial_vector_selector_data,
+                self._custom_vector_definitions,
+                self._vector_calculator_data,
+                self._predefined_expressions,
+                self._vector_selector_base_data,
+                self._custom_vector_definitions_base,
+                self._initial_vectors,
+            ),
+            PluginIds.SharedSettings.TIME_SERIES,
+        )
+        self.add_shared_settings_group(
+            VisualizationSettings(self._initial_visualization_selection),
+            PluginIds.SharedSettings.VISUALIZATION,
+        )
+        self.add_shared_settings_group(
+            FilterRealizationSettings(self._input_provider_set.all_realizations()),
+            PluginIds.SharedSettings.FILTER_REALIZATION,
         )
 
         self.add_view(
@@ -414,6 +437,10 @@ class SimulationTimeSeries(WebvizPluginABC):
             PluginIds.SimulationTimeSeries.VIEW_NAME,
             PluginIds.SimulationTimeSeries.GROUP_NAME,
         )
+
+    @property
+    def layout(self) -> Component:
+        return html.Div("No view is loaded.")
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions: List[Tuple[Callable, list]] = []
@@ -441,9 +468,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+                    PluginIds.SharedSettings.GROUP_BY
                 ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.TOUR_STEP_GROUP_BY
+                    GroupBySettings.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
                 ),
                 "content": (
                     "Setting to group visualization data according to selection. "
@@ -452,9 +479,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+                    PluginIds.SharedSettings.RESAMPLING_FREQUENCY
                 ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                    ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY
                 ),
                 "content": (
                     "Select resampling frequency for the time series data. "
@@ -464,10 +491,8 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
-                ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.ENSEMBLES_DROPDOWN
-                ),
+                    PluginIds.SharedSettings.ENSEMBLES
+                ).component_unique_id(EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN),
                 "content": (
                     "Display time series from one or several ensembles. "
                     "Ensembles will be overlain in subplot or represented per subplot, "
@@ -476,10 +501,8 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
-                ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.TOUR_STEP_DELTA_ENSEMBLE
-                ),
+                    PluginIds.SharedSettings.ENSEMBLES
+                ).component_unique_id(PluginIds.TourStepIds.DELTA_ENSEMBLE),
                 "content": (
                     "Create delta ensembles (A-B). "
                     "Define delta between two ensembles and make available among "
@@ -488,8 +511,8 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
-                ).component_unique_id(SimulationTimeSeriesFilters.Ids.VECTOR_SELECTOR),
+                    PluginIds.SharedSettings.TIME_SERIES
+                ).component_unique_id(TimeSeriesSettings.Ids.VECTOR_SELECTOR),
                 "content": (
                     "Display up to three different time series. "
                     "Each time series will be visualized in a separate plot. "
@@ -501,9 +524,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+                    PluginIds.SharedSettings.TIME_SERIES
                 ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
                 ),
                 "content": (
                     "Create mathematical expressions with provided vector time series. "
@@ -515,9 +538,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+                    PluginIds.SharedSettings.VISUALIZATION
                 ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.VISUALIZATION_RADIO_ITEMS
+                    VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS
                 ),
                 "content": (
                     "Choose between different visualizations. 1. Show time series as "
@@ -527,10 +550,8 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
-                ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.TOUR_STEP_OPTIONS
-                ),
+                    PluginIds.SharedSettings.VISUALIZATION
+                ).component_unique_id(PluginIds.TourStepIds.OPTIONS),
                 "content": (
                     "Various plot options: Whether to include history trace or vector observations "
                     "and which statistics to show if statistical lines or fanchart is chosen as "
@@ -539,9 +560,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+                    PluginIds.SharedSettings.FILTER_REALIZATION
                 ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.REALIZATIONS_FILTER_SELECTOR
+                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
                 ),
                 "content": (
                     "Filter realizations. Select realization numbers to include in visualization, "
@@ -550,9 +571,9 @@ class SimulationTimeSeries(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SIMULATIONTIMESERIESSETTINGS
+                    PluginIds.SharedSettings.FILTER_REALIZATION
                 ).component_unique_id(
-                    SimulationTimeSeriesFilters.Ids.STATISTICS_FROM_RADIO_ITEMS
+                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS
                 ),
                 "content": (
                     "Select whether to calculate statistics from all realizations, or to calculate "
