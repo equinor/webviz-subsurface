@@ -4,6 +4,7 @@ from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 from .._layout_style import LayoutStyle
+from ._info_dialog import InfoDialog
 
 
 class InfoBox(ViewElementABC):
@@ -12,11 +13,10 @@ class InfoBox(ViewElementABC):
         FRAME = "frame"
         KEY_NUMBERS = "key-numbers"
 
-    def __init__(self, datamodel, informaiton_dialog) -> None:
+    def __init__(self, datamodel) -> None:
         super().__init__()
         max_pc, min_pc = datamodel.pc_scaling_min_max
         wvol, hcvol = datamodel.vol_diff_total
-        self.information_dialog = informaiton_dialog
         self.number_style = {
             "font-weight": "bold",
             "font-size": "17px",
@@ -35,7 +35,7 @@ class InfoBox(ViewElementABC):
             id=self.register_component_unique_id(InfoBox.IDs.FRAME),
             children=[
                 wcc.Header("Information", style=LayoutStyle.HEADER),
-                self.information_dialog,
+                InfoDialog(),
                 wcc.Header("Key numbers", style=LayoutStyle.HEADER),
                 html.Div(
                     [

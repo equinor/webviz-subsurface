@@ -1,8 +1,8 @@
 from pathlib import Path
+from subprocess import call
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
-from pyparsing import DebugExceptionAction, col
 import webviz_core_components as wcc
 from dash import (
     Input,
@@ -14,10 +14,11 @@ from dash import (
     dcc,
     html,
 )
+from pyparsing import DebugExceptionAction, col
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .._plugin_ids import PlugInIDs
-from ..view_elements import OverViewTable, InfoBox, InfoDialog, Describtion
+from ..view_elements import Describtion, InfoBox, InfoDialog, OverViewTable
 
 
 class OverviewTabLayout(ViewABC):
@@ -56,4 +57,9 @@ class OverviewTabLayout(ViewABC):
                 ),
                 Describtion(),
             ]
+        )
+
+    def set_callbacks(self) -> None:
+        @callback(
+            
         )
