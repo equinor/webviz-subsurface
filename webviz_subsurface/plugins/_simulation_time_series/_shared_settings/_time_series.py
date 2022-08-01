@@ -73,7 +73,7 @@ class TimeSeriesSettings(SettingsGroupABC):
         vector_calculator_data: List,
         predefined_expressions: List[ExpressionInfo],
         vector_selector_base_data: List,
-        custom_vector_definitions_base=Dict,
+        custom_vector_definitions_base: Dict,
         selected_vectors: Optional[List[str]] = None,
     ) -> None:
         super().__init__("Time series")
