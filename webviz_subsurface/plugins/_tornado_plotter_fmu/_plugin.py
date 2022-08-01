@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Type
+from typing import Any, List, Type
 
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -201,6 +201,23 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PlugInIDs.TornardoPlotGroup.TORNPLOT,
             PlugInIDs.TornardoPlotGroup.GROUPNAME,
         )
+
+    @property
+    def tour_steps(self) -> List[dict[str, Any]]:
+        return [
+            {
+                "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT)
+                .layout_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                .get_unique_id(),
+                "content": ("Shows tornado plot."),
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.PLOTPICKER
+                ).component_unique_id(PlotPicker.IDs.BARS_OR_TABLE),
+                "content": "Choose between showing the data with bars og in a table",
+            },
+        ]
 
     @property
     def layout(self) -> Type[Component]:

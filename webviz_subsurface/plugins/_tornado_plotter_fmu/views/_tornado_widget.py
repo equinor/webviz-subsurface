@@ -1,10 +1,9 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from dash import (
-    ALL,
     ClientsideFunction,
     Input,
     Output,
@@ -12,8 +11,6 @@ from dash import (
     callback,
     callback_context,
     clientside_callback,
-    dash_table,
-    html,
 )
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
@@ -26,7 +23,6 @@ from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
 from .._plugin_ids import PlugInIDs
-from ..shared_settings import ViewSettings
 from ..view_elements._label import Label
 from ..view_elements._tornardo_view_element import TornadoViewElement
 
@@ -278,7 +274,7 @@ class TornadoWidget(ViewABC):
                 ),
                 Input(
                     self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                    .component_unique_id(TornadoWidget.IDs.BARS)
+                    .component_unique_id(TornadoViewElement.IDs.BARS)
                     .to_string(),
                     "clickData",
                 ),
@@ -323,14 +319,3 @@ class TornadoWidget(ViewABC):
                         "sens_name": sensname,
                     }
                 )
-
-    @property
-    def tour_steps(self) -> List[Dict[str, Any]]:
-        return [
-            {
-                "id": self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
-                .component_unique_id(TornadoViewElement.IDs.BARS)
-                .to_string(),
-                "content": ("Shows tornado plot."),
-            },
-        ]
