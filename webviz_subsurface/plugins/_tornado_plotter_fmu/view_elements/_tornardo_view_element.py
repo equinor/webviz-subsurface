@@ -12,7 +12,7 @@ class TornadoViewElement(ViewElementABC):
         TABLE = "table"
         TABLE_WRAPPER = "table-wrapper"
 
-    def __init__(self, height="75vh") -> None:
+    def __init__(self, height: str = "75vh") -> None:
         super().__init__()
         self.height = height
 
