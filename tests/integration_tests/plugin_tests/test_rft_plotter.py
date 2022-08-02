@@ -4,7 +4,6 @@ from webviz_config.plugins import RftPlotter
 
 def test_rft_plotter(dash_duo, app, shared_settings, testdata_folder) -> None:
     plugin = RftPlotter(
-        app,
         shared_settings["HM_SETTINGS"],
         ensembles=shared_settings["HM_ENSEMBLES"],
         formations=testdata_folder
