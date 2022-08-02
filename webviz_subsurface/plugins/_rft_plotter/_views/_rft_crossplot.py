@@ -28,7 +28,8 @@ class RftCrossplot(ViewABC):
             }
         )
 
-        self.add_row(self.Ids.CROSSPLOT_GRAPH)
+        column = self.add_column()
+        column.make_row(self.Ids.CROSSPLOT_GRAPH)
 
     def get_settings_element_id(self, element_id: str, setting_id: str) -> str:
         return (
@@ -70,7 +71,7 @@ class RftCrossplot(ViewABC):
             ),
             Input(
                 self.get_settings_element_id(
-                    SizeColorLayout.Ids.CROSSPLOT_COLOR_BY,
+                    SizeColorLayout.Ids.CROSSPLOT_SIZE_BY,
                     self.Ids.CROSSPLOT_PLOT_SETTINGS,
                 ),
                 "value",
