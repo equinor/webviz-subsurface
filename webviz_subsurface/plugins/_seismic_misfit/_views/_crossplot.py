@@ -127,7 +127,7 @@ class Crossplot(ViewABC):
             showerrbar: Optional[str],
             figcols: int,
             figheight: int,
-        ) -> Tuple:
+        ) -> List:
 
             if not regions:
                 raise PreventUpdate
@@ -163,8 +163,11 @@ class Crossplot(ViewABC):
                 fig_columns=figcols,
                 figheight=figheight,
             )
-            return (
-                figures,
+
+            if figures is None:
+                figures = []
+
+            return figures + [
                 wcc.Selectors(
                     label="Ensemble info",
                     children=[
@@ -175,5 +178,5 @@ class Crossplot(ViewABC):
                             },
                         ),
                     ],
-                ),
-            )
+                )
+            ]
