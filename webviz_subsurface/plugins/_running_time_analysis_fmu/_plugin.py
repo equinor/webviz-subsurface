@@ -1,8 +1,10 @@
 import json
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
+from dash import html
+from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
@@ -82,29 +84,9 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
         )
         self.plugin_parameters = self.parameters
 
-        # self.add_store(PluginIds.Stores.MODE, WebvizPluginABC.StorageType.SESSION)
-        # self.add_store(PluginIds.Stores.ENSEMBLE, WebvizPluginABC.StorageType.SESSION)
-        # self.add_store(PluginIds.Stores.COLORING, WebvizPluginABC.StorageType.SESSION)
-        # self.add_store(
-        #     PluginIds.Stores.FILTERING_SHORT, WebvizPluginABC.StorageType.SESSION
-        # )
-        # self.add_store(
-        #     PluginIds.Stores.FILTERING_PARAMS, WebvizPluginABC.StorageType.SESSION
-        # )
-        # self.add_store(
-        #     PluginIds.Stores.REMOVE_CONSTANT, WebvizPluginABC.StorageType.SESSION
-        # )
-        # self.add_store(PluginIds.Stores.ACTIVE_ID, WebvizPluginABC.StorageType.SESSION)
-
-        # self.add_shared_settings_group(
-        #     RunningTimeAnalysisFmuSettings(
-        #         self.ensembles,
-        #         self.visual_parameters,
-        #         self.plugin_parameters,
-        #         self.filter_shorter,
-        #     ),
-        #     PluginIds.SharedSettings.SHARED_SETTINGS_GROUP,
-        # )
+        self.add_store(
+            PluginIds.Stores.VIEW_ELEMENT_HEIGHT, WebvizPluginABC.StorageType.SESSION
+        )
 
         self.add_view(
             RunTimeAnalysisGraph(
@@ -119,6 +101,10 @@ class RunningTimeAnalysisFMU(WebvizPluginABC):
             PluginIds.RunTimeAnalysisView.RUN_TIME_FMU,
             PluginIds.RunTimeAnalysisView.GROUP_NAME,
         )
+
+    @property
+    def layout(self) -> Type[Component]:
+        return html.Div("No view is loaded.")
 
     @property
     def tour_steps(self) -> List[dict]:

@@ -107,11 +107,10 @@ class RunTimeAnalysisGraph(ViewABC):
             """Update main figure
             Dependent on `mode` it will call rendering of the chosen form of visualization
             """
-            plot_info = None
 
-            if mode == "running_time_matrix":
-                if "filter_short" in filter_short:
-                    plot_info = render_matrix(
+            if mode == "running_time_matrix" and "filter_short" in filter_short:
+                return wcc.Graph(
+                    figure=render_matrix(
                         self.job_status_df[
                             (self.job_status_df["ENSEMBLE"] == ens)
                             & (
@@ -122,19 +121,22 @@ class RunTimeAnalysisGraph(ViewABC):
                         coloring,
                         self.plotly_theme,
                     )
-                else:
-                    plot_info = render_matrix(
+                )
+            if mode == "running_time_matrix":
+                return wcc.Graph(
+                    figure=render_matrix(
                         self.job_status_df[(self.job_status_df["ENSEMBLE"] == ens)],
                         coloring,
                         self.plotly_theme,
                     )
+                )
 
-                return wcc.Graph(figure=plot_info)
             # Otherwise: parallel coordinates
             # Ensure selected parameters is a list
             params = params if isinstance(params, list) else [params]
             # Color by success or runtime, for runtime drop unsuccesful
             colormap_labels: Union[List[str], None]
+
             if coloring == "Successful/failed realization":
                 plot_df = self.real_status_df[self.real_status_df["ENSEMBLE"] == ens]
                 colormap = make_colormap(
@@ -163,8 +165,14 @@ class RunTimeAnalysisGraph(ViewABC):
             )
 
             return wcc.Graph(
-                figure=plot_info, style={"transform": "rotate(90deg)", "width": 900}
+                figure=plot_info,
+                style={
+                    "display": "block",
+                    "transform": "rotate(90deg)",
+                    "width": 900,
+                    "margin": {
+                        "b": 0,
+                        "r": 30,
+                    },
+                },
             )
-
-
-#
