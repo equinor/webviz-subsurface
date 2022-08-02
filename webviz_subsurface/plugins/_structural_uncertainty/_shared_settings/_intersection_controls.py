@@ -1,11 +1,14 @@
+import json
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
-from dash import Input, Output, State, callback, dcc, html
+from dash import Input, Output, State, callback, callback_context, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from pyparsing import line
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+
+from webviz_subsurface._components import ColorPicker
 
 from .._plugin_ids import PluginIds
 
@@ -51,6 +54,7 @@ class IntersectionControls(SettingsGroupABC):
         surface_geometry: Dict,
         initial_settings: Dict,
         realizations: List[Union[str, int]],
+        color_picker: ColorPicker,
     ) -> None:
         super().__init__("Intersection Controls")
 
@@ -62,6 +66,7 @@ class IntersectionControls(SettingsGroupABC):
         self.surface_geometry = surface_geometry
         self.initial_settings = initial_settings
         self.realizations = realizations
+        self.color_picker = color_picker
         self.source_opt = [
                     {"label": "Intersect polyline from Surface A", "value": "polyline"},
                     {"label": "Intersect x-line from Surface A", "value": "xline"},
@@ -623,6 +628,73 @@ class IntersectionControls(SettingsGroupABC):
         )
         def _set_ensembles(ens: List[str]) -> List[str]:
             return ens
-        
+        @callback(
+            Output(self.component_unique_id(
+                    IntersectionControls.Ids.UPDATE_INTERSECTION
+                ).to_string(), "style"),
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.STORED_MANUAL_UPDATE_OPTIONS),
+                "data",
+            ),
+            Input(self.component_unique_id(
+                    IntersectionControls.Ids.UPDATE_INTERSECTION
+                ).to_string(), "n_clicks"),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SURFACE_ATTR),
+                "data",
+            ),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SURFACE_NAMES), "data"
+            ),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.SHOW_SURFACES),
+                "data",
+            ),
+            Input(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.RESOLUTION), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.EXTENSION), "data"),
+            State(
+                self.get_store_unique_id(PluginIds.Stores.STORED_MANUAL_UPDATE_OPTIONS),
+                "data",
+            ),
+        )
+        def _update_apply_button(
+            _apply_click: Optional[int],
+            surfaceattribute: str,
+            surfacenames: List[str],
+            statistics: List[str],
+            ensembles: str,
+            resolution: float,
+            extension: int,
+            previous_settings: Dict,
+        ) -> Tuple[Dict, Dict]:
+
+            ctx = callback_context.triggered[0]
+            color_list = self.color_picker._dframe['COLOR'].tolist()
+            new_settings = {
+                "surface_attribute": surfaceattribute,
+                "surface_names": surfacenames,
+                "calculation": statistics,
+                "ensembles": ensembles,
+                "resolution": resolution,
+                "extension": extension,
+                "colors": color_list,
+            }
+            # store selected settings if initial callback or apply button is pressed
+            if (
+                "apply-intersection-data-selections" in ctx["prop_id"]
+                or ctx["prop_id"] == "."
+            ):
+                return {"background-color": "#E8E8E8"}, new_settings
+
+            element = (
+                "colors"
+                if "colorpicker" in ctx["prop_id"]
+                else json.loads(ctx["prop_id"].replace(".value", "")).get("element")
+            )
+            if new_settings[element] != previous_settings[element]:
+                return {"background-color": "#7393B3", "color": "#fff"}, previous_settings
+            return {"background-color": "#E8E8E8"}, previous_settings
+
 
         # Button

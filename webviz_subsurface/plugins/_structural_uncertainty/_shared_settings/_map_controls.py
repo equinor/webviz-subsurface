@@ -520,4 +520,38 @@ class MapControls(SettingsGroupABC):
         )
         def _set_ensembles(ens_a: str, ens_b: str) -> Tuple[str, str]:
             return [ens_a, ens_b]
-        
+        @callback(
+            #add layout to realization button first
+            Output(
+                {
+                    "id": get_uuid("dialog"),
+                    "dialog_id": "realization-filter",
+                    "element": "apply",
+                },
+                "disabled",
+            ),
+            Output(
+                {
+                    "id": get_uuid("dialog"),
+                    "dialog_id": "realization-filter",
+                    "element": "apply",
+                },
+                "style",
+            ),
+            Input(
+                self.get_store_unique_id(PluginIds.Stores.REAL_STORE),
+                "data",
+            ),
+            Input(
+                {"id": get_uuid("intersection-data"), "element": "realizations"},
+                "value",
+            ),
+        )
+        def _activate_realization_apply_btn(
+            stored_reals: List, selected_reals: List
+        ) -> Tuple[bool, Dict[str, str]]:
+            if stored_reals is None or selected_reals is None:
+                raise PreventUpdate
+            if set(stored_reals) == set(selected_reals):
+                return True, {"visibility": "hidden"}
+            return False, {"visibility": "visible"}

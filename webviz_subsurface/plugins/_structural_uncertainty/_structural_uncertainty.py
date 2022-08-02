@@ -247,7 +247,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         ]
         self._color_picker = ColorPicker(
             app=app,
-            uuid=PluginIds.Stores.COLOR_PICKER,
+            uuid=self.uuid("colorpicker"),
             dframe=pd.DataFrame(self._surfacecolors),
         )
         self.first_surface_geometry = self._surface_ensemble_set_model[
@@ -361,6 +361,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
         self.add_store(
             PluginIds.Stores.INTERSECTION_LAYOUT, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.STORED_MANUAL_UPDATE_OPTIONS, WebvizPluginABC.StorageType.SESSION
         )
 
         # ------------- Shared settings ------------------

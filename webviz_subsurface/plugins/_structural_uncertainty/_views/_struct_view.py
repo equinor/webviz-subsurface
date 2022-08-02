@@ -7,7 +7,18 @@ import pandas as pd
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 import xtgeo
-from dash import Input, Output, State, callback, callback_context, html, no_update
+from dash import (
+    ClientsideFunction,
+    Input,
+    Output,
+    State,
+    callback,
+    callback_context,
+    clientside_callback,
+    html,
+    no_update,
+)
+from dash.dash import _NoUpdate
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme
@@ -29,6 +40,7 @@ from .._figures.intersection import (
     get_plotly_zonelog_trace,
 )
 from .._plugin_ids import PluginIds
+from .._shared_settings._intersection_controls import IntersectionControls
 from .._view_elements import Graph
 
 
@@ -461,7 +473,9 @@ class StructView(ViewABC):
             )
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.INTERSECTION_DATA), "data"),
-            #Input(get_uuid("apply-intersection-data-selections"), "n_clicks"),
+            Input(self.shared_settings_group(PluginIds.SharedSettings.INTERSECTION_CONTROLS)
+                .component_unique_id(IntersectionControls.Ids.UPDATE_INTERSECTION)
+                .to_string(), "n_clicks"),
             Input(
                 self.get_store_unique_id(PluginIds.Stores.SOURCE),
                 "data",
@@ -485,11 +499,11 @@ class StructView(ViewABC):
             State(self.get_store_unique_id(PluginIds.Stores.ENSEMBLES), "data"),
             State(self.get_store_unique_id(PluginIds.Stores.RESOLUTION), "data"),
             State(self.get_store_unique_id(PluginIds.Stores.EXTENSION), "data"),
-            State(self.color_picker.color_store_id, "data")
+            #State(self.color_picker.color_store_id, "data")
         )
         # pylint: disable=too-many-arguments: disable=too-many-branches, too-many-locals
         def _store_intersection_traces(
-            #_apply_click: Optional[int],
+            _apply_click: Optional[int],
             intersection_source: str,
             polyline: Optional[List],
             xline: Optional[List],
@@ -502,7 +516,7 @@ class StructView(ViewABC):
             ensembles: List[str],
             resolution: float,
             extension: int,
-            color_list: List[str],
+            #color_list: List[str],
         ) -> List:
             """Generate plotly traces for intersection figure and store clientside"""
 
@@ -512,10 +526,9 @@ class StructView(ViewABC):
             # have not yet found a solution that prohibits the input field from being cleared.
             # The situation can be slightly remedied by setting required=True which will highlight
             # the missing value with a red rectangle.
-            print("polyline:", polyline)
-            print("xline", xline)
-            print("yline", yline)
-            print("color_list: ",color_list)
+            print("click", _apply_click)
+            color_list = self.color_picker._dframe['COLOR'].tolist()
+           
 
             if any(val is None for val in [resolution, extension]):
                 raise PreventUpdate
@@ -549,10 +562,8 @@ class StructView(ViewABC):
 
             realizations = [int(real) for real in realizations]
             for ensemble in ensembles:
-                print("ITERATION: ", ensemble)
                 surfset = self.surface_set_models[ensemble]
                 for surfacename in surfacenames:
-                    print("surfacename: ", surfacename)
                     color = self.color_picker.get_color(
                         color_list=color_list,
                         filter_query={
@@ -610,10 +621,9 @@ class StructView(ViewABC):
                 traces.append(get_plotly_trace_well_trajectory(well))
                 if well.zonelogname is not None:
                     traces.extend(get_plotly_zonelog_trace(well, self.zonelog))
-            print(traces)
             return traces
         @callback(
-            Output(StructView.Ids.INTERSECTION, "data"),
+            Output(self.get_store_unique_id(PluginIds.Stores.INTERSECTION_LAYOUT), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.INTERSECTION_DATA), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.INIT_INTERSECTION_LAYOUT), "data"),
             Input(
@@ -781,6 +791,46 @@ class StructView(ViewABC):
                     warnings.warn("Polyline for map is not valid format")
                     return None
             raise PreventUpdate
+
+        clientside_callback(
+            ClientsideFunction(namespace="clientside", function_name="set_dcc_figure"),
+            Output(self.view_element(StructView.Ids.INTERSECTION)
+                .component_unique_id(Graph.Ids.GRAPH)
+                .to_string(),
+                "figure"),
+            Input(self.get_store_unique_id(PluginIds.Stores.INTERSECTION_LAYOUT), "data"),
+            State(self.get_store_unique_id(PluginIds.Stores.INTERSECTION_DATA), "data"),
+        )
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.SOURCE),
+                "data",
+            ),
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.WELL),
+                "data",
+            ),
+            Input(StructView.Ids.LEAFLET_MAP1, "clicked_shape"),
+            Input(StructView.Ids.LEAFLET_MAP1, "polyline_points"),
+        )
+        def _update_from_map_click(
+            clicked_shape: Optional[Dict],
+            _polyline: List[List[float]],
+        ) -> Tuple[str, Union[_NoUpdate, str]]:
+            """Update intersection source and optionally selected well when
+            user clicks a shape in map"""
+            ctx = callback_context.triggered[0]
+            if "polyline_points" in ctx["prop_id"]:
+                return "polyline", no_update
+            if clicked_shape is None:
+                raise PreventUpdate
+            if clicked_shape.get("id") == "random_line":
+                return "polyline", no_update
+            if clicked_shape.get("id") in self.well_set_model.well_names:
+                return "well", clicked_shape.get("id")
+            raise PreventUpdate
+
 
 
 
