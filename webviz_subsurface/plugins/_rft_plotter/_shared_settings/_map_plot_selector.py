@@ -78,19 +78,14 @@ class MapPlotSelector(SettingsGroupABC):
                 ],
                 marks=self.datamodel.date_marks,
             ),
-            wcc.Selectors(
-                label="Zone filter",
-                open_details=False,
-                children=[
-                    wcc.SelectWithLabel(
-                        size=min(10, len(self.zone_names)),
-                        id=self.register_component_unique_id(self.Ids.MAP_ZONES),
-                        options=[
-                            {"label": name, "value": name} for name in self.zone_names
-                        ],
-                        value=self.zone_names,
-                        multi=True,
-                    ),
-                ],
+            wcc.Label(
+                "Zone filter",
+            ),
+            wcc.SelectWithLabel(
+                size=min(10, len(self.zone_names)),
+                id=self.register_component_unique_id(self.Ids.MAP_ZONES),
+                options=[{"label": name, "value": name} for name in self.zone_names],
+                value=self.zone_names,
+                multi=True,
             ),
         ]

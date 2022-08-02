@@ -70,7 +70,7 @@ class RftCrossplot(ViewABC):
             ),
             Input(
                 self.get_settings_element_id(
-                    SizeColorLayout.Ids.CROSSPLOT_COLOR_BY,
+                    SizeColorLayout.Ids.CROSSPLOT_SIZE_BY,
                     self.Ids.CROSSPLOT_PLOT_SETTINGS,
                 ),
                 "value",
