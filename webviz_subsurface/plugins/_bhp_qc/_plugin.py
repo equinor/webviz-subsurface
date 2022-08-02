@@ -118,7 +118,6 @@ class BhpQc(WebvizPluginABC):
             LineView(self.smry, webviz_settings),
             PluginIds.BhpID.LINE_CHART,
         )
-        print()
         self.add_shared_settings_group(
             BarLineSettings(),
             PluginIds.SharedSettings.BARLINE_SETTINGS,
