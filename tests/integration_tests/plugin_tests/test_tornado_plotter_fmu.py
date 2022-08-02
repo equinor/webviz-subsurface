@@ -4,7 +4,6 @@ from webviz_config.plugins import TornadoPlotterFMU
 
 def test_tornado_plotter_fmu(dash_duo, app, shared_settings) -> None:
     plugin = TornadoPlotterFMU(
-        app,
         shared_settings["SENS_SETTINGS"],
         ensemble=shared_settings["SENS_ENSEMBLES"][0],
         csvfile="share/results/volumes/geogrid--vol.csv",
