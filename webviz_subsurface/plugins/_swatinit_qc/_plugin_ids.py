@@ -13,9 +13,14 @@ class PlugInIDs:
             PICK_VIEW = "pick-view"
             EQLNUM = "eqlnum"
 
+        class Overview:
+            # pylint: disable=too-few-public-methods
+            BUTTON = "button"
+
         class Water:
             # pylint: disable=too-few-public-methods
             QC_VIZ = "qc-viz"
+            EQLNUM = "eqlnum"
             COLOR_BY = "color_by"
             MAX_POINTS = "max-points"
             QC_FLAG = "qc-flag"
@@ -41,3 +46,20 @@ class PlugInIDs:
         SWL_TRUNC = "SWL_TRUNC"
         UNKNOWN = "UNKNOWN"
         WATER = "WATER"
+
+    class ViewGroups:
+        # pylint: disable=too-few-public-methods
+        class Overview:
+            # pylint: disable=too-few-public-methods
+            OVERVIEW_TAB = "overview-tab"
+            GROUP_NAME = "overview-group"
+
+        class Water:
+            # pylint: disable=too-few-public-methods
+            WATER_TAB = "water-tab"
+            GROUP_NAME = "group-name"
+
+        class Capilar:
+            # pylint: disable=too-few-public-methods
+            CAPILAR_TAB = "capilar-tab"
+            GROUP_NAEME = "group-name"

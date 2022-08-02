@@ -9,7 +9,9 @@ from webviz_subsurface._providers import EnsembleTableProviderFactory
 
 from ._error import error
 from ._plugin_ids import PlugInIDs
+from ._swatint import SwatinitQcDataModel
 from .shared_settings import PickTab
+from .views import OverviewTabLayout
 
 
 class SwatinitQC(WebvizPluginABC):
@@ -30,13 +32,23 @@ class SwatinitQC(WebvizPluginABC):
             realization=realization,
             faultlines=faultlines,
         )
+        self.error_message = ""
 
-        self.add_store(PlugInIDs.Stores.Shared.PICK_VIEW)
-        self.add_shared_settings_group(PickTab)
+        self.add_store(
+            PlugInIDs.Stores.Shared.PICK_VIEW, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_shared_settings_group(PickTab(), PlugInIDs.SharedSettings.PICK_VIEW)
 
-        self.add_store(PlugInIDs.Stores.Shared.EQLNUM)
-        self.add_shared_settings_group()
+        self.add_store(
+            PlugInIDs.Stores.Overview.BUTTON, WebvizPluginABC.StorageType.SESSION
+        )
+
+        self.add_view(
+            OverviewTabLayout(self._datamodel),
+            PlugInIDs.ViewGroups.Overview.OVERVIEW_TAB,
+            PlugInIDs.ViewGroups.Overview.GROUP_NAME,
+        )
 
     @property
     def layout(self) -> wcc.Tabs:
-        return plugin_main_layout(self.uuid, self._datamodel)
+        return error(self.error_message)

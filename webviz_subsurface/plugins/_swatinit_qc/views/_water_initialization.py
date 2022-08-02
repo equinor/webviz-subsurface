@@ -1,12 +1,43 @@
-    
-   class TabQqPlotLayout:
-    class MainPlots(str, Enum):
-        WATERFALL = auto()
-        PROP_VS_DEPTH = auto()
+from typing import Dict, List, Optional, Tuple, Union
 
-    def __init__(self, get_uuid: Callable, datamodel: SwatinitQcDataModel) -> None:
+from typing import Any, Callable, List, Optional
+
+import pandas as pd
+import plotly.graph_objects as go
+import webviz_core_components as wcc
+from dash import dash_table, dcc, html
+
+import pandas as pd
+from dash import (
+    ClientsideFunction,
+    Input,
+    Output,
+    State,
+    callback,
+    callback_context,
+    clientside_callback,
+)
+from dash.exceptions import PreventUpdate
+from webviz_config import WebvizSettings
+from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from webviz_config.webviz_plugin_subclasses import ViewABC
+
+import webviz_subsurface
+from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
+from webviz_subsurface._components.tornado._tornado_data import TornadoData
+from webviz_subsurface._components.tornado._tornado_table import TornadoTable
+
+from .._plugin_ids import PlugInIDs
+
+
+class TabQqPlotLayout(ViewABC):
+    class IDs:
+        WATERFALL = "waterfall"
+        PROP_VS_DEPTH = "prop-vs-depth"
+
+    def __init__(self, datamodel: SwatinitQcDataModel) -> None:
+        super().__init__()
         self.datamodel = datamodel
-        self.get_uuid = get_uuid
 
     def main_layout(
         self,

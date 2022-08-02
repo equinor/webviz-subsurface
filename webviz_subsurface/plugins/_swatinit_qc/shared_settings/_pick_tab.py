@@ -14,7 +14,7 @@ class PickTab(SettingsGroupABC):
         TAB_PICKER = "tab-picker"
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__("Pick Tab")
         self.tab_options = [
             {"label": "Overview and Information", "value": "info"},
             {"label": "Water Initalization QC plots", "value": "water"},
@@ -36,7 +36,7 @@ class PickTab(SettingsGroupABC):
                 "data",
             ),
             Input(
-                self.component_unique_id(PickTab.IDs.TAB_PICKER),
+                self.component_unique_id(PickTab.IDs.TAB_PICKER).to_string(),
                 "value",
             ),
         )
