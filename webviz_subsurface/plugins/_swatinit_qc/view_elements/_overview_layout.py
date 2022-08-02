@@ -9,6 +9,9 @@ from ._layout_style import LayoutStyle
 
 
 class OverviewViewelement(ViewElementABC):
+    """All elements visible in the 'Overview and Information'-tab
+    gathered in one viewelement"""
+
     class IDs:
         # pylint: disable=too-few-public-methods
         LAYOUT = "layout"
@@ -106,7 +109,7 @@ class OverviewViewelement(ViewElementABC):
             style={"margin-bottom": "30px"},
             children=[
                 html.Button(
-                    "CLICK HERE FOR INFORMATION",  # var egt samme som tittelen til wcc.Dialog
+                    "CLICK HERE FOR INFORMATION",
                     style={"width": "100%", "background-color": "white"},
                     id=self.register_component_unique_id(
                         OverviewViewelement.IDs.BUTTON
@@ -150,7 +153,7 @@ class OverviewViewelement(ViewElementABC):
         )
 
 
-def qc_flag_description() -> str:  # listen på bunnen av første side
+def qc_flag_description() -> str:
     return """
 - **PC_SCALED**  - Capillary pressure have been scaled and SWATINIT was accepted.
 - **FINE_EQUIL**  - If item 9 in EQUIL is nonzero then initialization happens in a vertically

@@ -1,10 +1,6 @@
 from typing import List
 
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-
-from webviz_subsurface._figures import create_figure
-from webviz_subsurface._utils.colors import hex_to_rgb, rgb_to_str, scale_rgb_lightness
 
 from .._plugin_ids import PlugInIDs
 

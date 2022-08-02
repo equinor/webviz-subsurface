@@ -29,7 +29,7 @@ class OverviewTabLayout(ViewABC):
             Output(
                 self.view_element(OverviewTabLayout.IDs.OVERVIEW_TAB)
                 .component_unique_id(OverviewViewelement.IDs.INFO_DIALOG)
-                .to_string(),  # litt usikker på denne IDen her?
+                .to_string(),
                 "open",
             ),
             Input(self.get_store_unique_id(PlugInIDs.Stores.Overview.BUTTON), "data"),
