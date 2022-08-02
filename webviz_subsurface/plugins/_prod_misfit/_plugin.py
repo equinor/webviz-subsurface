@@ -3,8 +3,6 @@ import logging
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import dash
-import webviz_core_components as wcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._models import WellAttributesModel
@@ -13,11 +11,21 @@ from webviz_subsurface._providers import Frequency
 from .._simulation_time_series.types.provider_set import (
     create_presampled_provider_set_from_paths,
 )
-from ._callbacks import plugin_callbacks
-from ._layout import main_layout
+from ._plugin_ids import PluginIds
+from .shared_settings import Filter
+from .views import (
+    MisfitOptions,
+    MisfitPerRealView,
+    PlotSettingsCoverage,
+    PlotSettingsHeatmap,
+    PlotSettingsMisfit,
+    ProdCoverageView,
+    ProdHeatmapView,
+)
 
 
 class ProdMisfit(WebvizPluginABC):
+    # pylint: disable=too-many-instance-attributes
     """Visualizes production data misfit at selected date(s).
 
     When not dealing with absolute value of differences, difference plots are
@@ -84,7 +92,6 @@ class ProdMisfit(WebvizPluginABC):
 
     def __init__(
         self,
-        app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
@@ -95,6 +102,7 @@ class ProdMisfit(WebvizPluginABC):
         excl_name_contains: list = None,
         phase_weights: dict = None,
     ):
+        # pylint: disable=too-many-statements
 
         super().__init__()
 
@@ -171,20 +179,210 @@ class ProdMisfit(WebvizPluginABC):
         self.well_collections = _get_well_collections_from_attr(
             self.wells, self._well_attributes
         )
+        # ------------------------------------------------------------
+        # calculations for settings
+        self.all_dates, self.all_phases, self.all_wells, self.all_realizations = (
+            [],
+            [],
+            [],
+            [],
+        )
+        # pylint: disable=consider-iterating-dictionary
+        for ens_name in self.ensemble_names:
+            self.all_dates.extend(self.dates[ens_name])
+            self.all_phases.extend(self.phases[ens_name])
+            self.all_wells.extend(self.wells[ens_name])
+            self.all_realizations.extend(self.realizations[ens_name])
+        self.all_dates = list(sorted(set(self.all_dates)))
+        self.all_phases = list(sorted(set(self.all_phases)))
+        self.all_wells = list(sorted(set(self.all_wells)))
+        self.all_realizations = list(sorted(set(self.all_realizations)))
+        self.all_well_collection_names = []
+        for collection_name in self.well_collections.keys():
+            self.all_well_collection_names.append(collection_name)
+        # --------------------------------------------------------------
+        # add views, settings and stores
 
-        self.set_callbacks(app)
+        self.add_store(
+            PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_DATES, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_COMBINE_WELLS_COLLECTION,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_WELL_COLLECTIONS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PluginIds.Stores.SELECTED_REALIZATIONS, WebvizPluginABC.StorageType.SESSION
+        )
+
+        self.add_shared_settings_group(
+            Filter(
+                self.ensemble_names,
+                self.all_dates,
+                self.all_phases,
+                self.all_wells,
+                self.all_realizations,
+                self.all_well_collection_names,
+            ),
+            PluginIds.SharedSettings.FILTER,
+        )
+
+        self.add_view(
+            MisfitPerRealView(
+                input_provider_set=self._input_provider_set,
+                ens_vectors=self.vectors,
+                ens_realizations=self.realizations,
+                well_collections=self.well_collections,
+                weight_reduction_factor_oil=self.weight_reduction_factor_oil,
+                weight_reduction_factor_wat=self.weight_reduction_factor_wat,
+                weight_reduction_factor_gas=self.weight_reduction_factor_gas,
+            ),
+            PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL,
+        )
+        self.add_view(
+            ProdCoverageView(
+                input_provider_set=self._input_provider_set,
+                ens_vectors=self.vectors,
+                ens_realizations=self.realizations,
+                well_collections=self.well_collections,
+            ),
+            PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE,
+        )
+        self.add_view(
+            ProdHeatmapView(
+                input_provider_set=self._input_provider_set,
+                ens_vectors=self.vectors,
+                ens_realizations=self.realizations,
+                well_collections=self.well_collections,
+            ),
+            PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP,
+        )
 
     @property
-    def layout(self) -> wcc.Tabs:
-        return main_layout(
-            get_uuid=self.uuid,
-            ensemble_names=self.ensemble_names,
-            dates=self.dates,
-            phases=self.phases,
-            wells=self.wells,
-            realizations=self.realizations,
-            well_collections=self.well_collections,
-        )
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .layout_element(MisfitPerRealView.Ids.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": """Shows production misfit per realization.
+                             Several ensembles can be shown at the same time.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.ENSEMBLE_SELECTOR),
+                "content": """Select which ensembles to view graphs of.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.DATE_SELECTOR),
+                "content": """Choose a single or several dates.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.PHASE_SELECTOR),
+                "content": """Select what phases to be shown in the plot.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.WELL_SELECTOR),
+                "content": """Select what wells to include in the data.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.COMBINE_WELL_AND_COLLECTION_AS),
+                "content": """Combine the well and collection data as union or intersection.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.WELL_COLLECTION_SELECTOR),
+                "content": """Choose what collection data to include.""",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PluginIds.SharedSettings.FILTER
+                ).component_unique_id(Filter.Ids.REALIZATION_SELECTOR),
+                "content": """Choose how many realizations to include in the plot.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsMisfit.Ids.COLORBY),
+                "content": """Color plot by phases, date or total misfit.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsMisfit.Ids.SORTING_RANKING),
+                "content": """Rank data by ascending or descending value.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsMisfit.Ids.FIG_LAYOUT_HEIGHT),
+                "content": """Select the size of the plot.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.MISFIT_OPTIONS)
+                .component_unique_id(MisfitOptions.Ids.MISFIT_WEIGHT),
+                "content": """Select how to weigh misfits.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.PRODUCTION_MISFIT_PER_REAL)
+                .settings_group(MisfitPerRealView.Ids.MISFIT_OPTIONS)
+                .component_unique_id(MisfitOptions.Ids.MISFIT_EXPONENT),
+                "content": """Choose between linear or square sum of misfit exponent.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
+                .layout_element(ProdCoverageView.Ids.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": """Shows well production coverage in a crossplot.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
+                .settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsCoverage.Ids.COLORBY_GROUPING),
+                "content": """Choose to have the ensembles in the plot overlay or side by side.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_COVERAGE)
+                .settings_group(ProdCoverageView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsCoverage.Ids.SHOW_POINTS),
+                "content": """Select how many points to show.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP)
+                .layout_element(ProdHeatmapView.Ids.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": """Shows cummulative misfit in heatmap.""",
+            },
+            {
+                "id": self.view(PluginIds.MisfitViews.WELL_PRODUCTION_HEATMAP)
+                .settings_group(ProdHeatmapView.Ids.PLOT_SETTINGS)
+                .component_unique_id(PlotSettingsHeatmap.Ids.COLOR_RANGE_SCALING),
+                "content": """Select the scale of the color range relative to max.""",
+            },
+        ]
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return (
@@ -194,18 +392,6 @@ class ProdMisfit(WebvizPluginABC):
         )
 
     # ---------------------------------------------
-    def set_callbacks(self, app: dash.Dash) -> None:
-        plugin_callbacks(
-            app=app,
-            get_uuid=self.uuid,
-            input_provider_set=self._input_provider_set,
-            ens_vectors=self.vectors,
-            ens_realizations=self.realizations,
-            well_collections=self.well_collections,
-            weight_reduction_factor_oil=self.weight_reduction_factor_oil,
-            weight_reduction_factor_wat=self.weight_reduction_factor_wat,
-            weight_reduction_factor_gas=self.weight_reduction_factor_gas,
-        )
 
 
 # ------------------------------------------------------------------------
