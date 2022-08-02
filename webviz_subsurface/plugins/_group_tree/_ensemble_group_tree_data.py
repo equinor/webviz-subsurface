@@ -66,10 +66,8 @@ class EnsembleGroupTreeData:
         to the GroupTree plugin. First there is a lot of filtering of the smry and
         grouptree data, before the filtered data is sent to the function that is
         actually creating the dataset.
-
         Returns the group tree data and two lists with dropdown options for what
         to display on the edges and nodes.
-
         A sample data set can be found here:
         https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/demo/example-data/group-tree.json
         """  # noqa
@@ -131,7 +129,6 @@ class EnsembleGroupTreeData:
     ) -> pd.DataFrame:
         """Returns a dataframe with the summary vectors that is needed to
         put together the group tree dataset. The other columns are metadata:
-
         * nodename: name in eclipse network
         * datatype: oilrate, gasrate, pressure etc
         * edge_node: whether the datatype is edge (f.ex rates) or node (f.ex pressure)
@@ -298,7 +295,6 @@ def create_dataset(
     smry: pd.DataFrame, gruptree: pd.DataFrame, sumvecs: pd.DataFrame
 ) -> List[dict]:
     """The function puts together the GroupTree component input dataset.
-
     The gruptree dataframe includes complete networks for every time
     the tree changes (f.ex if a new well is defined). The function loops
     through the trees and puts together all the summary data that is valid for
@@ -442,7 +438,6 @@ def get_leafnode_types(
 ) -> Tuple[List[Any], List[Any], List[Any]]:
     """This function finds the IS_PROD, IS_INJ and IS_OTHER values of all
     leaf nodes connected to the input node.
-
     The function is using recursion to find all wells below the node
     int the three.
     """
@@ -466,7 +461,6 @@ def create_leafnodetype_maps(
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """Returns three dictionaries classifying leaf nodes as producer,
     injector and/or other (f.ex observation well).
-
     Well leaf nodes are classified using WSTAT and group leaf nodes
     are classified using summary data.
     """
