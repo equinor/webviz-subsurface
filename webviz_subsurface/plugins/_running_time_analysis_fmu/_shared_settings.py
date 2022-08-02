@@ -16,6 +16,7 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
         MODE = "mode-1"
         ENSEMBLE = "ensemble"
         COLORING = "coloring"
+        COLOR_LABEL = "color-label"
         FILTERING = "filtering"
         FILTER_SHORT = "filter-short"
         REMOVE_CONSTANT = "remove-constant"
@@ -70,8 +71,10 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                 value=self.ensembles[0],
                 clearable=False,
             ),
+            wcc.Label(
+                id=self.register_component_unique_id(self.Ids.COLOR_LABEL),
+            ),
             wcc.Dropdown(
-                label="Color jobs relative to running time of:",
                 id=self.register_component_unique_id(self.Ids.COLORING),
                 options=[
                     {"label": rel, "value": rel} for rel in self.COLOR_MATRIX_BY_LABELS
@@ -177,14 +180,16 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                 self.component_unique_id(self.Ids.FILTER_PARAMS).to_string(),
                 "style",
             ),
-            Output(self.component_unique_id(self.Ids.COLORING).to_string(), "label"),
+            Output(
+                self.component_unique_id(self.Ids.COLOR_LABEL).to_string(), "children"
+            ),
             Output(self.component_unique_id(self.Ids.COLORING).to_string(), "options"),
             Output(self.component_unique_id(self.Ids.COLORING).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.MODE).to_string(), "value"),
         )
         def _update_color(selected_mode: str) -> Tuple:
-            label = None
-            value = None
+            # label = None
+            # value = None
 
             if selected_mode == "running_time_matrix":
                 label = "Color jobs relative to running time of:"
@@ -202,7 +207,6 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                     value,
                 )
 
-            label = "Color realizations relative to:"
             options = [
                 {"label": rel, "value": rel} for rel in self.COLOR_PARCOORD_BY_LABELS
             ]
@@ -212,7 +216,7 @@ class RunningTimeAnalysisFmuSettings(SettingsGroupABC):
                 {"display": "none"},
                 {"display": "block"},
                 {"display": "block"},
-                label,
+                "Color realizations relative to:",
                 options,
                 value,
             )

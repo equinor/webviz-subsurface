@@ -1,5 +1,9 @@
 class PluginIds:
     # pylint: disable=too-few-public-methods
+    class Stores:
+        VIEW_ELEMENT_HEIGHT = "view-element-height"
+
+    # pylint: disable=too-few-public-methods
     class SharedSettings:
         SHARED_SETTINGS_GROUP = "shared-settings-group"
 
