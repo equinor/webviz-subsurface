@@ -70,11 +70,11 @@ jobs:
 
     - name: 🕵️ Check code style & linting
       run: |
-        black --check webviz_subsurface tests setup.py
-        pylint webviz_subsurface tests setup.py
-        bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
-        isort --check-only webviz_subsurface tests setup.py
-        mypy --package webviz_subsurface
+        # black --check webviz_subsurface tests setup.py
+        # pylint webviz_subsurface tests setup.py
+        # bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
+        # isort --check-only webviz_subsurface tests setup.py
+        # mypy --package webviz_subsurface
 
     - name: 🤖 Run tests
       env:
