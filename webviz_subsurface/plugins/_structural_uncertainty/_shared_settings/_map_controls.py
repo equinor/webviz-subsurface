@@ -1,13 +1,14 @@
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PluginIds
+from ._dialog import clear_all_apply_dialog_buttons, dialog_layout, open_dialog_layout
 
 
 class MapControls(SettingsGroupABC):
@@ -39,6 +40,7 @@ class MapControls(SettingsGroupABC):
 
         # -filter
         REAL_FILTER = "real-filter"
+        SELECTED_REAL = "selected-real"
 
     def __init__(
         self,
@@ -47,6 +49,7 @@ class MapControls(SettingsGroupABC):
         ensembles: List[str],
         realizations: List[int],
         use_wells: bool,
+        initial_settings: Dict,
     ) -> None:
         super().__init__("Map Controls")
 
@@ -55,6 +58,7 @@ class MapControls(SettingsGroupABC):
         self.ensembles = ensembles
         self.realizations = realizations
         self.use_wells = use_wells
+        self.initial_settings = initial_settings
 
     def layout(self) -> List[Component]:
         return [
@@ -317,15 +321,45 @@ class MapControls(SettingsGroupABC):
                 label="Filters",
                 children=[
                     html.Div(
-                        children=html.Button(
-                            "Realization filter",
-                            id=self.register_component_unique_id(
+                        children=[
+                        open_dialog_layout(
+                            uuid=self.register_component_unique_id(
                                 MapControls.Ids.REAL_FILTER
                             ),
-                        ),
+                            dialog_id="realization-filter",
+                            title="Realization filter",
+                        ),]
                     ),
                 ],
             ),
+           dialog_layout(
+                    uuid=self.component_unique_id(MapControls.Ids.REAL_FILTER).to_string(),
+                    dialog_id="realization-filter",
+                    title="Filter realizations",
+                    children=[
+                        html.Div(
+                            style={"marginTop": "10px"},
+                            children=html.Label(
+                                children=[
+                                    wcc.Select(
+                                        id=self.register_component_unique_id(MapControls.Ids.SELECTED_REAL),
+                                        options=[{"label": real, "value": real} for real in self.realizations],
+                                        value=[str(val) for val in self.initial_settings.get(
+                                                                "intersection_data", {}
+                                                            ).get("realizations", self.realizations)],
+                                        multi=True,
+                                        size=20,
+                                        persistence=True,
+                                        persistence_type="session",
+                                    ),
+                                ]
+                            ),
+                        ),
+                        clear_all_apply_dialog_buttons(
+                            uuid=self.component_unique_id(MapControls.Ids.REAL_FILTER).to_string(), dialog_id="realization-filter"
+                        ),
+                    ],
+                ), 
         ]
 
     def set_callbacks(self) -> None:
@@ -524,7 +558,9 @@ class MapControls(SettingsGroupABC):
             #add layout to realization button first
             Output(
                 {
-                    "id": get_uuid("dialog"),
+                    "id": self.component_unique_id(
+                    MapControls.Ids.REAL_FILTER
+                ).to_string(),
                     "dialog_id": "realization-filter",
                     "element": "apply",
                 },
@@ -532,7 +568,9 @@ class MapControls(SettingsGroupABC):
             ),
             Output(
                 {
-                    "id": get_uuid("dialog"),
+                    "id": self.component_unique_id(
+                    MapControls.Ids.REAL_FILTER
+                ).to_string(),
                     "dialog_id": "realization-filter",
                     "element": "apply",
                 },
@@ -543,15 +581,48 @@ class MapControls(SettingsGroupABC):
                 "data",
             ),
             Input(
-                {"id": get_uuid("intersection-data"), "element": "realizations"},
+                self.component_unique_id(
+                    MapControls.Ids.SELECTED_REAL
+                ).to_string(),
                 "value",
             ),
+            State(self.get_store_unique_id(PluginIds.Stores.INITIAL_REALS),
+                "data",)
         )
         def _activate_realization_apply_btn(
-            stored_reals: List, selected_reals: List
+            stored_reals: List, selected_reals: List, initial_reals: List
         ) -> Tuple[bool, Dict[str, str]]:
+            if stored_reals == None:
+                stored_reals = initial_reals
             if stored_reals is None or selected_reals is None:
                 raise PreventUpdate
             if set(stored_reals) == set(selected_reals):
                 return True, {"visibility": "hidden"}
             return False, {"visibility": "visible"}
+        @callback(
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.REAL_STORE),
+                "data",
+            ),
+            Input(
+                {
+                    "id": self.component_unique_id(
+                    MapControls.Ids.REAL_FILTER
+                ).to_string(),
+                    "dialog_id": "realization-filter",
+                    "element": "apply",
+                },
+                "n_clicks",
+            ),
+            State(
+                self.component_unique_id(
+                    MapControls.Ids.SELECTED_REAL
+                ).to_string(),
+                "value",
+            ),
+            prevent_initial_call = True
+        )
+        def _store_realizations(btn_click: Optional[int], selected_reals: List) -> List:
+            if btn_click:
+                return selected_reals
+            raise PreventUpdate

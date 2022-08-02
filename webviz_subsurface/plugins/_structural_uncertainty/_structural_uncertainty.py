@@ -365,6 +365,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         self.add_store(
             PluginIds.Stores.STORED_MANUAL_UPDATE_OPTIONS, WebvizPluginABC.StorageType.SESSION
         )
+        self.add_store(
+            PluginIds.Stores.INITIAL_REALS, WebvizPluginABC.StorageType.SESSION
+        )
 
         # ------------- Shared settings ------------------
 
@@ -377,7 +380,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 self._well_set_model.well_names,
                 self.first_surface_geometry,
                 self._initial_settings,
-                self._realizations
+                self._realizations,
+                self._color_picker
             ),
             PluginIds.SharedSettings.INTERSECTION_CONTROLS,
         )
@@ -389,6 +393,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 self.ensembles,
                 self._realizations,
                 self._use_wells,
+                self._initial_settings
             ),
             PluginIds.SharedSettings.MAP_CONTROLS,
         )

@@ -258,7 +258,7 @@ class StructView(ViewABC):
                 self.get_store_unique_id(PluginIds.Stores.AUTO_COMP_DIFF),
                 "data",
             ),
-            Input(self.get_store_unique_id(PluginIds.Stores.REAL_STORE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.INITIAL_REALS), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.WELL), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.STORED_POLYLINE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.MAP_STORED_XLINE), "data"),
@@ -484,7 +484,7 @@ class StructView(ViewABC):
             Input(self.get_store_unique_id(PluginIds.Stores.MAP_STORED_XLINE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.MAP_STORED_YLINE), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.WELL), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.REAL_STORE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.INITIAL_REALS), "data"),
             State(
                 self.get_store_unique_id(PluginIds.Stores.SURFACE_ATTR),
                 "data",
@@ -500,6 +500,7 @@ class StructView(ViewABC):
             State(self.get_store_unique_id(PluginIds.Stores.RESOLUTION), "data"),
             State(self.get_store_unique_id(PluginIds.Stores.EXTENSION), "data"),
             #State(self.color_picker.color_store_id, "data")
+            prevent_initial_call = True
         )
         # pylint: disable=too-many-arguments: disable=too-many-branches, too-many-locals
         def _store_intersection_traces(
@@ -802,34 +803,35 @@ class StructView(ViewABC):
             State(self.get_store_unique_id(PluginIds.Stores.INTERSECTION_DATA), "data"),
         )
 
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SOURCE),
-                "data",
-            ),
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.WELL),
-                "data",
-            ),
-            Input(StructView.Ids.LEAFLET_MAP1, "clicked_shape"),
-            Input(StructView.Ids.LEAFLET_MAP1, "polyline_points"),
-        )
-        def _update_from_map_click(
-            clicked_shape: Optional[Dict],
-            _polyline: List[List[float]],
-        ) -> Tuple[str, Union[_NoUpdate, str]]:
-            """Update intersection source and optionally selected well when
-            user clicks a shape in map"""
-            ctx = callback_context.triggered[0]
-            if "polyline_points" in ctx["prop_id"]:
-                return "polyline", no_update
-            if clicked_shape is None:
-                raise PreventUpdate
-            if clicked_shape.get("id") == "random_line":
-                return "polyline", no_update
-            if clicked_shape.get("id") in self.well_set_model.well_names:
-                return "well", clicked_shape.get("id")
-            raise PreventUpdate
+        # @callback(
+        #     Output(
+        #         self.get_store_unique_id(PluginIds.Stores.SOURCE),
+        #         "data",
+        #     ),
+        #     Output(
+        #         self.get_store_unique_id(PluginIds.Stores.WELL),
+        #         "data",
+        #     ),
+        #     Input(StructView.Ids.LEAFLET_MAP1, "clicked_shape"),
+        #     Input(StructView.Ids.LEAFLET_MAP1, "polyline_points"),
+        #     prevent_initial_call = True
+        # )
+        # def _update_from_map_click(
+        #     clicked_shape: Optional[Dict],
+        #     _polyline: List[List[float]],
+        # ) -> Tuple[str, Union[_NoUpdate, str]]:
+        #     """Update intersection source and optionally selected well when
+        #     user clicks a shape in map"""
+        #     ctx = callback_context.triggered[0]
+        #     if "polyline_points" in ctx["prop_id"]:
+        #         return "polyline", no_update
+        #     if clicked_shape is None:
+        #         raise PreventUpdate
+        #     if clicked_shape.get("id") == "random_line":
+        #         return "polyline", no_update
+        #     if clicked_shape.get("id") in self.well_set_model.well_names:
+        #         return "well", clicked_shape.get("id")
+        #     raise PreventUpdate
 
 
 

@@ -409,7 +409,7 @@ class IntersectionControls(SettingsGroupABC):
             return (src)
         @callback(
             Output(self.get_store_unique_id(PluginIds.Stores.INIT_INTERSECTION_LAYOUT), "data"),
-            Output(self.get_store_unique_id(PluginIds.Stores.REAL_STORE), "data"),
+            Output(self.get_store_unique_id(PluginIds.Stores.INITIAL_REALS), "data"),
             Input(self.get_store_unique_id(PluginIds.Stores.FIRST_CALL), "value")
         )
         def _set_real_and_layout(first: int) -> Tuple[Optional[dict], List[str]]:

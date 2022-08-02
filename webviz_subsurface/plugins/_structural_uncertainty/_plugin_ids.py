@@ -57,6 +57,7 @@ class PluginIds:
 
         # -filter
         REAL_FILTER = "real-filter"
+        INITIAL_REALS = "initial-reals"
         REAL_STORE = "real-store"
 
         # Graphs
