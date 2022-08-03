@@ -12,7 +12,6 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 import webviz_subsurface._utils.parameter_response as parresp
 
 from .._plugin_ids import PluginIds
-from ..view_elements import Graph
 from ._view_functions import render_parcoord
 
 

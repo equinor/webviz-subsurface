@@ -16,7 +16,6 @@ from webviz_subsurface._models import (
 from ._error import error
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
-from .view_elements import Graph
 from .views import EnsembleView, ResponseView, ViewSettings
 
 

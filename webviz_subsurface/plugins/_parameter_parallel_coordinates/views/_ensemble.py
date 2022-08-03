@@ -7,7 +7,6 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_core_components import Graph as WccGraph
 
 from .._plugin_ids import PluginIds
-from ..view_elements import Graph
 from ._view_functions import render_parcoord
 
 
