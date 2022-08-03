@@ -8,6 +8,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
+from typing import List
 
 import ecl2df
 
@@ -24,20 +25,21 @@ def _get_parser() -> argparse.ArgumentParser:
     parser.description = (
         "Batch conversion of UNSMRY files to Apache Arrow IPC file format.\n"
         "\n"
-        "Note that if the enspath argument includes wildcards you will have to enclose it\n"
-        "in quotes to stop the shell from expanding it, e.g.:\n"
-        '  smry2arrow_batch "my_folder/realization-*/iter-0"'
+        "Required input is a path/paths which may be wildcarded, like:\n"
+        "  smry2arrow_batch my_folder/realization-*/iter-0\n"
+        "You may also define a spesific file pattern for the UNSMRY file to read."
     )
 
     parser.add_argument(
         "enspath",
         type=Path,
         help="Path with wildcards giving file system location of the ensemble's realizations",
+        nargs="*",
     )
     parser.add_argument(
         "--eclbase",
         type=Path,
-        help="Eclipse base name",
+        help='Eclipse base name, note that "" is required around paths with wildcards',
         default=Path("eclipse/model/*.UNSMRY"),
     )
     return parser
@@ -63,25 +65,27 @@ def _convert_single_smry_file(smry_filename: str, arrow_filename: str) -> None:
 
 
 def _batch_convert_smry2arrow(
-    ens_path: Path, ecl_base: Path, relative_output_dir: Path
+    ens_path: List[Path], ecl_base: Path, relative_output_dir: Path
 ) -> None:
     """Does batch conversion of UNSMRY files for all realizations within an ensemble."""
-    globbed_real_dirs = sorted(glob.glob(str(ens_path)))
 
-    for real_dir in globbed_real_dirs:
-        glob_expr = str(Path(real_dir) / ecl_base)
-        globbed_smry_files = sorted(glob.glob(glob_expr))
-        if globbed_smry_files:
-            real_output_dir = Path(real_dir) / relative_output_dir
-            real_output_dir.mkdir(parents=True, exist_ok=True)
+    for wildcarded_path in ens_path:
+        globbed_real_dirs = sorted(glob.glob(str(wildcarded_path)))
 
-            for smry_file in globbed_smry_files:
-                basename_without_ext = Path(Path(smry_file).name).stem
-                arrow_file = real_output_dir / (basename_without_ext + ".arrow")
+        for real_dir in globbed_real_dirs:
+            glob_expr = str(Path(real_dir) / ecl_base)
+            globbed_smry_files = sorted(glob.glob(glob_expr))
+            if globbed_smry_files:
+                real_output_dir = Path(real_dir) / relative_output_dir
+                real_output_dir.mkdir(parents=True, exist_ok=True)
 
-                logger.info(f"input(smry):   {smry_file}")
-                logger.info(f"output(arrow): {arrow_file}")
-                _convert_single_smry_file(smry_file, str(arrow_file))
+                for smry_file in globbed_smry_files:
+                    basename_without_ext = Path(Path(smry_file).name).stem
+                    arrow_file = real_output_dir / (basename_without_ext + ".arrow")
+
+                    logger.info(f"input(smry):   {smry_file}")
+                    logger.info(f"output(arrow): {arrow_file}")
+                    _convert_single_smry_file(smry_file, str(arrow_file))
 
 
 def main() -> None:
