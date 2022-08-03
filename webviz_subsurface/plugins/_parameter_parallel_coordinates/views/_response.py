@@ -195,7 +195,7 @@ class ResponseView(ViewABC):
             df["COLOR"] = df.apply(
                 lambda row: self.ensembles.index(ensemble[0]), axis=1
             )
-            fig =  render_parcoord(
+            fig = render_parcoord(
                 df,
                 self.theme,
                 self.ens_colormap,
