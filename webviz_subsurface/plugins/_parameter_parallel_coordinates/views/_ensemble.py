@@ -83,10 +83,13 @@ class EnsembleView(ViewABC):
             )
             return WccGraph(
                 style={
-                    "width": "200vh",
-                    # "min-height": "300px",
-                    "transform": "rotate(-90deg)",
-                    "padding": "300px",
+                    "transform": "rotate(90deg)",
+                    "width": 900,
+                    "height": 1100,
+                    "margin": {
+                        "r": 60,
+                        "t": 0,
+                    },
                 },
                 figure=render_parcoord(
                     df,

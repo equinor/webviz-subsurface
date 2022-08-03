@@ -367,8 +367,8 @@ folder, to avoid risk of not extracting the right data.
             },
             {
                 "id": self.view(PluginIds.ParallelID.RESPONSE_CHART)
-                .view_element(ResponseView.Ids.RESPONSE_CHART)
-                .component_unique_id(Graph.Ids.GRAPH),
+                .layout_element(ResponseView.Ids.RESPONSE_CHART)
+                .get_unique_id(),
                 "content": """Colors the response
                             in a parallel coordinates plot.""",
             },

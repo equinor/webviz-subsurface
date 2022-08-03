@@ -5,6 +5,7 @@ import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
+from matplotlib.pyplot import figure
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
@@ -101,7 +102,7 @@ class ResponseView(ViewABC):
         self.aggregation = aggregation
 
         column = self.add_column()
-        column.add_view_element(Graph(), ResponseView.Ids.RESPONSE_CHART)
+        column.make_row(ResponseView.Ids.RESPONSE_CHART, flex_grow=4)
         self.add_settings_group(
             ViewSettings(self.response_columns, self.response_filters, self.responsedf),
             ResponseView.Ids.SETTINGS,
@@ -134,10 +135,10 @@ class ResponseView(ViewABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(ResponseView.Ids.RESPONSE_CHART)
-                .component_unique_id(Graph.Ids.GRAPH)
+                self.layout_element(ResponseView.Ids.RESPONSE_CHART)
+                .get_unique_id()
                 .to_string(),
-                "figure",
+                "children",
             ),
             Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "data"),
             Input(
@@ -194,7 +195,7 @@ class ResponseView(ViewABC):
             df["COLOR"] = df.apply(
                 lambda row: self.ensembles.index(ensemble[0]), axis=1
             )
-            return render_parcoord(
+            fig =  render_parcoord(
                 df,
                 self.theme,
                 self.ens_colormap,
@@ -204,4 +205,16 @@ class ResponseView(ViewABC):
                 params,
                 response,
                 remove_constant,
+            )
+            return wcc.Graph(
+                figure=fig,
+                style={
+                    "transform": "rotate(90deg)",
+                    "width": 900,
+                    "height": 1100,
+                    "margin": {
+                        "r": 60,
+                        "t": 0,
+                    },
+                },
             )
