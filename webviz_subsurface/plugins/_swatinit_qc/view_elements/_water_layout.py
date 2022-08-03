@@ -27,6 +27,7 @@ class WaterViewelement(ViewElementABC):
     ) -> None:
         super().__init__()
         self.datamodel = datamodel
+        
         self.main_figure = main_figure
         self.map_figure = map_figure
         self.qc_volumes = qc_volumes

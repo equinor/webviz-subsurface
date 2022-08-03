@@ -130,14 +130,11 @@ class WaterFilters(SettingsGroupABC):
                 value=self.datamodel.satnums,
                 size=min(8, len(self.datamodel.satnums)),
             ),
-            self.range_filters(
-                WaterFilters.IDs.RANGE_FILTERS,
-                self.datamodel,
-            ),
+            self.range_filters,
         ]
 
     @property
-    def range_filters(self, uuid: str) -> List:
+    def range_filters(self) -> List:
         dframe = self.datamodel.dframe
         filters = []
         for col in self.datamodel.filters_continuous:
@@ -145,7 +142,7 @@ class WaterFilters(SettingsGroupABC):
             filters.append(
                 wcc.RangeSlider(
                     label="Depth range" if col == "Z" else col,
-                    id={"id": uuid, "col": col},
+                    id={"id": WaterFilters.IDs.RANGE_FILTERS, "col": col},
                     min=min_val,
                     max=max_val,
                     value=[min_val, max_val],

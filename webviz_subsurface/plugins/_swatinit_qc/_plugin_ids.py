@@ -29,11 +29,19 @@ class PlugInIDs:
             # pylint: disable=too-few-public-methods
             SPLIT_TABLE_BY = "split-table-by"
             MAX_PC_SCALE = "max-pc-scale"
+            EQLNUM = "eqlnum"
 
     class SharedSettings:
         # pylint: disable=too-few-public-methods
         PICK_VIEW = "pick-view"
         FILTERS = "filters"
+
+    class SettingsGroups:
+        # pylint: disable=too-few-public-methods
+        WATER_SEELECTORS = "water-selectors"
+        WATER_FILTERS = "water-filters"
+        CAPILAR_SELECTORS = "capilar-selectors"
+        CAPILAR_FILTERS = "capilar-filters"
 
     class QcFlags:
         # pylint: disable=too-few-public-methods
