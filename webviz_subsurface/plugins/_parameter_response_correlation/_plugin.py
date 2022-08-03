@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Type
+from typing import Any, Callable, Dict, List, Tuple, Type
 
 import pandas as pd
 from dash.development.base_component import Component
@@ -322,6 +322,41 @@ Responses are extracted automatically from the `.arrow` files in the individual 
     def layout(self) -> Type[Component]:
         """Main layout"""
         return error(self.error_message)
+
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        if self.parameter_csv and self.response_csv:
+            return [
+                (
+                    read_csv,
+                    [
+                        {
+                            "csv_file": self.parameter_csv,
+                        }
+                    ],
+                ),
+                (
+                    read_csv,
+                    [
+                        {
+                            "csv_file": self.response_csv,
+                        }
+                    ],
+                ),
+            ]
+        if self.response_file:
+            return [
+                (
+                    load_csv,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "csv_file": self.response_file,
+                            "ensemble_set_name": "EnsembleSet",
+                        }
+                    ],
+                )
+            ]
+        return []
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
