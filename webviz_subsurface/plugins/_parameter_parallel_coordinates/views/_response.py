@@ -5,7 +5,6 @@ import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from matplotlib.pyplot import figure
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
