@@ -88,7 +88,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         user_defined_vector_definitions: str = None,
         line_shape_fallback: str = "linear",
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
         # NOTE: Temporary css, pending on new wcc modal component.
         # See: https://github.com/equinor/webviz-core-components/issues/163
