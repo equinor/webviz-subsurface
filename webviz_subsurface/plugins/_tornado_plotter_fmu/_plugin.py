@@ -48,7 +48,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
         single_value_selectors: List[str] = None,
         multi_value_selectors: List[str] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
         # Defining members
         self._single_filters = single_value_selectors if single_value_selectors else []
