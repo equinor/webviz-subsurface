@@ -238,7 +238,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VIEWS_SETTINGS
+                    PlugInIDs.SharedSettings.VIEW_SETTINGS
                 ).component_unique_id(ViewSettings.IDs.REFERENCE),
                 "content": (
                     "Set reference sensitivity for which to calculate tornado plot"
