@@ -31,7 +31,7 @@ class ParameterCorrelation(WebvizPluginABC):
         ensembles: list,
         drop_constants: bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
         self.error_message = ""
 
