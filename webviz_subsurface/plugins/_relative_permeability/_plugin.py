@@ -288,52 +288,60 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 ),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
-                .component_unique_id(Selectors.IDs.SATURATION_AXIS),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.SELECTORS
+                ).component_unique_id(Selectors.IDs.SATURATION_AXIS),
                 "content": (
                     "Choose saturation type for your x-axis. Will automatically change available "
                     "options in 'Curves'."
                 ),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
-                .component_unique_id(Selectors.IDs.COLOR_BY),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.SELECTORS
+                ).component_unique_id(Selectors.IDs.COLOR_BY),
                 "content": ("Choose basis for your colormap."),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
-                .component_unique_id(Selectors.IDs.ENSEMBLES),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.SELECTORS
+                ).component_unique_id(Selectors.IDs.ENSEMBLES),
                 "content": ("Select ensembles."),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
-                .component_unique_id(Selectors.IDs.CURVES),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.SELECTORS
+                ).component_unique_id(Selectors.IDs.CURVES),
                 "content": (
                     "Choose curves. Capillary pressures and relative permeabilities will be shown"
                     " in separate plots."
                 ),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
-                .component_unique_id(Selectors.IDs.SATNUM),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.SELECTORS
+                ).component_unique_id(Selectors.IDs.SATNUM),
                 "content": ("Choose SATNUM regions."),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.VISUALIZATION)
-                .component_unique_id(Visualization.IDs.LINE_TRACES),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VISUALIZATION
+                ).component_unique_id(Visualization.IDs.LINE_TRACES),
                 "content": (
                     "Choose between different visualizations. 1. Show time series as "
                     "individual lines per realization. 2. Show statistical fanchart per ensemble."
                 ),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.VISUALIZATION)
-                .component_unique_id(Visualization.IDs.Y_AXIS),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VISUALIZATION
+                ).component_unique_id(Visualization.IDs.Y_AXIS),
                 "content": ("Switch between linear and logarithmic y-axis."),
             },
             {
-                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SCAL_RECOMMENDATION)
-                .component_unique_id(SCALRecommendation.IDs.SHOW_SCAL),
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.SCAL_RECOMMENDATION
+                ).component_unique_id(SCALRecommendation.IDs.SHOW_SCAL),
                 "content": (
                     "Switch on/off SCAL reference data (requires that the optional scalfile is"
                     " defined)."
