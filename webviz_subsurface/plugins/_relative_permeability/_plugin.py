@@ -95,7 +95,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
     ):
         # pylint: disable=too-many-statements
 
-        super().__init__()
+        super().__init__(stretch=True)
 
         WEBVIZ_ASSETS.add(
             Path(webviz_subsurface.__file__).parent
