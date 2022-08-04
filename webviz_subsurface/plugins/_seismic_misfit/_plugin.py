@@ -127,7 +127,7 @@ class SeismicMisfit(WebvizPluginABC):
         polygon: str = None,
         realrange: List[List[int]] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
         self.attributes = attributes
 
