@@ -32,9 +32,12 @@ class Filters(SettingsGroupABC):
         self._multi_filters = multi_filters
         self._ensemble_name = ensemble_name
         self._plugin_unique_id = LayoutUniqueId(plugin_uuid=PlugInIDs.PlugIn.PLUGIN_ID)
-        self.single_filter_id = self.register_component_unique_id(Filters.IDs.SINGLE_FILTER)
-        self.multi_filter_id = self.register_component_unique_id(Filters.IDs.MULTI_FILTER)
-
+        self.single_filter_id = self.register_component_unique_id(
+            Filters.IDs.SINGLE_FILTER
+        )
+        self.multi_filter_id = self.register_component_unique_id(
+            Filters.IDs.MULTI_FILTER
+        )
 
     def layout(self) -> List[Component]:
         elements = []
@@ -139,10 +142,8 @@ class Filters(SettingsGroupABC):
         a plugins layout. If the element string is unique within the plugin, this
         function returns a string which is guaranteed to be unique also across the
         application (even when multiple instances of the same plugin is added).
-
         Within the same plugin instance, the returned uuid is the same for the same
         element string. I.e. storing the returned value in the plugin is not necessary.
-
         Main benefit of using this function instead of creating a UUID directly,
         is that the abstract base class can in the future provide IDs that
         are consistent across application restarts (i.e. when the webviz configuration
