@@ -273,7 +273,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
     def layout(self) -> Type[Component]:
         return error(self.error_message)
 
-     def add_webvizstore(self):
+    def add_webvizstore(self):
         return [
             (
                 load_satfunc,
