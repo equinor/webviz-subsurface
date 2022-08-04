@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import List, Optional, Type, Union
 
 import pandas as pd
 from dash.development.base_component import Component
@@ -272,3 +272,71 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
     @property
     def layout(self) -> Type[Component]:
         return error(self.error_message)
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        """Tour of the plugin"""
+        return [
+            {
+                "id": self.view(PlugInIDs.RelCapViewGroup.RELCAP)
+                .layout_element(RelpermCappres.IDs.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": (
+                    "Dashboard displaying relative permeability and capillary pressure. "
+                    "Different options can be set in the menu to the left."
+                    "You can also toggle data on/off by clicking at the legend."
+                ),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
+                .component_unique_id(Selectors.IDs.SATURATION_AXIS),
+                "content": (
+                    "Choose saturation type for your x-axis. Will automatically change available "
+                    "options in 'Curves'."
+                ),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
+                .component_unique_id(Selectors.IDs.COLOR_BY),
+                "content": ("Choose basis for your colormap."),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
+                .component_unique_id(Selectors.IDs.ENSEMBLES),
+                "content": ("Select ensembles."),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
+                .component_unique_id(Selectors.IDs.CURVES),
+                "content": (
+                    "Choose curves. Capillary pressures and relative permeabilities will be shown"
+                    " in separate plots."
+                ),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SELECTORS)
+                .component_unique_id(Selectors.IDs.SATNUM),
+                "content": ("Choose SATNUM regions."),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.VISUALIZATION)
+                .component_unique_id(Visualization.IDs.LINE_TRACES),
+                "content": (
+                    "Choose between different visualizations. 1. Show time series as "
+                    "individual lines per realization. 2. Show statistical fanchart per ensemble."
+                ),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.VISUALIZATION)
+                .component_unique_id(Visualization.IDs.Y_AXIS),
+                "content": ("Switch between linear and logarithmic y-axis."),
+            },
+            {
+                "id": self.shared_settings_group(PlugInIDs.SharedSettings.SCAL_RECOMMENDATION)
+                .component_unique_id(SCALRecommendation.IDs.SHOW_SCAL),
+                "content": (
+                    "Switch on/off SCAL reference data (requires that the optional scalfile is"
+                    " defined)."
+                ),
+            },
+        ]

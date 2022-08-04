@@ -24,6 +24,7 @@ class RelpermCappres(ViewABC):
     class IDs:
         # pylint: disable=too-few-public-methods
         RELATIVE_PERMEABILIY = "reative-permeability"
+        MAIN_COLUMN = "main-column"
 
     SCAL_COLORMAP = {
         "Missing": "#ffff00",  # Using yellow if the curve can't be found
@@ -50,7 +51,7 @@ class RelpermCappres(ViewABC):
         self.sat_axes_maps = sat_axes_maps
 
         # Creating the column and row for the setup of the view
-        column = self.add_column()
+        column = self.add_column(RelpermCappres.IDs.MAIN_COLUMN)
         first_row = column.make_row()
         first_row.add_view_element(Graph(), RelpermCappres.IDs.RELATIVE_PERMEABILIY)
 
