@@ -31,7 +31,7 @@ class PlugInIDs:
         PLOTPICKER = "plotpicker"
         SELECTORS = "selectors"
         FILTERS = "filters"
-        VIEWSETTINGS = "view-settings"
+        VIEW_SETTINGS = "view-settings"
 
     class TornardoPlotGroup:
         # pylint: disable=too-few-public-methods
