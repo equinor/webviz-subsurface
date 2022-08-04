@@ -1,17 +1,15 @@
-from pathlib import Path
 from typing import Callable, List, Tuple, Type
 
 import pandas as pd
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
 
-from ..._datainput.fmu_input import scratch_ensemble
 from ._error import error
 from ._plugin_ids import PlugInIDs
 from .shared_settings import BothPlots, Horizontal, Options, Vertical
 from .views import ParameterPlot
+from .views._parameter_plot import get_parameters
 
 
 class ParameterCorrelation(WebvizPluginABC):
@@ -205,14 +203,4 @@ def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFra
         else data.corr()
         .dropna(axis="index", how="all")
         .dropna(axis="columns", how="all")
-    )
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-@webvizstore
-def get_parameters(ensemble_path: Path) -> pd.DataFrame:
-    return (
-        scratch_ensemble("", ensemble_path)
-        .parameters.apply(pd.to_numeric, errors="coerce")
-        .dropna(how="all", axis="columns")
     )

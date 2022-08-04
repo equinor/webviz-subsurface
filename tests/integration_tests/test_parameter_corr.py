@@ -1,7 +1,9 @@
+# isort: skip_file
 from unittest import mock
 
 import dash
 import pandas as pd
+import webviz_core_components as wcc
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 
@@ -32,8 +34,27 @@ def test_parameter_corr(dash_duo: dash.testing.composite.DashComposite) -> None:
 
         parameter_correlation = ParameterCorrelation(webviz_settings, ensembles)
 
-        app.layout = parameter_correlation.layout
+        app.layout = dash.html.Div(
+            className="layoutWrapper",
+            children=[
+                wcc.WebvizContentManager(
+                    id="webviz-content-manager",
+                    children=[
+                        wcc.WebvizSettingsDrawer(
+                            id="settings-drawer",
+                            children=parameter_correlation.get_all_settings(),
+                        ),
+                        wcc.WebvizPluginsWrapper(
+                            id="plugins-wrapper",
+                            children=parameter_correlation.plugin_layout(),
+                        ),
+                    ],
+                ),
+            ],
+        )
         dash_duo.start_server(app)
+
+        dash_duo.find_element(".WebvizSettingsDrawer__ToggleOpen").click()
 
         # Using str literals directly, not IDs from the plugin as intended because
         # the run test did not accept the imports
