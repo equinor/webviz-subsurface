@@ -52,14 +52,18 @@ class TabMaxPcInfoLayout(ViewABC):
             ),
             Input(
                 {
-                    "id": CapilarFilters.IDs.RANGE_FILTERS,
+                    "id": self.view_element(TabMaxPcInfoLayout.IDs.CAPILAR_TAB)
+                    .component_unique_id(CapilarFilters.IDs.RANGE_FILTERS)
+                    .to_string(), # litt usikker på denne...?
                     "col": ALL
                 },
                 "value",
             ),
             State(
                 {
-                    "id": CapilarFilters.IDs.RANGE_FILTERS,
+                    "id": self.view_element(TabMaxPcInfoLayout.IDs.CAPILAR_TAB)
+                    .component_unique_id(CapilarFilters.IDs.RANGE_FILTERS)
+                    .to_string(),
                     "col": ALL
                 },
                 "id",

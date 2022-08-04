@@ -109,6 +109,7 @@ class WaterFilters(SettingsGroupABC):
     def __init__(self, datamodel) -> None:
         super().__init__("Filters")
         self.datamodel = datamodel
+        self.range_filters_id = self.register_component_unique_id(WaterFilters.IDs.RANGE_FILTERS)
 
     def layout(self) -> List[Component]:
         return [
@@ -142,7 +143,7 @@ class WaterFilters(SettingsGroupABC):
             filters.append(
                 wcc.RangeSlider(
                     label="Depth range" if col == "Z" else col,
-                    id={"id": WaterFilters.IDs.RANGE_FILTERS, "col": col},
+                    id={"id": self.range_filters_id, "col": col},
                     min=min_val,
                     max=max_val,
                     value=[min_val, max_val],

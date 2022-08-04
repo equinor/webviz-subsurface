@@ -17,6 +17,9 @@ class WaterViewelement(ViewElementABC):
         # pylint: disable=too-few-public-methods
         MAIN_FIGURE = "main-figure"
         MAP_FIGURE = "map-figure"
+        INFO_BOX_EQLNUMS = "info-box-eqlnums"
+        INFO_BOX_SATNUMS = "infobox-satnums"
+        INFO_BOX_VOL_DIFF = "info-box-vol-diff"
 
     def __init__(
         self,
@@ -58,29 +61,38 @@ class WaterViewelement(ViewElementABC):
                                 figure=self.map_figure,
                             )
                         ),
-                        self.info_box(self.qc_volumes, height="35vh"),
+                        self.info_box,
                     ],
                 ),
             ]
         )
 
-    @staticmethod
-    def info_box(qc_vols: dict, height: str) -> html.Div:
+    @property
+    def info_box(self) -> html.Div:
+        qc_vols = self.qc_volumes
+        height = "35vh"
         return html.Div(
             [
                 wcc.Header("Information about selection", style=LayoutStyle.HEADER),
                 html.Div(
-                    "EQLNUMS:", style={"font-weight": "bold", "font-size": "15px"}
+                    "EQLNUMS:", 
+                    style={"font-weight": "bold", "font-size": "15px"},
                 ),
-                html.Div(", ".join([str(x) for x in qc_vols["EQLNUMS"]])),
                 html.Div(
-                    "SATNUMS:", style={"font-weight": "bold", "font-size": "15px"}
+                    ", ".join([str(x) for x in qc_vols["EQLNUMS"]]),
+                    id=self.register_component_unique_id(WaterViewelement.IDs.INFO_BOX_EQLNUMS),
+                    ),
+                html.Div(
+                    "SATNUMS:",
+                    style={"font-weight": "bold", "font-size": "15px"},
                 ),
-                html.Div(", ".join([str(x) for x in qc_vols["SATNUMS"]])),
+                html.Div(
+                    ", ".join([str(x) for x in qc_vols["SATNUMS"]]),
+                    id= self.register_component_unique_id(WaterViewelement.IDs.INFO_BOX_SATNUMS),
+                ),
                 html.Div(
                     html.Span("Reservoir Volume Difference:"),
-                    style={"font-weight": "bold", "margin-top": "10px"},
-                ),
+                    style={"font-weight": "bold", "margin-top": "10px"},                ),
                 html.Div(
                     children=[
                         html.Div(line)
@@ -90,6 +102,7 @@ class WaterViewelement(ViewElementABC):
                             f"HC Volume Diff (%): {qc_vols['HCVOL_DIFF_PERCENT']:.2f}",
                         ]
                     ],
+                    id=self.register_component_unique_id(WaterViewelement.IDs.INFO_BOX_VOL_DIFF)
                 ),
             ],
             style={"height": height, "padding": "10px"},

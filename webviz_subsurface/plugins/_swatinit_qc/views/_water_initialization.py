@@ -8,6 +8,7 @@ from .._plugin_ids import PlugInIDs
 from .._swatint import SwatinitQcDataModel
 from ..settings_groups import WaterFilters, WaterSelections
 from ..view_elements import WaterViewelement
+from webviz_subsurface.plugins._swatinit_qc import view_elements
 
 
 class TabQqPlotLayout(ViewABC):
@@ -19,12 +20,12 @@ class TabQqPlotLayout(ViewABC):
     def __init__(
         self,
         datamodel: SwatinitQcDataModel,
-        main_figure: go.Figure,
-        map_figure: go.Figure,
-        qc_volumes: dict,
     ) -> None:
         super().__init__("Water Initialization QC plots")
         self.datamodel = datamodel
+
+
+
         self.main_figure = main_figure
         self.map_figure = map_figure
         self.qc_volumes = qc_volumes
@@ -44,8 +45,124 @@ class TabQqPlotLayout(ViewABC):
 
     def set_callbacks(self) -> None:
         # update 
-        
-        
+        @callback(
+            Output(
+                self.view_element(TabQqPlotLayout.IDs.WATER_TAB)
+                .component_unique_id(WaterViewelement.IDs.MAIN_FIGURE)
+                .to_string(),
+                "figure"
+            ),
+            Output(
+                self.view_element(TabQqPlotLayout.IDs.WATER_TAB)
+                .component_unique_id(WaterViewelement.IDs.MAP_FIGURE)
+                .to_string(),
+                "figure"
+            ),
+            Output(
+                self.view_element(TabQqPlotLayout.IDs.WATER_TAB)
+                .component_unique_id(WaterViewelement.IDs.INFO_BOX_EQLNUMS)
+                .to_string(),
+                "children"
+            ),
+            Output(
+                self.view_elements(TabQqPlotLayout.IDs.WATER_TAB)
+                .component_unique_id(WaterViewelement.IDs.INFO_BOX_SATNUMS),
+                "children"
+            ),
+            Output(
+                self.view_elements(TabQqPlotLayout.IDs.WATER_TAB)
+                .component_unique_id(WaterViewelement.IDs.INFO_BOX_VOL_DIFF),
+                "children"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Water.QC_VIZ),
+                "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Water.EQLNUM),
+                "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Water.COLOR_BY),
+                "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Water.MAX_POINTS),
+                "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Water.QC_FLAG),
+                "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Water.SATNUM),
+                "data"
+            ),
+            Input(
+                self.get_store_unique_id(PlugInIDs.Stores.Water.EQLNUM),
+                "data"
+            ),
+
+            Input({"id": get_uuid(LayoutElements.FILTERS_DISCRETE), "col": ALL}, "value"),
+            Input({"id": get_uuid(LayoutElements.FILTERS_CONTINOUS), "col": ALL}, "value"),
+            State({"id": get_uuid(LayoutElements.FILTERS_DISCRETE), "col": ALL}, "id"),
+            State({"id": get_uuid(LayoutElements.FILTERS_CONTINOUS), "col": ALL}, "id"),
+        )
+        # pylint: disable=too-many-arguments
+        def _update_plot(
+            tab_selected: str,
+            eqlnums: List[str],
+            dicrete_filters: List[List[str]],
+            continous_filters: List[List[str]],
+            color_by: str,
+            max_points: int,
+            plot_selector: str,
+            dicrete_filters_ids: List[Dict[str, str]],
+            continous_filters_ids: List[Dict[str, str]],
+        ) -> list:
+
+            if tab_selected != Tabs.QC_PLOTS or max_points is None:
+                raise PreventUpdate
+
+            filters = zip_filters(dicrete_filters, dicrete_filters_ids)
+            filters.update({"EQLNUM": eqlnums})
+
+            df = datamodel.get_dataframe(
+                filters=filters,
+                range_filters=zip_filters(continous_filters, continous_filters_ids),
+            )
+            if df.empty:
+                return ["No data left after filtering"]
+
+            qc_volumes = datamodel.compute_qc_volumes(df)
+
+            df = datamodel.filter_dframe_on_depth(df)
+            df = datamodel.resample_dataframe(df, max_points=max_points)
+
+            colormap = datamodel.create_colormap(color_by)
+            main_plot = (
+                WaterfallPlot(qc_vols=qc_volumes).figure
+                if plot_selector == qc_plot_layout.MainPlots.WATERFALL
+                else PropertiesVsDepthSubplots(
+                    dframe=df,
+                    color_by=color_by,
+                    colormap=colormap,
+                    discrete_color=color_by in datamodel.SELECTORS,
+                ).figure
+            )
+            map_figure = MapFigure(
+                dframe=df,
+                color_by=color_by,
+                faultlinedf=datamodel.faultlines_df,
+                colormap=colormap,
+            ).figure
+
+            return qc_plot_layout.main_layout(
+                main_figure=main_plot,
+                map_figure=map_figure,
+                qc_volumes=qc_volumes,
+            )
+            
         @callback(
             Output(
                 self.view_element(TabQqPlotLayout.IDs.WATER_TAB)

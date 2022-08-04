@@ -1,3 +1,4 @@
+from logging import captureWarnings
 from typing import List
 
 import webviz_core_components as wcc
@@ -79,6 +80,7 @@ class CapilarFilters(SettingsGroupABC):
     def __init__(self, datamodel: SwatinitQcDataModel) -> None:
         super().__init__("Filter")
         self.datamodel = datamodel
+        self.range_filters_id = self.register_component_unique_id(CapilarFilters.IDs.RANGE_FILTERS)
 
     def layout(self) -> List[Component]:
         return [
@@ -104,7 +106,7 @@ class CapilarFilters(SettingsGroupABC):
             filters.append(
                 wcc.RangeSlider(
                     label="Depth range" if col == "Z" else col,
-                    id={"id": CapilarFilters.IDs.RANGE_FILTERS, "col": col},
+                    id={"id": self.range_filters_id, "col": col},
                     min=min_val,
                     max=max_val,
                     value=[min_val, max_val],
