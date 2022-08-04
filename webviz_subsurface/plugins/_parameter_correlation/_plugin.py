@@ -123,7 +123,6 @@ class ParameterCorrelation(WebvizPluginABC):
                 "content": "Displayting correlation between parameteres.",
             },
             {
-
                 "id": self.view(PlugInIDs.ParaCorrGroups.PARACORR)
                 .layout_element(ParameterPlot.IDs.MATRIX_ROW)
                 .get_unique_id(),
