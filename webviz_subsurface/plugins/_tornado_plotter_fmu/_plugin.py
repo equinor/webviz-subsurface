@@ -226,7 +226,19 @@ class TornadoPlotterFMU(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VIEWS_ETTINGS
+                    PlugInIDs.SharedSettings.FILTERS
+                ).component_unique_id(Filters.IDs.SINGLE_FILTER),
+                "content": "Choose the respose for the data",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.FILTERS
+                ).component_unique_id(Filters.IDs.MULTI_FILTER),
+                "content": "Choose the respose for the data",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VIEWS_SETTINGS
                 ).component_unique_id(ViewSettings.IDs.REFERENCE),
                 "content": (
                     "Set reference sensitivity for which to calculate tornado plot"

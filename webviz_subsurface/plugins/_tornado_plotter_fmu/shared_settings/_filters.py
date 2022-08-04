@@ -32,6 +32,9 @@ class Filters(SettingsGroupABC):
         self._multi_filters = multi_filters
         self._ensemble_name = ensemble_name
         self._plugin_unique_id = LayoutUniqueId(plugin_uuid=PlugInIDs.PlugIn.PLUGIN_ID)
+        self.single_filter_id = self.register_component_unique_id(Filters.IDs.SINGLE_FILTER)
+        self.multi_filter_id = self.register_component_unique_id(Filters.IDs.MULTI_FILTER)
+
 
     def layout(self) -> List[Component]:
         elements = []
@@ -44,7 +47,7 @@ class Filters(SettingsGroupABC):
                 wcc.Dropdown(
                     label=selector,
                     id={
-                        "id": self.uuid(Filters.IDs.SINGLE_FILTER),
+                        "id": self.single_filter_id,
                         "name": selector,
                         "type": "single_filter",
                     },
@@ -61,9 +64,7 @@ class Filters(SettingsGroupABC):
                 wcc.Dropdown(
                     label=selector,
                     id={
-                        "id": self.uuid(  # kan jeg bruke denne egt?
-                            Filters.IDs.MULTI_FILTER
-                        ),
+                        "id": self.multi_filter_id,
                         "name": selector,
                         "type": "multi_filter",
                     },
@@ -86,7 +87,7 @@ class Filters(SettingsGroupABC):
             ),
             Input(
                 {
-                    "id": self.uuid(Filters.IDs.SINGLE_FILTER),
+                    "id": self.single_filter_id,
                     "name": ALL,
                     "type": "single_filter",
                 },
@@ -94,7 +95,7 @@ class Filters(SettingsGroupABC):
             ),
             Input(
                 {
-                    "id": self.uuid(Filters.IDs.MULTI_FILTER),
+                    "id": self.multi_filter_id,
                     "name": ALL,
                     "type": "multi_filter",
                 },
