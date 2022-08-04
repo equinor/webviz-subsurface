@@ -340,3 +340,36 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                 ),
             },
         ]
+
+        def add_webvizstore(self):
+        return [
+            (
+                load_satfunc,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
+            )
+            if self.relpermfile is None
+            else (
+                load_csv,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "csv_file": self.relpermfile,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
+            )
+        ] + (
+            []
+            if self.scalfile is None
+            else [
+                (
+                    load_scal_recommendation,
+                    [{"scalfile": self.scalfile, "sheet_name": self.sheet_name}],
+                )
+            ]
+        )
