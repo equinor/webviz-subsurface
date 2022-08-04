@@ -9,6 +9,7 @@ from webviz_config.webviz_plugin_subclasses import LayoutUniqueId, SettingsGroup
 from webviz_subsurface._providers import EnsembleTableProvider
 
 from .._plugin_ids import PlugInIDs
+from ._selectors import Selectors
 
 
 class Filters(SettingsGroupABC):
@@ -85,8 +86,7 @@ class Filters(SettingsGroupABC):
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Selectors.RESPONSE),
-                "data",
+                self.component_unique_id(Selectors.IDs.RESPONSE).to_string(), "value"
             ),
             Input(
                 {
@@ -136,21 +136,3 @@ class Filters(SettingsGroupABC):
                     "number_format": "#.4g",
                 }
             )
-
-    def uuid(self, element: Optional[str] = None) -> str:
-        """Typically used to get a unique ID for some given element/component in
-        a plugins layout. If the element string is unique within the plugin, this
-        function returns a string which is guaranteed to be unique also across the
-        application (even when multiple instances of the same plugin is added).
-        Within the same plugin instance, the returned uuid is the same for the same
-        element string. I.e. storing the returned value in the plugin is not necessary.
-        Main benefit of using this function instead of creating a UUID directly,
-        is that the abstract base class can in the future provide IDs that
-        are consistent across application restarts (i.e. when the webviz configuration
-        file changes in a non-portable setting).
-        """
-
-        if element is None:
-            return f"{self._plugin_unique_id.get_plugin_uuid()}"
-
-        return f"{element}-{self._plugin_unique_id.get_plugin_uuid()}"

@@ -9,16 +9,16 @@ from .._plugin_ids import PlugInIDs
 
 
 class PlotPicker(SettingsGroupABC):
-    """Settingsgruop for switching between table and bar view"""
+    """Settingsgroup for switching between table and bar view"""
 
     class IDs:
         # pylint: disable=too-few-public-methods
         BARS_OR_TABLE = "bars-or-table"
 
     def __init__(self) -> None:
-        super().__init__("Vizualisation type")
+        super().__init__("Visualization type")
 
-        self.plicker_options = [
+        self.picker_options = [
             {"label": "Show bars", "value": "bars"},
             {"label": "Show table", "value": "table"},
         ]
@@ -27,22 +27,8 @@ class PlotPicker(SettingsGroupABC):
         return [
             wcc.RadioItems(
                 id=self.register_component_unique_id(PlotPicker.IDs.BARS_OR_TABLE),
-                options=self.plicker_options,
+                options=self.picker_options,
                 value="bars",
                 inline=True,
             )
         ]
-
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.get_store_unique_id(PlugInIDs.Stores.PlotPicker.BARS_OR_TABLE),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(PlotPicker.IDs.BARS_OR_TABLE).to_string(),
-                "value",
-            ),
-        )
-        def _set_plotpicker(pick: str) -> str:
-            return pick

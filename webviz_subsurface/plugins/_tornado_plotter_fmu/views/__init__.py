@@ -1,1 +1,1 @@
-from ._tornado_widget import TornadoWidget
+from .tornado_widget import TornadoView

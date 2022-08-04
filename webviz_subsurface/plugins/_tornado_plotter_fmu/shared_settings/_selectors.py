@@ -36,14 +36,3 @@ class Selectors(SettingsGroupABC):
             )
         ]
 
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Selectors.RESPONSE), "data"
-            ),
-            Input(
-                self.component_unique_id(Selectors.IDs.RESPONSE).to_string(), "value"
-            ),
-        )
-        def _set_selector(response: str) -> str:
-            return response

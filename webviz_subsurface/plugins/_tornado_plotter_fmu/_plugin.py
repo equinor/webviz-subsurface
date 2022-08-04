@@ -10,7 +10,7 @@ from webviz_subsurface._providers import EnsembleTableProviderFactory
 from ._error import error
 from ._plugin_ids import PlugInIDs
 from .shared_settings import Filters, PlotPicker, Selectors, ViewSettings
-from .views import TornadoWidget
+from .views import TornadoView
 
 
 class TornadoPlotterFMU(WebvizPluginABC):
@@ -104,9 +104,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
             lambda row: find_sens_type(row.SENSCASE), axis=1
         )
 
-        self._tornado_widget = TornadoWidget(
-            webviz_settings=webviz_settings, realizations=design_matrix_df
-        )
         self._responses: List[str] = self._table_provider.column_names()
         if self._single_filters:
             self._responses = [
@@ -125,18 +122,11 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
 
         # Settingsgroup for switching between table and bars
-        self.add_store(
-            PlugInIDs.Stores.PlotPicker.BARS_OR_TABLE,
-            WebvizPluginABC.StorageType.SESSION,
-        )
         self.add_shared_settings_group(
             PlotPicker(), PlugInIDs.SharedSettings.PLOTPICKER
         )
 
         # Settingsgroup for Selector
-        self.add_store(
-            PlugInIDs.Stores.Selectors.RESPONSE, WebvizPluginABC.StorageType.SESSION
-        )
         self.add_shared_settings_group(
             Selectors(self._responses, self._initial_response),
             PlugInIDs.SharedSettings.SELECTORS,
@@ -154,28 +144,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
 
         # Settingsgroup for the view options
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.REFERENCE,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.SCALE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.SENSITIVITIES,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.RESET,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.LABEL, WebvizPluginABC.StorageType.SESSION
-        )
         self.add_shared_settings_group(
             ViewSettings(design_matrix_df), PlugInIDs.SharedSettings.VIEW_SETTINGS
         )
@@ -197,7 +165,9 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
 
         self.add_view(
-            self._tornado_widget,
+            TornadoView(
+                webviz_settings=webviz_settings, realizations=design_matrix_df
+            ),
             PlugInIDs.TornardoPlotGroup.TORNADO_PLOT,
             PlugInIDs.TornardoPlotGroup.GROUPNAME,
         )
@@ -208,7 +178,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
         return [
             {
                 "id": self.view(PlugInIDs.TornardoPlotGroup.TORNADO_PLOT)
-                .layout_element(TornadoWidget.IDs.MAIN_COLUMN)
+                .layout_element(TornadoView.IDs.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": ("Shows tornado plot."),
             },
@@ -222,19 +192,19 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 "id": self.shared_settings_group(
                     PlugInIDs.SharedSettings.SELECTORS
                 ).component_unique_id(Selectors.IDs.RESPONSE),
-                "content": "Choose the respose for the data",
+                "content": "Choose the response for the data",
             },
             {
                 "id": self.shared_settings_group(
                     PlugInIDs.SharedSettings.FILTERS
                 ).component_unique_id(Filters.IDs.SINGLE_FILTER),
-                "content": "Choose the respose for the data",
+                "content": "Choose the response for the data",
             },
             {
                 "id": self.shared_settings_group(
                     PlugInIDs.SharedSettings.FILTERS
                 ).component_unique_id(Filters.IDs.MULTI_FILTER),
-                "content": "Choose the respose for the data",
+                "content": "Choose the response for the data",
             },
             {
                 "id": self.shared_settings_group(

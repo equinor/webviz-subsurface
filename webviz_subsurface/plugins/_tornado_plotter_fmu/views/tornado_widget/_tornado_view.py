@@ -22,12 +22,13 @@ from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarC
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
-from .._plugin_ids import PlugInIDs
-from ..view_elements import Label, TornadoViewElement
+from ..._plugin_ids import PlugInIDs
+from ...shared_settings import Filters, PlotPicker, Selectors, ViewSettings
+from .view_elements import TornadoViewElement
 
 
-class TornadoWidget(ViewABC):
-    """### TornadoWidget
+class TornadoView(ViewABC):
+    """### TornadoView
 
     Edited version of the TornadoWidget in webviz subsurface components.
     Edits have been made to suuprot the WLF framework and it is spescified for the
@@ -37,7 +38,6 @@ class TornadoWidget(ViewABC):
 
     class IDs:
         # pylint: disable=too-few-public-methods
-        LABEL = "label"
         TORNADO_WIDGET = "tornado-widget"
         MAIN_COLUMN = "main-comlun"
 
@@ -67,41 +67,39 @@ class TornadoWidget(ViewABC):
             / "clientside_functions.js"
         )
 
-        viewcolumn = self.add_column(TornadoWidget.IDs.MAIN_COLUMN)
-
+        viewcolumn = self.add_column(TornadoView.IDs.MAIN_COLUMN)
         first_row = viewcolumn.make_row()
-        first_row.add_view_element(Label(), TornadoWidget.IDs.LABEL)
-        second_row = viewcolumn.make_row()
-        second_row.add_view_element(
-            TornadoViewElement(), TornadoWidget.IDs.TORNADO_WIDGET
+        first_row.add_view_element(
+            TornadoViewElement(), TornadoView.IDs.TORNADO_WIDGET
         )
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.BARS)
                 .to_string(),
                 "style",
             ),
             Output(
-                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.TABLE_WRAPPER)
                 .to_string(),
                 "style",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.PlotPicker.BARS_OR_TABLE),
-                "data",
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(PlotPicker.IDs.BARS_OR_TABLE).to_string(),
+                "value",
             ),
             State(
-                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.BARS)
                 .to_string(),
                 "style",
             ),
             State(
-                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.TABLE_WRAPPER)
                 .to_string(),
                 "style",
@@ -129,18 +127,24 @@ class TornadoWidget(ViewABC):
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
+                .to_string(),
                 "value",
             ),
         )
 
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL),
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.LABEL)
+                .to_string(),
                 "disabled",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
+                .to_string(),
                 "value",
             ),
         )
@@ -151,19 +155,19 @@ class TornadoWidget(ViewABC):
 
         @callback(
             Output(
-                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.BARS)
                 .to_string(),
                 "figure",
             ),
             Output(
-                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.TABLE)
                 .to_string(),
-                "data",
+                "value",
             ),
             Output(
-                self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                 .component_unique_id(TornadoViewElement.IDs.TABLE)
                 .to_string(),
                 "columns",
@@ -172,26 +176,34 @@ class TornadoWidget(ViewABC):
                 self.get_store_unique_id(PlugInIDs.Stores.DataStores.HIGH_LOW), "data"
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.REFERENCE),
-                "data",
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.REFERENCE).to_string(),
+                "value",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SCALE), "data"
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.SCALE).to_string(), "value"
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
-                "data",
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
+                .to_string(),
+                "value",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL), "data"
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.LABEL)
+                .to_string(),
+                "value"
             ),
             Input(
                 self.get_store_unique_id(PlugInIDs.Stores.DataStores.TORNADO_DATA),
                 "data",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SENSITIVITIES),
-                "data",
+                self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                .component_unique_id(ViewSettings.IDs.SENSITIVITEIS).to_string(),
+                "value",
             ),
             State(
                 self.get_store_unique_id(
@@ -272,13 +284,15 @@ class TornadoWidget(ViewABC):
                     "data",
                 ),
                 Input(
-                    self.view_element(TornadoWidget.IDs.TORNADO_WIDGET)
+                    self.view_element(TornadoView.IDs.TORNADO_WIDGET)
                     .component_unique_id(TornadoViewElement.IDs.BARS)
                     .to_string(),
                     "clickData",
                 ),
                 Input(
-                    self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.RESET),
+                    self.view_element(TornadoView.IDs.TORNADO_WIDGET)
+                    .component_unique_id(ViewSettings.IDs.RESET_BUTTON)
+                    .to_string(),
                     "n_clicks",
                 ),
                 State(
@@ -298,7 +312,7 @@ class TornadoWidget(ViewABC):
                 ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
                 if (
                     ctx
-                    == self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.RESET)
+                    == self.view_element(TornadoView.IDs.TORNADO_WIDGET).component_unique_id(ViewSettings.IDs.RESET_BUTTON).to_string()
                     and nclicks
                 ):
                     return json.dumps(
