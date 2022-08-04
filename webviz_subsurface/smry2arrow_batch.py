@@ -27,7 +27,7 @@ def _get_parser() -> argparse.ArgumentParser:
         "\n"
         "Required input is a path/paths which may be wildcarded, like:\n"
         "  smry2arrow_batch my_folder/realization-*/iter-0\n"
-        "You may also define a spesific file pattern for the UNSMRY file to read."
+        "You may also define a specific file pattern for the UNSMRY file to read."
     )
 
     parser.add_argument(
