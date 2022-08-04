@@ -114,6 +114,66 @@ class ParameterCorrelation(WebvizPluginABC):
     def layout(self) -> Type[Component]:
         return error(self.error_message)
 
+    @property
+    def tour_steps(self) -> List[dict]:
+        """Tour of the plugin"""
+        return [
+            {
+                "id": self.view(PlugInIDs.ParaCorrGroups.PARACORR)
+                .layout_element(ParameterPlot.IDs.MAIN_COLUMN)
+                .get_unique_id(),
+                "content": "Displayting correlation between parameteres.",
+            },
+            {
+
+                "id": self.view(PlugInIDs.ParaCorrGroups.PARACORR)
+                .layout_element(ParameterPlot.IDs.MATRIX_ROW)
+                .get_unique_id(),
+                "content": "Matrix plot of the parameter correlation. You can "
+                "click on the boxes to display the parameters in the scatterplot.",
+            },
+            {
+                "id": self.view(PlugInIDs.ParaCorrGroups.PARACORR)
+                .layout_element(ParameterPlot.IDs.SCATTER_ROW)
+                .get_unique_id(),
+                "content": "Scatterplot of the parameter correlation.",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.BOTHPLOTS
+                ).component_unique_id(BothPlots.IDs.ENSEMBLE),
+                "content": "Choose which ensemble that is desired to show.",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.HORIZONTAL
+                ).component_unique_id(Horizontal.IDs.PARAMETER),
+                "content": "Choose the parameter on the horizontal axis of the "
+                "scatterplot.",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.HORIZONTAL
+                ).component_unique_id(Horizontal.IDs.ENSEMBLE),
+                "content": "Choose the ensemble on the horizontal axis of the "
+                "scatterplot.",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VERTICAL
+                ).component_unique_id(Vertical.IDs.PARAMETER),
+                "content": "Choose the parameter on the vertical axis of the "
+                "scatterplot.",
+            },
+            {
+                "id": self.shared_settings_group(
+                    PlugInIDs.SharedSettings.VERTICAL
+                ).component_unique_id(Vertical.IDs.ENSEMBLE),
+                "content": "Choose the ensemble on the vertical axis of the "
+                "scatterplot.",
+            },
+        ]
+
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
             (get_parameters, [{"ensemble_path": v} for v in self.ensembles.values()])

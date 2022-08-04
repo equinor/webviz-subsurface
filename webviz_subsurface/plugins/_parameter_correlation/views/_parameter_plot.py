@@ -22,6 +22,9 @@ class ParameterPlot(ViewABC):
         # pylint: disable=too-few-public-methods
         MATRIXPLOT = "matrixplot"
         SCATTERPLOT = "scatterplot"
+        MAIN_COLUMN = "main-column"
+        MATRIX_ROW = "matrix-row"
+        SCATTER_ROW = "scatter-row"
 
     def __init__(
         self,
@@ -40,14 +43,14 @@ class ParameterPlot(ViewABC):
             print("Attribute error: 'Dash' has no attribute 'theme'")
         self.drop_constants = drop_constants
 
-        column = self.add_column()
+        column = self.add_column(ParameterPlot.IDs.MAIN_COLUMN)
 
-        first_row = column.make_row()
+        first_row = column.make_row(ParameterPlot.IDs.MATRIX_ROW)
         first_row.add_view_element(
             Graph(self.p_cols, matrix=True), ParameterPlot.IDs.MATRIXPLOT
         )
 
-        second_row = column.make_row()
+        second_row = column.make_row(ParameterPlot.IDs.SCATTER_ROW)
         second_row.add_view_element(Graph(self.p_cols), ParameterPlot.IDs.SCATTERPLOT)
 
     def set_callbacks(self) -> None:
