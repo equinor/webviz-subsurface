@@ -177,7 +177,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PlugInIDs.Stores.ViewSetttings.LABEL, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            ViewSettings(design_matrix_df), PlugInIDs.SharedSettings.VIEWSETTINGS
+            ViewSettings(design_matrix_df), PlugInIDs.SharedSettings.VIEW_SETTINGS
         )
 
         # Stores for data
@@ -198,7 +198,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
         self.add_view(
             self._tornado_widget,
-            PlugInIDs.TornardoPlotGroup.TORNPLOT,
+            PlugInIDs.TornardoPlotGroup.TORNADO_PLOT,
             PlugInIDs.TornardoPlotGroup.GROUPNAME,
         )
 
@@ -207,7 +207,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
         """Tour of the plugin"""
         return [
             {
-                "id": self.view(PlugInIDs.TornardoPlotGroup.TORNPLOT)
+                "id": self.view(PlugInIDs.TornardoPlotGroup.TORNADO_PLOT)
                 .layout_element(TornadoWidget.IDs.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": ("Shows tornado plot."),
@@ -226,7 +226,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                    PlugInIDs.SharedSettings.VIEWS_ETTINGS
                 ).component_unique_id(ViewSettings.IDs.REFERENCE),
                 "content": (
                     "Set reference sensitivity for which to calculate tornado plot"
@@ -234,7 +234,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                    PlugInIDs.SharedSettings.VIEW_SETTINGS
                 ).component_unique_id(ViewSettings.IDs.SCALE),
                 "content": (
                     "Set tornadoplot scale to either percentage or absolute values"
@@ -242,19 +242,19 @@ class TornadoPlotterFMU(WebvizPluginABC):
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                    PlugInIDs.SharedSettings.VIEW_SETTINGS
                 ).component_unique_id(ViewSettings.IDs.SENSITIVITEIS),
                 "content": ("Pick sensitivities to be displayed"),
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                    PlugInIDs.SharedSettings.VIEW_SETTINGS
                 ).component_unique_id(ViewSettings.IDs.PLOT_OPTIONS),
                 "content": "Options for dispaying the bars",
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VIEWSETTINGS
+                    PlugInIDs.SharedSettings.VIEW_SETTINGS
                 ).component_unique_id(ViewSettings.IDs.LABEL),
                 "content": "Plick settings for the label at the bars",
             },
