@@ -35,7 +35,7 @@ class PlugInIDs:
 
     class TornardoPlotGroup:
         # pylint: disable=too-few-public-methods
-        TORNPLOT = "tornado-plot"
+        TORNADO_PLOT = "tornado-plot"
         GROUPNAME = "tornardo-plot-group"
 
     class PlugIn:
