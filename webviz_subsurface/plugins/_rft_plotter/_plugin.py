@@ -115,7 +115,7 @@ class RftPlotter(WebvizPluginABC):
         obsdata: Path = None,
         faultlines: Path = None,
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
         self._datamodel = RftPlotterDataModel(
             webviz_settings,
