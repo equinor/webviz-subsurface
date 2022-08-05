@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -176,9 +176,9 @@ class PvtView(ViewABC):
         # pylint: disable=too-many-locals
         def _update_plots(
             color_by: str,
-            selected_ensembles: Union[List[str], str],
+            selected_ensembles: Any,
             phase: str,
-            selected_pvtnum: Union[List[str], str],
+            selected_pvtnum: Any,
             plots_visibility: Union[List[str], str],
         ) -> List[Component]:
 
