@@ -13,7 +13,6 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 from ._plugin_ids import PluginIds
-from .shared_settings import Filter, ShowPlots
 from .views import PvtView
 
 
@@ -128,34 +127,9 @@ class PvtPlot(WebvizPluginABC):
         if self.pvt_df["KEYWORD"].str.contains("PVTW").any():
             self.phases_additional_info.append("PVTW")
 
-        self.add_store(
-            PluginIds.Stores.SELECTED_COLOR, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_ENSEMBLES, WebvizPluginABC.StorageType.SESSION
-        )
-
-        self.add_store(
-            PluginIds.Stores.SELECTED_PHASE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_PVTNUM, WebvizPluginABC.StorageType.SESSION
-        )
-
-        self.add_store(
-            PluginIds.Stores.SELECTED_SHOW_PLOTS, WebvizPluginABC.StorageType.SESSION
-        )
-
-        self.add_shared_settings_group(
-            Filter(self.pvt_df), PluginIds.SharedSettings.FILTER
-        )
-
-        self.add_shared_settings_group(ShowPlots(), PluginIds.SharedSettings.SHOWPLOTS)
-
         self.add_view(
             PvtView(self.pvt_df, webviz_settings),
             PluginIds.PvtID.INDICATORS,
-            PluginIds.PvtID.GROUP_NAME,
         )
 
     @property

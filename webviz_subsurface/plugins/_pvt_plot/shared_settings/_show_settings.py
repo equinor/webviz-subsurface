@@ -1,11 +1,8 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import webviz_core_components as wcc
-from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-
-from .._plugin_ids import PluginIds
 
 
 class ShowPlots(SettingsGroupABC):
@@ -53,41 +50,3 @@ class ShowPlots(SettingsGroupABC):
                 persistence=False,
             ),
         ]
-
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"
-            ),
-            Input(
-                self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(), "value"
-            ),
-        )
-        def _update_show_plots(selected_plots: List[str]) -> List[str]:
-            return selected_plots
-
-        @callback(
-            [
-                Output(
-                    self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(),
-                    "options",
-                ),
-                Output(
-                    self.component_unique_id(ShowPlots.Ids.SHOWPLOTS).to_string(),
-                    "value",
-                ),
-            ],
-            Input(self.get_store_unique_id(PluginIds.Stores.SELECTED_PHASE), "data"),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_SHOW_PLOTS), "data"
-            ),
-        )
-        def _set_available_plots(
-            phase: str,
-            values: List[str],
-        ) -> Tuple[List[dict], List[str]]:
-            visibility_options = self.plot_visibility_options(phase)
-            return (
-                [{"label": l, "value": v} for v, l in visibility_options.items()],
-                [value for value in values if value in visibility_options],
-            )
