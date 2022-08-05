@@ -1,1 +1,2 @@
-from .tornado_widget import TornadoView
+from .plot_view import TornadoPlotView
+from .table_view import TornadoTableView

@@ -2,11 +2,14 @@ from typing import List
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, callback, html
+from dash import (
+    Input,
+    Output,
+    callback,
+    html,
+)
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-
-from .._plugin_ids import PlugInIDs
 
 
 class ViewSettings(SettingsGroupABC):
@@ -16,7 +19,7 @@ class ViewSettings(SettingsGroupABC):
         # pylint: disable=too-few-public-methods
         REFERENCE = "reference"
         SCALE = "scale"
-        SENSITIVITEIS = "sensitivities"
+        SENSITIVITIES = "sensitivities"
         RESET_BUTTON = "reset-button"
         PLOT_OPTIONS = "plot-options"
         LABEL = "label"
@@ -36,10 +39,6 @@ class ViewSettings(SettingsGroupABC):
             "True value",
         ]
         self.plot_options = [
-            {
-                "label": "Fit all bars in figure",
-                "value": "Fit all bars in figure",
-            },
             {
                 "label": "Remove sensitivites with no impact",
                 "value": "Remove sensitivites with no impact",
@@ -88,7 +87,7 @@ class ViewSettings(SettingsGroupABC):
                 clearable=False,
             ),
             wcc.SelectWithLabel(
-                id=self.register_component_unique_id(ViewSettings.IDs.SENSITIVITEIS),
+                id=self.register_component_unique_id(ViewSettings.IDs.SENSITIVITIES),
                 label="Select sensitivities",
                 options=[{"label": r, "value": r} for r in self.sensnames],
                 value=self.sensnames,
@@ -124,13 +123,15 @@ class ViewSettings(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.DataStores.REFERENCE),
-                "data",
+                self.component_unique_id(ViewSettings.IDs.LABEL).to_string(),
+                "disabled",
             ),
             Input(
-                self.component_unique_id(ViewSettings.IDs.REFERENCE).to_string(),
+                self.component_unique_id(ViewSettings.IDs.PLOT_OPTIONS).to_string(),
                 "value",
             ),
         )
-        def _set_reference(reference: str) -> str:
-            return reference
+        def _disable_label(plot_options: List) -> bool:
+            if plot_options is None:
+                return False
+            return "Show realization points" in plot_options
