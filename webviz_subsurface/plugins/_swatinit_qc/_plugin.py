@@ -67,6 +67,7 @@ class SwatinitQC(WebvizPluginABC):
             PlugInIDs.Stores.Capilary.EQLNUM, WebvizPluginABC.StorageType.SESSION
         )
 
+        # Adding each tab as a view element
         self.add_view(
             OverviewTabLayout(self._datamodel),
             PlugInIDs.SwatinitViews.OVERVIEW,
@@ -75,12 +76,12 @@ class SwatinitQC(WebvizPluginABC):
         self.add_view(
             TabQqPlotLayout(self._datamodel),
             PlugInIDs.SwatinitViews.WATER,
-            PlugInIDs.SwatinitViews.GROUP_NAME
+            PlugInIDs.SwatinitViews.GROUP_NAME,
         )
         self.add_view(
             TabMaxPcInfoLayout(self._datamodel),
             PlugInIDs.SwatinitViews.WATER,
-            PlugInIDs.SwatinitViews.GROUP_NAME
+            PlugInIDs.SwatinitViews.GROUP_NAME,
         )
 
     @property
@@ -89,4 +90,3 @@ class SwatinitQC(WebvizPluginABC):
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[dict]]]:
         return self._datamodel.webviz_store
-

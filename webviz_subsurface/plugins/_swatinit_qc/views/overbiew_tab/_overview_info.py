@@ -3,9 +3,9 @@ from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from .._plugin_ids import PlugInIDs
-from .._swatint import SwatinitQcDataModel
-from ..view_elements import OverviewViewelement
+from ..._plugin_ids import PlugInIDs
+from ..._swatint import SwatinitQcDataModel
+from ...view_elements import OverviewViewelement
 
 
 class OverviewTabLayout(ViewABC):

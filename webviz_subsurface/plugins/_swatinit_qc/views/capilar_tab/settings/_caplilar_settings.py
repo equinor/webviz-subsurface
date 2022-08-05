@@ -6,8 +6,8 @@ from dash import Input, Output, callback, dcc
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_ids import PlugInIDs
-from .._swatint import SwatinitQcDataModel
+from ...._plugin_ids import PlugInIDs
+from ...._swatint import SwatinitQcDataModel
 
 
 class CapilarSelections(SettingsGroupABC):
@@ -80,7 +80,9 @@ class CapilarFilters(SettingsGroupABC):
     def __init__(self, datamodel: SwatinitQcDataModel) -> None:
         super().__init__("Filter")
         self.datamodel = datamodel
-        self.range_filters_id = self.register_component_unique_id(CapilarFilters.IDs.RANGE_FILTERS)
+        self.range_filters_id = self.register_component_unique_id(
+            CapilarFilters.IDs.RANGE_FILTERS
+        )
 
     def layout(self) -> List[Component]:
         return [

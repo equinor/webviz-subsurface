@@ -7,6 +7,8 @@ from .._swatint import SwatinitQcDataModel
 from ._dash_table import DashTable
 from ._layout_style import LayoutStyle
 
+# This can be moved into a view_elements folder in views > overview_tab
+
 
 class OverviewViewelement(ViewElementABC):
     """All elements visible in the 'Overview and Information'-tab

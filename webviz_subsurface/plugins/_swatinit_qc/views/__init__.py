@@ -1,3 +1,3 @@
-from ._capilary_preassure import TabMaxPcInfoLayout
-from ._overview_info import OverviewTabLayout
-from ._water_initialization import TabQqPlotLayout
+from .capilar_tab import CapilarFilters, CapilarSelections, TabMaxPcInfoLayout
+from .overbiew_tab import OverviewTabLayout
+from .water_tab import TabQqPlotLayout, WaterFilters, WaterSelections

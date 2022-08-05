@@ -5,19 +5,22 @@ from dash import Input, Output, callback, dcc
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_ids import PlugInIDs
-from .._swatint import SwatinitQcDataModel
+from ...._plugin_ids import PlugInIDs
+from ...._swatint import SwatinitQcDataModel
 
 
 class WaterSelections(SettingsGroupABC):
     class IDs:
         # pylint: disable=too-few-public-methods
-        WATERFALL = "waterfall"
-        PROP_VS_DEPTH = "prop-vs-depth"
         SELECT_QC = "select-qc"
         EQLNUM = "eqlnum"
         COLOR_BY = "color-by"
         MAX_POINTS = "max-points"
+
+    class Values:
+        # pylint: disable=too-few-public-methods
+        WATERFALL = "waterfall"
+        PROP_VS_DEPTH = "prop-vs-depth"
 
     def __init__(self, datamodel: SwatinitQcDataModel) -> None:
         super().__init__("Selections")
@@ -31,14 +34,14 @@ class WaterSelections(SettingsGroupABC):
                 options=[
                     {
                         "label": "Waterfall plot for water vol changes",
-                        "value": WaterSelections.IDs.WATERFALL,
+                        "value": WaterSelections.Values.WATERFALL,
                     },
                     {
                         "label": "Reservoir properties vs Depth",
-                        "value": WaterSelections.IDs.PROP_VS_DEPTH,
+                        "value": WaterSelections.Values.PROP_VS_DEPTH,
                     },
                 ],
-                value=WaterSelections.IDs.PROP_VS_DEPTH,
+                value=WaterSelections.Values.PROP_VS_DEPTH,
                 clearable=False,
             ),
             wcc.SelectWithLabel(
@@ -102,20 +105,24 @@ class WaterSelections(SettingsGroupABC):
 class WaterFilters(SettingsGroupABC):
     class IDs:
         # pylint: disable=too-few-public-methods
-        QC_FLAG = "qc-flag"
-        SATNUM = "satnum"
+        DESCREATE_FILTERS = "descreate-filters"
         RANGE_FILTERS = "range_filters"
 
     def __init__(self, datamodel) -> None:
         super().__init__("Filters")
         self.datamodel = datamodel
-        self.range_filters_id = self.register_component_unique_id(WaterFilters.IDs.RANGE_FILTERS)
+        self.descreate_fiters_id = self.register_component_unique_id(
+            WaterFilters.IDs.DESCREATE_FILTERS
+        )
+        self.range_filters_id = self.register_component_unique_id(
+            WaterFilters.IDs.RANGE_FILTERS
+        )
 
     def layout(self) -> List[Component]:
         return [
             wcc.SelectWithLabel(
                 label="QC_FLAG",
-                id=self.register_component_unique_id(WaterFilters.IDs.QC_FLAG),
+                id={"id": self.range_filters_id, "col": "qc-flag"},
                 options=[
                     {"label": ens, "value": ens} for ens in self.datamodel.qc_flag
                 ],
@@ -124,7 +131,7 @@ class WaterFilters(SettingsGroupABC):
             ),
             wcc.SelectWithLabel(
                 label="SATNUM",
-                id=self.register_component_unique_id(WaterFilters.IDs.SATNUM),
+                id={"id": self.range_filters_id, "col": "satnum"},
                 options=[
                     {"label": ens, "value": ens} for ens in self.datamodel.satnums
                 ],
@@ -154,20 +161,3 @@ class WaterFilters(SettingsGroupABC):
                 )
             )
         return filters
-
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(self.get_store_unique_id(PlugInIDs.Stores.Water.QC_FLAG), "data"),
-            Input(
-                self.component_unique_id(WaterFilters.IDs.QC_FLAG).to_string(), "value"
-            ),
-        )
-        def _set_qc_flag(qc_flag: List[str]) -> List[str]:
-            return qc_flag
-
-        @callback(
-            Output(self.get_store_unique_id(PlugInIDs.Stores.Water.SATNUM), "data"),
-            Input(self.component_unique_id(WaterFilters.IDs.SATNUM), "value"),
-        )
-        def _set_satnum(satnum: List[int]) -> List[int]:
-            return satnum

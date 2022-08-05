@@ -9,11 +9,13 @@ from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 from .._swatint import SwatinitQcDataModel
-from ..settings_groups import CapilarFilters
+from ..views.capilar_tab.settings import CapilarFilters
 from ._dash_table import DashTable
 from ._fullscreen import FullScreen
 from ._layout_style import LayoutStyle
 from ._map_figure import MapFigure
+
+# This can be moved into a view_elements folder in views > capilar_tab
 
 
 class CapilarViewelement(ViewElementABC):
@@ -34,17 +36,20 @@ class CapilarViewelement(ViewElementABC):
         self.datamodel = datamodel
 
         self.init_eqlnums = self.datamodel.eqlnums[:1]
-        continous_filters = ([
-            self.datamodel.dframe[col].min(),
-            self.datamodel.dframe[col].max()
-        ] for col in self.datamodel.filters_continuous)
+        continous_filters = (
+            [self.datamodel.dframe[col].min(), self.datamodel.dframe[col].max()]
+            for col in self.datamodel.filters_continuous
+        )
 
-        continous_filters_ids = ([
-            {
-                "id": CapilarFilters.IDs.RANGE_FILTERS,
-                "col": col,
-            }
-        ] for col in self.datamodel.filters_continuous)
+        continous_filters_ids = (
+            [
+                {
+                    "id": CapilarFilters.IDs.RANGE_FILTERS,
+                    "col": col,
+                }
+            ]
+            for col in self.datamodel.filters_continuous
+        )
 
         print({"EQLNUM": self.init_eqlnums})
         self.dframe = self.datamodel.get_dataframe(

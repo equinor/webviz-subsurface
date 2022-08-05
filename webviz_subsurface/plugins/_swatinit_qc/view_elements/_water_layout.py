@@ -8,6 +8,8 @@ from .._swatint import SwatinitQcDataModel
 from ._fullscreen import FullScreen
 from ._layout_style import LayoutStyle
 
+# This can be moved into a view_elements folder in views > water_tab
+
 
 class WaterViewelement(ViewElementABC):
     """All elements visible in the 'Water Initialization QC plots'-tab
@@ -30,7 +32,7 @@ class WaterViewelement(ViewElementABC):
     ) -> None:
         super().__init__()
         self.datamodel = datamodel
-        
+
         self.main_figure = main_figure
         self.map_figure = map_figure
         self.qc_volumes = qc_volumes
@@ -75,24 +77,29 @@ class WaterViewelement(ViewElementABC):
             [
                 wcc.Header("Information about selection", style=LayoutStyle.HEADER),
                 html.Div(
-                    "EQLNUMS:", 
+                    "EQLNUMS:",
                     style={"font-weight": "bold", "font-size": "15px"},
                 ),
                 html.Div(
                     ", ".join([str(x) for x in qc_vols["EQLNUMS"]]),
-                    id=self.register_component_unique_id(WaterViewelement.IDs.INFO_BOX_EQLNUMS),
+                    id=self.register_component_unique_id(
+                        WaterViewelement.IDs.INFO_BOX_EQLNUMS
                     ),
+                ),
                 html.Div(
                     "SATNUMS:",
                     style={"font-weight": "bold", "font-size": "15px"},
                 ),
                 html.Div(
                     ", ".join([str(x) for x in qc_vols["SATNUMS"]]),
-                    id= self.register_component_unique_id(WaterViewelement.IDs.INFO_BOX_SATNUMS),
+                    id=self.register_component_unique_id(
+                        WaterViewelement.IDs.INFO_BOX_SATNUMS
+                    ),
                 ),
                 html.Div(
                     html.Span("Reservoir Volume Difference:"),
-                    style={"font-weight": "bold", "margin-top": "10px"},                ),
+                    style={"font-weight": "bold", "margin-top": "10px"},
+                ),
                 html.Div(
                     children=[
                         html.Div(line)
@@ -102,7 +109,9 @@ class WaterViewelement(ViewElementABC):
                             f"HC Volume Diff (%): {qc_vols['HCVOL_DIFF_PERCENT']:.2f}",
                         ]
                     ],
-                    id=self.register_component_unique_id(WaterViewelement.IDs.INFO_BOX_VOL_DIFF)
+                    id=self.register_component_unique_id(
+                        WaterViewelement.IDs.INFO_BOX_VOL_DIFF
+                    ),
                 ),
             ],
             style={"height": height, "padding": "10px"},
