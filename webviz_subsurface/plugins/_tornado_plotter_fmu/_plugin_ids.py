@@ -6,6 +6,8 @@ class PlugInIDs:
             CLICK_DATA = "click-data"
             HIGH_LOW = "high-low"
             CLIENT_HIGH_PIXELS = "client-height-pixels"
+            REFERENCE = " reference"
+            RESPONSE = "response"
 
     class SharedSettings:
         PLOTPICKER = "plotpicker"

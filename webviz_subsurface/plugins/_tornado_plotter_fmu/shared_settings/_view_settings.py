@@ -120,3 +120,17 @@ class ViewSettings(SettingsGroupABC):
                 clearable=False,
             ),
         ]
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.DataStores.REFERENCE),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.REFERENCE).to_string(),
+                "value",
+            ),
+        )
+        def _set_reference(reference: str) -> str:
+            return reference

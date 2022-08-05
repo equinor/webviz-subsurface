@@ -86,7 +86,8 @@ class Filters(SettingsGroupABC):
                 "data",
             ),
             Input(
-                self.component_unique_id(Selectors.IDs.RESPONSE).to_string(), "value"
+                self.get_store_unique_id(PlugInIDs.Stores.DataStores.RESPONSE),
+                "data",  # this callback does not work without a store
             ),
             Input(
                 {

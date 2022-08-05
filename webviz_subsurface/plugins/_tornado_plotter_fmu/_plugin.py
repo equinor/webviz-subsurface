@@ -120,6 +120,13 @@ class TornadoPlotterFMU(WebvizPluginABC):
         self._initial_response: str = (
             initial_response if initial_response else self._responses[0]
         )
+        # Adding stores to get the plugin to work
+        self.add_store(
+            PlugInIDs.Stores.DataStores.REFERENCE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PlugInIDs.Stores.DataStores.RESPONSE, WebvizPluginABC.StorageType.SESSION
+        )
 
         # Settingsgroup for switching between table and bars
         self.add_shared_settings_group(
