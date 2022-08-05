@@ -173,6 +173,7 @@ class PvtView(ViewABC):
                 "value",
             ),
         )
+        # pylint: disable=too-many-locals
         def _update_plots(
             color_by: str,
             selected_ensembles: Union[List[str], str],
