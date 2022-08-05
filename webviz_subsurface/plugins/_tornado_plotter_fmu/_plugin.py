@@ -165,9 +165,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
 
         self.add_view(
-            TornadoView(
-                webviz_settings=webviz_settings, realizations=design_matrix_df
-            ),
+            TornadoView(webviz_settings=webviz_settings, realizations=design_matrix_df),
             PlugInIDs.TornardoPlotGroup.TORNADO_PLOT,
             PlugInIDs.TornardoPlotGroup.GROUPNAME,
         )
