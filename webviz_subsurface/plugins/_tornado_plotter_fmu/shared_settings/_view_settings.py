@@ -124,7 +124,7 @@ class ViewSettings(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.DataStores.REFERENCE),
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.REFERENCE),
                 "data",
             ),
             Input(
@@ -132,5 +132,65 @@ class ViewSettings(SettingsGroupABC):
                 "value",
             ),
         )
-        def _set_reference(reference: str) -> str:
-            return reference
+        def _set_reference(ref: str) -> str:
+            return ref
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SCALE), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.SCALE).to_string(), "value"
+            ),
+        )
+        def _set_scale(scale: str) -> str:
+            return scale
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SENSITIVITIES),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.SENSITIVITEIS).to_string(),
+                "value",
+            ),
+        )
+        def _set_sensitivities(sens: List[str]) -> List[str]:
+            return sens
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.RESET), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.RESET_BUTTON).to_string(),
+                "n_clicks",
+            ),
+        )
+        def _set_button(n_clicks: int) -> int:
+            return n_clicks
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
+                "data",
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.PLOT_OPTIONS).to_string(),
+                "value",
+            ),
+        )
+        def _set_plot_options(picked_options: List[str]) -> List[str]:
+            return picked_options
+
+        @callback(
+            Output(
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL), "data"
+            ),
+            Input(
+                self.component_unique_id(ViewSettings.IDs.LABEL).to_string(), "value"
+            ),
+        )
+        def _set_label(label: str) -> str:
+            return

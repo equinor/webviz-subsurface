@@ -120,20 +120,19 @@ class TornadoPlotterFMU(WebvizPluginABC):
         self._initial_response: str = (
             initial_response if initial_response else self._responses[0]
         )
-        # Adding stores to get the plugin to work
-        self.add_store(
-            PlugInIDs.Stores.DataStores.REFERENCE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PlugInIDs.Stores.DataStores.RESPONSE, WebvizPluginABC.StorageType.SESSION
-        )
-
         # Settingsgroup for switching between table and bars
+        self.add_store(
+            PlugInIDs.Stores.PlotPicker.BARS_OR_TABLE,
+            WebvizPluginABC.StorageType.SESSION,
+        )
         self.add_shared_settings_group(
             PlotPicker(), PlugInIDs.SharedSettings.PLOTPICKER
         )
 
         # Settingsgroup for Selector
+        self.add_store(
+            PlugInIDs.Stores.Selectors.RESPONSE, WebvizPluginABC.StorageType.SESSION
+        )
         self.add_shared_settings_group(
             Selectors(self._responses, self._initial_response),
             PlugInIDs.SharedSettings.SELECTORS,
@@ -151,6 +150,28 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
 
         # Settingsgroup for the view options
+        self.add_store(
+            PlugInIDs.Stores.ViewSetttings.REFERENCE,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PlugInIDs.Stores.ViewSetttings.SCALE, WebvizPluginABC.StorageType.SESSION
+        )
+        self.add_store(
+            PlugInIDs.Stores.ViewSetttings.SENSITIVITIES,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PlugInIDs.Stores.ViewSetttings.RESET,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS,
+            WebvizPluginABC.StorageType.SESSION,
+        )
+        self.add_store(
+            PlugInIDs.Stores.ViewSetttings.LABEL, WebvizPluginABC.StorageType.SESSION
+        )
         self.add_shared_settings_group(
             ViewSettings(design_matrix_df), PlugInIDs.SharedSettings.VIEW_SETTINGS
         )

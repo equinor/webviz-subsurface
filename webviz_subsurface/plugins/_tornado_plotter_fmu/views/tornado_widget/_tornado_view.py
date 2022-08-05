@@ -86,10 +86,8 @@ class TornadoView(ViewABC):
                 "style",
             ),
             Input(
-                self.view_element(TornadoView.IDs.TORNADO_VIEW)
-                .component_unique_id(PlotPicker.IDs.BARS_OR_TABLE)
-                .to_string(),
-                "value",
+                self.get_store_unique_id(PlugInIDs.Stores.PlotPicker.BARS_OR_TABLE),
+                "data",
             ),
             State(
                 self.view_element(TornadoView.IDs.TORNADO_VIEW)
@@ -135,16 +133,12 @@ class TornadoView(ViewABC):
 
         @callback(
             Output(
-                self.view_element(TornadoView.IDs.TORNADO_VIEW)
-                .component_unique_id(ViewSettings.IDs.LABEL)
-                .to_string(),
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL),
                 "disabled",
             ),
             Input(
-                self.view_element(TornadoView.IDs.TORNADO_VIEW)
-                .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
-                .to_string(),
-                "value",
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
+                "data",
             ),
         )
         def _disable_label(plot_options: List) -> bool:
@@ -175,36 +169,26 @@ class TornadoView(ViewABC):
                 self.get_store_unique_id(PlugInIDs.Stores.DataStores.HIGH_LOW), "data"
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.DataStores.REFERENCE),
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.REFERENCE),
                 "data",  # callback don't work without a store
             ),
             Input(
-                self.view_element(TornadoView.IDs.TORNADO_VIEW)
-                .component_unique_id(ViewSettings.IDs.SCALE)
-                .to_string(),
-                "value",
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SCALE), "data"
             ),
             Input(
-                self.view_element(TornadoView.IDs.TORNADO_VIEW)
-                .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
-                .to_string(),
-                "value",
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS),
+                "data",
             ),
             Input(
-                self.view_element(TornadoView.IDs.TORNADO_VIEW)
-                .component_unique_id(ViewSettings.IDs.LABEL)
-                .to_string(),
-                "value",
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.LABEL), "data"
             ),
             Input(
                 self.get_store_unique_id(PlugInIDs.Stores.DataStores.TORNADO_DATA),
                 "data",
             ),
             Input(
-                self.view_element(TornadoView.IDs.TORNADO_VIEW)
-                .component_unique_id(ViewSettings.IDs.SENSITIVITEIS)
-                .to_string(),
-                "value",
+                self.get_store_unique_id(PlugInIDs.Stores.ViewSetttings.SENSITIVITIES),
+                "data",
             ),
             State(
                 self.get_store_unique_id(

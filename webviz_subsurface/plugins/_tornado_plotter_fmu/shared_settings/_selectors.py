@@ -40,7 +40,7 @@ class Selectors(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.DataStores.RESPONSE),
+                self.get_store_unique_id(PlugInIDs.Stores.Selectors.RESPONSE),
                 "data",
             ),
             Input(
