@@ -2,7 +2,7 @@ from dash import html
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
-class WellCompletionsViewElement(ViewElementABC):
+class WellCompletionViewElement(ViewElementABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         COMPONENT = "component"
@@ -13,6 +13,6 @@ class WellCompletionsViewElement(ViewElementABC):
     def inner_layout(self) -> html.Div:
         return html.Div(
             id=self.register_component_unique_id(
-                WellCompletionsViewElement.Ids.COMPONENT
+                WellCompletionViewElement.Ids.COMPONENT
             )
         )

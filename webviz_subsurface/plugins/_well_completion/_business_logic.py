@@ -16,20 +16,16 @@ from ..._providers import EnsembleTableProvider
 LOGGER = logging.getLogger(__name__)
 
 
-class WellCompletionsDataModel:
+class WellCompletionDataModel:
     def __init__(
         self,
         ensemble_path: str,
         wellcompletion_provider: EnsembleTableProvider,
         stratigraphy_model: StratigraphyModel,
         well_attributes_model: WellAttributesModel,
-        kh_unit: Optional[str],
-        kh_decimal_places: int,
         theme_colors: List[str],
     ) -> None:
         self._ensemble_path = ensemble_path
-        self._kh_unit = kh_unit
-        self._kh_decimal_places = kh_decimal_places
         self._theme_colors = theme_colors
         self._stratigraphy_model = stratigraphy_model
         self._stratigraphy = self._stratigraphy_model.data
@@ -48,13 +44,11 @@ class WellCompletionsDataModel:
         self._wellcompletion_df["TIMESTEP"] = self._wellcompletion_df["DATE"].map(
             self._datemap
         )
-
-        if self._kh_unit is None:
-            unit_system = json.load(_get_kh_unit(ensemble_path=self._ensemble_path))
-            self._kh_unit, self._kh_decimal_places = (
-                unit_system["unit"],
-                unit_system["decimals"],
-            )
+        unit_system = json.load(_get_kh_unit(ensemble_path=self._ensemble_path))
+        self._kh_unit, self._kh_decimal_places = (
+            unit_system["unit"],
+            unit_system["decimals"],
+        )
 
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict]]]:
@@ -97,7 +91,7 @@ class WellCompletionsDataModel:
             "wells": self._extract_wells(df),
         }
 
-        LOGGER.info(f"WellCompletions dataset created in {timer.elapsed_s():.2f}s")
+        LOGGER.info(f"WellCompletion dataset created in {timer.elapsed_s():.2f}s")
 
         return dataset
 

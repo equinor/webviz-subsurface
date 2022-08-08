@@ -5,12 +5,12 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._models import StratigraphyModel, WellAttributesModel
 
 from ..._providers import EnsembleTableProviderFactory
-from ._business_logic import WellCompletionsDataModel
+from ._business_logic import WellCompletionDataModel
 from ._plugin_ids import PluginIds
-from .views import WellCompletionsView
+from .views import WellCompletionView
 
 
-class WellCompletionsNew(WebvizPluginABC):
+class WellCompletion(WebvizPluginABC):
     """Vizualizes Eclipse well completions data per well. The data is grouped per well
     and zone and can be filtered according to flexible well categories.
 
@@ -140,8 +140,6 @@ class WellCompletionsNew(WebvizPluginABC):
         wellcompletiondata_file: str = "share/results/tables/wellcompletiondata.arrow",
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
-        kh_unit: str = None,
-        kh_decimal_places: int = 2,
     ):
 
         super().__init__(stretch=True)
@@ -150,7 +148,7 @@ class WellCompletionsNew(WebvizPluginABC):
         self._data_models = {}
         for ens_name in ensembles:
             ens_path = webviz_settings.shared_settings["scratch_ensembles"][ens_name]
-            self._data_models[ens_name] = WellCompletionsDataModel(
+            self._data_models[ens_name] = WellCompletionDataModel(
                 ensemble_path=ens_path,
                 wellcompletion_provider=factory.create_from_per_realization_arrow_file(
                     ens_path, wellcompletiondata_file
@@ -161,13 +159,11 @@ class WellCompletionsNew(WebvizPluginABC):
                 well_attributes_model=WellAttributesModel(
                     ens_name, ens_path, well_attributes_file
                 ),
-                kh_unit=kh_unit,
-                kh_decimal_places=kh_decimal_places,
                 theme_colors=webviz_settings.theme.plotly_theme["layout"]["colorway"],
             )
 
         self.add_view(
-            WellCompletionsView(self._data_models),
+            WellCompletionView(self._data_models),
             PluginIds.Views.WELL_COMPLETION_VIEW,
         )
 

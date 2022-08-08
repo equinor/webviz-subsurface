@@ -7,8 +7,8 @@ import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from .._business_logic import WellCompletionsDataModel
-from ..view_elements import WellCompletionsViewElement
+from .._business_logic import WellCompletionDataModel
+from ..view_elements import WellCompletionViewElement
 
 
 class DataMode(str, Enum):
@@ -66,56 +66,55 @@ class ViewSettings(SettingsGroupABC):
         ]
 
 
-class WellCompletionsView(ViewABC):
+class WellCompletionView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
         VIEW_ELEMENT = "view-element"
         SETTINGS = "settings"
 
-    def __init__(self, data_models: Dict[str, WellCompletionsDataModel]) -> None:
+    def __init__(self, data_models: Dict[str, WellCompletionDataModel]) -> None:
         super().__init__("Well Completion")
 
         self._data_models = data_models
 
         self.add_settings_group(
             ViewSettings(list(self._data_models.keys())),
-            WellCompletionsView.Ids.SETTINGS,
+            WellCompletionView.Ids.SETTINGS,
         )
 
         column = self.add_column()
         column.add_view_element(
-            WellCompletionsViewElement(), WellCompletionsView.Ids.VIEW_ELEMENT
+            WellCompletionViewElement(), WellCompletionView.Ids.VIEW_ELEMENT
         )
-        # self.main_column = self.add_column(WellCompletionView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(WellCompletionsView.Ids.VIEW_ELEMENT)
-                .component_unique_id(WellCompletionsViewElement.Ids.COMPONENT)
+                self.view_element(WellCompletionView.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellCompletionViewElement.Ids.COMPONENT)
                 .to_string(),
                 "children",
             ),
             Output(
-                self.view_element(WellCompletionsView.Ids.VIEW_ELEMENT)
-                .component_unique_id(WellCompletionsViewElement.Ids.COMPONENT)
+                self.view_element(WellCompletionView.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellCompletionViewElement.Ids.COMPONENT)
                 .to_string(),
                 "style",
             ),
             Input(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.DATA_MODE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "value",
@@ -142,25 +141,25 @@ class WellCompletionsView(ViewABC):
 
         @callback(
             Output(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "options",
             ),
             Output(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             State(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REALIZATION)
                 .to_string(),
                 "value",
@@ -178,13 +177,13 @@ class WellCompletionsView(ViewABC):
 
         @callback(
             Output(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.REAL_BLOCK)
                 .to_string(),
                 component_property="style",
             ),
             Input(
-                self.settings_group(WellCompletionsView.Ids.SETTINGS)
+                self.settings_group(WellCompletionView.Ids.SETTINGS)
                 .component_unique_id(ViewSettings.Ids.DATA_MODE)
                 .to_string(),
                 "value",
