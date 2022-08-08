@@ -208,7 +208,6 @@ class EnsembleTableProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing/saving arrow table data for: {ens_path}")
 
         timer.lap_s()
-        print(ens_path, rel_file_pattern)
         per_real_tables = load_per_realization_arrow_unsmry_files(
             ens_path, rel_file_pattern
         )
