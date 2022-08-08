@@ -72,6 +72,6 @@ class Filters(SettingsGroupABC):
                 )
             )
         return [
-            html.Div(id=self.single_filter_id, children=[single_filter_elements]),
-            html.Div(id=self.multi_filter_id, children=[multi_filter_elements]),
+            html.Div(id=self.single_filter_id, children=single_filter_elements),
+            html.Div(id=self.multi_filter_id, children=multi_filter_elements),
         ]
