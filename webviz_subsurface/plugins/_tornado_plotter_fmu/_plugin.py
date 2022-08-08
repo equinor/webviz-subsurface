@@ -419,7 +419,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
     @property
     def tour_steps(self) -> List[dict]:
         """Tour of the plugin"""
-        return [
+        tour = [
             {
                 "id": self.view(PluginIDs.TornadoViewGroup.TORNADO_PLOT_VIEW)
                 .layout_element(TornadoPlotView.IDs.MAIN_COLUMN)
@@ -432,53 +432,65 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 ).component_unique_id(Selectors.IDs.RESPONSE),
                 "content": "Choose the response for the data",
             },
-            {
-                "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.FILTERS
-                ).component_unique_id(Filters.IDs.SINGLE_FILTER),
-                "content": "Choose the response for the data",
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.FILTERS
-                ).component_unique_id(Filters.IDs.MULTI_FILTER),
-                "content": "Choose the response for the data",
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.VIEW_SETTINGS
-                ).component_unique_id(ViewSettings.IDs.REFERENCE),
-                "content": (
-                    "Set reference sensitivity for which to calculate tornado plot"
-                ),
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.VIEW_SETTINGS
-                ).component_unique_id(ViewSettings.IDs.SCALE),
-                "content": (
-                    "Set tornadoplot scale to either percentage or absolute values"
-                ),
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.VIEW_SETTINGS
-                ).component_unique_id(ViewSettings.IDs.SENSITIVITIES),
-                "content": ("Pick sensitivities to be displayed"),
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.VIEW_SETTINGS
-                ).component_unique_id(ViewSettings.IDs.PLOT_OPTIONS),
-                "content": "Options for dispaying the bars",
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.VIEW_SETTINGS
-                ).component_unique_id(ViewSettings.IDs.LABEL),
-                "content": "Plick settings for the label at the bars",
-            },
         ]
+        if len(self._single_filters) > 0:
+            tour.append(
+                {
+                    "id": self.shared_settings_group(
+                        PluginIDs.SharedSettings.FILTERS
+                    ).component_unique_id(Filters.IDs.SINGLE_FILTER),
+                    "content": "Choose the response for the data",
+                }
+            )
+        if len(self._multi_filters) > 0:
+            tour.append(
+                {
+                    "id": self.shared_settings_group(
+                        PluginIDs.SharedSettings.FILTERS
+                    ).component_unique_id(Filters.IDs.MULTI_FILTER),
+                    "content": "Choose the response for the data",
+                }
+            )
+
+        tour.extend(
+            [
+                {
+                    "id": self.shared_settings_group(
+                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                    ).component_unique_id(ViewSettings.IDs.REFERENCE),
+                    "content": (
+                        "Set reference sensitivity for which to calculate tornado plot"
+                    ),
+                },
+                {
+                    "id": self.shared_settings_group(
+                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                    ).component_unique_id(ViewSettings.IDs.SCALE),
+                    "content": (
+                        "Set tornadoplot scale to either percentage or absolute values"
+                    ),
+                },
+                {
+                    "id": self.shared_settings_group(
+                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                    ).component_unique_id(ViewSettings.IDs.SENSITIVITIES),
+                    "content": ("Pick sensitivities to be displayed"),
+                },
+                {
+                    "id": self.shared_settings_group(
+                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                    ).component_unique_id(ViewSettings.IDs.PLOT_OPTIONS),
+                    "content": "Options for dispaying the bars",
+                },
+                {
+                    "id": self.shared_settings_group(
+                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                    ).component_unique_id(ViewSettings.IDs.LABEL),
+                    "content": "Plick settings for the label at the bars",
+                },
+            ]
+        )
+        return tour
 
     @property
     def layout(self) -> Type[Component]:
