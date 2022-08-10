@@ -53,6 +53,7 @@ class LayoutLabels(str, Enum):
 
 
 class LayoutStyle:
+    INITIAL_BOUNDS = (0, 0, 1, 1)
     ENSEMBLE_PLOT_HEIGHT = 300
     ENSEMBLE_PLOT_WIDTH = 400
     PARENTDIV = {
@@ -111,7 +112,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                     DeckGLMap(
                                         id=get_uuid(LayoutElements.DECKGLMAP),
                                         layers=[],
-                                        bounds=[0, 0, 1, 1],
+                                        bounds=LayoutStyle.INITIAL_BOUNDS,
                                         coords={"visible": True},
                                         scale={"visible": True},
                                         coordinateUnit="m",

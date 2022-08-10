@@ -192,6 +192,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.CONTOUR_SMOOTHING), "value"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
         State(get_uuid(LayoutElements.DATE_STORE), "data"),
+        State(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
     )
     def update_map_attribute(
         attribute,
@@ -206,6 +207,7 @@ def plugin_callbacks(
         contour_smoothing,
         ensemble,
         date_list,
+        current_bounds,
     ):
         attribute = MapAttribute(attribute)
         if isinstance(realization, int):
@@ -284,6 +286,8 @@ def plugin_callbacks(
             well_pick_horizon=well_pick_horizon,
             plume_extent_data=plume_polygon,
         )
+        if tuple(current_bounds) != LayoutStyle.INITIAL_BOUNDS:
+            viewport_bounds = dash.no_update
         return layers, viewport_bounds
 
 
