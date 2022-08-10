@@ -14,42 +14,28 @@ from ..view_elements import GroupTreeViewElement
 class ViewControls(SettingsGroupABC):
     # pylint: disable=too-few-public-methods
     class Ids:
-        CONTROLS = "controls"
+        TOUR_STEP = "tour-step"
         ENSEMBLE = "ensemble"
         TREEMODE = "tree-mode"
 
     def __init__(self, ensembles: List[str]) -> None:
         super().__init__("Controls")
-
-        self.ensembles = ensembles
-
-        self.tree_mode_options: List[Dict[str, Any]] = [
-            {
-                "label": "Statistics",
-                "value": TreeModeOptions.STATISTICS.value,
-            },
-            {
-                "label": "Single realization",
-                "value": TreeModeOptions.SINGLE_REAL.value,
-            },
-        ]
+        self._ensembles = ensembles
 
     def layout(self) -> html.Div:
         return html.Div(
-            id=self.register_component_unique_id(self.Ids.CONTROLS),
+            id=self.register_component_unique_id(self.Ids.TOUR_STEP),
             children=[
                 wcc.Dropdown(
                     id=self.register_component_unique_id(self.Ids.ENSEMBLE),
                     label="Ensemble",
-                    options=[{"label": ens, "value": ens} for ens in self.ensembles],
                     clearable=False,
-                    value=self.ensembles[0],
+                    options=[{"label": ens, "value": ens} for ens in self._ensembles],
+                    value=self._ensembles[0],
                 ),
                 wcc.RadioItems(
                     id=self.register_component_unique_id(self.Ids.TREEMODE),
                     label="Statistics or realization",
-                    options=self.tree_mode_options,
-                    value=self.tree_mode_options[1]["value"],
                 ),
             ],
         )
@@ -59,7 +45,7 @@ class ViewOptions(SettingsGroupABC):
 
     # pylint: disable=too-few-public-methods
     class Ids:
-        OPTIONS = "options"
+        TOUR_STEP = "tour-step"
         STATISTICAL_OPTIONS = "statistical-options"
         STATISTICS = "statistics"
         SINGLE_REAL_OPTIONS = "single-real-options"
@@ -71,7 +57,7 @@ class ViewOptions(SettingsGroupABC):
 
     def layout(self) -> html.Div:
         return html.Div(
-            id=self.register_component_unique_id(ViewOptions.Ids.OPTIONS),
+            id=self.register_component_unique_id(ViewOptions.Ids.TOUR_STEP),
             children=[
                 html.Div(
                     id=self.register_component_unique_id(
@@ -119,16 +105,18 @@ class ViewOptions(SettingsGroupABC):
 class ViewFilters(SettingsGroupABC):
     # pylint: disable=too-few-public-methods
     class Ids:
-        FILTER = "filter"
+        TOUR_STEP = "tour-step"
+        PROD_INJ_OTHER = "prod-inj-other"
 
     def __init__(self) -> None:
         super().__init__("Filters")
 
     def layout(self) -> html.Div:
         return html.Div(
-            id=self.register_component_unique_id(self.Ids.FILTER),
+            id=self.register_component_unique_id(self.Ids.TOUR_STEP),
             children=[
                 wcc.SelectWithLabel(
+                    id=self.register_component_unique_id(self.Ids.PROD_INJ_OTHER),
                     label="Prod/Inj/Other",
                     options=[
                         {"label": "Production", "value": NodeType.PROD.value},
@@ -296,7 +284,7 @@ class GroupTreeView(ViewABC):
             ),
             Input(
                 self.settings_group(GroupTreeView.Ids.FILTERS)
-                .component_unique_id(ViewFilters.Ids.FILTER)
+                .component_unique_id(ViewFilters.Ids.PROD_INJ_OTHER)
                 .to_string(),
                 "value",
             ),
