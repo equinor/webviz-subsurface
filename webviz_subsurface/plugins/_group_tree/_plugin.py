@@ -12,19 +12,21 @@ from webviz_subsurface._providers import (
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
 from ._plugin_ids import PluginIds
-from .shared_settings import Controls, Filters, Options
-from .views import GroupTreeGraph
+from .views import GroupTreeView
 
 
 class GroupTree(WebvizPluginABC):
     """This plugin vizualizes the network tree and displays pressures,
     rates and other network related information.
+
     ---
     * **`ensembles`:** Which ensembles in `shared_settings` to include.
     * **`gruptree_file`:** `.csv` with gruptree information.
     * **`time_index`:** Frequency for the data sampling.
     ---
+
     **Summary data**
+
     This plugin needs the following summary vectors to be exported:
     * FOPR, FWPR, FOPR, FWIR and FGIR
     * GPR for all group nodes in the network
@@ -34,14 +36,18 @@ class GroupTree(WebvizPluginABC):
     * WSTAT, WTHP, WBHP, WMCTL for all wells
     * WOPR, WWPR, WGPR for all producers
     * WWIR and/or WGIR for all injectors
+
     **GRUPTREE input**
+
     `gruptree_file` is a path to a file stored per realization (e.g. in \
     `share/results/tables/gruptree.csv"`).
     The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
     model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
     representation of the Eclipse network:
     [Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+
     **time_index**
+
     This is the sampling interval of the summary data. It is `yearly` by default, but can be set
     to `monthly` if needed.
     """
@@ -56,10 +62,6 @@ class GroupTree(WebvizPluginABC):
     ) -> None:
         super().__init__(stretch=True)
 
-        assert time_index in [
-            "monthly",
-            "yearly",
-        ], "time_index must be monthly or yearly"
         self._ensembles = ensembles
         self._gruptree_file = gruptree_file
 
@@ -90,27 +92,9 @@ class GroupTree(WebvizPluginABC):
                 provider, GruptreeModel(ens_name, ens_path, gruptree_file)
             )
 
-        self.add_store(PluginIds.Stores.ENSEMBLES, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.TREEMODE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(PluginIds.Stores.STATISTICS, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(
-            PluginIds.Stores.REALIZATION, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(PluginIds.Stores.FILTER, WebvizPluginABC.StorageType.SESSION)
-        # self.add_store(PluginIds.Stores.OPTIONS, WebvizPluginABC.StorageType.SESSION)
-
-        self.add_shared_settings_group(
-            Controls(self._ensembles), PluginIds.SharedSettings.CONTROLS
-        )
-        self.add_shared_settings_group(
-            Options(self._group_tree_data), PluginIds.SharedSettings.OPTIONS
-        )
-        self.add_shared_settings_group(Filters(), PluginIds.SharedSettings.FILTERS)
-
         self.add_view(
-            GroupTreeGraph(self._group_tree_data),
-            PluginIds.ProductionNetworkID.GROUP_TREE,
-            PluginIds.ProductionNetworkID.GROUP_NAME,
+            GroupTreeView(self._group_tree_data),
+            PluginIds.Views.GROUPTREE_VIEW,
         )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
@@ -119,31 +103,31 @@ class GroupTree(WebvizPluginABC):
             for _, ens_grouptree_data in self._group_tree_data.items()
         ]
 
-    @property
-    def tour_steps(self) -> List[dict]:
-        return [
-            {
-                "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.CONTROLS
-                ).component_unique_id(Controls.Ids.CONTROLS),
-                "content": "Menu for selecting ensemble and tree mode.",
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.OPTIONS
-                ).component_unique_id(Options.Ids.OPTIONS),
-                "content": "Menu for statistical options or realization.",
-            },
-            {
-                "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.FILTERS
-                ).component_unique_id(Filters.Ids.FILTER),
-                "content": "Menu for filtering options.",
-            },
-            {
-                "id": self.view(PluginIds.ProductionNetworkID.GROUP_TREE)
-                .layout_element(GroupTreeGraph.Ids.GRAPH)
-                .get_unique_id(),
-                "content": "Vizualisation of network tree.",
-            },
-        ]
+    # @property
+    # def tour_steps(self) -> List[dict]:
+    #     return [
+    #         {
+    #             "id": self.shared_settings_group(
+    #                 PluginIds.SharedSettings.CONTROLS
+    #             ).component_unique_id(Controls.Ids.CONTROLS),
+    #             "content": "Menu for selecting ensemble and tree mode.",
+    #         },
+    #         {
+    #             "id": self.shared_settings_group(
+    #                 PluginIds.SharedSettings.OPTIONS
+    #             ).component_unique_id(Options.Ids.OPTIONS),
+    #             "content": "Menu for statistical options or realization.",
+    #         },
+    #         {
+    #             "id": self.shared_settings_group(
+    #                 PluginIds.SharedSettings.FILTERS
+    #             ).component_unique_id(Filters.Ids.FILTER),
+    #             "content": "Menu for filtering options.",
+    #         },
+    #         {
+    #             "id": self.view(PluginIds.ProductionNetworkID.GROUP_TREE)
+    #             .layout_element(GroupTreeGraph.Ids.GRAPH)
+    #             .get_unique_id(),
+    #             "content": "Vizualisation of network tree.",
+    #         },
+    #     ]

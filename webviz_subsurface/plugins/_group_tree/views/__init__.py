@@ -1,1 +1,1 @@
-from ._group_tree import GroupTreeGraph
+from ._group_tree_view import GroupTreeView
