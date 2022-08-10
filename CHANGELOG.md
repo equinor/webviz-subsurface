@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#1094](https://github.com/equinor/webviz-subsurface/pull/1094) - Fixed issues with ambiguous truth of pandas Series in EnsembleSummaryProvider.
+- [#1094](https://github.com/equinor/webviz-subsurface/pull/1094) - Fixed issues with ambiguous truth of `pandas.Series` in `EnsembleSummaryProvider`.
 
 ### Changed
 
