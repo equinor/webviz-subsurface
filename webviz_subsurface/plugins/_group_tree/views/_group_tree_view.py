@@ -34,8 +34,8 @@ class ViewControls(SettingsGroupABC):
             },
         ]
 
-    def layout(self) -> Component:
-        return wcc.FlexBox(
+    def layout(self) -> html.Div:
+        return html.Div(
             id=self.register_component_unique_id(self.Ids.CONTROLS),
             children=[
                 wcc.Dropdown(
@@ -69,10 +69,9 @@ class ViewOptions(SettingsGroupABC):
         super().__init__("Options")
         self.group_tree_data = group_tree_data
 
-    def layout(self) -> wcc.Selectors:
-        return wcc.Selectors(
+    def layout(self) -> html.Div:
+        return html.Div(
             id=self.register_component_unique_id(ViewOptions.Ids.OPTIONS),
-            label="Options",
             children=[
                 html.Div(
                     id=self.register_component_unique_id(
@@ -125,18 +124,26 @@ class ViewFilters(SettingsGroupABC):
     def __init__(self) -> None:
         super().__init__("Filters")
 
-    def layout(self) -> Type[Component]:
-        return wcc.SelectWithLabel(
-            label="Prod/Inj/Other",
+    def layout(self) -> html.Div:
+        return html.Div(
             id=self.register_component_unique_id(self.Ids.FILTER),
-            options=[
-                {"label": "Production", "value": NodeType.PROD.value},
-                {"label": "Injection", "value": NodeType.INJ.value},
-                {"label": "Other", "value": NodeType.OTHER.value},
+            children=[
+                wcc.SelectWithLabel(
+                    label="Prod/Inj/Other",
+                    options=[
+                        {"label": "Production", "value": NodeType.PROD.value},
+                        {"label": "Injection", "value": NodeType.INJ.value},
+                        {"label": "Other", "value": NodeType.OTHER.value},
+                    ],
+                    value=[
+                        NodeType.PROD.value,
+                        NodeType.INJ.value,
+                        NodeType.OTHER.value,
+                    ],
+                    multi=True,
+                    size=3,
+                )
             ],
-            value=[NodeType.PROD.value, NodeType.INJ.value, NodeType.OTHER.value],
-            multi=True,
-            size=3,
         )
 
 

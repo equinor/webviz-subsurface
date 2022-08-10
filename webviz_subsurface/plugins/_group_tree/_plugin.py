@@ -109,19 +109,19 @@ class GroupTree(WebvizPluginABC):
         return [
             {
                 "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
-                .shared_settings_group(GroupTreeView.Ids.CONTROLS)
+                .settings_group(GroupTreeView.Ids.CONTROLS)
                 .component_unique_id(ViewControls.Ids.CONTROLS),
                 "content": "Menu for selecting ensemble and tree mode.",
             },
             {
                 "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
-                .shared_settings_group(GroupTreeView.Ids.OPTIONS)
+                .settings_group(GroupTreeView.Ids.OPTIONS)
                 .component_unique_id(ViewOptions.Ids.OPTIONS),
                 "content": "Menu for statistical options or realization.",
             },
             {
                 "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
-                .shared_settings_group(GroupTreeView.Ids.FILTERS)
+                .settings_group(GroupTreeView.Ids.FILTERS)
                 .component_unique_id(ViewFilters.Ids.FILTER),
                 "content": "Menu for filtering options.",
             },
