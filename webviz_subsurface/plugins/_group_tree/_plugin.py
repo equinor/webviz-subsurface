@@ -12,7 +12,8 @@ from webviz_subsurface._providers import (
 
 from ._ensemble_group_tree_data import EnsembleGroupTreeData
 from ._plugin_ids import PluginIds
-from .views import GroupTreeView
+from .view_elements import GroupTreeViewElement
+from .views import GroupTreeView, ViewControls, ViewFilters, ViewOptions
 
 
 class GroupTree(WebvizPluginABC):
@@ -103,31 +104,31 @@ class GroupTree(WebvizPluginABC):
             for _, ens_grouptree_data in self._group_tree_data.items()
         ]
 
-    # @property
-    # def tour_steps(self) -> List[dict]:
-    #     return [
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.CONTROLS
-    #             ).component_unique_id(Controls.Ids.CONTROLS),
-    #             "content": "Menu for selecting ensemble and tree mode.",
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.OPTIONS
-    #             ).component_unique_id(Options.Ids.OPTIONS),
-    #             "content": "Menu for statistical options or realization.",
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.FILTERS
-    #             ).component_unique_id(Filters.Ids.FILTER),
-    #             "content": "Menu for filtering options.",
-    #         },
-    #         {
-    #             "id": self.view(PluginIds.ProductionNetworkID.GROUP_TREE)
-    #             .layout_element(GroupTreeGraph.Ids.GRAPH)
-    #             .get_unique_id(),
-    #             "content": "Vizualisation of network tree.",
-    #         },
-    #     ]
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                .shared_settings_group(GroupTreeView.Ids.CONTROLS)
+                .component_unique_id(ViewControls.Ids.CONTROLS),
+                "content": "Menu for selecting ensemble and tree mode.",
+            },
+            {
+                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                .shared_settings_group(GroupTreeView.Ids.OPTIONS)
+                .component_unique_id(ViewOptions.Ids.OPTIONS),
+                "content": "Menu for statistical options or realization.",
+            },
+            {
+                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                .shared_settings_group(GroupTreeView.Ids.FILTERS)
+                .component_unique_id(ViewFilters.Ids.FILTER),
+                "content": "Menu for filtering options.",
+            },
+            {
+                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                .view_element(GroupTreeView.Ids.VIEW_ELEMENT)
+                .component_unique_id(GroupTreeViewElement.Ids.COMPONENT),
+                "content": "Vizualisation of network tree.",
+            },
+        ]

@@ -1,4 +1,3 @@
-from tokenize import group
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 import webviz_core_components as wcc
@@ -8,7 +7,6 @@ from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from .._ensemble_group_tree_data import EnsembleGroupTreeData
-from .._plugin_ids import PluginIds
 from .._types import NodeType, StatOptions, TreeModeOptions
 from ..view_elements import GroupTreeViewElement
 
@@ -161,7 +159,6 @@ class GroupTreeView(ViewABC):
             ViewOptions(self._group_tree_data), GroupTreeView.Ids.OPTIONS
         )
         self.add_settings_group(ViewFilters(), GroupTreeView.Ids.FILTERS)
-        self.add_column()
         self.add_view_element(GroupTreeViewElement(), GroupTreeView.Ids.VIEW_ELEMENT)
 
     def set_callbacks(self) -> None:

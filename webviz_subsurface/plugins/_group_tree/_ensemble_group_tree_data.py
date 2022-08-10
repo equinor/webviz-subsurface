@@ -337,7 +337,6 @@ def extract_tree(
     dates: list,
     sumvecs: pd.DataFrame,
 ) -> dict:
-    # pylint: disable=too-many-locals
     """Extract the tree part of the GroupTree component dataset. This functions
     works recursively and is initially called with the top node of the tree: FIELD."""
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
