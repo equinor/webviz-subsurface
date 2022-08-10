@@ -69,15 +69,15 @@ class LayoutStyle:
         "flexDirection": "column",
     }
     MAP_VIEW = {
-        "flex": 11,
+        "height": "45vh",
     }
     MAP_WRAPPER = {
         "padding": "2vh",
-        "height": "90%",
+        "height": "32vh",
         "position": "relative",
     }
     PLOT_VIEW = {
-        "flex": 9,
+        "height": "35vh",
         "display": "flex",
         "flexDirection": "row",
         "justifyContent": "space-evenly",
@@ -122,6 +122,19 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                 ],
                                 style=LayoutStyle.MAP_WRAPPER,
                             ),
+                            html.Div(
+                                [
+                                    dcc.Slider(
+                                        id=get_uuid(LayoutElements.DATEINPUT),
+                                        step=None,
+                                        marks={0: ''},
+                                        value=0,
+                                    ),
+                                ],
+                                style={
+                                    "height": "4vh",
+                                }
+                            ),
                         ],
                         style=LayoutStyle.MAP_VIEW,
                     ),
@@ -148,20 +161,6 @@ class FilterSelectorLayout(wcc.Selectors):
                 "Formation",
                 wcc.Dropdown(
                     id=get_uuid(LayoutElements.FORMATION_INPUT),
-                ),
-                "Date",
-                html.Div(
-                    [
-                        dcc.Slider(
-                            id=get_uuid(LayoutElements.DATEINPUT),
-                            step=None,
-                            marks={0: ''},
-                            value=0,
-                        ),
-                    ],
-                    style={
-                        "paddingBottom": "50px",
-                    }
                 ),
             ]
         )
