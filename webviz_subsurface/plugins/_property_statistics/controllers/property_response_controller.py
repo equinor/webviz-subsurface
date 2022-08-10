@@ -2,7 +2,7 @@ from typing import Callable, Tuple, Union
 
 import pandas as pd
 from dash import ALL, Dash, Input, Output, State, callback_context, no_update
-from dash.dash import _NoUpdate
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._figures import BarChart, ScatterPlot, TimeSeriesFigure
@@ -75,11 +75,11 @@ def property_response_controller(
     def _update_correlation_figure(
         label: str, ensemble: str
     ) -> Tuple[
-        Union[float, _NoUpdate],
-        Union[float, _NoUpdate],
-        Union[float, _NoUpdate],
+        Union[float, NoUpdate],
+        Union[float, NoUpdate],
+        Union[float, NoUpdate],
         list,
-        Union[dict, _NoUpdate],
+        Union[dict, NoUpdate],
         bool,
     ]:
         if label is not None:

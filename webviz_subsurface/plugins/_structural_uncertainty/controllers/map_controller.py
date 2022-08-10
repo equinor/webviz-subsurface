@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import xtgeo
 from dash import Dash, Input, Output, State, callback_context, no_update
-from dash.dash import _NoUpdate
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._datainput.well import (
@@ -344,7 +344,7 @@ def update_maps(
     def _update_from_map_click(
         clicked_shape: Optional[Dict],
         _polyline: List[List[float]],
-    ) -> Tuple[str, Union[_NoUpdate, str]]:
+    ) -> Tuple[str, Union[NoUpdate, str]]:
         """Update intersection source and optionally selected well when
         user clicks a shape in map"""
         ctx = callback_context.triggered[0]
