@@ -7,15 +7,9 @@ from webviz_subsurface._providers import (
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
 )
-from webviz_subsurface._providers.ensemble_table_provider_factory import BackingType
-from webviz_subsurface._providers.ensemble_table_provider_impl_arrow import (
+from webviz_subsurface._providers.ensemble_table_provider import (
     EnsembleTableProviderImplArrow,
 )
-from webviz_subsurface._providers.ensemble_table_provider_impl_inmem_parquet import (
-    EnsembleTableProviderImplInMemParquet,
-)
-
-BACKING_TYPE_TO_TEST: BackingType = BackingType.ARROW
 
 
 def _create_synthetic_table_provider(
@@ -36,23 +30,14 @@ def _create_synthetic_table_provider(
 
     input_df = pd.DataFrame(input_data[1:], columns=input_data[0])
 
-    use_arrow_implementation = True
-
     provider: Optional[EnsembleTableProvider]
-    if use_arrow_implementation:
-        EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
-            storage_dir, "dummy_key", input_df
-        )
-        provider = EnsembleTableProviderImplArrow.from_backing_store(
-            storage_dir, "dummy_key"
-        )
-    else:
-        EnsembleTableProviderImplInMemParquet.write_backing_store_from_ensemble_dataframe(
-            storage_dir, "dummy_key", input_df
-        )
-        provider = EnsembleTableProviderImplInMemParquet.from_backing_store(
-            storage_dir, "dummy_key"
-        )
+
+    EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
+        storage_dir, "dummy_key", input_df
+    )
+    provider = EnsembleTableProviderImplArrow.from_backing_store(
+        storage_dir, "dummy_key"
+    )
 
     if not provider:
         raise ValueError("Failed to create EnsembleTableProvider")
@@ -77,15 +62,10 @@ def test_synthetic_get_column_data(testdata_folder: Path) -> None:
 def test_create_from_aggregated_csv_file_smry_csv(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-    factory = EnsembleTableProviderFactory(
-        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
-    )
-    providerset = factory.create_provider_set_from_aggregated_csv_file(
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_ensemble_csv_file(
         testdata_folder / "reek_test_data" / "aggregated_data" / "smry.csv"
     )
-
-    assert providerset.ensemble_names() == ["iter-0"]
-    provider = providerset.ensemble_provider("iter-0")
 
     assert len(provider.column_names()) == 17
     assert provider.column_names()[0] == "DATE"
@@ -106,53 +86,15 @@ def test_create_from_aggregated_csv_file_smry_csv(
     assert valdf["REAL"].nunique() == 3
 
 
-def test_create_from_aggregated_csv_file_smry_hm(
-    testdata_folder: Path, tmp_path: Path
-) -> None:
-    factory = EnsembleTableProviderFactory(
-        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
-    )
-    providerset = factory.create_provider_set_from_aggregated_csv_file(
-        testdata_folder / "reek_test_data" / "aggregated_data" / "smry_hm.csv"
-    )
-
-    assert providerset.ensemble_names() == ["iter-0", "iter-3"]
-    provider = providerset.ensemble_provider("iter-0")
-
-    assert len(provider.column_names()) == 474
-    assert provider.column_names()[0] == "DATE"
-    assert provider.column_names()[1] == "BPR:15,28,1"
-    assert provider.column_names()[473] == "YEARS"
-
-    assert len(provider.realizations()) == 10
-
-    valdf = provider.get_column_data(["DATE"])
-    assert len(valdf.columns) == 2
-    assert valdf.columns[0] == "REAL"
-    assert valdf.columns[1] == "DATE"
-    assert valdf["REAL"].nunique() == 10
-
-
 def test_create_from_per_realization_csv_file(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
 
-    ensembles: Dict[str, str] = {
-        "iter-0": str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
-        "iter-3": str(testdata_folder / "01_drogon_ahm/realization-*/iter-3"),
-    }
-
-    csvfile = "share/results/tables/rft.csv"
-
-    factory = EnsembleTableProviderFactory(
-        tmp_path, backing_type=BACKING_TYPE_TO_TEST, allow_storage_writes=True
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_per_realization_csv_file(
+        str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
+        "share/results/tables/rft.csv",
     )
-    providerset = factory.create_provider_set_from_per_realization_csv_file(
-        ensembles, csvfile
-    )
-
-    assert providerset.ensemble_names() == ["iter-0", "iter-3"]
-    provider = providerset.ensemble_provider("iter-0")
 
     all_column_names = provider.column_names()
     # print(all_column_names)
@@ -167,3 +109,59 @@ def test_create_from_per_realization_csv_file(
     assert valdf["REAL"].unique() == [2]
     assert valdf["CONIDX"].nunique() == 24
     assert sorted(valdf["CONIDX"].unique()) == list(range(1, 25))
+
+
+def test_create_from_per_realization_arrow_file(
+    testdata_folder: Path, tmp_path: Path
+) -> None:
+
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_per_realization_arrow_file(
+        str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
+        "share/results/unsmry/*arrow",
+    )
+
+    valdf = provider.get_column_data(provider.column_names())
+    assert valdf.shape[0] == 25284
+    assert "FOPT" in valdf.columns
+    assert valdf["REAL"].nunique() == 100
+
+
+def test_create_from_per_realization_parameter_file(
+    testdata_folder: Path, tmp_path: Path
+) -> None:
+
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider = factory.create_from_per_realization_parameter_file(
+        str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
+    )
+
+    valdf = provider.get_column_data(provider.column_names())
+    assert "GLOBVAR:FAULT_SEAL_SCALING" in valdf.columns
+    assert valdf["REAL"].nunique() == 100
+
+
+def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
+    """This tests importing a csv file with an ensemble column with multiple
+    ensembles. It will return a dictionary of providers, one for each ensemble.
+    """
+    factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
+    provider_set: Dict[
+        str, EnsembleTableProvider
+    ] = factory.create_provider_set_from_aggregated_csv_file("tests/data/volumes.csv")
+    assert set(provider_set.keys()) == {"iter-0", "iter-1"}
+
+    for _, provider in provider_set.items():
+        valdf = provider.get_column_data(provider.column_names())
+        print(valdf)
+        print(provider.column_names())
+        assert set(valdf["REAL"].unique()) == {0, 1}
+        assert {
+            "ZONE",
+            "REGION",
+            "BULK_OIL",
+            "PORE_OIL",
+            "HCPV_OIL",
+            "STOIIP_OIL",
+            "SOURCE",
+        }.issubset(set(provider.column_names()))

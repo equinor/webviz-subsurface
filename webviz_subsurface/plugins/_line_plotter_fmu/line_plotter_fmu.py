@@ -52,7 +52,7 @@ class LinePlotterFMU(WebvizPluginABC):
     ):
         super().__init__()
 
-        provider = EnsembleTableProviderFactory.instance()
+        provider_factory = EnsembleTableProviderFactory.instance()
         self._initial_data = initial_data if initial_data else {}
         self._initial_layout = initial_layout if initial_layout else {}
         if ensembles is not None and csvfile is not None:
@@ -60,54 +60,52 @@ class LinePlotterFMU(WebvizPluginABC):
                 ens_name: webviz_settings.shared_settings["scratch_ensembles"][ens_name]
                 for ens_name in ensembles
             }
-            self._parameterproviderset = (
-                provider.create_provider_set_from_per_realization_parameter_file(
-                    ensembles_dict
+            self._parameterproviderset = {
+                ens_name: provider_factory.create_from_per_realization_parameter_file(
+                    ens_path
                 )
-            )
-            self._tableproviderset = (
-                provider.create_provider_set_from_per_realization_csv_file(
-                    ensembles_dict, csvfile
+                for ens_name, ens_path in ensembles_dict.items()
+            }
+            self._tableproviderset = {
+                ens_name: provider_factory.create_from_per_realization_csv_file(
+                    ens_path, csvfile
                 )
-            )
+                for ens_name, ens_path in ensembles_dict.items()
+            }
             self._ensemble_names = ensembles
         elif aggregated_csvfile and aggregated_parameterfile is not None:
             self._tableproviderset = (
-                provider.create_provider_set_from_aggregated_csv_file(
+                provider_factory.create_provider_set_from_aggregated_csv_file(
                     aggregated_csvfile
                 )
             )
             self._parameterproviderset = (
-                provider.create_provider_set_from_aggregated_csv_file(
+                provider_factory.create_provider_set_from_aggregated_csv_file(
                     aggregated_parameterfile
                 )
             )
-            self._ensemble_names = self._tableproviderset.ensemble_names()
+            self._ensemble_names = list(self._tableproviderset.keys())
         else:
             raise ValueError(
                 "Specify either ensembles and csvfile or aggregated_csvfile "
                 "and aggregated_parameterfile"
             )
         all_parameters: list = [
-            self._parameterproviderset.ensemble_provider(ens).column_names()
-            for ens in self._ensemble_names
+            provider.column_names() for provider in self._parameterproviderset.values()
         ]
         self._parameter_names: list = list(set().union(*all_parameters))
         all_data_columns: list = [
-            self._tableproviderset.ensemble_provider(ens).column_names()
-            for ens in self._ensemble_names
+            provider.column_names() for provider in self._tableproviderset.values()
         ]
         self._data_column_names: list = list(set().union(*all_data_columns))
+
         dfs = []
-        for ens in self._ensemble_names:
-            df = self._parameterproviderset.ensemble_provider(ens).get_column_data(
-                column_names=self._parameterproviderset.ensemble_provider(
-                    ens
-                ).column_names()
-            )
+        for ens, provider in self._parameterproviderset.items():
+            df = provider.get_column_data(column_names=provider.column_names())
             df["ENSEMBLE"] = ens
             dfs.append(df)
         parameterdf = pd.concat(dfs)
+
         self._realizations = sorted(list(parameterdf["REAL"].unique()))
         self._parameter_filter = ParameterFilter(
             self.uuid("parameter-filter"), parameterdf
