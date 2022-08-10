@@ -339,6 +339,7 @@ def extract_tree(
 ) -> dict:
     """Extract the tree part of the GroupTree component dataset. This functions
     works recursively and is initially called with the top node of the tree: FIELD."""
+    # pylint: disable=too-many-locals
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
     nodedict = get_nodedict(gruptree, nodename)
 

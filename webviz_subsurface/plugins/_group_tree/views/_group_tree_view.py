@@ -1,9 +1,8 @@
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple
 
 import webviz_core_components as wcc
 import webviz_subsurface_components
 from dash import Input, Output, State, callback, html
-from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from .._ensemble_group_tree_data import EnsembleGroupTreeData
@@ -154,7 +153,11 @@ class GroupTreeView(ViewABC):
             ViewOptions(self._group_tree_data), GroupTreeView.Ids.OPTIONS
         )
         self.add_settings_group(ViewFilters(), GroupTreeView.Ids.FILTERS)
-        self.add_view_element(GroupTreeViewElement(), GroupTreeView.Ids.VIEW_ELEMENT)
+
+        main_column = self.add_column()
+        main_column.add_view_element(
+            GroupTreeViewElement(), GroupTreeView.Ids.VIEW_ELEMENT
+        )
 
     def set_callbacks(self) -> None:
         @callback(
