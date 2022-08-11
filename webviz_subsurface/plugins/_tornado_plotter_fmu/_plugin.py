@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
-from typing import List, Optional, Type, Tuple, Union
+from typing import List, Type, Tuple, Union
 
 from dash import (
     ALL,
     Input,
     Output,
-    State,
     callback,
     callback_context,
 )
@@ -17,17 +16,16 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._datainput.fmu_input import find_sens_type
 from webviz_subsurface._providers import EnsembleTableProviderFactory
+from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
+from webviz_subsurface._components.tornado._tornado_data import TornadoData
+from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
 from ._error import error
-from ._plugin_ids import PluginIDs
+from ._plugin_ids import PluginIds
 from .shared_settings import Filters, Selectors, ViewSettings
 from .views import TornadoPlotView, TornadoTableView
 from .views.plot_view.view_elements import TornadoPlot
 from .views.table_view.view_elements import TornadoTable as TornadoTableViewElement
-
-from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
-from webviz_subsurface._components.tornado._tornado_data import TornadoData
-from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
 
 class TornadoPlotterFMU(WebvizPluginABC):
@@ -142,27 +140,24 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
         # Stores for data
         self.add_store(
-            PluginIDs.Stores.DataStores.TORNADO_DATA,
+            PluginIds.Stores.DataStores.TORNADO_DATA,
             WebvizPluginABC.StorageType.SESSION,
         )
 
         self.add_view(
             TornadoPlotView(),
-            PluginIDs.TornadoViewGroup.TORNADO_PLOT_VIEW,
+            PluginIds.TornadoViewGroup.TORNADO_PLOT_VIEW,
         )
 
         self.add_view(
             TornadoTableView(),
-            PluginIDs.TornadoViewGroup.TORNADO_TABLE_VIEW,
+            PluginIds.TornadoViewGroup.TORNADO_TABLE_VIEW,
         )
 
         # Settingsgroup for Selector
-        self.add_store(
-            PlugInIDs.Stores.Selectors.RESPONSE, WebvizPluginABC.StorageType.SESSION
-        )
         self.add_shared_settings_group(
             Selectors(responses, initial_response),
-            PluginIDs.SharedSettings.SELECTORS,
+            PluginIds.SharedSettings.SELECTORS,
         )
 
         # Settingsgroup for filters
@@ -173,75 +168,53 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
         self.add_shared_settings_group(
             self.filters,
-            PluginIDs.SharedSettings.FILTERS,
+            PluginIds.SharedSettings.FILTERS,
         )
 
         # Settingsgroup for the view options
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.REFERENCE,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.SCALE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.SENSITIVITIES,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.RESET,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.PLOT_OPTIONS,
-            WebvizPluginABC.StorageType.SESSION,
-        )
-        self.add_store(
-            PlugInIDs.Stores.ViewSetttings.LABEL, WebvizPluginABC.StorageType.SESSION
-        )
         self.add_shared_settings_group(
-            ViewSettings(self._design_matrix_df), PluginIDs.SharedSettings.VIEW_SETTINGS
+            ViewSettings(self._design_matrix_df), PluginIds.SharedSettings.VIEW_SETTINGS
         )
 
     def _set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view(PluginIDs.TornadoViewGroup.TORNADO_PLOT_VIEW)
+                self.view(PluginIds.TornadoViewGroup.TORNADO_PLOT_VIEW)
                 .view_element(TornadoPlotView.IDs.TORNADO_PLOT)
                 .component_unique_id(TornadoPlot.IDs.GRAPH)
                 .to_string(),
                 "figure",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.REFERENCE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.SCALE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.LABEL)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIDs.Stores.DataStores.TORNADO_DATA),
+                self.get_store_unique_id(PluginIds.Stores.DataStores.TORNADO_DATA),
                 "data",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.SENSITIVITIES)
                 .to_string(),
                 "value",
@@ -299,43 +272,43 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
         @callback(
             Output(
-                self.view(PluginIDs.TornadoViewGroup.TORNADO_TABLE_VIEW)
+                self.view(PluginIds.TornadoViewGroup.TORNADO_TABLE_VIEW)
                 .view_element(TornadoTableView.IDs.TORNADO_TABLE)
                 .component_unique_id(TornadoTableViewElement.IDs.TABLE)
                 .to_string(),
                 "data",
             ),
             Output(
-                self.view(PluginIDs.TornadoViewGroup.TORNADO_TABLE_VIEW)
+                self.view(PluginIds.TornadoViewGroup.TORNADO_TABLE_VIEW)
                 .view_element(TornadoTableView.IDs.TORNADO_TABLE)
                 .component_unique_id(TornadoTableViewElement.IDs.TABLE)
                 .to_string(),
                 "columns",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.REFERENCE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.SCALE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIDs.Stores.DataStores.TORNADO_DATA),
+                self.get_store_unique_id(PluginIds.Stores.DataStores.TORNADO_DATA),
                 "data",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.VIEW_SETTINGS)
+                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
                 .component_unique_id(ViewSettings.IDs.SENSITIVITIES)
                 .to_string(),
                 "value",
@@ -383,11 +356,11 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
         @callback(
             Output(
-                self.get_store_unique_id(PluginIDs.Stores.DataStores.TORNADO_DATA),
+                self.get_store_unique_id(PluginIds.Stores.DataStores.TORNADO_DATA),
                 "data",
             ),
             Input(
-                self.shared_settings_group(PluginIDs.SharedSettings.SELECTORS)
+                self.shared_settings_group(PluginIds.SharedSettings.SELECTORS)
                 .component_unique_id(Selectors.IDs.RESPONSE)
                 .to_string(),
                 "value",
@@ -446,14 +419,14 @@ class TornadoPlotterFMU(WebvizPluginABC):
         """Tour of the plugin"""
         tour = [
             {
-                "id": self.view(PluginIDs.TornadoViewGroup.TORNADO_PLOT_VIEW)
+                "id": self.view(PluginIds.TornadoViewGroup.TORNADO_PLOT_VIEW)
                 .layout_element(TornadoPlotView.IDs.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": ("Shows tornado plot."),
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIDs.SharedSettings.SELECTORS
+                    PluginIds.SharedSettings.SELECTORS
                 ).component_unique_id(Selectors.IDs.RESPONSE),
                 "content": "Choose the response for the data",
             },
@@ -462,7 +435,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             tour.append(
                 {
                     "id": self.shared_settings_group(
-                        PluginIDs.SharedSettings.FILTERS
+                        PluginIds.SharedSettings.FILTERS
                     ).component_unique_id(Filters.IDs.SINGLE_FILTER),
                     "content": "Choose the response for the data",
                 }
@@ -471,7 +444,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             tour.append(
                 {
                     "id": self.shared_settings_group(
-                        PluginIDs.SharedSettings.FILTERS
+                        PluginIds.SharedSettings.FILTERS
                     ).component_unique_id(Filters.IDs.MULTI_FILTER),
                     "content": "Choose the response for the data",
                 }
@@ -481,7 +454,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             [
                 {
                     "id": self.shared_settings_group(
-                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                        PluginIds.SharedSettings.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.REFERENCE),
                     "content": (
                         "Set reference sensitivity for which to calculate tornado plot"
@@ -489,7 +462,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 },
                 {
                     "id": self.shared_settings_group(
-                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                        PluginIds.SharedSettings.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.SCALE),
                     "content": (
                         "Set tornadoplot scale to either percentage or absolute values"
@@ -497,19 +470,19 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 },
                 {
                     "id": self.shared_settings_group(
-                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                        PluginIds.SharedSettings.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.SENSITIVITIES),
                     "content": ("Pick sensitivities to be displayed"),
                 },
                 {
                     "id": self.shared_settings_group(
-                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                        PluginIds.SharedSettings.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.PLOT_OPTIONS),
                     "content": "Options for dispaying the bars",
                 },
                 {
                     "id": self.shared_settings_group(
-                        PluginIDs.SharedSettings.VIEW_SETTINGS
+                        PluginIds.SharedSettings.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.LABEL),
                     "content": "Plick settings for the label at the bars",
                 },

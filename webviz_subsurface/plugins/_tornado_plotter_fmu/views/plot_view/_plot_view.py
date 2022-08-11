@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .view_elements import TornadoPlot
@@ -16,6 +14,6 @@ class TornadoPlotView(ViewABC):
     ) -> None:
         super().__init__("Tornado Plot View")
 
-        viewcolumn = self.add_column(TornadoPlotView.IDs.MAIN_COLUMN)
-        first_row = viewcolumn.make_row()
+        column = self.add_column(TornadoPlotView.IDs.MAIN_COLUMN)
+        first_row = column.make_row()
         first_row.add_view_element(TornadoPlot(), TornadoPlotView.IDs.TORNADO_PLOT)

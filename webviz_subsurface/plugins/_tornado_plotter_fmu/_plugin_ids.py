@@ -1,5 +1,5 @@
 # pylint: disable=too-few-public-methods
-class PluginIDs:
+class PluginIds:
     class Stores:
         class PlotPicker:
             BARS_OR_TABLE = "bars-table"
