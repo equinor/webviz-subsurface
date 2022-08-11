@@ -2,11 +2,10 @@ import re
 from typing import List
 
 import webviz_core_components as wcc
-from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_ids import PlugInIDs
+from .._plugin_ids import PluginIDs
 
 
 class Selectors(SettingsGroupABC):
@@ -36,16 +35,3 @@ class Selectors(SettingsGroupABC):
                 clearable=False,
             )
         ]
-
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Selectors.RESPONSE),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(Selectors.IDs.RESPONSE).to_string(), "value"
-            ),
-        )
-        def _set_response(response: str) -> str:
-            return response

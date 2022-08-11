@@ -233,7 +233,10 @@ class TornadoBarChart:
                 "barmode": "overlay",
                 "margin": {"l": 0, "r": 0, "b": 20, "t": 0, "pad": 21},
                 "xaxis": {
-                    "title": self._scale,
+                    "title": {
+                        "text": self._scale,
+                        "standoff": 40,
+                    },
                     "range": self.range,
                     "autorange": self._show_scatter or self._tornadotable.empty,
                     "gridwidth": 1,
@@ -269,6 +272,7 @@ class TornadoBarChart:
                         " (Ref avg)",
                         "showarrow": False,
                         "align": "center",
+                        "standoff": 16,
                     }
                 ]
                 if self._show_reference
