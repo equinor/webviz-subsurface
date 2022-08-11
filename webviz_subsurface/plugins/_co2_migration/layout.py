@@ -69,7 +69,7 @@ class LayoutStyle:
         "flexDirection": "column",
     }
     MAP_VIEW = {
-        "height": "45vh",
+        "height": "47vh",
     }
     MAP_WRAPPER = {
         "padding": "2vh",
@@ -77,7 +77,7 @@ class LayoutStyle:
         "position": "relative",
     }
     PLOT_VIEW = {
-        "height": "35vh",
+        "height": "33vh",
         "display": "flex",
         "flexDirection": "row",
         "justifyContent": "space-evenly",
@@ -190,6 +190,13 @@ class MapSelectorLayout(wcc.Selectors):
                             options=[s.value for s in SurfaceStatistic],
                             value=SurfaceStatistic.MEAN,
                         ),
+                        html.Div(
+                            style={
+                                "height": "1px",
+                                "backgroundColor": "lightgray",
+                                "gridColumnStart": "span 2",
+                            }
+                        ),
                         "Color Scale",
                         dcc.Dropdown(
                             id=get_uuid(LayoutElements.COLORMAP_INPUT),
@@ -226,7 +233,7 @@ class MapSelectorLayout(wcc.Selectors):
                     style={
                         "display": "grid",
                         "gridTemplateColumns": "2fr 3fr",
-                        "gridTemplateRows": "repeat(5, 1fr)",
+                        "gridTemplateRows": "repeat(2, 1fr) 0.5fr repeat(3, 1fr)",
                         "alignItems": "center",
                     }
                 )
