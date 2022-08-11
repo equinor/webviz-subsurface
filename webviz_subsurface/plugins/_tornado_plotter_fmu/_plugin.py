@@ -1,24 +1,18 @@
 import json
 from pathlib import Path
-from typing import List, Type, Tuple, Union
+from typing import List, Tuple, Type, Union
 
-from dash import (
-    ALL,
-    Input,
-    Output,
-    callback,
-    callback_context,
-)
+import pandas as pd
+from dash import ALL, Input, Output, callback, callback_context
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-import pandas as pd
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._datainput.fmu_input import find_sens_type
-from webviz_subsurface._providers import EnsembleTableProviderFactory
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
+from webviz_subsurface._datainput.fmu_input import find_sens_type
+from webviz_subsurface._providers import EnsembleTableProviderFactory
 
 from ._error import error
 from ._plugin_ids import PluginIds
