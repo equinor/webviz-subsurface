@@ -1,4 +1,3 @@
-
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .view_elements import TornadoTable

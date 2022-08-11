@@ -126,16 +126,19 @@ def plugin_callbacks(
                 and len(df["CONMD"].unique()) == len(df["DEPTH"].unique())
             ):
 
-                return [
-                    {
-                        "label": "Realization lines",
-                        "value": "realization",
-                    },
-                    {
-                        "label": "Statistical fanchart",
-                        "value": "fanchart",
-                    },
-                ], current_linetype
+                return (
+                    [
+                        {
+                            "label": "Realization lines",
+                            "value": "realization",
+                        },
+                        {
+                            "label": "Statistical fanchart",
+                            "value": "fanchart",
+                        },
+                    ],
+                    current_linetype,
+                )
 
         return [
             {
