@@ -1,17 +1,49 @@
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Type
 
 import numpy as np
 import pandas as pd
-from dash import Input, Output, callback, callback_context
+from dash import Input, Output, State, callback, callback_context, no_update
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config.webviz_store import webvizstore
 
-from ...._datainput.fmu_input import scratch_ensemble
-from .._plugin_ids import PluginIds
-from ..view_elements import Graph
+
+from dash.development.base_component import Component
+from webviz_config.webviz_plugin_subclasses import ViewElementABC
+from webviz_core_components import Graph as WccGraph
+
+from webviz_subsurface._datainput.fmu_input import scratch_ensemble
+
+# from ..._plugin_ids import PluginIds
+
+from .settings._parameter_settings import ParameterSettings
+
+
+class Graph(ViewElementABC):
+    class IDs:
+        # pylint: disable=too-few-public-methods
+        GRAPH = "graph"
+
+    def __init__(self, p_cols: List, height: str = "43vh") -> None:
+        super().__init__()
+        self.height = height
+        self.p_cols = p_cols
+
+    def inner_layout(self) -> Type[Component]:
+        return WccGraph(
+            id=self.register_component_unique_id(Graph.IDs.GRAPH),
+            style={"height": self.height, "min-height": "300px"},
+            clickData={
+                "points": [
+                    {
+                        "x": self.p_cols[0] if len(self.p_cols) > 0 else "",
+                        "y": self.p_cols[0] if len(self.p_cols) > 0 else "",
+                    }
+                ]
+            },
+        )
 
 
 class ParameterPlot(ViewABC):
@@ -22,6 +54,7 @@ class ParameterPlot(ViewABC):
         # pylint: disable=too-few-public-methods
         MATRIXPLOT = "matrixplot"
         SCATTERPLOT = "scatterplot"
+        PARAMETERSETTINGS = "settings"
         MAIN_COLUMN = "main-column"
         MATRIX_ROW = "matrix-row"
         SCATTER_ROW = "scatter-row"
@@ -29,33 +62,123 @@ class ParameterPlot(ViewABC):
     def __init__(
         self,
         ensembles: dict,
-        p_cols: List,
         webviz_settings: WebvizSettings,
         drop_constants: bool = True,
     ) -> None:
         super().__init__("Parameter Correlation")
 
         self.ensembles = ensembles
-        self.p_cols = p_cols
+        self.drop_constants = drop_constants
+
         try:
             self.plotly_theme = webviz_settings.theme.plotly_theme
         except AttributeError:
             print("Attribute error: 'Dash' has no attribute 'theme'")
         self.drop_constants = drop_constants
 
+        self.add_settings_group(
+            ParameterSettings(self.ensembles, self.p_cols),
+            ParameterPlot.IDs.PARAMETERSETTINGS,
+        )
+
         column = self.add_column(ParameterPlot.IDs.MAIN_COLUMN)
 
         first_row = column.make_row(ParameterPlot.IDs.MATRIX_ROW)
-        first_row.add_view_element(
-            Graph(self.p_cols, matrix=True), ParameterPlot.IDs.MATRIXPLOT
-        )
+        first_row.add_view_element(Graph(self.p_cols), ParameterPlot.IDs.MATRIXPLOT)
 
         second_row = column.make_row(ParameterPlot.IDs.SCATTER_ROW)
         second_row.add_view_element(Graph(self.p_cols), ParameterPlot.IDs.SCATTERPLOT)
 
+    @property
+    def p_cols(self) -> list:
+        dfs = [
+            get_corr_data(ens, self.drop_constants) for ens in self.ensembles.values()
+        ]
+        return sorted(list(pd.concat(dfs, sort=True).columns))
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        """Tour of the plugin"""
+        return [
+            {
+                "id": self.layout_element(
+                    ParameterPlot.IDs.MAIN_COLUMN
+                ).get_unique_id(),
+                "content": "Displayting correlation between parameteres.",
+            },
+            {
+                "id": self.layout_element(ParameterPlot.IDs.MATRIX_ROW).get_unique_id(),
+                "content": "Matrix plot of the parameter correlation. You can "
+                "click on the boxes to display the parameters in the scatterplot.",
+            },
+            {
+                "id": self.layout_element(
+                    ParameterPlot.IDs.SCATTER_ROW
+                ).get_unique_id(),
+                "content": "Scatterplot of the parameter correlation.",
+            },
+            {
+                "id": self.settings_group(
+                    ParameterPlot.IDs.PARAMETERSETTINGS
+                ).component_unique_id(ParameterSettings.IDs.SHARED_ENSEMBLE),
+                "content": "Choose which ensemble that is desired to show.",
+            },
+            {
+                "id": self.settings_group(
+                    ParameterPlot.IDs.PARAMETERSETTINGS
+                ).component_unique_id(ParameterSettings.IDs.PARAMETER_H),
+                "content": "Choose the parameter on the horizontal axis of the "
+                "scatterplot.",
+            },
+            {
+                "id": self.settings_group(
+                    ParameterPlot.IDs.PARAMETERSETTINGS
+                ).component_unique_id(ParameterSettings.IDs.ENSEMBLE_H),
+                "content": "Choose the ensemble on the horizontal axis of the "
+                "scatterplot.",
+            },
+            {
+                "id": self.settings_group(
+                    ParameterPlot.IDs.PARAMETERSETTINGS
+                ).component_unique_id(ParameterSettings.IDs.PARAMETER_V),
+                "content": "Choose the parameter on the vertical axis of the "
+                "scatterplot.",
+            },
+            {
+                "id": self.settings_group(
+                    ParameterPlot.IDs.PARAMETERSETTINGS
+                ).component_unique_id(ParameterSettings.IDs.ENSEMBLE_V),
+                "content": "Choose the ensemble on the vertical axis of the "
+                "scatterplot.",
+            },
+            {
+                "id": self.settings_group(
+                    ParameterPlot.IDs.PARAMETERSETTINGS
+                ).component_unique_id(ParameterSettings.IDs.SCATTER_COLOR),
+                "content": "Choose optional parameter to color scattered points.",
+            },
+            {
+                "id": self.settings_group(
+                    ParameterPlot.IDs.PARAMETERSETTINGS
+                ).component_unique_id(ParameterSettings.IDs.SCATTER_VISIBLE),
+                "content": "Choose to display density of scattered points.",
+            },
+        ]
+
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.Data.CLICK_DATA), "data"),
+            Output(
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.PARAMETER_H)
+                .to_string(),
+                "value",
+            ),
+            Output(
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.PARAMETER_V)
+                .to_string(),
+                "value",
+            ),
             Input(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
                 .component_unique_id(Graph.IDs.GRAPH)
@@ -63,8 +186,10 @@ class ParameterPlot(ViewABC):
                 "clickData",
             ),
         )
-        def _set_clickdata(cell_data: dict) -> dict:
-            return cell_data
+        def _update_parameter_selections(cell_data: dict):
+            if cell_data is not None:
+                return (cell_data["points"][0]["x"], cell_data["points"][0]["y"])
+            return no_update
 
         @callback(
             Output(
@@ -74,15 +199,24 @@ class ParameterPlot(ViewABC):
                 "figure",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.BothPlots.ENSEMBLE), "data"
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.SHARED_ENSEMBLE)
+                .to_string(),
+                "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.Horizontal.PARAMETER), "data"
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.PARAMETER_H)
+                .to_string(),
+                "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.Vertical.PARAMETER), "data"
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.PARAMETER_V)
+                .to_string(),
+                "value",
             ),
-            Input(
+            State(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
                 .component_unique_id(Graph.IDs.GRAPH)
                 .to_string(),
@@ -148,18 +282,40 @@ class ParameterPlot(ViewABC):
                 "figure",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.Horizontal.PARAMETER), "data"
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.PARAMETER_H)
+                .to_string(),
+                "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.Horizontal.ENSEMBLE), "data"
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.ENSEMBLE_H)
+                .to_string(),
+                "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.Vertical.PARAMETER), "data"
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.PARAMETER_V)
+                .to_string(),
+                "value",
             ),
-            Input(self.get_store_unique_id(PluginIds.Stores.Vertical.ENSEMBLE), "data"),
-            Input(self.get_store_unique_id(PluginIds.Stores.Options.COLOR_BY), "data"),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.Options.SHOW_SCATTER), "data"
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.ENSEMBLE_V)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.SCATTER_COLOR)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(ParameterPlot.IDs.PARAMETERSETTINGS)
+                .component_unique_id(ParameterSettings.IDs.SCATTER_VISIBLE)
+                .to_string(),
+                "value",
             ),
             Input(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
@@ -387,4 +543,32 @@ def get_parameters(ensemble_path: Path) -> pd.DataFrame:
         scratch_ensemble("", ensemble_path)
         .parameters.apply(pd.to_numeric, errors="coerce")
         .dropna(how="all", axis="columns")
+    )
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFrame:
+    """
+    if drop_constants:
+    .dropna() removes undefined entries in correlation matrix after
+    it is calculated. Correlations between constants yield nan values since
+    they are undefined.
+    Passing tuple or list to drop on multiple axes is deprecated since
+    version 0.23.0. Therefor split in 2x .dropnan()
+    """
+    data = get_parameters(ensemble_path)
+
+    # Necessary to drop constant before correlations due to
+    # https://github.com/pandas-dev/pandas/issues/37448
+    if drop_constants is True:
+        for col in data.columns:
+            if len(data[col].unique()) == 1:
+                data = data.drop(col, axis=1)
+
+    return (
+        data.corr()
+        if not drop_constants
+        else data.corr()
+        .dropna(axis="index", how="all")
+        .dropna(axis="columns", how="all")
     )

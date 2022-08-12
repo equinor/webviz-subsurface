@@ -40,7 +40,6 @@ from ._prod_misfit import ProdMisfit
 from ._property_statistics import PropertyStatistics
 from ._pvt_plot import PvtPlot
 from ._relative_permeability import RelativePermeability
-from ._relative_permeability_new import RelativePermeabilityNew
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
 from ._reservoir_simulation_timeseries_onebyone import (
     ReservoirSimulationTimeSeriesOneByOne,
@@ -59,7 +58,7 @@ from ._surface_viewer_fmu import SurfaceViewerFMU
 from ._surface_with_grid_cross_section import SurfaceWithGridCrossSection
 from ._surface_with_seismic_cross_section import SurfaceWithSeismicCrossSection
 from ._swatinit_qc import SwatinitQC
-from ._tornado_plotter_fmu_old import TornadoPlotterFMU
+from ._tornado_plotter_fmu import TornadoPlotterFMU
 from ._volumetric_analysis import VolumetricAnalysis
 from ._well_analysis import WellAnalysis
 from ._well_completion import WellCompletion
@@ -67,5 +66,3 @@ from ._well_completions import WellCompletions
 from ._well_cross_section import WellCrossSection
 from ._well_cross_section_fmu import WellCrossSectionFMU
 from ._well_log_viewer import WellLogViewer
-
-from ._relative_permeability_new import RelativePermeabilityNew

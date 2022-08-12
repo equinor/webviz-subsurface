@@ -1,1 +1,1 @@
-from ._parameter_plot import ParameterPlot
+from .parameter_plot import ParameterPlot
