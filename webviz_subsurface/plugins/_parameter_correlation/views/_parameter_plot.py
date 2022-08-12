@@ -10,7 +10,7 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config.webviz_store import webvizstore
 
 from ...._datainput.fmu_input import scratch_ensemble
-from .._plugin_ids import PlugInIDs
+from .._plugin_ids import PluginIds
 from ..view_elements import Graph
 
 
@@ -55,7 +55,7 @@ class ParameterPlot(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"),
+            Output(self.get_store_unique_id(PluginIds.Stores.Data.CLICK_DATA), "data"),
             Input(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
                 .component_unique_id(Graph.IDs.GRAPH)
@@ -74,13 +74,13 @@ class ParameterPlot(ViewABC):
                 "figure",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.BothPlots.ENSEMBLE), "data"
+                self.get_store_unique_id(PluginIds.Stores.BothPlots.ENSEMBLE), "data"
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.PARAMETER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Horizontal.PARAMETER), "data"
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Vertical.PARAMETER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Vertical.PARAMETER), "data"
             ),
             Input(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
@@ -91,7 +91,7 @@ class ParameterPlot(ViewABC):
         )
         def _update_matrix(
             both_ensemble: str,
-            horizontal_paramter: str,
+            horizontal_parameter: str,
             vertical_parameter: str,
             cell_data: dict,
         ) -> dict:
@@ -115,12 +115,12 @@ class ParameterPlot(ViewABC):
                 .to_string()
                 or cell_data is None
             ):
-                x_index = list(fig["data"][0]["x"]).index(horizontal_paramter)
+                x_index = list(fig["data"][0]["x"]).index(horizontal_parameter)
                 y_index = list(fig["data"][0]["y"]).index(vertical_parameter)
             else:
-                horizontal_paramter = cell_data["points"][0]["x"]
+                horizontal_parameter = cell_data["points"][0]["x"]
                 vertical_parameter = cell_data["points"][0]["y"]
-                x_index = list(fig["data"][0]["x"]).index(horizontal_paramter)
+                x_index = list(fig["data"][0]["x"]).index(horizontal_parameter)
                 y_index = list(fig["data"][0]["y"]).index(vertical_parameter)
 
             # Adds a shape to highlight the selected cell
@@ -148,18 +148,18 @@ class ParameterPlot(ViewABC):
                 "figure",
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.PARAMETER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Horizontal.PARAMETER), "data"
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.ENSEMBLE), "data"
+                self.get_store_unique_id(PluginIds.Stores.Horizontal.ENSEMBLE), "data"
             ),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Vertical.PARAMETER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Vertical.PARAMETER), "data"
             ),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Vertical.ENSEMBLE), "data"),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Options.COLOR_BY), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.Vertical.ENSEMBLE), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.Options.COLOR_BY), "data"),
             Input(
-                self.get_store_unique_id(PlugInIDs.Stores.Options.SHOW_SCATTER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Options.SHOW_SCATTER), "data"
             ),
             Input(
                 self.view_element(ParameterPlot.IDs.MATRIXPLOT)
@@ -169,7 +169,7 @@ class ParameterPlot(ViewABC):
             ),
         )
         def _update_scatter(
-            horizontal_paramter: str,
+            horizontal_parameter: str,
             horizontal_ensemble: str,
             vertical_parameter: str,
             vertical_ensemble: str,
@@ -186,18 +186,18 @@ class ParameterPlot(ViewABC):
             ):
                 return render_scatter(
                     horizontal_ensemble,
-                    horizontal_paramter,
+                    horizontal_parameter,
                     vertical_ensemble,
                     vertical_parameter,
                     color_by,
                     scatter,
                     self.plotly_theme,
                 )
-            horizontal_paramter = cell_data["points"][0]["x"]
+            horizontal_parameter = cell_data["points"][0]["x"]
             vertical_parameter = cell_data["points"][0]["y"]
             return render_scatter(
                 horizontal_ensemble,
-                horizontal_paramter,
+                horizontal_parameter,
                 vertical_ensemble,
                 vertical_parameter,
                 color_by,

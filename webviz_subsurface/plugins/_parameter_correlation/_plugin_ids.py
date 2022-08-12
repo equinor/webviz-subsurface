@@ -1,4 +1,4 @@
-class PlugInIDs:
+class PluginIds:
     # pylint: disable=too-few-public-methods
     class Stores:
         class BothPlots:

@@ -5,7 +5,7 @@ from dash import Input, Output, callback, callback_context
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_ids import PlugInIDs
+from .._plugin_ids import PluginIds
 from ..views import ParameterPlot
 
 
@@ -35,7 +35,7 @@ class BothPlots(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.BothPlots.ENSEMBLE), "data"
+                self.get_store_unique_id(PluginIds.Stores.BothPlots.ENSEMBLE), "data"
             ),
             Input(
                 self.component_unique_id(BothPlots.IDs.ENSEMBLE).to_string(), "value"
@@ -84,7 +84,7 @@ class Horizontal(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.PARAMETER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Horizontal.PARAMETER), "data"
             ),
             Output(
                 self.component_unique_id(Horizontal.IDs.PARAMETER).to_string(), "value"
@@ -92,7 +92,7 @@ class Horizontal(SettingsGroupABC):
             Input(
                 self.component_unique_id(Horizontal.IDs.PARAMETER).to_string(), "value"
             ),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.Data.CLICK_DATA), "data"),
         )
         def _set_horizontal_parameter(
             parameter: str, cell_data: dict
@@ -108,7 +108,7 @@ class Horizontal(SettingsGroupABC):
 
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Horizontal.ENSEMBLE), "data"
+                self.get_store_unique_id(PluginIds.Stores.Horizontal.ENSEMBLE), "data"
             ),
             Input(
                 self.component_unique_id(Horizontal.IDs.ENSEMBLE).to_string(), "value"
@@ -157,7 +157,7 @@ class Vertical(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Vertical.PARAMETER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Vertical.PARAMETER), "data"
             ),
             Output(
                 self.component_unique_id(Vertical.IDs.PARAMETER).to_string(), "value"
@@ -165,7 +165,7 @@ class Vertical(SettingsGroupABC):
             Input(
                 self.component_unique_id(Vertical.IDs.PARAMETER).to_string(), "value"
             ),
-            Input(self.get_store_unique_id(PlugInIDs.Stores.Data.CLICK_DATA), "data"),
+            Input(self.get_store_unique_id(PluginIds.Stores.Data.CLICK_DATA), "data"),
         )
         def _set_vertical_parameter(parameter: str, cell_data: dict) -> Tuple[str, str]:
             if (
@@ -179,7 +179,7 @@ class Vertical(SettingsGroupABC):
 
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Vertical.ENSEMBLE), "data"
+                self.get_store_unique_id(PluginIds.Stores.Vertical.ENSEMBLE), "data"
             ),
             Input(self.component_unique_id(Vertical.IDs.ENSEMBLE).to_string(), "value"),
         )
@@ -223,7 +223,7 @@ class Options(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.get_store_unique_id(PlugInIDs.Stores.Options.COLOR_BY), "data"),
+            Output(self.get_store_unique_id(PluginIds.Stores.Options.COLOR_BY), "data"),
             Input(self.component_unique_id(Options.IDs.COLOR_BY).to_string(), "value"),
         )
         def _set_option_color_by(parameter: str) -> str:
@@ -231,7 +231,7 @@ class Options(SettingsGroupABC):
 
         @callback(
             Output(
-                self.get_store_unique_id(PlugInIDs.Stores.Options.SHOW_SCATTER), "data"
+                self.get_store_unique_id(PluginIds.Stores.Options.SHOW_SCATTER), "data"
             ),
             Input(
                 self.component_unique_id(Options.IDs.SHOW_SCATTER).to_string(), "value"

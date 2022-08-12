@@ -6,7 +6,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 
 from ._error import error
-from ._plugin_ids import PlugInIDs
+from ._plugin_ids import PluginIds
 from .shared_settings import BothPlots, Horizontal, Options, Vertical
 from .views import ParameterPlot
 from .views._parameter_plot import get_parameters
@@ -53,52 +53,52 @@ class ParameterCorrelation(WebvizPluginABC):
         )
 
         self.add_store(
-            PlugInIDs.Stores.BothPlots.ENSEMBLE, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.BothPlots.ENSEMBLE, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            BothPlots(self.ensembles), PlugInIDs.SharedSettings.BOTHPLOTS
+            BothPlots(self.ensembles), PluginIds.SharedSettings.BOTHPLOTS
         )
 
         self.add_store(
-            PlugInIDs.Stores.Horizontal.ENSEMBLE, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.Horizontal.ENSEMBLE, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
-            PlugInIDs.Stores.Horizontal.PARAMETER, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.Horizontal.PARAMETER, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
             Horizontal(self.ensembles, self.p_cols, self.plot),
-            PlugInIDs.SharedSettings.HORIZONTAL,
+            PluginIds.SharedSettings.HORIZONTAL,
         )
 
         self.add_store(
-            PlugInIDs.Stores.Vertical.ENSEMBLE, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.Vertical.ENSEMBLE, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
-            PlugInIDs.Stores.Vertical.PARAMETER, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.Vertical.PARAMETER, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
             Vertical(self.ensembles, self.p_cols, self.plot),
-            PlugInIDs.SharedSettings.VERTICAL,
+            PluginIds.SharedSettings.VERTICAL,
         )
 
         self.add_store(
-            PlugInIDs.Stores.Options.COLOR_BY, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.Options.COLOR_BY, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
-            PlugInIDs.Stores.Options.SHOW_SCATTER, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.Options.SHOW_SCATTER, WebvizPluginABC.StorageType.SESSION
         )
         self.add_shared_settings_group(
-            Options(self.p_cols), PlugInIDs.SharedSettings.OPTIONS
+            Options(self.p_cols), PluginIds.SharedSettings.OPTIONS
         )
 
         self.add_store(
-            PlugInIDs.Stores.Data.CLICK_DATA, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.Data.CLICK_DATA, WebvizPluginABC.StorageType.SESSION
         )
 
         self.add_view(
             self.plot,
-            PlugInIDs.ParaCorrGroups.PARACORR,
-            PlugInIDs.ParaCorrGroups.GROUPNAME,
+            PluginIds.ParaCorrGroups.PARACORR,
+            PluginIds.ParaCorrGroups.GROUPNAME,
         )
 
     @property
@@ -117,54 +117,54 @@ class ParameterCorrelation(WebvizPluginABC):
         """Tour of the plugin"""
         return [
             {
-                "id": self.view(PlugInIDs.ParaCorrGroups.PARACORR)
+                "id": self.view(PluginIds.ParaCorrGroups.PARACORR)
                 .layout_element(ParameterPlot.IDs.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": "Displayting correlation between parameteres.",
             },
             {
-                "id": self.view(PlugInIDs.ParaCorrGroups.PARACORR)
+                "id": self.view(PluginIds.ParaCorrGroups.PARACORR)
                 .layout_element(ParameterPlot.IDs.MATRIX_ROW)
                 .get_unique_id(),
                 "content": "Matrix plot of the parameter correlation. You can "
                 "click on the boxes to display the parameters in the scatterplot.",
             },
             {
-                "id": self.view(PlugInIDs.ParaCorrGroups.PARACORR)
+                "id": self.view(PluginIds.ParaCorrGroups.PARACORR)
                 .layout_element(ParameterPlot.IDs.SCATTER_ROW)
                 .get_unique_id(),
                 "content": "Scatterplot of the parameter correlation.",
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.BOTHPLOTS
+                    PluginIds.SharedSettings.BOTHPLOTS
                 ).component_unique_id(BothPlots.IDs.ENSEMBLE),
                 "content": "Choose which ensemble that is desired to show.",
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.HORIZONTAL
+                    PluginIds.SharedSettings.HORIZONTAL
                 ).component_unique_id(Horizontal.IDs.PARAMETER),
                 "content": "Choose the parameter on the horizontal axis of the "
                 "scatterplot.",
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.HORIZONTAL
+                    PluginIds.SharedSettings.HORIZONTAL
                 ).component_unique_id(Horizontal.IDs.ENSEMBLE),
                 "content": "Choose the ensemble on the horizontal axis of the "
                 "scatterplot.",
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VERTICAL
+                    PluginIds.SharedSettings.VERTICAL
                 ).component_unique_id(Vertical.IDs.PARAMETER),
                 "content": "Choose the parameter on the vertical axis of the "
                 "scatterplot.",
             },
             {
                 "id": self.shared_settings_group(
-                    PlugInIDs.SharedSettings.VERTICAL
+                    PluginIds.SharedSettings.VERTICAL
                 ).component_unique_id(Vertical.IDs.ENSEMBLE),
                 "content": "Choose the ensemble on the vertical axis of the "
                 "scatterplot.",
