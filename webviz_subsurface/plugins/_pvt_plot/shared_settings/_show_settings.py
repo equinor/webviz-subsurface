@@ -38,15 +38,13 @@ class ShowPlots(SettingsGroupABC):
         return options
 
     def layout(self) -> List[Component]:
+        component_id = self.register_component_unique_id(ShowPlots.Ids.SHOWPLOTS)
         return [
             wcc.Checklist(
-                id=self.register_component_unique_id(ShowPlots.Ids.SHOWPLOTS),
-                options=[
-                    {"label": l, "value": v}
-                    for v, l in self.plot_visibility_options().items()
-                ],
-                value=list(self.plot_visibility_options().keys()),
-                vertical=True,
+                id={"id": component_id, "plot": plot_value},
+                options=[{"label": plot_label, "value": plot_value}],
+                value=[plot_value],
                 persistence=False,
-            ),
+            )
+            for plot_value, plot_label in self.plot_visibility_options().items()
         ]

@@ -2,13 +2,12 @@ from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, callback
+from dash import ALL, Input, Output, callback
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from .._plugin_ids import PluginIds
 from ..shared_settings import Filter, ShowPlots
 from ._view_funcions import create_graph, filter_data_frame
 
@@ -21,6 +20,9 @@ class PvtView(ViewABC):
         VISCOSITY = "viscosity"
         DENSITY = "density"
         GAS_OIL_RATIO = "gas-oil-ratio"
+
+        FILTER = "filter"
+        SHOWPLOTS = "show-plots"
 
     PHASES = ["OIL", "GAS", "WATER"]
 
@@ -46,28 +48,12 @@ class PvtView(ViewABC):
 
         self.add_settings_groups(
             {
-                PluginIds.SharedSettings.FILTER: Filter(self.pvt_df),
-                PluginIds.SharedSettings.SHOWPLOTS: ShowPlots(),
+                PvtView.Ids.FILTER: Filter(self.pvt_df),
+                PvtView.Ids.SHOWPLOTS: ShowPlots(),
             }
         )
 
         self.add_column(PvtView.Ids.PVT_GRAPHS)
-
-    @staticmethod
-    def plot_visibility_options(phase: str = "") -> Dict[str, str]:
-        options = {
-            "fvf": "Formation Volume Factor",
-            "viscosity": "Viscosity",
-            "density": "Density",
-            "ratio": "Gas/Oil Ratio (Rs)",
-        }
-        if phase == "PVTO":
-            options["ratio"] = "Gas/Oil Ratio (Rs)"
-        if phase == "PVTG":
-            options["ratio"] = "Vaporized Oil Ratio (Rv)"
-        if phase == "WATER":
-            options.pop("ratio")
-        return options
 
     @property
     def phases(self) -> Dict[str, str]:
@@ -102,39 +88,33 @@ class PvtView(ViewABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(
-                self.settings_group(PluginIds.SharedSettings.SHOWPLOTS)
-                .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
-                .to_string(),
-                "options",
-            ),
-            Output(
-                self.settings_group(PluginIds.SharedSettings.SHOWPLOTS)
-                .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
-                .to_string(),
-                "value",
-            ),
+            [
+                Output(
+                    {
+                        "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
+                        .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
+                        .to_string(),
+                        "plot": plot_value,
+                    },
+                    "style",
+                )
+                for plot_value in ShowPlots.plot_visibility_options()
+            ],
             Input(
-                self.settings_group(PluginIds.SharedSettings.FILTER)
+                self.settings_group(PvtView.Ids.FILTER)
                 .component_unique_id(Filter.Ids.PHASE)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.settings_group(PluginIds.SharedSettings.SHOWPLOTS)
-                .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
                 .to_string(),
                 "value",
             ),
         )
         def _set_available_plots(
             phase: str,
-            values: List[str],
-        ) -> Tuple[List[dict], List[str]]:
-            visibility_options = self.plot_visibility_options(phase)
-            return (
-                [{"label": l, "value": v} for v, l in visibility_options.items()],
-                [value for value in values if value in visibility_options],
+        ) -> Tuple[dict, ...]:
+            all_visibility_options = ShowPlots.plot_visibility_options()
+            visibility_options = ShowPlots.plot_visibility_options(phase)
+            return tuple(
+                {"display": "block" if plot in visibility_options.keys() else "none"}
+                for plot in all_visibility_options
             )
 
         @callback(
@@ -143,33 +123,45 @@ class PvtView(ViewABC):
                 "children",
             ),
             Input(
-                self.settings_group(PluginIds.SharedSettings.FILTER)
+                self.settings_group(PvtView.Ids.FILTER)
                 .component_unique_id(Filter.Ids.COLOR_BY)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PluginIds.SharedSettings.FILTER)
+                self.settings_group(PvtView.Ids.FILTER)
                 .component_unique_id(Filter.Ids.ENSEMBLES)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PluginIds.SharedSettings.FILTER)
+                self.settings_group(PvtView.Ids.FILTER)
                 .component_unique_id(Filter.Ids.PHASE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PluginIds.SharedSettings.FILTER)
+                self.settings_group(PvtView.Ids.FILTER)
                 .component_unique_id(Filter.Ids.PVTNUM)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PluginIds.SharedSettings.SHOWPLOTS)
-                .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
-                .to_string(),
+                {
+                    "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
+                    .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
+                    .to_string(),
+                    "plot": ALL,
+                },
+                "id",
+            ),
+            Input(
+                {
+                    "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
+                    .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
+                    .to_string(),
+                    "plot": ALL,
+                },
                 "value",
             ),
         )
@@ -179,7 +171,8 @@ class PvtView(ViewABC):
             selected_ensembles: Any,
             phase: str,
             selected_pvtnum: Any,
-            plots_visibility: Union[List[str], str],
+            plots_visibility_ids: List[dict],
+            plots_visibility: List[str],
         ) -> List[Component]:
 
             if isinstance(selected_ensembles, list) is False:
@@ -209,9 +202,17 @@ class PvtView(ViewABC):
             current_column = 0
             figure_index = 0
 
+            visible_plots = {
+                plot_id["plot"]: plot_id["plot"] in visibility
+                for plot_id, visibility in zip(plots_visibility_ids, plots_visibility)
+            }
+
             graph_height = max(45.0, 90.0 / len(plots_visibility))
 
-            for plot in plots_visibility:
+            for plot in ShowPlots.plot_visibility_options(phase):
+                if not visible_plots[plot]:
+                    continue
+
                 current_element = wcc.WebvizViewElement(
                     id=self.unique_id(plot),
                     children=create_graph(
@@ -220,7 +221,7 @@ class PvtView(ViewABC):
                         colors,
                         phase,
                         plot,
-                        self.plot_visibility_options(self.phases[phase])[plot],
+                        ShowPlots.plot_visibility_options(self.phases[phase])[plot],
                         self.plotly_theme,
                         graph_height,
                     ),
@@ -229,10 +230,7 @@ class PvtView(ViewABC):
 
                 current_column += 1
 
-                if (
-                    current_column >= max_num_columns
-                    or figure_index == len(plots_visibility) - 1
-                ):
+                if current_column >= max_num_columns:
                     view_elements.append(
                         wcc.WebvizPluginLayoutRow(current_row_elements)
                     )
@@ -240,5 +238,8 @@ class PvtView(ViewABC):
                     current_column = 0
 
                 figure_index += 1
+
+            if len(current_row_elements) > 0:
+                view_elements.append(wcc.WebvizPluginLayoutRow(current_row_elements))
 
             return view_elements

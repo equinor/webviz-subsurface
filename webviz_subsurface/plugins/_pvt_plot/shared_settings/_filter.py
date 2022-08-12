@@ -2,7 +2,7 @@ from typing import Dict, List
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Input, Output, callback
+from dash import Input, Output, callback, html
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
@@ -66,7 +66,7 @@ class Filter(SettingsGroupABC):
                 value=self.color[0],
                 vertical=True,
             ),
-            wcc.FlexBox(
+            html.Div(
                 id=self.register_component_unique_id(Filter.Ids.ENSEMBLESBOX),
                 children=[
                     wcc.Checklist(
@@ -92,7 +92,7 @@ class Filter(SettingsGroupABC):
                 clearable=False,
                 persistence=False,
             ),
-            wcc.FlexBox(
+            html.Div(
                 id=self.register_component_unique_id(Filter.Ids.PVTNUMBOX),
                 children=[
                     wcc.Checklist(
