@@ -40,7 +40,7 @@ def create_derived_vectors_accessor_dict(
 
     `Input:`
     * ensembles: List[str] - list of ensemble names
-    * vectors List[str] - list of vectors to create accessess for
+    * vectors List[str] - list of vectors to create accesses for
     * provider_set: ProviderSet - set of EnsembleSummaryProviders to obtain vector data
     * expressions: List[ExpressionInfo] - list of expressions for calculating vectors
     * delta_ensembles: List[DeltaEnsemble] - list of created delta ensembles
