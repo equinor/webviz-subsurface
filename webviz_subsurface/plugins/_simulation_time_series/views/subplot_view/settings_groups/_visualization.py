@@ -1,19 +1,17 @@
-import datetime
-from typing import List, Optional
+from typing import List
 
 import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_ids import PluginIds
-from ..types import (
+from ...._plugin_ids import PluginIds
+from ....types import (
     FanchartOptions,
     StatisticsOptions,
     TraceOptions,
     VisualizationOptions,
 )
-from ..utils import datetime_utils
 
 
 class VisualizationSettings(SettingsGroupABC):
@@ -32,7 +30,7 @@ class VisualizationSettings(SettingsGroupABC):
         return [
             wcc.RadioItems(
                 id=self.register_component_unique_id(
-                    self.Ids.VISUALIZATION_RADIO_ITEMS
+                    VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS
                 ),
                 options=[
                     {
@@ -71,7 +69,7 @@ class VisualizationSettings(SettingsGroupABC):
             children=[
                 wcc.Checklist(
                     id=self.register_component_unique_id(
-                        self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST
+                        VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST
                     ),
                     style={"display": "block"},
                     options=[
@@ -85,7 +83,7 @@ class VisualizationSettings(SettingsGroupABC):
                 ),
                 wcc.Checklist(
                     id=self.register_component_unique_id(
-                        self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                        VisualizationSettings.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
                     ),
                     style={"display": "block"}
                     if selected_visualization
@@ -119,7 +117,7 @@ class VisualizationSettings(SettingsGroupABC):
                 ),
                 wcc.Checklist(
                     id=self.register_component_unique_id(
-                        self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
+                        VisualizationSettings.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
                     ),
                     style={"display": "block"}
                     if VisualizationOptions.FANCHART == selected_visualization
@@ -151,19 +149,19 @@ class VisualizationSettings(SettingsGroupABC):
         @callback(
             Output(
                 self.component_unique_id(
-                    self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                    VisualizationSettings.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
                 ).to_string(),
                 "style",
             ),
             Output(
                 self.component_unique_id(
-                    self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
+                    VisualizationSettings.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
                 ).to_string(),
                 "style",
             ),
             Input(
                 self.component_unique_id(
-                    self.Ids.VISUALIZATION_RADIO_ITEMS
+                    VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS
                 ).to_string(),
                 "value",
             ),
@@ -192,99 +190,3 @@ class VisualizationSettings(SettingsGroupABC):
             fanchart_options_style = get_style([VisualizationOptions.FANCHART])
 
             return [statistics_options_style, fanchart_options_style]
-
-        @callback(
-            [
-                Output(
-                    self.component_unique_id(
-                        self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST
-                    ).to_string(),
-                    "style",
-                ),
-            ],
-            [
-                Input(
-                    self.get_store_unique_id(PluginIds.Stores.RELATIVE_DATE_DROPDOWN),
-                    "data",
-                )
-            ],
-        )
-        def _update_trace_options_layout(
-            relative_date_value: str,
-        ) -> List[dict]:
-            """Hide trace options (History and Observation) when relative date is selected"""
-
-            # Convert to Optional[datetime.datime]
-            relative_date: Optional[datetime.datetime] = (
-                None
-                if relative_date_value is None
-                else datetime_utils.from_str(relative_date_value)
-            )
-
-            if relative_date:
-                return [{"display": "none"}]
-            return [{"display": "block"}]
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(
-                    self.Ids.VISUALIZATION_RADIO_ITEMS
-                ).to_string(),
-                "value",
-            ),
-        )
-        def _update_store_visualization_radio(selected_data: List[str]) -> List[str]:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(
-                    PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST
-                ),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(
-                    self.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
-                ).to_string(),
-                "value",
-            ),
-        )
-        def _update_store_stastics_options(selected_data: List[str]) -> List[str]:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(
-                    PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST
-                ),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(
-                    self.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
-                ).to_string(),
-                "value",
-            ),
-        )
-        def _update_store_fanchart_options(selected_data: List[str]) -> List[str]:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(
-                    self.Ids.PLOT_TRACE_OPTIONS_CHECKLIST
-                ).to_string(),
-                "value",
-            ),
-        )
-        def _update_store_trace_options(selected_data: List[str]) -> List[str]:
-            return selected_data

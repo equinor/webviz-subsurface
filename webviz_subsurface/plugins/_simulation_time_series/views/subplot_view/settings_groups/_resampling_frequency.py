@@ -9,16 +9,15 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers import Frequency
 
-from .._plugin_ids import PluginIds
-from ..types import ProviderSet
-from ..utils import datetime_utils
+from ....types import ProviderSet
+from ....utils import datetime_utils
 
 
 class ResamplingFrequencySettings(SettingsGroupABC):
     # pylint: disable=too-few-public-methods
     class Ids:
-        RESAMPLING_FREQUENCY = "resampling-frequency"
-        RELATIVE_DATE = "relative-date"
+        RESAMPLING_FREQUENCY_DROPDOWN = "resampling-frequency-dropdown"
+        RELATIVE_DATE_DROPDOWN = "relative-date-dropdown"
 
     def __init__(
         self,
@@ -36,7 +35,9 @@ class ResamplingFrequencySettings(SettingsGroupABC):
     def layout(self) -> List[Component]:
         return [
             wcc.Dropdown(
-                id=self.register_component_unique_id(self.Ids.RESAMPLING_FREQUENCY),
+                id=self.register_component_unique_id(
+                    ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                ),
                 clearable=False,
                 disabled=self.disable_resampling_dropdown,
                 options=[
@@ -60,7 +61,9 @@ class ResamplingFrequencySettings(SettingsGroupABC):
             wcc.Dropdown(
                 clearable=True,
                 disabled=self.disable_resampling_dropdown,
-                id=self.register_component_unique_id(self.Ids.RELATIVE_DATE),
+                id=self.register_component_unique_id(
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
+                ),
                 options=[
                     {
                         "label": datetime_utils.to_str(_date),
@@ -70,7 +73,7 @@ class ResamplingFrequencySettings(SettingsGroupABC):
                 ],
             ),
             wcc.Label(
-                "NB: Disabled for presampled data",
+                "NB: Disabled for pre-sampled data",
                 style={"font-style": "italic"}
                 if self.disable_resampling_dropdown
                 else {"display": "none"},
@@ -81,27 +84,37 @@ class ResamplingFrequencySettings(SettingsGroupABC):
         @callback(
             [
                 Output(
-                    self.component_unique_id(self.Ids.RELATIVE_DATE).to_string(),
+                    self.component_unique_id(
+                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
                     "options",
                 ),
                 Output(
-                    self.component_unique_id(self.Ids.RELATIVE_DATE).to_string(),
+                    self.component_unique_id(
+                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
                     "value",
                 ),
             ],
             [
                 Input(
-                    self.component_unique_id(self.Ids.RESAMPLING_FREQUENCY).to_string(),
+                    self.component_unique_id(
+                        ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                    ).to_string(),
                     "value",
                 ),
             ],
             [
                 State(
-                    self.component_unique_id(self.Ids.RELATIVE_DATE).to_string(),
+                    self.component_unique_id(
+                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
                     "options",
                 ),
                 State(
-                    self.component_unique_id(self.Ids.RELATIVE_DATE).to_string(),
+                    self.component_unique_id(
+                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
+                    ).to_string(),
                     "value",
                 ),
             ],
@@ -147,30 +160,3 @@ class ResamplingFrequencySettings(SettingsGroupABC):
                 new_relative_date_value = dash.no_update
 
             return new_relative_date_options, new_relative_date_value
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.RELATIVE_DATE_DROPDOWN),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(self.Ids.RELATIVE_DATE).to_string(), "value"
-            ),
-        )
-        def _update_store_relative_date(selected_data: str) -> str:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(
-                    PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN
-                ),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(self.Ids.RESAMPLING_FREQUENCY).to_string(),
-                "value",
-            ),
-        )
-        def _update_store_frequency_date(selected_data: str) -> str:
-            return selected_data

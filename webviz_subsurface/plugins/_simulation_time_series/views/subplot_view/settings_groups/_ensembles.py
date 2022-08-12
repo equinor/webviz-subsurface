@@ -6,9 +6,9 @@ from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from .._plugin_ids import PluginIds
-from ..types import DeltaEnsemble, ProviderSet
-from ..utils.delta_ensemble_utils import create_delta_ensemble_names
+from ...._plugin_ids import PluginIds
+from ....types import DeltaEnsemble, ProviderSet
+from ....utils.delta_ensemble_utils import create_delta_ensemble_names
 
 
 def _create_delta_ensemble_table_column_data(
@@ -24,7 +24,7 @@ class EnsemblesSettings(SettingsGroupABC):
         DELTA_ENSEMBLE_A_DROPDOWN = "delta-ensemble-a-dropdown"
         DELTA_ENSEMBLE_B_DROPDOWN = "delta-ensemble-b-dropdown"
         DELTA_ENSEMBLE_CREATE_BUTTON = "delta-ensemble-create-button"
-        CREATED_DELTA_ENSEMBLES = "create-dalta-ensembles"
+        CREATED_DELTA_ENSEMBLES = "create-delta-ensembles"
         CREATED_DELTA_ENSEMBLE_NAMES_TABLE = "create-delta-ensemble-names-table"
         CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN = (
             "create-delta-ensemble-names-table-column"
@@ -41,7 +41,9 @@ class EnsemblesSettings(SettingsGroupABC):
         return [
             wcc.Dropdown(
                 label="Selected ensembles",
-                id=self.register_component_unique_id(self.Ids.ENSEMBLES_DROPDOWN),
+                id=self.register_component_unique_id(
+                    EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN
+                ),
                 clearable=False,
                 multi=True,
                 options=[
@@ -66,7 +68,7 @@ class EnsemblesSettings(SettingsGroupABC):
                 wcc.Dropdown(
                     label="Ensemble A",
                     id=self.register_component_unique_id(
-                        self.Ids.DELTA_ENSEMBLE_A_DROPDOWN
+                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_A_DROPDOWN
                     ),
                     clearable=False,
                     options=[{"label": i, "value": i} for i in self.ensembles],
@@ -76,7 +78,7 @@ class EnsemblesSettings(SettingsGroupABC):
                 wcc.Dropdown(
                     label="Ensemble B",
                     id=self.register_component_unique_id(
-                        self.Ids.DELTA_ENSEMBLE_B_DROPDOWN
+                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_B_DROPDOWN
                     ),
                     clearable=False,
                     options=[{"label": i, "value": i} for i in self.ensembles],
@@ -86,7 +88,7 @@ class EnsemblesSettings(SettingsGroupABC):
                 html.Button(
                     "Create",
                     id=self.register_component_unique_id(
-                        self.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
+                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
                     ),
                     n_clicks=0,
                     style={
@@ -98,7 +100,7 @@ class EnsemblesSettings(SettingsGroupABC):
                 self.__delta_ensemble_table_layout(),
                 dcc.Store(
                     id=self.register_component_unique_id(
-                        self.Ids.CREATED_DELTA_ENSEMBLES
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES
                     ),
                     data=[],
                 ),  # TODO: Add predefined deltas?
@@ -108,13 +110,13 @@ class EnsemblesSettings(SettingsGroupABC):
     def __delta_ensemble_table_layout(self) -> dash_table.DataTable:
         return dash_table.DataTable(
             id=self.register_component_unique_id(
-                self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
+                EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
             ),
             columns=(
                 [
                     {
                         "id": self.register_component_unique_id(
-                            self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
+                            EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
                         ),
                         "name": "Created Delta (A-B)",
                     }
@@ -137,43 +139,47 @@ class EnsemblesSettings(SettingsGroupABC):
             [
                 Output(
                     self.component_unique_id(
-                        self.Ids.CREATED_DELTA_ENSEMBLES
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES
                     ).to_string(),
                     "data",
                 ),
                 Output(
                     self.component_unique_id(
-                        self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
                     ).to_string(),
                     "data",
                 ),
                 Output(
-                    self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(),
+                    self.component_unique_id(
+                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN
+                    ).to_string(),
                     "options",
                 ),
             ],
             [
                 Input(
                     self.component_unique_id(
-                        self.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
+                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
                     ).to_string(),
                     "n_clicks",
                 )
             ],
             [
                 State(
-                    self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(),
+                    self.component_unique_id(
+                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN
+                    ).to_string(),
                     "options",
                 ),
                 State(
                     self.component_unique_id(
-                        self.Ids.DELTA_ENSEMBLE_A_DROPDOWN
+                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_A_DROPDOWN
                     ).to_string(),
                     "value",
                 ),
                 State(
                     self.component_unique_id(
-                        self.Ids.DELTA_ENSEMBLE_B_DROPDOWN
+                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_B_DROPDOWN
                     ).to_string(),
                     "value",
                 ),
@@ -219,7 +225,7 @@ class EnsemblesSettings(SettingsGroupABC):
 
                 table_data = _create_delta_ensemble_table_column_data(
                     self.component_unique_id(
-                        self.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
                     ).to_string(),
                     new_delta_ensemble_names,
                 )
@@ -228,42 +234,3 @@ class EnsemblesSettings(SettingsGroupABC):
                     ensemble_options.append({"label": elm, "value": elm})
 
             return (new_delta_ensembles, table_data, ensemble_options)
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(),
-                "value",
-            ),
-        )
-        def _update_store_ensembles_dropdown(selected_data: str) -> str:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(self.Ids.CREATED_DELTA_ENSEMBLES).to_string(),
-                "data",
-            ),
-        )
-        def _update_store_create_delta_ensembles(selected_data: str) -> str:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(self.Ids.ENSEMBLES_DROPDOWN).to_string(),
-                "options",
-            ),
-        )
-        def _update_store_ensemble_options(selected_data: List[Dict]) -> List[Dict]:
-            return selected_data

@@ -3,7 +3,6 @@ from typing import Dict, List, Optional
 
 import dash
 import pandas as pd
-import webviz_core_components as wcc
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 from webviz_config._theme_class import WebvizConfigTheme
@@ -14,13 +13,12 @@ from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import get_selected_expressions
 
-from ._plugin_ids import PluginIds
-from ._property_serialization import (
+from ..._property_serialization import (
     EnsembleSubplotBuilder,
     GraphFigureBuilderBase,
     VectorSubplotBuilder,
 )
-from .types import (
+from ...types import (
     DeltaEnsemble,
     DerivedVectorsAccessor,
     FanchartOptions,
@@ -31,33 +29,95 @@ from .types import (
     TraceOptions,
     VisualizationOptions,
 )
-from .utils import datetime_utils
-from .utils.derived_ensemble_vectors_accessor_utils import (
+from ...utils import datetime_utils
+from ...utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
-from .utils.history_vectors import create_history_vectors_df
-from .utils.provider_set_utils import create_vector_plot_titles_from_provider_set
-from .utils.trace_line_shape import get_simulation_line_shape
-from .utils.vector_statistics import create_vectors_statistics_df
+from ...utils.history_vectors import create_history_vectors_df
+from ...utils.provider_set_utils import create_vector_plot_titles_from_provider_set
+from ...utils.trace_line_shape import get_simulation_line_shape
+from ...utils.vector_statistics import create_vectors_statistics_df
+
+from .view_elements.subplot import SubplotGraph
+
+from .settings_groups._ensembles import EnsemblesSettings
+from .settings_groups._filter_realization import FilterRealizationSettings
+from .settings_groups._group_by import GroupBySettings
+from .settings_groups._resampling_frequency import ResamplingFrequencySettings
+from .settings_groups._time_series import TimeSeriesSettings
+from .settings_groups._visualization import VisualizationSettings
 
 
-class SimulationTimeSeriesView(ViewABC):
+class SubplotView(ViewABC):
     # pylint: disable=too-few-public-methods
     class Ids:
-        CLOUMN = "column"
-        GRAPH = "graph"
+        SUBPLOT = "subplot"
+        MAIN_COLUMN = "main-column"
 
+        ENSEMBLE_SETTINGS = "ensemble-settings"
+        FILTER_REALIZATION_SETTINGS = "filter-realization-settings"
+        GROUP_BY_SETTINGS = "group-by-settings"
+        RESAMPLING_FREQUENCY_SETTINGS = "resampling-frequency-settings"
+        TIME_SERIES_SETTINGS = "time-series-settings"
+        VISUALIZATION_SETTINGS = "visualization-settings"
+
+    # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
+        custom_vector_definitions: dict,
+        custom_vector_definitions_base: dict,
+        disable_resampling_dropdown: bool,
         initial_selected_vectors: List[str],
+        initial_vector_selector_data: list,
+        initial_visualization: VisualizationOptions,
         input_provider_set: ProviderSet,
+        predefined_expressions: List[ExpressionInfo],
+        selected_resampling_frequency: Frequency,
+        vector_calculator_data: List,
+        vector_selector_base_data: list,
         theme: WebvizConfigTheme,
         user_defined_vector_definitions: Dict[str, VectorDefinition],
         observations: dict,  # TODO: Improve typehint?
         line_shape_fallback: str = "linear",
     ) -> None:
-        super().__init__("Simulation time series analysis")
-        self.add_column(SimulationTimeSeriesView.Ids.GRAPH)
+        super().__init__("Subplot View")
+
+        column = self.add_column(SubplotView.Ids.MAIN_COLUMN)
+        column.add_view_element(SubplotGraph(), SubplotView.Ids.SUBPLOT)
+
+        self.add_settings_groups(
+            {
+                SubplotView.Ids.GROUP_BY_SETTINGS: GroupBySettings(),
+                SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS: ResamplingFrequencySettings(
+                    disable_resampling_dropdown=disable_resampling_dropdown,
+                    selected_resampling_frequency=selected_resampling_frequency,
+                    ensembles_dates=input_provider_set.all_dates(
+                        selected_resampling_frequency
+                    ),
+                    input_provider_set=input_provider_set,
+                ),
+                SubplotView.Ids.ENSEMBLE_SETTINGS: EnsemblesSettings(
+                    ensembles_names=input_provider_set.names(),
+                    input_provider_set=input_provider_set,
+                ),
+                SubplotView.Ids.TIME_SERIES_SETTINGS: TimeSeriesSettings(
+                    initial_vector_selector_data=initial_vector_selector_data,
+                    custom_vector_definitions=custom_vector_definitions,
+                    vector_calculator_data=vector_calculator_data,
+                    predefined_expressions=predefined_expressions,
+                    vector_selector_base_data=vector_selector_base_data,
+                    custom_vector_definitions_base=custom_vector_definitions_base,
+                    initial_selected_vectors=initial_selected_vectors,
+                ),
+                SubplotView.Ids.VISUALIZATION_SETTINGS: VisualizationSettings(
+                    selected_visualization=initial_visualization
+                ),
+                SubplotView.Ids.FILTER_REALIZATION_SETTINGS: FilterRealizationSettings(
+                    realizations=input_provider_set.all_realizations()
+                ),
+            }
+        )
+
         self.initial_selected_vectors = initial_selected_vectors
         self.input_provider_set = input_provider_set
         self.theme = theme
@@ -68,89 +128,157 @@ class SimulationTimeSeriesView(ViewABC):
     # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
         @callback(
+            [
+                Output(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.VISUALIZATION_SETTINGS,
+                        VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
+                    ),
+                    "style",
+                ),
+            ],
+            [
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                    ),
+                    "value",
+                )
+            ],
+        )
+        def _update_trace_options_layout(
+            relative_date_value: str,
+        ) -> List[dict]:
+            """Hide trace options (History and Observation) when relative date is selected"""
+
+            # Convert to Optional[datetime.datetime]
+            relative_date: Optional[datetime.datetime] = (
+                None
+                if relative_date_value is None
+                else datetime_utils.from_str(relative_date_value)
+            )
+
+            if relative_date:
+                return [{"display": "none"}]
+            return [{"display": "block"}]
+
+        @callback(
             Output(
-                self.layout_element(SimulationTimeSeriesView.Ids.GRAPH)
-                .get_unique_id()
-                .to_string(),
-                "children",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.VECTOR_SELECTOR),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN), "data"
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.VISUALIZATION_RADIO_ITEMS),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(
-                    PluginIds.Stores.PLOT_STATISTICS_OPTIONS_CHECKLIST
+                self.view_element_unique_id(
+                    SubplotView.Ids.SUBPLOT, SubplotGraph.Ids.GRAPH
                 ),
-                "data",
+                "figure",
             ),
-            Input(
-                self.get_store_unique_id(
-                    PluginIds.Stores.PLOT_FANCHART_OPTIONS_CHECKLIST
+            [
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.TIME_SERIES_SETTINGS,
+                        TimeSeriesSettings.Ids.VECTOR_SELECTOR,
+                    ),
+                    "selectedNodes",
                 ),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.PLOT_TRACE_OPTIONS_CHECKLIST),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(
-                    PluginIds.Stores.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.ENSEMBLE_SETTINGS,
+                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
+                    ),
+                    "value",
                 ),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(
-                    PluginIds.Stores.RESAMPLING_FREQUENCY_DROPDOWN
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.VISUALIZATION_SETTINGS,
+                        VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS,
+                    ),
+                    "value",
                 ),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.STATISTICS_FROM_RADIO_ITEMS),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.RELATIVE_DATE_DROPDOWN),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(
-                    PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.VISUALIZATION_SETTINGS,
+                        VisualizationSettings.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST,
+                    ),
+                    "value",
                 ),
-                "data",
-            ),
-            State(
-                self.get_store_unique_id(PluginIds.Stores.CREATED_DELTA_ENSEMBLES),
-                "data",
-            ),
-            State(
-                self.get_store_unique_id(
-                    PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.VISUALIZATION_SETTINGS,
+                        VisualizationSettings.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST,
+                    ),
+                    "value",
                 ),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.ENSEMBLES_DROPDOWN_OPTIONS),
-                "data",
-            ),
-            Input(
-                self.get_store_unique_id(
-                    PluginIds.Stores.REALIZATIONS_FILTER_SELECTOR_ID
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.VISUALIZATION_SETTINGS,
+                        VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
+                    ),
+                    "value",
                 ),
-                "data",
-            ),
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.GROUP_BY_SETTINGS,
+                        GroupBySettings.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS,
+                    ),
+                    "value",
+                ),
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                        ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
+                    ),
+                    "value",
+                ),
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                        FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
+                    ),
+                    "value",
+                ),
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                        FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS,
+                    ),
+                    "value",
+                ),
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                    ),
+                    "value",
+                ),
+                Input(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.TIME_SERIES_SETTINGS,
+                        TimeSeriesSettings.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER,
+                    ),
+                    "data",
+                ),
+            ],
+            [
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.ENSEMBLE_SETTINGS,
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES,
+                    ),
+                    "data",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.TIME_SERIES_SETTINGS,
+                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS,
+                    ),
+                    "data",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.ENSEMBLE_SETTINGS,
+                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
+                    ),
+                    "options",
+                ),
+            ],
         )
 
         # pylint: disable=too-many-arguments
@@ -173,7 +301,6 @@ class SimulationTimeSeriesView(ViewABC):
             delta_ensembles: List[DeltaEnsemble],
             vector_calculator_expressions: List[ExpressionInfo],
             ensemble_dropdown_options: List[dict],
-            realization_selector_id: str,
         ) -> dict:
             """Callback to update all graphs based on selections
 
@@ -235,7 +362,11 @@ class SimulationTimeSeriesView(ViewABC):
             trigger_id = ctx[0]["prop_id"].split(".")[0]
 
             if (
-                trigger_id == realization_selector_id
+                trigger_id
+                == self.settings_group_unique_id(
+                    SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
+                )
                 and statistics_from_option is StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization
                 in [
@@ -485,8 +616,4 @@ class SimulationTimeSeriesView(ViewABC):
             # Create legends when all data is added to figure
             figure_builder.create_graph_legends()
 
-            return wcc.Graph(
-                style={"height": "85vh"},
-                id="time-series-graph",
-                figure=figure_builder.get_serialized_figure(),
-            )
+            return figure_builder.get_serialized_figure()

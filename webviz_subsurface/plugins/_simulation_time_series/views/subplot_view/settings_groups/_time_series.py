@@ -19,9 +19,6 @@ from webviz_subsurface._utils.vector_selector import (
     is_vector_name_in_vector_selector_data,
 )
 
-from .._plugin_ids import PluginIds
-from ..types import DeltaEnsemble
-
 
 def _create_new_selected_vectors(
     existing_selected_vectors: List[str],
@@ -68,17 +65,17 @@ class TimeSeriesSettings(SettingsGroupABC):
 
     def __init__(
         self,
-        vector_selector_data: List,
+        initial_vector_selector_data: List,
         custom_vector_definitions: Dict,
         vector_calculator_data: List,
         predefined_expressions: List[ExpressionInfo],
         vector_selector_base_data: List,
         custom_vector_definitions_base: Dict,
-        selected_vectors: Optional[List[str]] = None,
+        initial_selected_vectors: Optional[List[str]] = None,
     ) -> None:
         super().__init__("Time series")
-        self.vector_selector_data = vector_selector_data
-        self.selected_vectors = selected_vectors
+        self.vector_selector_data = initial_vector_selector_data
+        self.selected_vectors = initial_selected_vectors
         self.custom_vector_definitions = custom_vector_definitions
         self.vector_calculator_data = vector_calculator_data
         self.predefined_expressions = predefined_expressions
@@ -88,7 +85,9 @@ class TimeSeriesSettings(SettingsGroupABC):
     def layout(self) -> List[Component]:
         return [
             wsc.VectorSelector(
-                id=self.register_component_unique_id(self.Ids.VECTOR_SELECTOR),
+                id=self.register_component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_SELECTOR
+                ),
                 maxNumSelectedNodes=100,
                 data=self.vector_selector_data,
                 persistence=True,
@@ -103,7 +102,7 @@ class TimeSeriesSettings(SettingsGroupABC):
             html.Button(
                 "Vector Calculator",
                 id=self.register_component_unique_id(
-                    self.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
                 ),
                 style={
                     "margin-top": "5px",
@@ -112,7 +111,9 @@ class TimeSeriesSettings(SettingsGroupABC):
             ),
             wcc.Dialog(
                 title="Vector Calculator",
-                id=self.register_component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG),
+                id=self.register_component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_DIALOG
+                ),
                 draggable=True,
                 max_width="lg",
                 children=[
@@ -121,7 +122,7 @@ class TimeSeriesSettings(SettingsGroupABC):
                         children=[
                             wsc.VectorCalculator(
                                 id=self.register_component_unique_id(
-                                    self.Ids.VECTOR_CALCULATOR
+                                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR
                                 ),
                                 vectors=self.vector_calculator_data,
                                 expressions=self.predefined_expressions,
@@ -132,13 +133,13 @@ class TimeSeriesSettings(SettingsGroupABC):
             ),
             dcc.Store(
                 id=self.register_component_unique_id(
-                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS
                 ),
                 data=self.predefined_expressions,
             ),
             dcc.Store(
                 id=self.register_component_unique_id(
-                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
                 ),
                 data=self.predefined_expressions,
             ),
@@ -146,7 +147,7 @@ class TimeSeriesSettings(SettingsGroupABC):
                 # NOTE:Used to trigger graph update callback if data has
                 # changed, i.e. no change of regular INPUT html-elements
                 id=self.register_component_unique_id(
-                    self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                    TimeSeriesSettings.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
                 ),
                 data=0,
             ),
@@ -155,13 +156,15 @@ class TimeSeriesSettings(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG).to_string(),
+                self.component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_DIALOG
+                ).to_string(),
                 "open",
             ),
             [
                 Input(
                     self.component_unique_id(
-                        self.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
+                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
                     ).to_string(),
                     "n_clicks",
                 ),
@@ -169,7 +172,7 @@ class TimeSeriesSettings(SettingsGroupABC):
             [
                 State(
                     self.component_unique_id(
-                        self.Ids.VECTOR_CALCULATOR_DIALOG
+                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_DIALOG
                     ).to_string(),
                     "open",
                 )
@@ -184,11 +187,15 @@ class TimeSeriesSettings(SettingsGroupABC):
 
         @callback(
             Output(
-                self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(),
+                self.component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR
+                ).to_string(),
                 "externalParseData",
             ),
             Input(
-                self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(),
+                self.component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR
+                ).to_string(),
                 "externalParseExpression",
             ),
         )
@@ -203,57 +210,69 @@ class TimeSeriesSettings(SettingsGroupABC):
             [
                 Output(
                     self.component_unique_id(
-                        self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
+                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS
                     ).to_string(),
                     "data",
                 ),
                 Output(
-                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    self.component_unique_id(
+                        TimeSeriesSettings.Ids.VECTOR_SELECTOR
+                    ).to_string(),
                     "data",
                 ),
                 Output(
-                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    self.component_unique_id(
+                        TimeSeriesSettings.Ids.VECTOR_SELECTOR
+                    ).to_string(),
                     "selectedTags",
                 ),
                 Output(
-                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    self.component_unique_id(
+                        TimeSeriesSettings.Ids.VECTOR_SELECTOR
+                    ).to_string(),
                     "customVectorDefinitions",
                 ),
                 Output(
                     self.component_unique_id(
-                        self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                        TimeSeriesSettings.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
                     ).to_string(),
                     "data",
                 ),
             ],
             Input(
-                self.component_unique_id(self.Ids.VECTOR_CALCULATOR_DIALOG).to_string(),
+                self.component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_DIALOG
+                ).to_string(),
                 "open",
             ),
             [
                 State(
                     self.component_unique_id(
-                        self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
+                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
                     ).to_string(),
                     "data",
                 ),
                 State(
                     self.component_unique_id(
-                        self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
+                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS
                     ).to_string(),
                     "data",
                 ),
                 State(
-                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    self.component_unique_id(
+                        TimeSeriesSettings.Ids.VECTOR_SELECTOR
+                    ).to_string(),
                     "selectedNodes",
                 ),
                 State(
-                    self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
+                    self.component_unique_id(
+                        TimeSeriesSettings.Ids.VECTOR_SELECTOR
+                    ).to_string(),
                     "customVectorDefinitions",
                 ),
                 State(
                     self.component_unique_id(
-                        self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
+                        TimeSeriesSettings.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
                     ).to_string(),
                     "data",
                 ),
@@ -274,7 +293,6 @@ class TimeSeriesSettings(SettingsGroupABC):
             if is_dialog_open or (new_expressions == current_expressions):
                 raise PreventUpdate
 
-            print("close dialog")
             # Create current selected expressions for comparison - Deep copy!
             current_selected_expressions = get_selected_expressions(
                 current_expressions, current_selected_vectors
@@ -335,12 +353,14 @@ class TimeSeriesSettings(SettingsGroupABC):
         @callback(
             Output(
                 self.component_unique_id(
-                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
                 ).to_string(),
                 "data",
             ),
             Input(
-                self.component_unique_id(self.Ids.VECTOR_CALCULATOR).to_string(),
+                self.component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR
+                ).to_string(),
                 "expressions",
             ),
         )
@@ -351,52 +371,3 @@ class TimeSeriesSettings(SettingsGroupABC):
                 elm for elm in expressions if elm["isValid"]
             ]
             return new_expressions
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.VECTOR_SELECTOR),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(self.Ids.VECTOR_SELECTOR).to_string(),
-                "selectedNodes",
-            ),
-        )
-        def _update_store_vector_selector(selected_data: List[str]) -> List[str]:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(
-                    PluginIds.Stores.GRAPH_DATA_HAS_CHANGED_TRIGGER
-                ),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(
-                    self.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER
-                ).to_string(),
-                "data",
-            ),
-        )
-        def _update_store_graph_trigger(selected_data: int) -> int:
-            return selected_data
-
-        @callback(
-            Output(
-                self.get_store_unique_id(
-                    PluginIds.Stores.VECTOR_CALCULATOR_EXPRESSIONS
-                ),
-                "data",
-            ),
-            Input(
-                self.component_unique_id(
-                    self.Ids.VECTOR_CALCULATOR_EXPRESSIONS
-                ).to_string(),
-                "data",
-            ),
-        )
-        def _update_store_calculator_expressions(
-            selected_data: List[DeltaEnsemble],
-        ) -> List[DeltaEnsemble]:
-            return selected_data
