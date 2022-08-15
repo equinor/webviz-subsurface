@@ -2,12 +2,17 @@ from typing import Callable, Dict, List, Tuple
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.deprecation_decorators import deprecated_plugin
 
 from ._business_logic import WellCompletionsDataModel
 from ._callbacks import plugin_callbacks
 from ._layout import layout_tour_steps, main_layout
 
-
+@deprecated_plugin(
+    "This plugin has been replaced by the `WellCompletion` plugin "
+    "which is based on the `wellcompletionsdata` export from `ecl2df`. "
+    "The new plugin is faster and has more functionality. "
+)
 class WellCompletions(WebvizPluginABC):
     # pylint: disable=line-too-long
     """Visualizes well completions data per well coming from export of the Eclipse COMPDAT output. \
