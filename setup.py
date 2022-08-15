@@ -108,7 +108,7 @@ setup(
         "webviz-config",
         "webviz-core-components",
         "webviz-subsurface-components>=0.4.12",
-        "webviz_vtk@git+https://github.com/hanskallekleiv/webviz-vtk",
+        "webviz_vtk@git+https://github.com/equinor/webviz-vtk",
         "xtgeo@git+https://github.com/sigurdp/xtgeo/@sigurdp/vtk-esg",
         # "xtgeo>=2.18.0a1",
     ],

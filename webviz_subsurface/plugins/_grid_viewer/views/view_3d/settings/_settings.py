@@ -24,7 +24,7 @@ class Settings(SettingsGroupABC):
         return [
             wcc.Slider(
                 label="Z Scale",
-                id=self.register_component_uuid(ElementIds.Settings.ZSCALE),
+                id=self.register_component_unique_id(ElementIds.Settings.ZSCALE),
                 min=1,
                 max=10,
                 value=1,
@@ -34,7 +34,9 @@ class Settings(SettingsGroupABC):
                 label="Color map",
                 children=[
                     wcc.Dropdown(
-                        id=self.register_component_uuid(ElementIds.Settings.COLORMAP),
+                        id=self.register_component_unique_id(
+                            ElementIds.Settings.COLORMAP
+                        ),
                         options=list_to_options(self.colormaps),
                         value=self.colormaps[0],
                         clearable=False,
@@ -42,7 +44,7 @@ class Settings(SettingsGroupABC):
                 ],
             ),
             wcc.Checklist(
-                id=self.register_component_uuid(ElementIds.Settings.SHOW_CUBEAXES),
+                id=self.register_component_unique_id(ElementIds.Settings.SHOW_CUBEAXES),
                 options=["Show bounding box"],
                 value=["Show bounding box"],
             ),

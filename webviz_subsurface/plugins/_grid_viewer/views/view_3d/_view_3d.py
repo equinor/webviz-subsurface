@@ -33,7 +33,7 @@ class View3D(ViewABC):
         self.grid_provider = grid_provider
         self.grid_viz_service = grid_viz_service
         self.vtk_view_3d = VTKView3D()
-        self.add_view_element(self.vtk_view_3d, ElementIds.VTKVIEW3D.ID),
+        self.add_view_element(self.vtk_view_3d, ElementIds.VTKVIEW3D.ID)
         self.add_settings_group(
             DataSettings(grid_provider=grid_provider), ElementIds.DataSelectors.ID
         )
@@ -66,6 +66,12 @@ class View3D(ViewABC):
                 .component_unique_id(ElementIds.VTKVIEW3D.GRID_REPRESENTATION)
                 .to_string(),
                 "colorDataRange",
+            ),
+            Output(
+                self.view_element(ElementIds.VTKVIEW3D.ID)
+                .component_unique_id(ElementIds.VTKVIEW3D.VIEW)
+                .to_string(),
+                "triggerResetCamera",
             ),
             Input(
                 self.settings_group(ElementIds.DataSelectors.ID)
@@ -146,6 +152,7 @@ class View3D(ViewABC):
                     b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
                     b64_encode_numpy(scalars.value_arr.astype(np.float32)),
                     [np.nanmin(scalars.value_arr), np.nanmax(scalars.value_arr)],
+                    timer.elapsed_ms(),
                 )
             else:
                 scalars = self.grid_viz_service.get_mapped_property_values(
@@ -166,4 +173,5 @@ class View3D(ViewABC):
                     no_update,
                     b64_encode_numpy(scalars.value_arr.astype(np.float32)),
                     [np.nanmin(scalars.value_arr), np.nanmax(scalars.value_arr)],
+                    no_update,
                 )

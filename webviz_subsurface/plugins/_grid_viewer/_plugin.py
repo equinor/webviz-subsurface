@@ -21,8 +21,7 @@ from .views.view_3d._view_3d import View3D
 class GridViewer(WebvizPluginABC):
     def __init__(
         self,
-        app,
-        webviz_settings,
+        webviz_settings: WebvizSettings,
         ensembles: List[str],
         grid_name: str,
     ):

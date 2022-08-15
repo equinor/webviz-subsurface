@@ -39,14 +39,16 @@ class DataSettings(SettingsGroupABC):
         return [
             wcc.SelectWithLabel(
                 label="Realizations",
-                id=self.register_component_uuid(ElementIds.DataSelectors.REALIZATIONS),
+                id=self.register_component_unique_id(
+                    ElementIds.DataSelectors.REALIZATIONS
+                ),
                 multi=False,
                 options=list_to_options(self.grid_provider.realizations()),
                 value=[self.grid_provider.realizations()[0]],
             ),
             wcc.RadioItems(
                 label="Static / Dynamic",
-                id=self.register_component_uuid(
+                id=self.register_component_unique_id(
                     ElementIds.DataSelectors.STATIC_DYNAMIC
                 ),
                 options=self.static_dynamic_options,
@@ -54,12 +56,14 @@ class DataSettings(SettingsGroupABC):
             ),
             wcc.SelectWithLabel(
                 label="Property",
-                id=self.register_component_uuid(ElementIds.DataSelectors.PROPERTIES),
+                id=self.register_component_unique_id(
+                    ElementIds.DataSelectors.PROPERTIES
+                ),
                 multi=False,
             ),
             wcc.SelectWithLabel(
                 label="Date",
-                id=self.register_component_uuid(ElementIds.DataSelectors.DATES),
+                id=self.register_component_unique_id(ElementIds.DataSelectors.DATES),
                 multi=False,
             ),
         ]

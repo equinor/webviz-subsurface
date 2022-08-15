@@ -40,9 +40,6 @@ class GridFilter(SettingsGroupABC):
             j_max=initial_grid.dimensions[1] - 1,
             k_max=initial_grid.dimensions[2] - 1,
         )
-        self.widget_id = self.register_component_uuid(
-            ElementIds.GridFilter.IJK_CROP_WIDGET
-        )
 
     def layout(self) -> List[Component]:
 

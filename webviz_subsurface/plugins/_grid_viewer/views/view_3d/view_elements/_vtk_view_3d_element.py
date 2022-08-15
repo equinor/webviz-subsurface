@@ -20,6 +20,7 @@ class VTKView3D(ViewElementABC):
             id=self.register_component_unique_id(ElementIds.VTKVIEW3D.VIEW),
             style={"height": "90vh"},
             pickingModes=["click"],
+            autoResetCamera=True,
             interactorSettings=[
                 {
                     "button": 1,
