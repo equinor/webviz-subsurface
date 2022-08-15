@@ -1,4 +1,4 @@
 # pylint: disable=too-few-public-methods
 class PluginIds:
-    class PvtID:
+    class Views:
         INDICATORS = "pvt-indicators"

@@ -13,7 +13,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
 from ._plugin_ids import PluginIds
-from .views import PvtView
+from ._views._pvt import PvtView
 
 
 class PvtPlot(WebvizPluginABC):
@@ -129,7 +129,7 @@ class PvtPlot(WebvizPluginABC):
 
         self.add_view(
             PvtView(self.pvt_df, webviz_settings),
-            PluginIds.PvtID.INDICATORS,
+            PluginIds.Views.INDICATORS,
         )
 
     @property

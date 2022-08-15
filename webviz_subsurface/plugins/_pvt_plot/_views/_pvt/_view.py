@@ -4,12 +4,11 @@ import pandas as pd
 import webviz_core_components as wcc
 from dash import ALL, Input, Output, callback
 from dash.development.base_component import Component
-from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ..shared_settings import Filter, ShowPlots
-from ._view_funcions import create_graph, filter_data_frame
+from ._settings_groups import DataSettings, ViewSettings
+from ._business_logic._plot_utils import create_graph, filter_data_frame
 
 
 class PvtView(ViewABC):
@@ -21,7 +20,7 @@ class PvtView(ViewABC):
         DENSITY = "density"
         GAS_OIL_RATIO = "gas-oil-ratio"
 
-        FILTER = "filter"
+        DataSettings = "DataSettings"
         SHOWPLOTS = "show-plots"
 
     PHASES = ["OIL", "GAS", "WATER"]
@@ -48,8 +47,8 @@ class PvtView(ViewABC):
 
         self.add_settings_groups(
             {
-                PvtView.Ids.FILTER: Filter(self.pvt_df),
-                PvtView.Ids.SHOWPLOTS: ShowPlots(),
+                PvtView.Ids.DataSettings: DataSettings(self.pvt_df),
+                PvtView.Ids.SHOWPLOTS: ViewSettings(),
             }
         )
 
@@ -92,17 +91,17 @@ class PvtView(ViewABC):
                 Output(
                     {
                         "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
-                        .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
+                        .component_unique_id(ViewSettings.Ids.SHOWPLOTS)
                         .to_string(),
                         "plot": plot_value,
                     },
                     "style",
                 )
-                for plot_value in ShowPlots.plot_visibility_options()
+                for plot_value in ViewSettings.plot_visibility_options()
             ],
             Input(
-                self.settings_group(PvtView.Ids.FILTER)
-                .component_unique_id(Filter.Ids.PHASE)
+                self.settings_group(PvtView.Ids.DataSettings)
+                .component_unique_id(DataSettings.Ids.PHASE)
                 .to_string(),
                 "value",
             ),
@@ -110,8 +109,8 @@ class PvtView(ViewABC):
         def _set_available_plots(
             phase: str,
         ) -> Tuple[dict, ...]:
-            all_visibility_options = ShowPlots.plot_visibility_options()
-            visibility_options = ShowPlots.plot_visibility_options(phase)
+            all_visibility_options = ViewSettings.plot_visibility_options()
+            visibility_options = ViewSettings.plot_visibility_options(phase)
             return tuple(
                 {"display": "block" if plot in visibility_options else "none"}
                 for plot in all_visibility_options
@@ -123,33 +122,33 @@ class PvtView(ViewABC):
                 "children",
             ),
             Input(
-                self.settings_group(PvtView.Ids.FILTER)
-                .component_unique_id(Filter.Ids.COLOR_BY)
+                self.settings_group(PvtView.Ids.DataSettings)
+                .component_unique_id(DataSettings.Ids.COLOR_BY)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PvtView.Ids.FILTER)
-                .component_unique_id(Filter.Ids.ENSEMBLES)
+                self.settings_group(PvtView.Ids.DataSettings)
+                .component_unique_id(DataSettings.Ids.ENSEMBLES)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PvtView.Ids.FILTER)
-                .component_unique_id(Filter.Ids.PHASE)
+                self.settings_group(PvtView.Ids.DataSettings)
+                .component_unique_id(DataSettings.Ids.PHASE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PvtView.Ids.FILTER)
-                .component_unique_id(Filter.Ids.PVTNUM)
+                self.settings_group(PvtView.Ids.DataSettings)
+                .component_unique_id(DataSettings.Ids.PVTNUM)
                 .to_string(),
                 "value",
             ),
             Input(
                 {
                     "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
-                    .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
+                    .component_unique_id(ViewSettings.Ids.SHOWPLOTS)
                     .to_string(),
                     "plot": ALL,
                 },
@@ -158,7 +157,7 @@ class PvtView(ViewABC):
             Input(
                 {
                     "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
-                    .component_unique_id(ShowPlots.Ids.SHOWPLOTS)
+                    .component_unique_id(ViewSettings.Ids.SHOWPLOTS)
                     .to_string(),
                     "plot": ALL,
                 },
@@ -184,8 +183,6 @@ class PvtView(ViewABC):
             else:
                 pvtnum = selected_pvtnum
 
-            if len(ensembles) == 0 or len(pvtnum) == 0:
-                raise PreventUpdate
             pvt_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
             if color_by == "ENSEMBLE":
@@ -209,7 +206,7 @@ class PvtView(ViewABC):
 
             graph_height = max(45.0, 90.0 / len(plots_visibility))
 
-            for plot in ShowPlots.plot_visibility_options(phase):
+            for plot in ViewSettings.plot_visibility_options(phase):
                 if not visible_plots[plot]:
                     continue
 
@@ -221,7 +218,7 @@ class PvtView(ViewABC):
                         colors,
                         phase,
                         plot,
-                        ShowPlots.plot_visibility_options(self.phases[phase])[plot],
+                        ViewSettings.plot_visibility_options(self.phases[phase])[plot],
                         self.plotly_theme,
                         graph_height,
                     ),

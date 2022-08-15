@@ -5,7 +5,7 @@ from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
-class ShowPlots(SettingsGroupABC):
+class ViewSettings(SettingsGroupABC):
 
     # pylint: disable=too-few-public-methods
     class Ids:
@@ -38,7 +38,7 @@ class ShowPlots(SettingsGroupABC):
         return options
 
     def layout(self) -> List[Component]:
-        component_id = self.register_component_unique_id(ShowPlots.Ids.SHOWPLOTS)
+        component_id = self.register_component_unique_id(ViewSettings.Ids.SHOWPLOTS)
         return [
             wcc.Checklist(
                 id={"id": component_id, "plot": plot_value},

@@ -1,10 +1,19 @@
-from typing import Dict, List, Union
+from typing import Dict, List, TypedDict, Union
 
 import pandas as pd
 import webviz_core_components as wcc
 from dash import html
 from dash.development.base_component import Component
 from webviz_config.common_cache import CACHE
+
+
+class LayoutAttributes(TypedDict):
+    x_axis_title: str
+    y_axis_title: str
+    df_column: str
+    show_scatter_values: bool
+    show_border_values: bool
+    show_border_markers: bool
 
 
 def filter_data_frame(
@@ -18,7 +27,6 @@ def filter_data_frame(
 
 
 def create_hovertext(
-    phase: str,
     keyword: str,
     constant_group: str,
     group: str,
@@ -26,37 +34,19 @@ def create_hovertext(
     realization: str,
     ratio_value: float,
 ) -> str:
-    hovertext: Union[str, list] = ""
-    if phase == "OIL":
-        # pylint: disable=consider-using-f-string
-        hovertext = "{} Pvtnum: {}<br />Realization: {}, Ensemble: {}".format(
-            f"Rs = {ratio_value}" if keyword == "PVTO" else "",
-            group if color_by == "PVTNUM" else constant_group,
-            realization,
-            group if color_by == "ENSEMBLE" else constant_group,
-        )
-    elif phase == "GAS":
-        # pylint: disable=consider-using-f-string
-        hovertext = (
-            "{}"
-            "Pvtnum: "
-            "{}<br />"
-            "Realization: {}, Ensemble: "
-            "{}".format(
-                f"Rv = {ratio_value}, " if keyword == "PVTG" else "",
-                group if color_by == "PVTNUM" else constant_group,
-                realization,
-                group if color_by == "ENSEMBLE" else constant_group,
-            )
-        )
-    else:
-        hovertext = (
-            f"Pvtnum: {group if color_by == 'PVTNUM' else constant_group}<br />"
-            f"Realization: {realization}, "
-            f"Ensemble: {group if color_by == 'ENSEMBLE' else constant_group}"
-        )
+    rs_v = (
+        f"Rs = {ratio_value}, "
+        if keyword == "PVTO"
+        else f"Rv = {ratio_value}"
+        if keyword == "PVTG"
+        else ""
+    )
+    pvt_num = group if color_by == "PVTNUM" else constant_group
+    ensemble = group if color_by == "ENSEMBLE" else constant_group
 
-    return hovertext
+    return (
+        f"{rs_v}Pvtnum: {pvt_num}<br />Realization: {realization}, Ensemble: {ensemble}"
+    )
 
 
 def create_traces(
@@ -157,7 +147,6 @@ def create_traces(
                     if phase == "GAS":
                         hovertext = [
                             create_hovertext(
-                                phase,
                                 realization_data_frame["KEYWORD"].iloc[0],
                                 constant_group,
                                 group,
@@ -179,7 +168,6 @@ def create_traces(
                         ]
                     else:
                         hovertext = create_hovertext(
-                            phase,
                             realization_data_frame["KEYWORD"].iloc[0],
                             constant_group,
                             group,
@@ -245,6 +233,45 @@ def create_graph(
     theme: dict,
     graph_height: float,
 ) -> Component:
+    layout_attributes: Dict[str, LayoutAttributes] = (
+        {
+            "fvf": {
+                "x_axis_title": rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                "y_axis_title": rf"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]",
+                "df_column": "VOLUMEFACTOR",
+                "show_scatter_values": True,
+                "show_border_values": True,
+                "show_border_markers": False,
+            },
+            "viscosity": {
+                "x_axis_title": rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                "y_axis_title": rf"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]",
+                "df_column": "VISCOSITY",
+                "show_scatter_values": True,
+                "show_border_values": True,
+                "show_border_markers": False,
+            },
+            "density": {
+                "x_axis_title": rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                "y_axis_title": rf"[{data_frame['DENSITY_UNIT'].iloc[0]}]",
+                "df_column": "DENSITY",
+                "show_scatter_values": True,
+                "show_border_values": True,
+                "show_border_markers": False,
+            },
+            "ratio": {
+                "x_axis_title": rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
+                "y_axis_title": rf"[{data_frame['RATIO_UNIT'].iloc[0]}]",
+                "df_column": "DENSITY",
+                "show_scatter_values": False,
+                "show_border_values": True,
+                "show_border_markers": True,
+            },
+        }
+        if not data_frame.empty
+        else {}
+    )
+
     return wcc.FlexBox(
         style={
             "height": f"{graph_height}vh",
@@ -261,93 +288,24 @@ def create_graph(
                         "layout": plot_layout(
                             color_by,
                             theme,
-                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            rf"[{data_frame['VOLUMEFACTOR_UNIT'].iloc[0]}]",
+                            layout_attributes[plot]["x_axis_title"],
+                            layout_attributes[plot]["y_axis_title"],
                         ),
                         "data": create_traces(
                             data_frame,
                             color_by,
                             colors,
                             phase,
-                            "VOLUMEFACTOR",
-                            True,
-                            True,
+                            layout_attributes[plot]["df_column"],
+                            layout_attributes[plot]["show_scatter_values"],
+                            layout_attributes[plot]["show_border_values"],
+                            layout_attributes[plot]["show_border_markers"],
                         ),
                     }
+                    if not data_frame.empty and plot in layout_attributes
+                    else {}
                 ),
             ]
-            if plot == "fvf"
-            else [
-                html.Span(plot_title, style={"font-weight": "bold"}),
-                wcc.Graph(
-                    figure={
-                        "layout": plot_layout(
-                            color_by,
-                            theme,
-                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            rf"[{data_frame['VISCOSITY_UNIT'].iloc[0]}]",
-                        ),
-                        "data": create_traces(
-                            data_frame,
-                            color_by,
-                            colors,
-                            phase,
-                            "VISCOSITY",
-                            True,
-                            True,
-                        ),
-                    }
-                ),
-            ]
-            if plot == "viscosity"
-            else [
-                html.Span(plot_title, style={"font-weight": "bold"}),
-                wcc.Graph(
-                    figure={
-                        "layout": plot_layout(
-                            color_by,
-                            theme,
-                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            rf"[{data_frame['DENSITY_UNIT'].iloc[0]}]",
-                        ),
-                        "data": create_traces(
-                            data_frame,
-                            color_by,
-                            colors,
-                            phase,
-                            "DENSITY",
-                            True,
-                            True,
-                        ),
-                    }
-                ),
-            ]
-            if plot == "density"
-            else [
-                html.Span(plot_title, style={"font-weight": "bold"}),
-                wcc.Graph(
-                    figure={
-                        "layout": plot_layout(
-                            color_by,
-                            theme,
-                            rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
-                            rf"[{data_frame['RATIO_UNIT'].iloc[0]}]",
-                        ),
-                        "data": create_traces(
-                            data_frame,
-                            color_by,
-                            colors,
-                            phase,
-                            "RATIO",
-                            False,
-                            True,
-                            True,
-                        ),
-                    }
-                ),
-            ]
-            if plot == "ratio"
-            else []
         ),
     )
 
