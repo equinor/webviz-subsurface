@@ -8,6 +8,7 @@ from ._business_logic import WellCompletionsDataModel
 from ._callbacks import plugin_callbacks
 from ._layout import layout_tour_steps, main_layout
 
+
 @deprecated_plugin(
     "This plugin has been replaced by the `WellCompletion` plugin "
     "which is based on the `wellcompletionsdata` export from `ecl2df`. "
