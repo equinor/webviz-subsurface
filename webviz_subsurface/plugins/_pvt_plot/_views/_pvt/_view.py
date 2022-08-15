@@ -7,8 +7,8 @@ from dash.development.base_component import Component
 from webviz_config import WebvizSettings
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ._settings_groups import DataSettings, ViewSettings
 from ._business_logic._plot_utils import create_graph, filter_data_frame
+from ._settings_groups import DataSettings, ViewSettings
 
 
 class PvtView(ViewABC):
