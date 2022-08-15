@@ -160,6 +160,7 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA), "points"),
         Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA), "polys"),
         Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_CELL_DATA), "values"),
+        Output(get_uuid(LayoutElements.LINEGRAPH), "figure"),
         Input(get_uuid(LayoutElements.WELL_SELECT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONS), "value"),
         Input(get_uuid(LayoutElements.PROPERTIES), "value"),
@@ -177,11 +178,42 @@ def plugin_callbacks(
     ]:
 
         if not well_names:
-            return no_update, no_update, no_update, no_update, no_update, no_update
-        polyline_xy = well_provider.get_polyline_along_well_path_SIMPLIFIED(
-            well_names[0]
+            return (
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+            )
+        polyline_xy = np.array(
+            well_provider.get_polyline_along_well_path_SIMPLIFIED(well_names[0])
         )
-        polyline_xy = np.array(polyline_xy).flatten()
+        polyline_xy_full = np.array(
+            well_provider.get_polyline_along_well_path_SIMPLIFIED(
+                well_names[0], use_rdp=False
+            )
+        )
+
+        print(polyline_xy[:, 0], polyline_xy[:, 1])
+        print(polyline_xy_full)
+
+        def plotly_xy_plot(xy, xy2):
+            return {
+                "data": [
+                    {
+                        "x": xy[:, 0],
+                        "y": xy[:, 1],
+                        "marker": dict(
+                            size=20,
+                            line=dict(color="MediumPurple", width=8),
+                        ),
+                    },
+                    {"x": xy2[:, 0], "y": xy2[:, 1]},
+                ]
+            }
+
         if PROPERTYTYPE(proptype) == PROPERTYTYPE.INIT:
             property_spec = PropertySpec(prop_name=prop[0], prop_date=0)
         else:
@@ -190,7 +222,7 @@ def plugin_callbacks(
         surface_polys, scalars = grid_viz_service.cut_along_polyline(
             provider_id=grid_provider.provider_id(),
             realization=realizations[0],
-            polyline_xy=polyline_xy,
+            polyline_xy=np.array(polyline_xy).flatten(),
             property_spec=property_spec,
         )
 
@@ -205,6 +237,7 @@ def plugin_callbacks(
             b64_encode_numpy(scalars.value_arr.astype(np.float32))
             if scalars is not None
             else no_update,
+            plotly_xy_plot(polyline_xy, polyline_xy_full),
         )
 
     @callback(
