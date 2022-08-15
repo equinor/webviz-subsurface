@@ -10,7 +10,7 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
-from ._ensemble_group_tree_data import EnsembleGroupTreeData
+from ._business_logic import EnsembleGroupTreeData
 from ._plugin_ids import PluginIds
 from .view_elements import GroupTreeViewElement
 from .views import GroupTreeView, ViewControls, ViewFilters, ViewOptions

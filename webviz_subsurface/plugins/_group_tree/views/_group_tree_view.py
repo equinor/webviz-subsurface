@@ -1,11 +1,11 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import webviz_core_components as wcc
-import webviz_subsurface_components
+import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from .._ensemble_group_tree_data import EnsembleGroupTreeData
+from .._business_logic import EnsembleGroupTreeData
 from .._types import NodeType, StatOptions, TreeModeOptions
 from ..view_elements import GroupTreeViewElement
 
@@ -141,10 +141,12 @@ class GroupTreeView(ViewABC):
         CONTROLS = "controls"
         OPTIONS = "options"
         FILTERS = "filters"
+        GROUPTREE_COMPONENT = "grouptree-component"
 
     def __init__(self, group_tree_data: Dict[str, EnsembleGroupTreeData]) -> None:
         super().__init__("Group Tree")
         self._group_tree_data = group_tree_data
+        self._group_tree_component_id = "grouptree-component"
 
         self.add_settings_group(
             ViewControls(list(self._group_tree_data.keys())), GroupTreeView.Ids.CONTROLS
@@ -316,8 +318,8 @@ class GroupTreeView(ViewABC):
             )
 
             return [
-                webviz_subsurface_components.GroupTree(
-                    id="grouptree",
+                wsc.GroupTree(
+                    id=self._group_tree_component_id,
                     data=data,
                     edge_options=edge_options,
                     node_options=node_options,
