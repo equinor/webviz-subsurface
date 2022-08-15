@@ -12,14 +12,7 @@ def plume_polygon(
     smoothing: float = 10.0,
     simplify_factor: float = 1.2,
 ) -> geojson.FeatureCollection:
-    binary = [
-        (
-            np.where(np.isnan(s.values) | s.values.mask, 0.0, s.values) > threshold
-        ).astype(float)
-        for s in surfaces
-    ]
-    fraction = sum(binary) / len(binary)
-    fraction = scipy.ndimage.gaussian_filter(fraction, sigma=smoothing, mode="nearest")
+    fraction = binary_plume(surfaces, threshold, smoothing)
     levels = [0.1]
     if len(surfaces) > 2:
         levels.append(0.5)
@@ -36,6 +29,19 @@ def plume_polygon(
             for poly in polys
         ]
     )
+
+
+def binary_plume(
+    surfaces: List[xtgeo.RegularSurface], threshold: float, smoothing: float
+) -> np.ndarray:
+    binary = [
+        (
+            np.where(np.isnan(s.values) | s.values.mask, 0.0, s.values) > threshold
+        ).astype(float)
+        for s in surfaces
+    ]
+    fraction = sum(binary) / len(binary)
+    return scipy.ndimage.gaussian_filter(fraction, sigma=smoothing, mode="nearest")
 
 
 def _extract_fraction_contours(

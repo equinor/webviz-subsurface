@@ -1,15 +1,15 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, Optional, List, Tuple, Set
+from typing import Callable, Dict, Optional, List, Tuple, Set, Union
 
 import geojson
 import numpy as np
 import dash
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
-# TODO: tmp?
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
-    SurfaceStatistic
+    SurfaceStatistic, SurfaceAddress
 )
+# TODO: tmp?
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
 )
@@ -17,10 +17,8 @@ from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProvider,
     EnsembleSurfaceProvider,
     FaultPolygonsServer,
-    QualifiedSurfaceAddress,
     SimulatedFaultPolygonsAddress,
     SimulatedSurfaceAddress,
-    SurfaceAddress,
     SurfaceServer,
     SurfaceMeta,
     StatisticalSurfaceAddress,
@@ -34,6 +32,10 @@ from ._formation_alias import (
     lookup_surface_alias,
     lookup_fault_polygon_alias,
     lookup_well_pick_alias,
+)
+from ._surface_publishing import (
+    FrequencySurfaceAddress,
+    publish_and_get_surface_metadata,
 )
 from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths, parse_polygon_file
 from ._co2volume import (generate_co2_volume_figure, generate_co2_time_containment_figure)
@@ -50,11 +52,13 @@ class _SurfaceData:
 
     @staticmethod
     def from_server(
-        surface_server, surface_provider, surface_address, color_map_range, color_map_name
+        server: SurfaceServer,
+        provider: EnsembleSurfaceProvider,
+        address: Union[SurfaceAddress, FrequencySurfaceAddress],
+        color_map_range: Optional[Tuple[float, float]],
+        color_map_name: str,
     ):
-        surf_meta, img_url = _publish_and_get_surface_metadata(
-            surface_server, surface_provider, surface_address
-        )
+        surf_meta, img_url = publish_and_get_surface_metadata(server, provider, address)
         value_range = (
             0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
             0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
@@ -113,7 +117,7 @@ def plugin_callbacks(
             return [], None
         surface_provider = ensemble_surface_providers[ensemble]
         # Map
-        prop_name = map_attribute_names[MapAttribute(prop)]
+        prop_name = _property_origin(MapAttribute(prop), map_attribute_names)
         surfaces = surface_name_aliases(surface_provider, prop_name)
         polygons = fault_polygon_aliases(ensemble_fault_polygons_providers[ensemble])
         well_picks = well_pick_names_aliases(well_pick_provider)
@@ -224,7 +228,7 @@ def plugin_callbacks(
             formation_aliases,
             formation,
             ensemble_surface_providers[ensemble],
-            map_attribute_names[attribute],
+            _property_origin(attribute, map_attribute_names),
         )
         polygon_name = lookup_fault_polygon_alias(
             formation_aliases, formation, ensemble_fault_polygons_providers[ensemble]
@@ -241,9 +245,9 @@ def plugin_callbacks(
             surf_data = None
         else:
             surf_data = _SurfaceData.from_server(
-                surface_server=surface_server,
-                surface_provider=ensemble_surface_providers[ensemble],
-                surface_address=_derive_surface_address(
+                server=surface_server,
+                provider=ensemble_surface_providers[ensemble],
+                address=_derive_surface_address(
                     surface_name,
                     attribute,
                     date,
@@ -359,6 +363,17 @@ def create_map_layers(
     return layers, viewport_bounds
 
 
+def _property_origin(attribute: MapAttribute, map_attribute_names: Dict[MapAttribute, str]):
+    if attribute in map_attribute_names:
+        return map_attribute_names[attribute]
+    elif attribute == MapAttribute.SGAS_PLUME:
+        return map_attribute_names[MapAttribute.MAX_SATURATION]
+    elif attribute == MapAttribute.AMFG_PLUME:
+        return map_attribute_names[MapAttribute.AMFG_PLUME]
+    else:
+        raise AssertionError(f"No origin defined for property: {attribute}")
+
+
 def _extract_fault_polygon_url(
     server: FaultPolygonsServer,
     provider: EnsembleFaultPolygonsProvider,
@@ -386,7 +401,20 @@ def _derive_surface_address(
     statistic: str,
 ):
     date = None if attribute == MapAttribute.MIGRATION_TIME else date
-    if len(realization) == 1:
+    if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
+        return FrequencySurfaceAddress(
+            name=surface_name,
+            datestr=date,
+            realizations=realization,
+            basis_attribute=(
+                map_attribute_names[MapAttribute.MAX_SATURATION]
+                if attribute == MapAttribute.SGAS_PLUME
+                else map_attribute_names[MapAttribute.MAX_AMFG]
+            ),
+            threshold=.0001,
+            smoothing=10.0,
+        )
+    elif len(realization) == 1:
         return SimulatedSurfaceAddress(
             attribute=map_attribute_names[attribute],
             name=surface_name,
@@ -435,27 +463,3 @@ def _get_plume_polygon(
         smoothing=10.0 if smoothing else 0.0,
         simplify_factor=1.2 if smoothing else 0.0,
     )
-
-
-def _publish_and_get_surface_metadata(
-    surface_server: SurfaceServer,
-    surface_provider: EnsembleSurfaceProvider,
-    surface_address: SurfaceAddress,
-):
-    # TODO: Nearly direct copy from MapViewerFMU
-    provider_id: str = surface_provider.provider_id()
-    qualified_address = QualifiedSurfaceAddress(provider_id, surface_address)
-    surf_meta = surface_server.get_surface_metadata(qualified_address)
-    if not surf_meta:
-        # This means we need to compute the surface
-        # TODO: statistical surfaces should be filled first (?) At least the maximum
-        #  saturation one. However, it might be more appropriate to not mask it in the
-        #  first place
-        surface = surface_provider.get_surface(address=surface_address)
-        if not surface:
-            raise ValueError(
-                f"Could not get surface for address: {surface_address}"
-            )
-        surface_server.publish_surface(qualified_address, surface)
-        surf_meta = surface_server.get_surface_metadata(qualified_address)
-    return surf_meta, surface_server.encode_partial_url(qualified_address)
