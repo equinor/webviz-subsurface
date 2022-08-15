@@ -10,7 +10,7 @@ from webviz_subsurface._providers import EnsembleSummaryProvider
 from webviz_subsurface._providers.ensemble_summary_provider._provider_impl_arrow_presampled import (
     ProviderImplArrowPresampled,
 )
-from webviz_subsurface.plugins._group_tree._ensemble_group_tree_data import add_nodetype
+from webviz_subsurface.plugins._group_tree._business_logic import add_nodetype
 
 ADD_NODETYPE_CASES = [
     # Group leaf nodes:
