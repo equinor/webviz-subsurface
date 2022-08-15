@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -113,7 +113,7 @@ class PvtView(ViewABC):
             all_visibility_options = ShowPlots.plot_visibility_options()
             visibility_options = ShowPlots.plot_visibility_options(phase)
             return tuple(
-                {"display": "block" if plot in visibility_options.keys() else "none"}
+                {"display": "block" if plot in visibility_options else "none"}
                 for plot in all_visibility_options
             )
 
