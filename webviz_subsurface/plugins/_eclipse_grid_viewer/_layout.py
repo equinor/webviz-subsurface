@@ -188,7 +188,7 @@ def sidebar(
                 label=LayoutTitles.WELL_SELECT,
                 multi=False,
                 options=[{"value": well, "label": well} for well in well_names],
-                value=[],
+                value=[well_names[0]],
             ),
             wcc.Slider(
                 label=LayoutTitles.Z_SCALE,
