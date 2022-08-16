@@ -1,10 +1,16 @@
-from typing import Dict, List, TypedDict, Union
+from typing import Dict, List, Union
+import sys
 
 import pandas as pd
 import webviz_core_components as wcc
 from dash import html
 from dash.development.base_component import Component
 from webviz_config.common_cache import CACHE
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 
 class LayoutAttributes(TypedDict):
