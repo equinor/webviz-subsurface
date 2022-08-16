@@ -120,7 +120,7 @@ class OverviewView(ViewABC):
             well_attr_selected: List[str],
             current_fig_dict: dict,
             prev_plot: ChartType,
-        ) -> Tuple[List[Component], dict, ChartType]:
+        ) -> Tuple[Component, dict, ChartType]:
             # pylint: disable=too-many-locals
             # pylint: disable=too-many-arguments
 
@@ -145,7 +145,7 @@ class OverviewView(ViewABC):
             # Make set of wells that match the well_attributes
             # Well attributes that does not exist in one ensemble will be ignored
             wellattr_filtered_wells: Set[str] = set()
-            for _, ens_data_model in self.data_models.items():
+            for ens_data_model in self.data_models.values():
                 wellattr_filtered_wells = wellattr_filtered_wells.union(
                     ens_data_model.filter_on_well_attributes(well_attributes_selected)
                 )

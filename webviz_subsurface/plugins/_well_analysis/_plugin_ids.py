@@ -8,7 +8,7 @@ class PluginIds:
         SELECTED_PLOT_LAYOUT = "selected-plot-layout"
         SELECTED_REALIZATION = "selected-realization"
         DISPLAY_CTRL_MODE_BAR = "display-ctrl-mode-bar"
-        CURRENT_FIG = "current_fig"
+        CURRENT_FIG = "current-fig"
         PREV_PLOT_TYPE = "prev-plot-type"
 
     class SharedSettings:
@@ -19,6 +19,5 @@ class PluginIds:
     class ViewID:
         # pylint: disable=too-few-public-methods
         WELL_OVERVIEW = "well-overview"
-        WELL_CONTROL = "well-conroll"
-
+        WELL_CONTROL = "well-control"
         BAR_CHART = "bar-chart"

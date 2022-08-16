@@ -16,7 +16,7 @@ class OverviewPlotSettings(SettingsGroupABC):
         # pylint: disable=too-few-public-methods
         # plot controls
         PLOT_TYPE = "plot-type"
-        SELECTED_ENSEMBLES = "selected_ensembles"
+        SELECTED_ENSEMBLES = "selected-ensembles"
         SELECTED_RESPONSE = "selected-response"
         ONLY_PRODUCTION_AFTER_DATE = "only-production-after-date"
 
@@ -120,44 +120,37 @@ class OverviewPlotSettings(SettingsGroupABC):
                 "value",
             ),
         )
-        def _update_checkbox(selected_plot: str) -> List[Component]:
-            box_list = []
+        def _update_checkbox(selected_plot: str) -> Component:
             if selected_plot == ChartType.BAR:
-                box_list = [
-                    wcc.Checklist(
-                        id=self.plot_layout_id,
-                        options=[
-                            {"label": "Show legend", "value": "legend"},
-                            {"label": "Overlay bars", "value": "overlay_bars"},
-                            {"label": "Show prod as text", "value": "show_prod_text"},
-                            {"label": "White background", "value": "white_background"},
-                        ],
-                        value=["legend"],
-                    )
-                ]
+                return wcc.Checklist(
+                    id=self.plot_layout_id,
+                    options=[
+                        {"label": "Show legend", "value": "legend"},
+                        {"label": "Overlay bars", "value": "overlay_bars"},
+                        {"label": "Show prod as text", "value": "show_prod_text"},
+                        {"label": "White background", "value": "white_background"},
+                    ],
+                    value=["legend"],
+                )
             if selected_plot == ChartType.PIE:
-                box_list = [
-                    wcc.Checklist(
-                        id=self.plot_layout_id,
-                        options=[
-                            {"label": "Show legend", "value": "legend"},
-                            {"label": "Show prod as text", "value": "show_prod_text"},
-                        ],
-                        value=[],
-                    )
-                ]
+                return wcc.Checklist(
+                    id=self.plot_layout_id,
+                    options=[
+                        {"label": "Show legend", "value": "legend"},
+                        {"label": "Show prod as text", "value": "show_prod_text"},
+                    ],
+                    value=[],
+                )
             if selected_plot == ChartType.AREA:
-                box_list = [
-                    wcc.Checklist(
-                        id=self.plot_layout_id,
-                        options=[
-                            {"label": "Show legend", "value": "legend"},
-                            {"label": "White background", "value": "white_background"},
-                        ],
-                        value=["legend"],
-                    )
-                ]
-            return box_list
+                return wcc.Checklist(
+                    id=self.plot_layout_id,
+                    options=[
+                        {"label": "Show legend", "value": "legend"},
+                        {"label": "White background", "value": "white_background"},
+                    ],
+                    value=["legend"],
+                )
+            return None
 
         @callback(
             Output(
@@ -182,7 +175,7 @@ class OverviewFilter(SettingsGroupABC):
         super().__init__("Filter")
         self.wells: List[str] = []
         self.well_attr: dict = {}
-        for _, ens_data_model in data_models.items():
+        for ens_data_model in data_models.values():
             self.wells.extend(
                 [well for well in ens_data_model.wells if well not in self.wells]
             )
@@ -199,37 +192,32 @@ class OverviewFilter(SettingsGroupABC):
                     )
 
     def layout(self) -> List[Component]:
-        return (
-            [
-                wcc.SelectWithLabel(
-                    label="Well",
-                    size=min(10, len(self.wells)),
-                    id=self.register_component_unique_id(
-                        OverviewFilter.Ids.SLECTED_WELLS
-                    ),
-                    options=[{"label": well, "value": well} for well in self.wells],
-                    value=self.wells,
-                    multi=True,
-                )
-            ]
+        return [
+            wcc.SelectWithLabel(
+                label="Well",
+                size=min(10, len(self.wells)),
+                id=self.register_component_unique_id(OverviewFilter.Ids.SLECTED_WELLS),
+                options=[{"label": well, "value": well} for well in self.wells],
+                value=self.wells,
+                multi=True,
+            )
+        ] + [
             # Adding well attributes selectors
-            + [
-                wcc.SelectWithLabel(
-                    label=category.capitalize(),
-                    size=min(5, len(values)),
-                    id={
-                        "id": self.register_component_unique_id(
-                            OverviewFilter.Ids.SELECTED_WELL_ATTR
-                        ),
-                        "category": category,
-                    },
-                    options=[{"label": value, "value": value} for value in values],
-                    value=values,
-                    multi=True,
-                )
-                for category, values in self.well_attr.items()
-            ]
-        )
+            wcc.SelectWithLabel(
+                label=category.capitalize(),
+                size=min(5, len(values)),
+                id={
+                    "id": self.register_component_unique_id(
+                        OverviewFilter.Ids.SELECTED_WELL_ATTR
+                    ),
+                    "category": category,
+                },
+                options=[{"label": value, "value": value} for value in values],
+                value=values,
+                multi=True,
+            )
+            for category, values in self.well_attr.items()
+        ]
 
     def set_callbacks(self) -> None:
         @callback(

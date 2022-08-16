@@ -94,7 +94,7 @@ class ControlView(ViewABC):
             real: int,
             display_ctrlmode_bar: bool,
             shared_xaxes: List[str],
-        ) -> List[Component]:
+        ) -> Component:
             """Updates the well control figure"""
             pressure_plot_mode = PressurePlotMode(pressure_plot_mode_string)
             fig = create_well_control_figure(
