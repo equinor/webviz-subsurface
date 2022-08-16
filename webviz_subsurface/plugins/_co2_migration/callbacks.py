@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, Optional, List, Tuple, Set, Union
+from typing import Callable, Dict, Optional, List, Tuple, Set, Union, Any
 
 import geojson
 import numpy as np
@@ -182,6 +182,23 @@ def plugin_callbacks(
         )
 
     @callback(
+        Output(get_uuid(LayoutElements.PLUME_CONTOUR_STORE), "data"),
+        Input(get_uuid(LayoutElements.CONTOUR_PROPERTY), "value"),
+        Input(get_uuid(LayoutElements.CONTOUR_THRESHOLD), "value"),
+        Input(get_uuid(LayoutElements.CONTOUR_SMOOTHING), "value"),
+    )
+    def set_plume_contour_data(
+        _property,
+        _threshold,
+        _smoothing,
+    ):
+        return {
+            "property": _property,
+            "threshold": _threshold,
+            "smoothing": _smoothing,
+        }
+
+    @callback(
         Output(get_uuid(LayoutElements.DECKGLMAP), "layers"),
         Output(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
         Input(get_uuid(LayoutElements.PROPERTY), "value"),
@@ -191,9 +208,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.STATISTIC_INPUT), "value"),
         Input(get_uuid(LayoutElements.COLORMAP_INPUT), "value"),
         Input(get_uuid(LayoutElements.COLOR_RANGE_STORE), "data"),
-        Input(get_uuid(LayoutElements.CONTOUR_PROPERTY), "value"),
-        Input(get_uuid(LayoutElements.CONTOUR_THRESHOLD), "value"),
-        Input(get_uuid(LayoutElements.CONTOUR_SMOOTHING), "value"),
+        Input(get_uuid(LayoutElements.PLUME_CONTOUR_STORE), "data"),
         State(get_uuid(LayoutElements.ENSEMBLEINPUT), "value"),
         State(get_uuid(LayoutElements.DATE_STORE), "data"),
         State(get_uuid(LayoutElements.DECKGLMAP), "bounds"),
@@ -206,9 +221,7 @@ def plugin_callbacks(
         statistic,
         color_map_name,
         color_map_range,
-        contour_property,
-        contour_threshold,
-        contour_smoothing,
+        contour_data,
         ensemble,
         date_list,
         current_bounds,
@@ -259,23 +272,13 @@ def plugin_callbacks(
                 color_map_name=color_map_name,
             )
         # Plume polygon
-        if (
-            contour_property is not None
-            and len(realization) > 0
-            and contour_threshold is not None
-            and contour_threshold > 0
-        ):
-            plume_polygon = _get_plume_polygon(
-                ensemble_surface_providers[ensemble],
-                realization,
-                surface_name,
-                contour_property,
-                date,
-                len(contour_smoothing) > 0,
-                contour_threshold,
-            )
-        else:
-            plume_polygon = None
+        plume_polygon = _get_plume_polygon(
+            ensemble_surface_providers[ensemble],
+            realization,
+            surface_name,
+            date,
+            contour_data,
+        )
         # Create layers and view bounds
         layers, viewport_bounds = create_map_layers(
             surface_data=surf_data,
@@ -443,11 +446,19 @@ def _get_plume_polygon(
     surface_provider: EnsembleSurfaceProvider,
     realizations: List[int],
     surface_name: str,
-    surface_attribute: str,
     datestr: str,
-    smoothing: bool,
-    threshold: float,
-):
+    contour_data: Dict[str, Any],
+) -> Optional[geojson.FeatureCollection]:
+    surface_attribute = contour_data["property"]
+    threshold = contour_data["threshold"]
+    smoothing = contour_data["smoothing"]
+    if (
+        surface_attribute is None
+        or len(realizations) == 0
+        or threshold is None
+        or threshold <= 0
+    ):
+        return None
     surfaces = [
         surface_provider.get_surface(SimulatedSurfaceAddress(
             attribute=surface_attribute,
