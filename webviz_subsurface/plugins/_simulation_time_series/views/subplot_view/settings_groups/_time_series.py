@@ -74,13 +74,13 @@ class TimeSeriesSettings(SettingsGroupABC):
         initial_selected_vectors: Optional[List[str]] = None,
     ) -> None:
         super().__init__("Time series")
-        self.vector_selector_data = initial_vector_selector_data
-        self.selected_vectors = initial_selected_vectors
-        self.custom_vector_definitions = custom_vector_definitions
-        self.vector_calculator_data = vector_calculator_data
-        self.predefined_expressions = predefined_expressions
-        self.vector_selector_base_data = vector_selector_base_data
-        self.custom_vector_definitions_base = custom_vector_definitions_base
+        self._vector_selector_data = initial_vector_selector_data
+        self._selected_vectors = initial_selected_vectors
+        self._custom_vector_definitions = custom_vector_definitions
+        self._vector_calculator_data = vector_calculator_data
+        self._predefined_expressions = predefined_expressions
+        self._vector_selector_base_data = vector_selector_base_data
+        self._custom_vector_definitions_base = custom_vector_definitions_base
 
     def layout(self) -> List[Component]:
         return [
@@ -89,15 +89,15 @@ class TimeSeriesSettings(SettingsGroupABC):
                     TimeSeriesSettings.Ids.VECTOR_SELECTOR
                 ),
                 maxNumSelectedNodes=100,
-                data=self.vector_selector_data,
+                data=self._vector_selector_data,
                 persistence=True,
                 persistence_type="session",
                 selectedTags=[]
-                if self.selected_vectors is None
-                else self.selected_vectors,
+                if self._selected_vectors is None
+                else self._selected_vectors,
                 numSecondsUntilSuggestionsAreShown=0.5,
                 lineBreakAfterTag=True,
-                customVectorDefinitions=self.custom_vector_definitions,
+                customVectorDefinitions=self._custom_vector_definitions,
             ),
             html.Button(
                 "Vector Calculator",
@@ -124,8 +124,8 @@ class TimeSeriesSettings(SettingsGroupABC):
                                 id=self.register_component_unique_id(
                                     TimeSeriesSettings.Ids.VECTOR_CALCULATOR
                                 ),
-                                vectors=self.vector_calculator_data,
-                                expressions=self.predefined_expressions,
+                                vectors=self._vector_calculator_data,
+                                expressions=self._predefined_expressions,
                             )
                         ],
                     )
@@ -135,13 +135,13 @@ class TimeSeriesSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(
                     TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS
                 ),
-                data=self.predefined_expressions,
+                data=self._predefined_expressions,
             ),
             dcc.Store(
                 id=self.register_component_unique_id(
                     TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS_OPEN_DIALOG
                 ),
-                data=self.predefined_expressions,
+                data=self._predefined_expressions,
             ),
             dcc.Store(
                 # NOTE:Used to trigger graph update callback if data has
@@ -299,7 +299,7 @@ class TimeSeriesSettings(SettingsGroupABC):
             )
 
             # Create new vector selector data - Deep copy!
-            new_vector_selector_data = copy.deepcopy(self.vector_selector_base_data)
+            new_vector_selector_data = copy.deepcopy(self._vector_selector_base_data)
             add_expressions_to_vector_selector_data(
                 new_vector_selector_data, new_expressions
             )
@@ -321,7 +321,7 @@ class TimeSeriesSettings(SettingsGroupABC):
             new_custom_vector_definitions = get_vector_definitions_from_expressions(
                 new_expressions
             )
-            for key, value in self.custom_vector_definitions_base.items():
+            for key, value in self._custom_vector_definitions_base.items():
                 if key not in new_custom_vector_definitions:
                     new_custom_vector_definitions[key] = value
 

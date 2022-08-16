@@ -260,7 +260,7 @@ class SubplotView(ViewABC):
                 State(
                     self.settings_group_unique_id(
                         SubplotView.Ids.ENSEMBLE_SETTINGS,
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES,
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE,
                     ),
                     "data",
                 ),

@@ -27,10 +27,10 @@ class ResamplingFrequencySettings(SettingsGroupABC):
         input_provider_set: ProviderSet,
     ) -> None:
         super().__init__("Resampling frequency")
-        self.disable_resampling_dropdown = disable_resampling_dropdown
-        self.selected_resampling_frequency = selected_resampling_frequency
-        self.ensembles_dates = ensembles_dates
-        self.input_provider_set = input_provider_set
+        self._disable_resampling_dropdown = disable_resampling_dropdown
+        self._selected_resampling_frequency = selected_resampling_frequency
+        self._ensembles_dates = ensembles_dates
+        self._input_provider_set = input_provider_set
 
     def layout(self) -> List[Component]:
         return [
@@ -39,7 +39,7 @@ class ResamplingFrequencySettings(SettingsGroupABC):
                     ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN
                 ),
                 clearable=False,
-                disabled=self.disable_resampling_dropdown,
+                disabled=self._disable_resampling_dropdown,
                 options=[
                     {
                         "label": frequency.value,
@@ -47,7 +47,7 @@ class ResamplingFrequencySettings(SettingsGroupABC):
                     }
                     for frequency in Frequency
                 ],
-                value=self.selected_resampling_frequency,
+                value=self._selected_resampling_frequency,
                 style={
                     "margin-bottom": "10px",
                 },
@@ -60,7 +60,7 @@ class ResamplingFrequencySettings(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 clearable=True,
-                disabled=self.disable_resampling_dropdown,
+                disabled=self._disable_resampling_dropdown,
                 id=self.register_component_unique_id(
                     ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
                 ),
@@ -69,13 +69,13 @@ class ResamplingFrequencySettings(SettingsGroupABC):
                         "label": datetime_utils.to_str(_date),
                         "value": datetime_utils.to_str(_date),
                     }
-                    for _date in sorted(self.ensembles_dates)
+                    for _date in sorted(self._ensembles_dates)
                 ],
             ),
             wcc.Label(
                 "NB: Disabled for pre-sampled data",
                 style={"font-style": "italic"}
-                if self.disable_resampling_dropdown
+                if self._disable_resampling_dropdown
                 else {"display": "none"},
             ),
         ]
@@ -132,7 +132,7 @@ class ResamplingFrequencySettings(SettingsGroupABC):
             resampling_frequency = Frequency.from_string_value(
                 resampling_frequency_value
             )
-            dates_union = self.input_provider_set.all_dates(resampling_frequency)
+            dates_union = self._input_provider_set.all_dates(resampling_frequency)
 
             # Create dropdown options:
             new_relative_date_options: List[Dict[str, str]] = [

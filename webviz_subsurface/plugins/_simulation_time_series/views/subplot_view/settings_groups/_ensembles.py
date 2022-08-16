@@ -24,7 +24,7 @@ class EnsemblesSettings(SettingsGroupABC):
         DELTA_ENSEMBLE_A_DROPDOWN = "delta-ensemble-a-dropdown"
         DELTA_ENSEMBLE_B_DROPDOWN = "delta-ensemble-b-dropdown"
         DELTA_ENSEMBLE_CREATE_BUTTON = "delta-ensemble-create-button"
-        CREATED_DELTA_ENSEMBLES = "create-delta-ensembles"
+        CREATED_DELTA_ENSEMBLES_STORE = "created-delta-ensembles-store"
         CREATED_DELTA_ENSEMBLE_NAMES_TABLE = "create-delta-ensemble-names-table"
         CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN = (
             "create-delta-ensemble-names-table-column"
@@ -34,8 +34,8 @@ class EnsemblesSettings(SettingsGroupABC):
         self, ensembles_names: List[str], input_provider_set: ProviderSet
     ) -> None:
         super().__init__("Ensembles")
-        self.ensembles = ensembles_names
-        self.input_provider_set = input_provider_set
+        self._ensembles = ensembles_names
+        self._input_provider_set = input_provider_set
 
     def layout(self) -> List[Component]:
         return [
@@ -48,9 +48,9 @@ class EnsemblesSettings(SettingsGroupABC):
                 multi=True,
                 options=[
                     {"label": ensemble, "value": ensemble}
-                    for ensemble in self.ensembles
+                    for ensemble in self._ensembles
                 ],
-                value=None if len(self.ensembles) <= 0 else [self.ensembles[0]],
+                value=None if len(self._ensembles) <= 0 else [self._ensembles[0]],
             ),
             wcc.Selectors(
                 label="Delta Ensembles",
@@ -71,8 +71,8 @@ class EnsemblesSettings(SettingsGroupABC):
                         EnsemblesSettings.Ids.DELTA_ENSEMBLE_A_DROPDOWN
                     ),
                     clearable=False,
-                    options=[{"label": i, "value": i} for i in self.ensembles],
-                    value=self.ensembles[0],
+                    options=[{"label": i, "value": i} for i in self._ensembles],
+                    value=self._ensembles[0],
                     style={"min-width": "60px"},
                 ),
                 wcc.Dropdown(
@@ -81,8 +81,8 @@ class EnsemblesSettings(SettingsGroupABC):
                         EnsemblesSettings.Ids.DELTA_ENSEMBLE_B_DROPDOWN
                     ),
                     clearable=False,
-                    options=[{"label": i, "value": i} for i in self.ensembles],
-                    value=self.ensembles[-1],
+                    options=[{"label": i, "value": i} for i in self._ensembles],
+                    value=self._ensembles[-1],
                     style={"min-width": "60px"},
                 ),
                 html.Button(
@@ -100,7 +100,7 @@ class EnsemblesSettings(SettingsGroupABC):
                 self.__delta_ensemble_table_layout(),
                 dcc.Store(
                     id=self.register_component_unique_id(
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
                     ),
                     data=[],
                 ),  # TODO: Add predefined deltas?
@@ -139,7 +139,7 @@ class EnsemblesSettings(SettingsGroupABC):
             [
                 Output(
                     self.component_unique_id(
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
                     ).to_string(),
                     "data",
                 ),
@@ -167,9 +167,9 @@ class EnsemblesSettings(SettingsGroupABC):
             [
                 State(
                     self.component_unique_id(
-                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
                     ).to_string(),
-                    "options",
+                    "data",
                 ),
                 State(
                     self.component_unique_id(
@@ -191,46 +191,29 @@ class EnsemblesSettings(SettingsGroupABC):
             ensemble_a: str,
             ensemble_b: str,
         ) -> Tuple[List[DeltaEnsemble], List[Dict[str, str]], List[Dict[str, str]]]:
-
-            if n_clicks is None or n_clicks < 0:
+            if n_clicks is None or n_clicks <= 0:
                 raise PreventUpdate
+
+            delta_ensemble = DeltaEnsemble(ensemble_a=ensemble_a, ensemble_b=ensemble_b)
+            if delta_ensemble in existing_delta_ensembles:
+                raise PreventUpdate
+
+            new_delta_ensembles = existing_delta_ensembles
+            new_delta_ensembles.append(delta_ensemble)
+
+            # Create delta ensemble names
+            new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
+
+            table_data = _create_delta_ensemble_table_column_data(
+                self.component_unique_id(EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN).to_string(),
+                new_delta_ensemble_names,
+            )
 
             ensemble_options = [
                 {"label": ensemble, "value": ensemble}
-                for ensemble in self.input_provider_set.names()
+                for ensemble in self._input_provider_set.names()
             ]
-
-            new_delta_ensembles: List = []
-            table_data: List = []
-
-            if n_clicks == 0:
-                pass
-            else:
-
-                delta_ensemble = DeltaEnsemble(
-                    ensemble_a=ensemble_a, ensemble_b=ensemble_b
-                )
-
-                if delta_ensemble in existing_delta_ensembles:
-                    raise PreventUpdate
-
-                # new_delta_ensembles = existing_delta_ensembles
-                new_delta_ensembles = []
-                new_delta_ensembles.append(delta_ensemble)
-
-                # Create delta ensemble names
-                new_delta_ensemble_names = create_delta_ensemble_names(
-                    new_delta_ensembles
-                )
-
-                table_data = _create_delta_ensemble_table_column_data(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
-                    ).to_string(),
-                    new_delta_ensemble_names,
-                )
-
-                for elm in new_delta_ensemble_names:
-                    ensemble_options.append({"label": elm, "value": elm})
+            for elm in new_delta_ensemble_names:
+                ensemble_options.append({"label": elm, "value": elm})
 
             return (new_delta_ensembles, table_data, ensemble_options)

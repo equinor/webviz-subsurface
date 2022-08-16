@@ -20,7 +20,7 @@ class FilterRealizationSettings(SettingsGroupABC):
 
     def __init__(self, realizations: List[int]) -> None:
         super().__init__("Filter Realizations")
-        self.realizations = realizations
+        self._realizations = realizations
 
     def layout(self) -> List[Component]:
         return [
@@ -39,7 +39,7 @@ class FilterRealizationSettings(SettingsGroupABC):
                             "margin-left": "10px",
                             "margin-bottom": "5px",
                         },
-                        children=f"{min(self.realizations)}-{max(self.realizations)}",
+                        children=f"{min(self._realizations)}-{max(self._realizations)}",
                     ),
                 ],
             ),
@@ -66,9 +66,9 @@ class FilterRealizationSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(
                     FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
                 ),
-                options=[{"label": i, "value": i} for i in self.realizations],
-                value=self.realizations,
-                size=min(10, len(self.realizations)),
+                options=[{"label": i, "value": i} for i in self._realizations],
+                value=self._realizations,
+                size=min(10, len(self._realizations)),
             ),
         ]
 
@@ -94,22 +94,3 @@ class FilterRealizationSettings(SettingsGroupABC):
             realizations_filter_text = printable_int_list(realizations)
 
             return realizations_filter_text
-
-        @callback(
-            Output(
-                self.component_unique_id(
-                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS
-                ).to_string(),
-                "value",
-            ),
-            Input(
-                self.component_unique_id(
-                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
-                ).to_string(),
-                "value",
-            ),
-        )
-        def _update_realization_option(selected_value: List[int]) -> str:
-            if len(selected_value) == len(self.realizations):
-                return StatisticsFromOptions.ALL_REALIZATIONS.value
-            return StatisticsFromOptions.SELECTED_REALIZATIONS.value

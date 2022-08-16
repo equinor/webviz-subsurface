@@ -24,7 +24,7 @@ class VisualizationSettings(SettingsGroupABC):
 
     def __init__(self, selected_visualization: VisualizationOptions) -> None:
         super().__init__("Visualization")
-        self.selected_visualization = selected_visualization
+        self._selected_visualization = selected_visualization
 
     def layout(self) -> List[Component]:
         return [
@@ -50,13 +50,13 @@ class VisualizationSettings(SettingsGroupABC):
                         "value": VisualizationOptions.STATISTICS_AND_REALIZATIONS,
                     },
                 ],
-                value=self.selected_visualization.value,
+                value=self._selected_visualization.value,
             ),
             wcc.Selectors(
                 label="Options",
                 id=self.register_component_unique_id(PluginIds.TourStepIds.OPTIONS),
                 children=self.__plot_options_layout(
-                    selected_visualization=self.selected_visualization,
+                    selected_visualization=self._selected_visualization,
                 ),
             ),
         ]

@@ -32,7 +32,7 @@ class DerivedDeltaEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
     Vector names can be regular vectors existing among vector names in the providers, Per
     Interval/Per Day vector or a calculated vector from vector calculator.
 
-    Based on the vector type, the class provides an interface for retrieveing dataframes
+    Based on the vector type, the class provides an interface for retrieving dataframes
     for the set of such vectors for the provider.
     """
 
