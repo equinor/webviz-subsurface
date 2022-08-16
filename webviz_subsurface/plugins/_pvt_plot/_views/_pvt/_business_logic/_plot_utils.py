@@ -1,5 +1,5 @@
-from typing import Dict, List, Union
 import sys
+from typing import Dict, List, Union
 
 import pandas as pd
 import webviz_core_components as wcc
