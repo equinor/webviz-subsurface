@@ -369,7 +369,7 @@ def _property_origin(attribute: MapAttribute, map_attribute_names: Dict[MapAttri
     elif attribute == MapAttribute.SGAS_PLUME:
         return map_attribute_names[MapAttribute.MAX_SATURATION]
     elif attribute == MapAttribute.AMFG_PLUME:
-        return map_attribute_names[MapAttribute.AMFG_PLUME]
+        return map_attribute_names[MapAttribute.MAX_AMFG]
     else:
         raise AssertionError(f"No origin defined for property: {attribute}")
 
