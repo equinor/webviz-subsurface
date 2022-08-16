@@ -183,19 +183,24 @@ def plugin_callbacks(
 
     @callback(
         Output(get_uuid(LayoutElements.PLUME_CONTOUR_STORE), "data"),
-        Input(get_uuid(LayoutElements.CONTOUR_PROPERTY), "value"),
-        Input(get_uuid(LayoutElements.CONTOUR_THRESHOLD), "value"),
-        Input(get_uuid(LayoutElements.CONTOUR_SMOOTHING), "value"),
+        Input(get_uuid(LayoutElements.PROPERTY), "value"),
+        Input(get_uuid(LayoutElements.PLUME_THRESHOLD), "value"),
+        Input(get_uuid(LayoutElements.PLUME_SMOOTHING), "value"),
     )
     def set_plume_contour_data(
-        _property,
-        _threshold,
-        _smoothing,
+        attribute,
+        threshold,
+        smoothing,
     ):
+        if attribute is None:
+            return None
+        attribute = MapAttribute(attribute)
+        if attribute not in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
+            return None
         return {
-            "property": _property,
-            "threshold": _threshold,
-            "smoothing": _smoothing,
+            "property": _property_origin(attribute, map_attribute_names),
+            "threshold": threshold,
+            "smoothing": smoothing,
         }
 
     @callback(
@@ -267,18 +272,21 @@ def plugin_callbacks(
                     realization,
                     map_attribute_names,
                     statistic,
+                    contour_data,
                 ),
                 color_map_range=color_map_range,
                 color_map_name=color_map_name,
             )
         # Plume polygon
-        plume_polygon = _get_plume_polygon(
-            ensemble_surface_providers[ensemble],
-            realization,
-            surface_name,
-            date,
-            contour_data,
-        )
+        plume_polygon = None
+        if contour_data is not None:
+            plume_polygon = _get_plume_polygon(
+                ensemble_surface_providers[ensemble],
+                realization,
+                surface_name,
+                date,
+                contour_data,
+            )
         # Create layers and view bounds
         layers, viewport_bounds = create_map_layers(
             surface_data=surf_data,
@@ -402,6 +410,7 @@ def _derive_surface_address(
     realization: List[int],
     map_attribute_names: Dict[MapAttribute, str],
     statistic: str,
+    contour_data: Optional[Dict[str, Any]],
 ):
     date = None if attribute == MapAttribute.MIGRATION_TIME else date
     if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
@@ -414,8 +423,8 @@ def _derive_surface_address(
                 if attribute == MapAttribute.SGAS_PLUME
                 else map_attribute_names[MapAttribute.MAX_AMFG]
             ),
-            threshold=.0001,
-            smoothing=10.0,
+            threshold=contour_data["threshold"] if contour_data else 0.0,
+            smoothing=contour_data["smoothing"] if contour_data else 0.0,
         )
     elif len(realization) == 1:
         return SimulatedSurfaceAddress(
@@ -471,6 +480,6 @@ def _get_plume_polygon(
     return _plume_extent.plume_polygon(
         surfaces,
         threshold,
-        smoothing=10.0 if smoothing else 0.0,
-        simplify_factor=1.2 if smoothing else 0.0,
+        smoothing=smoothing,
+        simplify_factor=0.12 * smoothing,  # Experimental factor
     )

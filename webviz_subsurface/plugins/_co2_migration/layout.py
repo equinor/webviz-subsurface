@@ -25,8 +25,8 @@ class LayoutElements(str, Enum):
     PLUME_POLYGON_LAYER = "plume-polygon-layer"
 
     CONTOUR_PROPERTY = "contour-property"
-    CONTOUR_THRESHOLD = "contour-threshold"
-    CONTOUR_SMOOTHING = "contour-smoothing"
+    PLUME_THRESHOLD = "contour-threshold"
+    PLUME_SMOOTHING = "contour-smoothing"
     PROPERTY = "property"
     ENSEMBLEINPUT = "ensembleinput"
     REALIZATIONINPUT = "realizationinput"
@@ -62,7 +62,9 @@ class LayoutStyle:
         "height": "84vh",
     }
     SIDEBAR = {
-        "flex": 1
+        "flex": 1,
+        "display": "flex",
+        "flexDirection": "column",
     }
     CONTENT_PARENT = {
         "flex": 3,
@@ -98,7 +100,12 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                     EnsembleSelectorLayout(get_uuid, ensembles),
                     FilterSelectorLayout(get_uuid),
                     MapSelectorLayout(get_uuid),
-                    PlumeContourLayout(get_uuid),
+                    html.Div(
+                        style={
+                            "flex": "1 10 auto",
+                        }
+                    ),
+                    ExperimentalFeaturesLayout(get_uuid),
                 ]
             ),
             html.Div(
@@ -263,7 +270,7 @@ class PlumeContourLayout(wcc.Selectors):
                     children=[
                         html.Div("Threshold"),
                         dcc.Input(
-                            id=get_uuid(LayoutElements.CONTOUR_THRESHOLD),
+                            id=get_uuid(LayoutElements.PLUME_THRESHOLD),
                             type="number",
                             min=0,
                             value=0.000001,
@@ -284,13 +291,63 @@ class PlumeContourLayout(wcc.Selectors):
                 dcc.Checklist(
                     ["Smooth Contours"],
                     ["Smooth Contours"],
-                    id=get_uuid(LayoutElements.CONTOUR_SMOOTHING),
+                    id=get_uuid(LayoutElements.PLUME_SMOOTHING),
                     style={
                         "display": "flex",
                         "alignItems": "center",
                     }
                 ),
             ],
+        )
+
+
+class ExperimentalFeaturesLayout(wcc.Selectors):
+    def __init__(self, get_uuid: Callable):
+        style = {
+            "display": "flex",
+            "flexDirection": "row",
+            "justifyContent": "space-between",
+            "paddingTop": "5px",
+            "paddingBottom": "5px",
+        }
+        super().__init__(
+            label="Experimental",
+            open_details=False,
+            children=[
+                html.Div(
+                    children=[
+                        html.Div("Plume Threshold"),
+                        dcc.Input(
+                            id=get_uuid(LayoutElements.PLUME_THRESHOLD),
+                            type="number",
+                            min=0,
+                            value=0.000001,
+                            placeholder="Lower property threshold",
+                            style={
+                                "textAlign": "right",
+                            },
+                        ),
+                    ],
+                    style=style,
+                ),
+                html.Div(
+                    children=[
+                        html.Div("Plume Smoothing"),
+                        dcc.Input(
+                            id=get_uuid(LayoutElements.PLUME_SMOOTHING),
+                            type="number",
+                            min=0,
+                            value=0,
+                            step=1,
+                            placeholder="Smoothing [#pixels]",
+                            style={
+                                "textAlign": "right",
+                            },
+                        ),
+                    ],
+                    style=style,
+                ),
+            ]
         )
 
 
