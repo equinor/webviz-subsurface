@@ -52,7 +52,7 @@ class VisualizationSettings(SettingsGroupABC):
                 ],
                 value=self._selected_visualization.value,
             ),
-            wcc.Selectors(
+            wcc.LabeledContainer(
                 label="Options",
                 id=self.register_component_unique_id(PluginIds.TourStepIds.OPTIONS),
                 children=self.__plot_options_layout(

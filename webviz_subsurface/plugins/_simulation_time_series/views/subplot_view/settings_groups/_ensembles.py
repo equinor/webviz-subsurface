@@ -52,13 +52,12 @@ class EnsemblesSettings(SettingsGroupABC):
                 ],
                 value=None if len(self._ensembles) <= 0 else [self._ensembles[0]],
             ),
-            wcc.Selectors(
+            wcc.LabeledContainer(
                 label="Delta Ensembles",
                 id=self.register_component_unique_id(
                     PluginIds.TourStepIds.DELTA_ENSEMBLE
                 ),
-                open_details=False,
-                children=[self.__delta_ensemble_creator_layout()],
+                children=self.__delta_ensemble_creator_layout(),
             ),
         ]
 
@@ -205,7 +204,9 @@ class EnsemblesSettings(SettingsGroupABC):
             new_delta_ensemble_names = create_delta_ensemble_names(new_delta_ensembles)
 
             table_data = _create_delta_ensemble_table_column_data(
-                self.component_unique_id(EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN).to_string(),
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE_COLUMN
+                ).to_string(),
                 new_delta_ensemble_names,
             )
 
