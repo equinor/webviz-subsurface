@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [#1097](https://github.com/equinor/webviz-subsurface/pull/1007) - `smry2arrow_batch` - Now supports an arbitrary number of paths as input, meaning that it is no longer needed to wrap a wildcarded runpath pattern with "". It is though still required if defining a wildcarded eclbase.
+- [#1078](https://github.com/equinor/webviz-subsurface/pull/1078) - Refactored `PvtPlot` plugin with `WLF`.
 
 ## [0.2.14] - 2022-06-28
 
