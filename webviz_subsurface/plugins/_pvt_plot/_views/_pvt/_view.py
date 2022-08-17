@@ -31,19 +31,11 @@ class PvtView(ViewABC):
         self.pvt_df = pvt_df
         self.plotly_theme = webviz_settings.theme.plotly_theme
 
-        self.phases_additional_info: List[str] = []
-        if self.pvt_df["KEYWORD"].str.contains("PVTO").any():
-            self.phases_additional_info.append("PVTO")
-        elif self.pvt_df["KEYWORD"].str.contains("PVDO").any():
-            self.phases_additional_info.append("PVDO")
-        elif self.pvt_df["KEYWORD"].str.contains("PVCDO").any():
-            self.phases_additional_info.append("PVCDO")
-        if self.pvt_df["KEYWORD"].str.contains("PVTG").any():
-            self.phases_additional_info.append("PVTG")
-        elif self.pvt_df["KEYWORD"].str.contains("PVDG").any():
-            self.phases_additional_info.append("PVDG")
-        if self.pvt_df["KEYWORD"].str.contains("PVTW").any():
-            self.phases_additional_info.append("PVTW")
+        self.phases_additional_info: List[str] = [
+            keyword
+            for keyword in ["PVTO", "PVDO", "PVCDO", "PVTG", "PVDG", "PVTW"]
+            if self.pvt_df["KEYWORD"].str.contains(keyword).any()
+        ]
 
         self.add_settings_groups(
             {
@@ -204,7 +196,17 @@ class PvtView(ViewABC):
                 for plot_id, visibility in zip(plots_visibility_ids, plots_visibility)
             }
 
-            graph_height = max(45.0, 90.0 / len(plots_visibility))
+            graph_height = max(
+                40.0,
+                80.0
+                / len(
+                    [
+                        plot
+                        for plot in ViewSettings.plot_visibility_options(phase)
+                        if visible_plots[plot]
+                    ]
+                ),
+            )
 
             for plot in ViewSettings.plot_visibility_options(phase):
                 if not visible_plots[plot]:

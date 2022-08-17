@@ -290,6 +290,7 @@ def create_graph(
             [
                 html.Span(plot_title, style={"font-weight": "bold"}),
                 wcc.Graph(
+                    style={"height": f"{graph_height}vh"},
                     figure={
                         "layout": plot_layout(
                             color_by,
@@ -309,7 +310,7 @@ def create_graph(
                         ),
                     }
                     if not data_frame.empty and plot in layout_attributes
-                    else {}
+                    else {},
                 ),
             ]
         ),
