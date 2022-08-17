@@ -6,9 +6,9 @@ from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ...._plugin_ids import PluginIds
-from ....types import DeltaEnsemble, ProviderSet
-from ....utils.delta_ensemble_utils import create_delta_ensemble_names
+from .._types import DeltaEnsemble
+from .._utils.delta_ensemble_utils import create_delta_ensemble_names
+from .._utils.provider_set import ProviderSet
 
 
 def _create_delta_ensemble_table_column_data(
@@ -21,6 +21,7 @@ class EnsemblesSettings(SettingsGroupABC):
     # pylint: disable=too-few-public-methods
     class Ids:
         ENSEMBLES_DROPDOWN = "ensembles-dropdown"
+        DELTA_ENSEMBLE = "delta-ensemble"
         DELTA_ENSEMBLE_A_DROPDOWN = "delta-ensemble-a-dropdown"
         DELTA_ENSEMBLE_B_DROPDOWN = "delta-ensemble-b-dropdown"
         DELTA_ENSEMBLE_CREATE_BUTTON = "delta-ensemble-create-button"
@@ -55,7 +56,7 @@ class EnsemblesSettings(SettingsGroupABC):
             wcc.LabeledContainer(
                 label="Delta Ensembles",
                 id=self.register_component_unique_id(
-                    PluginIds.TourStepIds.DELTA_ENSEMBLE
+                    EnsemblesSettings.Ids.DELTA_ENSEMBLE
                 ),
                 children=self.__delta_ensemble_creator_layout(),
             ),

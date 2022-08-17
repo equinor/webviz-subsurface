@@ -8,7 +8,7 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._utils.formatting import printable_int_list
 
-from ....types import StatisticsFromOptions
+from .._types import StatisticsFromOptions
 
 
 class FilterRealizationSettings(SettingsGroupABC):

@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 import plotly.graph_objects as go
 
-from ..types import FanchartOptions, StatisticsOptions
+from .._types import FanchartOptions, StatisticsOptions
 
 
 class GraphFigureBuilderBase(abc.ABC):

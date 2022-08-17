@@ -35,14 +35,14 @@ from webviz_subsurface._utils.webvizstore_functions import get_path
 
 from ._plugin_ids import PluginIds
 from .views.subplot_view._subplot_view import SubplotView
-from .types import VisualizationOptions
-from .types.provider_set import (
-    create_lazy_provider_set_from_paths,
-    create_presampled_provider_set_from_paths,
-)
-from .utils.from_timeseries_cumulatives import (
+from .views.subplot_view._types import VisualizationOptions
+from .views.subplot_view._utils.from_timeseries_cumulatives import (
     create_per_day_vector_name,
     create_per_interval_vector_name,
+)
+from ._utils.create_provider_set_from_paths import (
+    create_lazy_provider_set_from_paths,
+    create_presampled_provider_set_from_paths,
 )
 
 

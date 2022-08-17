@@ -13,39 +13,37 @@ from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import get_selected_expressions
 
-from ..._property_serialization import (
+from ._property_serialization import (
     EnsembleSubplotBuilder,
     GraphFigureBuilderBase,
     VectorSubplotBuilder,
 )
-from ...types import (
+from ._types import (
     DeltaEnsemble,
-    DerivedVectorsAccessor,
     FanchartOptions,
-    ProviderSet,
     StatisticsFromOptions,
     StatisticsOptions,
     SubplotGroupByOptions,
     TraceOptions,
     VisualizationOptions,
 )
-from ...utils import datetime_utils
-from ...utils.derived_ensemble_vectors_accessor_utils import (
+from ._utils import datetime_utils, DerivedVectorsAccessor, ProviderSet
+from ._utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
-from ...utils.history_vectors import create_history_vectors_df
-from ...utils.provider_set_utils import create_vector_plot_titles_from_provider_set
-from ...utils.trace_line_shape import get_simulation_line_shape
-from ...utils.vector_statistics import create_vectors_statistics_df
+from ._utils.history_vectors import create_history_vectors_df
+from ._utils.provider_set_utils import create_vector_plot_titles_from_provider_set
+from ._utils.trace_line_shape import get_simulation_line_shape
+from ._utils.vector_statistics import create_vectors_statistics_df
 
-from .view_elements.subplot import SubplotGraph
+from ._view_elements.subplot import SubplotGraph
 
-from .settings_groups._ensembles import EnsemblesSettings
-from .settings_groups._filter_realization import FilterRealizationSettings
-from .settings_groups._group_by import GroupBySettings
-from .settings_groups._resampling_frequency import ResamplingFrequencySettings
-from .settings_groups._time_series import TimeSeriesSettings
-from .settings_groups._visualization import VisualizationSettings
+from ._settings._ensembles import EnsemblesSettings
+from ._settings._filter_realization import FilterRealizationSettings
+from ._settings._group_by import GroupBySettings
+from ._settings._resampling_frequency import ResamplingFrequencySettings
+from ._settings._time_series import TimeSeriesSettings
+from ._settings._visualization import VisualizationSettings
 
 
 class SubplotView(ViewABC):

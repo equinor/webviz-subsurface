@@ -17,8 +17,8 @@ from webviz_subsurface._utils.statistics_plotting import (
     create_statistics_traces,
 )
 
-from ..types import FanchartOptions, StatisticsOptions
-from ..utils.from_timeseries_cumulatives import is_per_interval_or_per_day_vector
+from .._types import FanchartOptions, StatisticsOptions
+from .._utils.from_timeseries_cumulatives import is_per_interval_or_per_day_vector
 
 
 def create_vector_observation_traces(

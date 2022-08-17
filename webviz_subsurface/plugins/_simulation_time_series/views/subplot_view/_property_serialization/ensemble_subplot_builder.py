@@ -7,8 +7,8 @@ from webviz_config._theme_class import WebvizConfigTheme
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.colors import hex_to_rgb, rgb_to_str, scale_rgb_lightness
 
-from ..types import FanchartOptions, StatisticsOptions
-from ..utils.create_vector_traces_utils import (
+from .._types import FanchartOptions, StatisticsOptions
+from .._utils.create_vector_traces_utils import (
     create_history_vector_trace,
     create_vector_fanchart_traces,
     create_vector_observation_traces,

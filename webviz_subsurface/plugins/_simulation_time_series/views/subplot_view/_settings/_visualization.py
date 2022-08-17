@@ -5,8 +5,7 @@ from dash import Input, Output, callback, html
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ...._plugin_ids import PluginIds
-from ....types import (
+from .._types import (
     FanchartOptions,
     StatisticsOptions,
     TraceOptions,
@@ -21,6 +20,7 @@ class VisualizationSettings(SettingsGroupABC):
         PLOT_TRACE_OPTIONS_CHECKLIST = "plot-trace-options-checklist"
         PLOT_STATISTICS_OPTIONS_CHECKLIST = "plot-statistics-options-checklist"
         PLOT_FANCHART_OPTIONS_CHECKLIST = "plot-fanchart-options-checklist"
+        PLOT_OPTIONS = "plot-options"
 
     def __init__(self, selected_visualization: VisualizationOptions) -> None:
         super().__init__("Visualization")
@@ -54,7 +54,9 @@ class VisualizationSettings(SettingsGroupABC):
             ),
             wcc.LabeledContainer(
                 label="Options",
-                id=self.register_component_unique_id(PluginIds.TourStepIds.OPTIONS),
+                id=self.register_component_unique_id(
+                    VisualizationSettings.Ids.PLOT_OPTIONS
+                ),
                 children=self.__plot_options_layout(
                     selected_visualization=self._selected_visualization,
                 ),

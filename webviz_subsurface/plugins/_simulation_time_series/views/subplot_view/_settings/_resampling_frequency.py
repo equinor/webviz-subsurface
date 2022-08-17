@@ -9,8 +9,8 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers import Frequency
 
-from ....types import ProviderSet
-from ....utils import datetime_utils
+from .._utils import datetime_utils
+from .._utils.provider_set import ProviderSet
 
 
 class ResamplingFrequencySettings(SettingsGroupABC):

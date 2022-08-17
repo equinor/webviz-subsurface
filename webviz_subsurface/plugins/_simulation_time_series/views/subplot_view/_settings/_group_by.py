@@ -4,7 +4,7 @@ import webviz_core_components as wcc
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ....types import SubplotGroupByOptions
+from .._types import SubplotGroupByOptions
 
 
 class GroupBySettings(SettingsGroupABC):
