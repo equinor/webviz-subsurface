@@ -10,8 +10,8 @@ from ._layout import layout_tour_steps, main_layout
 
 
 @deprecated_plugin(
-    "This plugin has been replaced by the `WellCompletion` plugin "
-    "which is based on the `wellcompletionsdata` export from `ecl2df`. "
+    "This plugin has been replaced by the `WellCompletion` plugin (without "
+    "the `s`) which is based on the `wellcompletionsdata` export from `ecl2df`. "
     "The new plugin is faster and has more functionality. "
 )
 class WellCompletions(WebvizPluginABC):

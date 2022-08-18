@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#1058](https://github.com/equinor/webviz-subsurface/pull/1058) - `WellCompletion` - New implementation of the WellCompletions plugin, which is faster, has more functionality (single realization) and utilizes the webviz layout framework (WLF).
+- [#1058](https://github.com/equinor/webviz-subsurface/pull/1058) - `WellCompletion` - New implementation of the `WellCompletions` plugin, which is faster, has more functionality (single realization) and utilizes the webviz layout framework (WLF).
 
 
 ### Fixed

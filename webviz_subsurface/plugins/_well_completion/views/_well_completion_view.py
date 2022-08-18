@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-# from dash.development.base_components import Component
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
