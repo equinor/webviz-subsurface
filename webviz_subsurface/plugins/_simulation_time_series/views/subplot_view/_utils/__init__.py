@@ -1,6 +1,6 @@
-from .provider_set import ProviderSet
 from .derived_vectors_accessor import (
-    DerivedVectorsAccessor,
     DerivedDeltaEnsembleVectorsAccessorImpl,
     DerivedEnsembleVectorsAccessorImpl,
+    DerivedVectorsAccessor,
 )
+from .provider_set import ProviderSet

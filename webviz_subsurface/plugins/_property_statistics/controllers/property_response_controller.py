@@ -17,7 +17,6 @@ from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils
     from_str,
 )
 
-
 from ..models import (
     PropertyStatisticsModel,
     ProviderTimeSeriesDataModel,

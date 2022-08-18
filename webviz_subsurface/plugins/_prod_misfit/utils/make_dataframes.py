@@ -8,6 +8,7 @@ from ..._simulation_time_series.views.subplot_view._utils.provider_set import (
     ProviderSet,
 )
 
+
 # -------------------
 def get_df_smry(
     input_provider_set: ProviderSet,

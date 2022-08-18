@@ -19,6 +19,12 @@ from ._property_serialization import (
     GraphFigureBuilderBase,
     VectorSubplotBuilder,
 )
+from ._settings._ensembles import EnsemblesSettings
+from ._settings._filter_realization import FilterRealizationSettings
+from ._settings._group_by import GroupBySettings
+from ._settings._resampling_frequency import ResamplingFrequencySettings
+from ._settings._time_series import TimeSeriesSettings
+from ._settings._visualization import VisualizationSettings
 from ._types import (
     DeltaEnsemble,
     FanchartOptions,
@@ -28,7 +34,7 @@ from ._types import (
     TraceOptions,
     VisualizationOptions,
 )
-from ._utils import datetime_utils, DerivedVectorsAccessor, ProviderSet
+from ._utils import DerivedVectorsAccessor, ProviderSet, datetime_utils
 from ._utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
@@ -40,16 +46,7 @@ from ._utils.history_vectors import create_history_vectors_df
 from ._utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from ._utils.trace_line_shape import get_simulation_line_shape
 from ._utils.vector_statistics import create_vectors_statistics_df
-
-
 from ._view_elements.subplot import SubplotGraph
-
-from ._settings._ensembles import EnsemblesSettings
-from ._settings._filter_realization import FilterRealizationSettings
-from ._settings._group_by import GroupBySettings
-from ._settings._resampling_frequency import ResamplingFrequencySettings
-from ._settings._time_series import TimeSeriesSettings
-from ._settings._visualization import VisualizationSettings
 
 
 class SubplotView(ViewABC):

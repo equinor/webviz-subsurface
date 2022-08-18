@@ -32,19 +32,11 @@ from webviz_subsurface._utils.vector_selector import (
     is_vector_name_in_vector_selector_data,
 )
 from webviz_subsurface._utils.webvizstore_functions import get_path
-from .views.subplot_view._view_elements.subplot import SubplotGraph
 
-from .views.subplot_view._subplot_view import SubplotView
-from .views.subplot_view._types import VisualizationOptions
-from .views.subplot_view._utils.from_timeseries_cumulatives import (
-    create_per_day_vector_name,
-    create_per_interval_vector_name,
-)
 from ._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
-
 from .views.subplot_view._settings import (
     EnsemblesSettings,
     FilterRealizationSettings,
@@ -53,6 +45,13 @@ from .views.subplot_view._settings import (
     TimeSeriesSettings,
     VisualizationSettings,
 )
+from .views.subplot_view._subplot_view import SubplotView
+from .views.subplot_view._types import VisualizationOptions
+from .views.subplot_view._utils.from_timeseries_cumulatives import (
+    create_per_day_vector_name,
+    create_per_interval_vector_name,
+)
+from .views.subplot_view._view_elements.subplot import SubplotGraph
 
 
 def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, str]]:

@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
 from webviz_subsurface._providers import (

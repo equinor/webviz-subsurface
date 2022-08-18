@@ -7,6 +7,11 @@ from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._types
 )
 
 # pylint: disable = line-too-long
+from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_ensemble_vectors_accessor_utils import (
+    create_derived_vectors_accessor_dict,
+)
+
+# pylint: disable = line-too-long
 from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_vectors_accessor.derived_delta_ensemble_vectors_accessor_impl import (
     DerivedDeltaEnsembleVectorsAccessorImpl,
 )
@@ -20,11 +25,6 @@ from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils
 )
 from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.provider_set import (
     ProviderSet,
-)
-
-# pylint: disable = line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_ensemble_vectors_accessor_utils import (
-    create_derived_vectors_accessor_dict,
 )
 
 from ..mocks.derived_vectors_accessor_ensemble_summary_provider_mock import (

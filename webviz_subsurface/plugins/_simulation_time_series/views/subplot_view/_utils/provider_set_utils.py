@@ -13,11 +13,11 @@ from webviz_subsurface._utils.vector_calculator import (
     VectorCalculator,
     get_expression_from_name,
 )
+
 from .from_timeseries_cumulatives import (
     get_cumulative_vector_name,
     is_per_interval_or_per_day_vector,
 )
-
 from .provider_set import ProviderSet
 
 
