@@ -7,7 +7,9 @@ from pandas._testing import assert_frame_equal
 
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
-from webviz_subsurface.plugins._simulation_time_series.utils.history_vectors import (
+
+# pylint: disable=line-too-long
+from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.history_vectors import (
     create_history_vectors_df,
 )
 

@@ -6,7 +6,9 @@ from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_pro
     EnsembleSummaryProvider,
     VectorMetadata,
 )
-from webviz_subsurface.plugins._simulation_time_series.types.provider_set import (
+
+# pylint: disable=line-too-long
+from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.provider_set import (
     ProviderSet,
 )
 

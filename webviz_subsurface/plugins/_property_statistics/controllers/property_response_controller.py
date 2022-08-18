@@ -11,6 +11,8 @@ from webviz_subsurface._utils.dataframe_utils import (
     correlate_response_with_dataframe,
     merge_dataframes_on_realization,
 )
+
+# pylint: disable=line-too-long
 from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.datetime_utils import (
     from_str,
 )

@@ -72,6 +72,7 @@ def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, s
 
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
+    # pylint: disable=too-few-public-methods
     class Ids:
         SUBPLOT_VIEW = "subplot-view"
 

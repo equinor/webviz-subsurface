@@ -3,7 +3,8 @@ import datetime
 import pandas as pd
 from pandas._testing import assert_frame_equal
 
-from webviz_subsurface.plugins._simulation_time_series.utils.dataframe_utils import (
+# pylint: disable=line-too-long
+from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.dataframe_utils import (
     create_relative_to_date_df,
 )
 

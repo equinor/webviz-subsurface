@@ -7,11 +7,13 @@ import pytest
 
 from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
-from webviz_subsurface.plugins._simulation_time_series.types.types import (
+from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._types import (
     FanchartOptions,
     StatisticsOptions,
 )
-from webviz_subsurface.plugins._simulation_time_series.utils.create_vector_traces_utils import (
+
+# pylint: disable=line-too-long
+from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.create_vector_traces_utils import (
     create_history_vector_trace,
     create_vector_fanchart_traces,
     create_vector_observation_traces,

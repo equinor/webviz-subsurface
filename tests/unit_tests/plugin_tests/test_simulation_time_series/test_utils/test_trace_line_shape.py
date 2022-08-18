@@ -1,5 +1,7 @@
 from webviz_subsurface._providers import VectorMetadata
-from webviz_subsurface.plugins._simulation_time_series.utils.trace_line_shape import (
+
+# pylint: disable=line-too-long
+from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.trace_line_shape import (
     get_simulation_line_shape,
 )
 

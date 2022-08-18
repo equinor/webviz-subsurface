@@ -285,10 +285,7 @@ class SubplotView(ViewABC):
             ],
         )
 
-        # pylint: disable=too-many-arguments
-        # pylint: disable=too-many-locals
-        # pylint: disable=too-many-branches
-        # pylint: disable=too-many-statements
+        # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
         def _update_graph(
             vectors: List[str],
             selected_ensembles: List[str],
@@ -691,6 +688,7 @@ class SubplotView(ViewABC):
                 ),
             ],
         )
+        # pylint: disable=too-many-branches
         def _user_download_data(
             data_requested: Union[int, None],
             vectors: List[str],
