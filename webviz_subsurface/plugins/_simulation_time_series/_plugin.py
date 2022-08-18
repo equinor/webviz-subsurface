@@ -32,8 +32,8 @@ from webviz_subsurface._utils.vector_selector import (
     is_vector_name_in_vector_selector_data,
 )
 from webviz_subsurface._utils.webvizstore_functions import get_path
+from .views.subplot_view._view_elements.subplot import SubplotGraph
 
-from ._plugin_ids import PluginIds
 from .views.subplot_view._subplot_view import SubplotView
 from .views.subplot_view._types import VisualizationOptions
 from .views.subplot_view._utils.from_timeseries_cumulatives import (
@@ -43,6 +43,15 @@ from .views.subplot_view._utils.from_timeseries_cumulatives import (
 from ._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
+)
+
+from .views.subplot_view._settings import (
+    EnsemblesSettings,
+    FilterRealizationSettings,
+    GroupBySettings,
+    ResamplingFrequencySettings,
+    TimeSeriesSettings,
+    VisualizationSettings,
 )
 
 
@@ -63,6 +72,9 @@ def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, s
 
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
+    class Ids:
+        SUBPLOT_VIEW = "subplot-view"
+
     # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
     @deprecated_plugin_arguments(check_deprecation_argument)
     def __init__(
@@ -323,8 +335,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                 observations=self._observations,
                 line_shape_fallback=self._line_shape_fallback,
             ),
-            PluginIds.SimulationTimeSeries.VIEW_NAME,
-            PluginIds.SimulationTimeSeries.GROUP_NAME,
+            SimulationTimeSeries.Ids.SUBPLOT_VIEW,
         )
 
     @property
@@ -343,130 +354,130 @@ class SimulationTimeSeries(WebvizPluginABC):
             )
         return functions
 
-    # @property
-    # def tour_steps(self) -> List[dict]:
-    #     return [
-    #         {
-    #             "id": self.view(PluginIds.SimulationTimeSeries.VIEW_NAME)
-    #             .layout_element(SubplotView.Ids.GRAPH)
-    #             .get_unique_id(),
-    #             "content": (
-    #                 "Visualization of selected time series. "
-    #                 "Different options can be set in the menu to the left."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.GROUP_BY
-    #             ).component_unique_id(
-    #                 GroupBySettings.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
-    #             ),
-    #             "content": (
-    #                 "Setting to group visualization data according to selection. "
-    #                 "Subplot per selected vector or per selected ensemble."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.RESAMPLING_FREQUENCY
-    #             ).component_unique_id(
-    #                 ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY
-    #             ),
-    #             "content": (
-    #                 "Select resampling frequency for the time series data. "
-    #                 "With presampled data, the dropdown is disabled and the pre-sampling "
-    #                 "frequency shown."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.ENSEMBLES
-    #             ).component_unique_id(EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN),
-    #             "content": (
-    #                 "Display time series from one or several ensembles. "
-    #                 "Ensembles will be overlain in subplot or represented per subplot, "
-    #                 'based on selection in "Group By".'
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.ENSEMBLES
-    #             ).component_unique_id(PluginIds.TourStepIds.DELTA_ENSEMBLE),
-    #             "content": (
-    #                 "Create delta ensembles (A-B). "
-    #                 "Define delta between two ensembles and make available among "
-    #                 "selectable ensembles."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.TIME_SERIES
-    #             ).component_unique_id(TimeSeriesSettings.Ids.VECTOR_SELECTOR),
-    #             "content": (
-    #                 "Display up to three different time series. "
-    #                 "Each time series will be visualized in a separate plot. "
-    #                 "Vectors prefixed with PER_DAY_ and PER_INTVL_ are calculated in the fly "
-    #                 "from cumulative vectors, providing average rates and interval cumulatives "
-    #                 "over a time interval from the selected resampling frequency. Vectors "
-    #                 "categorized as calculated are created using the Vector Calculator below."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.TIME_SERIES
-    #             ).component_unique_id(
-    #                 TimeSeriesSettings.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
-    #             ),
-    #             "content": (
-    #                 "Create mathematical expressions with provided vector time series. "
-    #                 "Parsing of the mathematical expression is handled and will give feedback "
-    #                 "when entering invalid expressions. "
-    #                 "The expressions are calculated on the fly and can be selected among the time "
-    #                 "series to be shown in the visualization."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.VISUALIZATION
-    #             ).component_unique_id(
-    #                 VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS
-    #             ),
-    #             "content": (
-    #                 "Choose between different visualizations. 1. Show time series as "
-    #                 "individual lines per realization. 2. Show statistical lines per "
-    #                 "ensemble. 3. Show statistical fanchart per ensemble."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.VISUALIZATION
-    #             ).component_unique_id(PluginIds.TourStepIds.OPTIONS),
-    #             "content": (
-    #                 "Various plot options: Whether to include history trace or vector observations "
-    #                 "and which statistics to show if statistical lines or fanchart is chosen as "
-    #                 "visualization."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.FILTER_REALIZATION
-    #             ).component_unique_id(
-    #                 FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
-    #             ),
-    #             "content": (
-    #                 "Filter realizations. Select realization numbers to include in visualization, "
-    #                 "and utilize in statistics calculation when calculating from selected subset."
-    #             ),
-    #         },
-    #         {
-    #             "id": self.shared_settings_group(
-    #                 PluginIds.SharedSettings.FILTER_REALIZATION
-    #             ).component_unique_id(
-    #                 FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS
-    #             ),
-    #             "content": (
-    #                 "Select whether to calculate statistics from all realizations, or to calculate "
-    #                 "statistics from the selected subset of realizations "
-    #             ),
-    #         },
-    #     ]
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .view_element(SubplotView.Ids.SUBPLOT)
+                .component_unique_id(SubplotGraph.Ids.GRAPH),
+                "content": (
+                    "Visualization of selected time series. "
+                    "Different options can be set in the menu to the left."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.GROUP_BY_SETTINGS)
+                .component_unique_id(
+                    GroupBySettings.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
+                ),
+                "content": (
+                    "Setting to group visualization data according to selection. "
+                    "Subplot per selected vector or per selected ensemble."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS)
+                .component_unique_id(
+                    ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                ),
+                "content": (
+                    "Select resampling frequency for the time series data. "
+                    "With presampled data, the dropdown is disabled and the pre-sampling "
+                    "frequency shown."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.ENSEMBLE_SETTINGS)
+                .component_unique_id(EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN),
+                "content": (
+                    "Display time series from one or several ensembles. "
+                    "Ensembles will be overlain in subplot or represented per subplot, "
+                    'based on selection in "Group By".'
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.ENSEMBLE_SETTINGS)
+                .component_unique_id(EnsemblesSettings.Ids.DELTA_ENSEMBLE),
+                "content": (
+                    "Create delta ensembles (A-B). "
+                    "Define delta between two ensembles and make available among "
+                    "selectable ensembles."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.TIME_SERIES_SETTINGS)
+                .component_unique_id(TimeSeriesSettings.Ids.VECTOR_SELECTOR),
+                "content": (
+                    "Display up to three different time series. "
+                    "Each time series will be visualized in a separate plot. "
+                    "Vectors prefixed with PER_DAY_ and PER_INTVL_ are calculated in the fly "
+                    "from cumulative vectors, providing average rates and interval cumulatives "
+                    "over a time interval from the selected resampling frequency. Vectors "
+                    "categorized as calculated are created using the Vector Calculator below."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.TIME_SERIES_SETTINGS)
+                .component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
+                ),
+                "content": (
+                    "Create mathematical expressions with provided vector time series. "
+                    "Parsing of the mathematical expression is handled and will give feedback "
+                    "when entering invalid expressions. "
+                    "The expressions are calculated on the fly and can be selected among the time "
+                    "series to be shown in the visualization."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.VISUALIZATION_SETTINGS)
+                .component_unique_id(
+                    VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS
+                ),
+                "content": (
+                    "Choose between different visualizations. 1. Show time series as "
+                    "individual lines per realization. 2. Show statistical lines per "
+                    "ensemble. 3. Show statistical fanchart per ensemble."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.VISUALIZATION_SETTINGS)
+                .component_unique_id(VisualizationSettings.Ids.PLOT_OPTIONS),
+                "content": (
+                    "Various plot options: Whether to include history trace or vector observations "
+                    "and which statistics to show if statistical lines or fanchart is chosen as "
+                    "visualization."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.FILTER_REALIZATION_SETTINGS)
+                .component_unique_id(
+                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
+                ),
+                "content": (
+                    "Filter realizations. Select realization numbers to include in visualization, "
+                    "and utilize in statistics calculation when calculating from selected subset."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.FILTER_REALIZATION_SETTINGS)
+                .component_unique_id(
+                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS
+                ),
+                "content": (
+                    "Select whether to calculate statistics from all realizations, or to calculate "
+                    "statistics from the selected subset of realizations "
+                ),
+            },
+        ]

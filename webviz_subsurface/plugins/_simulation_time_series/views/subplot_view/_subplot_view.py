@@ -1,10 +1,11 @@
 import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import dash
 import pandas as pd
 from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
+from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_subsurface_components import ExpressionInfo, VectorDefinition
@@ -31,10 +32,15 @@ from ._utils import datetime_utils, DerivedVectorsAccessor, ProviderSet
 from ._utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
+from ._utils.from_timeseries_cumulatives import (
+    datetime_to_intervalstr,
+    is_per_interval_or_per_day_vector,
+)
 from ._utils.history_vectors import create_history_vectors_df
 from ._utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from ._utils.trace_line_shape import get_simulation_line_shape
 from ._utils.vector_statistics import create_vectors_statistics_df
+
 
 from ._view_elements.subplot import SubplotGraph
 
@@ -116,12 +122,12 @@ class SubplotView(ViewABC):
             }
         )
 
-        self.initial_selected_vectors = initial_selected_vectors
-        self.input_provider_set = input_provider_set
-        self.theme = theme
-        self.line_shape_fallback = line_shape_fallback
-        self.user_defined_vector_definitions = user_defined_vector_definitions
-        self.observations = observations
+        self._initial_selected_vectors = initial_selected_vectors
+        self._input_provider_set = input_provider_set
+        self._theme = theme
+        self._line_shape_fallback = line_shape_fallback
+        self._user_defined_vector_definitions = user_defined_vector_definitions
+        self._observations = observations
 
     # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
@@ -323,7 +329,7 @@ class SubplotView(ViewABC):
                 raise TypeError("ensembles should always be of type list")
 
             if vectors is None:
-                vectors = self.initial_selected_vectors
+                vectors = self._initial_selected_vectors
             # Retrieve the selected expressions
             selected_expressions = get_selected_expressions(
                 vector_calculator_expressions, vectors
@@ -380,7 +386,7 @@ class SubplotView(ViewABC):
             ] = create_derived_vectors_accessor_dict(
                 ensembles=selected_ensembles,
                 vectors=vectors,
-                provider_set=self.input_provider_set,
+                provider_set=self._input_provider_set,
                 expressions=selected_expressions,
                 delta_ensembles=delta_ensembles,
                 resampling_frequency=resampling_frequency,
@@ -390,9 +396,9 @@ class SubplotView(ViewABC):
             # TODO: How to get metadata for calculated vector?
             vector_line_shapes: Dict[str, str] = {
                 vector: get_simulation_line_shape(
-                    self.line_shape_fallback,
+                    self._line_shape_fallback,
                     vector,
-                    self.input_provider_set.vector_metadata(vector),
+                    self._input_provider_set.vector_metadata(vector),
                 )
                 for vector in vectors
             }
@@ -400,12 +406,12 @@ class SubplotView(ViewABC):
             figure_builder: GraphFigureBuilderBase
             if subplot_owner is SubplotGroupByOptions.VECTOR:
                 # Create unique colors based on all ensemble names to preserve consistent colors
-                ensemble_colors = unique_colors(all_ensemble_names, self.theme)
+                ensemble_colors = unique_colors(all_ensemble_names, self._theme)
                 vector_titles = create_vector_plot_titles_from_provider_set(
                     vectors,
                     selected_expressions,
-                    self.input_provider_set,
-                    self.user_defined_vector_definitions,
+                    self._input_provider_set,
+                    self._user_defined_vector_definitions,
                     resampling_frequency,
                 )
                 figure_builder = VectorSubplotBuilder(
@@ -414,17 +420,17 @@ class SubplotView(ViewABC):
                     ensemble_colors,
                     resampling_frequency,
                     vector_line_shapes,
-                    self.theme,
+                    self._theme,
                 )
             elif subplot_owner is SubplotGroupByOptions.ENSEMBLE:
-                vector_colors = unique_colors(vectors, self.theme)
+                vector_colors = unique_colors(vectors, self._theme)
                 figure_builder = EnsembleSubplotBuilder(
                     vectors,
                     selected_ensembles,
                     vector_colors,
                     resampling_frequency,
                     vector_line_shapes,
-                    self.theme,
+                    self._theme,
                 )
             else:
                 raise PreventUpdate
@@ -542,7 +548,7 @@ class SubplotView(ViewABC):
             selected_input_providers = ProviderSet(
                 {
                     name: provider
-                    for name, provider in self.input_provider_set.items()
+                    for name, provider in self._input_provider_set.items()
                     if name in selected_ensembles
                 }
             )
@@ -553,13 +559,13 @@ class SubplotView(ViewABC):
                 and len(derived_vectors_accessors) > 0
             )
             if (
-                self.observations
+                self._observations
                 and TraceOptions.OBSERVATIONS in trace_options
                 and not is_only_delta_ensembles
                 and not relative_date
             ):
                 for vector in vectors:
-                    vector_observations = self.observations.get(vector)
+                    vector_observations = self._observations.get(vector)
                     if vector_observations:
                         figure_builder.add_vector_observations(
                             vector, vector_observations
@@ -615,3 +621,285 @@ class SubplotView(ViewABC):
             figure_builder.create_graph_legends()
 
             return figure_builder.get_serialized_figure()
+
+        @callback(
+            self.view_data_output(),
+            self.view_data_requested(),
+            [
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.TIME_SERIES_SETTINGS,
+                        TimeSeriesSettings.Ids.VECTOR_SELECTOR,
+                    ),
+                    "selectedNodes",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.ENSEMBLE_SETTINGS,
+                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
+                    ),
+                    "value",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.VISUALIZATION_SETTINGS,
+                        VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS,
+                    ),
+                    "value",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                        ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
+                    ),
+                    "value",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                        FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
+                    ),
+                    "value",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                        FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS,
+                    ),
+                    "value",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.ENSEMBLE_SETTINGS,
+                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE,
+                    ),
+                    "data",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.TIME_SERIES_SETTINGS,
+                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS,
+                    ),
+                    "data",
+                ),
+                State(
+                    self.settings_group_unique_id(
+                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                    ),
+                    "value",
+                ),
+            ],
+        )
+        def _user_download_data(
+            data_requested: Union[int, None],
+            vectors: List[str],
+            selected_ensembles: List[str],
+            visualization_value: str,
+            resampling_frequency_value: str,
+            selected_realizations: List[int],
+            statistics_calculated_from_value: str,
+            delta_ensembles: List[DeltaEnsemble],
+            vector_calculator_expressions: List[ExpressionInfo],
+            relative_date_value: str,
+        ) -> Union[EncodedFile, str]:
+            """Callback to download data based on selections
+
+            Retrieve vector data based on selected visualizations and filtered realizations
+
+            NOTE:
+            * Does not group based on "Group By" - data is stored per vector
+            * All statistics included - no filtering on statistics selections
+            * No history vector
+            * No observation data
+            """
+            if data_requested is None:
+                raise PreventUpdate
+
+            if not isinstance(selected_ensembles, list):
+                raise TypeError("ensembles should always be of type list")
+
+            if vectors is None:
+                vectors = self._initial_selected_vectors
+
+            # Retrieve the selected expressions
+            selected_expressions = get_selected_expressions(
+                vector_calculator_expressions, vectors
+            )
+
+            # Convert from string values to strongly typed
+            visualization = VisualizationOptions(visualization_value)
+            resampling_frequency = Frequency.from_string_value(
+                resampling_frequency_value
+            )
+            statistics_from_option = StatisticsFromOptions(
+                statistics_calculated_from_value
+            )
+
+            relative_date: Optional[datetime.datetime] = (
+                None
+                if relative_date_value is None
+                else datetime_utils.from_str(relative_date_value)
+            )
+
+            # Create dict of derived vectors accessors for selected ensembles
+            derived_vectors_accessors: Dict[
+                str, DerivedVectorsAccessor
+            ] = create_derived_vectors_accessor_dict(
+                ensembles=selected_ensembles,
+                vectors=vectors,
+                provider_set=self._input_provider_set,
+                expressions=selected_expressions,
+                delta_ensembles=delta_ensembles,
+                resampling_frequency=resampling_frequency,
+                relative_date=relative_date,
+            )
+
+            # Dict with vector name as key and dataframe data as value
+            vector_dataframe_dict: Dict[str, pd.DataFrame] = {}
+
+            # Get all realizations if statistics accross all realizations are requested
+            is_statistics_from_all_realizations = (
+                statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+                and visualization
+                in [
+                    VisualizationOptions.FANCHART,
+                    VisualizationOptions.STATISTICS,
+                    VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                ]
+            )
+
+            # Plotting per derived vectors accessor
+            for ensemble, accessor in derived_vectors_accessors.items():
+                # Realization query - realizations query for accessor
+                # - Get non-filter query, None, if statistics from all realizations is needed
+                # - Create valid realizations query for accessor otherwise:
+                #   * List[int]: Filtered valid realizations, empty list if none are valid
+                #   * None: Get all realizations, i.e. non-filtered query
+                realizations_query = (
+                    None
+                    if is_statistics_from_all_realizations
+                    else accessor.create_valid_realizations_query(selected_realizations)
+                )
+
+                # If all selected realizations are invalid for accessor - empty list
+                if realizations_query == []:
+                    continue
+
+                # Retrieve vectors data from accessor
+                vectors_df_list: List[pd.DataFrame] = []
+                if accessor.has_provider_vectors():
+                    vectors_df_list.append(
+                        accessor.get_provider_vectors_df(
+                            realizations=realizations_query
+                        )
+                    )
+                if accessor.has_per_interval_and_per_day_vectors():
+                    vectors_df_list.append(
+                        accessor.create_per_interval_and_per_day_vectors_df(
+                            realizations=realizations_query
+                        )
+                    )
+                if accessor.has_vector_calculator_expressions():
+                    vectors_df_list.append(
+                        accessor.create_calculated_vectors_df(
+                            realizations=realizations_query
+                        )
+                    )
+
+                # Append data for each vector
+                for vectors_df in vectors_df_list:
+                    # Ensure rows of data
+                    if not vectors_df.shape[0]:
+                        continue
+
+                    vector_names = [
+                        elm for elm in vectors_df.columns if elm not in ["DATE", "REAL"]
+                    ]
+
+                    if visualization in [
+                        VisualizationOptions.REALIZATIONS,
+                        VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                    ]:
+                        # NOTE: Should in theory not have situation with query of all realizations
+                        # if not wanted
+                        vectors_df_filtered = (
+                            vectors_df
+                            if realizations_query
+                            else vectors_df[
+                                vectors_df["REAL"].isin(selected_realizations)
+                            ]
+                        )
+                        for vector in vector_names:
+                            vector_df = vectors_df_filtered[["DATE", "REAL", vector]]
+                            row_count = vector_df.shape[0]
+                            ensemble_name_list = [ensemble] * row_count
+                            vector_df.insert(
+                                loc=0, column="ENSEMBLE", value=ensemble_name_list
+                            )
+
+                            if is_per_interval_or_per_day_vector(vector):
+                                vector_df["DATE"] = vector_df["DATE"].apply(
+                                    datetime_to_intervalstr, freq=resampling_frequency
+                                )
+
+                            vector_key = vector + "_realizations"
+                            if vector_dataframe_dict.get(vector_key) is None:
+                                vector_dataframe_dict[vector_key] = vector_df
+                            else:
+                                vector_dataframe_dict[vector_key] = pd.concat(
+                                    [vector_dataframe_dict[vector_key], vector_df],
+                                    ignore_index=True,
+                                    axis=0,
+                                )
+
+                    if visualization in [
+                        VisualizationOptions.STATISTICS,
+                        VisualizationOptions.FANCHART,
+                        VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                    ]:
+                        vectors_statistics_df = create_vectors_statistics_df(vectors_df)
+
+                        for vector in vector_names:
+                            vector_statistics_df = vectors_statistics_df[
+                                ["DATE", vector]
+                            ]
+                            row_count = vector_statistics_df.shape[0]
+                            ensemble_name_list = [ensemble] * row_count
+                            vector_statistics_df.insert(
+                                loc=0, column="ENSEMBLE", value=ensemble_name_list
+                            )
+
+                            vector_key = vector + "_statistics"
+
+                            if is_per_interval_or_per_day_vector(vector):
+                                # Copy df to prevent SettingWithCopyWarning
+                                vector_statistics_df = vector_statistics_df.copy()
+                                vector_statistics_df["DATE"] = vector_statistics_df[
+                                    "DATE"
+                                ].apply(
+                                    datetime_to_intervalstr, freq=resampling_frequency
+                                )
+                            if vector_dataframe_dict.get(vector_key) is None:
+                                vector_dataframe_dict[vector_key] = vector_statistics_df
+                            else:
+                                vector_dataframe_dict[vector_key] = pd.concat(
+                                    [
+                                        vector_dataframe_dict[vector_key],
+                                        vector_statistics_df,
+                                    ],
+                                    ignore_index=True,
+                                    axis=0,
+                                )
+
+            # : is replaced with _ in filenames to stay within POSIX portable pathnames
+            # (e.g. : is not valid in a Windows path)
+            return WebvizPluginABC.plugin_data_compress(
+                [
+                    {
+                        "filename": f"{vector.replace(':', '_')}.csv",
+                        "content": df.to_csv(index=False),
+                    }
+                    for vector, df in vector_dataframe_dict.items()
+                ]
+            )
