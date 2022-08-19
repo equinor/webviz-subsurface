@@ -24,7 +24,7 @@ from vtkmodules.vtkFiltersCore import (
     vtkExplicitStructuredGridCrop,
     vtkExplicitStructuredGridToUnstructuredGrid,
     vtkPlaneCutter,
-    vtkPolyDataPlaneClipper,
+    vtkClipPolyData,
     vtkUnstructuredGridToExplicitStructuredGrid,
 )
 from vtkmodules.vtkFiltersGeneral import vtkBoxClipDataSet
@@ -325,7 +325,6 @@ class GridVizService:
         # box_clip_alg.SetInputDataObject(ugrid)
 
         append_alg = vtkAppendPolyData()
-        cut_surface_polydata_arr = []
         et_setup_s = timer.lap_s()
 
         et_cut_s = 0.0
@@ -365,60 +364,28 @@ class GridVizService:
             cutter_alg.SetPlane(plane)
             cutter_alg.Update()
 
-            # Apparently we get a vtkPartitionedDataSet back here in VTK 9.1
-            # Note that when testing with VTK 9.2-ish it seems we get polydata back instead
-            cut_surface_dataset_or_polydata = cutter_alg.GetOutput()
-            # print(f"{type(cut_surface_dataset_or_polydata)=}")
+            cut_surface_polydata = cutter_alg.GetOutput()
+            # print(f"{type(cut_surface_polydata)=}")
             et_cut_s += timer.lap_s()
 
-            if cut_surface_dataset_or_polydata.IsA("vtkPartitionedDataSet"):
-                cut_surface_dataset = cut_surface_dataset_or_polydata
-                for i in range(0, cut_surface_dataset.GetNumberOfPartitions()):
-                    part_polydata = cut_surface_dataset.GetPartition(i)
-                    # print(f"{i=} {type(part_polydata)=}")
-                    # print(part_polydata)
+            # Used vtkPolyDataPlaneClipper earlier, but it seems that it doesn't
+            # maintain the original cell IDs that we need for the result mapping.
+            # May want to check up on any performance degradation!
+            clipper_0 = vtkClipPolyData()
+            clipper_0.SetInputDataObject(cut_surface_polydata)
+            clipper_0.SetClipFunction(plane_0)
+            clipper_0.Update()
+            clipped_polydata = clipper_0.GetOutput()
 
-                    clipper_0 = vtkPolyDataPlaneClipper()
-                    clipper_0.SetInputDataObject(part_polydata)
-                    clipper_0.SetPlane(plane_0)
-                    clipper_0.Update()
-                    clipped_polydata = clipper_0.GetOutputDataObject(0)
+            clipper_1 = vtkClipPolyData()
+            clipper_1.SetInputDataObject(clipped_polydata)
+            clipper_1.SetClipFunction(plane_1)
+            clipper_1.Update()
+            clipped_polydata = clipper_1.GetOutput()
 
-                    clipper_1 = vtkPolyDataPlaneClipper()
-                    clipper_1.SetInputDataObject(clipped_polydata)
-                    clipper_1.SetPlane(plane_1)
-                    clipper_1.Update()
-                    clipped_polydata = clipper_1.GetOutputDataObject(0)
+            append_alg.AddInputData(clipped_polydata)
 
-                    # print(f"{i=} {type(clipped_polydata)=}")
-                    # print(clipped_polydata)
-
-                    cut_surface_polydata_arr.append(clipped_polydata)
-                    append_alg.AddInputData(clipped_polydata)
-
-                    et_clip_s += timer.lap_s()
-            else:
-                cut_surface_polydata = cut_surface_dataset_or_polydata
-
-                clipper_0 = vtkPolyDataPlaneClipper()
-                clipper_0.SetInputDataObject(cut_surface_polydata)
-                clipper_0.SetPlane(plane_0)
-                clipper_0.Update()
-                clipped_polydata = clipper_0.GetOutputDataObject(0)
-
-                clipper_1 = vtkPolyDataPlaneClipper()
-                clipper_1.SetInputDataObject(clipped_polydata)
-                clipper_1.SetPlane(plane_1)
-                clipper_1.Update()
-                clipped_polydata = clipper_1.GetOutputDataObject(0)
-
-                # print(f"{i=} {type(clipped_polydata)=}")
-                # print(clipped_polydata)
-
-                cut_surface_polydata_arr.append(clipped_polydata)
-                append_alg.AddInputData(clipped_polydata)
-
-                et_clip_s += timer.lap_s()
+            et_clip_s += timer.lap_s()
 
         append_alg.Update()
         comb_polydata = append_alg.GetOutput()
@@ -429,13 +396,23 @@ class GridVizService:
 
         surface_polys = SurfacePolys(point_arr=points_np, poly_arr=polys_np)
 
+        property_scalars: Optional[PropertyScalars] = None
+        if property_spec:
+            raw_cell_vals = _load_property_values(provider, realization, property_spec)
+            if raw_cell_vals is not None:
+                original_cell_indices_np = vtk_to_numpy(
+                    comb_polydata.GetCellData().GetAbstractArray("vtkOriginalCellIds")
+                )
+                mapped_cell_vals = raw_cell_vals[original_cell_indices_np]
+                property_scalars = PropertyScalars(value_arr=mapped_cell_vals)
+
         LOGGER.debug(
             f"Cutting along polyline done in {timer.elapsed_s():.2f}s "
             f"setup={et_setup_s:.2f}s, cut={et_cut_s:.2f}s, clip={et_clip_s:.2f}s, combine={et_combine_s:.2f}s, "
             f"(provider_id={provider_id}, real={realization})"
         )
 
-        return surface_polys, None
+        return surface_polys, property_scalars
 
         """
         dbg_point_arr = []

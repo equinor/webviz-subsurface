@@ -105,6 +105,7 @@ setup(
         "pyvista>=0.33.3",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
+        "vtk>=9.2.0rc2",
         "webviz_config@git+https://github.com/equinor/webviz-config@50f0d20f5b6fd6c2d7ee98b17e229e625776ff82",
         "webviz-core-components",
         "webviz-subsurface-components>=0.4.12",
