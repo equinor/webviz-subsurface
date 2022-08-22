@@ -152,7 +152,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         if not self._input_provider_set:
             raise ValueError(
                 "Initial provider set is undefined, and ensemble summary providers"
-                " are not instanciated for plugin"
+                " are not instantiated for plugin"
             )
 
         self._theme = webviz_settings.theme
@@ -232,7 +232,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                         ),
                     )
 
-        # Retreive predefined expressions from configuration and validate
+        # Retrieve predefined expressions from configuration and validate
         self._predefined_expressions_path = (
             None
             if predefined_expressions is None
@@ -374,7 +374,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                 ),
                 "content": (
                     "Setting to group visualization data according to selection. "
-                    "Subplot per selected vector or per selected ensemble."
+                    "Subplot per selected time series or per selected ensemble."
                 ),
             },
             {
@@ -387,6 +387,18 @@ class SimulationTimeSeries(WebvizPluginABC):
                     "Select resampling frequency for the time series data. "
                     "With presampled data, the dropdown is disabled and the pre-sampling "
                     "frequency shown."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS)
+                .component_unique_id(
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
+                ),
+                "content": (
+                    "Select date to create relative time series data. "
+                    "The sample value on selected date is subtracted from each sample in "
+                    "the time series to provide data relative to the selected date. "
                 ),
             },
             {
@@ -414,8 +426,8 @@ class SimulationTimeSeries(WebvizPluginABC):
                 .settings_group(SubplotView.Ids.TIME_SERIES_SETTINGS)
                 .component_unique_id(TimeSeriesSettings.Ids.VECTOR_SELECTOR),
                 "content": (
-                    "Display up to three different time series. "
-                    "Each time series will be visualized in a separate plot. "
+                    "Display different time series. Data for each time series will be visualized"
+                    ' in subplots based on selection in "Group By".'
                     "Vectors prefixed with PER_DAY_ and PER_INTVL_ are calculated in the fly "
                     "from cumulative vectors, providing average rates and interval cumulatives "
                     "over a time interval from the selected resampling frequency. Vectors "
@@ -445,7 +457,9 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "content": (
                     "Choose between different visualizations. 1. Show time series as "
                     "individual lines per realization. 2. Show statistical lines per "
-                    "ensemble. 3. Show statistical fanchart per ensemble."
+                    "ensemble. 3. Show statistical fanchart per ensemble. 4. Show "
+                    "statistical lines per ensemble and individual lines per realization "
+                    "simultaneously"
                 ),
             },
             {
@@ -462,22 +476,22 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
                 .settings_group(SubplotView.Ids.FILTER_REALIZATION_SETTINGS)
                 .component_unique_id(
-                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
+                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS
                 ),
                 "content": (
-                    "Filter realizations. Select realization numbers to include in visualization, "
-                    "and utilize in statistics calculation when calculating from selected subset."
+                    "Select whether to calculate statistics from all realizations, or to calculate "
+                    "statistics from the selected subset of realizations "
                 ),
             },
             {
                 "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
                 .settings_group(SubplotView.Ids.FILTER_REALIZATION_SETTINGS)
                 .component_unique_id(
-                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS
+                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
                 ),
                 "content": (
-                    "Select whether to calculate statistics from all realizations, or to calculate "
-                    "statistics from the selected subset of realizations "
+                    "Filter realizations. Select realization numbers to include in visualization, "
+                    "and utilize in statistics calculation when calculating from selected subset."
                 ),
             },
         ]

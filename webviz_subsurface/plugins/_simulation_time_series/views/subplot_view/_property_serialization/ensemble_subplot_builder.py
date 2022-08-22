@@ -25,7 +25,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
     for the callback. Where vector traces are added per ensemble, and subplots
     are categorized per ensemble among selected ensembles.
 
-    Contains functions for adding titles, graph data and retreving the serialized
+    Contains functions for adding titles, graph data and retrieving the serialized
     data for callback Output property.
 
     `Input:`

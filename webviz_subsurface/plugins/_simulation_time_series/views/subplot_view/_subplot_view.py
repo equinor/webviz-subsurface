@@ -753,7 +753,7 @@ class SubplotView(ViewABC):
             # Dict with vector name as key and dataframe data as value
             vector_dataframe_dict: Dict[str, pd.DataFrame] = {}
 
-            # Get all realizations if statistics accross all realizations are requested
+            # Get all realizations if statistics across all realizations are requested
             is_statistics_from_all_realizations = (
                 statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization

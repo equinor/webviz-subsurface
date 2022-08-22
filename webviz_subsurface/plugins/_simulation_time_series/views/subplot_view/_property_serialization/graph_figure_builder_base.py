@@ -15,7 +15,7 @@ class GraphFigureBuilderBase(abc.ABC):
     correct in graph figure - e.g. place traces in correct subplots, set correct
     titles, legends and so on.
 
-    Contains interface for adding graph data and retreving the serialized data
+    Contains interface for adding graph data and retrieving the serialized data
     for callback Output property.
 
     Contains self._figure, an empty FigureWidget to either use or override

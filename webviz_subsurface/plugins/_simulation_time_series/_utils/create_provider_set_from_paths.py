@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, ItemsView, List, Optional, Sequence, Set
+from typing import Dict
 
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
