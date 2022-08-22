@@ -185,10 +185,13 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.STATISTIC_INPUT), "disabled"),
         Output(get_uuid(LayoutElements.STATISTIC_INPUT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
+        Input(get_uuid(LayoutElements.PROPERTY), "value"),
         State(get_uuid(LayoutElements.LAST_STATISTIC_STORE), "data"),
     )
-    def toggle_statistics(realizations, last_statistic):
+    def toggle_statistics(realizations, attribute, last_statistic):
         if len(realizations) <= 1:
+            return True, None
+        elif MapAttribute(attribute) in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
             return True, None
         else:
             if last_statistic is None:
@@ -289,8 +292,6 @@ def plugin_callbacks(
         if surface_name is None:
             surf_data = None
         elif len(realization) == 0:
-            surf_data = None
-        elif len(realization) > 1 and statistic is None:
             surf_data = None
         else:
             surf_data = _SurfaceData.from_server(
