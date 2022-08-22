@@ -163,6 +163,16 @@ def plugin_callbacks(
         return dates, initial_date, date_list
 
     @callback(
+        Output(get_uuid(LayoutElements.DATE_INPUT_WRAPPER), "style"),
+        Input(get_uuid(LayoutElements.PROPERTY), "value"),
+    )
+    def toggle_date_slider(attribute):
+        if MapAttribute(attribute) == MapAttribute.MIGRATION_TIME:
+            return {"display": "none"}
+        else:
+            return {}
+
+    @callback(
         Output(get_uuid(LayoutElements.COLOR_RANGE_STORE), "data"),
         Output(get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE), "disabled"),
         Output(get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE), "disabled"),

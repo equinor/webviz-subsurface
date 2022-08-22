@@ -31,6 +31,7 @@ class LayoutElements(str, Enum):
     ENSEMBLEINPUT = "ensembleinput"
     REALIZATIONINPUT = "realizationinput"
     DATEINPUT = "dateinput"
+    DATE_INPUT_WRAPPER = "date-input-wrapper"
     FORMATION_INPUT = "formation-input"
     COLORMAP_INPUT = "colormap-input"
 
@@ -75,8 +76,8 @@ class LayoutStyle:
         "height": "47vh",
     }
     MAP_WRAPPER = {
-        "padding": "2vh",
-        "height": "32vh",
+        "padding": "1vh",
+        "height": "37vh",
         "position": "relative",
     }
     PLOT_VIEW = {
@@ -131,17 +132,13 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                 style=LayoutStyle.MAP_WRAPPER,
                             ),
                             html.Div(
-                                [
-                                    dcc.Slider(
-                                        id=get_uuid(LayoutElements.DATEINPUT),
-                                        step=None,
-                                        marks={0: ''},
-                                        value=0,
-                                    ),
-                                ],
-                                style={
-                                    "height": "4vh",
-                                }
+                                wcc.Slider(
+                                    id=get_uuid(LayoutElements.DATEINPUT),
+                                    step=None,
+                                    marks={0: ''},
+                                    value=0,
+                                ),
+                                id=get_uuid(LayoutElements.DATE_INPUT_WRAPPER),
                             ),
                         ],
                         style=LayoutStyle.MAP_VIEW,
