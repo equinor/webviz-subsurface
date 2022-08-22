@@ -145,7 +145,7 @@ def plugin_callbacks(
             return [], None, []
         # Dates
         surface_provider = ensemble_surface_providers[ensemble]
-        att_name = map_attribute_names[MapAttribute.MAX_SATURATION]
+        att_name = map_attribute_names[MapAttribute.MAX_SGAS]
         date_list = surface_provider.surface_dates_for_attribute(att_name)
         if date_list is None:
             dates = {}
@@ -409,7 +409,7 @@ def _property_origin(attribute: MapAttribute, map_attribute_names: Dict[MapAttri
     if attribute in map_attribute_names:
         return map_attribute_names[attribute]
     elif attribute == MapAttribute.SGAS_PLUME:
-        return map_attribute_names[MapAttribute.MAX_SATURATION]
+        return map_attribute_names[MapAttribute.MAX_SGAS]
     elif attribute == MapAttribute.AMFG_PLUME:
         return map_attribute_names[MapAttribute.MAX_AMFG]
     else:
@@ -450,7 +450,7 @@ def _derive_surface_address(
             datestr=date,
             realizations=realization,
             basis_attribute=(
-                map_attribute_names[MapAttribute.MAX_SATURATION]
+                map_attribute_names[MapAttribute.MAX_SGAS]
                 if attribute == MapAttribute.SGAS_PLUME
                 else map_attribute_names[MapAttribute.MAX_AMFG]
             ),

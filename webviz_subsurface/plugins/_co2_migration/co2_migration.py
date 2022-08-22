@@ -80,8 +80,7 @@ def _initialize_map_attribute_names(
         # Based on name convention of xtgeoapp_grd3dmaps:
         return {
             MapAttribute.MIGRATION_TIME: "MigrationTime",
-            MapAttribute.MAX_SATURATION: "max_SGAS",
-            MapAttribute.EFFECTIVE_COLUMN_HEIGHT: "sum_hcpfdz",
+            MapAttribute.MAX_SGAS: "max_SGAS",
             MapAttribute.MAX_AMFG: "max_AMFG",
         }
     else:

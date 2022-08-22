@@ -9,8 +9,7 @@ FAULT_POLYGON_ATTRIBUTE = "dl_extracted_faultlines"
 
 class MapAttribute(Enum):
     MIGRATION_TIME = "Migration Time"
-    MAX_SATURATION = "Maximum Saturation"
-    EFFECTIVE_COLUMN_HEIGHT = "Effective Plume Height"
+    MAX_SGAS = "Maximum SGAS"
     MAX_AMFG = "Maximum AMFG"
     SGAS_PLUME = "Plume Extent (SGAS)"
     AMFG_PLUME = "Plume Extent (AMFG)"
