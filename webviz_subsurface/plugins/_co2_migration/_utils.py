@@ -11,8 +11,8 @@ class MapAttribute(Enum):
     MIGRATION_TIME = "Migration Time"
     MAX_SGAS = "Maximum SGAS"
     MAX_AMFG = "Maximum AMFG"
-    SGAS_PLUME = "Plume Extent (SGAS)"
-    AMFG_PLUME = "Plume Extent (AMFG)"
+    SGAS_PLUME = "Plume (SGAS)"
+    AMFG_PLUME = "Plume (AMFG)"
 
 
 def realization_paths(ensemble_path) -> Dict[str, str]:
