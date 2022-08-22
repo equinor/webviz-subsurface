@@ -154,7 +154,7 @@ def plugin_callbacks(
             dates = {
                 # Regarding tooltips: https://github.com/plotly/dash/issues/1846
                 i: {
-                    "label": f"{d[:4]}.{d[4:6]}.{d[6:]}",
+                    "label": f"{d[:4]}",
                     "style": {"writingMode": "vertical-rl"},
                 }
                 for i, d in enumerate(date_list)
