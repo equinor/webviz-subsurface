@@ -41,7 +41,7 @@ def _read_terminal_co2_volumes(realization_paths: Dict[str, str]):
             _Columns.VOLUME_OUTSIDE.value,
         ]
     )
-    df.sort_values(_Columns.VOLUME_OUTSIDE.value, inplace=True, ascending=False)
+    df.sort_values(_Columns.VOLUME_OUTSIDE.value, inplace=True, ascending=True)
     return df
 
 
@@ -62,6 +62,8 @@ def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width)
         color=_Columns.CONTAINMENT.value,
         title="End-state CO2 containment",
         orientation="h",
+        category_orders={_Columns.CONTAINMENT.value: ["outside", "inside"]},
+        color_discrete_sequence=["#dd4300", "#006ddd"],
     )
     # TODO: figure height or yrange should depend on number of realizations (?)
     fig.layout.height = height
@@ -71,7 +73,7 @@ def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width)
     fig.layout.legend.y = -0.3
     fig.layout.yaxis.title = "Realization"
     fig.layout.xaxis.exponentformat = "power"
-    fig.layout.xaxis.title = "Volume [m³]"
+    fig.layout.xaxis.title = "Mass [kg]"
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
     fig.layout.margin.b = 10
     fig.layout.margin.t = 60
@@ -115,7 +117,7 @@ def generate_co2_time_containment_figure(realization_paths: Dict[str, str], heig
     fig.layout.legend.xanchor = "right"
     fig.layout.legend.x = 1
     fig.layout.xaxis.title = "Time (date)"
-    fig.layout.yaxis.title = "Volume [m³]"
+    fig.layout.yaxis.title = "Mass [kg]"
     fig.layout.height = height
     fig.layout.width = width
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
