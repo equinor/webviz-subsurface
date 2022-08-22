@@ -103,7 +103,7 @@ def plugin_callbacks(
         fig1 = generate_co2_time_containment_figure(
             rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH
         )
-        return realizations, realizations[0]["value"], fig0, fig1
+        return realizations, [realizations[0]["value"]], fig0, fig1
 
     @callback(
         Output(get_uuid(LayoutElements.FORMATION_INPUT), 'options'),
@@ -171,6 +171,29 @@ def plugin_callbacks(
             return {"display": "none"}
         else:
             return {}
+
+    @callback(
+        Output(get_uuid(LayoutElements.LAST_STATISTIC_STORE), "data"),
+        Input(get_uuid(LayoutElements.STATISTIC_INPUT), "value"),
+    )
+    def store_statistic(value):
+        if value:
+            return value
+        return dash.no_update
+
+    @callback(
+        Output(get_uuid(LayoutElements.STATISTIC_INPUT), "disabled"),
+        Output(get_uuid(LayoutElements.STATISTIC_INPUT), "value"),
+        Input(get_uuid(LayoutElements.REALIZATIONINPUT), "value"),
+        State(get_uuid(LayoutElements.LAST_STATISTIC_STORE), "data"),
+    )
+    def toggle_statistics(realizations, last_statistic):
+        if len(realizations) <= 1:
+            return True, None
+        else:
+            if last_statistic is None:
+                last_statistic = SurfaceStatistic.MEAN
+            return False, last_statistic
 
     @callback(
         Output(get_uuid(LayoutElements.COLOR_RANGE_STORE), "data"),
@@ -242,9 +265,7 @@ def plugin_callbacks(
         current_bounds,
     ):
         attribute = MapAttribute(attribute)
-        if isinstance(realization, int):
-            realization = [realization]
-        elif len(realization) == 0:
+        if len(realization) == 0:
             raise PreventUpdate
         if ensemble is None:
             raise PreventUpdate

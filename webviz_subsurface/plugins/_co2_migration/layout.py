@@ -47,6 +47,7 @@ class LayoutElements(str, Enum):
     DATE_STORE = "date-store"
     COLOR_RANGE_STORE = "color-range-store"
     PLUME_CONTOUR_STORE = "plume-contour-store"
+    LAST_STATISTIC_STORE = "last-statistic-store"
 
 
 @unique
@@ -154,6 +155,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
             dcc.Store(id=get_uuid(LayoutElements.DATE_STORE)),
             dcc.Store(id=get_uuid(LayoutElements.COLOR_RANGE_STORE)),
             dcc.Store(id=get_uuid(LayoutElements.PLUME_CONTOUR_STORE)),
+            dcc.Store(id=get_uuid(LayoutElements.LAST_STATISTIC_STORE)),
         ],
         style=LayoutStyle.PARENTDIV,
     )
@@ -195,6 +197,7 @@ class MapSelectorLayout(wcc.Selectors):
                             id=get_uuid(LayoutElements.STATISTIC_INPUT),
                             options=[s.value for s in SurfaceStatistic],
                             value=SurfaceStatistic.MEAN,
+                            clearable=False,
                         ),
                         html.Div(
                             style={
