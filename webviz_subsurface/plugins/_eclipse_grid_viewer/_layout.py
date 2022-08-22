@@ -478,46 +478,34 @@ def vtk_3d_view(get_uuid: Callable) -> webviz_vtk.View:
 
 
 def vtk_intersect_view(get_uuid: Callable) -> webviz_vtk.View:
+
+    # fmt: off
+    interactorSettings = [
+        {"button": 1, "action": "Zoom"},
+        {"button": 1, "action": "Zoom", "alt": True},
+        {"button": 1, "action": "Pan", "shift": True},
+        {"button": 3, "action": "Pan"},
+        #{"button": 2, "action": "Rotate", "useFocalPointAsCenterOfRotation": True},
+        {"dragEnabled": False, "action": "Zoom", "scrollEnabled": True},
+        {"dragEnabled": False, "action": "ZoomToMouse", "scrollEnabled": True, "control": True,},
+    ]
+    # fmt: on
+
     return webviz_vtk.View(
         id=get_uuid(LayoutElements.VTK_INTERSECT_VIEW),
         style=LayoutStyle.VTK_VIEW,
         pickingModes=["click"],
-        interactorSettings=[
-            {
-                "button": 1,
-                "action": "Zoom",
-                "scrollEnabled": True,
-            },
-            {
-                "button": 3,
-                "action": "Pan",
-            },
-            {
-                "button": 2,
-                "action": "Rotate",
-            },
-            {
-                "button": 1,
-                "action": "Pan",
-                "shift": True,
-            },
-            {
-                "button": 1,
-                "action": "Zoom",
-                "alt": True,
-            },
-            {
-                "button": 1,
-                "action": "Roll",
-                "alt": True,
-                "shift": True,
-            },
-        ],
+        cameraParallelProjection=True,
+        autoResetCamera=False,
+        interactorSettings=interactorSettings,
         children=[
             webviz_vtk.GeometryRepresentation(
                 id=get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_REPRESENTATION),
                 actor={"visibility": True},
-                property={"edgeVisibility": True},
+                property={
+                    "edgeVisibility": False,
+                    "lighting": False,
+                },
                 children=[
                     webviz_vtk.PolyData(
                         id=get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA),

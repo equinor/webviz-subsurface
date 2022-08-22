@@ -160,6 +160,10 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA), "points"),
         Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_POLYDATA), "polys"),
         Output(get_uuid(LayoutElements.VTK_WELL_2D_INTERSECT_CELL_DATA), "values"),
+        Output(get_uuid(LayoutElements.VTK_INTERSECT_VIEW), "cameraPosition"),
+        Output(get_uuid(LayoutElements.VTK_INTERSECT_VIEW), "cameraFocalPoint"),
+        Output(get_uuid(LayoutElements.VTK_INTERSECT_VIEW), "cameraViewUp"),
+        Output(get_uuid(LayoutElements.VTK_INTERSECT_VIEW), "cameraParallelHorScale"),
         Output(get_uuid(LayoutElements.LINEGRAPH), "figure"),
         Input(get_uuid(LayoutElements.WELL_SELECT), "value"),
         Input(get_uuid(LayoutElements.REALIZATIONS), "value"),
@@ -179,6 +183,10 @@ def plugin_callbacks(
 
         if not well_names:
             return (
+                no_update,
+                no_update,
+                no_update,
+                no_update,
                 no_update,
                 no_update,
                 no_update,
@@ -226,17 +234,31 @@ def plugin_callbacks(
             property_spec=property_spec,
         )
 
+        approx_plane_normal = _calc_approx_plane_normal_from_polyline_xy(polyline_xy)
+
+        surf_points_3d = np.asarray(surface_polys.point_arr).reshape(-1, 3)
+        bb_min = np.min(surf_points_3d, axis=0)
+        bb_max = np.max(surf_points_3d, axis=0)
+        bb_radius = np.linalg.norm(bb_max - bb_min) / 2
+
+        center_pt = (bb_max + bb_min) / 2.0
+        eye_pt = center_pt + bb_radius * approx_plane_normal
+        view_up_vec = [0.0, 0.0, 1.0]
+
+        # Make scale slightly larger so we get some space on each side of the viewport
+        cameraParallelHorScale = bb_radius * 1.05
+
         return (
-            b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
-            b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
-            b64_encode_numpy(scalars.value_arr.astype(np.float32))
-            if scalars is not None
-            else no_update,
-            b64_encode_numpy(surface_polys.point_arr.astype(np.float32)),
-            b64_encode_numpy(surface_polys.poly_arr.astype(np.float32)),
-            b64_encode_numpy(scalars.value_arr.astype(np.float32))
-            if scalars is not None
-            else no_update,
+            b64_encode_numpy(surface_polys.point_arr),
+            b64_encode_numpy(surface_polys.poly_arr),
+            b64_encode_numpy(scalars.value_arr) if scalars is not None else no_update,
+            b64_encode_numpy(surface_polys.point_arr),
+            b64_encode_numpy(surface_polys.poly_arr),
+            b64_encode_numpy(scalars.value_arr) if scalars is not None else no_update,
+            eye_pt,
+            center_pt,
+            view_up_vec,
+            cameraParallelHorScale,
             plotly_xy_plot(polyline_xy, polyline_xy_full),
         )
 
@@ -245,7 +267,6 @@ def plugin_callbacks(
         Output(get_uuid(LayoutElements.VTK_WELL_PATH_POLYDATA), "lines"),
         Output(get_uuid(LayoutElements.VTK_WELL_PATH_2D_POLYDATA), "points"),
         Output(get_uuid(LayoutElements.VTK_WELL_PATH_2D_POLYDATA), "lines"),
-        Output(get_uuid(LayoutElements.VTK_INTERSECT_VIEW), "triggerResetCamera"),
         Input(get_uuid(LayoutElements.WELL_SELECT), "value"),
     )
     def set_well_geometries(
@@ -265,7 +286,6 @@ def plugin_callbacks(
             b64_encode_numpy(polyline.line_arr.astype(np.float32)),
             b64_encode_numpy(polyline.point_arr.astype(np.float32)),
             b64_encode_numpy(polyline.line_arr.astype(np.float32)),
-            time(),
         )
 
     @callback(
@@ -472,3 +492,22 @@ def plugin_callbacks(
         if not input_vals or not width_vals:
             return no_update
         return [[val, val + width - 1] for val, width in zip(input_vals, width_vals)]
+
+
+def _calc_approx_plane_normal_from_polyline_xy(polyline_xy: List[float]) -> List[float]:
+    polyline_np = np.asarray(polyline_xy).reshape(-1, 2)
+    num_points_in_polyline = len(polyline_np)
+
+    aggr_right_vec = np.array([0.0, 0.0])
+    for i in range(0, num_points_in_polyline - 1):
+        p0 = polyline_np[i]
+        p1 = polyline_np[i + 1]
+        fwd_vec = p1 - p0
+        fwd_vec /= np.linalg.norm(fwd_vec)
+        right_vec = np.array([fwd_vec[1], -fwd_vec[0]])
+        aggr_right_vec += right_vec
+
+    avg_right_vec = aggr_right_vec / np.linalg.norm(aggr_right_vec)
+    approx_plane_normal = np.array([aggr_right_vec[0], aggr_right_vec[1], 0])
+
+    return approx_plane_normal
