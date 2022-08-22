@@ -185,11 +185,8 @@ class MapSelectorLayout(wcc.Selectors):
                         "Property",
                         wcc.Dropdown(
                             id=get_uuid(LayoutElements.PROPERTY),
-                            options=[
-                                dict(label=m.value, value=m.value)
-                                for m in MapAttribute
-                            ],
-                            value=MapAttribute.MIGRATION_TIME,
+                            options=_compile_property_options(),
+                            value=MapAttribute.MIGRATION_TIME.value,
                             clearable=False,
                         ),
                         "Statistic",
@@ -396,3 +393,15 @@ class SummaryGraphLayout(html.Div):
             ],
             **kwargs,
         )
+
+
+def _compile_property_options():
+    return [
+        {"label": "SGAS", "value": "", "disabled": True},
+        {"label": MapAttribute.MIGRATION_TIME.value, "value": MapAttribute.MIGRATION_TIME.value},
+        {"label": MapAttribute.MAX_SGAS.value, "value": MapAttribute.MAX_SGAS.value},
+        {"label": MapAttribute.SGAS_PLUME.value, "value": MapAttribute.SGAS_PLUME.value},
+        {"label": "AMFG", "value": "", "disabled": True},
+        {"label": MapAttribute.MAX_AMFG.value, "value": MapAttribute.MAX_AMFG.value},
+        {"label": MapAttribute.AMFG_PLUME.value, "value": MapAttribute.AMFG_PLUME.value},
+    ]
