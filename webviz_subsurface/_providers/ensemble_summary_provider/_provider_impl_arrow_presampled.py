@@ -396,7 +396,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         table = self._get_or_read_table(columns_to_get)
         et_read_ms = timer.lap_ms()
 
-        if realizations:
+        if realizations is not None:
             mask = pc.is_in(table["REAL"], value_set=pa.array(realizations))
             table = table.filter(mask)
         et_filter_ms = timer.lap_ms()
@@ -412,7 +412,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             f"filter={et_filter_ms}ms, "
             f"to_pandas={et_to_pandas_ms}ms), "
             f"#vecs={len(vector_names)}, "
-            f"#real={len(realizations) if realizations else 'all'}, "
+            f"#real={len(realizations) if realizations is not None else 'all'}, "
             f"df.shape={df.shape}, file={Path(self._arrow_file_name).name}"
         )
 
