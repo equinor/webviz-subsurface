@@ -142,24 +142,24 @@ def test_create_vector_realization_traces() -> None:
 
     expected_traces = [
         {
-            "line": {"width": 1, "shape": "linear"},
+            "line": {"width": 1, "shape": "linear", "color": "red"},
+            "mode": "lines",
             "x": [datetime.datetime(2020, 1, 1), datetime.datetime(2020, 2, 1)],
             "y": [1.0, 2.0],
             "hovertemplate": "Test hovertemplate Realization: 1, Ensemble: Test ensemble",
             "name": "Test group",
             "legendgroup": "Test group",
-            "marker": {"color": "red"},
             "legendrank": 2,
             "showlegend": True,
         },
         {
-            "line": {"width": 1, "shape": "linear"},
+            "line": {"width": 1, "shape": "linear", "color": "red"},
+            "mode": "lines",
             "x": [datetime.datetime(2031, 5, 10), datetime.datetime(2031, 6, 10)],
             "y": [5.0, 6.0],
             "hovertemplate": "Test hovertemplate Realization: 2, Ensemble: Test ensemble",
             "name": "Test group",
             "legendgroup": "Test group",
-            "marker": {"color": "red"},
             "legendrank": 2,
             "showlegend": False,
         },
@@ -200,13 +200,13 @@ def test_create_history_vector_trace() -> None:
     )
 
     expected_trace = {
-        "line": {"shape": "linear"},
+        "line": {"shape": "linear", "color": "green"},
+        "mode": "lines",
         "x": input_samples,
         "y": input_history_data,
         "hovertext": "History: Test hist vector",
         "hoverinfo": "y+x+text",
         "name": "History",
-        "marker": {"color": "green"},
         "showlegend": False,
         "legendgroup": "History",
         "legendrank": None,
