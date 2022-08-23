@@ -102,13 +102,13 @@ def create_vector_realization_traces(
     vector_name = vector_names[0]
     return [
         {
-            "line": {"width": 1, "shape": line_shape},
+            "line": {"width": 1, "shape": line_shape, "color": color},
+            "mode": "lines",
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector_name]),
             "hovertemplate": f"{hovertemplate}Realization: {real}, Ensemble: {ensemble}",
             "name": legend_group,
             "legendgroup": legend_group,
-            "marker": {"color": color},
             "legendrank": legendrank,
             "showlegend": real_no == 0 and show_legend,
         }
@@ -340,13 +340,13 @@ def create_history_vector_trace(
     hovertext = "History" if vector_name is None else "History: " + vector_name
 
     return {
-        "line": {"shape": line_shape},
+        "line": {"shape": line_shape, "color": color},
+        "mode": "lines",
         "x": samples,
         "y": history_data,
         "hovertext": hovertext,
         "hoverinfo": "y+x+text",
         "name": "History",
-        "marker": {"color": color},
         "showlegend": show_legend,
         "legendgroup": "History",
         "legendrank": legendrank,
