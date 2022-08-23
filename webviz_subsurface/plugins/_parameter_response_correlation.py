@@ -424,8 +424,6 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                                     children=self.filter_layout,
                                 )
                             ]
-                            if self.response_filters
-                            else []
                         ),
                     ),
                 ),
