@@ -12,20 +12,21 @@ def plume_polygon(
     smoothing: float = 10.0,
     simplify_factor: float = 1.2,
 ) -> geojson.FeatureCollection:
-    fraction = binary_plume(surfaces, threshold, smoothing)
-    levels = [0.1]
+    plume_count = binary_plume(surfaces, threshold, smoothing)
+    p_levels = [0.1]
     if len(surfaces) > 2:
-        levels.append(0.5)
+        p_levels.append(0.5)
     if len(surfaces) > 1:
-        levels.append(0.9)
-    contours = _extract_fraction_contours(fraction, surfaces[0], simplify_factor, levels)
+        p_levels.append(0.9)
+    levels = [lvl * len(surfaces) for lvl in p_levels]
+    contours = _extract_contours(plume_count, surfaces[0], simplify_factor, levels)
     return geojson.FeatureCollection(
         features=[
             geojson.Feature(
                 id=f"P{level * 100}",
                 geometry=geojson.LineString(poly),
             )
-            for level, polys in zip(*contours)
+            for level, polys in zip(p_levels, contours)
             for poly in polys
         ]
     )
@@ -44,8 +45,8 @@ def binary_plume(
     return scipy.ndimage.gaussian_filter(count, sigma=smoothing, mode="nearest")
 
 
-def _extract_fraction_contours(
-    fraction: np.ndarray,
+def _extract_contours(
+    surface: np.ndarray,
     ref_surface: xtgeo.RegularSurface,
     simplify_factor: float,
     levels: List[float],
@@ -54,7 +55,7 @@ def _extract_fraction_contours(
     y = ref_surface.yori + np.arange(0, ref_surface.nrow) * ref_surface.yinc
     res = np.mean([abs(x[1] - x[0]), abs(y[1] - y[0])])
     simplify_dist = simplify_factor * res
-    return _find_all_contours(x, y, fraction, levels, simplify_dist)
+    return _find_all_contours(x, y, surface, levels, simplify_dist)
 
 
 def _find_all_contours(x, y, zz, levels, simplify_dist: float):
@@ -66,7 +67,7 @@ def _find_all_contours(x, y, zz, levels, simplify_dist: float):
         ]
         for level in levels
     ]
-    return levels, polys
+    return polys
 
 
 def _find_contours(xx, yy, zz):
