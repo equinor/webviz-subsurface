@@ -44,6 +44,7 @@ from .layout import LayoutElements, LayoutStyle, LayoutLabels
 
 @dataclass
 class _SurfaceData:
+    readable_name: str
     color_map_range: Tuple[float, float]
     color_map_name: str
     value_range: Tuple[float, float]
@@ -57,6 +58,7 @@ class _SurfaceData:
         address: Union[SurfaceAddress, FrequencySurfaceAddress],
         color_map_range: Optional[Tuple[float, float]],
         color_map_name: str,
+        readable_name: str,
     ):
         surf_meta, img_url = publish_and_get_surface_metadata(server, provider, address)
         value_range = (
@@ -68,7 +70,12 @@ class _SurfaceData:
             value_range[1] if color_map_range[1] is None else color_map_range[1],
         )
         return _SurfaceData(
-            color_map_range, color_map_name, value_range, surf_meta, img_url
+            readable_name,
+            color_map_range,
+            color_map_name,
+            value_range,
+            surf_meta,
+            img_url,
         )
 
 
@@ -308,6 +315,7 @@ def plugin_callbacks(
                 ),
                 color_map_range=color_map_range,
                 color_map_name=color_map_name,
+                readable_name=attribute.value,
             )
         # Plume polygon
         plume_polygon = None
@@ -352,7 +360,7 @@ def create_map_layers(
         # Update ColormapLayer
         layers.append({
             "@@type": "ColormapLayer",
-            "name": "Property",
+            "name": surface_data.readable_name,
             "id": LayoutElements.COLORMAPLAYER,
             "image": surface_data.img_url,
             "bounds": surface_data.meta_data.deckgl_bounds,
