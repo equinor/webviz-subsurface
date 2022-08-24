@@ -414,19 +414,13 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                         children=[
                             wcc.Selectors(
                                 label="Controls", children=self.control_layout
-                            )
-                        ]
-                        + (
-                            [
-                                wcc.Selectors(
-                                    label="Filters",
-                                    id=self.uuid("filters"),
-                                    children=self.filter_layout,
-                                )
-                            ]
-                            if self.response_filters
-                            else []
-                        ),
+                            ),
+                            wcc.Selectors(
+                                label="Filters",
+                                id=self.uuid("filters"),
+                                children=self.filter_layout,
+                            ),
+                        ],
                     ),
                 ),
                 wcc.FlexColumn(
