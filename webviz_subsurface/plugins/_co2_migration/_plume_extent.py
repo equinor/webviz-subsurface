@@ -40,8 +40,8 @@ def binary_plume(
         ).astype(float)
         for s in surfaces
     ]
-    fraction = sum(binary) / len(binary)
-    return scipy.ndimage.gaussian_filter(fraction, sigma=smoothing, mode="nearest")
+    count = sum(binary)
+    return scipy.ndimage.gaussian_filter(count, sigma=smoothing, mode="nearest")
 
 
 def _extract_fraction_contours(

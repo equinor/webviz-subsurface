@@ -100,8 +100,8 @@ def _generate_surface(
     surfaces = [s for s in surfaces if s is not None]
     if len(surfaces) == 0:
         return None
-    fraction = binary_plume(surfaces, address.threshold, address.smoothing)
+    plume_count = binary_plume(surfaces, address.threshold, address.smoothing)
     template = surfaces[0].copy()
-    template.values = fraction
-    template.values.mask = fraction < 1e-4
+    template.values = plume_count
+    template.values.mask = plume_count < 1e-4
     return template

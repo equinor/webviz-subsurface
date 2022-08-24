@@ -441,6 +441,8 @@ def _readable_name(attribute: MapAttribute):
     unit = ""
     if attribute == MapAttribute.MIGRATION_TIME:
         unit = " [year]"
+    elif attribute in (MapAttribute.AMFG_PLUME, MapAttribute.SGAS_PLUME):
+        unit = " [# real.]"
     return f"{attribute.value}{unit}"
 
 
