@@ -25,10 +25,7 @@ from webviz_subsurface._providers import (
 )
 from . import _plume_extent
 from ._formation_alias import (
-    compile_alias_list,
     surface_name_aliases,
-    fault_polygon_aliases,
-    well_pick_names_aliases,
     lookup_surface_alias,
     lookup_fault_polygon_alias,
     lookup_well_pick_alias,
@@ -126,17 +123,14 @@ def plugin_callbacks(
         # Map
         prop_name = _property_origin(MapAttribute(prop), map_attribute_names)
         surfaces = surface_name_aliases(surface_provider, prop_name)
-        polygons = fault_polygon_aliases(ensemble_fault_polygons_providers[ensemble])
-        well_picks = well_pick_names_aliases(well_pick_provider)
         # Formation names
-        formations = compile_alias_list(formation_aliases, surfaces, well_picks, polygons)
+        formations = [{"label": v.title(), "value": v} for v in surfaces]
         picked_formation = None
         if len(formations) != 0:
             if any(fmt["value"] == current_value for fmt in formations):
                 picked_formation = dash.no_update
-            elif "disabled" in formations[0]:
-                if any(fmt["value"] == "all" for fmt in formations):
-                    picked_formation = "all"
+            elif any(fmt["value"] == "all" for fmt in formations):
+                picked_formation = "all"
             else:
                 picked_formation = formations[0]["value"]
         return formations, picked_formation
