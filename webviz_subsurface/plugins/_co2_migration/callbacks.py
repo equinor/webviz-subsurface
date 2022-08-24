@@ -315,7 +315,7 @@ def plugin_callbacks(
                 ),
                 color_map_range=color_map_range,
                 color_map_name=color_map_name,
-                readable_name=attribute.value,
+                readable_name=_readable_name(attribute),
             )
         # Plume polygon
         plume_polygon = None
@@ -441,6 +441,13 @@ def _extract_fault_polygon_url(
         provider_id=provider.provider_id(),
         fault_polygons_address=address,
     )
+
+
+def _readable_name(attribute: MapAttribute):
+    unit = ""
+    if attribute == MapAttribute.MIGRATION_TIME:
+        unit = " [year]"
+    return f"{attribute.value}{unit}"
 
 
 def _derive_surface_address(
