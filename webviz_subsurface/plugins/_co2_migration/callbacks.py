@@ -524,9 +524,12 @@ def _get_plume_polygon(
         ))
         for r in realizations
     ]
+    surfaces = [s for s in surfaces if s is not None]
+    if len(surfaces) == 0:
+        return None
     return _plume_extent.plume_polygon(
         surfaces,
         threshold,
         smoothing=smoothing,
-        simplify_factor=0.12 * smoothing,  # Experimental factor
+        simplify_factor=0.12 * smoothing,  # Experimental
     )
