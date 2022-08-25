@@ -1,3 +1,4 @@
+import pathlib
 from typing import List, Optional, Dict
 import pandas
 from dash import Dash
@@ -12,7 +13,7 @@ from webviz_subsurface._providers import (
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import WellPickProvider
 from .layout import main_layout
 from .callbacks import plugin_callbacks
-from ._utils import MapAttribute
+from ._utils import MapAttribute, realization_paths, first_existing_file_path
 
 
 class CO2Migration(WebvizPluginABC):
@@ -21,8 +22,10 @@ class CO2Migration(WebvizPluginABC):
         app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: List[str],
-        license_boundary_file: Optional[str] = None,
-        well_pick_file: Optional[str] = None,
+        boundary_relpath: Optional[str] = "share/results/polygons/leakage_boundary.csv",
+        well_pick_relpath: Optional[str] = "share/results/tables/well_picks.csv",
+        co2_containment_relpath: Optional[str] = "share/results/tables/co2_volumes.csv",
+        fault_polygon_attribute: Optional[str] = "dl_extracted_faultlines",
         map_attribute_names: Optional[Dict[str, str]] = None,
         formation_aliases: Optional[List[List[str]]] = None,
     ):
@@ -42,13 +45,13 @@ class CO2Migration(WebvizPluginABC):
         for provider in self._ensemble_fault_polygons_providers.values():
             self._polygons_server.add_provider(provider)
         self._formation_aliases = [set(f) for f in formation_aliases or []]
+        self._fault_polygon_attribute = fault_polygon_attribute
         # License boundary
-        # TODO: may want to expose license boundary via a provider, but need
-        #  standardization on its location first
-        self._license_boundary_file = license_boundary_file
-        # Wells
-        # TODO: this does not support well picks differing between realizations
-        self._well_pick_provider = _initialize_well_picks_providers(well_pick_file)
+        self._boundary_rel_path = boundary_relpath
+        # Well picks
+        self._well_pick_providers = _initialize_well_pick_providers(self._ensemble_paths, well_pick_relpath)
+        # CO2 containment
+        self._co2_containment_relpath = co2_containment_relpath
         self.set_callbacks()
 
     @property
@@ -65,9 +68,11 @@ class CO2Migration(WebvizPluginABC):
             ensemble_surface_providers=self._ensemble_surface_providers,
             surface_server=self._surface_server,
             ensemble_fault_polygons_providers=self._ensemble_fault_polygons_providers,
+            fault_polygon_attribute=self._fault_polygon_attribute,
             fault_polygons_server=self._polygons_server,
-            license_boundary_file=self._license_boundary_file,
-            well_pick_provider=self._well_pick_provider,
+            leakage_boundary_relpath=self._boundary_rel_path,
+            co2_containment_relpath=self._co2_containment_relpath,
+            well_pick_providers=self._well_pick_providers,
             map_attribute_names=self._map_attribute_names,
             formation_aliases=self._formation_aliases,
         )
@@ -107,10 +112,17 @@ def _initialize_fault_polygon_providers(webviz_settings, ensembles):
     }    
 
 
-def _initialize_well_picks_providers(well_pick_file):
-    if well_pick_file is None:
-        return None
-    well_pick_table = pandas.read_csv(well_pick_file)
-    return WellPickProvider(
-        dframe=well_pick_table,
-    )
+def _initialize_well_pick_providers(
+    ensemble_roots: Dict[str, str],
+    well_pick_rel_path: str,
+) -> Dict[str, WellPickProvider]:
+    providers = {}
+
+    for e_name, e_root in ensemble_roots.items():
+        realz = realization_paths(e_root).keys()
+        first = first_existing_file_path(e_root, realz, well_pick_rel_path)
+        if first is None:
+            continue
+        table = pandas.read_csv(first)
+        providers[e_name] = WellPickProvider(table)
+    return providers

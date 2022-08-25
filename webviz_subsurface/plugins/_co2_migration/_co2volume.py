@@ -13,17 +13,15 @@ class _Columns(Enum):
     VOLUME_OUTSIDE = "volume_outside"
 
 
-def _read_dataframe(realization_path: str):
-    return pandas.read_csv(
-        pathlib.Path(realization_path) / "share" / "results" / "tables" / "co2_volumes.csv",
-    )
+def _read_dataframe(realization_path: str, relpath: str):
+    return pandas.read_csv(pathlib.Path(realization_path) / relpath)
 
 
-def _read_terminal_co2_volumes(realization_paths: Dict[str, str]):
+def _read_terminal_co2_volumes(realization_paths: Dict[str, str], table_relpath: str):
     records = []
     for rz_name, rz_path in realization_paths.items():
         try:
-            df = _read_dataframe(rz_path)
+            df = _read_dataframe(rz_path, table_relpath)
         except FileNotFoundError:
             continue
         last = df.iloc[np.argmax(df["date"])]
@@ -45,16 +43,16 @@ def _read_terminal_co2_volumes(realization_paths: Dict[str, str]):
     return df
 
 
-def _read_co2_volumes(realization_paths: Dict[str, str]):
+def _read_co2_volumes(realization_paths: Dict[str, str], table_relpath: str):
     return pandas.concat([
-        _read_dataframe(rz_path).assign(realization=rz_name)
+        _read_dataframe(rz_path, table_relpath).assign(realization=rz_name)
         for rz_name, rz_path in realization_paths.items()
     ])
 
 
-def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width):
+def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width, table_relpath: str):
     import plotly.express as px
-    df = _read_terminal_co2_volumes(realization_paths)
+    df = _read_terminal_co2_volumes(realization_paths, table_relpath)
     fig = px.bar(
         df,
         y=_Columns.REALIZATION.value,
@@ -82,10 +80,10 @@ def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width)
     return fig
 
 
-def generate_co2_time_containment_figure(realization_paths: Dict[str, str], height, width):
+def generate_co2_time_containment_figure(realization_paths: Dict[str, str], height, width, table_relpath: str):
     import plotly.graph_objects as go
     import plotly.express as px
-    df = _read_co2_volumes(realization_paths)
+    df = _read_co2_volumes(realization_paths, table_relpath)
     df.sort_values(by="date", inplace=True)
     df["date"] = df["date"].astype(str)
     dates = df["date"].str[:4] + "-" + df["date"].str[4:6] + "-" + df["date"].str[6:]

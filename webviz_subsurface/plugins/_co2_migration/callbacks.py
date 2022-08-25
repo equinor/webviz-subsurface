@@ -34,7 +34,7 @@ from ._surface_publishing import (
     FrequencySurfaceAddress,
     publish_and_get_surface_metadata,
 )
-from ._utils import MapAttribute, FAULT_POLYGON_ATTRIBUTE, realization_paths, parse_polygon_file
+from ._utils import MapAttribute, realization_paths, parse_polygon_file, first_existing_file_path
 from ._co2volume import (generate_co2_volume_figure, generate_co2_time_containment_figure)
 from .layout import LayoutElements, LayoutStyle, LayoutLabels
 
@@ -83,8 +83,10 @@ def plugin_callbacks(
     surface_server: SurfaceServer,
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
-    license_boundary_file: Optional[str],
-    well_pick_provider: Optional[WellPickProvider],
+    fault_polygon_attribute: str,
+    leakage_boundary_relpath: Optional[str],
+    co2_containment_relpath: str,
+    well_pick_providers: Dict[str, WellPickProvider],
     map_attribute_names: Dict[MapAttribute, str],
     formation_aliases: List[Set[str]],
 ):
@@ -102,10 +104,10 @@ def plugin_callbacks(
             for r in sorted(rz_paths.keys())
         ]
         fig0 = generate_co2_volume_figure(
-            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH
+            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH, co2_containment_relpath,
         )
         fig1 = generate_co2_time_containment_figure(
-            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH
+            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH, co2_containment_relpath,
         )
         return realizations, [realizations[0]["value"]], fig0, fig1
 
@@ -282,10 +284,10 @@ def plugin_callbacks(
             _property_origin(attribute, map_attribute_names),
         )
         polygon_name = lookup_fault_polygon_alias(
-            formation_aliases, formation, ensemble_fault_polygons_providers[ensemble]
+            formation_aliases, formation, ensemble_fault_polygons_providers[ensemble], fault_polygon_attribute
         )
         well_pick_horizon = lookup_well_pick_alias(
-            formation_aliases, formation, well_pick_provider
+            formation_aliases, formation, well_pick_providers[ensemble]
         )
         # Surface
         if surface_name is None:
@@ -327,9 +329,12 @@ def plugin_callbacks(
                 provider=ensemble_fault_polygons_providers[ensemble],
                 polygon_name=polygon_name,
                 realization=realization,
+                fault_polygon_attribute=fault_polygon_attribute,
             ),
-            license_boundary_file=license_boundary_file,
-            well_pick_provider=well_pick_provider,
+            license_boundary_file=first_existing_file_path(
+                ensemble_paths[ensemble], realization, leakage_boundary_relpath
+            ),
+            well_pick_provider=well_pick_providers[ensemble],
             well_pick_horizon=well_pick_horizon,
             plume_extent_data=plume_polygon,
         )
@@ -382,8 +387,6 @@ def create_map_layers(
             "data": parse_polygon_file(license_boundary_file),
         })
     if well_pick_provider is not None:
-        # Need to cast to dict. Possible bug when passing geojson.FeatureCollection via
-        # WellsLayer.__init__
         layers.append({
             "@@type": "GeoJsonLayer",
             "name": "Well Picks",
@@ -422,13 +425,14 @@ def _extract_fault_polygon_url(
     provider: EnsembleFaultPolygonsProvider,
     polygon_name: Optional[str],
     realization: List[int],
+    fault_polygon_attribute: str,
 ) -> Optional[str]:
     if polygon_name is None:
         return None
     if len(realization) == 0:
         return None
     # This always returns the url corresponding to the first realization
-    address = _derive_fault_polygon_address(polygon_name, realization[0])
+    address = _derive_fault_polygon_address(polygon_name, realization[0], fault_polygon_attribute)
     return server.encode_partial_url(
         provider_id=provider.provider_id(),
         fault_polygons_address=address,
@@ -484,9 +488,9 @@ def _derive_surface_address(
         )
 
 
-def _derive_fault_polygon_address(polygon_name, realization):
+def _derive_fault_polygon_address(polygon_name, realization, fault_polygon_attribute):
     return SimulatedFaultPolygonsAddress(
-        attribute=FAULT_POLYGON_ATTRIBUTE,
+        attribute=fault_polygon_attribute,
         name=polygon_name,
         realization=realization,
     )

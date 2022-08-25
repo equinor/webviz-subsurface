@@ -1,4 +1,5 @@
-from typing import Dict
+import pathlib
+from typing import Dict, Optional, Iterable
 from enum import Enum
 from fmu.ensemble import ScratchEnsemble
 import numpy as np
@@ -21,6 +22,19 @@ def realization_paths(ensemble_path) -> Dict[str, str]:
         r: s.runpath()
         for r, s in scratch.realizations.items()
     }
+
+
+def first_existing_file_path(
+    ens_root: str,
+    realizations: Iterable[str],
+    relpath: str,
+) -> Optional[str]:
+    rp = realization_paths(ens_root)
+    for r in realizations:
+        fn = pathlib.Path(rp[r]) / relpath
+        if fn.is_file():
+            return str(fn)
+    return None
 
 
 def parse_polygon_file(filename: str):

@@ -1,6 +1,5 @@
 from typing import List, Set
 
-from webviz_subsurface.plugins._co2_migration._utils import FAULT_POLYGON_ATTRIBUTE
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
     WellPickTableColumns
 
@@ -20,11 +19,11 @@ def lookup_surface_alias(alias_groups: List[Set[str]], alias, surface_provider, 
     )
 
 
-def lookup_fault_polygon_alias(alias_groups: List[Set[str]], alias, polygon_provider):
+def lookup_fault_polygon_alias(alias_groups: List[Set[str]], alias, polygon_provider, fault_polygon_attribute):
     return lookup_formation_alias(
         alias_groups,
         alias,
-        polygon_provider.fault_polygons_names_for_attribute(FAULT_POLYGON_ATTRIBUTE),
+        polygon_provider.fault_polygons_names_for_attribute(fault_polygon_attribute),
     )
 
 
