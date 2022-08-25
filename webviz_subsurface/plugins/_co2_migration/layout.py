@@ -125,6 +125,7 @@ def main_layout(get_uuid: Callable, ensembles: List[str]) -> html.Div:
                                         bounds=LayoutStyle.INITIAL_BOUNDS,
                                         coords={"visible": True},
                                         scale={"visible": True},
+                                        toolbar={"visible": True},
                                         coordinateUnit="m",
                                         colorTables=_color_tables(),
                                         zoom=-7,

@@ -129,8 +129,6 @@ def plugin_callbacks(
         if len(formations) != 0:
             if any(fmt["value"] == current_value for fmt in formations):
                 picked_formation = dash.no_update
-            elif any(fmt["value"] == "all" for fmt in formations):
-                picked_formation = "all"
             else:
                 picked_formation = formations[0]["value"]
         return formations, picked_formation
