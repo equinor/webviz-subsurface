@@ -16,7 +16,7 @@ from .callbacks import plugin_callbacks
 from ._utils import MapAttribute, realization_paths, first_existing_file_path
 
 
-class CO2Migration(WebvizPluginABC):
+class CO2Leakage(WebvizPluginABC):
     def __init__(
         self,
         app: Dash,

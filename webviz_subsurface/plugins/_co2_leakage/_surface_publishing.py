@@ -13,7 +13,7 @@ from webviz_subsurface._providers import (
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic
-from webviz_subsurface.plugins._co2_migration._plume_extent import binary_plume
+from ._plume_extent import binary_plume
 
 
 @dataclass

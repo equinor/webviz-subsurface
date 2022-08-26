@@ -39,7 +39,7 @@ setup(
     entry_points={
         "webviz_config_plugins": [
             "BhpQc = webviz_subsurface.plugins:BhpQc",
-            "CO2Migration = webviz_subsurface.plugins:CO2Migration",
+            "CO2Leakage = webviz_subsurface.plugins:CO2Leakage",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
             "GroupTree = webviz_subsurface.plugins:GroupTree",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
