@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 import webviz_core_components as wcc
-from dash import ALL, Input, Output, State, callback, html
+from dash import Input, Output, State, callback, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
