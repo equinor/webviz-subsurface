@@ -23,7 +23,7 @@ class CO2Migration(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: List[str],
         boundary_relpath: Optional[str] = "share/results/polygons/leakage_boundary.csv",
-        well_pick_relpath: Optional[str] = "share/results/tables/well_picks.csv",
+        well_pick_relpath: Optional[str] = "share/results/wells/well_picks.csv",
         co2_containment_relpath: Optional[str] = "share/results/tables/co2_volumes.csv",
         fault_polygon_attribute: Optional[str] = "dl_extracted_faultlines",
         map_attribute_names: Optional[Dict[str, str]] = None,
