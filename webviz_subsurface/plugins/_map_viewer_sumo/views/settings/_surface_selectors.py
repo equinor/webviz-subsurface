@@ -300,7 +300,8 @@ class SurfaceSelector(SettingsGroupABC):
                 ]
             ):
                 return {}
-
+            if not case_iter:
+                return no_update
             case = case_iter["case"][0]
             iteration = case_iter["iteration"][0]
 
