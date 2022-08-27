@@ -212,10 +212,11 @@ class SurfaceSelector(SettingsGroupABC):
         ) -> Tuple[List[Dict], str, List[Dict], str]:
             # print(f"callback _update_surface_names_and_dates() {attribute_name=}")
 
-            case = case_iter["case"][0]
-            iteration = case_iter["iteration"][0]
             if not case_iter or not attribute_name:
                 return no_update, no_update, no_update, no_update
+            case = case_iter["case"][0]
+            iteration = case_iter["iteration"][0]
+            
             attribute_name = attribute_name[0]
 
             provider = self._provider_dealer.get_surface_provider(
