@@ -115,25 +115,7 @@ class WellAnalysis(WebvizPluginABC):
             )
 
         self.add_store(
-            PluginIds.Stores.SELECTED_PLOT_LAYOUT, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_WELLS, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_WELL_ATTR, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_ENSEMBLE, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.SELECTED_REALIZATION, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.DISPLAY_CTRL_MODE_BAR, WebvizPluginABC.StorageType.SESSION
-        )
-        self.add_store(
-            PluginIds.Stores.CURRENT_FIG, WebvizPluginABC.StorageType.SESSION
+            PluginIds.Stores.CURRENT_FIGURE, WebvizPluginABC.StorageType.SESSION
         )
         self.add_store(
             PluginIds.Stores.PREV_PLOT_TYPE, WebvizPluginABC.StorageType.SESSION
@@ -194,7 +176,7 @@ class WellAnalysis(WebvizPluginABC):
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
                 .settings_group(OverviewView.Ids.FILTER)
-                .component_unique_id(OverviewFilter.Ids.SLECTED_WELLS),
+                .component_unique_id(OverviewFilter.Ids.SELECTED_WELLS),
                 "content": """You can choose to view the production for all the wells or
                                 select only the ones you are interested in.""",
             },
@@ -203,7 +185,7 @@ class WellAnalysis(WebvizPluginABC):
                 .layout_element(ControlView.Ids.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": """Shows the number of realizations on different control modes.
-                             The control modes are listed in the legend. Also shows 
+                             The control modes are listed in the legend. Also shows
                              Network pressures according to dates.""",
             },
             {

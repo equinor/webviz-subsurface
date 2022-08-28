@@ -3,7 +3,7 @@ from typing import Dict, List, Set, Tuple, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import ALL, Input, Output, State, callback, callback_context
+from dash import Input, Output, State, callback, callback_context
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
@@ -155,22 +155,13 @@ class OverviewPlotSettings(SettingsGroupABC):
                 )
             return None
 
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_PLOT_LAYOUT), "value"
-            ),
-            Input(self.plot_layout_id, "value"),
-        )
-        def _set_plot_layout(settings: List[str]) -> List[str]:
-            return settings
-
 
 class OverviewFilter(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
 
         # filters
-        SLECTED_WELLS = "selected-wells"
+        SELECTED_WELLS = "selected-wells"
         SELECTED_WELL_ATTR = "selected-welltype"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
@@ -195,11 +186,12 @@ class OverviewFilter(SettingsGroupABC):
                     )
 
     def layout(self) -> List[Component]:
+        self.register_component_unique_id(OverviewFilter.Ids.SELECTED_WELL_ATTR)
         return [
             wcc.SelectWithLabel(
                 label="Well",
                 size=min(10, len(self.wells)),
-                id=self.register_component_unique_id(OverviewFilter.Ids.SLECTED_WELLS),
+                id=self.register_component_unique_id(OverviewFilter.Ids.SELECTED_WELLS),
                 options=[{"label": well, "value": well} for well in self.wells],
                 value=self.wells,
                 multi=True,
@@ -210,9 +202,9 @@ class OverviewFilter(SettingsGroupABC):
                 label=category.capitalize(),
                 size=min(5, len(values)),
                 id={
-                    "id": self.register_component_unique_id(
+                    "id": self.component_unique_id(
                         OverviewFilter.Ids.SELECTED_WELL_ATTR
-                    ),
+                    ).to_string(),
                     "category": category,
                 },
                 options=[{"label": value, "value": value} for value in values],
@@ -222,34 +214,6 @@ class OverviewFilter(SettingsGroupABC):
             for category, values in self.well_attr.items()
         ]
 
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS), "value"),
-            Input(
-                self.component_unique_id(OverviewFilter.Ids.SLECTED_WELLS).to_string(),
-                "value",
-            ),
-        )
-        def _set_wells(wells: List[str]) -> List[str]:
-            return wells
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_WELL_ATTR), "value"
-            ),
-            Input(
-                {
-                    "id": self.component_unique_id(
-                        OverviewFilter.Ids.SELECTED_WELL_ATTR
-                    ).to_string(),
-                    "category": ALL,
-                },
-                "value",
-            ),
-        )
-        def _set_well_attr(well_attr: List[str]) -> List[str]:
-            return well_attr
-
 
 class OverviewView(ViewABC):
     class Ids:
@@ -257,6 +221,7 @@ class OverviewView(ViewABC):
         PLOT_SETTINGS = "plot-settings"
         FILTER = "filter"
         MAIN_COLUMN = "main-column"
+        CURRENT_FIGURE = "current-figure"
         FIGURE = "figure"
 
     def __init__(
@@ -303,8 +268,14 @@ class OverviewView(ViewABC):
                 .to_string(),
                 "children",
             ),
-            Output(self.get_store_unique_id(PluginIds.Stores.CURRENT_FIG), "value"),
-            Output(self.get_store_unique_id(PluginIds.Stores.PREV_PLOT_TYPE), "value"),
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.CURRENT_FIGURE),
+                "value",
+            ),
+            Output(
+                self.get_store_unique_id(PluginIds.Stores.PREV_PLOT_TYPE),
+                "value",
+            ),
             Input(
                 self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
                 .component_unique_id(OverviewPlotSettings.Ids.SELECTED_ENSEMBLES)
@@ -312,7 +283,9 @@ class OverviewView(ViewABC):
                 "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_PLOT_LAYOUT),
+                self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
+                .component_unique_id(OverviewPlotSettings.Ids.PLOT_LAYOUT)
+                .to_string(),
                 "value",
             ),
             Input(
@@ -336,14 +309,18 @@ class OverviewView(ViewABC):
                 "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_WELLS),
+                self.settings_group(OverviewView.Ids.FILTER)
+                .component_unique_id(OverviewFilter.Ids.SELECTED_WELLS)
+                .to_string(),
                 "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_WELL_ATTR),
+                self.settings_group(OverviewView.Ids.FILTER)
+                .component_unique_id(OverviewFilter.Ids.SELECTED_WELL_ATTR)
+                .to_string(),
                 "value",
             ),
-            State(self.get_store_unique_id(PluginIds.Stores.CURRENT_FIG), "value"),
+            State(self.get_store_unique_id(PluginIds.Stores.CURRENT_FIGURE), "value"),
             State(self.get_store_unique_id(PluginIds.Stores.PREV_PLOT_TYPE), "value"),
         )
         def _update_graph(

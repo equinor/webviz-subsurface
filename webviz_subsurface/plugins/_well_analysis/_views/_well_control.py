@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback, html
@@ -8,7 +8,6 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import create_well_control_figure
-from .._plugin_ids import PluginIds
 from .._types import PressurePlotMode
 
 
@@ -56,21 +55,6 @@ class ControlSettings(SettingsGroupABC):
                 value=["shared_xaxes"],
             ),
         ]
-
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE), "value"
-            ),
-            Input(
-                self.component_unique_id(
-                    ControlSettings.Ids.SELECTED_ENSEMBLE
-                ).to_string(),
-                "value",
-            ),
-        )
-        def _store_ensemble(selected_ensemble: str) -> str:
-            return selected_ensemble
 
 
 class ControlPressureOptions(SettingsGroupABC):
@@ -149,76 +133,6 @@ class ControlPressureOptions(SettingsGroupABC):
             ),
         ]
 
-    def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_REALIZATION), "value"
-            ),
-            Input(
-                self.realization_id,
-                "value",
-            ),
-        )
-        def _store_realization(selected_real: str) -> str:
-            return selected_real
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.DISPLAY_CTRL_MODE_BAR),
-                "value",
-            ),
-            Input(
-                self.display_ctr_id,
-                "value",
-            ),
-        )
-        def _store_display(selected_display: str) -> str:
-            return selected_display
-
-        @callback(
-            Output(
-                self.component_unique_id(
-                    ControlPressureOptions.Ids.REALIZATION_BOX
-                ).to_string(),
-                "children",
-            ),
-            Input(
-                self.component_unique_id(
-                    ControlPressureOptions.Ids.MEAN_OR_REALIZATION
-                ).to_string(),
-                "value",
-            ),
-            State(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_ENSEMBLE),
-                "value",
-            ),
-        )
-        def _update_realization_box(
-            mean_or_real: str, ensemble: str
-        ) -> List[Component]:
-            if mean_or_real == PressurePlotMode.SINGLE_REAL:
-                reals = self.data_models[ensemble].realizations
-                return [
-                    wcc.Dropdown(
-                        id=self.realization_id,
-                        options=[{"label": real, "value": real} for real in reals],
-                        value=reals[0],
-                        multi=False,
-                    ),
-                    wcc.Checklist(
-                        id=self.display_ctr_id,
-                        options=[
-                            {
-                                "label": "Display ctrl mode bar",
-                                "value": "ctrlmode_bar",
-                            }
-                        ],
-                        value=["ctrlmode_bar"],
-                    ),
-                ]
-
-            return []
-
 
 class ControlView(ViewABC):
     class Ids:
@@ -247,6 +161,65 @@ class ControlView(ViewABC):
         self.main_column = self.add_column(ControlView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
+        @callback(
+            Output(
+                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
+                .component_unique_id(ControlSettings.Ids.SELECTED_WELL)
+                .to_string(),
+                "options",
+            ),
+            Output(
+                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
+                .component_unique_id(ControlSettings.Ids.SELECTED_WELL)
+                .to_string(),
+                "value",
+            ),
+            Output(
+                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
+                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                .to_string(),
+                "options",
+            ),
+            Output(
+                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
+                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
+                .component_unique_id(ControlSettings.Ids.SELECTED_ENSEMBLE)
+                .to_string(),
+                "value",
+            ),
+            State(
+                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
+                .component_unique_id(ControlSettings.Ids.SELECTED_WELL)
+                .to_string(),
+                "value",
+            ),
+            State(
+                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
+                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                .to_string(),
+                "value",
+            ),
+        )
+        def _update_dropdowns(
+            ensemble: str, state_well: str, state_real: int
+        ) -> Tuple[
+            List[Dict[str, str]], Optional[str], List[Dict[str, Any]], Optional[int]
+        ]:
+            """Updates the well and realization dropdowns with ensemble values"""
+            wells = self.data_models[ensemble].wells
+            reals = self.data_models[ensemble].realizations
+            return (
+                [{"label": well, "value": well} for well in wells],
+                state_well if state_well in wells else wells[0],
+                [{"label": real, "value": real} for real in reals],
+                state_real if state_real in reals else reals[0],
+            )
+
         @callback(
             Output(
                 self.layout_element(ControlView.Ids.MAIN_COLUMN)
@@ -279,11 +252,15 @@ class ControlView(ViewABC):
                 "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.SELECTED_REALIZATION),
+                self.settings_group(ControlView.Ids.CONTROL_OPTIONS)
+                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                .to_string(),
                 "value",
             ),
             Input(
-                self.get_store_unique_id(PluginIds.Stores.DISPLAY_CTRL_MODE_BAR),
+                self.settings_group(ControlView.Ids.CONTROL_OPTIONS)
+                .component_unique_id(ControlPressureOptions.Ids.DISPLAY_CTR_MODE_BAR)
+                .to_string(),
                 "value",
             ),
             Input(
