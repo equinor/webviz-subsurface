@@ -3,7 +3,7 @@ from typing import Dict, List, Set, Tuple, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import Input, Output, State, callback, callback_context
+from dash import ALL, Input, Output, State, callback, callback_context
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
@@ -31,15 +31,14 @@ class OverviewPlotSettings(SettingsGroupABC):
 
         super().__init__("Plot Settings")
 
-        self.plot_layout_id = self.register_component_unique_id(
-            OverviewPlotSettings.Ids.PLOT_LAYOUT
-        )
-
         self.ensembles = list(data_models.keys())
         self.dates: Set[datetime.datetime] = set()
         for _, ens_data_model in data_models.items():
             self.dates = self.dates.union(ens_data_model.dates)
         self.sorted_dates: List[datetime.datetime] = sorted(list(self.dates))
+        self.plot_layout_id = self.register_component_unique_id(
+            OverviewPlotSettings.Ids.PLOT_LAYOUT
+        )
 
     def layout(self) -> List[Component]:
         return [
@@ -162,7 +161,7 @@ class OverviewFilter(SettingsGroupABC):
 
         # filters
         SELECTED_WELLS = "selected-wells"
-        SELECTED_WELL_ATTR = "selected-welltype"
+        SELECTED_WELL_ATTR = "selected-well-attr"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
 
@@ -315,9 +314,12 @@ class OverviewView(ViewABC):
                 "value",
             ),
             Input(
-                self.settings_group(OverviewView.Ids.FILTER)
-                .component_unique_id(OverviewFilter.Ids.SELECTED_WELL_ATTR)
-                .to_string(),
+                {
+                    "id": self.settings_group(OverviewView.Ids.FILTER)
+                    .component_unique_id(OverviewFilter.Ids.SELECTED_WELL_ATTR)
+                    .to_string(),
+                    "category": ALL,
+                },
                 "value",
             ),
             State(self.get_store_unique_id(PluginIds.Stores.CURRENT_FIGURE), "value"),
@@ -336,7 +338,6 @@ class OverviewView(ViewABC):
         ) -> Tuple[Component, dict, ChartType]:
             # pylint: disable=too-many-locals
             # pylint: disable=too-many-arguments
-
             """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"]
             settings = checklist_values
