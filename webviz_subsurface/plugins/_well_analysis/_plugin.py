@@ -14,12 +14,12 @@ from ._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from ._error import error
 from ._plugin_ids import PluginIds
 from ._views import (
-    ControlPressureOptions,
-    ControlSettings,
-    ControlView,
-    OverviewFilter,
-    OverviewPlotSettings,
-    OverviewView,
+    WellControlPressurePlotOptions,
+    WellControlSettings,
+    WellControlView,
+    WellOverviewFilters,
+    WellOverviewSettings,
+    WellOverviewView,
 )
 
 
@@ -122,10 +122,12 @@ class WellAnalysis(WebvizPluginABC):
         )
 
         self.add_view(
-            OverviewView(self._data_models, self._theme), PluginIds.ViewID.WELL_OVERVIEW
+            WellOverviewView(self._data_models, self._theme),
+            PluginIds.ViewID.WELL_OVERVIEW,
         )
         self.add_view(
-            ControlView(self._data_models, self._theme), PluginIds.ViewID.WELL_CONTROL
+            WellControlView(self._data_models, self._theme),
+            PluginIds.ViewID.WELL_CONTROL,
         )
 
     @property
@@ -133,56 +135,56 @@ class WellAnalysis(WebvizPluginABC):
         return [
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .layout_element(OverviewView.Ids.MAIN_COLUMN)
+                .layout_element(WellOverviewView.Ids.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": """Shows cumulative well oil production,
                  with the possibility to switch between different chart types.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.PLOT_TYPE),
+                .settings_group(WellOverviewView.Ids.SETTINGS)
+                .component_unique_id(WellOverviewSettings.Ids.CHARTTYPE),
                 "content": """You can choose to view your selected data in a bar,
                              pie or stacked area chart.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.SELECTED_ENSEMBLES),
+                .settings_group(WellOverviewView.Ids.SETTINGS)
+                .component_unique_id(WellOverviewSettings.Ids.SELECTED_ENSEMBLES),
                 "content": """Lets you choose between different ensembles.
                             Several can be selected at the same time.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.SELECTED_RESPONSE),
+                .settings_group(WellOverviewView.Ids.SETTINGS)
+                .component_unique_id(WellOverviewSettings.Ids.SELECTED_RESPONSE),
                 "content": """This gives you the option to see different types of production.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .settings_group(OverviewView.Ids.PLOT_SETTINGS)
+                .settings_group(WellOverviewView.Ids.SETTINGS)
                 .component_unique_id(
-                    OverviewPlotSettings.Ids.ONLY_PRODUCTION_AFTER_DATE
+                    WellOverviewSettings.Ids.ONLY_PRODUCTION_AFTER_DATE
                 ),
                 "content": """You can choose to only see the production after a certain date.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.CHECKBOX),
+                .settings_group(WellOverviewView.Ids.SETTINGS)
+                .component_unique_id(WellOverviewSettings.Ids.CHARTTYPE_SETTINGS),
                 "content": """You can change the layout of the graph. This does not alter the data.
                             The options vary depending on your selected plot type.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .settings_group(OverviewView.Ids.FILTER)
-                .component_unique_id(OverviewFilter.Ids.SELECTED_WELLS),
+                .settings_group(WellOverviewView.Ids.FILTERS)
+                .component_unique_id(WellOverviewFilters.Ids.SELECTED_WELLS),
                 "content": """You can choose to view the production for all the wells or
                                 select only the ones you are interested in.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
-                .layout_element(ControlView.Ids.MAIN_COLUMN)
+                .layout_element(WellControlView.Ids.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": """Shows the number of realizations on different control modes.
                              The control modes are listed in the legend. Also shows
@@ -190,34 +192,36 @@ class WellAnalysis(WebvizPluginABC):
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
-                .settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_ENSEMBLE),
+                .settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.ENSEMBLE),
                 "content": """You can choose to view data on different ensembles.
                             Only one can be selected.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
-                .settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_WELL),
+                .settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.WELL),
                 "content": """You can also view data on different wells.
                             Only one can be selected.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
-                .settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SHARED_X_AXIS),
+                .settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.SHARED_X_AXIS),
                 "content": """This gives you the option to view both graphs on the same x-axis.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
-                .settings_group(ControlView.Ids.CONTROL_OPTIONS)
-                .component_unique_id(ControlPressureOptions.Ids.INCLUDE_BHP),
+                .settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(WellControlPressurePlotOptions.Ids.INCLUDE_BHP),
                 "content": """Toggle bottom hole pressure on and off.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_CONTROL)
-                .settings_group(ControlView.Ids.CONTROL_OPTIONS)
-                .component_unique_id(ControlPressureOptions.Ids.MEAN_OR_REALIZATION),
+                .settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(
+                    WellControlPressurePlotOptions.Ids.PRESSURE_PLOT_MODE
+                ),
                 "content": """You can choose to view the mean value of the realizations or
                             data on a single realization. If single realization is selected,
                             you get the option to choose which one.""",

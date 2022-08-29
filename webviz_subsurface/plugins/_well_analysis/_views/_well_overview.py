@@ -3,7 +3,7 @@ from typing import Dict, List, Set, Tuple, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import ALL, Input, Output, State, callback, callback_context
+from dash import ALL, Input, Output, State, callback, callback_context, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
@@ -14,39 +14,42 @@ from .._plugin_ids import PluginIds
 from .._types import ChartType
 
 
-class OverviewPlotSettings(SettingsGroupABC):
+class WellOverviewSettings(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
-        # plot controls
-        PLOT_TYPE = "plot-type"
+        # chart controls
+        CHARTTYPE = "charttype"
         SELECTED_ENSEMBLES = "selected-ensembles"
         SELECTED_RESPONSE = "selected-response"
         ONLY_PRODUCTION_AFTER_DATE = "only-production-after-date"
 
-        # plot layout
-        CHECKBOX = "checkbox"
-        PLOT_LAYOUT = "plot-layout"
+        # chart layout
+        CHARTTYPE_SETTINGS = "charttype-settings"
+        CHARTTYPE_CHECKLIST = "charttype-checklist"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
 
-        super().__init__("Plot Settings")
+        super().__init__("Settings")
 
         self.ensembles = list(data_models.keys())
         self.dates: Set[datetime.datetime] = set()
         for _, ens_data_model in data_models.items():
             self.dates = self.dates.union(ens_data_model.dates)
         self.sorted_dates: List[datetime.datetime] = sorted(list(self.dates))
-        self.plot_layout_id = self.register_component_unique_id(
-            OverviewPlotSettings.Ids.PLOT_LAYOUT
-        )
 
     def layout(self) -> List[Component]:
+        settings_id = self.register_component_unique_id(
+            WellOverviewSettings.Ids.CHARTTYPE_SETTINGS
+        )
+        checklist_id = self.register_component_unique_id(
+            WellOverviewSettings.Ids.CHARTTYPE_CHECKLIST
+        )
         return [
             wcc.RadioItems(
                 id=self.register_component_unique_id(
-                    OverviewPlotSettings.Ids.PLOT_TYPE
+                    WellOverviewSettings.Ids.CHARTTYPE
                 ),
-                label="Plot type",
+                label="Chart type",
                 options=[
                     {"label": "Bar chart", "value": ChartType.BAR},
                     {"label": "Pie chart", "value": ChartType.PIE},
@@ -58,7 +61,7 @@ class OverviewPlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Ensembles",
                 id=self.register_component_unique_id(
-                    OverviewPlotSettings.Ids.SELECTED_ENSEMBLES
+                    WellOverviewSettings.Ids.SELECTED_ENSEMBLES
                 ),
                 options=[{"label": col, "value": col} for col in self.ensembles],
                 value=self.ensembles,
@@ -67,7 +70,7 @@ class OverviewPlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Response",
                 id=self.register_component_unique_id(
-                    OverviewPlotSettings.Ids.SELECTED_RESPONSE
+                    WellOverviewSettings.Ids.SELECTED_RESPONSE
                 ),
                 options=[
                     {"label": "Oil production", "value": "WOPT"},
@@ -81,7 +84,7 @@ class OverviewPlotSettings(SettingsGroupABC):
             wcc.Dropdown(
                 label="Only Production after date",
                 id=self.register_component_unique_id(
-                    OverviewPlotSettings.Ids.ONLY_PRODUCTION_AFTER_DATE
+                    WellOverviewSettings.Ids.ONLY_PRODUCTION_AFTER_DATE
                 ),
                 options=[
                     {
@@ -92,19 +95,55 @@ class OverviewPlotSettings(SettingsGroupABC):
                 ],
                 multi=False,
             ),
-            wcc.FlexBox(
-                id=self.register_component_unique_id(OverviewPlotSettings.Ids.CHECKBOX),
+            html.Div(
                 children=[
-                    wcc.Checklist(
-                        id={"id": self.plot_layout_id, "charttype": "bar"},
-                        options=[
-                            {"label": "Show legend", "value": "legend"},
-                            {"label": "Overlay bars", "value": "overlay_bars"},
-                            {"label": "Show prod as text", "value": "show_prod_text"},
-                            {"label": "White background", "value": "white_background"},
-                        ],
-                        value=["legend"],
-                    )
+                    html.Div(
+                        id={"id": settings_id, "charttype": "bar"},
+                        children=wcc.Checklist(
+                            id={"id": checklist_id, "charttype": "bar"},
+                            options=[
+                                {"label": "Show legend", "value": "legend"},
+                                {"label": "Overlay bars", "value": "overlay_bars"},
+                                {
+                                    "label": "Show prod as text",
+                                    "value": "show_prod_text",
+                                },
+                                {
+                                    "label": "White background",
+                                    "value": "white_background",
+                                },
+                            ],
+                            value=["legend"],
+                        ),
+                    ),
+                    html.Div(
+                        id={"id": settings_id, "charttype": "pie"},
+                        children=wcc.Checklist(
+                            id={"id": checklist_id, "charttype": "pie"},
+                            options=[
+                                {"label": "Show legend", "value": "legend"},
+                                {
+                                    "label": "Show prod as text",
+                                    "value": "show_prod_text",
+                                },
+                            ],
+                            value=[],
+                        ),
+                    ),
+                    html.Div(
+                        id={"id": settings_id, "charttype": "area"},
+                        children=wcc.Checklist(
+                            id={"id": checklist_id, "charttype": "area"},
+                            options=[
+                                {"label": "Show legend", "value": "legend"},
+                                {
+                                    "label": "White background",
+                                    "value": "white_background",
+                                },
+                            ],
+                            value=["legend"],
+                        ),
+                    ),
                 ],
             ),
         ]
@@ -112,50 +151,43 @@ class OverviewPlotSettings(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.component_unique_id(OverviewPlotSettings.Ids.CHECKBOX).to_string(),
-                "children",
+                {
+                    "id": self.component_unique_id(
+                        WellOverviewSettings.Ids.CHARTTYPE_SETTINGS
+                    ).to_string(),
+                    "charttype": ALL,
+                },
+                "style",
             ),
             Input(
                 self.component_unique_id(
-                    OverviewPlotSettings.Ids.PLOT_TYPE
+                    WellOverviewSettings.Ids.CHARTTYPE
                 ).to_string(),
                 "value",
             ),
+            State(
+                {
+                    "id": self.component_unique_id(
+                        WellOverviewSettings.Ids.CHARTTYPE_SETTINGS
+                    ).to_string(),
+                    "charttype": ALL,
+                },
+                "id",
+            ),
         )
-        def _update_checkbox(selected_plot: str) -> Component:
-            if selected_plot == ChartType.BAR:
-                return wcc.Checklist(
-                    id=self.plot_layout_id,
-                    options=[
-                        {"label": "Show legend", "value": "legend"},
-                        {"label": "Overlay bars", "value": "overlay_bars"},
-                        {"label": "Show prod as text", "value": "show_prod_text"},
-                        {"label": "White background", "value": "white_background"},
-                    ],
-                    value=["legend"],
-                )
-            if selected_plot == ChartType.PIE:
-                return wcc.Checklist(
-                    id=self.plot_layout_id,
-                    options=[
-                        {"label": "Show legend", "value": "legend"},
-                        {"label": "Show prod as text", "value": "show_prod_text"},
-                    ],
-                    value=[],
-                )
-            if selected_plot == ChartType.AREA:
-                return wcc.Checklist(
-                    id=self.plot_layout_id,
-                    options=[
-                        {"label": "Show legend", "value": "legend"},
-                        {"label": "White background", "value": "white_background"},
-                    ],
-                    value=["legend"],
-                )
-            return None
+        def _display_charttype_settings(
+            chart_selected: str, charttype_settings_ids: list
+        ) -> list:
+            """Display only the settings relevant for the currently selected chart type."""
+            return [
+                {"display": "block"}
+                if settings_id["charttype"] == chart_selected
+                else {"display": "none"}
+                for settings_id in charttype_settings_ids
+            ]
 
 
-class OverviewFilter(SettingsGroupABC):
+class WellOverviewFilters(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
 
@@ -185,12 +217,14 @@ class OverviewFilter(SettingsGroupABC):
                     )
 
     def layout(self) -> List[Component]:
-        self.register_component_unique_id(OverviewFilter.Ids.SELECTED_WELL_ATTR)
+        self.register_component_unique_id(WellOverviewFilters.Ids.SELECTED_WELL_ATTR)
         return [
             wcc.SelectWithLabel(
                 label="Well",
                 size=min(10, len(self.wells)),
-                id=self.register_component_unique_id(OverviewFilter.Ids.SELECTED_WELLS),
+                id=self.register_component_unique_id(
+                    WellOverviewFilters.Ids.SELECTED_WELLS
+                ),
                 options=[{"label": well, "value": well} for well in self.wells],
                 value=self.wells,
                 multi=True,
@@ -202,7 +236,7 @@ class OverviewFilter(SettingsGroupABC):
                 size=min(5, len(values)),
                 id={
                     "id": self.component_unique_id(
-                        OverviewFilter.Ids.SELECTED_WELL_ATTR
+                        WellOverviewFilters.Ids.SELECTED_WELL_ATTR
                     ).to_string(),
                     "category": category,
                 },
@@ -214,11 +248,11 @@ class OverviewFilter(SettingsGroupABC):
         ]
 
 
-class OverviewView(ViewABC):
+class WellOverviewView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
-        PLOT_SETTINGS = "plot-settings"
-        FILTER = "filter"
+        SETTINGS = "settings"
+        FILTERS = "filters"
         MAIN_COLUMN = "main-column"
         CURRENT_FIGURE = "current-figure"
         FIGURE = "figure"
@@ -251,20 +285,16 @@ class OverviewView(ViewABC):
                     )
 
         self.add_settings_group(
-            OverviewPlotSettings(self.data_models), OverviewView.Ids.PLOT_SETTINGS
+            WellOverviewSettings(self.data_models), self.Ids.SETTINGS
         )
-        self.add_settings_group(
-            OverviewFilter(self.data_models), OverviewView.Ids.FILTER
-        )
+        self.add_settings_group(WellOverviewFilters(self.data_models), self.Ids.FILTERS)
 
-        self.main_column = self.add_column(OverviewView.Ids.MAIN_COLUMN)
+        self.main_column = self.add_column(self.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.layout_element(OverviewView.Ids.MAIN_COLUMN)
-                .get_unique_id()
-                .to_string(),
+                self.layout_element(self.Ids.MAIN_COLUMN).get_unique_id().to_string(),
                 "children",
             ),
             Output(
@@ -276,47 +306,50 @@ class OverviewView(ViewABC):
                 "value",
             ),
             Input(
-                self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.SELECTED_ENSEMBLES)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.PLOT_LAYOUT)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.SELECTED_RESPONSE)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(
-                    OverviewPlotSettings.Ids.ONLY_PRODUCTION_AFTER_DATE
-                )
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.settings_group(OverviewView.Ids.PLOT_SETTINGS)
-                .component_unique_id(OverviewPlotSettings.Ids.PLOT_TYPE)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.settings_group(OverviewView.Ids.FILTER)
-                .component_unique_id(OverviewFilter.Ids.SELECTED_WELLS)
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(WellOverviewSettings.Ids.SELECTED_ENSEMBLES)
                 .to_string(),
                 "value",
             ),
             Input(
                 {
-                    "id": self.settings_group(OverviewView.Ids.FILTER)
-                    .component_unique_id(OverviewFilter.Ids.SELECTED_WELL_ATTR)
+                    "id": self.settings_group(self.Ids.SETTINGS)
+                    .component_unique_id(WellOverviewSettings.Ids.CHARTTYPE_CHECKLIST)
+                    .to_string(),
+                    "charttype": ALL,
+                },
+                "value",
+            ),
+            Input(
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(WellOverviewSettings.Ids.SELECTED_RESPONSE)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(
+                    WellOverviewSettings.Ids.ONLY_PRODUCTION_AFTER_DATE
+                )
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(WellOverviewSettings.Ids.CHARTTYPE)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self.settings_group(self.Ids.FILTERS)
+                .component_unique_id(WellOverviewFilters.Ids.SELECTED_WELLS)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                {
+                    "id": self.settings_group(self.Ids.FILTERS)
+                    .component_unique_id(WellOverviewFilters.Ids.SELECTED_WELL_ATTR)
                     .to_string(),
                     "category": ALL,
                 },
@@ -339,6 +372,9 @@ class OverviewView(ViewABC):
             # pylint: disable=too-many-locals
             # pylint: disable=too-many-arguments
             """Updates the well overview graph with selected input (f.ex chart type)"""
+            if not ensembles:
+                return "No ensembles selected", current_fig_dict, prev_plot
+
             ctx = callback_context.triggered[0]["prop_id"]
             settings = checklist_values
             layout_trigger = False
@@ -405,7 +441,7 @@ class OverviewView(ViewABC):
             return (
                 [
                     wcc.Graph(
-                        id=self.unique_id(OverviewView.Ids.FIGURE),
+                        id=self.unique_id(self.Ids.FIGURE),
                         style={"height": "87vh"},
                         figure=fig_dict,
                     )

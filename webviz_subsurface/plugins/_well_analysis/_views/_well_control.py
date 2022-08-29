@@ -11,12 +11,12 @@ from .._figures import create_well_control_figure
 from .._types import PressurePlotMode
 
 
-class ControlSettings(SettingsGroupABC):
+class WellControlSettings(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
 
-        SELECTED_ENSEMBLE = "selected-ensemble"
-        SELECTED_WELL = "selected-well"
+        ENSEMBLE = "ensemble"
+        WELL = "well"
         SHARED_X_AXIS = "shared-x-axis"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
@@ -33,9 +33,7 @@ class ControlSettings(SettingsGroupABC):
         return [
             wcc.Dropdown(
                 label="Ensemble",
-                id=self.register_component_unique_id(
-                    ControlSettings.Ids.SELECTED_ENSEMBLE
-                ),
+                id=self.register_component_unique_id(WellControlSettings.Ids.ENSEMBLE),
                 options=[{"label": col, "value": col} for col in self.ensembles],
                 value=self.ensembles[0],
                 multi=False,
@@ -43,39 +41,35 @@ class ControlSettings(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Well",
-                id=self.register_component_unique_id(ControlSettings.Ids.SELECTED_WELL),
+                id=self.register_component_unique_id(WellControlSettings.Ids.WELL),
                 options=[{"label": well, "value": well} for well in self.wells],
                 value=self.wells[0],
                 multi=False,
                 clearable=False,
             ),
             wcc.Checklist(
-                id=self.register_component_unique_id(ControlSettings.Ids.SHARED_X_AXIS),
+                id=self.register_component_unique_id(
+                    WellControlSettings.Ids.SHARED_X_AXIS
+                ),
                 options=[{"label": "Shared x-axis", "value": "shared_xaxes"}],
                 value=["shared_xaxes"],
             ),
         ]
 
 
-class ControlPressureOptions(SettingsGroupABC):
+class WellControlPressurePlotOptions(SettingsGroupABC):
     class Ids:
         # pylint: disable=too-few-public-methods
 
         INCLUDE_BHP = "include-bhp"
-        MEAN_OR_REALIZATION = "mean-or-realization"
+        PRESSURE_PLOT_MODE = "pressure-plot-mode"
         REALIZATION_BOX = "realization-box"
-        SELECTED_REALIZATION = "selected-realization"
-        DISPLAY_CTR_MODE_BAR = "display-ctr-mode-bar"
+        REALIZATION = "realization"
+        DISPLAY_CTRL_MODE_BAR = "display-ctrl-mode-bar"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
 
         super().__init__("Pressure Plot Options")
-        self.realization_id = self.register_component_unique_id(
-            ControlPressureOptions.Ids.SELECTED_REALIZATION
-        )
-        self.display_ctr_id = self.register_component_unique_id(
-            ControlPressureOptions.Ids.DISPLAY_CTR_MODE_BAR
-        )
         self.data_models = data_models
         self.ensembles = list(data_models.keys())
 
@@ -83,7 +77,7 @@ class ControlPressureOptions(SettingsGroupABC):
         return [
             wcc.Checklist(
                 id=self.register_component_unique_id(
-                    ControlPressureOptions.Ids.INCLUDE_BHP
+                    WellControlPressurePlotOptions.Ids.INCLUDE_BHP
                 ),
                 options=[{"label": "Include BHP", "value": "include_bhp"}],
                 value=["include_bhp"],
@@ -91,7 +85,7 @@ class ControlPressureOptions(SettingsGroupABC):
             wcc.RadioItems(
                 label="Mean or realization",
                 id=self.register_component_unique_id(
-                    ControlPressureOptions.Ids.MEAN_OR_REALIZATION
+                    WellControlPressurePlotOptions.Ids.PRESSURE_PLOT_MODE
                 ),
                 options=[
                     {
@@ -107,11 +101,13 @@ class ControlPressureOptions(SettingsGroupABC):
             ),
             html.Div(
                 id=self.register_component_unique_id(
-                    ControlPressureOptions.Ids.REALIZATION_BOX
+                    WellControlPressurePlotOptions.Ids.REALIZATION_BOX
                 ),
                 children=[
                     wcc.Dropdown(
-                        id=self.realization_id,
+                        id=self.register_component_unique_id(
+                            WellControlPressurePlotOptions.Ids.REALIZATION
+                        ),
                         options=[
                             {"label": real, "value": real}
                             for real in self.data_models[self.ensembles[0]].realizations
@@ -120,7 +116,9 @@ class ControlPressureOptions(SettingsGroupABC):
                         multi=False,
                     ),
                     wcc.Checklist(
-                        id=self.display_ctr_id,
+                        id=self.register_component_unique_id(
+                            WellControlPressurePlotOptions.Ids.DISPLAY_CTRL_MODE_BAR
+                        ),
                         options=[
                             {
                                 "label": "Display ctrl mode bar",
@@ -134,11 +132,11 @@ class ControlPressureOptions(SettingsGroupABC):
         ]
 
 
-class ControlView(ViewABC):
+class WellControlView(ViewABC):
     class Ids:
         # pylint: disable=too-few-public-methods
-        PLOT_SETTINGS = "plot-settings"
-        CONTROL_OPTIONS = "control-options"
+        SETTINGS = "settings"
+        PRESSUREPLOT_OPTIONS = "pressure-plot-options"
         MAIN_COLUMN = "main-column"
 
     def __init__(
@@ -152,55 +150,56 @@ class ControlView(ViewABC):
         self.theme = theme
 
         self.add_settings_group(
-            ControlSettings(self.data_models), ControlView.Ids.PLOT_SETTINGS
+            WellControlSettings(self.data_models), WellControlView.Ids.SETTINGS
         )
         self.add_settings_group(
-            ControlPressureOptions(self.data_models), ControlView.Ids.CONTROL_OPTIONS
+            WellControlPressurePlotOptions(self.data_models),
+            WellControlView.Ids.PRESSUREPLOT_OPTIONS,
         )
 
-        self.main_column = self.add_column(ControlView.Ids.MAIN_COLUMN)
+        self.main_column = self.add_column(WellControlView.Ids.MAIN_COLUMN)
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_WELL)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.WELL)
                 .to_string(),
                 "options",
             ),
             Output(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_WELL)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.WELL)
                 .to_string(),
                 "value",
             ),
             Output(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION)
                 .to_string(),
                 "options",
             ),
             Output(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_ENSEMBLE)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             State(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_WELL)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.WELL)
                 .to_string(),
                 "value",
             ),
             State(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION)
                 .to_string(),
                 "value",
             ),
@@ -213,6 +212,7 @@ class ControlView(ViewABC):
             """Updates the well and realization dropdowns with ensemble values"""
             wells = self.data_models[ensemble].wells
             reals = self.data_models[ensemble].realizations
+            print("update dropdowns")
             return (
                 [{"label": well, "value": well} for well in wells],
                 state_well if state_well in wells else wells[0],
@@ -222,50 +222,54 @@ class ControlView(ViewABC):
 
         @callback(
             Output(
-                self.layout_element(ControlView.Ids.MAIN_COLUMN)
+                self.layout_element(WellControlView.Ids.MAIN_COLUMN)
                 .get_unique_id()
                 .to_string(),
                 "children",
             ),
             Input(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_ENSEMBLE)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SELECTED_WELL)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.WELL)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ControlView.Ids.CONTROL_OPTIONS)
-                .component_unique_id(ControlPressureOptions.Ids.INCLUDE_BHP)
+                self.settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(WellControlPressurePlotOptions.Ids.INCLUDE_BHP)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ControlView.Ids.CONTROL_OPTIONS)
-                .component_unique_id(ControlPressureOptions.Ids.MEAN_OR_REALIZATION)
+                self.settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(
+                    WellControlPressurePlotOptions.Ids.PRESSURE_PLOT_MODE
+                )
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ControlView.Ids.CONTROL_OPTIONS)
-                .component_unique_id(ControlPressureOptions.Ids.SELECTED_REALIZATION)
+                self.settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ControlView.Ids.CONTROL_OPTIONS)
-                .component_unique_id(ControlPressureOptions.Ids.DISPLAY_CTR_MODE_BAR)
+                self.settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(
+                    WellControlPressurePlotOptions.Ids.DISPLAY_CTRL_MODE_BAR
+                )
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(ControlView.Ids.PLOT_SETTINGS)
-                .component_unique_id(ControlSettings.Ids.SHARED_X_AXIS)
+                self.settings_group(WellControlView.Ids.SETTINGS)
+                .component_unique_id(WellControlSettings.Ids.SHARED_X_AXIS)
                 .to_string(),
                 "value",
             ),
@@ -295,3 +299,27 @@ class ControlView(ViewABC):
             )
 
             return wcc.Graph(style={"height": "87vh"}, figure=fig)
+
+        @callback(
+            Output(
+                self.settings_group(self.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION_BOX)
+                .to_string(),
+                component_property="style",
+            ),
+            Input(
+                self.settings_group(self.Ids.PRESSUREPLOT_OPTIONS)
+                .component_unique_id(
+                    WellControlPressurePlotOptions.Ids.PRESSURE_PLOT_MODE
+                )
+                .to_string(),
+                "value",
+            ),
+        )
+        def _show_hide_single_real_options(pressure_plot_mode: str) -> Dict[str, str]:
+            """Hides or unhides the realization dropdown according to whether mean
+            or single realization is selected.
+            """
+            if PressurePlotMode(pressure_plot_mode) == PressurePlotMode.MEAN:
+                return {"display": "none"}
+            return {"display": "block"}
