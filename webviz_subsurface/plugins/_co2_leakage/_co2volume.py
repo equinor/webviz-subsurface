@@ -2,8 +2,11 @@ import itertools
 import pathlib
 from enum import Enum
 from typing import Dict
+
 import pandas
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 
 
 class _Columns(Enum):
@@ -50,8 +53,12 @@ def _read_co2_volumes(realization_paths: Dict[str, str], table_relpath: str):
     ])
 
 
-def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width, table_relpath: str):
-    import plotly.express as px
+def generate_co2_volume_figure(
+    realization_paths: Dict[str, str],
+    height: int,
+    width: int,
+    table_relpath: str,
+):
     df = _read_terminal_co2_volumes(realization_paths, table_relpath)
     fig = px.bar(
         df,
@@ -63,7 +70,6 @@ def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width,
         category_orders={_Columns.CONTAINMENT.value: ["outside", "inside"]},
         color_discrete_sequence=["#dd4300", "#006ddd"],
     )
-    # TODO: figure height or yrange should depend on number of realizations (?)
     fig.layout.height = height
     fig.layout.width = width
     fig.layout.legend.title.text = ""
@@ -80,9 +86,12 @@ def generate_co2_volume_figure(realization_paths: Dict[str, str], height, width,
     return fig
 
 
-def generate_co2_time_containment_figure(realization_paths: Dict[str, str], height, width, table_relpath: str):
-    import plotly.graph_objects as go
-    import plotly.express as px
+def generate_co2_time_containment_figure(
+    realization_paths: Dict[str, str],
+    height: int,
+    width: int,
+    table_relpath: str,
+):
     df = _read_co2_volumes(realization_paths, table_relpath)
     df.sort_values(by="date", inplace=True)
     df["date"] = df["date"].astype(str)

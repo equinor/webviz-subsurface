@@ -1,8 +1,9 @@
-import pathlib
 from typing import List, Optional, Dict
+
 import pandas
 from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
+
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProviderFactory,
     EnsembleSurfaceProviderFactory,
@@ -17,6 +18,27 @@ from ._utils import MapAttribute, realization_paths, first_existing_file_path
 
 
 class CO2Leakage(WebvizPluginABC):
+    """
+    Plugin for analyzing CO2 leakage potential across multiple realizations in an FMU
+    ensemble
+
+    * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+    * **`boundary_relpath`:** Path to a polygon representing the containment area
+    * **`well_pick_relpath`:** Path to a file containing well picks
+    * **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
+        CO2 outside/inside a boundary)
+    * **`fault_polygon_attribute`:** Polygons with this attribute are used as fault
+        polygons
+    * **`map_attribute_names`:** Dictionary for overriding the default mapping between
+        attributes visualized by the plugin, and the attributes names used by
+        EnsembleSurfaceProvider
+    * **`formation_aliases`:** List of formation aliases. Relevant when the formation
+        name convention of e.g. well picks is different from that of surface maps
+
+    ---
+
+    TODO: Elaborate on arguments above
+    """
     def __init__(
         self,
         app: Dash,
@@ -29,18 +51,18 @@ class CO2Leakage(WebvizPluginABC):
         map_attribute_names: Optional[Dict[str, str]] = None,
         formation_aliases: Optional[List[List[str]]] = None,
     ):
-        # TMP
-        import warnings
-        warnings.filterwarnings("ignore", category=FutureWarning)
-        # ---
         super().__init__()
         self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
-        self._map_attribute_names = _initialize_map_attribute_names(map_attribute_names)
+        self._map_attribute_names = _init_map_attribute_names(map_attribute_names)
         # Surfaces
-        self._ensemble_surface_providers = _initialize_surface_providers(webviz_settings, ensembles)
+        self._ensemble_surface_providers = _init_surface_providers(
+            webviz_settings, ensembles
+        )
         self._surface_server = SurfaceServer.instance(app)
         # Polygons
-        self._ensemble_fault_polygons_providers = _initialize_fault_polygon_providers(webviz_settings, ensembles)
+        self._ensemble_fault_polygons_providers = _init_fault_polygon_providers(
+            webviz_settings, ensembles
+        )
         self._polygons_server = FaultPolygonsServer.instance(app)
         for provider in self._ensemble_fault_polygons_providers.values():
             self._polygons_server.add_provider(provider)
@@ -49,7 +71,9 @@ class CO2Leakage(WebvizPluginABC):
         # License boundary
         self._boundary_rel_path = boundary_relpath
         # Well picks
-        self._well_pick_providers = _initialize_well_pick_providers(self._ensemble_paths, well_pick_relpath)
+        self._well_pick_providers = _init_well_pick_providers(
+            self._ensemble_paths, well_pick_relpath
+        )
         # CO2 containment
         self._co2_containment_relpath = co2_containment_relpath
         self.set_callbacks()
@@ -78,7 +102,7 @@ class CO2Leakage(WebvizPluginABC):
         )
 
 
-def _initialize_map_attribute_names(
+def _init_map_attribute_names(
     mapping: Optional[Dict[str, str]]
 ) -> Dict[MapAttribute, str]:
     if mapping is None:
@@ -92,7 +116,7 @@ def _initialize_map_attribute_names(
         return {MapAttribute(key): value for key, value in mapping.items()}
 
 
-def _initialize_surface_providers(webviz_settings, ensembles):
+def _init_surface_providers(webviz_settings, ensembles):
     surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
     return {
         ens: surface_provider_factory.create_from_ensemble_surface_files(
@@ -102,7 +126,7 @@ def _initialize_surface_providers(webviz_settings, ensembles):
     }
 
 
-def _initialize_fault_polygon_providers(webviz_settings, ensembles):
+def _init_fault_polygon_providers(webviz_settings, ensembles):
     polygon_provider_factory = EnsembleFaultPolygonsProviderFactory.instance()
     return {
         ens: polygon_provider_factory.create_from_ensemble_fault_polygons_files(
@@ -112,7 +136,7 @@ def _initialize_fault_polygon_providers(webviz_settings, ensembles):
     }    
 
 
-def _initialize_well_pick_providers(
+def _init_well_pick_providers(
     ensemble_roots: Dict[str, str],
     well_pick_rel_path: str,
 ) -> Dict[str, WellPickProvider]:

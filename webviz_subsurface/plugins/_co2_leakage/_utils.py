@@ -1,11 +1,9 @@
 import pathlib
 from typing import Dict, Optional, Iterable
 from enum import Enum
-from fmu.ensemble import ScratchEnsemble
+
 import numpy as np
-
-
-FAULT_POLYGON_ATTRIBUTE = "dl_extracted_faultlines"
+from fmu.ensemble import ScratchEnsemble
 
 
 class MapAttribute(Enum):

@@ -1,14 +1,16 @@
 from typing import Callable, List
 from enum import unique, Enum
+
 import plotly.graph_objects as go
 from dash import html, dcc
 import webviz_core_components as wcc
+
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic
 )
 from webviz_subsurface_components import DeckGLMap
+
 from ._utils import MapAttribute
-# Local import?
 from .._map_viewer_fmu.color_tables import default_color_tables
 
 
@@ -213,7 +215,10 @@ class MapSelectorLayout(wcc.Selectors):
                         "Minimum",
                         html.Div(
                             [
-                                dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE), type="number"),
+                                dcc.Input(
+                                    id=get_uuid(LayoutElements.COLOR_RANGE_MIN_VALUE),
+                                    type="number"
+                                ),
                                 dcc.Checklist(
                                     ["Auto"],
                                     ["Auto"],
@@ -226,7 +231,10 @@ class MapSelectorLayout(wcc.Selectors):
                         "Maximum",
                         html.Div(
                             [
-                                dcc.Input(id=get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE), type="number"),
+                                dcc.Input(
+                                    id=get_uuid(LayoutElements.COLOR_RANGE_MAX_VALUE),
+                                    type="number"
+                                ),
                                 dcc.Checklist(
                                     ["Auto"],
                                     ["Auto"],
@@ -409,8 +417,7 @@ def _compile_property_options():
 
 
 def _color_tables():
-    # Source: https://waldyrious.net/viridis-palette-generator/
-    # + matplotlib._cm_listed
+    # Source: https://waldyrious.net/viridis-palette-generator/ + matplotlib._cm_listed
     return default_color_tables + [
         {
             "name": "Viridis",
@@ -468,4 +475,3 @@ def _color_tables():
             ],
         },
     ]
-

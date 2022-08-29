@@ -6,8 +6,10 @@ import numpy as np
 import dash
 from dash import callback, Output, Input, State
 from dash.exceptions import PreventUpdate
+
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
-    SurfaceStatistic, SurfaceAddress
+    SurfaceStatistic,
+    SurfaceAddress,
 )
 # TODO: tmp?
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
@@ -23,6 +25,7 @@ from webviz_subsurface._providers import (
     SurfaceMeta,
     StatisticalSurfaceAddress,
 )
+
 from . import _plume_extent
 from ._formation_alias import (
     surface_name_aliases,
@@ -31,49 +34,20 @@ from ._formation_alias import (
     lookup_well_pick_alias,
 )
 from ._surface_publishing import (
-    FrequencySurfaceAddress,
+    TruncatedSurfaceAddress,
     publish_and_get_surface_metadata,
 )
-from ._utils import MapAttribute, realization_paths, parse_polygon_file, first_existing_file_path
-from ._co2volume import (generate_co2_volume_figure, generate_co2_time_containment_figure)
+from ._utils import (
+    MapAttribute,
+    realization_paths,
+    parse_polygon_file,
+    first_existing_file_path,
+)
+from ._co2volume import (
+    generate_co2_volume_figure,
+    generate_co2_time_containment_figure,
+)
 from .layout import LayoutElements, LayoutStyle, LayoutLabels
-
-
-@dataclass
-class _SurfaceData:
-    readable_name: str
-    color_map_range: Tuple[float, float]
-    color_map_name: str
-    value_range: Tuple[float, float]
-    meta_data: SurfaceMeta
-    img_url: str
-
-    @staticmethod
-    def from_server(
-        server: SurfaceServer,
-        provider: EnsembleSurfaceProvider,
-        address: Union[SurfaceAddress, FrequencySurfaceAddress],
-        color_map_range: Optional[Tuple[float, float]],
-        color_map_name: str,
-        readable_name: str,
-    ):
-        surf_meta, img_url = publish_and_get_surface_metadata(server, provider, address)
-        value_range = (
-            0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
-            0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
-        )
-        color_map_range = (
-            value_range[0] if color_map_range[0] is None else color_map_range[0],
-            value_range[1] if color_map_range[1] is None else color_map_range[1],
-        )
-        return _SurfaceData(
-            readable_name,
-            color_map_range,
-            color_map_name,
-            value_range,
-            surf_meta,
-            img_url,
-        )
 
 
 def plugin_callbacks(
@@ -103,12 +77,14 @@ def plugin_callbacks(
             dict(label=r, value=r)
             for r in sorted(rz_paths.keys())
         ]
-        fig0 = generate_co2_volume_figure(
-            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH, co2_containment_relpath,
+        fig_args = (
+            rz_paths,
+            LayoutStyle.ENSEMBLE_PLOT_HEIGHT,
+            LayoutStyle.ENSEMBLE_PLOT_WIDTH,
+            co2_containment_relpath
         )
-        fig1 = generate_co2_time_containment_figure(
-            rz_paths, LayoutStyle.ENSEMBLE_PLOT_HEIGHT, LayoutStyle.ENSEMBLE_PLOT_WIDTH, co2_containment_relpath,
-        )
+        fig0 = generate_co2_volume_figure(*fig_args)
+        fig1 = generate_co2_time_containment_figure(*fig_args)
         return realizations, [realizations[0]["value"]], fig0, fig1
 
     @callback(
@@ -153,7 +129,6 @@ def plugin_callbacks(
             initial_date = dash.no_update
         else:
             dates = {
-                # Regarding tooltips: https://github.com/plotly/dash/issues/1846
                 i: {
                     "label": f"{d[:4]}",
                     "style": {"writingMode": "vertical-rl"},
@@ -192,7 +167,9 @@ def plugin_callbacks(
     def toggle_statistics(realizations, attribute, last_statistic):
         if len(realizations) <= 1:
             return True, None
-        elif MapAttribute(attribute) in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
+        elif MapAttribute(attribute) in (
+            MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME
+        ):
             return True, None
         else:
             if last_statistic is None:
@@ -284,10 +261,15 @@ def plugin_callbacks(
             _property_origin(attribute, map_attribute_names),
         )
         polygon_name = lookup_fault_polygon_alias(
-            formation_aliases, formation, ensemble_fault_polygons_providers[ensemble], fault_polygon_attribute
+            formation_aliases,
+            formation,
+            ensemble_fault_polygons_providers[ensemble],
+            fault_polygon_attribute,
         )
         well_pick_horizon = lookup_well_pick_alias(
-            formation_aliases, formation, well_pick_providers[ensemble]
+            formation_aliases,
+            formation,
+            well_pick_providers[ensemble],
         )
         # Surface
         if surface_name is None:
@@ -322,7 +304,7 @@ def plugin_callbacks(
                 contour_data,
             )
         # Create layers and view bounds
-        layers, viewport_bounds = create_map_layers(
+        layers, viewport_bounds = _create_map_layers(
             surface_data=surf_data,
             fault_polygon_url=_extract_fault_polygon_url(
                 server=fault_polygons_server,
@@ -343,7 +325,44 @@ def plugin_callbacks(
         return layers, viewport_bounds
 
 
-def create_map_layers(
+@dataclass
+class _SurfaceData:
+    readable_name: str
+    color_map_range: Tuple[float, float]
+    color_map_name: str
+    value_range: Tuple[float, float]
+    meta_data: SurfaceMeta
+    img_url: str
+
+    @staticmethod
+    def from_server(
+        server: SurfaceServer,
+        provider: EnsembleSurfaceProvider,
+        address: Union[SurfaceAddress, TruncatedSurfaceAddress],
+        color_map_range: Optional[Tuple[float, float]],
+        color_map_name: str,
+        readable_name: str,
+    ):
+        surf_meta, img_url = publish_and_get_surface_metadata(server, provider, address)
+        value_range = (
+            0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
+            0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
+        )
+        color_map_range = (
+            value_range[0] if color_map_range[0] is None else color_map_range[0],
+            value_range[1] if color_map_range[1] is None else color_map_range[1],
+        )
+        return _SurfaceData(
+            readable_name,
+            color_map_range,
+            color_map_name,
+            value_range,
+            surf_meta,
+            img_url,
+        )
+
+
+def _create_map_layers(
     surface_data: Optional[_SurfaceData],
     fault_polygon_url: Optional[str],
     license_boundary_file: Optional[str],
@@ -409,7 +428,9 @@ def create_map_layers(
     return layers, viewport_bounds
 
 
-def _property_origin(attribute: MapAttribute, map_attribute_names: Dict[MapAttribute, str]):
+def _property_origin(
+    attribute: MapAttribute, map_attribute_names: Dict[MapAttribute, str]
+):
     if attribute in map_attribute_names:
         return map_attribute_names[attribute]
     elif attribute == MapAttribute.SGAS_PLUME:
@@ -432,7 +453,9 @@ def _extract_fault_polygon_url(
     if len(realization) == 0:
         return None
     # This always returns the url corresponding to the first realization
-    address = _derive_fault_polygon_address(polygon_name, realization[0], fault_polygon_attribute)
+    address = _derive_fault_polygon_address(
+        polygon_name, realization[0], fault_polygon_attribute
+    )
     return server.encode_partial_url(
         provider_id=provider.provider_id(),
         fault_polygons_address=address,
@@ -459,15 +482,16 @@ def _derive_surface_address(
 ):
     date = None if attribute == MapAttribute.MIGRATION_TIME else date
     if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
-        return FrequencySurfaceAddress(
+        basis = (
+            MapAttribute.MAX_SGAS
+            if attribute == MapAttribute.SGAS_PLUME
+            else MapAttribute.MAX_AMFG
+        )
+        return TruncatedSurfaceAddress(
             name=surface_name,
             datestr=date,
             realizations=realization,
-            basis_attribute=(
-                map_attribute_names[MapAttribute.MAX_SGAS]
-                if attribute == MapAttribute.SGAS_PLUME
-                else map_attribute_names[MapAttribute.MAX_AMFG]
-            ),
+            basis_attribute=map_attribute_names[basis],
             threshold=contour_data["threshold"] if contour_data else 0.0,
             smoothing=contour_data["smoothing"] if contour_data else 0.0,
         )
@@ -525,7 +549,7 @@ def _get_plume_polygon(
     surfaces = [s for s in surfaces if s is not None]
     if len(surfaces) == 0:
         return None
-    return _plume_extent.plume_polygon(
+    return _plume_extent.plume_polygons(
         surfaces,
         threshold,
         smoothing=smoothing,

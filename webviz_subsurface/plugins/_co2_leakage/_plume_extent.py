@@ -6,13 +6,13 @@ import geojson
 import xtgeo
 
 
-def plume_polygon(
+def plume_polygons(
     surfaces: List[xtgeo.RegularSurface],
     threshold: float,
     smoothing: float = 10.0,
     simplify_factor: float = 1.2,
 ) -> geojson.FeatureCollection:
-    plume_count = binary_plume(surfaces, threshold, smoothing)
+    plume_count = truncate_surfaces(surfaces, threshold, smoothing)
     p_levels = [0.1]
     if len(surfaces) > 2:
         p_levels.append(0.5)
@@ -32,7 +32,7 @@ def plume_polygon(
     )
 
 
-def binary_plume(
+def truncate_surfaces(
     surfaces: List[xtgeo.RegularSurface], threshold: float, smoothing: float
 ) -> np.ndarray:
     binary = [
@@ -72,8 +72,8 @@ def _find_all_contours(x, y, zz, levels, simplify_dist: float):
 
 def _find_contours(xx, yy, zz):
     # Use _contour from MPL. Under the hood, this is the same functionality pyplot is
-    # using. Direct use is preferred over pyplot.contour to avoid the overhead related to
-    # figure/axis creation in MPL.
+    # using. Direct use is implemented (instead of pyplot.contour directly) to avoid the
+    # overhead related to figure/axis creation in MPL.
     from matplotlib import _contour
     from matplotlib import __version__ as mpl_ver
     contour_output = _contour.QuadContourGenerator(

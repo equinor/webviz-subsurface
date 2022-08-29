@@ -1,17 +1,30 @@
-from typing import List, Set
+from typing import List, Set, Iterable
 
-from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
-    WellPickTableColumns
+from webviz_subsurface._providers import (
+    EnsembleFaultPolygonsProvider,
+    EnsembleSurfaceProvider,
+)
+from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
+    WellPickTableColumns, WellPickProvider
+)
 
 
-def surface_name_aliases(surface_provider, prop):
+def surface_name_aliases(
+    surface_provider: EnsembleSurfaceProvider,
+    prop: str,
+):
     return [
         s.lower()
         for s in surface_provider.surface_names_for_attribute(prop)
     ]
 
 
-def lookup_surface_alias(alias_groups: List[Set[str]], alias, surface_provider, prop):
+def lookup_surface_alias(
+    alias_groups: List[Set[str]],
+    alias: str,
+    surface_provider: EnsembleSurfaceProvider,
+    prop: str,
+):
     return lookup_formation_alias(
         alias_groups,
         alias,
@@ -19,7 +32,12 @@ def lookup_surface_alias(alias_groups: List[Set[str]], alias, surface_provider, 
     )
 
 
-def lookup_fault_polygon_alias(alias_groups: List[Set[str]], alias, polygon_provider, fault_polygon_attribute):
+def lookup_fault_polygon_alias(
+    alias_groups: List[Set[str]],
+    alias: str,
+    polygon_provider: EnsembleFaultPolygonsProvider,
+    fault_polygon_attribute: str,
+):
     return lookup_formation_alias(
         alias_groups,
         alias,
@@ -27,7 +45,11 @@ def lookup_fault_polygon_alias(alias_groups: List[Set[str]], alias, polygon_prov
     )
 
 
-def lookup_well_pick_alias(alias_groups: List[Set[str]], alias, well_pick_provider):
+def lookup_well_pick_alias(
+    alias_groups: List[Set[str]],
+    alias: str,
+    well_pick_provider: WellPickProvider,
+):
     if well_pick_provider is None:
         return None
     return lookup_formation_alias(
@@ -37,7 +59,11 @@ def lookup_well_pick_alias(alias_groups: List[Set[str]], alias, well_pick_provid
     )
 
 
-def lookup_formation_alias(alias_groups: List[Set[str]], alias, names):
+def lookup_formation_alias(
+    alias_groups: List[Set[str]],
+    alias: str,
+    names: Iterable[str],
+):
     matches = [s for s in names if s.lower() == alias]
     if len(matches) == 0:
         for g in alias_groups:

@@ -13,11 +13,11 @@ from webviz_subsurface._providers import (
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic
-from ._plume_extent import binary_plume
+from ._plume_extent import truncate_surfaces
 
 
 @dataclass
-class FrequencySurfaceAddress:
+class TruncatedSurfaceAddress:
     name: str
     datestr: str
     realizations: List[int]
@@ -27,24 +27,21 @@ class FrequencySurfaceAddress:
 
     @property
     def attribute(self):
-        return f"Frequency_{self.basis_attribute}_{self.threshold}_{self.smoothing}"
+        return f"Truncated_{self.basis_attribute}_{self.threshold}_{self.smoothing}"
 
 
 def publish_and_get_surface_metadata(
     server: SurfaceServer,
     provider: EnsembleSurfaceProvider,
-    address: Union[SurfaceAddress, FrequencySurfaceAddress],
+    address: Union[SurfaceAddress, TruncatedSurfaceAddress],
 ):
-    if isinstance(address, FrequencySurfaceAddress):
-        return _publish_and_get_frequency_surface_metadata(server, provider, address)
+    if isinstance(address, TruncatedSurfaceAddress):
+        return _publish_and_get_truncated_surface_metadata(server, provider, address)
     provider_id: str = provider.provider_id()
     qualified_address = QualifiedSurfaceAddress(provider_id, address)
     surf_meta = server.get_surface_metadata(qualified_address)
     if not surf_meta:
         # This means we need to compute the surface
-        # TODO: statistical surfaces should be filled first (?) At least the maximum
-        #  saturation one. However, it might be more appropriate to not mask it in the
-        #  first place
         surface = provider.get_surface(address)
         if not surface:
             raise ValueError(
@@ -55,10 +52,10 @@ def publish_and_get_surface_metadata(
     return surf_meta, server.encode_partial_url(qualified_address)
 
 
-def _publish_and_get_frequency_surface_metadata(
+def _publish_and_get_truncated_surface_metadata(
     server: SurfaceServer,
     provider: EnsembleSurfaceProvider,
-    address: FrequencySurfaceAddress,
+    address: TruncatedSurfaceAddress,
 ):
     qualified_address = QualifiedSurfaceAddress(
         provider.provider_id(),
@@ -86,7 +83,7 @@ def _publish_and_get_frequency_surface_metadata(
 
 def _generate_surface(
     provider: EnsembleSurfaceProvider,
-    address: FrequencySurfaceAddress,
+    address: TruncatedSurfaceAddress,
 ) -> Optional[xtgeo.RegularSurface]:
     surfaces = [
         provider.get_surface(SimulatedSurfaceAddress(
@@ -100,7 +97,7 @@ def _generate_surface(
     surfaces = [s for s in surfaces if s is not None]
     if len(surfaces) == 0:
         return None
-    plume_count = binary_plume(surfaces, address.threshold, address.smoothing)
+    plume_count = truncate_surfaces(surfaces, address.threshold, address.smoothing)
     template = surfaces[0].copy()
     template.values = plume_count
     template.values.mask = plume_count < 1e-4
