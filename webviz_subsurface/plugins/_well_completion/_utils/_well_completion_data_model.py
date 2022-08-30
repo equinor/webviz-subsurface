@@ -9,9 +9,9 @@ from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from ..._datainput.well_completions import get_ecl_unit_system
-from ..._models import StratigraphyModel, WellAttributesModel
-from ..._providers import EnsembleTableProvider
+from ...._datainput.well_completions import get_ecl_unit_system
+from ...._models import StratigraphyModel, WellAttributesModel
+from ...._providers import EnsembleTableProvider
 
 LOGGER = logging.getLogger(__name__)
 

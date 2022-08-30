@@ -1,1 +1,0 @@
-from ._well_completion_view import WellCompletionView

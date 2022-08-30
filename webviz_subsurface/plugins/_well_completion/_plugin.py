@@ -5,9 +5,9 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._models import StratigraphyModel, WellAttributesModel
 
 from ..._providers import EnsembleTableProviderFactory
-from ._business_logic import WellCompletionDataModel
 from ._plugin_ids import PluginIds
-from .views import WellCompletionView
+from ._utils import WellCompletionDataModel
+from ._views import WellCompletionView
 
 
 class WellCompletion(WebvizPluginABC):

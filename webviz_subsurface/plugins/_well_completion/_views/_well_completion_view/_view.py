@@ -6,8 +6,8 @@ import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from .._business_logic import WellCompletionDataModel
-from ..view_elements import WellCompletionViewElement
+from ..._utils import WellCompletionDataModel
+from ._view_element import WellCompletionViewElement
 
 
 class DataMode(str, Enum):
