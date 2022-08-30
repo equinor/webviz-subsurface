@@ -108,11 +108,8 @@ class WellControlPressurePlotOptions(SettingsGroupABC):
                         id=self.register_component_unique_id(
                             WellControlPressurePlotOptions.Ids.REALIZATION
                         ),
-                        options=[
-                            {"label": real, "value": real}
-                            for real in self.data_models[self.ensembles[0]].realizations
-                        ],
-                        value=self.data_models[self.ensembles[0]].realizations[0],
+                        options=[],
+                        value=None,
                         multi=False,
                     ),
                     wcc.Checklist(
@@ -174,13 +171,13 @@ class WellControlView(ViewABC):
                 "value",
             ),
             Output(
-                self.settings_group(WellControlView.Ids.SETTINGS)
+                self.settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
                 .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION)
                 .to_string(),
                 "options",
             ),
             Output(
-                self.settings_group(WellControlView.Ids.SETTINGS)
+                self.settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
                 .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION)
                 .to_string(),
                 "value",
@@ -198,7 +195,7 @@ class WellControlView(ViewABC):
                 "value",
             ),
             State(
-                self.settings_group(WellControlView.Ids.SETTINGS)
+                self.settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
                 .component_unique_id(WellControlPressurePlotOptions.Ids.REALIZATION)
                 .to_string(),
                 "value",
@@ -212,7 +209,6 @@ class WellControlView(ViewABC):
             """Updates the well and realization dropdowns with ensemble values"""
             wells = self.data_models[ensemble].wells
             reals = self.data_models[ensemble].realizations
-            print("update dropdowns")
             return (
                 [{"label": well, "value": well} for well in wells],
                 state_well if state_well in wells else wells[0],

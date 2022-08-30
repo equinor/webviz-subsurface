@@ -197,7 +197,7 @@ class WellOverviewFilters(SettingsGroupABC):
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
 
-        super().__init__("Filter")
+        super().__init__("Filters")
         self.wells: List[str] = []
         self.well_attr: dict = {}
         for ens_data_model in data_models.values():
