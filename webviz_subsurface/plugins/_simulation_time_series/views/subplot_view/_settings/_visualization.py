@@ -57,13 +57,13 @@ class VisualizationSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(
                     VisualizationSettings.Ids.PLOT_OPTIONS
                 ),
-                children=self.__plot_options_layout(
+                children=self._plot_options_layout(
                     selected_visualization=self._selected_visualization,
                 ),
             ),
         ]
 
-    def __plot_options_layout(
+    def _plot_options_layout(
         self,
         selected_visualization: VisualizationOptions,
     ) -> html.Div:

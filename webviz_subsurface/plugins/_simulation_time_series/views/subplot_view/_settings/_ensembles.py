@@ -58,11 +58,11 @@ class EnsemblesSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(
                     EnsemblesSettings.Ids.DELTA_ENSEMBLE
                 ),
-                children=self.__delta_ensemble_creator_layout(),
+                children=self._delta_ensemble_creator_layout(),
             ),
         ]
 
-    def __delta_ensemble_creator_layout(self) -> html.Div:
+    def _delta_ensemble_creator_layout(self) -> html.Div:
         return html.Div(
             children=[
                 wcc.Dropdown(
@@ -97,7 +97,7 @@ class EnsemblesSettings(SettingsGroupABC):
                         "min-width": "20px",
                     },
                 ),
-                self.__delta_ensemble_table_layout(),
+                self._delta_ensemble_table_layout(),
                 dcc.Store(
                     id=self.register_component_unique_id(
                         EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
@@ -107,7 +107,7 @@ class EnsemblesSettings(SettingsGroupABC):
             ]
         )
 
-    def __delta_ensemble_table_layout(self) -> dash_table.DataTable:
+    def _delta_ensemble_table_layout(self) -> dash_table.DataTable:
         return dash_table.DataTable(
             id=self.register_component_unique_id(
                 EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
@@ -136,54 +136,48 @@ class EnsemblesSettings(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            [
-                Output(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
-                    ).to_string(),
-                    "data",
-                ),
-                Output(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
-                    ).to_string(),
-                    "data",
-                ),
-                Output(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN
-                    ).to_string(),
-                    "options",
-                ),
-            ],
-            [
-                Input(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
-                    ).to_string(),
-                    "n_clicks",
-                )
-            ],
-            [
-                State(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
-                    ).to_string(),
-                    "data",
-                ),
-                State(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_A_DROPDOWN
-                    ).to_string(),
-                    "value",
-                ),
-                State(
-                    self.component_unique_id(
-                        EnsemblesSettings.Ids.DELTA_ENSEMBLE_B_DROPDOWN
-                    ).to_string(),
-                    "value",
-                ),
-            ],
+            Output(
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
+                ).to_string(),
+                "data",
+            ),
+            Output(
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
+                ).to_string(),
+                "data",
+            ),
+            Output(
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN
+                ).to_string(),
+                "options",
+            ),
+            Input(
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.DELTA_ENSEMBLE_CREATE_BUTTON
+                ).to_string(),
+                "n_clicks",
+            ),
+            State(
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE
+                ).to_string(),
+                "data",
+            ),
+            State(
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.DELTA_ENSEMBLE_A_DROPDOWN
+                ).to_string(),
+                "value",
+            ),
+            State(
+                self.component_unique_id(
+                    EnsemblesSettings.Ids.DELTA_ENSEMBLE_B_DROPDOWN
+                ).to_string(),
+                "value",
+            ),
         )
         def _update_created_delta_ensembles_names(
             n_clicks: int,

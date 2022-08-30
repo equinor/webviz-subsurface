@@ -53,7 +53,6 @@ class SubplotView(ViewABC):
     # pylint: disable=too-few-public-methods
     class Ids:
         SUBPLOT = "subplot"
-        MAIN_COLUMN = "main-column"
 
         ENSEMBLE_SETTINGS = "ensemble-settings"
         FILTER_REALIZATION_SETTINGS = "filter-realization-settings"
@@ -83,7 +82,7 @@ class SubplotView(ViewABC):
     ) -> None:
         super().__init__("Subplot View")
 
-        column = self.add_column(SubplotView.Ids.MAIN_COLUMN)
+        column = self.add_column()
         column.add_view_element(SubplotGraph(), SubplotView.Ids.SUBPLOT)
 
         self.add_settings_groups(
@@ -129,24 +128,20 @@ class SubplotView(ViewABC):
     # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
         @callback(
-            [
-                Output(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.VISUALIZATION_SETTINGS,
-                        VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
-                    ),
-                    "style",
+            Output(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.VISUALIZATION_SETTINGS,
+                    VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
                 ),
-            ],
-            [
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
-                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
-                    ),
-                    "value",
-                )
-            ],
+                "style",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                ),
+                "value",
+            ),
         )
         def _update_trace_options_layout(
             relative_date_value: str,
@@ -171,115 +166,111 @@ class SubplotView(ViewABC):
                 ),
                 "figure",
             ),
-            [
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.TIME_SERIES_SETTINGS,
-                        TimeSeriesSettings.Ids.VECTOR_SELECTOR,
-                    ),
-                    "selectedNodes",
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.TIME_SERIES_SETTINGS,
+                    TimeSeriesSettings.Ids.VECTOR_SELECTOR,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.ENSEMBLE_SETTINGS,
-                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
-                    ),
-                    "value",
+                "selectedNodes",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.ENSEMBLE_SETTINGS,
+                    EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.VISUALIZATION_SETTINGS,
-                        VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.VISUALIZATION_SETTINGS,
+                    VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.VISUALIZATION_SETTINGS,
-                        VisualizationSettings.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.VISUALIZATION_SETTINGS,
+                    VisualizationSettings.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.VISUALIZATION_SETTINGS,
-                        VisualizationSettings.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.VISUALIZATION_SETTINGS,
+                    VisualizationSettings.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.VISUALIZATION_SETTINGS,
-                        VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.VISUALIZATION_SETTINGS,
+                    VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.GROUP_BY_SETTINGS,
-                        GroupBySettings.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.GROUP_BY_SETTINGS,
+                    GroupBySettings.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
-                        ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
-                        FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
-                        FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
-                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
-                    ),
-                    "value",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
                 ),
-                Input(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.TIME_SERIES_SETTINGS,
-                        TimeSeriesSettings.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER,
-                    ),
-                    "data",
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.TIME_SERIES_SETTINGS,
+                    TimeSeriesSettings.Ids.GRAPH_DATA_HAS_CHANGED_TRIGGER,
                 ),
-            ],
-            [
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.ENSEMBLE_SETTINGS,
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE,
-                    ),
-                    "data",
+                "data",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.ENSEMBLE_SETTINGS,
+                    EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.TIME_SERIES_SETTINGS,
-                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS,
-                    ),
-                    "data",
+                "data",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.TIME_SERIES_SETTINGS,
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.ENSEMBLE_SETTINGS,
-                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
-                    ),
-                    "options",
+                "data",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.ENSEMBLE_SETTINGS,
+                    EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
                 ),
-            ],
+                "options",
+            ),
         )
 
         # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
@@ -295,7 +286,7 @@ class SubplotView(ViewABC):
             selected_realizations: List[int],
             statistics_calculated_from_value: str,
             relative_date_value: str,
-            __graph_data_has_changed_trigger: int,
+            _graph_data_has_changed_trigger: int,
             delta_ensembles: List[DeltaEnsemble],
             vector_calculator_expressions: List[ExpressionInfo],
             ensemble_dropdown_options: List[dict],
@@ -313,7 +304,7 @@ class SubplotView(ViewABC):
                 ensemble, using VectorSubplotBuilder and EnsembleSubplotBuilder, respectively
             * Create/build property serialization in FigureBuilder by use of business logic data
 
-            NOTE: __graph_data_has_changed_trigger is only used to trigger callback when change of
+            NOTE: _graph_data_has_changed_trigger is only used to trigger callback when change of
             graphs data has changed and re-render of graph is necessary. E.g. when a selected
             expression from the VectorCalculator gets edited without changing the expression
             name - i.e.
@@ -619,71 +610,69 @@ class SubplotView(ViewABC):
         @callback(
             self.view_data_output(),
             self.view_data_requested(),
-            [
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.TIME_SERIES_SETTINGS,
-                        TimeSeriesSettings.Ids.VECTOR_SELECTOR,
-                    ),
-                    "selectedNodes",
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.TIME_SERIES_SETTINGS,
+                    TimeSeriesSettings.Ids.VECTOR_SELECTOR,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.ENSEMBLE_SETTINGS,
-                        EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
-                    ),
-                    "value",
+                "selectedNodes",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.ENSEMBLE_SETTINGS,
+                    EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.VISUALIZATION_SETTINGS,
-                        VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS,
-                    ),
-                    "value",
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.VISUALIZATION_SETTINGS,
+                    VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
-                        ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
-                    ),
-                    "value",
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
-                        FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
-                    ),
-                    "value",
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
-                        FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS,
-                    ),
-                    "value",
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
+                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.ENSEMBLE_SETTINGS,
-                        EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE,
-                    ),
-                    "data",
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.ENSEMBLE_SETTINGS,
+                    EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLES_STORE,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.TIME_SERIES_SETTINGS,
-                        TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS,
-                    ),
-                    "data",
+                "data",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.TIME_SERIES_SETTINGS,
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_EXPRESSIONS,
                 ),
-                State(
-                    self.settings_group_unique_id(
-                        SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
-                        ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
-                    ),
-                    "value",
+                "data",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
                 ),
-            ],
+                "value",
+            ),
         )
         # pylint: disable=too-many-branches
         def _user_download_data(

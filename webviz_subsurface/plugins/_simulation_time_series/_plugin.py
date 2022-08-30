@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 import webviz_subsurface_components as wsc
-from dash import html
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 
@@ -118,7 +116,6 @@ class SimulationTimeSeries(WebvizPluginABC):
             line_shape_fallback
         )
 
-        # Must define valid frequency!
         if Frequency.from_string_value(sampling) is None:
             raise ValueError(
                 'Sampling frequency conversion is "None", i.e. Raw sampling, and '
@@ -337,10 +334,6 @@ class SimulationTimeSeries(WebvizPluginABC):
             ),
             SimulationTimeSeries.Ids.SUBPLOT_VIEW,
         )
-
-    @property
-    def layout(self) -> Component:
-        return html.Div("No view is loaded.")
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions: List[Tuple[Callable, list]] = []
