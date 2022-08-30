@@ -5,9 +5,9 @@ import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from .._business_logic import EnsembleGroupTreeData
-from .._types import NodeType, StatOptions, TreeModeOptions
-from ..view_elements import GroupTreeViewElement
+from ..._types import NodeType, StatOptions, TreeModeOptions
+from ..._utils import EnsembleGroupTreeData
+from ._view_element import GroupTreeViewElement
 
 
 class ViewControls(SettingsGroupABC):

@@ -8,7 +8,7 @@ from webviz_config.common_cache import CACHE
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from ._types import NodeType, StatOptions, TreeModeOptions
+from .._types import NodeType, StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:

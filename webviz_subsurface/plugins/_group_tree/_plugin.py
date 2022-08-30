@@ -10,10 +10,15 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
-from ._business_logic import EnsembleGroupTreeData
 from ._plugin_ids import PluginIds
-from .view_elements import GroupTreeViewElement
-from .views import GroupTreeView, ViewControls, ViewFilters, ViewOptions
+from ._utils import EnsembleGroupTreeData
+from ._views import (
+    GroupTreeView,
+    GroupTreeViewElement,
+    ViewControls,
+    ViewFilters,
+    ViewOptions,
+)
 
 
 class GroupTree(WebvizPluginABC):
