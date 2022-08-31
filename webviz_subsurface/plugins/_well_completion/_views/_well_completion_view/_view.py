@@ -16,8 +16,7 @@ class DataMode(str, Enum):
 
 
 class ViewSettings(SettingsGroupABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(str, Enum):
         ENSEMBLE = "ensemble"
         DATA_MODE = "mode"
         REALIZATION = "realization"
@@ -66,8 +65,7 @@ class ViewSettings(SettingsGroupABC):
 
 
 class WellCompletionView(ViewABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(str, Enum):
         VIEW_ELEMENT = "view-element"
         SETTINGS = "settings"
 

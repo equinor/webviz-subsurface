@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Callable, Dict, List, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -5,9 +6,14 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._models import StratigraphyModel, WellAttributesModel
 
 from ..._providers import EnsembleTableProviderFactory
-from ._plugin_ids import PluginIds
 from ._utils import WellCompletionDataModel
 from ._views import WellCompletionView
+
+
+class PluginIds:
+    # pylint: disable=too-few-public-methods
+    class Views(str, Enum):
+        WELL_COMPLETION_VIEW = "well-completion-view"
 
 
 class WellCompletion(WebvizPluginABC):
