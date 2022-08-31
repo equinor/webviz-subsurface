@@ -6,9 +6,9 @@ from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import create_well_control_figure
 from .._types import PressurePlotMode
+from .._utils import EnsembleWellAnalysisData
 
 
 class WellControlSettings(SettingsGroupABC):

@@ -10,9 +10,9 @@ from ..._providers import (
     EnsembleSummaryProviderFactory,
     Frequency,
 )
-from ._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from ._error import error
 from ._plugin_ids import PluginIds
+from ._utils import EnsembleWellAnalysisData
 from ._views import (
     WellControlPressurePlotOptions,
     WellControlSettings,

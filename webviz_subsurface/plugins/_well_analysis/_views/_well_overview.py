@@ -8,10 +8,10 @@ from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from .._ensemble_well_analysis_data import EnsembleWellAnalysisData
 from .._figures import WellOverviewFigure, format_well_overview_figure
 from .._plugin_ids import PluginIds
 from .._types import ChartType
+from .._utils import EnsembleWellAnalysisData
 
 
 class WellOverviewSettings(SettingsGroupABC):
