@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import webviz_core_components as wcc
@@ -11,8 +12,7 @@ from ._view_element import GroupTreeViewElement
 
 
 class ViewControls(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(str, Enum):
         TOUR_STEP = "tour-step"
         ENSEMBLE = "ensemble"
         TREEMODE = "tree-mode"
@@ -41,9 +41,7 @@ class ViewControls(SettingsGroupABC):
 
 
 class ViewOptions(SettingsGroupABC):
-
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(str, Enum):
         TOUR_STEP = "tour-step"
         STATISTICAL_OPTIONS = "statistical-options"
         STATISTICS = "statistics"
@@ -102,8 +100,7 @@ class ViewOptions(SettingsGroupABC):
 
 
 class ViewFilters(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(str, Enum):
         TOUR_STEP = "tour-step"
         PROD_INJ_OTHER = "prod-inj-other"
 
@@ -135,8 +132,7 @@ class ViewFilters(SettingsGroupABC):
 
 
 class GroupTreeView(ViewABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(str, Enum):
         VIEW_ELEMENT = "view-element"
         CONTROLS = "controls"
         OPTIONS = "options"

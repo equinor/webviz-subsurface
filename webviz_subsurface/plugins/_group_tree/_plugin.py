@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
@@ -10,7 +11,6 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
-from ._plugin_ids import PluginIds
 from ._utils import EnsembleGroupTreeData
 from ._views import (
     GroupTreeView,
@@ -19,6 +19,12 @@ from ._views import (
     ViewFilters,
     ViewOptions,
 )
+
+
+class PluginIds:
+    # pylint: disable=too-few-public-methods
+    class Views(str, Enum):
+        GROUPTREE_VIEW = "group-tree-view"
 
 
 class GroupTree(WebvizPluginABC):
