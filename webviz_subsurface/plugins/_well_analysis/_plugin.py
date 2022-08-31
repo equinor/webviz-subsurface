@@ -117,9 +117,6 @@ class WellAnalysis(WebvizPluginABC):
         self.add_store(
             PluginIds.Stores.CURRENT_FIGURE, WebvizPluginABC.StorageType.SESSION
         )
-        self.add_store(
-            PluginIds.Stores.PREV_PLOT_TYPE, WebvizPluginABC.StorageType.SESSION
-        )
 
         self.add_view(
             WellOverviewView(self._data_models, self._theme),
@@ -150,14 +147,14 @@ class WellAnalysis(WebvizPluginABC):
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
                 .settings_group(WellOverviewView.Ids.SETTINGS)
-                .component_unique_id(WellOverviewSettings.Ids.SELECTED_ENSEMBLES),
+                .component_unique_id(WellOverviewSettings.Ids.ENSEMBLES),
                 "content": """Lets you choose between different ensembles.
                             Several can be selected at the same time.""",
             },
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
                 .settings_group(WellOverviewView.Ids.SETTINGS)
-                .component_unique_id(WellOverviewSettings.Ids.SELECTED_RESPONSE),
+                .component_unique_id(WellOverviewSettings.Ids.RESPONSE),
                 "content": """This gives you the option to see different types of production.""",
             },
             {
