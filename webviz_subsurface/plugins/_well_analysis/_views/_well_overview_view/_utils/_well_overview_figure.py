@@ -8,8 +8,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
-from .._types import ChartType
-from .._utils import EnsembleWellAnalysisData
+from ...._types import ChartType
+from ...._utils import EnsembleWellAnalysisData
 
 
 class WellOverviewFigure:
