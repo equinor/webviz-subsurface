@@ -10,12 +10,6 @@ from ._utils import WellCompletionDataModel
 from ._views import WellCompletionView
 
 
-class PluginIds:
-    # pylint: disable=too-few-public-methods
-    class Views(str, Enum):
-        WELL_COMPLETION_VIEW = "well-completion-view"
-
-
 class WellCompletion(WebvizPluginABC):
     """Vizualizes Eclipse well completions data per well. The data is grouped per well
     and zone and can be filtered according to flexible well categories.
@@ -139,6 +133,9 @@ class WellCompletion(WebvizPluginABC):
 
     """
 
+    class Ids(str, Enum):
+        WELL_COMPLETION_VIEW = "well-completion-view"
+
     def __init__(
         self,
         webviz_settings: WebvizSettings,
@@ -170,7 +167,7 @@ class WellCompletion(WebvizPluginABC):
 
         self.add_view(
             WellCompletionView(self._data_models),
-            PluginIds.Views.WELL_COMPLETION_VIEW,
+            self.Ids.WELL_COMPLETION_VIEW,
         )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
