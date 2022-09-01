@@ -10,7 +10,7 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
 )
 from webviz_subsurface_components import DeckGLMap
 
-from ._utils import MapAttribute
+from ._utilities.general import MapAttribute
 from .._map_viewer_fmu.color_tables import default_color_tables
 
 
