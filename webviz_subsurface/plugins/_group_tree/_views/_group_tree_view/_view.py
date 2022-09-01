@@ -135,7 +135,6 @@ class GroupTreeView(ViewABC):
     def __init__(self, group_tree_data: Dict[str, EnsembleGroupTreeData]) -> None:
         super().__init__("Group Tree")
         self._group_tree_data = group_tree_data
-        self._group_tree_component_id = "grouptree-component"
 
         self.add_settings_group(
             ViewControls(list(self._group_tree_data.keys())), GroupTreeView.Ids.CONTROLS
@@ -149,6 +148,9 @@ class GroupTreeView(ViewABC):
         main_column.add_view_element(
             GroupTreeViewElement(), GroupTreeView.Ids.VIEW_ELEMENT
         )
+        self._group_tree_component_id = self.view_element(
+            GroupTreeView.Ids.VIEW_ELEMENT
+        ).register_component_unique_id(GroupTreeView.Ids.GROUPTREE_COMPONENT)
 
     def set_callbacks(self) -> None:
         @callback(
