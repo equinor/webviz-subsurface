@@ -10,8 +10,8 @@ from webviz_subsurface._providers import SurfaceMeta, SurfaceServer, \
     SimulatedFaultPolygonsAddress
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic
-from webviz_subsurface.plugins._co2_leakage import _plume_extent
-from webviz_subsurface.plugins._co2_leakage._surface_publishing import \
+from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
+from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import \
     TruncatedSurfaceAddress, publish_and_get_surface_metadata
 from webviz_subsurface.plugins._co2_leakage._utilities.general import MapAttribute, \
     parse_polygon_file
@@ -148,7 +148,7 @@ def get_plume_polygon(
     surfaces = [s for s in surfaces if s is not None]
     if len(surfaces) == 0:
         return None
-    return _plume_extent.plume_polygons(
+    return plume_extent.plume_polygons(
         surfaces,
         threshold,
         smoothing=smoothing,

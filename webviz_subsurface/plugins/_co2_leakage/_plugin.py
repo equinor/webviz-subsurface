@@ -1,18 +1,15 @@
 from typing import Optional, Dict, List
 
 import dash
-import pandas
 from dash import Dash, callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import SurfaceServer, \
     FaultPolygonsServer
-from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
-    SurfaceStatistic
-from webviz_subsurface.plugins._co2_leakage._co2volume import generate_co2_volume_figure, \
+from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import generate_co2_volume_figure, \
     generate_co2_time_containment_figure
-from webviz_subsurface.plugins._co2_leakage._formation_alias import surface_name_aliases, \
+from webviz_subsurface.plugins._co2_leakage._utilities.formation_alias import surface_name_aliases, \
     lookup_surface_alias, lookup_fault_polygon_alias, lookup_well_pick_alias
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin, \
     SurfaceData, derive_surface_address, readable_name, get_plume_polygon, \
@@ -25,9 +22,6 @@ from webviz_subsurface.plugins._co2_leakage._utilities.initialization import \
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import MainView, \
     MapViewElement, INITIAL_BOUNDS
 from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewSettings
-from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
-    WellPickProvider
-
 
 ENSEMBLE_PLOT_HEIGHT = 300
 ENSEMBLE_PLOT_WIDTH = 400

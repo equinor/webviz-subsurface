@@ -1,1 +1,1 @@
-from .co2leakage import CO2Leakage
+from ._plugin import CO2Leakage

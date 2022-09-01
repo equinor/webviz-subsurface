@@ -1,22 +1,10 @@
-from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import ViewElementABC, ViewABC
-
-from webviz_subsurface.plugins._co2_leakage._element_ids import ElementIds
-
-import dataclasses
-from typing import Callable, List
-from enum import unique, Enum
 
 import plotly.graph_objects as go
 from dash import html, dcc
 import webviz_core_components as wcc
 from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC, \
-    SettingsGroupABC
+from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 
-from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
-    SurfaceStatistic
-)
 from webviz_subsurface_components import DeckGLMap
 
 from webviz_subsurface.plugins._map_viewer_fmu.color_tables import default_color_tables

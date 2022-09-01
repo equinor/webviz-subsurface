@@ -13,7 +13,7 @@ from webviz_subsurface._providers import (
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic
-from ._plume_extent import truncate_surfaces
+from webviz_subsurface.plugins._co2_leakage._utilities.plume_extent import truncate_surfaces
 
 
 @dataclass
