@@ -7,4 +7,5 @@ from ._well_overview_view import (
     WellOverviewFilters,
     WellOverviewSettings,
     WellOverviewView,
+    WellOverviewViewElement,
 )

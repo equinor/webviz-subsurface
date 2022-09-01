@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Set, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
@@ -8,10 +8,10 @@ from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from ..._plugin_ids import PluginIds
 from ..._types import ChartType
 from ..._utils import EnsembleWellAnalysisData
 from ._utils import WellOverviewFigure, format_well_overview_figure
+from ._view_element import WellOverviewViewElement
 
 
 class WellOverviewSettings(SettingsGroupABC):
@@ -222,9 +222,8 @@ class WellOverviewView(ViewABC):
         # pylint: disable=too-few-public-methods
         SETTINGS = "settings"
         FILTERS = "filters"
-        MAIN_COLUMN = "main-column"
         CURRENT_FIGURE = "current-figure"
-        FIGURE = "figure"
+        VIEW_ELEMENT = "view-element"
 
     def __init__(
         self,
@@ -242,17 +241,16 @@ class WellOverviewView(ViewABC):
         self.add_settings_group(
             WellOverviewFilters(self._data_models), self.Ids.FILTERS
         )
-        self.add_column(self.Ids.MAIN_COLUMN)
+        main_column = self.add_column()
+        main_column.add_view_element(WellOverviewViewElement(), self.Ids.VIEW_ELEMENT)
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.layout_element(self.Ids.MAIN_COLUMN).get_unique_id().to_string(),
+                self.view_element(self.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellOverviewViewElement.Ids.CHART)
+                .to_string(),
                 "children",
-            ),
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.CURRENT_FIGURE),
-                "value",
             ),
             Input(
                 self.settings_group(self.Ids.SETTINGS)
@@ -304,7 +302,12 @@ class WellOverviewView(ViewABC):
                 },
                 "id",
             ),
-            State(self.get_store_unique_id(PluginIds.Stores.CURRENT_FIGURE), "value"),
+            State(
+                self.view_element(self.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellOverviewViewElement.Ids.CHART)
+                .to_string(),
+                "figure",
+            ),
         )
         def _update_graph(
             ensembles: List[str],
@@ -315,7 +318,7 @@ class WellOverviewView(ViewABC):
             wells_selected: List[str],
             checklist_ids: List[Dict[str, str]],
             current_fig_dict: dict,
-        ) -> Tuple[Component, dict]:
+        ) -> Component:
             # pylint: disable=too-many-locals
             # pylint: disable=too-many-arguments
             """Updates the well overview graph with selected input (f.ex chart type)"""
@@ -363,12 +366,9 @@ class WellOverviewView(ViewABC):
                     prod_after_date,
                 )
 
-            return (
-                [
-                    wcc.Graph(
-                        style={"height": "87vh"},
-                        figure=fig_dict,
-                    ),
-                ],
-                fig_dict,
-            )
+            return [
+                wcc.Graph(
+                    style={"height": "87vh"},
+                    figure=fig_dict,
+                ),
+            ]

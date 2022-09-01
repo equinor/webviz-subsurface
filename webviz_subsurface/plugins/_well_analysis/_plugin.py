@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Type
 
@@ -11,7 +12,6 @@ from ..._providers import (
     Frequency,
 )
 from ._error import error
-from ._plugin_ids import PluginIds
 from ._utils import EnsembleWellAnalysisData
 from ._views import (
     WellControlPressurePlotOptions,
@@ -20,7 +20,15 @@ from ._views import (
     WellOverviewFilters,
     WellOverviewSettings,
     WellOverviewView,
+    WellOverviewViewElement,
 )
+
+
+class PluginIds:
+    # pylint: disable=too-few-public-methods
+    class ViewID(str, Enum):
+        WELL_OVERVIEW = "well-overview"
+        WELL_CONTROL = "well-control"
 
 
 class WellAnalysis(WebvizPluginABC):
@@ -114,10 +122,6 @@ class WellAnalysis(WebvizPluginABC):
                 filter_out_startswith=filter_out_startswith,
             )
 
-        self.add_store(
-            PluginIds.Stores.CURRENT_FIGURE, WebvizPluginABC.StorageType.SESSION
-        )
-
         self.add_view(
             WellOverviewView(self._data_models, self._theme),
             PluginIds.ViewID.WELL_OVERVIEW,
@@ -132,8 +136,8 @@ class WellAnalysis(WebvizPluginABC):
         return [
             {
                 "id": self.view(PluginIds.ViewID.WELL_OVERVIEW)
-                .layout_element(WellOverviewView.Ids.MAIN_COLUMN)
-                .get_unique_id(),
+                .view_element(WellOverviewView.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellOverviewViewElement.Ids.CHART),
                 "content": """Shows cumulative well oil production,
                  with the possibility to switch between different chart types.""",
             },
