@@ -2,28 +2,28 @@ from typing import Dict, List
 
 import pandas as pd
 
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._types import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._types import (
     DeltaEnsemble,
 )
 
 # pylint: disable = line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_ensemble_vectors_accessor_utils import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
 
 # pylint: disable = line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_vectors_accessor.derived_delta_ensemble_vectors_accessor_impl import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.derived_vectors_accessor.derived_delta_ensemble_vectors_accessor_impl import (
     DerivedDeltaEnsembleVectorsAccessorImpl,
 )
 
 # pylint: disable = line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_vectors_accessor.derived_ensemble_vectors_accessor_impl import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.derived_vectors_accessor.derived_ensemble_vectors_accessor_impl import (
     DerivedEnsembleVectorsAccessorImpl,
 )
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_vectors_accessor.derived_vectors_accessor import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.derived_vectors_accessor.derived_vectors_accessor import (
     DerivedVectorsAccessor,
 )
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.provider_set import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set import (
     ProviderSet,
 )
 

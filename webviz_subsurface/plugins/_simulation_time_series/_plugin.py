@@ -35,7 +35,8 @@ from ._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
-from .views.subplot_view._settings import (
+from ._views import SubplotView
+from ._views._subplot_view._settings import (
     EnsemblesSettings,
     FilterRealizationSettings,
     GroupBySettings,
@@ -43,13 +44,12 @@ from .views.subplot_view._settings import (
     TimeSeriesSettings,
     VisualizationSettings,
 )
-from .views.subplot_view._subplot_view import SubplotView
-from .views.subplot_view._types import VisualizationOptions
-from .views.subplot_view._utils.from_timeseries_cumulatives import (
+from ._views._subplot_view._types import VisualizationOptions
+from ._views._subplot_view._utils.from_timeseries_cumulatives import (
     create_per_day_vector_name,
     create_per_interval_vector_name,
 )
-from .views.subplot_view._view_elements.subplot import SubplotGraph
+from ._views._subplot_view._view_elements._subplot_graph import SubplotGraph
 
 
 def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, str]]:

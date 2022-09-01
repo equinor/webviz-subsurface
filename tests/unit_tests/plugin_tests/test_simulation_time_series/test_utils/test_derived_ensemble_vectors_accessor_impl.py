@@ -11,7 +11,7 @@ from webviz_subsurface_components.VectorCalculatorWrapper import (
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 
 # pylint: disable = line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.derived_vectors_accessor.derived_ensemble_vectors_accessor_impl import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.derived_vectors_accessor.derived_ensemble_vectors_accessor_impl import (
     DerivedEnsembleVectorsAccessorImpl,
 )
 

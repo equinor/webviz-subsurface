@@ -9,7 +9,7 @@ from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
 
 # pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.history_vectors import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.history_vectors import (
     create_history_vectors_df,
 )
 

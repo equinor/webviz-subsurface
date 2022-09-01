@@ -7,7 +7,7 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
-from ..views.subplot_view._utils.provider_set import ProviderSet
+from .._views._subplot_view._utils.provider_set import ProviderSet
 
 
 def create_lazy_provider_set_from_paths(

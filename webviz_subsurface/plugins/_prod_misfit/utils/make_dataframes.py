@@ -4,7 +4,7 @@ from typing import Dict, List
 
 import pandas as pd
 
-from ..._simulation_time_series.views.subplot_view._utils.provider_set import (
+from ..._simulation_time_series._views._subplot_view._utils.provider_set import (
     ProviderSet,
 )
 

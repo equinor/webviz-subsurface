@@ -3,7 +3,7 @@ import datetime
 import pytest
 
 # pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.datetime_utils import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.datetime_utils import (
     from_str,
     to_str,
 )

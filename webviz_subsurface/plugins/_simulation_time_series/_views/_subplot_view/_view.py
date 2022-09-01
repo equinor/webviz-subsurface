@@ -46,7 +46,7 @@ from ._utils.history_vectors import create_history_vectors_df
 from ._utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from ._utils.trace_line_shape import get_simulation_line_shape
 from ._utils.vector_statistics import create_vectors_statistics_df
-from ._view_elements.subplot import SubplotGraph
+from ._view_elements import SubplotGraph
 
 
 class SubplotView(ViewABC):

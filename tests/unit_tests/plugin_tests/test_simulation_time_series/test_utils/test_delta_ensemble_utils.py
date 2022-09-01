@@ -3,7 +3,7 @@ from typing import List
 import pytest
 
 # pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.delta_ensemble_utils import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.delta_ensemble_utils import (
     DeltaEnsemble,
     create_delta_ensemble_name,
     create_delta_ensemble_name_dict,
@@ -13,7 +13,7 @@ from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils
 )
 
 # pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.provider_set import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set import (
     ProviderSet,
 )
 

@@ -4,7 +4,9 @@ import dash
 import webviz_core_components as wcc
 from dash.dependencies import Input, Output
 
-from .._simulation_time_series.views.subplot_view._utils.provider_set import ProviderSet
+from .._simulation_time_series._views._subplot_view._utils.provider_set import (
+    ProviderSet,
+)
 from ._layout import LayoutElements
 from .utils import make_dataframes as makedf
 from .utils import make_figures as makefigs

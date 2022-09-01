@@ -5,12 +5,12 @@ import pytest
 from pandas._testing import assert_frame_equal
 
 from webviz_subsurface._utils.dataframe_utils import make_date_column_datetime_object
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._types import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._types import (
     StatisticsOptions,
 )
 
 # pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series.views.subplot_view._utils.vector_statistics import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.vector_statistics import (
     create_vectors_statistics_df,
 )
 
