@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
+from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from ..._types import NodeType, StatOptions, TreeModeOptions
@@ -13,7 +14,6 @@ from ._view_element import GroupTreeViewElement
 
 class ViewControls(SettingsGroupABC):
     class Ids(str, Enum):
-        TOUR_STEP = "tour-step"
         ENSEMBLE = "ensemble"
         TREEMODE = "tree-mode"
 
@@ -21,28 +21,24 @@ class ViewControls(SettingsGroupABC):
         super().__init__("Controls")
         self._ensembles = ensembles
 
-    def layout(self) -> html.Div:
-        return html.Div(
-            id=self.register_component_unique_id(self.Ids.TOUR_STEP),
-            children=[
-                wcc.Dropdown(
-                    id=self.register_component_unique_id(self.Ids.ENSEMBLE),
-                    label="Ensemble",
-                    clearable=False,
-                    options=[{"label": ens, "value": ens} for ens in self._ensembles],
-                    value=self._ensembles[0],
-                ),
-                wcc.RadioItems(
-                    id=self.register_component_unique_id(self.Ids.TREEMODE),
-                    label="Statistics or realization",
-                ),
-            ],
-        )
+    def layout(self) -> List[Component]:
+        return [
+            wcc.Dropdown(
+                id=self.register_component_unique_id(self.Ids.ENSEMBLE),
+                label="Ensemble",
+                clearable=False,
+                options=[{"label": ens, "value": ens} for ens in self._ensembles],
+                value=self._ensembles[0],
+            ),
+            wcc.RadioItems(
+                id=self.register_component_unique_id(self.Ids.TREEMODE),
+                label="Statistics or realization",
+            ),
+        ]
 
 
 class ViewOptions(SettingsGroupABC):
     class Ids(str, Enum):
-        TOUR_STEP = "tour-step"
         STATISTICAL_OPTIONS = "statistical-options"
         STATISTICS = "statistics"
         SINGLE_REAL_OPTIONS = "single-real-options"
@@ -52,51 +48,48 @@ class ViewOptions(SettingsGroupABC):
         super().__init__("Options")
         self.group_tree_data = group_tree_data
 
-    def layout(self) -> html.Div:
-        return html.Div(
-            id=self.register_component_unique_id(ViewOptions.Ids.TOUR_STEP),
-            children=[
-                html.Div(
-                    id=self.register_component_unique_id(
-                        ViewOptions.Ids.STATISTICAL_OPTIONS
-                    ),
-                    children=[
-                        wcc.RadioItems(
-                            id=self.register_component_unique_id(
-                                ViewOptions.Ids.STATISTICS
-                            ),
-                            options=[
-                                {"label": "Mean", "value": StatOptions.MEAN.value},
-                                {"label": "P10 (high)", "value": StatOptions.P10.value},
-                                {
-                                    "label": "P50 (median)",
-                                    "value": StatOptions.P50.value,
-                                },
-                                {"label": "P90 (low)", "value": StatOptions.P90.value},
-                                {"label": "Maximum", "value": StatOptions.MAX.value},
-                                {"label": "Minimum", "value": StatOptions.MIN.value},
-                            ],
-                        )
-                    ],
+    def layout(self) -> List[Component]:
+        return [
+            html.Div(
+                id=self.register_component_unique_id(
+                    ViewOptions.Ids.STATISTICAL_OPTIONS
                 ),
-                html.Div(
-                    id=self.register_component_unique_id(
-                        ViewOptions.Ids.SINGLE_REAL_OPTIONS
-                    ),
-                    children=[
-                        wcc.Dropdown(
-                            label="Realization",
-                            id=self.register_component_unique_id(
-                                ViewOptions.Ids.REALIZATION
-                            ),
-                            options=[],
-                            value=None,
-                            multi=False,
-                        )
-                    ],
+                children=[
+                    wcc.RadioItems(
+                        id=self.register_component_unique_id(
+                            ViewOptions.Ids.STATISTICS
+                        ),
+                        options=[
+                            {"label": "Mean", "value": StatOptions.MEAN.value},
+                            {"label": "P10 (high)", "value": StatOptions.P10.value},
+                            {
+                                "label": "P50 (median)",
+                                "value": StatOptions.P50.value,
+                            },
+                            {"label": "P90 (low)", "value": StatOptions.P90.value},
+                            {"label": "Maximum", "value": StatOptions.MAX.value},
+                            {"label": "Minimum", "value": StatOptions.MIN.value},
+                        ],
+                    )
+                ],
+            ),
+            html.Div(
+                id=self.register_component_unique_id(
+                    ViewOptions.Ids.SINGLE_REAL_OPTIONS
                 ),
-            ],
-        )
+                children=[
+                    wcc.Dropdown(
+                        label="Realization",
+                        id=self.register_component_unique_id(
+                            ViewOptions.Ids.REALIZATION
+                        ),
+                        options=[],
+                        value=None,
+                        multi=False,
+                    )
+                ],
+            ),
+        ]
 
 
 class ViewFilters(SettingsGroupABC):

@@ -12,19 +12,7 @@ from webviz_subsurface._providers import (
 )
 
 from ._utils import EnsembleGroupTreeData
-from ._views import (
-    GroupTreeView,
-    GroupTreeViewElement,
-    ViewControls,
-    ViewFilters,
-    ViewOptions,
-)
-
-
-class PluginIds:
-    # pylint: disable=too-few-public-methods
-    class Views(str, Enum):
-        GROUPTREE_VIEW = "group-tree-view"
+from ._views import GroupTreeView, GroupTreeViewElement
 
 
 class GroupTree(WebvizPluginABC):
@@ -63,6 +51,9 @@ class GroupTree(WebvizPluginABC):
     This is the sampling interval of the summary data. It is `yearly` by default, but can be set
     to `monthly` if needed.
     """
+
+    class Ids(str, Enum):
+        GROUPTREE_VIEW = "group-tree-view"
 
     def __init__(
         self,
@@ -106,7 +97,7 @@ class GroupTree(WebvizPluginABC):
 
         self.add_view(
             GroupTreeView(self._group_tree_data),
-            PluginIds.Views.GROUPTREE_VIEW,
+            self.Ids.GROUPTREE_VIEW,
         )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
@@ -119,25 +110,25 @@ class GroupTree(WebvizPluginABC):
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
                 .settings_group(GroupTreeView.Ids.CONTROLS)
-                .component_unique_id(ViewControls.Ids.TOUR_STEP),
+                .get_unique_id(),
                 "content": "Menu for selecting ensemble and tree mode.",
             },
             {
-                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
                 .settings_group(GroupTreeView.Ids.OPTIONS)
-                .component_unique_id(ViewOptions.Ids.TOUR_STEP),
+                .get_unique_id(),
                 "content": "Menu for statistical options or realization.",
             },
             {
-                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
                 .settings_group(GroupTreeView.Ids.FILTERS)
-                .component_unique_id(ViewFilters.Ids.TOUR_STEP),
+                .get_unique_id(),
                 "content": "Menu for filtering options.",
             },
             {
-                "id": self.view(PluginIds.Views.GROUPTREE_VIEW)
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
                 .view_element(GroupTreeView.Ids.VIEW_ELEMENT)
                 .component_unique_id(GroupTreeViewElement.Ids.COMPONENT),
                 "content": "Vizualisation of network tree.",
