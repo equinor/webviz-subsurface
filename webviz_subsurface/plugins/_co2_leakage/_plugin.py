@@ -71,13 +71,8 @@ class CO2Leakage(WebvizPluginABC):
         formation_aliases: Optional[List[List[str]]] = None,
     ):
         super().__init__()
-        self.add_shared_settings_group(ViewSettings(ensembles), self.Ids.MAIN_SETTINGS)
-        self.add_view(MainView(), self.Ids.MAIN_VIEW)
-        self.add_store(self.Ids.DATE_STORE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(self.Ids.COLOR_STORE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(self.Ids.PLUME_STORE, WebvizPluginABC.StorageType.SESSION)
-
         self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
+
         self._map_attribute_names = init_map_attribute_names(map_attribute_names)
         # Surfaces
         self._ensemble_surface_providers = init_surface_providers(
@@ -102,6 +97,19 @@ class CO2Leakage(WebvizPluginABC):
         # CO2 containment
         self._co2_containment_relpath = co2_containment_relpath
 
+        self.add_shared_settings_group(
+            ViewSettings(
+                self._ensemble_paths,
+                self._ensemble_surface_providers,
+                self._map_attribute_names,
+            ),
+            self.Ids.MAIN_SETTINGS
+        )
+        self.add_view(MainView(), self.Ids.MAIN_VIEW)
+        self.add_store(self.Ids.DATE_STORE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(self.Ids.COLOR_STORE, WebvizPluginABC.StorageType.SESSION)
+        self.add_store(self.Ids.PLUME_STORE, WebvizPluginABC.StorageType.SESSION)
+
     def _view_component(self, component_id):
         return (
             self.view(self.Ids.MAIN_VIEW)
@@ -118,22 +126,13 @@ class CO2Leakage(WebvizPluginABC):
         )
 
     def _set_callbacks(self) -> None:
-        # TODO:
-        #  - many of the callbacks can probably be moved to settings. Is that clearer?
-
         @callback(
-            Output(self._settings_component(ViewSettings.Ids.REALIZATION), "options"),
-            Output(self._settings_component(ViewSettings.Ids.REALIZATION), "value"),
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
-        def set_realizations(ensemble):
+        def update_graphs(ensemble):
             rz_paths = fmu_realization_paths(self._ensemble_paths[ensemble])
-            realizations = [
-                dict(label=r, value=r)
-                for r in sorted(rz_paths.keys())
-            ]
             fig_args = (
                 rz_paths,
                 ENSEMBLE_PLOT_HEIGHT,
@@ -142,31 +141,7 @@ class CO2Leakage(WebvizPluginABC):
             )
             fig0 = generate_co2_volume_figure(*fig_args)
             fig1 = generate_co2_time_containment_figure(*fig_args)
-            return realizations, [realizations[0]["value"]], fig0, fig1
-
-        @callback(
-            Output(self._settings_component(ViewSettings.Ids.FORMATION), 'options'),
-            Output(self._settings_component(ViewSettings.Ids.FORMATION), 'value'),
-            State(self._settings_component(ViewSettings.Ids.ENSEMBLE), 'value'),
-            Input(self._settings_component(ViewSettings.Ids.PROPERTY), 'value'),
-            State(self._settings_component(ViewSettings.Ids.FORMATION), 'value'),
-        )
-        def set_formations(ensemble, prop, current_value):
-            if ensemble is None:
-                return [], None
-            surface_provider = self._ensemble_surface_providers[ensemble]
-            # Map
-            prop_name = property_origin(MapAttribute(prop), self._map_attribute_names)
-            surfaces = surface_name_aliases(surface_provider, prop_name)
-            # Formation names
-            formations = [{"label": v.title(), "value": v} for v in surfaces]
-            picked_formation = None
-            if len(formations) != 0:
-                if any(fmt["value"] == current_value for fmt in formations):
-                    picked_formation = dash.no_update
-                else:
-                    picked_formation = formations[0]["value"]
-            return formations, picked_formation
+            return fig0, fig1
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), 'marks'),
@@ -206,20 +181,6 @@ class CO2Leakage(WebvizPluginABC):
                 return {}
 
         @callback(
-            Output(self._settings_component(ViewSettings.Ids.STATISTIC), "disabled"),
-            Input(self._settings_component(ViewSettings.Ids.REALIZATION), "value"),
-            Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
-        )
-        def toggle_statistics(realizations, attribute):
-            if len(realizations) <= 1:
-                return True
-            elif MapAttribute(attribute) in (
-                    MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME
-            ):
-                return True
-            return False
-
-        @callback(
             Output(self.get_store_unique_id(self.Ids.COLOR_STORE), "data"),
             Output(self._settings_component(ViewSettings.Ids.CM_MIN), "disabled"),
             Output(self._settings_component(ViewSettings.Ids.CM_MAX), "disabled"),
@@ -229,6 +190,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.CM_MAX), "value"),
         )
         def set_color_range_data(min_auto, min_val, max_auto, max_val):
+            # TODO: can be moved after removing COLOR_STORE
             return (
                 [
                     min_val if len(min_auto) == 0 else None,

@@ -1,12 +1,17 @@
-from typing import List
+from typing import List, Dict
 
+import dash
 import webviz_core_components as wcc
-from dash import html, dcc
+from dash import html, dcc, callback, Output, Input, State
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
-    SurfaceStatistic
-from webviz_subsurface.plugins._co2_leakage._utilities.general import MapAttribute
+    SurfaceStatistic, EnsembleSurfaceProvider
+from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
+from webviz_subsurface.plugins._co2_leakage._utilities.formation_alias import \
+    surface_name_aliases
+from webviz_subsurface.plugins._co2_leakage._utilities.general import MapAttribute, \
+    fmu_realization_paths
 from webviz_subsurface.plugins._map_viewer_fmu.color_tables import default_color_tables
 
 
@@ -27,17 +32,23 @@ class ViewSettings(SettingsGroupABC):
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
 
-    def __init__(self, ensembles):
+    def __init__(
+        self,
+        ensemble_paths: Dict[str, str],
+        ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
+        map_attribute_names: Dict[MapAttribute, str],
+    ):
         super().__init__("Settings")
-        self._ensembles = ensembles
+        self._ensemble_paths = ensemble_paths
+        self._ensemble_surface_providers = ensemble_surface_providers
+        self._map_attribute_names = map_attribute_names
 
     def layout(self):
-        # TODO: register in __init__, and use via "self.component_unique_id(...).to_string()?
         return [
             EnsembleSelectorLayout(
                 self.register_component_unique_id(self.Ids.ENSEMBLE),
                 self.register_component_unique_id(self.Ids.REALIZATION),
-                self._ensembles
+                list(self._ensemble_paths.keys()),
             ),
             FilterSelectorLayout(
                 self.register_component_unique_id(self.Ids.FORMATION)
@@ -56,6 +67,58 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.PLUME_SMOOTHING),
             ),
         ]
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(self.component_unique_id(self.Ids.REALIZATION).to_string(), "options"),
+            Output(self.component_unique_id(self.Ids.REALIZATION).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
+        )
+        def set_realizations(ensemble):
+            rz_paths = fmu_realization_paths(self._ensemble_paths[ensemble])
+            realizations = [
+                dict(label=r, value=r)
+                for r in sorted(rz_paths.keys())
+            ]
+            return realizations, [realizations[0]["value"]]
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.FORMATION).to_string(), 'options'),
+            Output(self.component_unique_id(self.Ids.FORMATION).to_string(), 'value'),
+            Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), 'value'),
+            State(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), 'value'),
+            State(self.component_unique_id(self.Ids.FORMATION).to_string(), 'value'),
+        )
+        def set_formations(prop, ensemble, current_value):
+            if ensemble is None:
+                return [], None
+            surface_provider = self._ensemble_surface_providers[ensemble]
+            # Map
+            prop_name = property_origin(MapAttribute(prop), self._map_attribute_names)
+            surfaces = surface_name_aliases(surface_provider, prop_name)
+            # Formation names
+            formations = [{"label": v.title(), "value": v} for v in surfaces]
+            picked_formation = None
+            if len(formations) != 0:
+                if any(fmt["value"] == current_value for fmt in formations):
+                    picked_formation = dash.no_update
+                else:
+                    picked_formation = formations[0]["value"]
+            return formations, picked_formation
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.STATISTIC).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.REALIZATION).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
+        )
+        def toggle_statistics(realizations, attribute):
+            if len(realizations) <= 1:
+                return True
+            elif MapAttribute(attribute) in (
+                    MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME
+            ):
+                return True
+            return False
 
 
 class FilterSelectorLayout(wcc.Selectors):
@@ -211,7 +274,8 @@ class EnsembleSelectorLayout(wcc.Selectors):
                         dict(value=en, label=en)
                         for en in ensembles
                     ],
-                    value=ensembles[0]
+                    value=ensembles[0],
+                    clearable=False,
                 ),
                 "Realization",
                 wcc.Dropdown(
