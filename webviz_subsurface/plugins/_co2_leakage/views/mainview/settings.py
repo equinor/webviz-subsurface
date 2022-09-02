@@ -120,6 +120,15 @@ class ViewSettings(SettingsGroupABC):
                 return True
             return False
 
+        @callback(
+            Output(self.component_unique_id(self.Ids.CM_MIN), "disabled"),
+            Output(self.component_unique_id(self.Ids.CM_MAX), "disabled"),
+            Input(self.component_unique_id(self.Ids.CM_MIN_AUTO), "value"),
+            Input(self.component_unique_id(self.Ids.CM_MAX_AUTO), "value"),
+        )
+        def set_color_range_data(min_auto, max_auto):
+            return len(min_auto) == 1, len(max_auto) == 1
+
 
 class FilterSelectorLayout(wcc.Selectors):
     def __init__(self, formation_id):

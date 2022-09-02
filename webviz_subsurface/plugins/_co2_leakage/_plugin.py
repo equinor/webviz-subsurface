@@ -55,7 +55,6 @@ class CO2Leakage(WebvizPluginABC):
 
         # TODO: get rid of stores?
         DATE_STORE = "date-store"
-        COLOR_STORE = "color-store"
         PLUME_STORE = "plume-store"
 
     def __init__(
@@ -107,7 +106,6 @@ class CO2Leakage(WebvizPluginABC):
         )
         self.add_view(MainView(), self.Ids.MAIN_VIEW)
         self.add_store(self.Ids.DATE_STORE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(self.Ids.COLOR_STORE, WebvizPluginABC.StorageType.SESSION)
         self.add_store(self.Ids.PLUME_STORE, WebvizPluginABC.StorageType.SESSION)
 
     def _view_component(self, component_id):
@@ -181,26 +179,6 @@ class CO2Leakage(WebvizPluginABC):
                 return {}
 
         @callback(
-            Output(self.get_store_unique_id(self.Ids.COLOR_STORE), "data"),
-            Output(self._settings_component(ViewSettings.Ids.CM_MIN), "disabled"),
-            Output(self._settings_component(ViewSettings.Ids.CM_MAX), "disabled"),
-            Input(self._settings_component(ViewSettings.Ids.CM_MIN_AUTO), "value"),
-            Input(self._settings_component(ViewSettings.Ids.CM_MIN), "value"),
-            Input(self._settings_component(ViewSettings.Ids.CM_MAX_AUTO), "value"),
-            Input(self._settings_component(ViewSettings.Ids.CM_MAX), "value"),
-        )
-        def set_color_range_data(min_auto, min_val, max_auto, max_val):
-            # TODO: can be moved after removing COLOR_STORE
-            return (
-                [
-                    min_val if len(min_auto) == 0 else None,
-                    max_val if len(max_auto) == 0 else None,
-                ],
-                len(min_auto) == 1,
-                len(max_auto) == 1,
-            )
-
-        @callback(
             Output(self.get_store_unique_id(self.Ids.PLUME_STORE), "data"),
             Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
@@ -231,20 +209,26 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.REALIZATION), "value"),
             Input(self._settings_component(ViewSettings.Ids.STATISTIC), "value"),
             Input(self._settings_component(ViewSettings.Ids.COLOR_SCALE), "value"),
-            Input(self.get_store_unique_id(self.Ids.COLOR_STORE), "data"),
+            Input(self._settings_component(ViewSettings.Ids.CM_MIN_AUTO), "value"),
+            Input(self._settings_component(ViewSettings.Ids.CM_MIN), "value"),
+            Input(self._settings_component(ViewSettings.Ids.CM_MAX_AUTO), "value"),
+            Input(self._settings_component(ViewSettings.Ids.CM_MAX), "value"),
             Input(self.get_store_unique_id(self.Ids.PLUME_STORE), "data"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
             State(self.get_store_unique_id(self.Ids.DATE_STORE), "data"),
             State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
         )
         def update_map_attribute(
-                attribute,
+                attribute: str,
                 date,
-                formation,
-                realization,
-                statistic,
+                formation: str,
+                realization: List[int],
+                statistic: str,
                 color_map_name,
-                color_map_range,
+                cm_min_auto,
+                cm_min_val,
+                cm_max_auto,
+                cm_max_val,
                 contour_data,
                 ensemble,
                 date_list,
@@ -282,6 +266,10 @@ class CO2Leakage(WebvizPluginABC):
             elif len(realization) == 0:
                 surf_data = None
             else:
+                color_map_range = (
+                    cm_min_val if len(cm_min_auto) == 0 else None,
+                    cm_max_val if len(cm_max_auto) == 0 else None,
+                )
                 surf_data = SurfaceData.from_server(
                     server=self._surface_server,
                     provider=self._ensemble_surface_providers[ensemble],
@@ -296,7 +284,7 @@ class CO2Leakage(WebvizPluginABC):
                     ),
                     color_map_range=color_map_range,
                     color_map_name=color_map_name,
-                    readable_name=readable_name(attribute),
+                    readable_name_=readable_name(attribute),
                 )
             # Plume polygon
             plume_polygon = None

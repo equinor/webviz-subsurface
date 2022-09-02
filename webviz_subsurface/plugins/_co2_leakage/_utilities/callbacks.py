@@ -46,9 +46,9 @@ class SurfaceData:
         server: SurfaceServer,
         provider: EnsembleSurfaceProvider,
         address: Union[SurfaceAddress, TruncatedSurfaceAddress],
-        color_map_range: Optional[Tuple[float, float]],
+        color_map_range: Tuple[Optional[float], Optional[float]],
         color_map_name: str,
-        readable_name: str,
+        readable_name_: str,
     ):
         surf_meta, img_url = publish_and_get_surface_metadata(server, provider, address)
         value_range = (
@@ -60,7 +60,7 @@ class SurfaceData:
             value_range[1] if color_map_range[1] is None else color_map_range[1],
         )
         return SurfaceData(
-            readable_name,
+            readable_name_,
             color_map_range,
             color_map_name,
             value_range,
