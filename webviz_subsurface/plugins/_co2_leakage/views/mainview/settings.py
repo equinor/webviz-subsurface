@@ -121,10 +121,10 @@ class ViewSettings(SettingsGroupABC):
             return False
 
         @callback(
-            Output(self.component_unique_id(self.Ids.CM_MIN), "disabled"),
-            Output(self.component_unique_id(self.Ids.CM_MAX), "disabled"),
-            Input(self.component_unique_id(self.Ids.CM_MIN_AUTO), "value"),
-            Input(self.component_unique_id(self.Ids.CM_MAX_AUTO), "value"),
+            Output(self.component_unique_id(self.Ids.CM_MIN).to_string(), "disabled"),
+            Output(self.component_unique_id(self.Ids.CM_MAX).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.CM_MIN_AUTO).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.CM_MAX_AUTO).to_string(), "value"),
         )
         def set_color_range_data(min_auto, max_auto):
             return len(min_auto) == 1, len(max_auto) == 1

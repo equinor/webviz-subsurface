@@ -6,7 +6,7 @@ import numpy as np
 from fmu.ensemble import ScratchEnsemble
 
 
-def fmu_realization_paths(ensemble_path) -> Dict[str, str]:
+def fmu_realization_paths(ensemble_path) -> Dict[int, str]:
     scratch = ScratchEnsemble("tmp", paths=ensemble_path)
     return {
         r: s.runpath()
@@ -16,7 +16,7 @@ def fmu_realization_paths(ensemble_path) -> Dict[str, str]:
 
 def first_existing_fmu_file_path(
     ens_root: str,
-    realizations: Iterable[str],
+    realizations: Iterable[int],
     relpath: str,
 ) -> Optional[str]:
     rp = fmu_realization_paths(ens_root)

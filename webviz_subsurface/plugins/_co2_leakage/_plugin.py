@@ -52,10 +52,7 @@ class CO2Leakage(WebvizPluginABC):
     class Ids:
         MAIN_VIEW = "main-view"
         MAIN_SETTINGS = "main-settings"
-
-        # TODO: get rid of stores?
         DATE_STORE = "date-store"
-        PLUME_STORE = "plume-store"
 
     def __init__(
         self,
@@ -106,7 +103,6 @@ class CO2Leakage(WebvizPluginABC):
         )
         self.add_view(MainView(), self.Ids.MAIN_VIEW)
         self.add_store(self.Ids.DATE_STORE, WebvizPluginABC.StorageType.SESSION)
-        self.add_store(self.Ids.PLUME_STORE, WebvizPluginABC.StorageType.SESSION)
 
     def _view_component(self, component_id):
         return (
@@ -179,28 +175,6 @@ class CO2Leakage(WebvizPluginABC):
                 return {}
 
         @callback(
-            Output(self.get_store_unique_id(self.Ids.PLUME_STORE), "data"),
-            Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
-            Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
-            Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
-        )
-        def set_plume_contour_data(
-                attribute,
-                threshold,
-                smoothing,
-        ):
-            if attribute is None:
-                return None
-            attribute = MapAttribute(attribute)
-            if attribute not in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
-                return None
-            return {
-                "property": property_origin(attribute, self._map_attribute_names),
-                "threshold": threshold,
-                "smoothing": smoothing,
-            }
-
-        @callback(
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
             Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
@@ -213,7 +187,8 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.CM_MIN), "value"),
             Input(self._settings_component(ViewSettings.Ids.CM_MAX_AUTO), "value"),
             Input(self._settings_component(ViewSettings.Ids.CM_MAX), "value"),
-            Input(self.get_store_unique_id(self.Ids.PLUME_STORE), "data"),
+            Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
+            Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
             State(self.get_store_unique_id(self.Ids.DATE_STORE), "data"),
             State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
@@ -229,7 +204,8 @@ class CO2Leakage(WebvizPluginABC):
                 cm_min_val,
                 cm_max_auto,
                 cm_max_val,
-                contour_data,
+                plume_threshold,
+                plume_smoothing,
                 ensemble,
                 date_list,
                 current_bounds,
@@ -260,6 +236,14 @@ class CO2Leakage(WebvizPluginABC):
                 formation,
                 self._well_pick_providers[ensemble],
             )
+            # Contour data
+            contour_data = None
+            if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
+                contour_data = {
+                    "property": property_origin(attribute, self._map_attribute_names),
+                    "threshold": plume_threshold,
+                    "smoothing": plume_smoothing,
+                }
             # Surface
             if surface_name is None:
                 surf_data = None
