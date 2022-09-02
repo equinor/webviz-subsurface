@@ -12,7 +12,7 @@ from webviz_subsurface._providers import (
 )
 
 from ._utils import EnsembleGroupTreeData
-from ._views import GroupTreeView, GroupTreeViewElement
+from ._views._group_tree_view import GroupTreeView, GroupTreeViewElement
 
 
 class GroupTree(WebvizPluginABC):
