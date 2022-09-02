@@ -100,6 +100,7 @@ class WellOverviewSettings(SettingsGroupABC):
                         id={"id": settings_id, "charttype": "bar"},
                         children=wcc.Checklist(
                             id={"id": checklist_id, "charttype": "bar"},
+                            label="Layout options",
                             options=[
                                 {"label": "Show legend", "value": "legend"},
                                 {"label": "Overlay bars", "value": "overlay_bars"},
@@ -119,6 +120,7 @@ class WellOverviewSettings(SettingsGroupABC):
                         id={"id": settings_id, "charttype": "pie"},
                         children=wcc.Checklist(
                             id={"id": checklist_id, "charttype": "pie"},
+                            label="Layout options",
                             options=[
                                 {"label": "Show legend", "value": "legend"},
                                 {
@@ -133,6 +135,7 @@ class WellOverviewSettings(SettingsGroupABC):
                         id={"id": settings_id, "charttype": "area"},
                         children=wcc.Checklist(
                             id={"id": checklist_id, "charttype": "area"},
+                            label="Layout options",
                             options=[
                                 {"label": "Show legend", "value": "legend"},
                                 {
