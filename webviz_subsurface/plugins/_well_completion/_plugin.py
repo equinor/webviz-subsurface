@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
 
@@ -7,7 +7,7 @@ from webviz_subsurface._models import StratigraphyModel, WellAttributesModel
 
 from ..._providers import EnsembleTableProviderFactory
 from ._utils import WellCompletionDataModel
-from ._views import WellCompletionView
+from ._views._well_completion_view import WellCompletionView, WellCompletionViewElement
 
 
 class WellCompletion(WebvizPluginABC):
@@ -175,4 +175,24 @@ class WellCompletion(WebvizPluginABC):
             webviz_store_tuple
             for _, ens_data_model in self._data_models.items()
             for webviz_store_tuple in ens_data_model.webviz_store
+        ]
+
+    @property
+    def tour_steps(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "id": self.view(self.Ids.WELL_COMPLETION_VIEW)
+                .settings_group(WellCompletionView.Ids.SETTINGS)
+                .get_unique_id(),
+                "content": "Menu for selecting ensemble and other options",
+            },
+            {
+                "id": self.view(self.Ids.WELL_COMPLETION_VIEW)
+                .view_element(WellCompletionView.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellCompletionViewElement.Ids.COMPONENT),
+                "content": "Visualization of the well completions. "
+                "Time slider for selecting which time steps to display. "
+                "Different vizualisation and filtering alternatives are available "
+                "in the upper right corner.",
+            },
         ]
