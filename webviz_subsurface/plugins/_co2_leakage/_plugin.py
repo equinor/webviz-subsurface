@@ -11,12 +11,13 @@ from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import generate
     generate_co2_time_containment_figure
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin, \
     SurfaceData, derive_surface_address, readable_name, get_plume_polygon, \
-    create_map_layers, extract_fault_polygon_url
+    create_map_layers
+from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import \
+    FaultPolygonsHandler
 from webviz_subsurface.plugins._co2_leakage._utilities.general import \
     fmu_realization_paths, first_existing_fmu_file_path, MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import \
-    init_map_attribute_names, init_surface_providers, init_fault_polygon_providers, \
-    init_well_pick_providers
+    init_map_attribute_names, init_surface_providers, init_well_pick_providers
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import MainView, \
     MapViewElement, INITIAL_BOUNDS
 from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewSettings
@@ -67,22 +68,24 @@ class CO2Leakage(WebvizPluginABC):
     ):
         super().__init__()
         self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
+        self._surface_server = SurfaceServer.instance(app)
+        self._polygons_server = FaultPolygonsServer.instance(app)
 
         self._map_attribute_names = init_map_attribute_names(map_attribute_names)
         # Surfaces
         self._ensemble_surface_providers = init_surface_providers(
             webviz_settings, ensembles
         )
-        self._surface_server = SurfaceServer.instance(app)
         # Polygons
-        self._ensemble_fault_polygons_providers = init_fault_polygon_providers(
-            webviz_settings, ensembles
-        )
-        self._polygons_server = FaultPolygonsServer.instance(app)
-        for provider in self._ensemble_fault_polygons_providers.values():
-            self._polygons_server.add_provider(provider)
-        self._map_surface_names_to_fault_polygons = map_surface_names_to_fault_polygons or {}
-        self._fault_polygon_attribute = fault_polygon_attribute
+        self._fault_polygon_handlers = {
+            ens: FaultPolygonsHandler(
+                self._polygons_server,
+                self._ensemble_paths[ens],
+                map_surface_names_to_fault_polygons or {},
+                fault_polygon_attribute,
+            )
+            for ens in ensembles
+        }
         # License boundary
         self._boundary_rel_path = boundary_relpath
         # Well picks
@@ -228,11 +231,8 @@ class CO2Leakage(WebvizPluginABC):
                     "smoothing": plume_smoothing,
                 }
             # Surface
-            if formation is None:
-                surf_data = None
-            elif len(realization) == 0:
-                surf_data = None
-            else:
+            surf_data = None
+            if formation is not None and len(realization) > 0:
                 color_map_range = (
                     cm_min_val if len(cm_min_auto) == 0 else None,
                     cm_max_val if len(cm_max_auto) == 0 else None,
@@ -267,13 +267,11 @@ class CO2Leakage(WebvizPluginABC):
             layers, viewport_bounds = create_map_layers(
                 formation,
                 surface_data=surf_data,
-                fault_polygon_url=extract_fault_polygon_url(
-                    server=self._polygons_server,
-                    provider=self._ensemble_fault_polygons_providers[ensemble],
-                    polygon_name=formation,
-                    realization=realization,
-                    fault_polygon_attribute=self._fault_polygon_attribute,
-                    map_surface_names_to_fault_polygons=self._map_surface_names_to_fault_polygons
+                fault_polygon_url=(
+                    self._fault_polygon_handlers[ensemble].extract_fault_polygon_url(
+                        formation,
+                        realization,
+                    )
                 ),
                 license_boundary_file=first_existing_fmu_file_path(
                     self._ensemble_paths[ensemble], realization, self._boundary_rel_path

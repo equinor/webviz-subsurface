@@ -33,17 +33,6 @@ def init_surface_providers(webviz_settings, ensembles):
     }
 
 
-def init_fault_polygon_providers(webviz_settings, ensembles):
-    from webviz_subsurface._providers import EnsembleFaultPolygonsProviderFactory
-    polygon_provider_factory = EnsembleFaultPolygonsProviderFactory.instance()
-    return {
-        ens: polygon_provider_factory.create_from_ensemble_fault_polygons_files(
-            webviz_settings.shared_settings["scratch_ensembles"][ens],
-        )
-        for ens in ensembles
-    }
-
-
 def init_well_pick_providers(
     ensemble_roots: Dict[str, str],
     well_pick_rel_path: str,
