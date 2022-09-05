@@ -22,6 +22,10 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import MainV
     MapViewElement, INITIAL_BOUNDS
 from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewSettings
 
+
+from . import _error
+
+
 ENSEMBLE_PLOT_HEIGHT = 300
 ENSEMBLE_PLOT_WIDTH = 400
 
@@ -58,44 +62,47 @@ class CO2Leakage(WebvizPluginABC):
         app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: List[str],
-        boundary_relpath: Optional[str] = "share/results/polygons/leakage_boundary.csv",
-        well_pick_relpath: Optional[str] = "share/results/wells/well_picks.csv",
-        co2_containment_relpath: Optional[str] = "share/results/tables/co2_volumes.csv",
-        fault_polygon_attribute: Optional[str] = "dl_extracted_faultlines",
+        boundary_relpath: str = "share/results/polygons/leakage_boundary.csv",
+        well_pick_relpath: str = "share/results/wells/well_picks.csv",
+        co2_containment_relpath: str = "share/results/tables/co2_volumes.csv",
+        fault_polygon_attribute: str = "dl_extracted_faultlines",
         map_attribute_names: Optional[Dict[str, str]] = None,
         map_surface_names_to_well_pick_names: Optional[Dict[str, str]] = None,
         map_surface_names_to_fault_polygons: Optional[Dict[str, str]] = None,
     ):
         super().__init__()
-        self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
-        self._surface_server = SurfaceServer.instance(app)
-        self._polygons_server = FaultPolygonsServer.instance(app)
+        self._error_message = ""
 
-        self._map_attribute_names = init_map_attribute_names(map_attribute_names)
-        # Surfaces
-        self._ensemble_surface_providers = init_surface_providers(
-            webviz_settings, ensembles
-        )
-        # Polygons
-        self._fault_polygon_handlers = {
-            ens: FaultPolygonsHandler(
-                self._polygons_server,
-                self._ensemble_paths[ens],
-                map_surface_names_to_fault_polygons or {},
-                fault_polygon_attribute,
-            )
-            for ens in ensembles
-        }
-        # License boundary
-        self._boundary_rel_path = boundary_relpath
-        # Well picks
-        self._well_pick_providers = init_well_pick_providers(
-            self._ensemble_paths,
-            well_pick_relpath,
-            map_surface_names_to_well_pick_names,
-        )
-        # CO2 containment
         self._co2_containment_relpath = co2_containment_relpath
+        self._boundary_rel_path = boundary_relpath
+        try:
+            self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
+            self._surface_server = SurfaceServer.instance(app)
+            self._polygons_server = FaultPolygonsServer.instance(app)
+
+            self._map_attribute_names = init_map_attribute_names(map_attribute_names)
+            # Surfaces
+            self._ensemble_surface_providers = init_surface_providers(
+                webviz_settings, ensembles
+            )
+            # Polygons
+            self._fault_polygon_handlers = {
+                ens: FaultPolygonsHandler(
+                    self._polygons_server,
+                    self._ensemble_paths[ens],
+                    map_surface_names_to_fault_polygons or {},
+                    fault_polygon_attribute,
+                )
+                for ens in ensembles
+            }
+            # Well picks
+            self._well_pick_providers = init_well_pick_providers(
+                self._ensemble_paths,
+                well_pick_relpath,
+                map_surface_names_to_well_pick_names,
+            )
+        except Exception as e:
+            self._error_message = f"Plugin initialization failed: {e}"
 
         self.add_shared_settings_group(
             ViewSettings(
@@ -107,6 +114,10 @@ class CO2Leakage(WebvizPluginABC):
         )
         self.add_view(MainView(), self.Ids.MAIN_VIEW)
         self.add_store(self.Ids.DATE_STORE, WebvizPluginABC.StorageType.SESSION)
+
+    @property
+    def layout(self):
+        return _error.error(self._error_message)
 
     def _view_component(self, component_id):
         return (
