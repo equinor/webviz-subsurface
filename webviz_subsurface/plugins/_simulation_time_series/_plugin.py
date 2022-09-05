@@ -35,7 +35,7 @@ from ._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
-from ._views import SubplotView
+from ._views._subplot_view import SubplotView
 from ._views._subplot_view._settings import (
     EnsemblesSettings,
     FilterRealizationSettings,
