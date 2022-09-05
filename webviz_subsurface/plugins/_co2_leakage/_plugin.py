@@ -14,7 +14,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property
     create_map_layers
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import \
     FaultPolygonsHandler
-from webviz_subsurface.plugins._co2_leakage._utilities.general import \
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
     fmu_realization_paths, first_existing_fmu_file_path, MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import \
     init_map_attribute_names, init_surface_providers, init_well_pick_providers

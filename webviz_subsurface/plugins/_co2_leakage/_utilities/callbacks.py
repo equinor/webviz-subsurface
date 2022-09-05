@@ -6,15 +6,13 @@ import numpy as np
 
 from webviz_subsurface._providers import SurfaceMeta, SurfaceServer, \
     EnsembleSurfaceProvider, SurfaceAddress, SimulatedSurfaceAddress, \
-    StatisticalSurfaceAddress, FaultPolygonsServer, EnsembleFaultPolygonsProvider, \
-    SimulatedFaultPolygonsAddress
+    StatisticalSurfaceAddress
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic
 from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
 from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import \
     TruncatedSurfaceAddress, publish_and_get_surface_metadata
-from webviz_subsurface.plugins._co2_leakage._utilities.general import MapAttribute, \
-    parse_polygon_file
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
     WellPickProvider
 
@@ -197,7 +195,7 @@ def create_map_layers(
             "@@type": "FaultPolygonsLayer",
             "name": "Containment Boundary",
             "id": "license-boundary-layer",
-            "data": parse_polygon_file(license_boundary_file),
+            "data": _parse_polygon_file(license_boundary_file),
         })
     if well_pick_provider is not None:
         layers.append({
@@ -222,25 +220,19 @@ def create_map_layers(
     return layers, viewport_bounds
 
 
-def extract_fault_polygon_url(
-    server: FaultPolygonsServer,
-    provider: EnsembleFaultPolygonsProvider,
-    polygon_name: Optional[str],
-    realization: List[int],
-    fault_polygon_attribute: str,
-    map_surface_names_to_fault_polygons: Dict[str, str],
-) -> Optional[str]:
-    if polygon_name is None:
-        return None
-    if len(realization) == 0:
-        return None
-    # NB! This always returns the url corresponding to the first realization
-    address = SimulatedFaultPolygonsAddress(
-        attribute=fault_polygon_attribute,
-        name=map_surface_names_to_fault_polygons.get(polygon_name, polygon_name),
-        realization=realization[0],
-    )
-    return server.encode_partial_url(
-        provider_id=provider.provider_id(),
-        fault_polygons_address=address,
-    )
+def _parse_polygon_file(filename: str):
+    xyz = np.genfromtxt(filename, skip_header=1, delimiter=",")
+    as_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {},
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": xyz[:, :2].tolist(),
+                }
+            }
+        ]
+    }
+    return as_geojson

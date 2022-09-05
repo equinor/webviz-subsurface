@@ -3,7 +3,7 @@ from typing import Optional, Dict
 import pandas
 
 from webviz_subsurface._providers import EnsembleSurfaceProviderFactory
-from webviz_subsurface.plugins._co2_leakage._utilities.general import \
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
     first_existing_fmu_file_path, fmu_realization_paths, MapAttribute
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
     WellPickProvider

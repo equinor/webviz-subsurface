@@ -8,7 +8,7 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic, EnsembleSurfaceProvider
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
-from webviz_subsurface.plugins._co2_leakage._utilities.general import MapAttribute, \
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute, \
     fmu_realization_paths
 from webviz_subsurface.plugins._map_viewer_fmu.color_tables import default_color_tables
 

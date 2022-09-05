@@ -33,21 +33,3 @@ class MapAttribute(Enum):
     MAX_AMFG = "Maximum AMFG"
     SGAS_PLUME = "Plume (SGAS)"
     AMFG_PLUME = "Plume (AMFG)"
-
-
-def parse_polygon_file(filename: str):
-    xyz = np.genfromtxt(filename, skip_header=1, delimiter=",")
-    as_geojson = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "properties": {},
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": xyz[:, :2].tolist(),
-                }
-            }
-        ]
-    }
-    return as_geojson
