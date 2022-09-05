@@ -8,8 +8,6 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic, EnsembleSurfaceProvider
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
-from webviz_subsurface.plugins._co2_leakage._utilities.formation_alias import \
-    surface_name_aliases
 from webviz_subsurface.plugins._co2_leakage._utilities.general import MapAttribute, \
     fmu_realization_paths
 from webviz_subsurface.plugins._map_viewer_fmu.color_tables import default_color_tables
@@ -95,7 +93,7 @@ class ViewSettings(SettingsGroupABC):
             surface_provider = self._ensemble_surface_providers[ensemble]
             # Map
             prop_name = property_origin(MapAttribute(prop), self._map_attribute_names)
-            surfaces = surface_name_aliases(surface_provider, prop_name)
+            surfaces = surface_provider.surface_names_for_attribute(prop_name)
             # Formation names
             formations = [{"label": v.title(), "value": v} for v in surfaces]
             picked_formation = None

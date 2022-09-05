@@ -157,11 +157,11 @@ def get_plume_polygon(
 
 
 def create_map_layers(
+    formation: str,
     surface_data: Optional[SurfaceData],
     fault_polygon_url: Optional[str],
     license_boundary_file: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
-    well_pick_horizon: Optional[str],
     plume_extent_data: Optional[geojson.FeatureCollection],
 ) -> Tuple[List[Dict], Optional[List[float]]]:
     layers = []
@@ -206,7 +206,7 @@ def create_map_layers(
             "id": "well-picks-layer",
             "data": dict(
                 well_pick_provider.get_geojson(
-                    well_pick_provider.well_names(), well_pick_horizon
+                    well_pick_provider.well_names(), formation
                 )
             ),
         })
@@ -228,15 +228,16 @@ def extract_fault_polygon_url(
     polygon_name: Optional[str],
     realization: List[int],
     fault_polygon_attribute: str,
+    map_surface_names_to_fault_polygons: Dict[str, str],
 ) -> Optional[str]:
     if polygon_name is None:
         return None
     if len(realization) == 0:
         return None
-    # This always returns the url corresponding to the first realization
+    # NB! This always returns the url corresponding to the first realization
     address = SimulatedFaultPolygonsAddress(
         attribute=fault_polygon_attribute,
-        name=polygon_name,
+        name=map_surface_names_to_fault_polygons.get(polygon_name, polygon_name),
         realization=realization[0],
     )
     return server.encode_partial_url(

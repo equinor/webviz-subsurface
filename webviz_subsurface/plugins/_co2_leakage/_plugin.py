@@ -9,8 +9,6 @@ from webviz_subsurface._providers import SurfaceServer, \
     FaultPolygonsServer
 from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import generate_co2_volume_figure, \
     generate_co2_time_containment_figure
-from webviz_subsurface.plugins._co2_leakage._utilities.formation_alias import surface_name_aliases, \
-    lookup_surface_alias, lookup_fault_polygon_alias, lookup_well_pick_alias
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin, \
     SurfaceData, derive_surface_address, readable_name, get_plume_polygon, \
     create_map_layers, extract_fault_polygon_url
@@ -64,7 +62,8 @@ class CO2Leakage(WebvizPluginABC):
         co2_containment_relpath: Optional[str] = "share/results/tables/co2_volumes.csv",
         fault_polygon_attribute: Optional[str] = "dl_extracted_faultlines",
         map_attribute_names: Optional[Dict[str, str]] = None,
-        formation_aliases: Optional[List[List[str]]] = None,
+        map_surface_names_to_well_pick_names: Optional[Dict[str, str]] = None,
+        map_surface_names_to_fault_polygons: Optional[Dict[str, str]] = None,
     ):
         super().__init__()
         self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
@@ -82,13 +81,15 @@ class CO2Leakage(WebvizPluginABC):
         self._polygons_server = FaultPolygonsServer.instance(app)
         for provider in self._ensemble_fault_polygons_providers.values():
             self._polygons_server.add_provider(provider)
-        self._formation_aliases = [set(f) for f in formation_aliases or []]
+        self._map_surface_names_to_fault_polygons = map_surface_names_to_fault_polygons or {}
         self._fault_polygon_attribute = fault_polygon_attribute
         # License boundary
         self._boundary_rel_path = boundary_relpath
         # Well picks
         self._well_pick_providers = init_well_pick_providers(
-            self._ensemble_paths, well_pick_relpath
+            self._ensemble_paths,
+            well_pick_relpath,
+            map_surface_names_to_well_pick_names,
         )
         # CO2 containment
         self._co2_containment_relpath = co2_containment_relpath
@@ -218,24 +219,6 @@ class CO2Leakage(WebvizPluginABC):
             if attribute != MapAttribute.MIGRATION_TIME and date is None:
                 raise PreventUpdate
             date = str(date_list[date])
-            # Look up formation aliases
-            surface_name = lookup_surface_alias(
-                self._formation_aliases,
-                formation,
-                self._ensemble_surface_providers[ensemble],
-                property_origin(attribute, self._map_attribute_names),
-            )
-            polygon_name = lookup_fault_polygon_alias(
-                self._formation_aliases,
-                formation,
-                self._ensemble_fault_polygons_providers[ensemble],
-                self._fault_polygon_attribute,
-            )
-            well_pick_horizon = lookup_well_pick_alias(
-                self._formation_aliases,
-                formation,
-                self._well_pick_providers[ensemble],
-            )
             # Contour data
             contour_data = None
             if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
@@ -245,7 +228,7 @@ class CO2Leakage(WebvizPluginABC):
                     "smoothing": plume_smoothing,
                 }
             # Surface
-            if surface_name is None:
+            if formation is None:
                 surf_data = None
             elif len(realization) == 0:
                 surf_data = None
@@ -258,7 +241,7 @@ class CO2Leakage(WebvizPluginABC):
                     server=self._surface_server,
                     provider=self._ensemble_surface_providers[ensemble],
                     address=derive_surface_address(
-                        surface_name,
+                        formation,
                         attribute,
                         date,
                         realization,
@@ -276,25 +259,26 @@ class CO2Leakage(WebvizPluginABC):
                 plume_polygon = get_plume_polygon(
                     self._ensemble_surface_providers[ensemble],
                     realization,
-                    surface_name,
+                    formation,
                     date,
                     contour_data,
                 )
             # Create layers and view bounds
             layers, viewport_bounds = create_map_layers(
+                formation,
                 surface_data=surf_data,
                 fault_polygon_url=extract_fault_polygon_url(
                     server=self._polygons_server,
                     provider=self._ensemble_fault_polygons_providers[ensemble],
-                    polygon_name=polygon_name,
+                    polygon_name=formation,
                     realization=realization,
                     fault_polygon_attribute=self._fault_polygon_attribute,
+                    map_surface_names_to_fault_polygons=self._map_surface_names_to_fault_polygons
                 ),
                 license_boundary_file=first_existing_fmu_file_path(
                     self._ensemble_paths[ensemble], realization, self._boundary_rel_path
                 ),
                 well_pick_provider=self._well_pick_providers[ensemble],
-                well_pick_horizon=well_pick_horizon,
                 plume_extent_data=plume_polygon,
             )
             if (

@@ -47,6 +47,7 @@ def init_fault_polygon_providers(webviz_settings, ensembles):
 def init_well_pick_providers(
     ensemble_roots: Dict[str, str],
     well_pick_rel_path: str,
+    map_surface_names_to_well_pick_names: Optional[Dict[str, str]],
 ) -> Dict[str, WellPickProvider]:
     providers = {}
 
@@ -56,5 +57,5 @@ def init_well_pick_providers(
         if first is None:
             continue
         table = pandas.read_csv(first)
-        providers[e_name] = WellPickProvider(table)
+        providers[e_name] = WellPickProvider(table, map_surface_names_to_well_pick_names)
     return providers
