@@ -265,7 +265,7 @@ class CO2Leakage(WebvizPluginABC):
                 )
             # Create layers and view bounds
             layers, viewport_bounds = create_map_layers(
-                formation,
+                formation=formation,
                 surface_data=surf_data,
                 fault_polygon_url=(
                     self._fault_polygon_handlers[ensemble].extract_fault_polygon_url(
