@@ -287,7 +287,7 @@ class CO2Leakage(WebvizPluginABC):
                 license_boundary_file=first_existing_fmu_file_path(
                     self._ensemble_paths[ensemble], realization, self._boundary_rel_path
                 ),
-                well_pick_provider=self._well_pick_providers[ensemble],
+                well_pick_provider=self._well_pick_providers.get(ensemble, None),
                 plume_extent_data=plume_polygon,
             )
             if (
