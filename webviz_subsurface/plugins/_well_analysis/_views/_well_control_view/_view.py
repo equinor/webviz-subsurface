@@ -9,6 +9,7 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 from ..._types import PressurePlotMode
 from ..._utils import EnsembleWellAnalysisData
 from ._utils import create_well_control_figure
+from ._view_element import WellControlViewElement
 
 
 class WellControlSettings(SettingsGroupABC):
@@ -134,7 +135,7 @@ class WellControlView(ViewABC):
         # pylint: disable=too-few-public-methods
         SETTINGS = "settings"
         PRESSUREPLOT_OPTIONS = "pressure-plot-options"
-        MAIN_COLUMN = "main-column"
+        VIEW_ELEMENT = "view-element"
 
     def __init__(
         self,
@@ -154,7 +155,8 @@ class WellControlView(ViewABC):
             WellControlView.Ids.PRESSUREPLOT_OPTIONS,
         )
 
-        self.main_column = self.add_column(WellControlView.Ids.MAIN_COLUMN)
+        main_column = self.add_column()
+        main_column.add_view_element(WellControlViewElement(), self.Ids.VIEW_ELEMENT)
 
     def set_callbacks(self) -> None:
         @callback(
@@ -218,8 +220,8 @@ class WellControlView(ViewABC):
 
         @callback(
             Output(
-                self.layout_element(WellControlView.Ids.MAIN_COLUMN)
-                .get_unique_id()
+                self.view_element(self.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellControlViewElement.Ids.CHART)
                 .to_string(),
                 "children",
             ),

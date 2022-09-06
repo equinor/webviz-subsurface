@@ -1,1 +1,2 @@
-from ._view import WellControlPressurePlotOptions, WellControlSettings, WellControlView
+from ._view import WellControlView
+from ._view_element import WellControlViewElement

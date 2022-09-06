@@ -13,7 +13,7 @@ from ..._providers import (
 )
 from ._error import error
 from ._utils import EnsembleWellAnalysisData
-from ._views._well_control_view import WellControlView
+from ._views._well_control_view import WellControlView, WellControlViewElement
 from ._views._well_overview_view import WellOverviewView, WellOverviewViewElement
 
 
@@ -146,8 +146,8 @@ class WellAnalysis(WebvizPluginABC):
             },
             {
                 "id": self.view(self.Ids.WELL_CONTROL)
-                .layout_element(WellControlView.Ids.MAIN_COLUMN)
-                .get_unique_id(),
+                .view_element(WellControlView.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellControlViewElement.Ids.CHART),
                 "content": """Shows the number of realizations on different control modes.
                              The control modes are listed in the legend. Also shows
                              Network pressures according to dates.""",
