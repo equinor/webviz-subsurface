@@ -5,23 +5,22 @@ import webviz_core_components as wcc
 from dash import ALL, Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config import WebvizSettings
-from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import callback_typecheck, ViewABC
 
 from ._settings import DataSettings, ViewSettings
 from ._utils._plot_utils import create_graph, filter_data_frame
 
 
 class PvtView(ViewABC):
-
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         PVT_GRAPHS = "formation-volume-factor"
         VISCOSITY = "viscosity"
         DENSITY = "density"
         GAS_OIL_RATIO = "gas-oil-ratio"
 
-        DataSettings = "DataSettings"
-        SHOWPLOTS = "show-plots"
+        DATA_SETTINGS = "DataSettings"
+        SHOW_PLOTS = "show-plots"
 
     PHASES = ["OIL", "GAS", "WATER"]
 
@@ -39,8 +38,8 @@ class PvtView(ViewABC):
 
         self.add_settings_groups(
             {
-                PvtView.Ids.DataSettings: DataSettings(self.pvt_df),
-                PvtView.Ids.SHOWPLOTS: ViewSettings(),
+                PvtView.Ids.DATA_SETTINGS: DataSettings(self.pvt_df),
+                PvtView.Ids.SHOW_PLOTS: ViewSettings(),
             }
         )
 
@@ -82,8 +81,8 @@ class PvtView(ViewABC):
             [
                 Output(
                     {
-                        "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
-                        .component_unique_id(ViewSettings.Ids.SHOWPLOTS)
+                        "id": self.settings_group(PvtView.Ids.SHOW_PLOTS)
+                        .component_unique_id(ViewSettings.Ids.SHOW_PLOTS)
                         .to_string(),
                         "plot": plot_value,
                     },
@@ -92,12 +91,13 @@ class PvtView(ViewABC):
                 for plot_value in ViewSettings.plot_visibility_options()
             ],
             Input(
-                self.settings_group(PvtView.Ids.DataSettings)
+                self.settings_group(PvtView.Ids.DATA_SETTINGS)
                 .component_unique_id(DataSettings.Ids.PHASE)
                 .to_string(),
                 "value",
             ),
         )
+        @callback_typecheck
         def _set_available_plots(
             phase: str,
         ) -> Tuple[dict, ...]:
@@ -114,33 +114,33 @@ class PvtView(ViewABC):
                 "children",
             ),
             Input(
-                self.settings_group(PvtView.Ids.DataSettings)
+                self.settings_group(PvtView.Ids.DATA_SETTINGS)
                 .component_unique_id(DataSettings.Ids.COLOR_BY)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PvtView.Ids.DataSettings)
+                self.settings_group(PvtView.Ids.DATA_SETTINGS)
                 .component_unique_id(DataSettings.Ids.ENSEMBLES)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PvtView.Ids.DataSettings)
+                self.settings_group(PvtView.Ids.DATA_SETTINGS)
                 .component_unique_id(DataSettings.Ids.PHASE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(PvtView.Ids.DataSettings)
+                self.settings_group(PvtView.Ids.DATA_SETTINGS)
                 .component_unique_id(DataSettings.Ids.PVTNUM)
                 .to_string(),
                 "value",
             ),
             Input(
                 {
-                    "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
-                    .component_unique_id(ViewSettings.Ids.SHOWPLOTS)
+                    "id": self.settings_group(PvtView.Ids.SHOW_PLOTS)
+                    .component_unique_id(ViewSettings.Ids.SHOW_PLOTS)
                     .to_string(),
                     "plot": ALL,
                 },
@@ -148,14 +148,15 @@ class PvtView(ViewABC):
             ),
             Input(
                 {
-                    "id": self.settings_group(PvtView.Ids.SHOWPLOTS)
-                    .component_unique_id(ViewSettings.Ids.SHOWPLOTS)
+                    "id": self.settings_group(PvtView.Ids.SHOW_PLOTS)
+                    .component_unique_id(ViewSettings.Ids.SHOW_PLOTS)
                     .to_string(),
                     "plot": ALL,
                 },
                 "value",
             ),
         )
+        @callback_typecheck
         # pylint: disable=too-many-locals
         def _update_plots(
             color_by: str,

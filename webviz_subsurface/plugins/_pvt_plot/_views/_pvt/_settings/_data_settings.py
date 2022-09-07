@@ -4,7 +4,8 @@ import pandas as pd
 import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, callback_typecheck
 
 
 class DataSettings(SettingsGroupABC):
@@ -12,15 +13,14 @@ class DataSettings(SettingsGroupABC):
     PHASES = ["OIL", "GAS", "WATER"]
     phases_additional_info: List[str] = []
 
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         COLOR_BY = "select-color"
         ENSEMBLES = "ensembles"
         PHASE = "phase"
-        PVTNUM = "Pvtnum"
-        SHOWPLOTS = "Show-plots"
-        PVTNUMBOX = "pvtnum-box"
-        ENSEMBLESBOX = "ensembles-box"
+        PVTNUM = "pvtnum"
+        SHOW_PLOTS = "show-plots"
+        PVTNUM_BOX = "pvtnum-box"
+        ENSEMBLES_BOX = "ensembles-box"
 
     def __init__(self, pvt_data_frame: pd.DataFrame) -> None:
         super().__init__("Data")
@@ -69,7 +69,7 @@ class DataSettings(SettingsGroupABC):
                 vertical=True,
             ),
             html.Div(
-                id=self.register_component_unique_id(DataSettings.Ids.ENSEMBLESBOX),
+                id=self.register_component_unique_id(DataSettings.Ids.ENSEMBLES_BOX),
                 children=[
                     wcc.Checklist(
                         id=self.register_component_unique_id(
@@ -97,7 +97,7 @@ class DataSettings(SettingsGroupABC):
                 persistence=False,
             ),
             html.Div(
-                id=self.register_component_unique_id(DataSettings.Ids.PVTNUMBOX),
+                id=self.register_component_unique_id(DataSettings.Ids.PVTNUM_BOX),
                 children=[
                     wcc.Checklist(
                         id=self.register_component_unique_id(DataSettings.Ids.PVTNUM),
@@ -113,17 +113,18 @@ class DataSettings(SettingsGroupABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.component_unique_id(DataSettings.Ids.ENSEMBLESBOX).to_string(),
+                self.component_unique_id(DataSettings.Ids.ENSEMBLES_BOX).to_string(),
                 "children",
             ),
             Output(
-                self.component_unique_id(DataSettings.Ids.PVTNUMBOX).to_string(),
+                self.component_unique_id(DataSettings.Ids.PVTNUM_BOX).to_string(),
                 "children",
             ),
             Input(
                 self.component_unique_id(DataSettings.Ids.COLOR_BY).to_string(), "value"
             ),
         )
+        @callback_typecheck
         def _update_ensembles_pvtnum(selected_color_by: str) -> List[Component]:
             output_list = []
             if selected_color_by == "ENSEMBLE":

@@ -10,9 +10,9 @@ from typing import Any, Callable, Dict, List, Tuple
 from dash import html
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
 from ..._datainput.pvt_data import load_pvt_csv, load_pvt_dataframe
-from ._plugin_ids import PluginIds
 from ._views._pvt import PvtView
 
 
@@ -60,6 +60,9 @@ class PvtPlot(WebvizPluginABC):
     The file can e.g. be dumped to disc per realization by a forward model in ERT using
     `ecl2df`.
     """
+
+    class Ids(StrEnum):
+        INDICATORS = "pvt-indicators"
 
     PHASES = ["OIL", "GAS", "WATER"]
 
@@ -129,7 +132,7 @@ class PvtPlot(WebvizPluginABC):
 
         self.add_view(
             PvtView(self.pvt_df, webviz_settings),
-            PluginIds.Views.INDICATORS,
+            PvtPlot.Ids.INDICATORS,
         )
 
     @property

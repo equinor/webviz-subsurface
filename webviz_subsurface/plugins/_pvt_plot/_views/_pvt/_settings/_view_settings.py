@@ -2,14 +2,13 @@ from typing import Dict, List
 
 import webviz_core_components as wcc
 from dash.development.base_component import Component
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
 class ViewSettings(SettingsGroupABC):
-
-    # pylint: disable=too-few-public-methods
-    class Ids:
-        SHOWPLOTS = "show-plots"
+    class Ids(StrEnum):
+        SHOW_PLOTS = "show-plots"
 
     def __init__(self) -> None:
         super().__init__("Show Plots")
@@ -38,7 +37,7 @@ class ViewSettings(SettingsGroupABC):
         return options
 
     def layout(self) -> List[Component]:
-        component_id = self.register_component_unique_id(ViewSettings.Ids.SHOWPLOTS)
+        component_id = self.register_component_unique_id(ViewSettings.Ids.SHOW_PLOTS)
         return [
             wcc.Checklist(
                 id={"id": component_id, "plot": plot_value},
