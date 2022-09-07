@@ -1,5 +1,5 @@
 # pylint: disable=no-name-in-module
-from webviz_config.testing._composite import WebvizComposite
+from webviz_config.testing import WebvizComposite
 from webviz_config.plugins import PvtPlot
 
 
