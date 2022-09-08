@@ -1,8 +1,7 @@
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Type
+from typing import Callable, Dict, List, Optional, Tuple
 
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ..._models import GruptreeModel, WellAttributesModel
@@ -11,7 +10,6 @@ from ..._providers import (
     EnsembleSummaryProviderFactory,
     Frequency,
 )
-from ._error import error
 from ._utils import EnsembleWellAnalysisData
 from ._views._well_control_view import WellControlView, WellControlViewElement
 from ._views._well_overview_view import WellOverviewView, WellOverviewViewElement
@@ -77,13 +75,10 @@ class WellAnalysis(WebvizPluginABC):
     ) -> None:
         super().__init__()
 
-        self.error_message = ""
-
         self._ensembles = ensembles
         self._theme = webviz_settings.theme
 
         if ensembles is None:
-            self.error_message = 'Incorrect argument, must provide "ensembles"'
             raise ValueError('Incorrect argument, must provide "ensembles"')
 
         self._ensemble_paths: Dict[str, Path] = {
@@ -173,7 +168,3 @@ class WellAnalysis(WebvizPluginABC):
             for _, ens_data_model in self._data_models.items()
             for webviz_store_tuple in ens_data_model.webviz_store
         ]
-
-    @property
-    def layout(self) -> Type[Component]:
-        return error(self.error_message)
