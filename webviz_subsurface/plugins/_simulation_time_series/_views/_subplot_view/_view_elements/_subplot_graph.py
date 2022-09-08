@@ -1,12 +1,12 @@
 import webviz_core_components as wcc
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
 class SubplotGraph(ViewElementABC):
     """View element for subplot graph"""
 
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(StrEnum):
         GRAPH = "graph"
 
     def __init__(self, height: str = "86vh") -> None:

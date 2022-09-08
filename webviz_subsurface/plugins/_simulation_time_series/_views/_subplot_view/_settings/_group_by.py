@@ -2,14 +2,14 @@ from typing import List
 
 import webviz_core_components as wcc
 from dash.development.base_component import Component
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._types import SubplotGroupByOptions
 
 
 class GroupBySettings(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS = "subplot-owner-options-radio-items"
 
     def __init__(self) -> None:
@@ -24,13 +24,13 @@ class GroupBySettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "Time Series",
-                        "value": SubplotGroupByOptions.VECTOR.value,
+                        "value": SubplotGroupByOptions.VECTOR,
                     },
                     {
                         "label": "Ensemble",
-                        "value": SubplotGroupByOptions.ENSEMBLE.value,
+                        "value": SubplotGroupByOptions.ENSEMBLE,
                     },
                 ],
-                value=SubplotGroupByOptions.VECTOR.value,
+                value=SubplotGroupByOptions.VECTOR,
             )
         ]

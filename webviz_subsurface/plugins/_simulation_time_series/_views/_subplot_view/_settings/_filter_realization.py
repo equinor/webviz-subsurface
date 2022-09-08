@@ -4,6 +4,7 @@ import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._utils.formatting import printable_int_list
@@ -12,8 +13,7 @@ from .._types import StatisticsFromOptions
 
 
 class FilterRealizationSettings(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         REALIZATIONS_FILTER_SPAN = "realization-filter-span"
         STATISTICS_FROM_RADIO_ITEMS = "statistics-from-radio-items"
         REALIZATIONS_FILTER_SELECTOR = "realizations-filter-selector"
@@ -52,14 +52,14 @@ class FilterRealizationSettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "All",
-                        "value": StatisticsFromOptions.ALL_REALIZATIONS.value,
+                        "value": StatisticsFromOptions.ALL_REALIZATIONS,
                     },
                     {
                         "label": "Selected",
-                        "value": StatisticsFromOptions.SELECTED_REALIZATIONS.value,
+                        "value": StatisticsFromOptions.SELECTED_REALIZATIONS,
                     },
                 ],
-                value=StatisticsFromOptions.ALL_REALIZATIONS.value,
+                value=StatisticsFromOptions.ALL_REALIZATIONS,
                 vertical=False,
             ),
             wcc.Select(

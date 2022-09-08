@@ -178,7 +178,7 @@ def create_vector_statistics_traces(
     low_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.P90].values,
-            name=StatisticsOptions.P90.value,
+            name=StatisticsOptions.P90,
         )
         if StatisticsOptions.P90 in statistics_options
         else None
@@ -186,7 +186,7 @@ def create_vector_statistics_traces(
     mid_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.P50].values,
-            name=StatisticsOptions.P50.value,
+            name=StatisticsOptions.P50,
         )
         if StatisticsOptions.P50 in statistics_options
         else None
@@ -194,7 +194,7 @@ def create_vector_statistics_traces(
     high_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.P10].values,
-            name=StatisticsOptions.P10.value,
+            name=StatisticsOptions.P10,
         )
         if StatisticsOptions.P10 in statistics_options
         else None
@@ -202,7 +202,7 @@ def create_vector_statistics_traces(
     mean_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.MEAN].values,
-            name=StatisticsOptions.MEAN.value,
+            name=StatisticsOptions.MEAN,
         )
         if StatisticsOptions.MEAN in statistics_options
         else None

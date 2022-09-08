@@ -4,6 +4,7 @@ import webviz_core_components as wcc
 from dash import Input, Output, State, callback, dash_table, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._types import DeltaEnsemble
@@ -18,8 +19,7 @@ def _create_delta_ensemble_table_column_data(
 
 
 class EnsemblesSettings(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         ENSEMBLES_DROPDOWN = "ensembles-dropdown"
         DELTA_ENSEMBLE = "delta-ensemble"
         DELTA_ENSEMBLE_A_DROPDOWN = "delta-ensemble-a-dropdown"

@@ -7,6 +7,7 @@ import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
@@ -51,8 +52,7 @@ def _create_new_selected_vectors(
 
 
 class TimeSeriesSettings(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         VECTOR_SELECTOR = "vector-selector"
         VECTOR_CALCULATOR_OPEN_BUTTON = "vector-calculator-open-button"
         VECTOR_CALCULATOR_DIALOG = "vector-calculator-dialog"

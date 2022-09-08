@@ -3,6 +3,7 @@ from typing import List
 import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._types import (
@@ -14,8 +15,7 @@ from .._types import (
 
 
 class VisualizationSettings(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         VISUALIZATION_RADIO_ITEMS = "visualization-radio-items"
         PLOT_TRACE_OPTIONS_CHECKLIST = "plot-trace-options-checklist"
         PLOT_STATISTICS_OPTIONS_CHECKLIST = "plot-statistics-options-checklist"
@@ -35,22 +35,22 @@ class VisualizationSettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "Individual realizations",
-                        "value": VisualizationOptions.REALIZATIONS.value,
+                        "value": VisualizationOptions.REALIZATIONS,
                     },
                     {
                         "label": "Statistical lines",
-                        "value": VisualizationOptions.STATISTICS.value,
+                        "value": VisualizationOptions.STATISTICS,
                     },
                     {
                         "label": "Statistical fanchart",
-                        "value": VisualizationOptions.FANCHART.value,
+                        "value": VisualizationOptions.FANCHART,
                     },
                     {
                         "label": "Statistics + Realizations",
                         "value": VisualizationOptions.STATISTICS_AND_REALIZATIONS,
                     },
                 ],
-                value=self._selected_visualization.value,
+                value=self._selected_visualization,
             ),
             wcc.LabeledContainer(
                 label="Options",
@@ -75,13 +75,13 @@ class VisualizationSettings(SettingsGroupABC):
                     ),
                     style={"display": "block"},
                     options=[
-                        {"label": "History", "value": TraceOptions.HISTORY.value},
+                        {"label": "History", "value": TraceOptions.HISTORY},
                         {
                             "label": "Observation",
-                            "value": TraceOptions.OBSERVATIONS.value,
+                            "value": TraceOptions.OBSERVATIONS,
                         },
                     ],
-                    value=[TraceOptions.HISTORY.value, TraceOptions.OBSERVATIONS.value],
+                    value=[TraceOptions.HISTORY, TraceOptions.OBSERVATIONS],
                 ),
                 wcc.Checklist(
                     id=self.register_component_unique_id(
@@ -95,26 +95,26 @@ class VisualizationSettings(SettingsGroupABC):
                     ]
                     else {"display": "none"},
                     options=[
-                        {"label": "Mean", "value": StatisticsOptions.MEAN.value},
+                        {"label": "Mean", "value": StatisticsOptions.MEAN},
                         {
                             "label": "P10 (high)",
-                            "value": StatisticsOptions.P10.value,
+                            "value": StatisticsOptions.P10,
                         },
                         {
                             "label": "P50 (median)",
-                            "value": StatisticsOptions.P50.value,
+                            "value": StatisticsOptions.P50,
                         },
                         {
                             "label": "P90 (low)",
-                            "value": StatisticsOptions.P90.value,
+                            "value": StatisticsOptions.P90,
                         },
-                        {"label": "Maximum", "value": StatisticsOptions.MAX.value},
-                        {"label": "Minimum", "value": StatisticsOptions.MIN.value},
+                        {"label": "Maximum", "value": StatisticsOptions.MAX},
+                        {"label": "Minimum", "value": StatisticsOptions.MIN},
                     ],
                     value=[
-                        StatisticsOptions.MEAN.value,
-                        StatisticsOptions.P10.value,
-                        StatisticsOptions.P90.value,
+                        StatisticsOptions.MEAN,
+                        StatisticsOptions.P10,
+                        StatisticsOptions.P90,
                     ],
                 ),
                 wcc.Checklist(
@@ -126,22 +126,22 @@ class VisualizationSettings(SettingsGroupABC):
                     else {"display": "none"},
                     options=[
                         {
-                            "label": FanchartOptions.MEAN.value,
-                            "value": FanchartOptions.MEAN.value,
+                            "label": FanchartOptions.MEAN,
+                            "value": FanchartOptions.MEAN,
                         },
                         {
-                            "label": FanchartOptions.P10_P90.value,
-                            "value": FanchartOptions.P10_P90.value,
+                            "label": FanchartOptions.P10_P90,
+                            "value": FanchartOptions.P10_P90,
                         },
                         {
-                            "label": FanchartOptions.MIN_MAX.value,
-                            "value": FanchartOptions.MIN_MAX.value,
+                            "label": FanchartOptions.MIN_MAX,
+                            "value": FanchartOptions.MIN_MAX,
                         },
                     ],
                     value=[
-                        FanchartOptions.MEAN.value,
-                        FanchartOptions.P10_P90.value,
-                        FanchartOptions.MIN_MAX.value,
+                        FanchartOptions.MEAN,
+                        FanchartOptions.P10_P90,
+                        FanchartOptions.MIN_MAX,
                     ],
                 ),
             ],

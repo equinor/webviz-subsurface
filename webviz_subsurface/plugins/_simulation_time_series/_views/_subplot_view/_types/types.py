@@ -1,5 +1,6 @@
 import sys
-from enum import Enum
+
+from webviz_config.utils import StrEnum
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -17,7 +18,7 @@ class DeltaEnsemble(TypedDict):
     ensemble_b: str
 
 
-class FanchartOptions(str, Enum):
+class FanchartOptions(StrEnum):
     """
     Type definition for statistical options for fanchart
     """
@@ -27,7 +28,7 @@ class FanchartOptions(str, Enum):
     P10_P90 = "P10/P90"  # P10 and P90 pair
 
 
-class StatisticsFromOptions(str, Enum):
+class StatisticsFromOptions(StrEnum):
     """
     Type definition of options for what to generate statistics from in simulation time series
     """
@@ -36,7 +37,7 @@ class StatisticsFromOptions(str, Enum):
     SELECTED_REALIZATIONS = "selected_realizations"
 
 
-class StatisticsOptions(str, Enum):
+class StatisticsOptions(StrEnum):
     """
     Type definition of statistics to include in plot in simulation time series
     """
@@ -49,7 +50,7 @@ class StatisticsOptions(str, Enum):
     P50 = "P50"
 
 
-class SubplotGroupByOptions(str, Enum):
+class SubplotGroupByOptions(StrEnum):
     """
     Type definition of options for subplots "group by" in graph for simulation time series
     """
@@ -58,7 +59,7 @@ class SubplotGroupByOptions(str, Enum):
     ENSEMBLE = "ensemble"
 
 
-class TraceOptions(str, Enum):
+class TraceOptions(StrEnum):
     """
     Type definition for trace options in simulation time series
     """
@@ -67,7 +68,7 @@ class TraceOptions(str, Enum):
     OBSERVATIONS = "observations"
 
 
-class VisualizationOptions(str, Enum):
+class VisualizationOptions(StrEnum):
     """
     Type definition for visualization options in simulation time series
     """

@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
+from webviz_config.utils import StrEnum
 
 from webviz_subsurface._abbreviations.reservoir_simulation import (
     historical_vector,
@@ -69,8 +70,7 @@ def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, s
 
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         SUBPLOT_VIEW = "subplot-view"
 
     # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements

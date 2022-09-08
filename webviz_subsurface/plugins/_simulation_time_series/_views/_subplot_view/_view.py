@@ -7,6 +7,7 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_subsurface_components import ExpressionInfo, VectorDefinition
 
@@ -50,8 +51,7 @@ from ._view_elements import SubplotGraph
 
 
 class SubplotView(ViewABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         SUBPLOT = "subplot"
 
         ENSEMBLE_SETTINGS = "ensemble-settings"

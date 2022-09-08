@@ -5,6 +5,7 @@ import dash
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback
 from dash.development.base_component import Component
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers import Frequency
@@ -14,8 +15,7 @@ from .._utils.provider_set import ProviderSet
 
 
 class ResamplingFrequencySettings(SettingsGroupABC):
-    # pylint: disable=too-few-public-methods
-    class Ids:
+    class Ids(StrEnum):
         RESAMPLING_FREQUENCY_DROPDOWN = "resampling-frequency-dropdown"
         RELATIVE_DATE_DROPDOWN = "relative-date-dropdown"
 
