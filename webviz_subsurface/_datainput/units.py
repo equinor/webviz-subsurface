@@ -38,38 +38,10 @@
 #
 ########################################
 
+from __future__ import annotations
+
 import re
-from typing import Any, Dict, Union
-
-
-class UnitBase:
-    """This is a pseudo-base-class necessary due to class Prefix requiring
-    a class type for operator type definitions.
-
-    TODO (RMT): Can be removed as soon as 'from __future__ import annotations'
-    is available (Python >= 3.7).
-    """
-
-    def __init__(self, value: float, symbol: str) -> None:
-        raise NotImplementedError("This pseudo-class must not be used directly.")
-
-    @property
-    def value(self) -> float:
-        raise NotImplementedError("This pseudo-class must not be used directly.")
-
-    @property
-    def raw_symbol(self) -> str:
-        raise NotImplementedError("This pseudo-class must not be used directly.")
-
-    @property
-    def symbol(self) -> str:
-        raise NotImplementedError("This pseudo-class must not be used directly.")
-
-    def __mul__(self, other: Any) -> Any:
-        raise NotImplementedError("This pseudo-class must not be used directly.")
-
-    def __truediv__(self, other: Any) -> Any:
-        raise NotImplementedError("This pseudo-class must not be used directly.")
+from typing import Dict, Union
 
 
 # pylint: disable=too-few-public-methods
@@ -107,7 +79,7 @@ class Prefix:
             self.factor = factor
             self.symbol = symbol
 
-        def __mul__(self, unit: UnitBase) -> UnitBase:  # type: ignore[no-untyped-def]
+        def __mul__(self, unit: Unit.Base) -> Unit.Base:  # type: ignore[no-untyped-def]
             """Applies this factor to the given unit and returns the result as a new unit.
 
             Does also create a new symbol.
@@ -119,7 +91,7 @@ class Prefix:
                 A new unit as a result of the application of this prefix.
 
             """
-            if issubclass(unit.__class__, UnitBase):
+            if issubclass(unit.__class__, Unit.Base):
                 return unit.__class__(
                     self.factor * unit.value, f"{self.symbol}{unit.symbol}"
                 )
@@ -147,7 +119,7 @@ class Prefix:
 class Unit:
     """Namespace for units"""
 
-    class Base(UnitBase):
+    class Base:
         """Common class for all units.
 
         Used to have one object holding both value and symbol of the unit.
@@ -155,10 +127,9 @@ class Unit:
         care of keeping its symbol tidy.
         """
 
-        # pylint: disable=super-init-not-called
         def __init__(
             self,
-            value: Union[float, UnitBase],  # type: ignore[name-defined]
+            value: Union[float, Unit.Base],  # type: ignore[name-defined]
             symbol: str,
         ) -> None:
             """Creates a new unit instance.
@@ -323,8 +294,8 @@ class Unit:
 
         def __mul__(
             self,
-            other: Union[UnitBase, Prefix.Base, float, int],
-        ) -> UnitBase:
+            other: Union[Unit.Base, Prefix.Base, float, int],
+        ) -> Unit.Base:
             """Multiplies this unit with the given unit/float/int and
             returns the result as a new unit.
 
@@ -337,7 +308,7 @@ class Unit:
                 A new unit as a result of the operation.
 
             """
-            if issubclass(other.__class__, UnitBase):
+            if issubclass(other.__class__, Unit.Base):
                 return self.__class__(
                     self.value * other.value, f"{self.raw_symbol}*{other.raw_symbol}"
                 )
@@ -352,8 +323,8 @@ class Unit:
 
         def __truediv__(
             self,
-            other: Union[UnitBase, Prefix.Base, float, int],
-        ) -> UnitBase:
+            other: Union[Unit.Base, Prefix.Base, float, int],
+        ) -> Unit.Base:
             """Divides this unit by the given unit/float/int and returns the result as a new unit.
 
             Does also create a new symbol.
@@ -365,7 +336,7 @@ class Unit:
                 A new unit as a result of the operation.
 
             """
-            if issubclass(other.__class__, UnitBase):
+            if issubclass(other.__class__, Unit.Base):
                 return self.__class__(
                     self.value / other.value, f"{self.raw_symbol}/({other.raw_symbol})"
                 )
@@ -380,7 +351,7 @@ class Unit:
 
     # Common powers
     @staticmethod
-    def square(unit: UnitBase) -> UnitBase:
+    def square(unit: Base) -> Base:
         """Computes the square product of the given unit.
 
         Args:
@@ -393,7 +364,7 @@ class Unit:
         return unit * unit
 
     @staticmethod
-    def cubic(unit: UnitBase) -> UnitBase:
+    def cubic(unit: Base) -> Base:
         """Computes the cubic product of the given unit.
 
         Args:
