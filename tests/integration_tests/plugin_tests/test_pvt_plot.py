@@ -1,6 +1,6 @@
 # pylint: disable=no-name-in-module
-from webviz_config.testing import WebvizComposite
 from webviz_config.plugins import PvtPlot
+from webviz_config.testing import WebvizComposite
 
 
 def test_pvt_plot(_webviz_duo: WebvizComposite, shared_settings: dict) -> None:
