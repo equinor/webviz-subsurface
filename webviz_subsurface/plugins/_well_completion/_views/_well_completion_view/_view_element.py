@@ -1,9 +1,10 @@
 from dash import html
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
 class WellCompletionViewElement(ViewElementABC):
-    class Ids:
+    class Ids(StrEnum):
         # pylint: disable=too-few-public-methods
         COMPONENT = "component"
 

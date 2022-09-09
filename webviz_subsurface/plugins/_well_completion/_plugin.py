@@ -1,7 +1,7 @@
-from enum import Enum
 from typing import Any, Callable, Dict, List, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
 from webviz_subsurface._models import StratigraphyModel, WellAttributesModel
 
@@ -133,7 +133,7 @@ class WellCompletion(WebvizPluginABC):
 
     """
 
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         WELL_COMPLETION_VIEW = "well-completion-view"
 
     def __init__(

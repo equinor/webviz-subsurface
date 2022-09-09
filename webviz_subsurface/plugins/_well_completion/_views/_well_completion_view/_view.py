@@ -1,22 +1,26 @@
-from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import (
+    SettingsGroupABC,
+    ViewABC,
+    callback_typecheck,
+)
 
 from ..._utils import WellCompletionDataModel
 from ._view_element import WellCompletionViewElement
 
 
-class DataMode(str, Enum):
+class DataMode(StrEnum):
     AGGREGATED = "aggregated"
     SINGLE_REAL = "single-real"
 
 
 class ViewSettings(SettingsGroupABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         ENSEMBLE = "ensemble"
         DATA_MODE = "mode"
         REALIZATION = "realization"
@@ -43,14 +47,14 @@ class ViewSettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "Aggregated",
-                        "value": DataMode.AGGREGATED.value,
+                        "value": DataMode.AGGREGATED,
                     },
                     {
                         "label": "Single realization",
-                        "value": DataMode.SINGLE_REAL.value,
+                        "value": DataMode.SINGLE_REAL,
                     },
                 ],
-                value=DataMode.AGGREGATED.value,
+                value=DataMode.AGGREGATED,
             ),
             html.Div(
                 id=self.register_component_unique_id(ViewSettings.Ids.REAL_BLOCK),
@@ -65,7 +69,7 @@ class ViewSettings(SettingsGroupABC):
 
 
 class WellCompletionView(ViewABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         VIEW_ELEMENT = "view-element"
         SETTINGS = "settings"
 
@@ -117,14 +121,13 @@ class WellCompletionView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _render_well_completions(
-            ensemble_name: str, data_mode: str, real: int
+            ensemble_name: str, data_mode: DataMode, real: int
         ) -> Tuple:
 
             data = self._data_models[ensemble_name].create_ensemble_dataset(
-                realization=real
-                if DataMode(data_mode) == DataMode.SINGLE_REAL
-                else None
+                realization=real if data_mode == DataMode.SINGLE_REAL else None
             )
             no_leaves = _count_leaves(data["stratigraphy"])
             return (
@@ -186,11 +189,12 @@ class WellCompletionView(ViewABC):
                 "value",
             ),
         )
-        def _show_hide_single_real_options(data_mode: str) -> Dict[str, str]:
+        @callback_typecheck
+        def _show_hide_single_real_options(data_mode: DataMode) -> Dict[str, str]:
             """Hides or unhides the realization dropdown according to whether mean
             or single realization is selected.
             """
-            if DataMode(data_mode) == DataMode.AGGREGATED:
+            if data_mode == DataMode.AGGREGATED:
                 return {"display": "none"}
             return {"display": "block"}
 
