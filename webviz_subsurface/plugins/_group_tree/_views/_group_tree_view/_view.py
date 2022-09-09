@@ -219,7 +219,12 @@ class GroupTreeView(ViewABC):
             stat_option_state: str,
             real_state: int,
         ) -> Tuple[List[Dict[str, Any]], str, str, List[Dict[str, Any]], Optional[int]]:
-            """Updates the selection options when the ensemble value changes"""
+            """Updates the selection options when the ensemble value changes
+
+            It was not possible to use the callback_typecheck decorator here since
+            tree_mode_state and stat_mode_state will be None at the first callback event.
+            Optional[TreeModeOptions] is not allowed as a type for now.
+            """
             tree_mode_options: List[Dict[str, Any]] = [
                 {
                     "label": "Statistics",
