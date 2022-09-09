@@ -1,11 +1,10 @@
-from enum import Enum
-
 from dash import html
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
 class GroupTreeViewElement(ViewElementABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         COMPONENT = "component"
 
     def __init__(self) -> None:

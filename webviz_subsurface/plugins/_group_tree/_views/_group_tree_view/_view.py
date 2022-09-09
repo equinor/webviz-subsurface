@@ -1,11 +1,15 @@
-from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
 from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import (
+    SettingsGroupABC,
+    ViewABC,
+    callback_typecheck,
+)
 
 from ..._types import NodeType, StatOptions, TreeModeOptions
 from ..._utils import EnsembleGroupTreeData
@@ -13,7 +17,7 @@ from ._view_element import GroupTreeViewElement
 
 
 class ViewControls(SettingsGroupABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         ENSEMBLE = "ensemble"
         TREEMODE = "tree-mode"
 
@@ -38,7 +42,7 @@ class ViewControls(SettingsGroupABC):
 
 
 class ViewOptions(SettingsGroupABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         STATISTICAL_OPTIONS = "statistical-options"
         STATISTICS = "statistics"
         SINGLE_REAL_OPTIONS = "single-real-options"
@@ -60,15 +64,15 @@ class ViewOptions(SettingsGroupABC):
                             ViewOptions.Ids.STATISTICS
                         ),
                         options=[
-                            {"label": "Mean", "value": StatOptions.MEAN.value},
-                            {"label": "P10 (high)", "value": StatOptions.P10.value},
+                            {"label": "Mean", "value": StatOptions.MEAN},
+                            {"label": "P10 (high)", "value": StatOptions.P10},
                             {
                                 "label": "P50 (median)",
-                                "value": StatOptions.P50.value,
+                                "value": StatOptions.P50,
                             },
-                            {"label": "P90 (low)", "value": StatOptions.P90.value},
-                            {"label": "Maximum", "value": StatOptions.MAX.value},
-                            {"label": "Minimum", "value": StatOptions.MIN.value},
+                            {"label": "P90 (low)", "value": StatOptions.P90},
+                            {"label": "Maximum", "value": StatOptions.MAX},
+                            {"label": "Minimum", "value": StatOptions.MIN},
                         ],
                     )
                 ],
@@ -93,7 +97,7 @@ class ViewOptions(SettingsGroupABC):
 
 
 class ViewFilters(SettingsGroupABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         TOUR_STEP = "tour-step"
         PROD_INJ_OTHER = "prod-inj-other"
 
@@ -108,14 +112,14 @@ class ViewFilters(SettingsGroupABC):
                     id=self.register_component_unique_id(self.Ids.PROD_INJ_OTHER),
                     label="Prod/Inj/Other",
                     options=[
-                        {"label": "Production", "value": NodeType.PROD.value},
-                        {"label": "Injection", "value": NodeType.INJ.value},
-                        {"label": "Other", "value": NodeType.OTHER.value},
+                        {"label": "Production", "value": NodeType.PROD},
+                        {"label": "Injection", "value": NodeType.INJ},
+                        {"label": "Other", "value": NodeType.OTHER},
                     ],
                     value=[
-                        NodeType.PROD.value,
-                        NodeType.INJ.value,
-                        NodeType.OTHER.value,
+                        NodeType.PROD,
+                        NodeType.INJ,
+                        NodeType.OTHER,
                     ],
                     multi=True,
                     size=3,
@@ -125,7 +129,7 @@ class ViewFilters(SettingsGroupABC):
 
 
 class GroupTreeView(ViewABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         VIEW_ELEMENT = "view-element"
         CONTROLS = "controls"
         OPTIONS = "options"
@@ -219,11 +223,11 @@ class GroupTreeView(ViewABC):
             tree_mode_options: List[Dict[str, Any]] = [
                 {
                     "label": "Statistics",
-                    "value": TreeModeOptions.STATISTICS.value,
+                    "value": TreeModeOptions.STATISTICS,
                 },
                 {
                     "label": "Single realization",
-                    "value": TreeModeOptions.SINGLE_REAL.value,
+                    "value": TreeModeOptions.SINGLE_REAL,
                 },
             ]
             tree_mode = (
@@ -247,8 +251,8 @@ class GroupTreeView(ViewABC):
 
             return (
                 tree_mode_options,
-                tree_mode.value,
-                stat_option.value,
+                tree_mode,
+                stat_option,
                 [{"label": real, "value": real} for real in unique_real],
                 real_state if real_state in unique_real else min(unique_real),
             )
@@ -291,21 +295,22 @@ class GroupTreeView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _render_grouptree(
-            tree_mode: str,
-            stat_option: str,
+            tree_mode: TreeModeOptions,
+            stat_option: StatOptions,
             real: int,
-            node_types: list,
+            node_types: List[NodeType],
             ensemble_name: str,
         ) -> list:
             """This callback updates the input dataset to the Grouptree component."""
             data, edge_options, node_options = self._group_tree_data[
                 ensemble_name
             ].create_grouptree_dataset(
-                TreeModeOptions(tree_mode),
-                StatOptions(stat_option),
+                tree_mode,
+                stat_option,
                 real,
-                [NodeType(tpe) for tpe in node_types],
+                node_types,
             )
 
             return [
@@ -337,9 +342,10 @@ class GroupTreeView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _show_hide_single_real_options(
-            tree_mode: str,
+            tree_mode: TreeModeOptions,
         ) -> Tuple[Dict[str, str], Dict[str, str]]:
-            if TreeModeOptions(tree_mode) is TreeModeOptions.STATISTICS:
+            if tree_mode is TreeModeOptions.STATISTICS:
                 return {"display": "block"}, {"display": "none"}
             return {"display": "none"}, {"display": "block"}

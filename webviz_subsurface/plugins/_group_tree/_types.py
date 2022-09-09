@@ -1,12 +1,12 @@
-from enum import Enum
+from webviz_config.utils import StrEnum
 
 
-class TreeModeOptions(str, Enum):
+class TreeModeOptions(StrEnum):
     STATISTICS = "statistics"
     SINGLE_REAL = "single_real"
 
 
-class StatOptions(str, Enum):
+class StatOptions(StrEnum):
     MEAN = "mean"
     P10 = "p10"
     P50 = "p50"
@@ -15,7 +15,7 @@ class StatOptions(str, Enum):
     MIN = "min"
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     PROD = "prod"
     INJ = "inj"
     OTHER = "other"

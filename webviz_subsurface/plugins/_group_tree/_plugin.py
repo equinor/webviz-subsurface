@@ -1,8 +1,8 @@
-from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import (
@@ -52,7 +52,7 @@ class GroupTree(WebvizPluginABC):
     to `monthly` if needed.
     """
 
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         GROUPTREE_VIEW = "group-tree-view"
 
     def __init__(
