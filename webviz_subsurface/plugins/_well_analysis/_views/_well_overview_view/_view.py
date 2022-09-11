@@ -247,9 +247,9 @@ class WellOverviewView(ViewABC):
         @callback(
             Output(
                 self.view_element(self.Ids.VIEW_ELEMENT)
-                .component_unique_id(WellOverviewViewElement.Ids.CHART)
+                .component_unique_id(WellOverviewViewElement.Ids.GRAPH)
                 .to_string(),
-                "children",
+                "figure",
             ),
             Input(
                 self.settings_group(self.Ids.SETTINGS)
@@ -303,7 +303,7 @@ class WellOverviewView(ViewABC):
             ),
             State(
                 self.view_element(self.Ids.VIEW_ELEMENT)
-                .component_unique_id(WellOverviewViewElement.Ids.CHART)
+                .component_unique_id(WellOverviewViewElement.Ids.GRAPH)
                 .to_string(),
                 "figure",
             ),
@@ -356,7 +356,7 @@ class WellOverviewView(ViewABC):
                     datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
                     if prod_after_date is not None
                     else None,
-                    ChartType[charttype_selected],
+                    ChartType(charttype_selected),
                     wells_selected,
                     self._theme,
                 )
@@ -369,9 +369,4 @@ class WellOverviewView(ViewABC):
                     prod_after_date,
                 )
 
-            return [
-                wcc.Graph(
-                    style={"height": "87vh"},
-                    figure=fig_dict,
-                ),
-            ]
+            return fig_dict

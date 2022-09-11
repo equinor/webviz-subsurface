@@ -122,7 +122,7 @@ class WellAnalysis(WebvizPluginABC):
             {
                 "id": self.view(self.Ids.WELL_OVERVIEW)
                 .view_element(WellOverviewView.Ids.VIEW_ELEMENT)
-                .component_unique_id(WellOverviewViewElement.Ids.CHART),
+                .component_unique_id(WellOverviewViewElement.Ids.GRAPH),
                 "content": "Shows production split on well for the various chart types",
             },
             {
