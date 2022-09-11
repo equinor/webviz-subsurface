@@ -1,18 +1,18 @@
-from enum import Enum
+from webviz_config.utils import StrEnum
 
 
-class PressurePlotMode(str, Enum):
+class PressurePlotMode(StrEnum):
     MEAN = "mean"
     SINGLE_REAL = "single-real"
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     WELL = "well"
     GROUP = "group"
     WELL_BH = "well-bh"
 
 
-class ChartType(str, Enum):
+class ChartType(StrEnum):
     BAR = "bar"
     PIE = "pie"
     AREA = "area"

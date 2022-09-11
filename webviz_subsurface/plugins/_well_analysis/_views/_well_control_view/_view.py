@@ -4,7 +4,12 @@ import webviz_core_components as wcc
 from dash import Input, Output, State, callback, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import (
+    SettingsGroupABC,
+    ViewABC,
+    callback_typecheck,
+)
 
 from ..._types import PressurePlotMode
 from ..._utils import EnsembleWellAnalysisData
@@ -13,9 +18,7 @@ from ._view_element import WellControlViewElement
 
 
 class WellControlSettings(SettingsGroupABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
-
+    class Ids(StrEnum):
         ENSEMBLE = "ensemble"
         WELL = "well"
         SHARED_X_AXIS = "shared-x-axis"
@@ -59,9 +62,7 @@ class WellControlSettings(SettingsGroupABC):
 
 
 class WellControlPressurePlotOptions(SettingsGroupABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
-
+    class Ids(StrEnum):
         INCLUDE_BHP = "include-bhp"
         PRESSURE_PLOT_MODE = "pressure-plot-mode"
         REALIZATION_BOX = "realization-box"
@@ -91,14 +92,14 @@ class WellControlPressurePlotOptions(SettingsGroupABC):
                 options=[
                     {
                         "label": "Mean of producing real.",
-                        "value": PressurePlotMode.MEAN.value,
+                        "value": PressurePlotMode.MEAN,
                     },
                     {
                         "label": "Single realization",
-                        "value": PressurePlotMode.SINGLE_REAL.value,
+                        "value": PressurePlotMode.SINGLE_REAL,
                     },
                 ],
-                value=PressurePlotMode.MEAN.value,
+                value=PressurePlotMode.MEAN,
             ),
             html.Div(
                 id=self.register_component_unique_id(
@@ -131,8 +132,7 @@ class WellControlPressurePlotOptions(SettingsGroupABC):
 
 
 class WellControlView(ViewABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(StrEnum):
         SETTINGS = "settings"
         PRESSUREPLOT_OPTIONS = "pressure-plot-options"
         VIEW_ELEMENT = "view-element"
@@ -272,17 +272,17 @@ class WellControlView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_graph(
             ensemble: str,
             well: str,
             include_bhp: List[str],
-            pressure_plot_mode_string: str,
+            pressure_plot_mode: PressurePlotMode,
             real: int,
-            display_ctrlmode_bar: bool,
+            display_ctrlmode_bar: List[str],
             shared_xaxes: List[str],
         ) -> Component:
             """Updates the well control figure"""
-            pressure_plot_mode = PressurePlotMode(pressure_plot_mode_string)
             fig = create_well_control_figure(
                 self.data_models[ensemble].get_node_info(
                     well, pressure_plot_mode, real
@@ -290,7 +290,7 @@ class WellControlView(ViewABC):
                 self.data_models[ensemble].summary_data,
                 pressure_plot_mode,
                 real,
-                display_ctrlmode_bar,
+                "ctrlmode_bar" in display_ctrlmode_bar,
                 "shared_xaxes" in shared_xaxes,
                 "include_bhp" in include_bhp,
                 self.theme,
@@ -314,10 +314,13 @@ class WellControlView(ViewABC):
                 "value",
             ),
         )
-        def _show_hide_single_real_options(pressure_plot_mode: str) -> Dict[str, str]:
+        @callback_typecheck
+        def _show_hide_single_real_options(
+            pressure_plot_mode: PressurePlotMode,
+        ) -> Dict[str, str]:
             """Hides or unhides the realization dropdown according to whether mean
             or single realization is selected.
             """
-            if PressurePlotMode(pressure_plot_mode) == PressurePlotMode.MEAN:
+            if pressure_plot_mode == PressurePlotMode.MEAN:
                 return {"display": "none"}
             return {"display": "block"}

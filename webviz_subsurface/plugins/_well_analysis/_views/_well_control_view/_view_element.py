@@ -1,11 +1,10 @@
-from enum import Enum
-
 from dash import html
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
 class WellControlViewElement(ViewElementABC):
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         CHART = "chart"
 
     def __init__(self) -> None:

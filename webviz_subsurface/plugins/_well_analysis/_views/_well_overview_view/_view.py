@@ -1,12 +1,17 @@
 import datetime
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import ALL, Input, Output, State, callback, callback_context, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import (
+    SettingsGroupABC,
+    ViewABC,
+    callback_typecheck,
+)
 
 from ..._types import ChartType
 from ..._utils import EnsembleWellAnalysisData
@@ -15,20 +20,15 @@ from ._view_element import WellOverviewViewElement
 
 
 class WellOverviewSettings(SettingsGroupABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
-        # chart controls
+    class Ids(StrEnum):
         CHARTTYPE = "charttype"
         ENSEMBLES = "ensembles"
         RESPONSE = "response"
         ONLY_PRODUCTION_AFTER_DATE = "only-production-after-date"
-
-        # chart layout
         CHARTTYPE_SETTINGS = "charttype-settings"
         CHARTTYPE_CHECKLIST = "charttype-checklist"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
-
         super().__init__("Settings")
 
         self._ensembles = list(data_models.keys())
@@ -177,8 +177,9 @@ class WellOverviewSettings(SettingsGroupABC):
                 "id",
             ),
         )
+        @callback_typecheck
         def _display_charttype_settings(
-            chart_selected: str, charttype_settings_ids: list
+            chart_selected: ChartType, charttype_settings_ids: list
         ) -> list:
             """Display only the settings relevant for the currently selected chart type."""
             return [
@@ -190,14 +191,10 @@ class WellOverviewSettings(SettingsGroupABC):
 
 
 class WellOverviewFilters(SettingsGroupABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
-
-        # filters
+    class Ids(StrEnum):
         SELECTED_WELLS = "selected-wells"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
-
         super().__init__("Filters")
         self._wells: List[str] = []
         for ens_data_model in data_models.values():
@@ -221,8 +218,7 @@ class WellOverviewFilters(SettingsGroupABC):
 
 
 class WellOverviewView(ViewABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(StrEnum):
         SETTINGS = "settings"
         FILTERS = "filters"
         CURRENT_FIGURE = "current-figure"
@@ -317,14 +313,18 @@ class WellOverviewView(ViewABC):
             checklist_values: List[List[str]],
             sumvec: str,
             prod_after_date: Union[str, None],
-            charttype_selected: ChartType,
+            charttype_selected: str,
             wells_selected: List[str],
             checklist_ids: List[Dict[str, str]],
-            current_fig_dict: dict,
+            current_fig_dict: Optional[Dict],
         ) -> Component:
             # pylint: disable=too-many-locals
             # pylint: disable=too-many-arguments
-            """Updates the well overview graph with selected input (f.ex chart type)"""
+            """Updates the well overview graph with selected input (f.ex chart type)
+
+            The callback_typecheck decorator can't be used because it doesn't handle
+            Optional.
+            """
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
             settings = {
@@ -356,7 +356,7 @@ class WellOverviewView(ViewABC):
                     datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
                     if prod_after_date is not None
                     else None,
-                    charttype_selected,
+                    ChartType[charttype_selected],
                     wells_selected,
                     self._theme,
                 )

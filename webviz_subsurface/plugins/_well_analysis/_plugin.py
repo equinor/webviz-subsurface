@@ -1,8 +1,8 @@
-from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
 from ..._models import GruptreeModel, WellAttributesModel
 from ..._providers import (
@@ -59,7 +59,7 @@ class WellAnalysis(WebvizPluginABC):
 
     """
 
-    class Ids(str, Enum):
+    class Ids(StrEnum):
         WELL_OVERVIEW = "well-overview"
         WELL_CONTROL = "well-control"
 
