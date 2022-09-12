@@ -15,9 +15,10 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import \
     FaultPolygonsHandler
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
-    fmu_realization_paths, first_existing_fmu_file_path, MapAttribute
+    first_existing_fmu_file_path, MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import \
-    init_map_attribute_names, init_surface_providers, init_well_pick_providers
+    init_map_attribute_names, init_surface_providers, init_well_pick_providers, \
+    init_co2_containment_table_providers
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import MainView, \
     MapViewElement, INITIAL_BOUNDS
 from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewSettings
@@ -70,7 +71,6 @@ class CO2Leakage(WebvizPluginABC):
         super().__init__()
         self._error_message = ""
 
-        self._co2_containment_relpath = co2_containment_relpath
         self._boundary_rel_path = boundary_relpath
         try:
             self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
@@ -97,6 +97,11 @@ class CO2Leakage(WebvizPluginABC):
                 self._ensemble_paths,
                 well_pick_relpath,
                 map_surface_names_to_well_pick_names,
+            )
+            # CO2 containment
+            self._co2_table_providers = init_co2_containment_table_providers(
+                self._ensemble_paths,
+                co2_containment_relpath,
             )
         except Exception as e:
             self._error_message = f"Plugin initialization failed: {e}"
@@ -139,10 +144,9 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
         def update_graphs(ensemble):
-            rz_paths = fmu_realization_paths(self._ensemble_paths[ensemble])
             fig_args = (
-                rz_paths,
-                self._co2_containment_relpath,
+                self._co2_table_providers[ensemble],
+                self._co2_table_providers[ensemble].realizations(),
             )
             fig0 = generate_co2_volume_figure(*fig_args)
             fig1 = generate_co2_time_containment_figure(*fig_args)

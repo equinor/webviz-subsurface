@@ -1,12 +1,13 @@
 import itertools
-import pathlib
 from enum import Enum
-from typing import Dict
+from typing import List
 
 import pandas
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+
+from webviz_subsurface._providers import EnsembleTableProvider
 
 
 class _Columns(Enum):
@@ -16,19 +17,20 @@ class _Columns(Enum):
     VOLUME_OUTSIDE = "volume_outside"
 
 
-def _read_dataframe(realization_path: str, relpath: str):
-    return pandas.read_csv(pathlib.Path(realization_path) / relpath)
+def _read_dataframe(table_provider: EnsembleTableProvider, realization: int):
+    return table_provider.get_column_data(
+        ["date", "co2_inside", "co2_outside"], [realization]
+    )
 
 
-def _read_terminal_co2_volumes(realization_paths: Dict[str, str], table_relpath: str):
+def _read_terminal_co2_volumes(
+    table_provider: EnsembleTableProvider, realizations: List[int]
+):
     records = []
-    for rz_name, rz_path in realization_paths.items():
-        try:
-            df = _read_dataframe(rz_path, table_relpath)
-        except FileNotFoundError:
-            continue
+    for real in realizations:
+        df = _read_dataframe(table_provider, real)
         last = df.iloc[np.argmax(df["date"])]
-        label = str(rz_name)
+        label = str(real)
         records += [
             (label, last["co2_inside"], "inside", 0.0),
             (label, last["co2_outside"], "outside", last["co2_outside"]),
@@ -46,18 +48,18 @@ def _read_terminal_co2_volumes(realization_paths: Dict[str, str], table_relpath:
     return df
 
 
-def _read_co2_volumes(realization_paths: Dict[str, str], table_relpath: str):
+def _read_co2_volumes(table_provider: EnsembleTableProvider, realizations: List[int]):
     return pandas.concat([
-        _read_dataframe(rz_path, table_relpath).assign(realization=rz_name)
-        for rz_name, rz_path in realization_paths.items()
+        _read_dataframe(table_provider, real).assign(realization=real)
+        for real in realizations
     ])
 
 
 def generate_co2_volume_figure(
-    realization_paths: Dict[str, str],
-    table_relpath: str,
+    table_provider: EnsembleTableProvider,
+    realizations: List[int],
 ):
-    df = _read_terminal_co2_volumes(realization_paths, table_relpath)
+    df = _read_terminal_co2_volumes(table_provider, realizations)
     fig = px.bar(
         df,
         y=_Columns.REALIZATION.value,
@@ -83,10 +85,10 @@ def generate_co2_volume_figure(
 
 
 def generate_co2_time_containment_figure(
-    realization_paths: Dict[str, str],
-    table_relpath: str,
+    table_provider: EnsembleTableProvider,
+    realizations: List[int],
 ):
-    df = _read_co2_volumes(realization_paths, table_relpath)
+    df = _read_co2_volumes(table_provider, realizations)
     df.sort_values(by="date", inplace=True)
     df["date"] = df["date"].astype(str)
     dates = df["date"].str[:4] + "-" + df["date"].str[4:6] + "-" + df["date"].str[6:]
@@ -100,7 +102,7 @@ def generate_co2_time_containment_figure(
     dummy_args = dict(mode="lines", marker_color="black", hoverinfo='none')
     fig.add_scatter(y=[.0], **dummy_args, **outside_args)
     fig.add_scatter(y=[.0], **dummy_args, **total_args)
-    for rz, color in zip(realization_paths.keys(), itertools.cycle(colors)):
+    for rz, color in zip(realizations, itertools.cycle(colors)):
         sub_df = df[df["realization"] == rz]
         common_args = dict(
             x=sub_df["dt"],

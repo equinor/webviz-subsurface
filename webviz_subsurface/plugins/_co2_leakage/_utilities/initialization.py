@@ -2,7 +2,8 @@ from typing import Optional, Dict
 
 import pandas
 
-from webviz_subsurface._providers import EnsembleSurfaceProviderFactory
+from webviz_subsurface._providers import EnsembleSurfaceProviderFactory, \
+    EnsembleTableProviderFactory, EnsembleTableProvider
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
     first_existing_fmu_file_path, fmu_realization_paths, MapAttribute
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
@@ -48,3 +49,17 @@ def init_well_pick_providers(
         table = pandas.read_csv(first)
         providers[e_name] = WellPickProvider(table, map_surface_names_to_well_pick_names)
     return providers
+
+
+def init_co2_containment_table_providers(
+    ensemble_roots: Dict[str, str],
+    table_rel_path: str,
+) -> Dict[str, EnsembleTableProvider]:
+    return {
+        ens: (
+            EnsembleTableProviderFactory
+            .instance()
+            .create_from_per_realization_csv_file(ens_path, table_rel_path)
+        )
+        for ens, ens_path in ensemble_roots.items()
+    }
