@@ -76,12 +76,11 @@ class ViewSettings(SettingsGroupABC):
             Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
         )
         def set_realizations(ensemble):
-            rz_paths = fmu_realization_paths(self._ensemble_paths[ensemble])
-            realizations = [
-                dict(label=r, value=r)
-                for r in sorted(rz_paths.keys())
+            rlz = [
+                {"value": r, "label": str(r)}
+                for r in self._ensemble_surface_providers[ensemble].realizations()
             ]
-            return realizations, [realizations[0]["value"]]
+            return rlz, [rlz[0]["value"]]
 
         @callback(
             Output(self.component_unique_id(self.Ids.FORMATION).to_string(), 'options'),

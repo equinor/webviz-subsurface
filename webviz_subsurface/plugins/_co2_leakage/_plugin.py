@@ -17,7 +17,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import \
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
     first_existing_fmu_file_path, MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import \
-    init_map_attribute_names, init_surface_providers, init_well_pick_providers, \
+    init_map_attribute_names, init_surface_providers, init_well_pick_provider, \
     init_co2_containment_table_providers
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import MainView, \
     MapViewElement, INITIAL_BOUNDS
@@ -61,7 +61,7 @@ class CO2Leakage(WebvizPluginABC):
         webviz_settings: WebvizSettings,
         ensembles: List[str],
         boundary_relpath: str = "share/results/polygons/leakage_boundary.csv",
-        well_pick_relpath: str = "share/results/wells/well_picks.csv",
+        well_pick_file: Optional[str] = None,
         co2_containment_relpath: str = "share/results/tables/co2_volumes.csv",
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         map_attribute_names: Optional[Dict[str, str]] = None,
@@ -92,19 +92,19 @@ class CO2Leakage(WebvizPluginABC):
                 )
                 for ens in ensembles
             }
-            # Well picks
-            self._well_pick_providers = init_well_pick_providers(
-                self._ensemble_paths,
-                well_pick_relpath,
-                map_surface_names_to_well_pick_names,
-            )
             # CO2 containment
             self._co2_table_providers = init_co2_containment_table_providers(
                 self._ensemble_paths,
                 co2_containment_relpath,
             )
+            # Well picks
+            self._well_pick_provider = init_well_pick_provider(
+                well_pick_file,
+                map_surface_names_to_well_pick_names,
+            )
         except Exception as e:
             self._error_message = f"Plugin initialization failed: {e}"
+            raise
 
         self.add_shared_settings_group(
             ViewSettings(
@@ -287,7 +287,7 @@ class CO2Leakage(WebvizPluginABC):
                 license_boundary_file=first_existing_fmu_file_path(
                     self._ensemble_paths[ensemble], realization, self._boundary_rel_path
                 ),
-                well_pick_provider=self._well_pick_providers.get(ensemble, None),
+                well_pick_provider=self._well_pick_provider,
                 plume_extent_data=plume_polygon,
             )
             if (

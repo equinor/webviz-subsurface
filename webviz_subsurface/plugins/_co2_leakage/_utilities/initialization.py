@@ -1,11 +1,10 @@
 from typing import Optional, Dict
 
-import pandas
-
 from webviz_subsurface._providers import EnsembleSurfaceProviderFactory, \
     EnsembleTableProviderFactory, EnsembleTableProvider
+from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
-    first_existing_fmu_file_path, fmu_realization_paths, MapAttribute
+    MapAttribute
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
     WellPickProvider
 
@@ -34,21 +33,19 @@ def init_surface_providers(webviz_settings, ensembles):
     }
 
 
-def init_well_pick_providers(
-    ensemble_roots: Dict[str, str],
-    well_pick_rel_path: str,
+def init_well_pick_provider(
+    well_pick_path: Optional[str],
     map_surface_names_to_well_pick_names: Optional[Dict[str, str]],
-) -> Dict[str, WellPickProvider]:
-    providers = {}
-
-    for e_name, e_root in ensemble_roots.items():
-        realz = fmu_realization_paths(e_root).keys()
-        first = first_existing_fmu_file_path(e_root, realz, well_pick_rel_path)
-        if first is None:
-            continue
-        table = pandas.read_csv(first)
-        providers[e_name] = WellPickProvider(table, map_surface_names_to_well_pick_names)
-    return providers
+) -> Optional[WellPickProvider]:
+    if well_pick_path is None:
+        return None
+    try:
+        return WellPickProvider(
+            read_csv(well_pick_path),
+            map_surface_names_to_well_pick_names
+        )
+    except OSError:
+        return None
 
 
 def init_co2_containment_table_providers(
