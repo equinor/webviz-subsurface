@@ -41,7 +41,7 @@
 from enum import IntEnum
 from typing import Callable, List
 
-from .units import Prefix, Unit
+from .units import Prefix, Unit, UnitBase
 
 
 class EclUnitEnum(IntEnum):
@@ -232,7 +232,7 @@ class EclUnits:
         """
 
         @staticmethod
-        def density() -> Unit.Base:
+        def density() -> UnitBase:
             """
             Returns:
                 The unit system's unit of density (e.g. 1 kg/m^3)
@@ -240,7 +240,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def depth() -> Unit.Base:
+        def depth() -> UnitBase:
             """
             Returns:
                 The unit system's unit of depth (e.g. 1 m)
@@ -248,7 +248,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def pressure() -> Unit.Base:
+        def pressure() -> UnitBase:
             """
             Returns:
                 The unit system's unit of pressure (e.g. 1 Pa)
@@ -256,7 +256,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def reservoir_rate() -> Unit.Base:
+        def reservoir_rate() -> UnitBase:
             """
             Returns:
                 The unit system's unit of the reservoir rate (e.g. m^3/s)
@@ -264,7 +264,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def reservoir_volume() -> Unit.Base:
+        def reservoir_volume() -> UnitBase:
             """
             Returns:
                 The unit system's unit of reservoir volume (e.g. rm^3)
@@ -272,7 +272,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def surface_volume_gas() -> Unit.Base:
+        def surface_volume_gas() -> UnitBase:
             """
             Returns:
                 The unit system's unit of the surface volume of gas (e.g. sm^3)
@@ -280,7 +280,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def surface_volume_liquid() -> Unit.Base:
+        def surface_volume_liquid() -> UnitBase:
             """
             Returns:
                 The unit system's unit of the surface volume of liquids (e.g. sm^3)
@@ -288,7 +288,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def time() -> Unit.Base:
+        def time() -> UnitBase:
             """
             Returns:
                 The unit system's unit of time (e.g. s)
@@ -296,7 +296,7 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def transmissibility() -> Unit.Base:
+        def transmissibility() -> UnitBase:
             """
             Returns:
                 The unit system's unit of transmissibility (e.g. m^3)
@@ -304,21 +304,21 @@ class EclUnits:
             raise NotImplementedError("The base class cannot be called directly.")
 
         @staticmethod
-        def viscosity() -> Unit.Base:
+        def viscosity() -> UnitBase:
             """
             Returns:
                 The unit system's unit of viscosity (e.g. Pa*s)
             """
             raise NotImplementedError("The base class cannot be called directly.")
 
-        def dissolved_gas_oil_ratio(self) -> Unit.Base:
+        def dissolved_gas_oil_ratio(self) -> UnitBase:
             """
             Returns:
                 The unit system's unit of the dissolved gas to oil ratio (e.g. [-])
             """
             return self.surface_volume_gas() / self.surface_volume_liquid()
 
-        def vaporised_oil_gas_ratio(self) -> Unit.Base:
+        def vaporised_oil_gas_ratio(self) -> UnitBase:
             """
             Returns:
                 The unit system's unit of the vaporised oil to gas ratio (e.g. [-])
@@ -327,207 +327,207 @@ class EclUnits:
 
     class EclSIUnitSystem(UnitSystem):
         @staticmethod
-        def density() -> Unit.Base:
+        def density() -> UnitBase:
             return UnitSystems.SI.Density
 
         @staticmethod
-        def depth() -> Unit.Base:
+        def depth() -> UnitBase:
             return UnitSystems.SI.Length
 
         @staticmethod
-        def pressure() -> Unit.Base:
+        def pressure() -> UnitBase:
             return UnitSystems.SI.Pressure
 
         @staticmethod
-        def reservoir_rate() -> Unit.Base:
+        def reservoir_rate() -> UnitBase:
             return UnitSystems.SI.ReservoirVolume / UnitSystems.SI.Time
 
         @staticmethod
-        def reservoir_volume() -> Unit.Base:
+        def reservoir_volume() -> UnitBase:
             return UnitSystems.SI.ReservoirVolume
 
         @staticmethod
-        def surface_volume_gas() -> Unit.Base:
+        def surface_volume_gas() -> UnitBase:
             return UnitSystems.SI.GasSurfaceVolume
 
         @staticmethod
-        def surface_volume_liquid() -> Unit.Base:
+        def surface_volume_liquid() -> UnitBase:
             return UnitSystems.SI.LiquidSurfaceVolume
 
         @staticmethod
-        def time() -> Unit.Base:
+        def time() -> UnitBase:
             return UnitSystems.SI.Time
 
         @staticmethod
-        def transmissibility() -> Unit.Base:
+        def transmissibility() -> UnitBase:
             return UnitSystems.SI.Transmissibility
 
         @staticmethod
-        def viscosity() -> Unit.Base:
+        def viscosity() -> UnitBase:
             return UnitSystems.SI.Viscosity
 
     class EclMetricUnitSystem(UnitSystem):
         @staticmethod
-        def density() -> Unit.Base:
+        def density() -> UnitBase:
             return UnitSystems.Metric.Density
 
         @staticmethod
-        def depth() -> Unit.Base:
+        def depth() -> UnitBase:
             return UnitSystems.Metric.Length
 
         @staticmethod
-        def pressure() -> Unit.Base:
+        def pressure() -> UnitBase:
             return UnitSystems.Metric.Pressure
 
         @staticmethod
-        def reservoir_rate() -> Unit.Base:
+        def reservoir_rate() -> UnitBase:
             return UnitSystems.Metric.ReservoirVolume / UnitSystems.Metric.Time
 
         @staticmethod
-        def reservoir_volume() -> Unit.Base:
+        def reservoir_volume() -> UnitBase:
             return UnitSystems.Metric.ReservoirVolume
 
         @staticmethod
-        def surface_volume_gas() -> Unit.Base:
+        def surface_volume_gas() -> UnitBase:
             return UnitSystems.Metric.GasSurfaceVolume
 
         @staticmethod
-        def surface_volume_liquid() -> Unit.Base:
+        def surface_volume_liquid() -> UnitBase:
             return UnitSystems.Metric.LiquidSurfaceVolume
 
         @staticmethod
-        def time() -> Unit.Base:
+        def time() -> UnitBase:
             return UnitSystems.Metric.Time
 
         @staticmethod
-        def transmissibility() -> Unit.Base:
+        def transmissibility() -> UnitBase:
             return UnitSystems.Metric.Transmissibility
 
         @staticmethod
-        def viscosity() -> Unit.Base:
+        def viscosity() -> UnitBase:
             return UnitSystems.Metric.Viscosity
 
     class EclFieldUnitSystem(UnitSystem):
         @staticmethod
-        def density() -> Unit.Base:
+        def density() -> UnitBase:
             return UnitSystems.Field.Density
 
         @staticmethod
-        def depth() -> Unit.Base:
+        def depth() -> UnitBase:
             return UnitSystems.Field.Length
 
         @staticmethod
-        def pressure() -> Unit.Base:
+        def pressure() -> UnitBase:
             return UnitSystems.Field.Pressure
 
         @staticmethod
-        def reservoir_rate() -> Unit.Base:
+        def reservoir_rate() -> UnitBase:
             return UnitSystems.Field.ReservoirVolume / UnitSystems.Field.Time
 
         @staticmethod
-        def reservoir_volume() -> Unit.Base:
+        def reservoir_volume() -> UnitBase:
             return UnitSystems.Field.ReservoirVolume
 
         @staticmethod
-        def surface_volume_gas() -> Unit.Base:
+        def surface_volume_gas() -> UnitBase:
             return UnitSystems.Field.GasSurfaceVolume
 
         @staticmethod
-        def surface_volume_liquid() -> Unit.Base:
+        def surface_volume_liquid() -> UnitBase:
             return UnitSystems.Field.LiquidSurfaceVolume
 
         @staticmethod
-        def time() -> Unit.Base:
+        def time() -> UnitBase:
             return UnitSystems.Field.Time
 
         @staticmethod
-        def transmissibility() -> Unit.Base:
+        def transmissibility() -> UnitBase:
             return UnitSystems.Field.Transmissibility
 
         @staticmethod
-        def viscosity() -> Unit.Base:
+        def viscosity() -> UnitBase:
             return UnitSystems.Field.Viscosity
 
     class EclLabUnitSystem(UnitSystem):
         @staticmethod
-        def density() -> Unit.Base:
+        def density() -> UnitBase:
             return UnitSystems.Lab.Density
 
         @staticmethod
-        def depth() -> Unit.Base:
+        def depth() -> UnitBase:
             return UnitSystems.Lab.Length
 
         @staticmethod
-        def pressure() -> Unit.Base:
+        def pressure() -> UnitBase:
             return UnitSystems.Lab.Pressure
 
         @staticmethod
-        def reservoir_rate() -> Unit.Base:
+        def reservoir_rate() -> UnitBase:
             return UnitSystems.Lab.ReservoirVolume / UnitSystems.Lab.Time
 
         @staticmethod
-        def reservoir_volume() -> Unit.Base:
+        def reservoir_volume() -> UnitBase:
             return UnitSystems.Lab.ReservoirVolume
 
         @staticmethod
-        def surface_volume_gas() -> Unit.Base:
+        def surface_volume_gas() -> UnitBase:
             return UnitSystems.Lab.GasSurfaceVolume
 
         @staticmethod
-        def surface_volume_liquid() -> Unit.Base:
+        def surface_volume_liquid() -> UnitBase:
             return UnitSystems.Lab.LiquidSurfaceVolume
 
         @staticmethod
-        def time() -> Unit.Base:
+        def time() -> UnitBase:
             return UnitSystems.Lab.Time
 
         @staticmethod
-        def transmissibility() -> Unit.Base:
+        def transmissibility() -> UnitBase:
             return UnitSystems.Lab.Transmissibility
 
         @staticmethod
-        def viscosity() -> Unit.Base:
+        def viscosity() -> UnitBase:
             return UnitSystems.Lab.Viscosity
 
     class EclPvtMUnitSystem(UnitSystem):
         @staticmethod
-        def density() -> Unit.Base:
+        def density() -> UnitBase:
             return UnitSystems.PVTM.Density
 
         @staticmethod
-        def depth() -> Unit.Base:
+        def depth() -> UnitBase:
             return UnitSystems.PVTM.Length
 
         @staticmethod
-        def pressure() -> Unit.Base:
+        def pressure() -> UnitBase:
             return UnitSystems.PVTM.Pressure
 
         @staticmethod
-        def reservoir_rate() -> Unit.Base:
+        def reservoir_rate() -> UnitBase:
             return UnitSystems.PVTM.ReservoirVolume / UnitSystems.PVTM.Time
 
         @staticmethod
-        def reservoir_volume() -> Unit.Base:
+        def reservoir_volume() -> UnitBase:
             return UnitSystems.PVTM.ReservoirVolume
 
         @staticmethod
-        def surface_volume_gas() -> Unit.Base:
+        def surface_volume_gas() -> UnitBase:
             return UnitSystems.PVTM.GasSurfaceVolume
 
         @staticmethod
-        def surface_volume_liquid() -> Unit.Base:
+        def surface_volume_liquid() -> UnitBase:
             return UnitSystems.PVTM.LiquidSurfaceVolume
 
         @staticmethod
-        def time() -> Unit.Base:
+        def time() -> UnitBase:
             return UnitSystems.PVTM.Time
 
         @staticmethod
-        def transmissibility() -> Unit.Base:
+        def transmissibility() -> UnitBase:
             return UnitSystems.PVTM.Transmissibility
 
         @staticmethod
-        def viscosity() -> Unit.Base:
+        def viscosity() -> UnitBase:
             return UnitSystems.PVTM.Viscosity
 
     @staticmethod
