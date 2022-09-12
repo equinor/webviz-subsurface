@@ -105,14 +105,14 @@ class SummaryGraphLayout(html.Div):
     def __init__(self, bar_plot_id, time_plot_id, **kwargs):
         super().__init__(
             children=[
-                dcc.Graph(
+                wcc.Graph(
                     id=bar_plot_id,
                     figure=go.Figure(),
                     config={
                         "displayModeBar": False,
                     }
                 ),
-                dcc.Graph(
+                wcc.Graph(
                     id=time_plot_id,
                     figure=go.Figure(),
                     config={
