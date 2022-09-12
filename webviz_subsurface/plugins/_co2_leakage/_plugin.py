@@ -24,6 +24,7 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewS
 
 
 from . import _error
+from ._utilities.color_tables import CO2LEAKAGE_COLOR_TABLES
 
 
 class CO2Leakage(WebvizPluginABC):
@@ -105,10 +106,11 @@ class CO2Leakage(WebvizPluginABC):
                 self._ensemble_paths,
                 self._ensemble_surface_providers,
                 self._map_attribute_names,
+                [c["name"] for c in CO2LEAKAGE_COLOR_TABLES],
             ),
             self.Ids.MAIN_SETTINGS
         )
-        self.add_view(MainView(), self.Ids.MAIN_VIEW)
+        self.add_view(MainView(CO2LEAKAGE_COLOR_TABLES), self.Ids.MAIN_VIEW)
         self.add_store(self.Ids.DATE_STORE, WebvizPluginABC.StorageType.SESSION)
 
     @property
@@ -203,21 +205,21 @@ class CO2Leakage(WebvizPluginABC):
             State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
         )
         def update_map_attribute(
-                attribute: str,
-                date,
-                formation: str,
-                realization: List[int],
-                statistic: str,
-                color_map_name,
-                cm_min_auto,
-                cm_min_val,
-                cm_max_auto,
-                cm_max_val,
-                plume_threshold,
-                plume_smoothing,
-                ensemble,
-                date_list,
-                current_bounds,
+            attribute: str,
+            date,
+            formation: str,
+            realization: List[int],
+            statistic: str,
+            color_map_name,
+            cm_min_auto,
+            cm_min_val,
+            cm_max_auto,
+            cm_max_val,
+            plume_threshold,
+            plume_smoothing,
+            ensemble,
+            date_list,
+            current_bounds,
         ):
             attribute = MapAttribute(attribute)
             if len(realization) == 0:

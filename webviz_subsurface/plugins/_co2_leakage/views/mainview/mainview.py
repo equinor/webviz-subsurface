@@ -1,13 +1,10 @@
-
 import plotly.graph_objects as go
-from dash import html, dcc
+from dash import html
 import webviz_core_components as wcc
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 
 from webviz_subsurface_components import DeckGLMap
-
-from webviz_subsurface.plugins._map_viewer_fmu.color_tables import default_color_tables
 
 
 INITIAL_BOUNDS = (0, 0, 1, 1)
@@ -17,9 +14,9 @@ class MainView(ViewABC):
     class Ids:
         MAIN_ELEMENT = "main-element"
 
-    def __init__(self):
+    def __init__(self, color_scales):
         super().__init__("Main View")
-        self._view_element = MapViewElement()
+        self._view_element = MapViewElement(color_scales)
         self.add_view_element(self._view_element, self.Ids.MAIN_ELEMENT)
 
 
@@ -52,6 +49,10 @@ class MapViewElement(ViewElementABC):
             "flexDirection": "column",
         }
 
+    def __init__(self, color_scales):
+        super().__init__()
+        self._color_scales = color_scales
+
     def inner_layout(self) -> Component:
         return html.Div(
             [
@@ -70,7 +71,7 @@ class MapViewElement(ViewElementABC):
                                     scale={"visible": True},
                                     toolbar={"visible": True},
                                     coordinateUnit="m",
-                                    colorTables=_color_tables(),
+                                    colorTables=self._color_scales,
                                     zoom=-7,
                                 ),
                             ],
@@ -122,64 +123,3 @@ class SummaryGraphLayout(html.Div):
             ],
             **kwargs,
         )
-
-
-def _color_tables():
-    # Source: https://waldyrious.net/viridis-palette-generator/ + matplotlib._cm_listed
-    return default_color_tables + [
-        {
-            "name": "Viridis",
-            "discrete": False,
-            "colors": [
-                [0.0, 253, 231, 37],
-                [0.25, 94, 201, 98],
-                [0.50, 33, 145, 140],
-                [0.75, 59, 82, 139],
-                [1.0, 68, 1, 84],
-            ],
-        },
-        {
-            "name": "Inferno",
-            "discrete": False,
-            "colors": [
-                [0.0, 252, 255, 164],
-                [0.25, 249, 142, 9],
-                [0.5, 188, 55, 84],
-                [0.75, 87, 16, 110],
-                [1.0, 0, 0, 4],
-            ],
-        },
-        {
-            "name": "Magma",
-            "discrete": False,
-            "colors": [
-                [0.0, 252, 253, 191],
-                [0.25, 252, 137, 97],
-                [0.5, 183, 55, 121],
-                [0.75, 81, 18, 124],
-                [1.0, 0, 0, 4],
-            ],
-        },
-        {
-            "name": "Plasma",
-            "discrete": False,
-            "colors": [
-                [0.0, 240, 249, 33],
-                [0.25, 248, 149, 64],
-                [0.5, 204, 71, 120],
-                [0.75, 126, 3, 168],
-                [1.0, 13, 8, 135],
-            ],
-        },
-        {
-            "name": "Cividis",
-            "discrete": False,
-            "colors": [
-                 [0.0, 0, 32, 77],
-                 [0.25, 64, 77, 107],
-                 [0.5, 124, 123, 120],
-                 [0.75, 188, 175, 111],
-                 [1.0, 255, 234, 70],
-            ],
-        },
-    ]
