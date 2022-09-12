@@ -55,8 +55,6 @@ def _read_co2_volumes(realization_paths: Dict[str, str], table_relpath: str):
 
 def generate_co2_volume_figure(
     realization_paths: Dict[str, str],
-    height: int,
-    width: int,
     table_relpath: str,
 ):
     df = _read_terminal_co2_volumes(realization_paths, table_relpath)
@@ -70,8 +68,6 @@ def generate_co2_volume_figure(
         category_orders={_Columns.CONTAINMENT.value: ["outside", "inside"]},
         color_discrete_sequence=["#dd4300", "#006ddd"],
     )
-    fig.layout.height = height
-    fig.layout.width = width
     fig.layout.legend.title.text = ""
     fig.layout.legend.orientation = "h"
     fig.layout.legend.y = -0.3
@@ -88,8 +84,6 @@ def generate_co2_volume_figure(
 
 def generate_co2_time_containment_figure(
     realization_paths: Dict[str, str],
-    height: int,
-    width: int,
     table_relpath: str,
 ):
     df = _read_co2_volumes(realization_paths, table_relpath)
@@ -125,8 +119,6 @@ def generate_co2_time_containment_figure(
     fig.layout.legend.x = 1
     fig.layout.xaxis.title = "Time (date)"
     fig.layout.yaxis.title = "Mass [kg]"
-    fig.layout.height = height
-    fig.layout.width = width
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
     fig.layout.margin.b = 10
     fig.layout.margin.t = 60

@@ -26,10 +26,6 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewS
 from . import _error
 
 
-ENSEMBLE_PLOT_HEIGHT = 300
-ENSEMBLE_PLOT_WIDTH = 400
-
-
 class CO2Leakage(WebvizPluginABC):
     """
     Plugin for analyzing CO2 leakage potential across multiple realizations in an FMU
@@ -144,8 +140,6 @@ class CO2Leakage(WebvizPluginABC):
             rz_paths = fmu_realization_paths(self._ensemble_paths[ensemble])
             fig_args = (
                 rz_paths,
-                ENSEMBLE_PLOT_HEIGHT,
-                ENSEMBLE_PLOT_WIDTH,
                 self._co2_containment_relpath,
             )
             fig0 = generate_co2_volume_figure(*fig_args)
