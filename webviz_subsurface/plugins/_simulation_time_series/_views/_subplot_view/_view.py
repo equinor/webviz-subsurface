@@ -633,8 +633,8 @@ class SubplotView(ViewABC):
                 "value",
             ),
         )
-        # pylint: disable=too-many-branches
         @callback_typecheck
+        # pylint: disable=too-many-branches,
         def _user_download_data(
             data_requested: Union[int, None],
             vectors: List[str],
