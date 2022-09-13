@@ -4,12 +4,8 @@ import webviz_core_components as wcc
 from dash import Input, Output, State, callback, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
-from webviz_config.utils import StrEnum
-from webviz_config.webviz_plugin_subclasses import (
-    SettingsGroupABC,
-    ViewABC,
-    callback_typecheck,
-)
+from webviz_config.utils import StrEnum, callback_typecheck
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from ..._types import PressurePlotMode
 from ..._utils import EnsembleWellAnalysisData
@@ -24,7 +20,6 @@ class WellControlSettings(SettingsGroupABC):
         SHARED_X_AXIS = "shared-x-axis"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
-
         super().__init__("Plot Controls")
         self.ensembles = list(data_models.keys())
         self.wells: List[str] = []

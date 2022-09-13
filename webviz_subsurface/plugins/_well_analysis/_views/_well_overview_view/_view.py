@@ -6,12 +6,8 @@ import webviz_core_components as wcc
 from dash import ALL, Input, Output, State, callback, callback_context, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
-from webviz_config.utils import StrEnum
-from webviz_config.webviz_plugin_subclasses import (
-    SettingsGroupABC,
-    ViewABC,
-    callback_typecheck,
-)
+from webviz_config.utils import StrEnum, callback_typecheck
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from ..._types import ChartType
 from ..._utils import EnsembleWellAnalysisData
@@ -97,9 +93,9 @@ class WellOverviewSettings(SettingsGroupABC):
             html.Div(
                 children=[
                     html.Div(
-                        id={"id": settings_id, "charttype": "bar"},
+                        id={"id": settings_id, "charttype": ChartType.BAR},
                         children=wcc.Checklist(
-                            id={"id": checklist_id, "charttype": "bar"},
+                            id={"id": checklist_id, "charttype": ChartType.BAR},
                             label="Layout options",
                             options=[
                                 {"label": "Show legend", "value": "legend"},
@@ -117,9 +113,9 @@ class WellOverviewSettings(SettingsGroupABC):
                         ),
                     ),
                     html.Div(
-                        id={"id": settings_id, "charttype": "pie"},
+                        id={"id": settings_id, "charttype": ChartType.PIE},
                         children=wcc.Checklist(
-                            id={"id": checklist_id, "charttype": "pie"},
+                            id={"id": checklist_id, "charttype": ChartType.PIE},
                             label="Layout options",
                             options=[
                                 {"label": "Show legend", "value": "legend"},
@@ -132,9 +128,9 @@ class WellOverviewSettings(SettingsGroupABC):
                         ),
                     ),
                     html.Div(
-                        id={"id": settings_id, "charttype": "area"},
+                        id={"id": settings_id, "charttype": ChartType.AREA},
                         children=wcc.Checklist(
-                            id={"id": checklist_id, "charttype": "area"},
+                            id={"id": checklist_id, "charttype": ChartType.AREA},
                             label="Layout options",
                             options=[
                                 {"label": "Show legend", "value": "legend"},
@@ -308,23 +304,20 @@ class WellOverviewView(ViewABC):
                 "figure",
             ),
         )
+        @callback_typecheck
         def _update_graph(
             ensembles: List[str],
             checklist_values: List[List[str]],
             sumvec: str,
             prod_after_date: Union[str, None],
-            charttype_selected: str,
+            charttype_selected: ChartType,
             wells_selected: List[str],
             checklist_ids: List[Dict[str, str]],
             current_fig_dict: Optional[Dict],
         ) -> Component:
             # pylint: disable=too-many-locals
             # pylint: disable=too-many-arguments
-            """Updates the well overview graph with selected input (f.ex chart type)
-
-            The callback_typecheck decorator can't be used because it doesn't handle
-            Optional.
-            """
+            """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
             settings = {
@@ -343,7 +336,7 @@ class WellOverviewView(ViewABC):
             ):
                 fig_dict = format_well_overview_figure(
                     go.Figure(current_fig_dict),
-                    ChartType(charttype_selected),
+                    charttype_selected,
                     settings[charttype_selected],
                     sumvec,
                     prod_after_date,
@@ -356,14 +349,14 @@ class WellOverviewView(ViewABC):
                     datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
                     if prod_after_date is not None
                     else None,
-                    ChartType(charttype_selected),
+                    charttype_selected,
                     wells_selected,
                     self._theme,
                 )
 
                 fig_dict = format_well_overview_figure(
                     figure.figure,
-                    ChartType(charttype_selected),
+                    charttype_selected,
                     settings[charttype_selected],
                     sumvec,
                     prod_after_date,
