@@ -7,7 +7,7 @@ from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_subsurface_components import ExpressionInfo, VectorDefinition
 
@@ -142,10 +142,11 @@ class SubplotView(ViewABC):
                 ),
                 "value",
             ),
+            prevent_initial_call=False,
         )
         def _update_trace_options_layout(
             relative_date_value: str,
-        ) -> List[dict]:
+        ) -> dict:
             """Hide trace options (History and Observation) when relative date is selected"""
 
             # Convert to Optional[datetime.datetime]
@@ -156,8 +157,8 @@ class SubplotView(ViewABC):
             )
 
             if relative_date:
-                return [{"display": "none"}]
-            return [{"display": "block"}]
+                return {"display": "none"}
+            return {"display": "block"}
 
         @callback(
             Output(
@@ -272,20 +273,20 @@ class SubplotView(ViewABC):
                 "options",
             ),
         )
-
+        @callback_typecheck
         # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
         def _update_graph(
             vectors: List[str],
             selected_ensembles: List[str],
-            visualization_value: str,
-            statistics_option_values: List[str],
-            fanchart_option_values: List[str],
-            trace_option_values: List[str],
-            subplot_owner_options_value: str,
+            visualization: VisualizationOptions,
+            statistics_options: List[StatisticsOptions],
+            fanchart_options: List[FanchartOptions],
+            trace_options: List[TraceOptions],
+            subplot_group_by: SubplotGroupByOptions,
             resampling_frequency_value: str,
             selected_realizations: List[int],
-            statistics_calculated_from_value: str,
-            relative_date_value: str,
+            statistics_from: StatisticsFromOptions,
+            relative_date_value: Optional[str],
             _graph_data_has_changed_trigger: int,
             delta_ensembles: List[DeltaEnsemble],
             vector_calculator_expressions: List[ExpressionInfo],
@@ -315,19 +316,13 @@ class SubplotView(ViewABC):
 
             if vectors is None:
                 vectors = self._initial_selected_vectors
+
             # Retrieve the selected expressions
             selected_expressions = get_selected_expressions(
                 vector_calculator_expressions, vectors
             )
 
             # Convert from string values to strongly typed
-            visualization = VisualizationOptions(visualization_value)
-            statistics_options = [
-                StatisticsOptions(elm) for elm in statistics_option_values
-            ]
-            fanchart_options = [FanchartOptions(elm) for elm in fanchart_option_values]
-            trace_options = [TraceOptions(elm) for elm in trace_option_values]
-            subplot_owner = SubplotGroupByOptions(subplot_owner_options_value)
             resampling_frequency = Frequency.from_string_value(
                 resampling_frequency_value
             )
@@ -335,9 +330,6 @@ class SubplotView(ViewABC):
             all_ensemble_names = [
                 option["value"] for option in ensemble_dropdown_options
             ]
-            statistics_from_option = StatisticsFromOptions(
-                statistics_calculated_from_value
-            )
 
             relative_date: Optional[datetime.datetime] = (
                 None
@@ -356,7 +348,7 @@ class SubplotView(ViewABC):
                     SubplotView.Ids.FILTER_REALIZATION_SETTINGS,
                     FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR,
                 )
-                and statistics_from_option is StatisticsFromOptions.ALL_REALIZATIONS
+                and statistics_from is StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization
                 in [
                     VisualizationOptions.STATISTICS,
@@ -389,7 +381,7 @@ class SubplotView(ViewABC):
             }
 
             figure_builder: GraphFigureBuilderBase
-            if subplot_owner is SubplotGroupByOptions.VECTOR:
+            if subplot_group_by is SubplotGroupByOptions.VECTOR:
                 # Create unique colors based on all ensemble names to preserve consistent colors
                 ensemble_colors = unique_colors(all_ensemble_names, self._theme)
                 vector_titles = create_vector_plot_titles_from_provider_set(
@@ -407,7 +399,7 @@ class SubplotView(ViewABC):
                     vector_line_shapes,
                     self._theme,
                 )
-            elif subplot_owner is SubplotGroupByOptions.ENSEMBLE:
+            elif subplot_group_by is SubplotGroupByOptions.ENSEMBLE:
                 vector_colors = unique_colors(vectors, self._theme)
                 figure_builder = EnsembleSubplotBuilder(
                     vectors,
@@ -422,7 +414,7 @@ class SubplotView(ViewABC):
 
             # Get all realizations if statistics accross all realizations are requested
             is_statistics_from_all_realizations = (
-                statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+                statistics_from == StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization
                 in [
                     VisualizationOptions.FANCHART,
@@ -675,17 +667,18 @@ class SubplotView(ViewABC):
             ),
         )
         # pylint: disable=too-many-branches
+        @callback_typecheck
         def _user_download_data(
             data_requested: Union[int, None],
             vectors: List[str],
             selected_ensembles: List[str],
-            visualization_value: str,
+            visualization: VisualizationOptions,
             resampling_frequency_value: str,
             selected_realizations: List[int],
-            statistics_calculated_from_value: str,
+            statistics_from: StatisticsFromOptions,
             delta_ensembles: List[DeltaEnsemble],
             vector_calculator_expressions: List[ExpressionInfo],
-            relative_date_value: str,
+            relative_date_value: Optional[str],
         ) -> Union[EncodedFile, str]:
             """Callback to download data based on selections
 
@@ -712,14 +705,9 @@ class SubplotView(ViewABC):
             )
 
             # Convert from string values to strongly typed
-            visualization = VisualizationOptions(visualization_value)
             resampling_frequency = Frequency.from_string_value(
                 resampling_frequency_value
             )
-            statistics_from_option = StatisticsFromOptions(
-                statistics_calculated_from_value
-            )
-
             relative_date: Optional[datetime.datetime] = (
                 None
                 if relative_date_value is None
@@ -744,7 +732,7 @@ class SubplotView(ViewABC):
 
             # Get all realizations if statistics across all realizations are requested
             is_statistics_from_all_realizations = (
-                statistics_from_option == StatisticsFromOptions.ALL_REALIZATIONS
+                statistics_from == StatisticsFromOptions.ALL_REALIZATIONS
                 and visualization
                 in [
                     VisualizationOptions.FANCHART,
