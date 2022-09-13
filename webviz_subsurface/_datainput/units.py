@@ -45,9 +45,6 @@ from typing import Any, Dict, Union
 class UnitBase:
     """This is a pseudo-base-class necessary due to class Prefix requiring
     a class type for operator type definitions.
-
-    TODO (RMT): Can be removed as soon as 'from __future__ import annotations'
-    is available (Python >= 3.7).
     """
 
     def __init__(self, value: float, symbol: str) -> None:

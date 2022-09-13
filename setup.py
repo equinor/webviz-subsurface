@@ -14,7 +14,6 @@ TESTS_REQUIRE = [
     "pytest-mock",
     "pytest-xdist",
     "selenium>=3.141",
-    "types-dataclasses>=0.1.5; python_version<'3.7'",
     "types-pkg-resources",
     "types-pyyaml",
 ]
@@ -87,7 +86,6 @@ setup(
         "dash>=2.0.0",
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
-        "dataclasses>=0.8; python_version<'3.7'",
         "defusedxml>=0.6.0",
         "ecl2df>=0.15.0; sys_platform=='linux'",
         "fmu-ensemble>=1.2.3",
@@ -108,7 +106,7 @@ setup(
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
-    python_requires="~=3.6",
+    python_requires="~=3.8",
     use_scm_version=True,
     zip_safe=False,
     project_urls={
