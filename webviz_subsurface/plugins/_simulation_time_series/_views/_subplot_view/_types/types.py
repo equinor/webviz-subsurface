@@ -1,5 +1,6 @@
-from webviz_config.utils import StrEnum
 from typing import TypedDict
+
+from webviz_config.utils import StrEnum
 
 
 class DeltaEnsemble(TypedDict):
