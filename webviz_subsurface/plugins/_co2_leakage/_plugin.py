@@ -52,7 +52,6 @@ class CO2Leakage(WebvizPluginABC):
     class Ids:
         MAIN_VIEW = "main-view"
         MAIN_SETTINGS = "main-settings"
-        DATE_STORE = "date-store"
 
     def __init__(
         self,
@@ -115,7 +114,6 @@ class CO2Leakage(WebvizPluginABC):
             self.Ids.MAIN_SETTINGS
         )
         self.add_view(MainView(CO2LEAKAGE_COLOR_TABLES), self.Ids.MAIN_VIEW)
-        self.add_store(self.Ids.DATE_STORE, WebvizPluginABC.StorageType.SESSION)
 
     @property
     def layout(self):
@@ -136,6 +134,11 @@ class CO2Leakage(WebvizPluginABC):
             .to_string()
         )
 
+    def _ensemble_dates(self, ens) -> List[str]:
+        surface_provider = self._ensemble_surface_providers[ens]
+        att_name = self._map_attribute_names[MapAttribute.MAX_SGAS]
+        return surface_provider.surface_dates_for_attribute(att_name)
+
     def _set_callbacks(self) -> None:
         @callback(
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
@@ -154,29 +157,22 @@ class CO2Leakage(WebvizPluginABC):
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), 'marks'),
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), 'value'),
-            Output(self.get_store_unique_id(self.Ids.DATE_STORE), "data"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), 'value'),
         )
         def set_dates(ensemble):
             if ensemble is None:
-                return [], None, []
+                return [], None
             # Dates
-            surface_provider = self._ensemble_surface_providers[ensemble]
-            att_name = self._map_attribute_names[MapAttribute.MAX_SGAS]
-            date_list = surface_provider.surface_dates_for_attribute(att_name)
-            if date_list is None:
-                dates = {}
-                initial_date = dash.no_update
-            else:
-                dates = {
-                    i: {
-                        "label": f"{d[:4]}",
-                        "style": {"writingMode": "vertical-rl"},
-                    }
-                    for i, d in enumerate(date_list)
+            date_list = self._ensemble_dates(ensemble)
+            dates = {
+                i: {
+                    "label": f"{d[:4]}",
+                    "style": {"writingMode": "vertical-rl"},
                 }
-                initial_date = max(dates.keys())
-            return dates, initial_date, date_list
+                for i, d in enumerate(date_list)
+            }
+            initial_date = max(dates.keys())
+            return dates, initial_date
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_WRAPPER), "style"),
@@ -204,7 +200,6 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
-            State(self.get_store_unique_id(self.Ids.DATE_STORE), "data"),
             State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
         )
         def update_map_attribute(
@@ -221,7 +216,6 @@ class CO2Leakage(WebvizPluginABC):
             plume_threshold,
             plume_smoothing,
             ensemble,
-            date_list,
             current_bounds,
         ):
             attribute = MapAttribute(attribute)
@@ -231,7 +225,7 @@ class CO2Leakage(WebvizPluginABC):
                 raise PreventUpdate
             if attribute != MapAttribute.MIGRATION_TIME and date is None:
                 raise PreventUpdate
-            date = str(date_list[date])
+            date = self._ensemble_dates(ensemble)[date]
             # Contour data
             contour_data = None
             if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):

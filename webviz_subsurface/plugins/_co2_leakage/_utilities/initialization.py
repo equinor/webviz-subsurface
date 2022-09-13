@@ -1,7 +1,7 @@
 from typing import Optional, Dict
 
 from webviz_subsurface._providers import EnsembleSurfaceProviderFactory, \
-    EnsembleTableProviderFactory, EnsembleTableProvider
+    EnsembleTableProviderFactory, EnsembleTableProvider, EnsembleSurfaceProvider
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
     MapAttribute
@@ -23,7 +23,10 @@ def init_map_attribute_names(
         return {MapAttribute(key): value for key, value in mapping.items()}
 
 
-def init_surface_providers(webviz_settings, ensembles):
+def init_surface_providers(
+    webviz_settings,
+    ensembles,
+) -> Dict[str, EnsembleSurfaceProvider]:
     surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
     return {
         ens: surface_provider_factory.create_from_ensemble_surface_files(
