@@ -4,12 +4,8 @@ import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
 from dash.development.base_component import Component
-from webviz_config.utils import StrEnum
-from webviz_config.webviz_plugin_subclasses import (
-    SettingsGroupABC,
-    ViewABC,
-    callback_typecheck,
-)
+from webviz_config.utils import StrEnum, callback_typecheck
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from ..._types import NodeType, StatOptions, TreeModeOptions
 from ..._utils import EnsembleGroupTreeData
@@ -213,18 +209,14 @@ class GroupTreeView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_ensemble_options(
             ensemble_name: str,
-            tree_mode_state: str,
-            stat_option_state: str,
-            real_state: int,
+            tree_mode_state: Optional[TreeModeOptions],
+            stat_option_state: Optional[StatOptions],
+            real_state: Optional[int],
         ) -> Tuple[List[Dict[str, Any]], str, str, List[Dict[str, Any]], Optional[int]]:
-            """Updates the selection options when the ensemble value changes
-
-            It was not possible to use the callback_typecheck decorator here since
-            tree_mode_state and stat_mode_state will be None at the first callback event.
-            Optional[TreeModeOptions] is not allowed as a type for now.
-            """
+            """Updates the selection options when the ensemble value changes"""
             tree_mode_options: List[Dict[str, Any]] = [
                 {
                     "label": "Statistics",
@@ -236,14 +228,12 @@ class GroupTreeView(ViewABC):
                 },
             ]
             tree_mode = (
-                TreeModeOptions(tree_mode_state)
+                tree_mode_state
                 if tree_mode_state is not None
                 else TreeModeOptions.STATISTICS
             )
             stat_option = (
-                StatOptions(stat_option_state)
-                if stat_option_state is not None
-                else StatOptions.MEAN
+                stat_option_state if stat_option_state is not None else StatOptions.MEAN
             )
 
             ensemble = self._group_tree_data[ensemble_name]
