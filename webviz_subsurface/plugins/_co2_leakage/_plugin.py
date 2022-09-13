@@ -14,8 +14,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property
     create_map_layers
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import \
     FaultPolygonsHandler
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
-    first_existing_fmu_file_path, MapAttribute
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import \
     init_map_attribute_names, init_surface_providers, init_well_pick_provider, \
     init_co2_containment_table_providers
@@ -60,7 +59,7 @@ class CO2Leakage(WebvizPluginABC):
         app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: List[str],
-        boundary_relpath: str = "share/results/polygons/leakage_boundary.csv",
+        boundary_file: Optional[str] = None,
         well_pick_file: Optional[str] = None,
         co2_containment_relpath: str = "share/results/tables/co2_volumes.csv",
         fault_polygon_attribute: str = "dl_extracted_faultlines",
@@ -71,7 +70,7 @@ class CO2Leakage(WebvizPluginABC):
         super().__init__()
         self._error_message = ""
 
-        self._boundary_rel_path = boundary_relpath
+        self._boundary_file = boundary_file
         try:
             self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
             self._surface_server = SurfaceServer.instance(app)
@@ -284,9 +283,7 @@ class CO2Leakage(WebvizPluginABC):
                         realization,
                     )
                 ),
-                license_boundary_file=first_existing_fmu_file_path(
-                    self._ensemble_paths[ensemble], realization, self._boundary_rel_path
-                ),
+                license_boundary_file=self._boundary_file,
                 well_pick_provider=self._well_pick_provider,
                 plume_extent_data=plume_polygon,
             )

@@ -9,6 +9,7 @@ from webviz_subsurface._providers import SurfaceMeta, SurfaceServer, \
     StatisticalSurfaceAddress
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
     SurfaceStatistic
+from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
 from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import \
     TruncatedSurfaceAddress, publish_and_get_surface_metadata
@@ -221,7 +222,7 @@ def create_map_layers(
 
 
 def _parse_polygon_file(filename: str):
-    xyz = np.genfromtxt(filename, skip_header=1, delimiter=",")
+    xyz = read_csv(filename)[['x', 'y']].values
     as_geojson = {
         "type": "FeatureCollection",
         "features": [
@@ -230,7 +231,7 @@ def _parse_polygon_file(filename: str):
                 "properties": {},
                 "geometry": {
                     "type": "LineString",
-                    "coordinates": xyz[:, :2].tolist(),
+                    "coordinates": xyz.tolist(),
                 }
             }
         ]
