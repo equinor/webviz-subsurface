@@ -3,12 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html
-from webviz_config.utils import StrEnum
-from webviz_config.webviz_plugin_subclasses import (
-    SettingsGroupABC,
-    ViewABC,
-    callback_typecheck,
-)
+from webviz_config.utils import StrEnum, callback_typecheck
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
 from ..._utils import WellCompletionDataModel
 from ._view_element import WellCompletionViewElement
