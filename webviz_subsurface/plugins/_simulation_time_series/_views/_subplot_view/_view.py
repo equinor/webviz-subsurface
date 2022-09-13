@@ -899,7 +899,7 @@ class SubplotView(ViewABC):
             relative_date_value: str,
             current_relative_date_options: List[dict],
             current_relative_date_value: Optional[str],
-        ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+        ) -> Tuple[List[Dict[str, str]], Optional[str], Dict[str, str]]:
             """This callback updates dropdown based on selected resampling frequency selection
             and hide trace options (History and Observation) when a relative date is selected.
 
