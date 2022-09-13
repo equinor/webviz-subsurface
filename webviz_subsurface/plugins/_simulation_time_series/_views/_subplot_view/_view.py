@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import dash
 import pandas as pd
@@ -127,39 +127,6 @@ class SubplotView(ViewABC):
 
     # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
-        @callback(
-            Output(
-                self.settings_group_unique_id(
-                    SubplotView.Ids.VISUALIZATION_SETTINGS,
-                    VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
-                ),
-                "style",
-            ),
-            Input(
-                self.settings_group_unique_id(
-                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
-                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
-                ),
-                "value",
-            ),
-            prevent_initial_call=False,
-        )
-        def _update_trace_options_layout(
-            relative_date_value: str,
-        ) -> dict:
-            """Hide trace options (History and Observation) when relative date is selected"""
-
-            # Convert to Optional[datetime.datetime]
-            relative_date: Optional[datetime.datetime] = (
-                None
-                if relative_date_value is None
-                else datetime_utils.from_str(relative_date_value)
-            )
-
-            if relative_date:
-                return {"display": "none"}
-            return {"display": "block"}
-
         @callback(
             Output(
                 self.view_element_unique_id(
@@ -874,4 +841,113 @@ class SubplotView(ViewABC):
                     }
                     for vector, df in vector_dataframe_dict.items()
                 ]
+            )
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                ),
+                "options",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                ),
+                "value",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.VISUALIZATION_SETTINGS,
+                    VisualizationSettings.Ids.PLOT_TRACE_OPTIONS_CHECKLIST,
+                ),
+                "style",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                ),
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                ),
+                "options",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS,
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN,
+                ),
+                "value",
+            ),
+        )
+        def _update_relative_date_dropdown_and_trace_options_style(
+            resampling_frequency_value: str,
+            relative_date_value: str,
+            current_relative_date_options: List[dict],
+            current_relative_date_value: Optional[str],
+        ) -> Tuple[List[Dict[str, str]], Optional[str]]:
+            """This callback updates dropdown based on selected resampling frequency selection
+            and hide trace options (History and Observation) when a relative date is selected.
+
+            If dates are not existing for a provider, the data accessor must handle invalid
+            relative date selection!
+            """
+            resampling_frequency = Frequency.from_string_value(
+                resampling_frequency_value
+            )
+            dates_union = self._input_provider_set.all_dates(resampling_frequency)
+
+            # Create dropdown options:
+            new_relative_date_options: List[Dict[str, str]] = [
+                {
+                    "label": datetime_utils.to_str(_date),
+                    "value": datetime_utils.to_str(_date),
+                }
+                for _date in dates_union
+            ]
+
+            # Create valid dropdown value:
+            new_relative_date_value = next(
+                (
+                    elm["value"]
+                    for elm in new_relative_date_options
+                    if elm["value"] == current_relative_date_value
+                ),
+                None,
+            )
+
+            # Prevent updates if unchanged
+            if new_relative_date_options == current_relative_date_options:
+                new_relative_date_options = dash.no_update
+            if new_relative_date_value == current_relative_date_value:
+                new_relative_date_value = dash.no_update
+
+            # Convert to Optional[datetime.datetime]
+            relative_date: Optional[datetime.datetime] = (
+                None
+                if relative_date_value is None
+                else datetime_utils.from_str(relative_date_value)
+            )
+            trace_options_style = (
+                {"display": "none"} if relative_date else {"display": "block"}
+            )
+
+            return (
+                new_relative_date_options,
+                new_relative_date_value,
+                trace_options_style,
             )
