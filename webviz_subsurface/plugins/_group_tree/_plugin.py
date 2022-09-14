@@ -1,9 +1,8 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
-import dash
-from dash import html
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import (
@@ -12,9 +11,8 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
-from ._callbacks import plugin_callbacks
-from ._ensemble_group_tree_data import EnsembleGroupTreeData
-from ._layout import LayoutElements, main_layout
+from ._utils import EnsembleGroupTreeData
+from ._views._group_tree_view import GroupTreeView, GroupTreeViewElement
 
 
 class GroupTree(WebvizPluginABC):
@@ -43,7 +41,6 @@ class GroupTree(WebvizPluginABC):
 
     `gruptree_file` is a path to a file stored per realization (e.g. in \
     `share/results/tables/gruptree.csv"`).
-
     The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
     model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
     representation of the Eclipse network:
@@ -55,20 +52,19 @@ class GroupTree(WebvizPluginABC):
     to `monthly` if needed.
     """
 
+    class Ids(StrEnum):
+        GROUPTREE_VIEW = "group-tree-view"
+
     def __init__(
         self,
-        app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: list,
         gruptree_file: str = "share/results/tables/gruptree.csv",
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         time_index: str = "yearly",
-    ):
-        super().__init__()
-        assert time_index in [
-            "monthly",
-            "yearly",
-        ], "time_index must be monthly or yearly"
+    ) -> None:
+        super().__init__(stretch=True)
+
         self._ensembles = ensembles
         self._gruptree_file = gruptree_file
 
@@ -99,7 +95,10 @@ class GroupTree(WebvizPluginABC):
                 provider, GruptreeModel(ens_name, ens_path, gruptree_file)
             )
 
-        self.set_callbacks(app)
+        self.add_view(
+            GroupTreeView(self._group_tree_data),
+            self.Ids.GROUPTREE_VIEW,
+        )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
@@ -111,32 +110,27 @@ class GroupTree(WebvizPluginABC):
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.uuid(LayoutElements.SELECTIONS_LAYOUT),
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
+                .settings_group(GroupTreeView.Ids.CONTROLS)
+                .get_unique_id(),
                 "content": "Menu for selecting ensemble and tree mode.",
             },
             {
-                "id": self.uuid(LayoutElements.OPTIONS_LAYOUT),
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
+                .settings_group(GroupTreeView.Ids.OPTIONS)
+                .get_unique_id(),
                 "content": "Menu for statistical options or realization.",
             },
             {
-                "id": self.uuid(LayoutElements.FILTERS_LAYOUT),
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
+                .settings_group(GroupTreeView.Ids.FILTERS)
+                .get_unique_id(),
                 "content": "Menu for filtering options.",
             },
             {
-                "id": self.uuid(LayoutElements.GRAPH),
+                "id": self.view(self.Ids.GROUPTREE_VIEW)
+                .view_element(GroupTreeView.Ids.VIEW_ELEMENT)
+                .component_unique_id(GroupTreeViewElement.Ids.COMPONENT),
                 "content": "Vizualisation of network tree.",
             },
         ]
-
-    @property
-    def layout(self) -> html.Div:
-        return html.Div(
-            children=[
-                main_layout(get_uuid=self.uuid, ensembles=self._ensembles),
-            ],
-        )
-
-    def set_callbacks(self, app: dash.Dash) -> None:
-        plugin_callbacks(
-            app=app, get_uuid=self.uuid, group_tree_data=self._group_tree_data
-        )

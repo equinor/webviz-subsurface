@@ -8,7 +8,7 @@ from webviz_config.common_cache import CACHE
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from ._types import NodeType, StatOptions, TreeModeOptions
+from .._types import NodeType, StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:
@@ -337,9 +337,9 @@ def extract_tree(
     dates: list,
     sumvecs: pd.DataFrame,
 ) -> dict:
-    # pylint: disable=too-many-locals
     """Extract the tree part of the GroupTree component dataset. This functions
     works recursively and is initially called with the top node of the tree: FIELD."""
+    # pylint: disable=too-many-locals
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
     nodedict = get_nodedict(gruptree, nodename)
 
