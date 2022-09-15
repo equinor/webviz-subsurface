@@ -104,12 +104,12 @@ def generate_co2_time_containment_figure(
     dummy_args = dict(mode="lines", marker_color="black", hoverinfo="none")
     fig.add_scatter(y=[0.0], **dummy_args, **outside_args)
     fig.add_scatter(y=[0.0], **dummy_args, **total_args)
-    for rz, color in zip(realizations, itertools.cycle(colors)):
-        sub_df = df[df["realization"] == rz]
+    for rlz, color in zip(realizations, itertools.cycle(colors)):
+        sub_df = df[df["realization"] == rlz]
         common_args = dict(
             x=sub_df["dt"],
             hovertemplate="%{x}: %{y}<br>Realization: %{meta[0]}",
-            meta=[rz],
+            meta=[rlz],
             marker_color=color,
             showlegend=False,
         )

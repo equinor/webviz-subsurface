@@ -114,8 +114,8 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_file,
                 map_surface_names_to_well_pick_names,
             )
-        except Exception as e:
-            self._error_message = f"Plugin initialization failed: {e}"
+        except Exception as err:
+            self._error_message = f"Plugin initialization failed: {err}"
             raise
 
         self.add_shared_settings_group(
@@ -195,9 +195,11 @@ class CO2Leakage(WebvizPluginABC):
         def toggle_date_slider(attribute):
             if MapAttribute(attribute) == MapAttribute.MIGRATION_TIME:
                 return {"display": "none"}
-            else:
-                return {}
+            return {}
 
+        # Cannot avoid many arguments and/or locals since all layers of the DeckGL map
+        # needs to be updated simultaneously
+        # pylint: disable=too-many-arguments,too-many-locals
         @callback(
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
@@ -251,10 +253,6 @@ class CO2Leakage(WebvizPluginABC):
             # Surface
             surf_data = None
             if formation is not None and len(realization) > 0:
-                color_map_range = (
-                    cm_min_val if len(cm_min_auto) == 0 else None,
-                    cm_max_val if len(cm_max_auto) == 0 else None,
-                )
                 surf_data = SurfaceData.from_server(
                     server=self._surface_server,
                     provider=self._ensemble_surface_providers[ensemble],
@@ -267,7 +265,10 @@ class CO2Leakage(WebvizPluginABC):
                         statistic,
                         contour_data,
                     ),
-                    color_map_range=color_map_range,
+                    color_map_range=(
+                        cm_min_val if len(cm_min_auto) == 0 else None,
+                        cm_max_val if len(cm_max_auto) == 0 else None,
+                    ),
                     color_map_name=color_map_name,
                     readable_name_=readable_name(attribute),
                 )

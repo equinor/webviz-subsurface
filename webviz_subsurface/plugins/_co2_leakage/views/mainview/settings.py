@@ -116,7 +116,7 @@ class ViewSettings(SettingsGroupABC):
         def toggle_statistics(realizations, attribute):
             if len(realizations) <= 1:
                 return True
-            elif MapAttribute(attribute) in (
+            if MapAttribute(attribute) in (
                 MapAttribute.SGAS_PLUME,
                 MapAttribute.AMFG_PLUME,
             ):

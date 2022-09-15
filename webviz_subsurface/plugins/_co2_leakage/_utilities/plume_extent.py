@@ -1,9 +1,17 @@
-import numpy as np
 from typing import List
 
-import scipy.ndimage
 import geojson
+import numpy as np
+import scipy.ndimage
+import shapely.geometry
 import xtgeo
+
+# Use _contour from MPL. Under the hood, this is the same functionality pyplot is
+# using. Direct use is implemented (instead of pyplot.contour directly) to avoid the
+# overhead related to figure/axis creation in MPL.
+# pylint: disable=no-name-in-module
+from matplotlib import __version__ as mpl_ver
+from matplotlib import _contour
 
 
 def plume_polygons(
@@ -58,24 +66,22 @@ def _extract_contours(
     return _find_all_contours(x, y, surface, levels, simplify_dist)
 
 
-def _find_all_contours(x, y, zz, levels, simplify_dist: float):
-    xx, yy = np.meshgrid(x, y, indexing="ij")
+def _find_all_contours(x_lin, y_lin, z_values, levels, simplify_dist: float):
+    x_mesh, y_mesh = np.meshgrid(x_lin, y_lin, indexing="ij")
     polys = [
-        [_simplify(poly, simplify_dist) for poly in _find_contours(xx, yy, zz >= level)]
+        [
+            _simplify(poly, simplify_dist)
+            for poly in _find_contours(x_mesh, y_mesh, z_values >= level)
+        ]
         for level in levels
     ]
     return polys
 
 
-def _find_contours(xx, yy, zz):
-    # Use _contour from MPL. Under the hood, this is the same functionality pyplot is
-    # using. Direct use is implemented (instead of pyplot.contour directly) to avoid the
-    # overhead related to figure/axis creation in MPL.
-    from matplotlib import _contour
-    from matplotlib import __version__ as mpl_ver
-
+def _find_contours(x_mesh, y_mesh, z_values):
+    # pylint: disable=c-extension-no-member
     contour_output = _contour.QuadContourGenerator(
-        xx, yy, zz, np.zeros_like(zz, dtype=bool), False, 0
+        x_mesh, y_mesh, z_values, np.zeros_like(z_values, dtype=bool), False, 0
     ).create_contour(0.5)
     if int(mpl_ver[0]) >= 3 and int(mpl_ver[2]) >= 5:
         contour_output = contour_output[0]
@@ -83,7 +89,5 @@ def _find_contours(xx, yy, zz):
 
 
 def _simplify(poly, simplify_dist: float):
-    import shapely.geometry  # TODO: not project requirement. How to handle?
-
-    ls = shapely.geometry.LineString(poly).simplify(simplify_dist)
-    return np.array(ls.coords).tolist()
+    simplified = shapely.geometry.LineString(poly).simplify(simplify_dist)
+    return np.array(simplified.coords).tolist()

@@ -23,8 +23,7 @@ def init_map_attribute_names(
             MapAttribute.MAX_SGAS: "max_SGAS",
             MapAttribute.MAX_AMFG: "max_AMFG",
         }
-    else:
-        return {MapAttribute(key): value for key, value in mapping.items()}
+    return {MapAttribute(key): value for key, value in mapping.items()}
 
 
 def init_surface_providers(

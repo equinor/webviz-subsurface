@@ -1,11 +1,9 @@
 import plotly.graph_objects as go
-from dash import html
 import webviz_core_components as wcc
+from dash import html
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
-
 from webviz_subsurface_components import DeckGLMap
-
 
 INITIAL_BOUNDS = (0, 0, 1, 1)
 

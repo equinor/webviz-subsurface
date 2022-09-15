@@ -32,12 +32,11 @@ def property_origin(
 ):
     if attribute in map_attribute_names:
         return map_attribute_names[attribute]
-    elif attribute == MapAttribute.SGAS_PLUME:
+    if attribute == MapAttribute.SGAS_PLUME:
         return map_attribute_names[MapAttribute.MAX_SGAS]
-    elif attribute == MapAttribute.AMFG_PLUME:
+    if attribute == MapAttribute.AMFG_PLUME:
         return map_attribute_names[MapAttribute.MAX_AMFG]
-    else:
-        raise AssertionError(f"No origin defined for property: {attribute}")
+    raise AssertionError(f"No origin defined for property: {attribute}")
 
 
 @dataclass
@@ -101,21 +100,20 @@ def derive_surface_address(
             threshold=contour_data["threshold"] if contour_data else 0.0,
             smoothing=contour_data["smoothing"] if contour_data else 0.0,
         )
-    elif len(realization) == 1:
+    if len(realization) == 1:
         return SimulatedSurfaceAddress(
             attribute=map_attribute_names[attribute],
             name=surface_name,
             datestr=date,
             realization=realization[0],
         )
-    else:
-        return StatisticalSurfaceAddress(
-            attribute=map_attribute_names[attribute],
-            name=surface_name,
-            datestr=date,
-            statistic=SurfaceStatistic(statistic),
-            realizations=realization,
-        )
+    return StatisticalSurfaceAddress(
+        attribute=map_attribute_names[attribute],
+        name=surface_name,
+        datestr=date,
+        statistic=SurfaceStatistic(statistic),
+        realizations=realization,
+    )
 
 
 def readable_name(attribute: MapAttribute):
