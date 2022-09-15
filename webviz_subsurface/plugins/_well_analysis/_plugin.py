@@ -136,16 +136,15 @@ class WellAnalysis(WebvizPluginABC):
                 "id": self.view(self.Ids.WELL_OVERVIEW)
                 .settings_group(WellOverviewView.Ids.FILTERS)
                 .get_unique_id(),
-                "content": """You can choose to view the production for all the wells or
-                                select only the ones you are interested in.""",
+                "content": "You can choose to view the production for all the wells or "
+                "select only the ones you are interested in.",
             },
             {
                 "id": self.view(self.Ids.WELL_CONTROL)
                 .view_element(WellControlView.Ids.VIEW_ELEMENT)
                 .component_unique_id(WellControlViewElement.Ids.CHART),
-                "content": """Shows the number of realizations on different control modes.
-                             The control modes are listed in the legend. Also shows
-                             Network pressures according to dates.""",
+                "content": "Shows the number of realizations on different control modes "
+                "and network pressures.",
             },
             {
                 "id": self.view(self.Ids.WELL_CONTROL)
