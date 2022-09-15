@@ -61,10 +61,7 @@ def _extract_contours(
 def _find_all_contours(x, y, zz, levels, simplify_dist: float):
     xx, yy = np.meshgrid(x, y, indexing="ij")
     polys = [
-        [
-            _simplify(poly, simplify_dist)
-            for poly in _find_contours(xx, yy, zz >= level)
-        ]
+        [_simplify(poly, simplify_dist) for poly in _find_contours(xx, yy, zz >= level)]
         for level in levels
     ]
     return polys
@@ -76,6 +73,7 @@ def _find_contours(xx, yy, zz):
     # overhead related to figure/axis creation in MPL.
     from matplotlib import _contour
     from matplotlib import __version__ as mpl_ver
+
     contour_output = _contour.QuadContourGenerator(
         xx, yy, zz, np.zeros_like(zz, dtype=bool), False, 0
     ).create_contour(0.5)
@@ -86,5 +84,6 @@ def _find_contours(xx, yy, zz):
 
 def _simplify(poly, simplify_dist: float):
     import shapely.geometry  # TODO: not project requirement. How to handle?
+
     ls = shapely.geometry.LineString(poly).simplify(simplify_dist)
     return np.array(ls.coords).tolist()

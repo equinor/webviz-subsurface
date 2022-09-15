@@ -1,12 +1,16 @@
 from typing import Optional, Dict
 
-from webviz_subsurface._providers import EnsembleSurfaceProviderFactory, \
-    EnsembleTableProviderFactory, EnsembleTableProvider, EnsembleSurfaceProvider
+from webviz_subsurface._providers import (
+    EnsembleSurfaceProviderFactory,
+    EnsembleTableProviderFactory,
+    EnsembleTableProvider,
+    EnsembleSurfaceProvider,
+)
 from webviz_subsurface._utils.webvizstore_functions import read_csv
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import \
-    MapAttribute
-from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
-    WellPickProvider
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
+from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
+    WellPickProvider,
+)
 
 
 def init_map_attribute_names(
@@ -44,8 +48,7 @@ def init_well_pick_provider(
         return None
     try:
         return WellPickProvider(
-            read_csv(well_pick_path),
-            map_surface_names_to_well_pick_names
+            read_csv(well_pick_path), map_surface_names_to_well_pick_names
         )
     except OSError:
         return None
@@ -57,9 +60,9 @@ def init_co2_containment_table_providers(
 ) -> Dict[str, EnsembleTableProvider]:
     return {
         ens: (
-            EnsembleTableProviderFactory
-            .instance()
-            .create_from_per_realization_csv_file(ens_path, table_rel_path)
+            EnsembleTableProviderFactory.instance().create_from_per_realization_csv_file(
+                ens_path, table_rel_path
+            )
         )
         for ens, ens_path in ensemble_roots.items()
     }

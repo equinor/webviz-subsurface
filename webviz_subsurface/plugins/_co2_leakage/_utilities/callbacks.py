@@ -4,18 +4,27 @@ from typing import Dict, Tuple, Union, Optional, List, Any
 import geojson
 import numpy as np
 
-from webviz_subsurface._providers import SurfaceMeta, SurfaceServer, \
-    EnsembleSurfaceProvider, SurfaceAddress, SimulatedSurfaceAddress, \
-    StatisticalSurfaceAddress
-from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
-    SurfaceStatistic
+from webviz_subsurface._providers import (
+    SurfaceMeta,
+    SurfaceServer,
+    EnsembleSurfaceProvider,
+    SurfaceAddress,
+    SimulatedSurfaceAddress,
+    StatisticalSurfaceAddress,
+)
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    SurfaceStatistic,
+)
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
-from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import \
-    TruncatedSurfaceAddress, publish_and_get_surface_metadata
+from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import (
+    TruncatedSurfaceAddress,
+    publish_and_get_surface_metadata,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
-from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import \
-    WellPickProvider
+from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
+    WellPickProvider,
+)
 
 
 def property_origin(
@@ -136,12 +145,14 @@ def get_plume_polygon(
     ):
         return None
     surfaces = [
-        surface_provider.get_surface(SimulatedSurfaceAddress(
-            attribute=surface_attribute,
-            name=surface_name,
-            datestr=datestr,
-            realization=r,
-        ))
+        surface_provider.get_surface(
+            SimulatedSurfaceAddress(
+                attribute=surface_attribute,
+                name=surface_name,
+                datestr=datestr,
+                realization=r,
+            )
+        )
         for r in realizations
     ]
     surfaces = [s for s in surfaces if s is not None]
@@ -167,17 +178,19 @@ def create_map_layers(
     viewport_bounds = None
     if surface_data is not None:
         # Update ColormapLayer
-        layers.append({
-            "@@type": "ColormapLayer",
-            "name": surface_data.readable_name,
-            "id": "colormap-layer",
-            "image": surface_data.img_url,
-            "bounds": surface_data.meta_data.deckgl_bounds,
-            "valueRange": surface_data.value_range,
-            "colorMapRange": surface_data.color_map_range,
-            "colorMapName": surface_data.color_map_name,
-            "rotDeg": surface_data.meta_data.deckgl_rot_deg,
-        })
+        layers.append(
+            {
+                "@@type": "ColormapLayer",
+                "name": surface_data.readable_name,
+                "id": "colormap-layer",
+                "image": surface_data.img_url,
+                "bounds": surface_data.meta_data.deckgl_bounds,
+                "valueRange": surface_data.value_range,
+                "colorMapRange": surface_data.color_map_range,
+                "colorMapName": surface_data.color_map_name,
+                "rotDeg": surface_data.meta_data.deckgl_rot_deg,
+            }
+        )
         viewport_bounds = [
             surface_data.meta_data.x_min,
             surface_data.meta_data.y_min,
@@ -185,44 +198,52 @@ def create_map_layers(
             surface_data.meta_data.y_max,
         ]
     if fault_polygon_url is not None:
-        layers.append({
-            "@@type": "FaultPolygonsLayer",
-            "name": "Fault Polygons",
-            "id": "fault-polygons-layer",
-            "data": fault_polygon_url,
-        })
+        layers.append(
+            {
+                "@@type": "FaultPolygonsLayer",
+                "name": "Fault Polygons",
+                "id": "fault-polygons-layer",
+                "data": fault_polygon_url,
+            }
+        )
     if license_boundary_file is not None:
-        layers.append({
-            "@@type": "FaultPolygonsLayer",
-            "name": "Containment Boundary",
-            "id": "license-boundary-layer",
-            "data": _parse_polygon_file(license_boundary_file),
-        })
+        layers.append(
+            {
+                "@@type": "FaultPolygonsLayer",
+                "name": "Containment Boundary",
+                "id": "license-boundary-layer",
+                "data": _parse_polygon_file(license_boundary_file),
+            }
+        )
     if well_pick_provider is not None:
-        layers.append({
-            "@@type": "GeoJsonLayer",
-            "name": "Well Picks",
-            "id": "well-picks-layer",
-            "data": dict(
-                well_pick_provider.get_geojson(
-                    well_pick_provider.well_names(), formation
-                )
-            ),
-        })
+        layers.append(
+            {
+                "@@type": "GeoJsonLayer",
+                "name": "Well Picks",
+                "id": "well-picks-layer",
+                "data": dict(
+                    well_pick_provider.get_geojson(
+                        well_pick_provider.well_names(), formation
+                    )
+                ),
+            }
+        )
     if plume_extent_data is not None:
-        layers.append({
-            "@@type": "GeoJsonLayer",
-            "name": "Plume Contours",
-            "id": "plume-polygon-layer",
-            "data": dict(plume_extent_data),
-            "lineWidthMinPixels": 2,
-            "getLineColor": [150, 150, 150, 255],
-        })
+        layers.append(
+            {
+                "@@type": "GeoJsonLayer",
+                "name": "Plume Contours",
+                "id": "plume-polygon-layer",
+                "data": dict(plume_extent_data),
+                "lineWidthMinPixels": 2,
+                "getLineColor": [150, 150, 150, 255],
+            }
+        )
     return layers, viewport_bounds
 
 
 def _parse_polygon_file(filename: str):
-    xyz = read_csv(filename)[['x', 'y']].values
+    xyz = read_csv(filename)[["x", "y"]].values
     as_geojson = {
         "type": "FeatureCollection",
         "features": [
@@ -232,8 +253,8 @@ def _parse_polygon_file(filename: str):
                 "geometry": {
                     "type": "LineString",
                     "coordinates": xyz.tolist(),
-                }
+                },
             }
-        ]
+        ],
     }
     return as_geojson

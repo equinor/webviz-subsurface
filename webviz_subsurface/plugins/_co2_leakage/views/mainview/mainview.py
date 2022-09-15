@@ -64,7 +64,9 @@ class MapViewElement(ViewElementABC):
                         html.Div(
                             [
                                 DeckGLMap(
-                                    id=self.register_component_unique_id(self.Ids.DECKGL_MAP),
+                                    id=self.register_component_unique_id(
+                                        self.Ids.DECKGL_MAP
+                                    ),
                                     layers=[],
                                     bounds=INITIAL_BOUNDS,
                                     coords={"visible": True},
@@ -79,9 +81,11 @@ class MapViewElement(ViewElementABC):
                         ),
                         html.Div(
                             wcc.Slider(
-                                id=self.register_component_unique_id(self.Ids.DATE_SLIDER),
+                                id=self.register_component_unique_id(
+                                    self.Ids.DATE_SLIDER
+                                ),
                                 step=None,
-                                marks={0: ''},
+                                marks={0: ""},
                                 value=0,
                             ),
                             id=self.register_component_unique_id(self.Ids.DATE_WRAPPER),
@@ -95,10 +99,10 @@ class MapViewElement(ViewElementABC):
                     children=SummaryGraphLayout(
                         self.register_component_unique_id(self.Ids.BAR_PLOT),
                         self.register_component_unique_id(self.Ids.TIME_PLOT),
-                    ).children
-                )
+                    ).children,
+                ),
             ],
-            style=self.Style.CONTENT_PARENT
+            style=self.Style.CONTENT_PARENT,
         )
 
 
@@ -111,14 +115,14 @@ class SummaryGraphLayout(html.Div):
                     figure=go.Figure(),
                     config={
                         "displayModeBar": False,
-                    }
+                    },
                 ),
                 wcc.Graph(
                     id=time_plot_id,
                     figure=go.Figure(),
                     config={
                         "displayModeBar": False,
-                    }
+                    },
                 ),
             ],
             **kwargs,

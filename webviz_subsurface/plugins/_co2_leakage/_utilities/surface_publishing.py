@@ -11,9 +11,12 @@ from webviz_subsurface._providers import (
     StatisticalSurfaceAddress,
     SimulatedSurfaceAddress,
 )
-from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
-    SurfaceStatistic
-from webviz_subsurface.plugins._co2_leakage._utilities.plume_extent import truncate_surfaces
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    SurfaceStatistic,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.plume_extent import (
+    truncate_surfaces,
+)
 
 
 @dataclass
@@ -44,9 +47,7 @@ def publish_and_get_surface_metadata(
         # This means we need to compute the surface
         surface = provider.get_surface(address)
         if not surface:
-            raise ValueError(
-                f"Could not get surface for address: {address}"
-            )
+            raise ValueError(f"Could not get surface for address: {address}")
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)
     return surf_meta, server.encode_partial_url(qualified_address)
@@ -69,7 +70,7 @@ def _publish_and_get_truncated_surface_metadata(
             address.datestr,
             SurfaceStatistic.MEAN,
             address.realizations,
-        )
+        ),
     )
     surf_meta = server.get_surface_metadata(qualified_address)
     if surf_meta is None:
@@ -86,12 +87,14 @@ def _generate_surface(
     address: TruncatedSurfaceAddress,
 ) -> Optional[xtgeo.RegularSurface]:
     surfaces = [
-        provider.get_surface(SimulatedSurfaceAddress(
-            attribute=address.basis_attribute,
-            name=address.name,
-            datestr=address.datestr,
-            realization=r,
-        ))
+        provider.get_surface(
+            SimulatedSurfaceAddress(
+                attribute=address.basis_attribute,
+                name=address.name,
+                datestr=address.datestr,
+                realization=r,
+            )
+        )
         for r in address.realizations
     ]
     surfaces = [s for s in surfaces if s is not None]

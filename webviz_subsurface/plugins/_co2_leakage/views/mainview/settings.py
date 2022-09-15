@@ -5,8 +5,10 @@ import webviz_core_components as wcc
 from dash import html, dcc, callback, Output, Input, State
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import \
-    SurfaceStatistic, EnsembleSurfaceProvider
+from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
+    SurfaceStatistic,
+    EnsembleSurfaceProvider,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 
@@ -48,9 +50,7 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.REALIZATION),
                 list(self._ensemble_paths.keys()),
             ),
-            FilterSelectorLayout(
-                self.register_component_unique_id(self.Ids.FORMATION)
-            ),
+            FilterSelectorLayout(self.register_component_unique_id(self.Ids.FORMATION)),
             MapSelectorLayout(
                 self._color_scale_names,
                 self.register_component_unique_id(self.Ids.PROPERTY),
@@ -69,7 +69,9 @@ class ViewSettings(SettingsGroupABC):
 
     def set_callbacks(self) -> None:
         @callback(
-            Output(self.component_unique_id(self.Ids.REALIZATION).to_string(), "options"),
+            Output(
+                self.component_unique_id(self.Ids.REALIZATION).to_string(), "options"
+            ),
             Output(self.component_unique_id(self.Ids.REALIZATION).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
         )
@@ -81,11 +83,11 @@ class ViewSettings(SettingsGroupABC):
             return rlz, [rlz[0]["value"]]
 
         @callback(
-            Output(self.component_unique_id(self.Ids.FORMATION).to_string(), 'options'),
-            Output(self.component_unique_id(self.Ids.FORMATION).to_string(), 'value'),
-            Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), 'value'),
-            State(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), 'value'),
-            State(self.component_unique_id(self.Ids.FORMATION).to_string(), 'value'),
+            Output(self.component_unique_id(self.Ids.FORMATION).to_string(), "options"),
+            Output(self.component_unique_id(self.Ids.FORMATION).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
+            State(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
+            State(self.component_unique_id(self.Ids.FORMATION).to_string(), "value"),
         )
         def set_formations(prop, ensemble, current_value):
             if ensemble is None:
@@ -105,7 +107,9 @@ class ViewSettings(SettingsGroupABC):
             return formations, picked_formation
 
         @callback(
-            Output(self.component_unique_id(self.Ids.STATISTIC).to_string(), "disabled"),
+            Output(
+                self.component_unique_id(self.Ids.STATISTIC).to_string(), "disabled"
+            ),
             Input(self.component_unique_id(self.Ids.REALIZATION).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
         )
@@ -113,7 +117,8 @@ class ViewSettings(SettingsGroupABC):
             if len(realizations) <= 1:
                 return True
             elif MapAttribute(attribute) in (
-                    MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME
+                MapAttribute.SGAS_PLUME,
+                MapAttribute.AMFG_PLUME,
             ):
                 return True
             return False
@@ -138,7 +143,7 @@ class FilterSelectorLayout(wcc.Selectors):
                     id=formation_id,
                     clearable=False,
                 ),
-            ]
+            ],
         )
 
 
@@ -196,10 +201,7 @@ class MapSelectorLayout(wcc.Selectors):
                         "Minimum",
                         html.Div(
                             [
-                                dcc.Input(
-                                    id=cm_min_id,
-                                    type="number"
-                                ),
+                                dcc.Input(id=cm_min_id, type="number"),
                                 dcc.Checklist(
                                     ["Auto"],
                                     ["Auto"],
@@ -211,10 +213,7 @@ class MapSelectorLayout(wcc.Selectors):
                         "Maximum",
                         html.Div(
                             [
-                                dcc.Input(
-                                    id=cm_max_id,
-                                    type="number"
-                                ),
+                                dcc.Input(id=cm_max_id, type="number"),
                                 dcc.Checklist(
                                     ["Auto"],
                                     ["Auto"],
@@ -266,7 +265,7 @@ class ExperimentalFeaturesLayout(wcc.Selectors):
                         ),
                     ],
                 ),
-            ]
+            ],
         )
 
 
@@ -279,10 +278,7 @@ class EnsembleSelectorLayout(wcc.Selectors):
                 "Ensemble",
                 wcc.Dropdown(
                     id=ensemble_id,
-                    options=[
-                        dict(value=en, label=en)
-                        for en in ensembles
-                    ],
+                    options=[dict(value=en, label=en) for en in ensembles],
                     value=ensembles[0],
                     clearable=False,
                 ),
@@ -292,17 +288,26 @@ class EnsembleSelectorLayout(wcc.Selectors):
                     value=[],
                     multi=True,
                 ),
-            ]
+            ],
         )
 
 
 def _compile_property_options():
     return [
         {"label": "SGAS", "value": "", "disabled": True},
-        {"label": MapAttribute.MIGRATION_TIME.value, "value": MapAttribute.MIGRATION_TIME.value},
+        {
+            "label": MapAttribute.MIGRATION_TIME.value,
+            "value": MapAttribute.MIGRATION_TIME.value,
+        },
         {"label": MapAttribute.MAX_SGAS.value, "value": MapAttribute.MAX_SGAS.value},
-        {"label": MapAttribute.SGAS_PLUME.value, "value": MapAttribute.SGAS_PLUME.value},
+        {
+            "label": MapAttribute.SGAS_PLUME.value,
+            "value": MapAttribute.SGAS_PLUME.value,
+        },
         {"label": "AMFG", "value": "", "disabled": True},
         {"label": MapAttribute.MAX_AMFG.value, "value": MapAttribute.MAX_AMFG.value},
-        {"label": MapAttribute.AMFG_PLUME.value, "value": MapAttribute.AMFG_PLUME.value},
+        {
+            "label": MapAttribute.AMFG_PLUME.value,
+            "value": MapAttribute.AMFG_PLUME.value,
+        },
     ]

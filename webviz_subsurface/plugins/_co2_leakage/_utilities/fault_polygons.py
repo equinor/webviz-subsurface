@@ -13,11 +13,15 @@ class FaultPolygonsHandler:
         server: FaultPolygonsServer,
         ensemble_path: str,
         map_surface_names_to_fault_polygons: Dict[str, str],
-        fault_polygon_attribute: str
+        fault_polygon_attribute: str,
     ) -> None:
         self._server = server
         polygon_provider_factory = EnsembleFaultPolygonsProviderFactory.instance()
-        self._provider = polygon_provider_factory.create_from_ensemble_fault_polygons_files(ensemble_path)
+        self._provider = (
+            polygon_provider_factory.create_from_ensemble_fault_polygons_files(
+                ensemble_path
+            )
+        )
         server.add_provider(self._provider)
         self._map_surface_names_to_fault_polygons = map_surface_names_to_fault_polygons
         self._fault_polygon_attribute = fault_polygon_attribute
@@ -34,7 +38,9 @@ class FaultPolygonsHandler:
         # NB! This always returns the url corresponding to the first realization
         address = SimulatedFaultPolygonsAddress(
             attribute=self._fault_polygon_attribute,
-            name=self._map_surface_names_to_fault_polygons.get(polygon_name, polygon_name),
+            name=self._map_surface_names_to_fault_polygons.get(
+                polygon_name, polygon_name
+            ),
             realization=realization[0],
         )
         return self._server.encode_partial_url(

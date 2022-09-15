@@ -42,17 +42,19 @@ def _read_terminal_co2_volumes(
             _Columns.VOLUME.value,
             _Columns.CONTAINMENT.value,
             _Columns.VOLUME_OUTSIDE.value,
-        ]
+        ],
     )
     df.sort_values(_Columns.VOLUME_OUTSIDE.value, inplace=True, ascending=True)
     return df
 
 
 def _read_co2_volumes(table_provider: EnsembleTableProvider, realizations: List[int]):
-    return pandas.concat([
-        _read_dataframe(table_provider, real).assign(realization=real)
-        for real in realizations
-    ])
+    return pandas.concat(
+        [
+            _read_dataframe(table_provider, real).assign(realization=real)
+            for real in realizations
+        ]
+    )
 
 
 def generate_co2_volume_figure(
@@ -99,9 +101,9 @@ def generate_co2_time_containment_figure(
     # Generate dummy scatters for legend entries
     outside_args = dict(line_dash="dot", legendgroup="Outside", name="Outside")
     total_args = dict(legendgroup="Total", name="Total")
-    dummy_args = dict(mode="lines", marker_color="black", hoverinfo='none')
-    fig.add_scatter(y=[.0], **dummy_args, **outside_args)
-    fig.add_scatter(y=[.0], **dummy_args, **total_args)
+    dummy_args = dict(mode="lines", marker_color="black", hoverinfo="none")
+    fig.add_scatter(y=[0.0], **dummy_args, **outside_args)
+    fig.add_scatter(y=[0.0], **dummy_args, **total_args)
     for rz, color in zip(realizations, itertools.cycle(colors)):
         sub_df = df[df["realization"] == rz]
         common_args = dict(

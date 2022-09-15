@@ -5,21 +5,34 @@ from dash import Dash, callback, Output, Input, State
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._providers import SurfaceServer, \
-    FaultPolygonsServer
-from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import generate_co2_volume_figure, \
-    generate_co2_time_containment_figure
-from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin, \
-    SurfaceData, derive_surface_address, readable_name, get_plume_polygon, \
-    create_map_layers
-from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import \
-    FaultPolygonsHandler
+from webviz_subsurface._providers import SurfaceServer, FaultPolygonsServer
+from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
+    generate_co2_volume_figure,
+    generate_co2_time_containment_figure,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
+    property_origin,
+    SurfaceData,
+    derive_surface_address,
+    readable_name,
+    get_plume_polygon,
+    create_map_layers,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
+    FaultPolygonsHandler,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
-from webviz_subsurface.plugins._co2_leakage._utilities.initialization import \
-    init_map_attribute_names, init_surface_providers, init_well_pick_provider, \
-    init_co2_containment_table_providers
-from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import MainView, \
-    MapViewElement, INITIAL_BOUNDS
+from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
+    init_map_attribute_names,
+    init_surface_providers,
+    init_well_pick_provider,
+    init_co2_containment_table_providers,
+)
+from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
+    MainView,
+    MapViewElement,
+    INITIAL_BOUNDS,
+)
 from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewSettings
 
 
@@ -49,6 +62,7 @@ class CO2Leakage(WebvizPluginABC):
 
     TODO: Elaborate on arguments above
     """
+
     class Ids:
         MAIN_VIEW = "main-view"
         MAIN_SETTINGS = "main-settings"
@@ -111,7 +125,7 @@ class CO2Leakage(WebvizPluginABC):
                 self._map_attribute_names,
                 [c["name"] for c in CO2LEAKAGE_COLOR_TABLES],
             ),
-            self.Ids.MAIN_SETTINGS
+            self.Ids.MAIN_SETTINGS,
         )
         self.add_view(MainView(CO2LEAKAGE_COLOR_TABLES), self.Ids.MAIN_VIEW)
 
@@ -155,9 +169,9 @@ class CO2Leakage(WebvizPluginABC):
             return fig0, fig1
 
         @callback(
-            Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), 'marks'),
-            Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), 'value'),
-            Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), 'value'),
+            Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "marks"),
+            Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "value"),
+            Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
         def set_dates(ensemble):
             if ensemble is None:
@@ -281,9 +295,6 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_provider=self._well_pick_provider,
                 plume_extent_data=plume_polygon,
             )
-            if (
-                tuple(current_bounds) != INITIAL_BOUNDS
-                or viewport_bounds is None
-            ):
+            if tuple(current_bounds) != INITIAL_BOUNDS or viewport_bounds is None:
                 viewport_bounds = dash.no_update
             return layers, viewport_bounds
