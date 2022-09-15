@@ -1,11 +1,8 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
-
-import webviz_subsurface
+from webviz_config.utils import StrEnum
 
 from ..._models import GruptreeModel, WellAttributesModel
 from ..._providers import (
@@ -13,9 +10,9 @@ from ..._providers import (
     EnsembleSummaryProviderFactory,
     Frequency,
 )
-from ._callbacks import well_control_callbacks, well_overview_callbacks
-from ._ensemble_well_analysis_data import EnsembleWellAnalysisData
-from ._layout import clientside_stores, main_layout
+from ._utils import EnsembleWellAnalysisData
+from ._views._well_control_view import WellControlView, WellControlViewElement
+from ._views._well_overview_view import WellOverviewView, WellOverviewViewElement
 
 
 class WellAnalysis(WebvizPluginABC):
@@ -62,10 +59,12 @@ class WellAnalysis(WebvizPluginABC):
 
     """
 
-    # pylint: disable=too-many-arguments
+    class Ids(StrEnum):
+        WELL_OVERVIEW = "well-overview"
+        WELL_CONTROL = "well-control"
+
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: Optional[List[str]] = None,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
@@ -75,14 +74,6 @@ class WellAnalysis(WebvizPluginABC):
         filter_out_startswith: Optional[str] = None,
     ) -> None:
         super().__init__()
-
-        # This is used to format the buttons in the well overview tab
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent
-            / "_assets"
-            / "css"
-            / "inplace_volumes.css"
-        )
 
         self._ensembles = ensembles
         self._theme = webviz_settings.theme
@@ -116,7 +107,59 @@ class WellAnalysis(WebvizPluginABC):
                 filter_out_startswith=filter_out_startswith,
             )
 
-        self.set_callbacks(app)
+        self.add_view(
+            WellOverviewView(self._data_models, self._theme),
+            self.Ids.WELL_OVERVIEW,
+        )
+        self.add_view(
+            WellControlView(self._data_models, self._theme),
+            self.Ids.WELL_CONTROL,
+        )
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(self.Ids.WELL_OVERVIEW)
+                .view_element(WellOverviewView.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellOverviewViewElement.Ids.GRAPH),
+                "content": "Shows production split on well for the various chart types",
+            },
+            {
+                "id": self.view(self.Ids.WELL_OVERVIEW)
+                .settings_group(WellOverviewView.Ids.SETTINGS)
+                .get_unique_id(),
+                "content": "Choose chart type, ensemble, type of production and other options. "
+                "You also change the layout of the chart.",
+            },
+            {
+                "id": self.view(self.Ids.WELL_OVERVIEW)
+                .settings_group(WellOverviewView.Ids.FILTERS)
+                .get_unique_id(),
+                "content": "You can choose to view the production for all the wells or "
+                "select only the ones you are interested in.",
+            },
+            {
+                "id": self.view(self.Ids.WELL_CONTROL)
+                .view_element(WellControlView.Ids.VIEW_ELEMENT)
+                .component_unique_id(WellControlViewElement.Ids.CHART),
+                "content": "Shows the number of realizations on different control modes "
+                "and network pressures.",
+            },
+            {
+                "id": self.view(self.Ids.WELL_CONTROL)
+                .settings_group(WellControlView.Ids.SETTINGS)
+                .get_unique_id(),
+                "content": "Select the ensemble and well you are interested in."
+                "The well dropdown is autmatically updated when ensemble is selected",
+            },
+            {
+                "id": self.view(self.Ids.WELL_CONTROL)
+                .settings_group(WellControlView.Ids.PRESSUREPLOT_OPTIONS)
+                .get_unique_id(),
+                "content": "Here are some options related only to the Network pressures plot.",
+            },
+        ]
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
@@ -124,16 +167,3 @@ class WellAnalysis(WebvizPluginABC):
             for _, ens_data_model in self._data_models.items()
             for webviz_store_tuple in ens_data_model.webviz_store
         ]
-
-    @property
-    def layout(self) -> html.Div:
-        return html.Div(
-            children=[
-                clientside_stores(get_uuid=self.uuid),
-                main_layout(self.uuid, self._data_models),
-            ]
-        )
-
-    def set_callbacks(self, app: Dash) -> None:
-        well_overview_callbacks(app, self.uuid, self._data_models, self._theme)
-        well_control_callbacks(app, self.uuid, self._data_models, self._theme)
