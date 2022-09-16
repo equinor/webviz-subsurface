@@ -7,7 +7,7 @@ import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
@@ -15,6 +15,7 @@ from webviz_subsurface._utils.vector_calculator import (
     add_expressions_to_vector_selector_data,
     get_selected_expressions,
     get_vector_definitions_from_expressions,
+    VectorDefinition,
 )
 from webviz_subsurface._utils.vector_selector import (
     is_vector_name_in_vector_selector_data,
@@ -174,8 +175,9 @@ class TimeSeriesSettings(SettingsGroupABC):
                 "open",
             ),
         )
+        @callback_typecheck
         def _toggle_vector_calculator_dialog_open(
-            n_open_clicks: int, is_open: bool
+            n_open_clicks: Optional[int], is_open: bool
         ) -> bool:
             if n_open_clicks:
                 return not is_open
@@ -195,8 +197,9 @@ class TimeSeriesSettings(SettingsGroupABC):
                 "externalParseExpression",
             ),
         )
+        @callback_typecheck
         def _parse_vector_calculator_expression(
-            expression: ExpressionInfo,
+            expression: Optional[ExpressionInfo],
         ) -> ExternalParseData:
             if expression is None:
                 raise PreventUpdate
@@ -270,12 +273,13 @@ class TimeSeriesSettings(SettingsGroupABC):
                 "data",
             ),
         )
+        @callback_typecheck
         def _update_vector_calculator_expressions_on_dialog_close(
             is_dialog_open: bool,
             new_expressions: List[ExpressionInfo],
             current_expressions: List[ExpressionInfo],
             current_selected_vectors: List[str],
-            current_custom_vector_definitions: dict,
+            current_custom_vector_definitions: Dict[str, VectorDefinition],
             graph_data_has_changed_counter: int,
         ) -> list:
             """Update vector calculator expressions, propagate expressions to VectorSelectors,
@@ -356,6 +360,7 @@ class TimeSeriesSettings(SettingsGroupABC):
                 "expressions",
             ),
         )
+        @callback_typecheck
         def _update_vector_calculator_expressions_when_dialog_open(
             expressions: List[ExpressionInfo],
         ) -> list:

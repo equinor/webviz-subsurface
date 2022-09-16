@@ -4,7 +4,7 @@ import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._utils.formatting import printable_int_list
@@ -87,6 +87,7 @@ class FilterRealizationSettings(SettingsGroupABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_realization_range(realizations: List[int]) -> Optional[str]:
             if not realizations:
                 raise PreventUpdate

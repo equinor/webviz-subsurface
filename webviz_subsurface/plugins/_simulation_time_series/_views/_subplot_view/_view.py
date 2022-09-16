@@ -894,10 +894,11 @@ class SubplotView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_relative_date_dropdown_and_trace_options_style(
             resampling_frequency_value: str,
-            relative_date_value: str,
-            current_relative_date_options: List[dict],
+            relative_date_value: Optional[str],
+            current_relative_date_options: List[Dict[str, str]],
             current_relative_date_value: Optional[str],
         ) -> Tuple[List[Dict[str, str]], Optional[str], Dict[str, str]]:
             """This callback updates dropdown based on selected resampling frequency selection

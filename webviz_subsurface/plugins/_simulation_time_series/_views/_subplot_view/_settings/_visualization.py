@@ -3,7 +3,7 @@ from typing import List
 import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._types import (
@@ -168,13 +168,11 @@ class VisualizationSettings(SettingsGroupABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_statistics_options_layout(
-            selected_visualization: str,
+            selected_visualization: VisualizationOptions,
         ) -> List[dict]:
             """Only show statistics checklist if in statistics mode"""
-
-            # Convert to enum type
-            selected_visualization = VisualizationOptions(selected_visualization)
 
             def get_style(visualization_options: List[VisualizationOptions]) -> dict:
                 return (

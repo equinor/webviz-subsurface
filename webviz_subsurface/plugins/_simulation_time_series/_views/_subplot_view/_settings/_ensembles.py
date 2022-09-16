@@ -4,7 +4,7 @@ import webviz_core_components as wcc
 from dash import Input, Output, State, callback, dash_table, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._types import DeltaEnsemble
@@ -179,6 +179,7 @@ class EnsemblesSettings(SettingsGroupABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_created_delta_ensembles_names(
             n_clicks: int,
             existing_delta_ensembles: List[DeltaEnsemble],
