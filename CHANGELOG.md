@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+
+- [#1058](https://github.com/equinor/webviz-subsurface/pull/1058) - `WellCompletion` - New implementation of the `WellCompletions` plugin, which is faster, has more functionality (single realization) and utilizes the webviz layout framework (WLF).
+
+
+### Fixed
+
+- [#1094](https://github.com/equinor/webviz-subsurface/pull/1094) - Fixed issues with ambiguous truth of `pandas.Series` in `EnsembleSummaryProvider`.
+- [#1107](https://github.com/equinor/webviz-subsurface/pull/1107) - Fixed bug in `ParameterResponseCorrelation` that caused the plugin to fail if the `response_filters` parameter was not given.
+
+### Changed
+
+- [#1097](https://github.com/equinor/webviz-subsurface/pull/1007) - `smry2arrow_batch` - Now supports an arbitrary number of paths as input, meaning that it is no longer needed to wrap a wildcarded runpath pattern with "". It is though still required if defining a wildcarded eclbase.
+- [#1080](https://github.com/equinor/webviz-subsurface/pull/1080) - Converted the `GroupTree` plugin to WLF (Webviz Layout Framework).
+- [#1089](https://github.com/equinor/webviz-subsurface/pull/1080) - Converted the `WellAnalysis` plugin to WLF (Webviz Layout Framework).
+
 ## [0.2.14] - 2022-06-28
 
 ### Fixed

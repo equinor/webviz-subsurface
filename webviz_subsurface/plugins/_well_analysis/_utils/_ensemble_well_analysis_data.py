@@ -7,7 +7,7 @@ import pandas as pd
 from webviz_subsurface._models import GruptreeModel, WellAttributesModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from ._types import NodeType, PressurePlotMode
+from .._types import NodeType, PressurePlotMode
 
 
 class EnsembleWellAnalysisData:
