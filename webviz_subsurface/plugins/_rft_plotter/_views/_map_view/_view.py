@@ -5,10 +5,11 @@ from dash import Input, Output, State, callback, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ..._utils import RftPlotterDataModel
-from ._settings import MapSettings
+from ._settings import FormationPlotSettings, MapSettings
+
 
 class MapView(ViewABC):
     class Ids(StrEnum):
@@ -22,3 +23,7 @@ class MapView(ViewABC):
         self._datamodel = datamodel
 
         self.add_settings_group(MapSettings(self._datamodel), self.Ids.MAP_SETTINGS)
+
+        self.add_settings_group(
+            FormationPlotSettings(self._datamodel), self.Ids.FORMATION_PLOT_SETTINGS
+        )

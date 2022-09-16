@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import webviz_core_components as wcc
-from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
 
@@ -101,7 +99,6 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
