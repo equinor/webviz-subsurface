@@ -5,8 +5,8 @@ import webviz_core_components as wcc
 from dash import ALL, Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config import WebvizSettings
-from webviz_config.utils import StrEnum
-from webviz_config.webviz_plugin_subclasses import ViewABC, callback_typecheck
+from webviz_config.utils import callback_typecheck, StrEnum
+from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ._settings import DataSettings, ViewSettings
 from ._utils._plot_utils import create_graph, filter_data_frame
