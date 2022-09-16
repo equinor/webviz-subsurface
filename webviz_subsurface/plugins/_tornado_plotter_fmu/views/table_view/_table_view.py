@@ -1,11 +1,12 @@
 from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_config.utils import StrEnum
 
 from .view_elements import TornadoTable
 
 
 class TornadoTableView(ViewABC):
-    class IDs:
-        # pylint: disable=too-few-public-methods
+
+    class IDs(StrEnum):
         TORNADO_TABLE = "tornado-table"
         MAIN_COLUMN = "main-column"
 

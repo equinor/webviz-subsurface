@@ -4,15 +4,14 @@ import webviz_core_components as wcc
 from dash import html
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+from webviz_config.utils import StrEnum
 
 from webviz_subsurface._providers import EnsembleTableProvider
 
 
 class Filters(SettingsGroupABC):
-    """Settingsgroup for filters"""
 
-    class IDs:
-        # pylint: disable=too-few-public-methods
+    class IDs(StrEnum):
         SINGLE_FILTER = "single-filter"
         MULTI_FILTER = "multi-filter"
 
@@ -36,7 +35,6 @@ class Filters(SettingsGroupABC):
     def layout(self) -> List[Component]:
         single_filter_elements = []
 
-        # Creates dropdowns for any data columns added as single value filters
         for selector in self._single_filters:
             values = self._table_provider.get_column_data([selector])[selector].unique()
 
@@ -54,7 +52,6 @@ class Filters(SettingsGroupABC):
                 )
             )
 
-        # Creates dropdowns for any data columns added as single value filters
         multi_filter_elements = []
         for selector in self._multi_filters:
             values = self._table_provider.get_column_data([selector])[selector].unique()

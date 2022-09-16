@@ -5,13 +5,12 @@ import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+from webviz_config.utils import callback_typecheck, StrEnum
 
 
 class ViewSettings(SettingsGroupABC):
-    """Settingsgroup for settings for the view"""
 
-    class IDs:
-        # pylint: disable=too-few-public-methods
+    class IDs(StrEnum):
         REFERENCE = "reference"
         SCALE = "scale"
         SENSITIVITIES = "sensitivities"
@@ -21,7 +20,7 @@ class ViewSettings(SettingsGroupABC):
 
     def __init__(
         self,
-        realizations: pd.DataFrame,  # tror ikke dette er en Lisa
+        realizations: pd.DataFrame,
         reference: str = "rms_seed",
         allow_click: bool = False,
     ) -> None:
@@ -126,7 +125,8 @@ class ViewSettings(SettingsGroupABC):
                 "value",
             ),
         )
-        def _disable_label(plot_options: List) -> bool:
+        @callback_typecheck
+        def _disable_label(plot_options: List[str]) -> bool:
             if plot_options is None:
                 return False
             return "Show realization points" in plot_options

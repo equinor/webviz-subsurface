@@ -7,6 +7,7 @@ from dash import ALL, Input, Output, callback, callback_context
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import callback_typecheck
 
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
@@ -59,7 +60,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
     ) -> None:
         super().__init__(stretch=True)
 
-        # Defining members
         self._single_filters = single_value_selectors if single_value_selectors else []
         self._multi_filters = multi_value_selectors if multi_value_selectors else []
         self.plotly_theme = webviz_settings.theme.plotly_theme
@@ -69,7 +69,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
         self._ensemble_name = ""
 
-        # Reading from the csv file
         if ensemble is not None and csvfile is not None:
             ens_path = webviz_settings.shared_settings["scratch_ensembles"][ensemble]
             self._parameter_provider = (
@@ -110,7 +109,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 f"from {ensemble_name}. Cannot calculate tornado plots"
             )
 
-        # Defining the datafame
         self._design_matrix_df["ENSEMBLE"] = self._ensemble_name
         self._design_matrix_df["SENSTYPE"] = self._design_matrix_df.apply(
             lambda row: find_sens_type(row.SENSCASE), axis=1
@@ -132,7 +130,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
         initial_response = initial_response if initial_response else responses[0]
 
-        # Stores for data
         self.add_store(
             PluginIds.Stores.DataStores.TORNADO_DATA,
             WebvizPluginABC.StorageType.SESSION,
@@ -148,13 +145,11 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PluginIds.TornadoViewGroup.TORNADO_TABLE_VIEW,
         )
 
-        # Settingsgroup for Selector
         self.add_shared_settings_group(
             Selectors(responses, initial_response),
             PluginIds.SharedSettings.SELECTORS,
         )
 
-        # Settingsgroup for filters
         self.filters = Filters(
             self._table_provider,
             self._single_filters,
@@ -165,7 +160,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
             PluginIds.SharedSettings.FILTERS,
         )
 
-        # Settingsgroup for the view options
         self.add_shared_settings_group(
             ViewSettings(self._design_matrix_df), PluginIds.SharedSettings.VIEW_SETTINGS
         )
@@ -214,10 +208,11 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _calc_tornado_plot(
             reference: str,
             scale: str,
-            plot_options: List,
+            plot_options: List[str],
             label_option: str,
             data: Union[str, bytes, bytearray],
             sens_filter: Union[List[str], str],
@@ -308,10 +303,11 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _calc_tornado_table(
             reference: str,
             scale: str,
-            plot_options: List,
+            plot_options: List[str],
             data: Union[str, bytes, bytearray],
             sens_filter: Union[List[str], str],
         ) -> Tuple[dict, dict, dict]:
@@ -376,8 +372,9 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_tornado_with_response_values(
-            response: str, single_filters: List, multi_filters: List
+            response: str, single_filters: list, multi_filters: list
         ) -> str:
             """Returns a json dump for the tornado plot with the response values per realization"""
 

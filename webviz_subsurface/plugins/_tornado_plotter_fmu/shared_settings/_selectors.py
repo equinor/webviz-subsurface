@@ -3,13 +3,12 @@ from typing import List
 import webviz_core_components as wcc
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+from webviz_config.utils import StrEnum
 
 
 class Selectors(SettingsGroupABC):
-    """Settings class for labelled dropdown with all response columns"""
 
-    class IDs:
-        # pylint: disable=too-few-public-methods
+    class IDs(StrEnum):
         RESPONSE = "response"
 
     def __init__(

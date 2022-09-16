@@ -1,12 +1,11 @@
 import webviz_core_components as wcc
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
+from webviz_config.utils import StrEnum
 
 
 class TornadoPlot(ViewElementABC):
-    """View element for graph"""
 
-    class IDs:
-        # pylint: disable=too-few-public-methods
+    class IDs(StrEnum):
         GRAPH = "graph"
 
     def __init__(self, height: str = "86vh") -> None:

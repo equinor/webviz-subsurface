@@ -1,12 +1,11 @@
 from dash import dash_table
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
+from webviz_config.utils import StrEnum
 
 
 class TornadoTable(ViewElementABC):
-    """View element for table"""
 
-    class IDs:
-        # pylint: disable=too-few-public-methods
+    class IDs(StrEnum):
         TABLE = "table"
 
     def __init__(self, height: str = "75vh") -> None:
