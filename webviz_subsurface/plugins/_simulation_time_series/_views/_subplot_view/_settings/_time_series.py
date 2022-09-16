@@ -12,10 +12,10 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 from webviz_subsurface_components import ExpressionInfo, ExternalParseData
 
 from webviz_subsurface._utils.vector_calculator import (
+    VectorDefinition,
     add_expressions_to_vector_selector_data,
     get_selected_expressions,
     get_vector_definitions_from_expressions,
-    VectorDefinition,
 )
 from webviz_subsurface._utils.vector_selector import (
     is_vector_name_in_vector_selector_data,
