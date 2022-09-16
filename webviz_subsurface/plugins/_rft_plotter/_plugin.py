@@ -4,10 +4,13 @@ from typing import Callable, Dict, List, Optional, Tuple
 import webviz_core_components as wcc
 from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
-from ._business_logic import RftPlotterDataModel
-from ._callbacks import paramresp_callbacks, plugin_callbacks
-from ._layout import main_layout
+from ._utils._rft_plotter_data_model import RftPlotterDataModel
+from ._views._map_view import MapView
+
+# from ._callbacks import paramresp_callbacks, plugin_callbacks
+# from ._layout import main_layout
 
 
 class RftPlotter(WebvizPluginABC):
@@ -90,6 +93,11 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
 """
 
+    class Ids(StrEnum):
+        MAP_VIEW = "map-view"
+        PARAMETER_RESPONSE_VIEW = "parameter-response-view"
+
+    Ids
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -114,18 +122,12 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             csvfile_rft_ert,
         )
 
-        self.set_callbacks(app)
+        self.add_view(MapView(self._datamodel), self.Ids.MAP_VIEW)
+
+        # if not self._datamodel.param_model.sensrun:
+        #     self.add_view(
+        #         ParameterResponseView(self._datamodel)
+        #     )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return self._datamodel.webviz_store
-
-    @property
-    def layout(self) -> wcc.Tabs:
-        return main_layout(self.uuid, self._datamodel)
-
-    def set_callbacks(self, app: Dash) -> None:
-        plugin_callbacks(app, self.uuid, self._datamodel)
-
-        # It this is not a sensitivity run, add the parameter response callbacks
-        if not self._datamodel.param_model.sensrun:
-            paramresp_callbacks(app, self.uuid, self._datamodel)

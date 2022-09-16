@@ -1,0 +1,1 @@
+from ._map_settings import MapSettings
