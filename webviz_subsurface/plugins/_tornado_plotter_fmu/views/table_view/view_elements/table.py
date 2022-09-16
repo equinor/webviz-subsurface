@@ -4,7 +4,6 @@ from webviz_config.utils import StrEnum
 
 
 class TornadoTable(ViewElementABC):
-
     class IDs(StrEnum):
         TABLE = "table"
 

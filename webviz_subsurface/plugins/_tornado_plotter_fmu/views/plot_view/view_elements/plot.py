@@ -4,7 +4,6 @@ from webviz_config.utils import StrEnum
 
 
 class TornadoPlot(ViewElementABC):
-
     class IDs(StrEnum):
         GRAPH = "graph"
 

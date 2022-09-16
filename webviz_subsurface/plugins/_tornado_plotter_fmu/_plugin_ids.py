@@ -1,5 +1,6 @@
 from webviz_config.utils import StrEnum
 
+
 class PluginIds:
     class Stores:
         class PlotPicker(StrEnum):

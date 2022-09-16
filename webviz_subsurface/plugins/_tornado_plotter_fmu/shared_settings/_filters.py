@@ -10,7 +10,6 @@ from webviz_subsurface._providers import EnsembleTableProvider
 
 
 class Filters(SettingsGroupABC):
-
     class IDs(StrEnum):
         SINGLE_FILTER = "single-filter"
         MULTI_FILTER = "multi-filter"

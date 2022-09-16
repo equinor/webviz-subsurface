@@ -5,7 +5,6 @@ from .view_elements import TornadoTable
 
 
 class TornadoTableView(ViewABC):
-
     class IDs(StrEnum):
         TORNADO_TABLE = "tornado-table"
         MAIN_COLUMN = "main-column"

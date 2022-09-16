@@ -9,7 +9,6 @@ from webviz_config.utils import callback_typecheck, StrEnum
 
 
 class ViewSettings(SettingsGroupABC):
-
     class IDs(StrEnum):
         REFERENCE = "reference"
         SCALE = "scale"

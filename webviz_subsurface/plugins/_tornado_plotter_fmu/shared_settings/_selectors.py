@@ -7,7 +7,6 @@ from webviz_config.utils import StrEnum
 
 
 class Selectors(SettingsGroupABC):
-
     class IDs(StrEnum):
         RESPONSE = "response"
 
