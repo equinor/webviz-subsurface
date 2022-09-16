@@ -1,14 +1,8 @@
-import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, TypedDict
 
 import yaml
 from webviz_subsurface_components import VectorDefinition
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
 
 # JSON Schema for user defined vector definitions
 # Used as schema input for json_schema.validate()
