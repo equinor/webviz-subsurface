@@ -1,6 +1,6 @@
 from dash import dash_table
-from webviz_config.webviz_plugin_subclasses import ViewElementABC
 from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
 class TornadoTable(ViewElementABC):

@@ -4,8 +4,8 @@ import pandas as pd
 import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from dash.development.base_component import Component
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
-from webviz_config.utils import callback_typecheck, StrEnum
 
 
 class ViewSettings(SettingsGroupABC):

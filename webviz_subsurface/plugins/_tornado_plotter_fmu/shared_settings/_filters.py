@@ -3,8 +3,8 @@ from typing import List
 import webviz_core_components as wcc
 from dash import html
 from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers import EnsembleTableProvider
 

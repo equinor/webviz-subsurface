@@ -1,6 +1,6 @@
 import webviz_core_components as wcc
-from webviz_config.webviz_plugin_subclasses import ViewElementABC
 from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
 class TornadoPlot(ViewElementABC):

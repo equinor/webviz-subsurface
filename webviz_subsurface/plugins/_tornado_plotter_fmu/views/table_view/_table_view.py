@@ -1,5 +1,5 @@
-from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .view_elements import TornadoTable
 
