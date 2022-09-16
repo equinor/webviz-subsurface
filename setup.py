@@ -76,6 +76,7 @@ setup(
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
             "WellCompletions = webviz_subsurface.plugins:WellCompletions",
+            "WellCompletion = webviz_subsurface.plugins:WellCompletion",
             "WellLogViewer = webviz_subsurface.plugins:WellLogViewer",
             "WellAnalysis = webviz_subsurface.plugins:WellAnalysis",
         ],
