@@ -2,7 +2,9 @@ from webviz_config.utils import StrEnum
 
 
 class PluginIds:
+    # pylint: disable=too-few-public-methods
     class Stores:
+        # pylint: disable=too-few-public-methods
         class PlotPicker(StrEnum):
             BARS_OR_TABLE = "bars-table"
 
