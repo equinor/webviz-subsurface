@@ -95,8 +95,6 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         MAP_VIEW = "map-view"
         PARAMETER_RESPONSE_VIEW = "parameter-response-view"
 
-    Ids
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         webviz_settings: WebvizSettings,

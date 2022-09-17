@@ -17,7 +17,7 @@ class MapSettings(SettingsGroupABC):
         ZONES = "map-zones"
 
     def __init__(self, datamodel: RftPlotterDataModel) -> None:
-        super().__init__("Map plot settings")
+        super().__init__("Map settings")
         self._datamodel = datamodel
         self._ensembles = datamodel.ensembles
         self._zone_names = datamodel.zone_names
