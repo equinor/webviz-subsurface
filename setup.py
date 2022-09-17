@@ -39,6 +39,7 @@ setup(
         "webviz_config_plugins": [
             "BhpQc = webviz_subsurface.plugins:BhpQc",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
+            "EXPERIMENTALGridViewerFMU = webviz_subsurface.plugins:EXPERIMENTALGridViewerFMU",
             "GroupTree = webviz_subsurface.plugins:GroupTree",
             "HistoryMatch = webviz_subsurface.plugins:HistoryMatch",
             "HorizonUncertaintyViewer = webviz_subsurface.plugins:HorizonUncertaintyViewer",
@@ -100,10 +101,12 @@ setup(
         "pyscal>=0.7.5",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
+        "vtk>=9.2.0rc2",
         "webviz-config>=0.3.8",
         "webviz-core-components>=0.5.6",
         "webviz-subsurface-components>=0.4.13",
-        "xtgeo>=2.14",
+        "webviz_vtk@git+https://github.com/equinor/webviz-vtk",
+        "xtgeo>=2.20rc1",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
