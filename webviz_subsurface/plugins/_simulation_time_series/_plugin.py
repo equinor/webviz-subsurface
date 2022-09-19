@@ -310,9 +310,9 @@ class SimulationTimeSeries(WebvizPluginABC):
         _max_num_initial_vectors = 5
         if len(initial_vectors) > _max_num_initial_vectors:
             warnings.warn(
-                f'User input option "vectors" contains more than {_max_num_initial_vectors} vectors. '
-                f"Only the first {_max_num_initial_vectors} listed vectors are kept for initially "
-                "selected vectors - the remaining are neglected."
+                f'User input option "vectors" contains more than {_max_num_initial_vectors} '
+                f"vectors. Only the first {_max_num_initial_vectors} listed vectors are kept "
+                "for initially selected vectors - the remaining are neglected."
             )
         self._initial_vectors = initial_vectors[:_max_num_initial_vectors]
 
