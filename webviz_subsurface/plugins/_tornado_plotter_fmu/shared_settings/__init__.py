@@ -1,3 +1,3 @@
 from ._filters import Filters
 from ._selectors import Selectors
-from ._view_settings import ViewSettings
+from ._view_settings import ViewSettings, FilterOption, Scale

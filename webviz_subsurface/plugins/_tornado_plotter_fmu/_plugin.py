@@ -1,26 +1,19 @@
 import json
 from pathlib import Path
-from typing import List, Tuple, Type, Union
+from typing import List, Type
 
-import pandas as pd
 from dash import ALL, Input, Output, callback, callback_context
 from dash.development.base_component import Component
-from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.utils import callback_typecheck
+from webviz_config.utils import callback_typecheck, StrEnum
 
-from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
-from webviz_subsurface._components.tornado._tornado_data import TornadoData
-from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 from webviz_subsurface._datainput.fmu_input import find_sens_type
 from webviz_subsurface._providers import EnsembleTableProviderFactory
 
 from ._error import error
-from ._plugin_ids import PluginIds
 from .shared_settings import Filters, Selectors, ViewSettings
-from .views import TornadoPlotView, TornadoTableView
-from .views.plot_view.view_elements import TornadoPlot
-from .views.table_view.view_elements import TornadoTable as TornadoTableViewElement
+from .views.plot_view import TornadoPlotView, PlotSettings
+from .views.table_view import TornadoTableView
 
 
 class TornadoPlotterFMU(WebvizPluginABC):
@@ -46,6 +39,16 @@ class TornadoPlotterFMU(WebvizPluginABC):
     REGIONS.
     """
 
+    class Ids(StrEnum):
+        TORNADO_DATA = "tornado-data"
+
+        SELECTORS = "selectors"
+        FILTERS = "filters"
+        VIEW_SETTINGS = "view-settings"
+
+        TORNADO_PLOT_VIEW = "tornado-plot-view"
+        TORNADO_TABLE_VIEW = "tornado-table-view"
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -62,7 +65,6 @@ class TornadoPlotterFMU(WebvizPluginABC):
 
         self._single_filters = single_value_selectors if single_value_selectors else []
         self._multi_filters = multi_value_selectors if multi_value_selectors else []
-        self.plotly_theme = webviz_settings.theme.plotly_theme
 
         provider_factory = EnsembleTableProviderFactory.instance()
         self._error_message = ""
@@ -100,7 +102,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             )
 
         try:
-            self._design_matrix_df = self._parameter_provider.get_column_data(
+            design_matrix_df = self._parameter_provider.get_column_data(
                 column_names=["SENSNAME", "SENSCASE"]
             )
         except KeyError:
@@ -109,8 +111,8 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 f"from {ensemble_name}. Cannot calculate tornado plots"
             )
 
-        self._design_matrix_df["ENSEMBLE"] = self._ensemble_name
-        self._design_matrix_df["SENSTYPE"] = self._design_matrix_df.apply(
+        design_matrix_df["ENSEMBLE"] = self._ensemble_name
+        design_matrix_df["SENSTYPE"] = design_matrix_df.apply(
             lambda row: find_sens_type(row.SENSCASE), axis=1
         )
 
@@ -131,23 +133,13 @@ class TornadoPlotterFMU(WebvizPluginABC):
         initial_response = initial_response if initial_response else responses[0]
 
         self.add_store(
-            PluginIds.Stores.DataStores.TORNADO_DATA,
+            TornadoPlotterFMU.Ids.TORNADO_DATA,
             WebvizPluginABC.StorageType.SESSION,
-        )
-
-        self.add_view(
-            TornadoPlotView(),
-            PluginIds.TornadoViewGroup.TORNADO_PLOT_VIEW,
-        )
-
-        self.add_view(
-            TornadoTableView(),
-            PluginIds.TornadoViewGroup.TORNADO_TABLE_VIEW,
         )
 
         self.add_shared_settings_group(
             Selectors(responses, initial_response),
-            PluginIds.SharedSettings.SELECTORS,
+            TornadoPlotterFMU.Ids.SELECTORS,
         )
 
         self.filters = Filters(
@@ -157,200 +149,96 @@ class TornadoPlotterFMU(WebvizPluginABC):
         )
         self.add_shared_settings_group(
             self.filters,
-            PluginIds.SharedSettings.FILTERS,
+            TornadoPlotterFMU.Ids.FILTERS,
         )
 
         self.add_shared_settings_group(
-            ViewSettings(self._design_matrix_df), PluginIds.SharedSettings.VIEW_SETTINGS
+            ViewSettings(design_matrix_df), TornadoPlotterFMU.Ids.VIEW_SETTINGS
+        )
+
+        self.add_view(
+            TornadoPlotView(
+                design_matrix_df,
+                webviz_settings.theme.plotly_theme,
+                TornadoPlotView.Slots(
+                    reference=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.REFERENCE)
+                        .to_string(),
+                        "value",
+                    ),
+                    scale=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.SCALE)
+                        .to_string(),
+                        "value",
+                    ),
+                    filter_options=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.FILTER_OPTIONS)
+                        .to_string(),
+                        "value",
+                    ),
+                    data=Input(
+                        self.get_store_unique_id(TornadoPlotterFMU.Ids.TORNADO_DATA),
+                        "data",
+                    ),
+                    sens_filter=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.SENSITIVITIES)
+                        .to_string(),
+                        "value",
+                    ),
+                ),
+            ),
+            TornadoPlotterFMU.Ids.TORNADO_PLOT_VIEW,
+        )
+
+        self.add_view(
+            TornadoTableView(
+                design_matrix_df,
+                TornadoTableView.Slots(
+                    reference=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.REFERENCE)
+                        .to_string(),
+                        "value",
+                    ),
+                    scale=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.SCALE)
+                        .to_string(),
+                        "value",
+                    ),
+                    filter_options=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.FILTER_OPTIONS)
+                        .to_string(),
+                        "value",
+                    ),
+                    data=Input(
+                        self.get_store_unique_id(TornadoPlotterFMU.Ids.TORNADO_DATA),
+                        "data",
+                    ),
+                    sens_filter=Input(
+                        self.shared_settings_group(TornadoPlotterFMU.Ids.VIEW_SETTINGS)
+                        .component_unique_id(ViewSettings.IDs.SENSITIVITIES)
+                        .to_string(),
+                        "value",
+                    ),
+                ),
+            ),
+            TornadoPlotterFMU.Ids.TORNADO_TABLE_VIEW,
         )
 
     def _set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view(PluginIds.TornadoViewGroup.TORNADO_PLOT_VIEW)
-                .view_element(TornadoPlotView.IDs.TORNADO_PLOT)
-                .component_unique_id(TornadoPlot.IDs.GRAPH)
-                .to_string(),
-                "figure",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.REFERENCE)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.SCALE)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.LABEL)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.DataStores.TORNADO_DATA),
+                self.get_store_unique_id(TornadoPlotterFMU.Ids.TORNADO_DATA),
                 "data",
             ),
             Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.SENSITIVITIES)
-                .to_string(),
-                "value",
-            ),
-        )
-        @callback_typecheck
-        def _calc_tornado_plot(
-            reference: str,
-            scale: str,
-            plot_options: List[str],
-            label_option: str,
-            data: Union[str, bytes, bytearray],
-            sens_filter: Union[List[str], str],
-        ) -> dict:
-            if not data:
-                raise PreventUpdate
-            plot_options = plot_options if plot_options else []
-            data = json.loads(data)
-            if not isinstance(sens_filter, List):
-                sens_filter = [sens_filter]
-            if not isinstance(data, dict):
-                raise PreventUpdate
-            values = pd.DataFrame(data["data"], columns=["REAL", "VALUE"])
-            realizations = self._design_matrix_df.loc[
-                self._design_matrix_df["ENSEMBLE"] == data["ENSEMBLE"]
-            ]
-
-            design_and_responses = pd.merge(values, realizations, on="REAL")
-            if sens_filter is not None:
-                if reference not in sens_filter:
-                    sens_filter.append(reference)
-                design_and_responses = design_and_responses.loc[
-                    design_and_responses["SENSNAME"].isin(sens_filter)
-                ]
-            tornado_data = TornadoData(
-                dframe=design_and_responses,
-                response_name=data.get("response_name"),
-                reference=reference,
-                scale="Percentage" if scale == "Relative value (%)" else "Absolute",
-                cutbyref="Remove sensitivites with no impact" in plot_options,
-            )
-
-            tornado_figure = TornadoBarChart(
-                tornado_data=tornado_data,
-                plotly_theme=self.plotly_theme,
-                label_options=label_option,
-                number_format=data.get("number_format", ""),
-                unit=data.get("unit", ""),
-                spaced=data.get("spaced", True),
-                locked_si_prefix=data.get("locked_si_prefix", None),
-                use_true_base=scale == "True value",
-                show_realization_points="Show realization points" in plot_options,
-                color_by_sensitivity="Color bars by sensitivity" in plot_options,
-            )
-            return tornado_figure.figure
-
-        @callback(
-            Output(
-                self.view(PluginIds.TornadoViewGroup.TORNADO_TABLE_VIEW)
-                .view_element(TornadoTableView.IDs.TORNADO_TABLE)
-                .component_unique_id(TornadoTableViewElement.IDs.TABLE)
-                .to_string(),
-                "data",
-            ),
-            Output(
-                self.view(PluginIds.TornadoViewGroup.TORNADO_TABLE_VIEW)
-                .view_element(TornadoTableView.IDs.TORNADO_TABLE)
-                .component_unique_id(TornadoTableViewElement.IDs.TABLE)
-                .to_string(),
-                "columns",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.REFERENCE)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.SCALE)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.PLOT_OPTIONS)
-                .to_string(),
-                "value",
-            ),
-            Input(
-                self.get_store_unique_id(PluginIds.Stores.DataStores.TORNADO_DATA),
-                "data",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.VIEW_SETTINGS)
-                .component_unique_id(ViewSettings.IDs.SENSITIVITIES)
-                .to_string(),
-                "value",
-            ),
-        )
-        @callback_typecheck
-        def _calc_tornado_table(
-            reference: str,
-            scale: str,
-            plot_options: List[str],
-            data: Union[str, bytes, bytearray],
-            sens_filter: Union[List[str], str],
-        ) -> Tuple[dict, dict, dict]:
-            if not data:
-                raise PreventUpdate
-            plot_options = plot_options if plot_options else []
-            data = json.loads(data)
-            if not isinstance(sens_filter, List):
-                sens_filter = [sens_filter]
-            if not isinstance(data, dict):
-                raise PreventUpdate
-            values = pd.DataFrame(data["data"], columns=["REAL", "VALUE"])
-            realizations = self._design_matrix_df.loc[
-                self._design_matrix_df["ENSEMBLE"] == data["ENSEMBLE"]
-            ]
-
-            design_and_responses = pd.merge(values, realizations, on="REAL")
-            if sens_filter is not None:
-                if reference not in sens_filter:
-                    sens_filter.append(reference)
-                design_and_responses = design_and_responses.loc[
-                    design_and_responses["SENSNAME"].isin(sens_filter)
-                ]
-            tornado_data = TornadoData(
-                dframe=design_and_responses,
-                response_name=data.get("response_name"),
-                reference=reference,
-                scale="Percentage" if scale == "Relative value (%)" else "Absolute",
-                cutbyref="Remove sensitivites with no impact" in plot_options,
-            )
-            tornado_table = TornadoTable(tornado_data=tornado_data)
-            return (
-                tornado_table.as_plotly_table,
-                tornado_table.columns,
-            )
-
-        @callback(
-            Output(
-                self.get_store_unique_id(PluginIds.Stores.DataStores.TORNADO_DATA),
-                "data",
-            ),
-            Input(
-                self.shared_settings_group(PluginIds.SharedSettings.SELECTORS)
+                self.shared_settings_group(TornadoPlotterFMU.Ids.SELECTORS)
                 .component_unique_id(Selectors.IDs.RESPONSE)
                 .to_string(),
                 "value",
@@ -373,10 +261,10 @@ class TornadoPlotterFMU(WebvizPluginABC):
             ),
         )
         @callback_typecheck
-        def _update_tornado_with_response_values(
+        def _update_tornado_data_with_response_values(
             response: str, single_filters: list, multi_filters: list
         ) -> str:
-            """Returns a json dump for the tornado plot with the response values per realization"""
+            """Returns a json dump for the tornado data with the response values per realization"""
 
             data = self._table_provider.get_column_data(
                 [response] + self._single_filters + self._multi_filters
@@ -410,14 +298,14 @@ class TornadoPlotterFMU(WebvizPluginABC):
         """Tour of the plugin"""
         tour = [
             {
-                "id": self.view(PluginIds.TornadoViewGroup.TORNADO_PLOT_VIEW)
+                "id": self.view(TornadoPlotterFMU.Ids.TORNADO_PLOT_VIEW)
                 .layout_element(TornadoPlotView.IDs.MAIN_COLUMN)
                 .get_unique_id(),
                 "content": ("Shows tornado plot."),
             },
             {
                 "id": self.shared_settings_group(
-                    PluginIds.SharedSettings.SELECTORS
+                    TornadoPlotterFMU.Ids.SELECTORS
                 ).component_unique_id(Selectors.IDs.RESPONSE),
                 "content": "Choose the response for the data",
             },
@@ -426,7 +314,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             tour.append(
                 {
                     "id": self.shared_settings_group(
-                        PluginIds.SharedSettings.FILTERS
+                        TornadoPlotterFMU.Ids.FILTERS
                     ).component_unique_id(Filters.IDs.SINGLE_FILTER),
                     "content": "Choose the response for the data",
                 }
@@ -435,7 +323,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             tour.append(
                 {
                     "id": self.shared_settings_group(
-                        PluginIds.SharedSettings.FILTERS
+                        TornadoPlotterFMU.Ids.FILTERS
                     ).component_unique_id(Filters.IDs.MULTI_FILTER),
                     "content": "Choose the response for the data",
                 }
@@ -445,7 +333,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
             [
                 {
                     "id": self.shared_settings_group(
-                        PluginIds.SharedSettings.VIEW_SETTINGS
+                        TornadoPlotterFMU.Ids.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.REFERENCE),
                     "content": (
                         "Set reference sensitivity for which to calculate tornado plot"
@@ -453,7 +341,7 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 },
                 {
                     "id": self.shared_settings_group(
-                        PluginIds.SharedSettings.VIEW_SETTINGS
+                        TornadoPlotterFMU.Ids.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.SCALE),
                     "content": (
                         "Set tornadoplot scale to either percentage or absolute values"
@@ -461,20 +349,20 @@ class TornadoPlotterFMU(WebvizPluginABC):
                 },
                 {
                     "id": self.shared_settings_group(
-                        PluginIds.SharedSettings.VIEW_SETTINGS
+                        TornadoPlotterFMU.Ids.VIEW_SETTINGS
                     ).component_unique_id(ViewSettings.IDs.SENSITIVITIES),
                     "content": ("Pick sensitivities to be displayed"),
                 },
                 {
-                    "id": self.shared_settings_group(
-                        PluginIds.SharedSettings.VIEW_SETTINGS
-                    ).component_unique_id(ViewSettings.IDs.PLOT_OPTIONS),
+                    "id": self.view(TornadoPlotterFMU.Ids.TORNADO_PLOT_VIEW)
+                    .settings_group(TornadoPlotView.IDs.SETTINGS)
+                    .component_unique_id(PlotSettings.IDs.PLOT_OPTIONS),
                     "content": "Options for dispaying the bars",
                 },
                 {
-                    "id": self.shared_settings_group(
-                        PluginIds.SharedSettings.VIEW_SETTINGS
-                    ).component_unique_id(ViewSettings.IDs.LABEL),
+                    "id": self.view(TornadoPlotterFMU.Ids.TORNADO_PLOT_VIEW)
+                    .settings_group(TornadoPlotView.IDs.SETTINGS)
+                    .component_unique_id(PlotSettings.IDs.LABEL),
                     "content": "Plick settings for the label at the bars",
                 },
             ]
