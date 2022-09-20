@@ -5,14 +5,14 @@ from typing import List, Type
 from dash import ALL, Input, Output, callback, callback_context
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.utils import callback_typecheck, StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 
 from webviz_subsurface._datainput.fmu_input import find_sens_type
 from webviz_subsurface._providers import EnsembleTableProviderFactory
 
 from ._error import error
 from .shared_settings import Filters, Selectors, ViewSettings
-from .views.plot_view import TornadoPlotView, PlotSettings
+from .views.plot_view import PlotSettings, TornadoPlotView
 from .views.table_view import TornadoTableView
 
 

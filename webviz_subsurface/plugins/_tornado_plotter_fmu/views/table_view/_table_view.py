@@ -1,19 +1,19 @@
-from typing import List, Tuple, Union
-from dataclasses import dataclass
 import json
 import sys
+from dataclasses import dataclass
+from typing import List, Tuple, Union
 
-from dash import callback, Input, Output
-from dash.exceptions import PreventUpdate
 import pandas as pd
+from dash import Input, Output, callback
+from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
 
-from .view_elements import TornadoTable as TornadoTableViewElement
 from ...shared_settings import FilterOption, Scale
+from .view_elements import TornadoTable as TornadoTableViewElement
 
 if sys.version_info >= (3, 9):
     from typing import Annotated

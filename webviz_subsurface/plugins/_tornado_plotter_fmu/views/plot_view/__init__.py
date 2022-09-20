@@ -1,1 +1,1 @@
-from ._plot_view import TornadoPlotView, PlotSettings
+from ._plot_view import PlotSettings, TornadoPlotView

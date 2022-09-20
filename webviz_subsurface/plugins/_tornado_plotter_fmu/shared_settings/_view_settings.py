@@ -3,8 +3,8 @@ from typing import List
 import pandas as pd
 import webviz_core_components as wcc
 from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 from webviz_config.utils import StrEnum
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
 class FilterOption(StrEnum):

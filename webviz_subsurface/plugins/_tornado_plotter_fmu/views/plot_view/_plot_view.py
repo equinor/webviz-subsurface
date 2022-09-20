@@ -1,15 +1,16 @@
-from dataclasses import dataclass
-from typing import List, Optional, Union
 import json
 import sys
+from dataclasses import dataclass
+from typing import List, Optional, Union
 
+import pandas as pd
+import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-import pandas as pd
 from webviz_config.utils import StrEnum, callback_typecheck
-from webviz_config.webviz_plugin_subclasses import ViewABC, SettingsGroupABC
-import webviz_core_components as wcc
+from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
+
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 
