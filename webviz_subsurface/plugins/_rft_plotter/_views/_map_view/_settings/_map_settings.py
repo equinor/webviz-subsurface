@@ -2,9 +2,10 @@ from typing import List
 
 import webviz_core_components as wcc
 from dash.development.base_component import Component
-from webviz_config.utils import StrEnum, callback_typecheck
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
+from ...._types import ColorAndSizeByType
 from ...._utils import RftPlotterDataModel
 
 
@@ -37,14 +38,14 @@ class MapSettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "Standard Deviation",
-                        "value": "STDDEV",
+                        "value": ColorAndSizeByType.STDDEV,
                     },
                     {
                         "label": "Misfit",
-                        "value": "ABSDIFF",
+                        "value": ColorAndSizeByType.MISFIT,
                     },
                 ],
-                value="ABSDIFF",
+                value=ColorAndSizeByType.MISFIT,
                 clearable=False,
             ),
             wcc.Dropdown(
@@ -53,18 +54,18 @@ class MapSettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "Misfit",
-                        "value": "ABSDIFF",
+                        "value": ColorAndSizeByType.MISFIT,
                     },
                     {
                         "label": "Standard Deviation",
-                        "value": "STDDEV",
+                        "value": ColorAndSizeByType.STDDEV,
                     },
                     {
                         "label": "Year",
-                        "value": "YEAR",
+                        "value": ColorAndSizeByType.YEAR,
                     },
                 ],
-                value="STDDEV",
+                value=ColorAndSizeByType.STDDEV,
                 clearable=False,
             ),
             wcc.RangeSlider(

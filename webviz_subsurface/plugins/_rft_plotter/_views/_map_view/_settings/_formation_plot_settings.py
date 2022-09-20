@@ -6,6 +6,7 @@ from dash.development.base_component import Component
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
+from ...._types import DepthType, LineType
 from ...._utils import RftPlotterDataModel, filter_frame
 
 
@@ -29,7 +30,7 @@ class FormationPlotSettings(SettingsGroupABC):
                 label="Ensemble",
                 id=self.register_component_unique_id(self.Ids.ENSEMBLE),
                 options=[{"label": ens, "value": ens} for ens in self._ensembles],
-                value=self._ensembles[0],
+                value=[self._ensembles[0]],
                 multi=True,
                 clearable=False,
             ),
@@ -56,11 +57,11 @@ class FormationPlotSettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "Realization lines",
-                        "value": "realization",
+                        "value": LineType.REALIZATION,
                     },
                     {
                         "label": "Statistical fanchart",
-                        "value": "fanchart",
+                        "value": LineType.FANCHART,
                     },
                 ],
                 value="realization",
@@ -71,14 +72,14 @@ class FormationPlotSettings(SettingsGroupABC):
                 options=[
                     {
                         "label": "TVD",
-                        "value": "TVD",
+                        "value": DepthType.TVD,
                     },
                     {
                         "label": "MD",
-                        "value": "MD",
+                        "value": DepthType.MD,
                     },
                 ],
-                value="TVD",
+                value=DepthType.TVD,
             ),
         ]
 
@@ -103,9 +104,10 @@ class FormationPlotSettings(SettingsGroupABC):
             State(self.component_unique_id(self.Ids.WELL).to_string(), "value"),
             State(self.component_unique_id(self.Ids.DATE).to_string(), "value"),
         )
+        @callback_typecheck
         def _update_linetype(
-            depth_option: str,
-            current_linetype: str,
+            depthtype: DepthType,
+            current_linetype: LineType,
             current_well: str,
             current_date: str,
         ) -> Tuple[List[Dict[str, str]], str]:
@@ -114,8 +116,8 @@ class FormationPlotSettings(SettingsGroupABC):
                     self._datamodel.simdf,
                     {"WELL": current_well, "DATE": current_date},
                 )
-                if depth_option == "TVD" or (
-                    depth_option == "MD"
+                if depthtype == DepthType.TVD or (
+                    depthtype == DepthType.MD
                     and "CONMD" in self._datamodel.simdf
                     and len(df["CONMD"].unique()) == len(df["DEPTH"].unique())
                 ):
@@ -123,20 +125,20 @@ class FormationPlotSettings(SettingsGroupABC):
                     return [
                         {
                             "label": "Realization lines",
-                            "value": "realization",
+                            "value": LineType.REALIZATION,
                         },
                         {
                             "label": "Statistical fanchart",
-                            "value": "fanchart",
+                            "value": LineType.FANCHART,
                         },
                     ], current_linetype
 
             return [
                 {
                     "label": "Realization lines",
-                    "value": "realization",
+                    "value": LineType.REALIZATION,
                 },
-            ], "realization"
+            ], LineType.REALIZATION
 
         @callback(
             Output(

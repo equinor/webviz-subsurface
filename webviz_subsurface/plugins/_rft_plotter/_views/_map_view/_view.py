@@ -6,10 +6,11 @@ from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
+from ..._types import ColorAndSizeByType, DepthType, LineType
 from ..._utils import RftPlotterDataModel
 from ._settings import FormationPlotSettings, MapSettings
+from ._utils import FormationFigure, MapFigure
 from ._view_elements import FormationPlotViewElement, MapViewElement
-from ._utils import MapFigure, FormationFigure
 
 
 class MapView(ViewABC):
@@ -74,10 +75,11 @@ class MapView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_map(
             ensemble: str,
-            sizeby: str,
-            colorby: str,
+            sizeby: ColorAndSizeByType,
+            colorby: ColorAndSizeByType,
             dates: List[float],
             zones: List[str],
         ) -> Union[str, List[wcc.Graph]]:
@@ -131,8 +133,13 @@ class MapView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_formation_plot(
-            well: str, date: str, ensembles: List[str], linetype: str, depth_option: str
+            well: str,
+            date: str,
+            ensembles: List[str],
+            linetype: LineType,
+            depthtype: DepthType,
         ) -> Union[str, List[wcc.Graph]]:
             if not ensembles:
                 return "No ensembles selected"
@@ -145,13 +152,13 @@ class MapView(ViewABC):
                 well=well,
                 ertdf=self._datamodel.ertdatadf,
                 enscolors=self._datamodel.enscolors,
-                depth_option=depth_option,
+                depthtype=depthtype,
                 date=date,
                 ensembles=ensembles,
                 simdf=self._datamodel.simdf,
                 obsdf=self._datamodel.obsdatadf,
             )
-            if figure.ertdf.empty:
+            if figure.ertdf_empty:
                 return ["No data matching the given filter criterias."]
 
             if self._datamodel.formations is not None:

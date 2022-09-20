@@ -2,6 +2,8 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
+from ...._types import ColorAndSizeByType
+
 
 class MapFigure:
     def __init__(self, ertdf: pd.DataFrame, ensemble: str, zones: List[str]) -> None:
@@ -12,13 +14,18 @@ class MapFigure:
             .aggregate("mean")
             .reset_index()
         )
+
         self.traces: List[Dict[str, Any]] = []
 
-    def add_misfit_plot(self, sizeby: str, colorby: str, dates: List[float]) -> None:
+    def add_misfit_plot(
+        self,
+        sizeby: ColorAndSizeByType,
+        colorby: ColorAndSizeByType,
+        dates: List[float],
+    ) -> None:
         df = self.ertdf.loc[
             (self.ertdf["DATE_IDX"] >= dates[0]) & (self.ertdf["DATE_IDX"] <= dates[1])
         ]
-
         self.traces.append(
             {
                 "x": df["EAST"],
@@ -39,13 +46,15 @@ class MapFigure:
                 # "name": date,
                 "showlegend": False,
                 "marker": {
-                    "size": df[sizeby],
-                    "sizeref": 2.0 * self.ertdf[sizeby].quantile(0.9) / (40.0**2),
+                    "size": df[sizeby.value],
+                    "sizeref": 2.0
+                    * self.ertdf[sizeby.value].quantile(0.9)
+                    / (40.0**2),
                     "sizemode": "area",
                     "sizemin": 6,
-                    "color": df[colorby],
-                    "cmin": self.ertdf[colorby].min(),
-                    "cmax": self.ertdf[colorby].quantile(0.9),
+                    "color": df[colorby.value],
+                    "cmin": self.ertdf[colorby.value].min(),
+                    "cmax": self.ertdf[colorby.value].quantile(0.9),
                     "colorscale": [[0, "#2584DE"], [1, "#E50000"]],
                     "showscale": True,
                 },
