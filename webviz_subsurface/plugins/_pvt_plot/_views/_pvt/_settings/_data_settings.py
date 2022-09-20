@@ -8,6 +8,11 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
+class ColorBy(StrEnum):
+    ENSEMBLE = "ensemble"
+    PVTNUM = "pvtnum"
+
+
 class DataSettings(SettingsGroupABC):
 
     PHASES = ["OIL", "GAS", "WATER"]
@@ -18,7 +23,6 @@ class DataSettings(SettingsGroupABC):
         ENSEMBLES = "ensembles"
         PHASE = "phase"
         PVTNUM = "pvtnum"
-        SHOW_PLOTS = "show-plots"
         PVTNUM_BOX = "pvtnum-box"
         ENSEMBLES_BOX = "ensembles-box"
 
@@ -33,7 +37,7 @@ class DataSettings(SettingsGroupABC):
 
         self.pvt_data_frame = pvt_data_frame
 
-        self.color = ["ENSEMBLE", "PVTNUM"]
+        self.color_by = ColorBy()
 
         self.ensembles = list(self.pvt_data_frame["ENSEMBLE"].unique())
 
@@ -64,8 +68,8 @@ class DataSettings(SettingsGroupABC):
             wcc.RadioItems(
                 id=self.register_component_unique_id(DataSettings.Ids.COLOR_BY),
                 label="Color by",
-                options=[{"label": x, "value": x} for x in self.color],
-                value=self.color[0],
+                options=[{"label": x, "value": x} for x in self.color_by],
+                value=ColorBy.ENSEMBLE,
                 vertical=True,
             ),
             html.Div(
@@ -125,9 +129,9 @@ class DataSettings(SettingsGroupABC):
             ),
         )
         @callback_typecheck
-        def _update_ensembles_pvtnum(selected_color_by: str) -> List[Component]:
+        def _update_ensembles_pvtnum(selected_color_by: ColorBy) -> List[Component]:
             output_list = []
-            if selected_color_by == "ENSEMBLE":
+            if selected_color_by == ColorBy.ENSEMBLE:
                 output_list = [
                     wcc.Checklist(
                         id=self.register_component_unique_id(

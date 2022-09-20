@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -15,10 +15,6 @@ from ._utils._plot_utils import create_graph, filter_data_frame
 class PvtView(ViewABC):
     class Ids(StrEnum):
         PVT_GRAPHS = "formation-volume-factor"
-        VISCOSITY = "viscosity"
-        DENSITY = "density"
-        GAS_OIL_RATIO = "gas-oil-ratio"
-
         DATA_SETTINGS = "DataSettings"
         SHOW_PLOTS = "show-plots"
 
@@ -160,18 +156,18 @@ class PvtView(ViewABC):
         # pylint: disable=too-many-locals
         def _update_plots(
             color_by: str,
-            selected_ensembles: Any,
+            selected_ensembles: Union[str, List[str]],
             phase: str,
-            selected_pvtnum: Any,
+            selected_pvtnum: Union[str, List[str]],
             plots_visibility_ids: List[dict],
             plots_visibility: List[str],
         ) -> List[Component]:
 
-            if isinstance(selected_ensembles, list) is False:
+            if isinstance(selected_ensembles, str):
                 ensembles = [selected_ensembles]
             else:
                 ensembles = selected_ensembles
-            if isinstance(selected_pvtnum, list) is False:
+            if isinstance(selected_pvtnum, str):
                 pvtnum = [selected_pvtnum]
             else:
                 pvtnum = selected_pvtnum

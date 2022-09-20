@@ -13,13 +13,6 @@ class ViewSettings(SettingsGroupABC):
     def __init__(self) -> None:
         super().__init__("Show Plots")
 
-        self.plot_settings = [
-            "Formation Volume Factor",
-            "Viscosity",
-            "Density",
-            "Gas/Oil Ratio (Rs)",
-        ]
-
     @staticmethod
     def plot_visibility_options(phase: str = "") -> Dict[str, str]:
         options = {
