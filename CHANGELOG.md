@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#1097](https://github.com/equinor/webviz-subsurface/pull/1007) - `smry2arrow_batch` - Now supports an arbitrary number of paths as input, meaning that it is no longer needed to wrap a wildcarded runpath pattern with "". It is though still required if defining a wildcarded eclbase.
 - [#1080](https://github.com/equinor/webviz-subsurface/pull/1080) - Converted the `GroupTree` plugin to WLF (Webviz Layout Framework).
-- [#1089](https://github.com/equinor/webviz-subsurface/pull/1080) - Converted the `WellAnalysis` plugin to WLF (Webviz Layout Framework).
+- [#1089](https://github.com/equinor/webviz-subsurface/pull/1089) - Converted the `WellAnalysis` plugin to WLF (Webviz Layout Framework).
+- [#1086](https://github.com/equinor/webviz-subsurface/pull/1086) - Converted the `SimulationTimeSeries` plugin to WLF (Webviz Layout Framework). Also increase maximum number of initial vectors from 3 to 5.
 
 ## [0.2.14] - 2022-06-28
 
