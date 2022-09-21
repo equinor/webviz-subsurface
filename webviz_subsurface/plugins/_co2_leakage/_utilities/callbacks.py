@@ -1,27 +1,27 @@
 from dataclasses import dataclass
-from typing import Dict, Tuple, Union, Optional, List, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geojson
 import numpy as np
 
 from webviz_subsurface._providers import (
-    SurfaceMeta,
-    SurfaceServer,
     EnsembleSurfaceProvider,
-    SurfaceAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
+    SurfaceAddress,
+    SurfaceMeta,
+    SurfaceServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import (
     TruncatedSurfaceAddress,
     publish_and_get_surface_metadata,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
 )

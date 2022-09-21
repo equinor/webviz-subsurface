@@ -1,8 +1,8 @@
 from typing import Dict, List, Optional
 
 from webviz_subsurface._providers import (
-    FaultPolygonsServer,
     EnsembleFaultPolygonsProviderFactory,
+    FaultPolygonsServer,
     SimulatedFaultPolygonsAddress,
 )
 

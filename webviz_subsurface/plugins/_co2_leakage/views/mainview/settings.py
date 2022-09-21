@@ -1,13 +1,13 @@
-from typing import List, Dict
+from typing import Dict, List
 
 import dash
 import webviz_core_components as wcc
-from dash import html, dcc, callback, Output, Input, State
+from dash import Input, Output, State, callback, dcc, html
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
-    SurfaceStatistic,
     EnsembleSurfaceProvider,
+    SurfaceStatistic,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute

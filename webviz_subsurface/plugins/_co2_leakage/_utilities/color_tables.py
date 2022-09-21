@@ -1,6 +1,5 @@
 from webviz_subsurface.plugins._map_viewer_fmu.color_tables import default_color_tables
 
-
 # Source: https://waldyrious.net/viridis-palette-generator/ + matplotlib._cm_listed
 CO2LEAKAGE_COLOR_TABLES = default_color_tables + [
     {

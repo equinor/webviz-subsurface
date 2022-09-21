@@ -1,40 +1,39 @@
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 import dash
-from dash import Dash, callback, Output, Input, State
+from dash import Dash, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._providers import SurfaceServer, FaultPolygonsServer
-from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
-    generate_co2_volume_figure,
-    generate_co2_time_containment_figure,
-)
+from webviz_subsurface._providers import FaultPolygonsServer, SurfaceServer
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
-    property_origin,
     SurfaceData,
-    derive_surface_address,
-    readable_name,
-    get_plume_polygon,
     create_map_layers,
+    derive_surface_address,
+    get_plume_polygon,
+    property_origin,
+    readable_name,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
+    generate_co2_time_containment_figure,
+    generate_co2_volume_figure,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
     FaultPolygonsHandler,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
+    init_co2_containment_table_providers,
     init_map_attribute_names,
     init_surface_providers,
     init_well_pick_provider,
-    init_co2_containment_table_providers,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
+    INITIAL_BOUNDS,
     MainView,
     MapViewElement,
-    INITIAL_BOUNDS,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewSettings
-
 
 from . import _error
 from ._utilities.color_tables import CO2LEAKAGE_COLOR_TABLES

@@ -1,15 +1,15 @@
 from dataclasses import dataclass
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 import xtgeo
 
 from webviz_subsurface._providers import (
-    SurfaceAddress,
-    SurfaceServer,
     EnsembleSurfaceProvider,
     QualifiedSurfaceAddress,
-    StatisticalSurfaceAddress,
     SimulatedSurfaceAddress,
+    StatisticalSurfaceAddress,
+    SurfaceAddress,
+    SurfaceServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,

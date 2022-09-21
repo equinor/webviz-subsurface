@@ -1,10 +1,10 @@
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from webviz_subsurface._providers import (
-    EnsembleSurfaceProviderFactory,
-    EnsembleTableProviderFactory,
-    EnsembleTableProvider,
     EnsembleSurfaceProvider,
+    EnsembleSurfaceProviderFactory,
+    EnsembleTableProvider,
+    EnsembleTableProviderFactory,
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute

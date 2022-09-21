@@ -2,8 +2,8 @@ import itertools
 from enum import Enum
 from typing import List
 
-import pandas
 import numpy as np
+import pandas
 import plotly.express as px
 import plotly.graph_objects as go
 
