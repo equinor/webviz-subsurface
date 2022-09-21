@@ -13,12 +13,12 @@ from webviz_subsurface._utils.vector_calculator import (
     VectorCalculator,
     get_expression_from_name,
 )
-from webviz_subsurface.plugins._simulation_time_series.utils.from_timeseries_cumulatives import (
+
+from .from_timeseries_cumulatives import (
     get_cumulative_vector_name,
     is_per_interval_or_per_day_vector,
 )
-
-from ..types import ProviderSet
+from .provider_set import ProviderSet
 
 
 def create_vector_plot_titles_from_provider_set(

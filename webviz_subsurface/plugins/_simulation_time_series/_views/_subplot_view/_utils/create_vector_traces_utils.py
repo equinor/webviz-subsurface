@@ -17,8 +17,8 @@ from webviz_subsurface._utils.statistics_plotting import (
     create_statistics_traces,
 )
 
-from ..types import FanchartOptions, StatisticsOptions
-from ..utils.from_timeseries_cumulatives import is_per_interval_or_per_day_vector
+from .._types import FanchartOptions, StatisticsOptions
+from .._utils.from_timeseries_cumulatives import is_per_interval_or_per_day_vector
 
 
 def create_vector_observation_traces(
@@ -102,13 +102,13 @@ def create_vector_realization_traces(
     vector_name = vector_names[0]
     return [
         {
-            "line": {"width": 1, "shape": line_shape},
+            "line": {"width": 1, "shape": line_shape, "color": color},
+            "mode": "lines",
             "x": list(real_df["DATE"]),
             "y": list(real_df[vector_name]),
             "hovertemplate": f"{hovertemplate}Realization: {real}, Ensemble: {ensemble}",
             "name": legend_group,
             "legendgroup": legend_group,
-            "marker": {"color": color},
             "legendrank": legendrank,
             "showlegend": real_no == 0 and show_legend,
         }
@@ -178,7 +178,7 @@ def create_vector_statistics_traces(
     low_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.P90].values,
-            name=StatisticsOptions.P90.value,
+            name=StatisticsOptions.P90,
         )
         if StatisticsOptions.P90 in statistics_options
         else None
@@ -186,7 +186,7 @@ def create_vector_statistics_traces(
     mid_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.P50].values,
-            name=StatisticsOptions.P50.value,
+            name=StatisticsOptions.P50,
         )
         if StatisticsOptions.P50 in statistics_options
         else None
@@ -194,7 +194,7 @@ def create_vector_statistics_traces(
     high_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.P10].values,
-            name=StatisticsOptions.P10.value,
+            name=StatisticsOptions.P10,
         )
         if StatisticsOptions.P10 in statistics_options
         else None
@@ -202,7 +202,7 @@ def create_vector_statistics_traces(
     mean_data = (
         LineData(
             data=vector_statistics_df[StatisticsOptions.MEAN].values,
-            name=StatisticsOptions.MEAN.value,
+            name=StatisticsOptions.MEAN,
         )
         if StatisticsOptions.MEAN in statistics_options
         else None
@@ -340,13 +340,13 @@ def create_history_vector_trace(
     hovertext = "History" if vector_name is None else "History: " + vector_name
 
     return {
-        "line": {"shape": line_shape},
+        "line": {"shape": line_shape, "color": color},
+        "mode": "lines",
         "x": samples,
         "y": history_data,
         "hovertext": hovertext,
         "hoverinfo": "y+x+text",
         "name": "History",
-        "marker": {"color": color},
         "showlegend": show_legend,
         "legendgroup": "History",
         "legendrank": legendrank,

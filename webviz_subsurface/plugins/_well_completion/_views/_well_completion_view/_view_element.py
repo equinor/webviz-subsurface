@@ -5,7 +5,6 @@ from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 class WellCompletionViewElement(ViewElementABC):
     class Ids(StrEnum):
-        # pylint: disable=too-few-public-methods
         COMPONENT = "component"
 
     def __init__(self) -> None:

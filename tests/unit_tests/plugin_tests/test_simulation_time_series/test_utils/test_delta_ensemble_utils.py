@@ -2,16 +2,19 @@ from typing import List
 
 import pytest
 
-from webviz_subsurface.plugins._simulation_time_series.types.provider_set import (
-    ProviderSet,
-)
-from webviz_subsurface.plugins._simulation_time_series.utils.delta_ensemble_utils import (
+# pylint: disable=line-too-long
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.delta_ensemble_utils import (
     DeltaEnsemble,
     create_delta_ensemble_name,
     create_delta_ensemble_name_dict,
     create_delta_ensemble_names,
     create_delta_ensemble_provider_pair,
     is_delta_ensemble_providers_in_provider_set,
+)
+
+# pylint: disable=line-too-long
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set import (
+    ProviderSet,
 )
 
 from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy

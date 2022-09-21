@@ -8,7 +8,7 @@ from webviz_subsurface._utils.dataframe_utils import (
     make_date_column_datetime_object,
 )
 
-from ..types import StatisticsOptions
+from .._types import StatisticsOptions
 
 
 def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:

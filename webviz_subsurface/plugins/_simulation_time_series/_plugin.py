@@ -3,14 +3,11 @@ import warnings
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import dash
-import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
-from webviz_config.webviz_assets import WEBVIZ_ASSETS
+from webviz_config.utils import StrEnum
 
-import webviz_subsurface
 from webviz_subsurface._abbreviations.reservoir_simulation import (
     historical_vector,
     simulation_vector_description,
@@ -35,17 +32,25 @@ from webviz_subsurface._utils.vector_selector import (
 )
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
-from ._callbacks import plugin_callbacks
-from ._layout import LayoutElements, main_layout
-from .types import VisualizationOptions
-from .types.provider_set import (
+from ._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
-from .utils.from_timeseries_cumulatives import (
+from ._views._subplot_view import SubplotView
+from ._views._subplot_view._settings import (
+    EnsemblesSettings,
+    FilterRealizationSettings,
+    GroupBySettings,
+    ResamplingFrequencySettings,
+    TimeSeriesSettings,
+    VisualizationSettings,
+)
+from ._views._subplot_view._types import VisualizationOptions
+from ._views._subplot_view._utils.from_timeseries_cumulatives import (
     create_per_day_vector_name,
     create_per_interval_vector_name,
 )
+from ._views._subplot_view._view_elements._subplot_graph import SubplotGraph
 
 
 def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, str]]:
@@ -65,11 +70,13 @@ def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, s
 
 # pylint: disable=too-many-instance-attributes
 class SimulationTimeSeries(WebvizPluginABC):
+    class Ids(StrEnum):
+        SUBPLOT_VIEW = "subplot-view"
+
     # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
     @deprecated_plugin_arguments(check_deprecation_argument)
     def __init__(
         self,
-        app: dash.Dash,
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
@@ -81,13 +88,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         user_defined_vector_definitions: str = None,
         line_shape_fallback: str = "linear",
     ) -> None:
-        super().__init__()
-
-        # NOTE: Temporary css, pending on new wcc modal component.
-        # See: https://github.com/equinor/webviz-core-components/issues/163
-        WEBVIZ_ASSETS.add(
-            Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "modal.css"
-        )
+        super().__init__(stretch=True)
 
         self._webviz_settings = webviz_settings
         self._obsfile = obsfile
@@ -115,7 +116,6 @@ class SimulationTimeSeries(WebvizPluginABC):
             line_shape_fallback
         )
 
-        # Must define valid freqency!
         if Frequency.from_string_value(sampling) is None:
             raise ValueError(
                 'Sampling frequency conversion is "None", i.e. Raw sampling, and '
@@ -149,7 +149,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         if not self._input_provider_set:
             raise ValueError(
                 "Initial provider set is undefined, and ensemble summary providers"
-                " are not instanciated for plugin"
+                " are not instantiated for plugin"
             )
 
         self._theme = webviz_settings.theme
@@ -229,7 +229,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                         ),
                     )
 
-        # Retreive predefined expressions from configuration and validate
+        # Retrieve predefined expressions from configuration and validate
         self._predefined_expressions_path = (
             None
             if predefined_expressions is None
@@ -277,7 +277,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         # Initial selected vectors - NB: {vector1, vector2, vector3} is deprecated!
         initial_vectors: List[str] = plot_options.get("vectors", [])
 
-        # TODO: Remove when depretaced code is not utilized anymore
+        # TODO: Remove when deprecated code is not utilized anymore
         if "vectors" in plot_options and any(
             elm in plot_options for elm in ["vector1", "vector2", "vector3"]
         ):
@@ -307,152 +307,35 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "SimulationTimeSeries. Check that the vector(s) exist in your data."
             )
 
-        if len(initial_vectors) > 3:
+        _max_num_initial_vectors = 5
+        if len(initial_vectors) > _max_num_initial_vectors:
             warnings.warn(
-                'User input option "vectors" contains more than 3 vectors. Only the first 3 listed '
-                "vectors are kept for initially selected vectors - the remaining are neglected."
+                f'User input option "vectors" contains more than {_max_num_initial_vectors} '
+                f"vectors. Only the first {_max_num_initial_vectors} listed vectors are kept "
+                "for initially selected vectors - the remaining are neglected."
             )
-        self._initial_vectors = initial_vectors[:3]
+        self._initial_vectors = initial_vectors[:_max_num_initial_vectors]
 
-        # Set callbacks
-        self.set_callbacks(app)
-
-    @property
-    def layout(self) -> wcc.FlexBox:
-        return main_layout(
-            get_uuid=self.uuid,
-            ensemble_names=self._input_provider_set.names(),
-            vector_selector_data=self._initial_vector_selector_data,
-            vector_calculator_data=self._vector_calculator_data,
-            predefined_expressions=self._predefined_expressions,
-            custom_vector_definitions=self._custom_vector_definitions,
-            realizations=self._input_provider_set.all_realizations(),
-            disable_resampling_dropdown=self._presampled_frequency is not None,
-            selected_resampling_frequency=self._sampling,
-            selected_visualization=self._initial_visualization_selection,
-            selected_vectors=self._initial_vectors,
-            ensembles_dates=self._input_provider_set.all_dates(self._sampling),
+        self.add_view(
+            SubplotView(
+                custom_vector_definitions=self._custom_vector_definitions,
+                custom_vector_definitions_base=self._custom_vector_definitions_base,
+                disable_resampling_dropdown=self._presampled_frequency is not None,
+                initial_selected_vectors=self._initial_vectors,
+                initial_vector_selector_data=self._initial_vector_selector_data,
+                initial_visualization=self._initial_visualization_selection,
+                input_provider_set=self._input_provider_set,
+                predefined_expressions=self._predefined_expressions,
+                selected_resampling_frequency=self._sampling,
+                vector_calculator_data=self._vector_calculator_data,
+                vector_selector_base_data=self._vector_selector_base_data,
+                theme=self._theme,
+                user_defined_vector_definitions=self._user_defined_vector_definitions,
+                observations=self._observations,
+                line_shape_fallback=self._line_shape_fallback,
+            ),
+            SimulationTimeSeries.Ids.SUBPLOT_VIEW,
         )
-
-    def set_callbacks(self, app: dash.Dash) -> None:
-        plugin_callbacks(
-            app=app,
-            get_uuid=self.uuid,
-            get_data_output=self.plugin_data_output,
-            get_data_requested=self.plugin_data_requested,
-            input_provider_set=self._input_provider_set,
-            theme=self._theme,
-            initial_selected_vectors=self._initial_vectors,
-            vector_selector_base_data=self._vector_selector_base_data,
-            custom_vector_definitions_base=self._custom_vector_definitions_base,
-            observations=self._observations,
-            user_defined_vector_definitions=self._user_defined_vector_definitions,
-            line_shape_fallback=self._line_shape_fallback,
-        )
-
-    @property
-    def tour_steps(self) -> List[dict]:
-        return [
-            {
-                "id": self.uuid(LayoutElements.TOUR_STEP_MAIN_LAYOUT),
-                "content": "Dashboard displaying reservoir simulation time series.",
-            },
-            {
-                "id": self.uuid(LayoutElements.GRAPH),
-                "content": (
-                    "Visualization of selected time series. "
-                    "Different options can be set in the menu to the left."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.TOUR_STEP_SETTINGS_LAYOUT),
-                "content": (
-                    "Settings to configure data and layout of the time series visualization."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.TOUR_STEP_GROUP_BY),
-                "content": (
-                    "Setting to group visualization data according to selection. "
-                    "Subplot per selected vector or per selected ensemble."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.RESAMPLING_FREQUENCY_DROPDOWN),
-                "content": (
-                    "Select resampling frequency for the time series data. "
-                    "With presampled data, the dropdown is disabled and the presampling "
-                    "frequency shown."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.ENSEMBLES_DROPDOWN),
-                "content": (
-                    "Display time series from one or several ensembles. "
-                    "Ensembles will be overlain in subplot or represented per subplot, "
-                    'based on selection in "Group By".'
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.TOUR_STEP_DELTA_ENSEMBLE),
-                "content": (
-                    "Create delta ensembles (A-B). "
-                    "Define delta between two ensembles and make available among "
-                    "selectable ensembles."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.VECTOR_SELECTOR),
-                "content": (
-                    "Display up to three different time series. "
-                    "Each time series will be visualized in a separate plot. "
-                    "Vectors prefixed with PER_DAY_ and PER_INTVL_ are calculated in the fly "
-                    "from cumulative vectors, providing average rates and interval cumulatives "
-                    "over a time interval from the selected resampling frequency. Vectors "
-                    "categorized as calculated are created using the Vector Calculator below."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.VECTOR_CALCULATOR_OPEN_BUTTON),
-                "content": (
-                    "Create mathematical expressions with provided vector time series. "
-                    "Parsing of the mathematical expression is handled and will give feedback "
-                    "when entering invalid expressions. "
-                    "The expressions are calculated on the fly and can be selected among the time "
-                    "series to be shown in the visualization."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.VISUALIZATION_RADIO_ITEMS),
-                "content": (
-                    "Choose between different visualizations. 1. Show time series as "
-                    "individual lines per realization. 2. Show statistical lines per "
-                    "ensemble. 3. Show statistical fanchart per ensemble."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.TOUR_STEP_OPTIONS),
-                "content": (
-                    "Various plot options: Whether to include history trace or vector observations "
-                    "and which statistics to show if statistical lines or fanchart is chosen as "
-                    "visualization."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.REALIZATIONS_FILTER_SELECTOR),
-                "content": (
-                    "Filter realizations. Select realization numbers to include in visualization, "
-                    "and utilize in statistics calculation when calculating from selected subset."
-                ),
-            },
-            {
-                "id": self.uuid(LayoutElements.STATISTICS_FROM_RADIO_ITEMS),
-                "content": (
-                    "Select whether to calculate statistics from all realizations, or to calculate "
-                    "statistics from the selected subset of realizations "
-                ),
-            },
-        ]
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         functions: List[Tuple[Callable, list]] = []
@@ -465,3 +348,145 @@ class SimulationTimeSeries(WebvizPluginABC):
                 (get_path, [{"path": self._user_defined_vector_descriptions_path}])
             )
         return functions
+
+    @property
+    def tour_steps(self) -> List[dict]:
+        return [
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .view_element(SubplotView.Ids.SUBPLOT)
+                .component_unique_id(SubplotGraph.Ids.GRAPH),
+                "content": (
+                    "Visualization of selected time series. "
+                    "Different options can be set in the menu to the left."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.GROUP_BY_SETTINGS)
+                .component_unique_id(
+                    GroupBySettings.Ids.SUBPLOT_OWNER_OPTIONS_RADIO_ITEMS
+                ),
+                "content": (
+                    "Setting to group visualization data according to selection. "
+                    "Subplot per selected time series or per selected ensemble."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS)
+                .component_unique_id(
+                    ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                ),
+                "content": (
+                    "Select resampling frequency for the time series data. "
+                    "With presampled data, the dropdown is disabled and the pre-sampling "
+                    "frequency shown."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS)
+                .component_unique_id(
+                    ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
+                ),
+                "content": (
+                    "Select date to create relative time series data. "
+                    "The sample value on selected date is subtracted from each sample in "
+                    "the time series to provide data relative to the selected date. "
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.ENSEMBLE_SETTINGS)
+                .component_unique_id(EnsemblesSettings.Ids.ENSEMBLES_DROPDOWN),
+                "content": (
+                    "Display time series from one or several ensembles. "
+                    "Ensembles will be overlain in subplot or represented per subplot, "
+                    'based on selection in "Group By".'
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.ENSEMBLE_SETTINGS)
+                .component_unique_id(EnsemblesSettings.Ids.DELTA_ENSEMBLE),
+                "content": (
+                    "Create delta ensembles (A-B). "
+                    "Define delta between two ensembles and make available among "
+                    "selectable ensembles."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.TIME_SERIES_SETTINGS)
+                .component_unique_id(TimeSeriesSettings.Ids.VECTOR_SELECTOR),
+                "content": (
+                    "Display different time series. Data for each time series will be visualized"
+                    ' in subplots based on selection in "Group By".'
+                    "Vectors prefixed with PER_DAY_ and PER_INTVL_ are calculated in the fly "
+                    "from cumulative vectors, providing average rates and interval cumulatives "
+                    "over a time interval from the selected resampling frequency. Vectors "
+                    "categorized as calculated are created using the Vector Calculator below."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.TIME_SERIES_SETTINGS)
+                .component_unique_id(
+                    TimeSeriesSettings.Ids.VECTOR_CALCULATOR_OPEN_BUTTON
+                ),
+                "content": (
+                    "Create mathematical expressions with provided vector time series. "
+                    "Parsing of the mathematical expression is handled and will give feedback "
+                    "when entering invalid expressions. "
+                    "The expressions are calculated on the fly and can be selected among the time "
+                    "series to be shown in the visualization."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.VISUALIZATION_SETTINGS)
+                .component_unique_id(
+                    VisualizationSettings.Ids.VISUALIZATION_RADIO_ITEMS
+                ),
+                "content": (
+                    "Choose between different visualizations. 1. Show time series as "
+                    "individual lines per realization. 2. Show statistical lines per "
+                    "ensemble. 3. Show statistical fanchart per ensemble. 4. Show "
+                    "statistical lines per ensemble and individual lines per realization "
+                    "simultaneously"
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.VISUALIZATION_SETTINGS)
+                .component_unique_id(VisualizationSettings.Ids.PLOT_OPTIONS),
+                "content": (
+                    "Various plot options: Whether to include history trace or vector observations "
+                    "and which statistics to show if statistical lines or fanchart is chosen as "
+                    "visualization."
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.FILTER_REALIZATION_SETTINGS)
+                .component_unique_id(
+                    FilterRealizationSettings.Ids.STATISTICS_FROM_RADIO_ITEMS
+                ),
+                "content": (
+                    "Select whether to calculate statistics from all realizations, or to calculate "
+                    "statistics from the selected subset of realizations "
+                ),
+            },
+            {
+                "id": self.view(SimulationTimeSeries.Ids.SUBPLOT_VIEW)
+                .settings_group(SubplotView.Ids.FILTER_REALIZATION_SETTINGS)
+                .component_unique_id(
+                    FilterRealizationSettings.Ids.REALIZATIONS_FILTER_SELECTOR
+                ),
+                "content": (
+                    "Filter realizations. Select realization numbers to include in visualization, "
+                    "and utilize in statistics calculation when calculating from selected subset."
+                ),
+            },
+        ]
