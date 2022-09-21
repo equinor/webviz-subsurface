@@ -45,6 +45,9 @@ class DataSettings(SettingsGroupABC):
         if self.pvt_data_frame["KEYWORD"].str.contains("PVTW").any():
             DataSettings.phases_additional_info.append("PVTW")
 
+        self._ensemble_properties: dict = {}
+        self._pvtnum_properties: dict = {}
+
     @property
     def phases(self) -> Dict[str, str]:
         phase_descriptions: Dict[str, str] = {}

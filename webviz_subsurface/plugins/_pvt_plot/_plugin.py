@@ -7,8 +7,6 @@
 
 from typing import Any, Callable, Dict, List, Tuple
 
-from dash import html
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
 
