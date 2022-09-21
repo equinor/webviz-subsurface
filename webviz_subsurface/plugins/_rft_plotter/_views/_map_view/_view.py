@@ -10,7 +10,7 @@ from ..._types import ColorAndSizeByType, DepthType, LineType
 from ..._utils import FormationFigure, RftPlotterDataModel
 from ._settings import FormationPlotSettings, MapSettings
 from ._utils import MapFigure
-from ._view_elements import FormationPlotViewElement, MapViewElement
+from ..._shared_view_element import GeneralViewElement
 
 
 class MapView(ViewABC):
@@ -30,17 +30,17 @@ class MapView(ViewABC):
         )
 
         map_column = self.add_column()
-        map_column.add_view_element(MapViewElement(), self.Ids.MAP_VIEW_ELEMENT)
+        map_column.add_view_element(GeneralViewElement(), self.Ids.MAP_VIEW_ELEMENT)
         formation_plot_column = self.add_column()
         formation_plot_column.add_view_element(
-            FormationPlotViewElement(), self.Ids.FORMATION_PLOT_VIEW_ELEMENT
+            GeneralViewElement(), self.Ids.FORMATION_PLOT_VIEW_ELEMENT
         )
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
                 self.view_element(self.Ids.MAP_VIEW_ELEMENT)
-                .component_unique_id(MapViewElement.Ids.CHART)
+                .component_unique_id(GeneralViewElement.Ids.CHART)
                 .to_string(),
                 "children",
             ),
@@ -98,7 +98,7 @@ class MapView(ViewABC):
         @callback(
             Output(
                 self.view_element(self.Ids.FORMATION_PLOT_VIEW_ELEMENT)
-                .component_unique_id(FormationPlotViewElement.Ids.CHART)
+                .component_unique_id(GeneralViewElement.Ids.CHART)
                 .to_string(),
                 "children",
             ),
