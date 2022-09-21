@@ -1,4 +1,6 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, List
+
+from webviz_config import WebvizSettings
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProvider,
@@ -27,8 +29,8 @@ def init_map_attribute_names(
 
 
 def init_surface_providers(
-    webviz_settings,
-    ensembles,
+    webviz_settings: WebvizSettings,
+    ensembles: List[str],
 ) -> Dict[str, EnsembleSurfaceProvider]:
     surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
     return {

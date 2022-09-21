@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterable
 
 import geojson
 import numpy as np
@@ -58,7 +58,7 @@ def _extract_contours(
     ref_surface: xtgeo.RegularSurface,
     simplify_factor: float,
     levels: List[float],
-):
+) -> List:
     x = ref_surface.xori + np.arange(0, ref_surface.ncol) * ref_surface.xinc
     y = ref_surface.yori + np.arange(0, ref_surface.nrow) * ref_surface.yinc
     res = np.mean([abs(x[1] - x[0]), abs(y[1] - y[0])])
@@ -66,7 +66,13 @@ def _extract_contours(
     return _find_all_contours(x, y, surface, levels, simplify_dist)
 
 
-def _find_all_contours(x_lin, y_lin, z_values, levels, simplify_dist: float):
+def _find_all_contours(
+    x_lin: np.ndarray,
+    y_lin: np.ndarray,
+    z_values: np.ndarray,
+    levels: List[float],
+    simplify_dist: float,
+) -> List[List[List[List[float]]]]:
     x_mesh, y_mesh = np.meshgrid(x_lin, y_lin, indexing="ij")
     polys = [
         [
@@ -78,7 +84,11 @@ def _find_all_contours(x_lin, y_lin, z_values, levels, simplify_dist: float):
     return polys
 
 
-def _find_contours(x_mesh, y_mesh, z_values):
+def _find_contours(
+    x_mesh: np.ndarray,
+    y_mesh: np.ndarray,
+    z_values: np.ndarray,
+) -> Iterable[np.ndarray]:
     # pylint: disable=c-extension-no-member
     contour_output = _contour.QuadContourGenerator(
         x_mesh, y_mesh, z_values, np.zeros_like(z_values, dtype=bool), False, 0
@@ -88,6 +98,6 @@ def _find_contours(x_mesh, y_mesh, z_values):
     return contour_output
 
 
-def _simplify(poly, simplify_dist: float):
+def _simplify(poly: np.ndarray, simplify_dist: float) -> List[List[float]]:
     simplified = shapely.geometry.LineString(poly).simplify(simplify_dist)
     return np.array(simplified.coords).tolist()

@@ -1,8 +1,9 @@
-from typing import Dict, List
+from typing import Dict, List, Any, Tuple, Optional
 
 import dash
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback, dcc, html
+from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
@@ -43,7 +44,7 @@ class ViewSettings(SettingsGroupABC):
         self._map_attribute_names = map_attribute_names
         self._color_scale_names = color_scale_names
 
-    def layout(self):
+    def layout(self) -> List[Component]:
         return [
             EnsembleSelectorLayout(
                 self.register_component_unique_id(self.Ids.ENSEMBLE),
@@ -75,12 +76,12 @@ class ViewSettings(SettingsGroupABC):
             Output(self.component_unique_id(self.Ids.REALIZATION).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
         )
-        def set_realizations(ensemble):
+        def set_realizations(ensemble: str) -> Tuple[List[Dict[str, Any]], List[int]]:
             rlz = [
                 {"value": r, "label": str(r)}
                 for r in self._ensemble_surface_providers[ensemble].realizations()
             ]
-            return rlz, [rlz[0]["value"]]
+            return rlz, [rlz[0]["value"]]  # type: ignore
 
         @callback(
             Output(self.component_unique_id(self.Ids.FORMATION).to_string(), "options"),
@@ -89,7 +90,9 @@ class ViewSettings(SettingsGroupABC):
             State(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
             State(self.component_unique_id(self.Ids.FORMATION).to_string(), "value"),
         )
-        def set_formations(prop, ensemble, current_value):
+        def set_formations(
+            prop: str, ensemble: str, current_value: str
+        ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
             if ensemble is None:
                 return [], None
             surface_provider = self._ensemble_surface_providers[ensemble]
@@ -113,7 +116,7 @@ class ViewSettings(SettingsGroupABC):
             Input(self.component_unique_id(self.Ids.REALIZATION).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
         )
-        def toggle_statistics(realizations, attribute):
+        def toggle_statistics(realizations: List[int], attribute: str) -> bool:
             if len(realizations) <= 1:
                 return True
             if MapAttribute(attribute) in (
@@ -129,12 +132,14 @@ class ViewSettings(SettingsGroupABC):
             Input(self.component_unique_id(self.Ids.CM_MIN_AUTO).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.CM_MAX_AUTO).to_string(), "value"),
         )
-        def set_color_range_data(min_auto, max_auto):
+        def set_color_range_data(
+            min_auto: List[str], max_auto: List[str]
+        ) -> Tuple[bool, bool]:
             return len(min_auto) == 1, len(max_auto) == 1
 
 
 class FilterSelectorLayout(wcc.Selectors):
-    def __init__(self, formation_id):
+    def __init__(self, formation_id: str):
         super().__init__(
             label="Filter Settings",
             children=[
@@ -156,14 +161,14 @@ class MapSelectorLayout(wcc.Selectors):
 
     def __init__(
         self,
-        color_scale_names,
-        property_id,
-        statistic_id,
-        colormap_id,
-        cm_min_id,
-        cm_max_id,
-        cm_min_auto_id,
-        cm_max_auto_id,
+        color_scale_names: List[str],
+        property_id: str,
+        statistic_id: str,
+        colormap_id: str,
+        cm_min_id: str,
+        cm_max_id: str,
+        cm_min_auto_id: str,
+        cm_max_auto_id: str,
     ):
         super().__init__(
             label="Map Settings",
@@ -229,7 +234,7 @@ class MapSelectorLayout(wcc.Selectors):
 
 
 class ExperimentalFeaturesLayout(wcc.Selectors):
-    def __init__(self, plume_threshold_id, plume_smoothing_id):
+    def __init__(self, plume_threshold_id: str, plume_smoothing_id: str):
         super().__init__(
             label="Experimental",
             open_details=False,
@@ -270,7 +275,7 @@ class ExperimentalFeaturesLayout(wcc.Selectors):
 
 
 class EnsembleSelectorLayout(wcc.Selectors):
-    def __init__(self, ensemble_id, realization_id, ensembles: List[str]):
+    def __init__(self, ensemble_id: str, realization_id: str, ensembles: List[str]):
         super().__init__(
             label="Ensemble",
             open_details=True,
@@ -292,7 +297,7 @@ class EnsembleSelectorLayout(wcc.Selectors):
         )
 
 
-def _compile_property_options():
+def _compile_property_options() -> List[Dict[str, Any]]:
     return [
         {"label": "SGAS", "value": "", "disabled": True},
         {

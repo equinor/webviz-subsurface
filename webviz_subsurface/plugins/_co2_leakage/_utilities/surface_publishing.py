@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 import xtgeo
 
@@ -9,7 +9,7 @@ from webviz_subsurface._providers import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-    SurfaceServer,
+    SurfaceServer, SurfaceMeta,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
@@ -29,7 +29,7 @@ class TruncatedSurfaceAddress:
     smoothing: float
 
     @property
-    def attribute(self):
+    def attribute(self) -> str:
         return f"Truncated_{self.basis_attribute}_{self.threshold}_{self.smoothing}"
 
 
@@ -37,7 +37,7 @@ def publish_and_get_surface_metadata(
     server: SurfaceServer,
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
-):
+) -> Tuple[Optional[SurfaceMeta], str]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
     provider_id: str = provider.provider_id()
@@ -57,7 +57,7 @@ def _publish_and_get_truncated_surface_metadata(
     server: SurfaceServer,
     provider: EnsembleSurfaceProvider,
     address: TruncatedSurfaceAddress,
-):
+) -> Tuple[Optional[SurfaceMeta], str]:
     qualified_address = QualifiedSurfaceAddress(
         provider.provider_id(),
         # TODO: Should probably use a dedicated address type for this. Statistical surface
@@ -101,7 +101,7 @@ def _generate_surface(
     if len(surfaces) == 0:
         return None
     plume_count = truncate_surfaces(surfaces, address.threshold, address.smoothing)
-    template = surfaces[0].copy()
+    template: xtgeo.RegularSurface = surfaces[0].copy()  # type: ignore
     template.values = plume_count
-    template.values.mask = plume_count < 1e-4
+    template.values.mask = plume_count < 1e-4  # type: ignore
     return template

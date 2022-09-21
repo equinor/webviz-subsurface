@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import html
@@ -12,7 +14,7 @@ class MainView(ViewABC):
     class Ids:
         MAIN_ELEMENT = "main-element"
 
-    def __init__(self, color_scales):
+    def __init__(self, color_scales: List[Dict[str, Any]]):
         super().__init__("Main View")
         self._view_element = MapViewElement(color_scales)
         self.add_view_element(self._view_element, self.Ids.MAIN_ELEMENT)
@@ -47,7 +49,7 @@ class MapViewElement(ViewElementABC):
             "flexDirection": "column",
         }
 
-    def __init__(self, color_scales):
+    def __init__(self, color_scales: List[Dict[str, Any]]) -> None:
         super().__init__()
         self._color_scales = color_scales
 
@@ -105,7 +107,7 @@ class MapViewElement(ViewElementABC):
 
 
 class SummaryGraphLayout(html.Div):
-    def __init__(self, bar_plot_id, time_plot_id, **kwargs):
+    def __init__(self, bar_plot_id: str, time_plot_id: str, **kwargs: Dict) -> None:
         super().__init__(
             children=[
                 wcc.Graph(

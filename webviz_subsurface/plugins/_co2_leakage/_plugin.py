@@ -1,8 +1,9 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Any
 
 import dash
-from dash import Dash, Input, Output, State, callback
+from dash import Dash, Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
+import plotly.graph_objects as go
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import FaultPolygonsServer, SurfaceServer
@@ -122,17 +123,17 @@ class CO2Leakage(WebvizPluginABC):
                 self._ensemble_paths,
                 self._ensemble_surface_providers,
                 self._map_attribute_names,
-                [c["name"] for c in CO2LEAKAGE_COLOR_TABLES],
+                [c["name"] for c in CO2LEAKAGE_COLOR_TABLES],  # type: ignore
             ),
             self.Ids.MAIN_SETTINGS,
         )
         self.add_view(MainView(CO2LEAKAGE_COLOR_TABLES), self.Ids.MAIN_VIEW)
 
     @property
-    def layout(self):
+    def layout(self) -> html.Div:
         return _error.error(self._error_message)
 
-    def _view_component(self, component_id):
+    def _view_component(self, component_id: str) -> str:
         return (
             self.view(self.Ids.MAIN_VIEW)
             .view_element(MainView.Ids.MAIN_ELEMENT)
@@ -140,17 +141,20 @@ class CO2Leakage(WebvizPluginABC):
             .to_string()
         )
 
-    def _settings_component(self, component_id):
+    def _settings_component(self, component_id: str) -> str:
         return (
             self.shared_settings_group(self.Ids.MAIN_SETTINGS)
             .component_unique_id(component_id)
             .to_string()
         )
 
-    def _ensemble_dates(self, ens) -> List[str]:
+    def _ensemble_dates(self, ens: str) -> List[str]:
         surface_provider = self._ensemble_surface_providers[ens]
         att_name = self._map_attribute_names[MapAttribute.MAX_SGAS]
-        return surface_provider.surface_dates_for_attribute(att_name)
+        dates = surface_provider.surface_dates_for_attribute(att_name)
+        if dates is None:
+            raise ValueError(f"Failed to fetch dates for attribute '{att_name}'")
+        return dates
 
     def _set_callbacks(self) -> None:
         @callback(
@@ -158,7 +162,7 @@ class CO2Leakage(WebvizPluginABC):
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
-        def update_graphs(ensemble):
+        def update_graphs(ensemble: str) -> Tuple[go.Figure, go.Figure]:
             fig_args = (
                 self._co2_table_providers[ensemble],
                 self._co2_table_providers[ensemble].realizations(),
@@ -172,9 +176,9 @@ class CO2Leakage(WebvizPluginABC):
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "value"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
-        def set_dates(ensemble):
+        def set_dates(ensemble: str) -> Tuple[Dict[int, Dict[str, Any]], Optional[int]]:
             if ensemble is None:
-                return [], None
+                return {}, None
             # Dates
             date_list = self._ensemble_dates(ensemble)
             dates = {
@@ -191,7 +195,7 @@ class CO2Leakage(WebvizPluginABC):
             Output(self._view_component(MapViewElement.Ids.DATE_WRAPPER), "style"),
             Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
         )
-        def toggle_date_slider(attribute):
+        def toggle_date_slider(attribute: str) -> Dict[str, str]:
             if MapAttribute(attribute) == MapAttribute.MIGRATION_TIME:
                 return {"display": "none"}
             return {}
@@ -218,29 +222,27 @@ class CO2Leakage(WebvizPluginABC):
             State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
         )
         def update_map_attribute(
-            attribute: str,
-            date,
+            attribute: MapAttribute,
+            date: int,
             formation: str,
             realization: List[int],
             statistic: str,
-            color_map_name,
-            cm_min_auto,
-            cm_min_val,
-            cm_max_auto,
-            cm_max_val,
-            plume_threshold,
-            plume_smoothing,
-            ensemble,
-            current_bounds,
-        ):
+            color_map_name: str,
+            cm_min_auto: List[str],
+            cm_min_val: Optional[float],
+            cm_max_auto: List[str],
+            cm_max_val: Optional[float],
+            plume_threshold: Optional[float],
+            plume_smoothing: Optional[float],
+            ensemble: str,
+            current_bounds: List[float],
+        ) -> Tuple[List[Dict[str, Any]], Optional[List[float]]]:
             attribute = MapAttribute(attribute)
             if len(realization) == 0:
                 raise PreventUpdate
             if ensemble is None:
                 raise PreventUpdate
-            if attribute != MapAttribute.MIGRATION_TIME and date is None:
-                raise PreventUpdate
-            date = self._ensemble_dates(ensemble)[date]
+            datestr = self._ensemble_dates(ensemble)[date]
             # Contour data
             contour_data = None
             if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
@@ -258,7 +260,7 @@ class CO2Leakage(WebvizPluginABC):
                     address=derive_surface_address(
                         formation,
                         attribute,
-                        date,
+                        datestr,
                         realization,
                         self._map_attribute_names,
                         statistic,
@@ -278,7 +280,7 @@ class CO2Leakage(WebvizPluginABC):
                     self._ensemble_surface_providers[ensemble],
                     realization,
                     formation,
-                    date,
+                    datestr,
                     contour_data,
                 )
             # Create layers and view bounds

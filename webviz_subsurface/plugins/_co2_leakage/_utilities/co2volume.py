@@ -17,7 +17,9 @@ class _Columns(Enum):
     VOLUME_OUTSIDE = "volume_outside"
 
 
-def _read_dataframe(table_provider: EnsembleTableProvider, realization: int):
+def _read_dataframe(
+    table_provider: EnsembleTableProvider, realization: int
+) -> pandas.DataFrame:
     return table_provider.get_column_data(
         ["date", "co2_inside", "co2_outside"], [realization]
     )
@@ -25,7 +27,7 @@ def _read_dataframe(table_provider: EnsembleTableProvider, realization: int):
 
 def _read_terminal_co2_volumes(
     table_provider: EnsembleTableProvider, realizations: List[int]
-):
+) -> pandas.DataFrame:
     records = []
     for real in realizations:
         df = _read_dataframe(table_provider, real)
@@ -48,7 +50,9 @@ def _read_terminal_co2_volumes(
     return df
 
 
-def _read_co2_volumes(table_provider: EnsembleTableProvider, realizations: List[int]):
+def _read_co2_volumes(
+    table_provider: EnsembleTableProvider, realizations: List[int]
+) -> pandas.DataFrame:
     return pandas.concat(
         [
             _read_dataframe(table_provider, real).assign(realization=real)
@@ -60,7 +64,7 @@ def _read_co2_volumes(table_provider: EnsembleTableProvider, realizations: List[
 def generate_co2_volume_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
-):
+) -> go.Figure:
     df = _read_terminal_co2_volumes(table_provider, realizations)
     fig = px.bar(
         df,
@@ -89,7 +93,7 @@ def generate_co2_volume_figure(
 def generate_co2_time_containment_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
-):
+) -> go.Figure:
     df = _read_co2_volumes(table_provider, realizations)
     df.sort_values(by="date", inplace=True)
     df["date"] = df["date"].astype(str)

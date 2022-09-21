@@ -29,7 +29,7 @@ from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
 
 def property_origin(
     attribute: MapAttribute, map_attribute_names: Dict[MapAttribute, str]
-):
+) -> str:
     if attribute in map_attribute_names:
         return map_attribute_names[attribute]
     if attribute == MapAttribute.SGAS_PLUME:
@@ -42,7 +42,7 @@ def property_origin(
 @dataclass
 class SurfaceData:
     readable_name: str
-    color_map_range: Tuple[float, float]
+    color_map_range: Tuple[Optional[float], Optional[float]]
     color_map_name: str
     value_range: Tuple[float, float]
     meta_data: SurfaceMeta
@@ -56,8 +56,9 @@ class SurfaceData:
         color_map_range: Tuple[Optional[float], Optional[float]],
         color_map_name: str,
         readable_name_: str,
-    ):
+    ) -> "SurfaceData":
         surf_meta, img_url = publish_and_get_surface_metadata(server, provider, address)
+        assert surf_meta is not None  # Should not occur
         value_range = (
             0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
             0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
@@ -84,9 +85,9 @@ def derive_surface_address(
     map_attribute_names: Dict[MapAttribute, str],
     statistic: str,
     contour_data: Optional[Dict[str, Any]],
-):
-    date = None if attribute == MapAttribute.MIGRATION_TIME else date
+) -> Union[SurfaceAddress, TruncatedSurfaceAddress]:
     if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
+        assert date is not None
         basis = (
             MapAttribute.MAX_SGAS
             if attribute == MapAttribute.SGAS_PLUME
@@ -100,6 +101,7 @@ def derive_surface_address(
             threshold=contour_data["threshold"] if contour_data else 0.0,
             smoothing=contour_data["smoothing"] if contour_data else 0.0,
         )
+    date = None if attribute == MapAttribute.MIGRATION_TIME else date
     if len(realization) == 1:
         return SimulatedSurfaceAddress(
             attribute=map_attribute_names[attribute],
@@ -116,7 +118,7 @@ def derive_surface_address(
     )
 
 
-def readable_name(attribute: MapAttribute):
+def readable_name(attribute: MapAttribute) -> str:
     unit = ""
     if attribute == MapAttribute.MIGRATION_TIME:
         unit = " [year]"
@@ -240,7 +242,7 @@ def create_map_layers(
     return layers, viewport_bounds
 
 
-def _parse_polygon_file(filename: str):
+def _parse_polygon_file(filename: str) -> Dict[str, Any]:
     xyz = read_csv(filename)[["x", "y"]].values
     as_geojson = {
         "type": "FeatureCollection",
