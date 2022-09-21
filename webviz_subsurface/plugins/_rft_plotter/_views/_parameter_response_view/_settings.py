@@ -25,22 +25,22 @@ class ParameterResponseSettings(SettingsGroupABC):
 
     def __init__(self, datamodel: RftPlotterDataModel) -> None:
         super().__init__("Plot settings")
-        self.datamodel = datamodel
-        self.ensembles = datamodel.ensembles
-        self.well_names = datamodel.well_names
-        self.params = datamodel.parameters if not datamodel.parameters is None else []
-        self.parameter_df = datamodel.param_model.dataframe
+        self._datamodel = datamodel
+        self._ensembles = datamodel.ensembles
+        self._well_names = datamodel.well_names
+        self._params = datamodel.parameters if not datamodel.parameters is None else []
+        self._parameter_df = datamodel.param_model.dataframe
 
-        well = self.well_names[0] if self.well_names else ""
+        well = self._well_names[0] if self._well_names else ""
 
-        self.dates_in_well, self.zones_in_well = self.datamodel.well_dates_and_zones(
+        self._dates_in_well, self._zones_in_well = self._datamodel.well_dates_and_zones(
             well
         )
 
-        self.parameter_filter = ParameterFilter(
+        self._parameter_filter = ParameterFilter(
             uuid=self.Ids.PARAM_FILTER,
-            dframe=self.parameter_df[
-                self.parameter_df["ENSEMBLE"].isin(datamodel.param_model.mc_ensembles)
+            dframe=self._parameter_df[
+                self._parameter_df["ENSEMBLE"].isin(datamodel.param_model.mc_ensembles)
             ].copy(),
             reset_on_ensemble_update=True,
         )
@@ -54,18 +54,18 @@ class ParameterResponseSettings(SettingsGroupABC):
                         label="Ensemble",
                         id=self.register_component_unique_id(self.Ids.ENSEMBLE),
                         options=[
-                            {"label": ens, "value": ens} for ens in self.ensembles
+                            {"label": ens, "value": ens} for ens in self._ensembles
                         ],
-                        value=self.ensembles[0],
+                        value=self._ensembles[0],
                         clearable=False,
                     ),
                     wcc.Dropdown(
                         label="Well",
                         id=self.register_component_unique_id(self.Ids.WELL),
                         options=[
-                            {"label": well, "value": well} for well in self.well_names
+                            {"label": well, "value": well} for well in self._well_names
                         ],
-                        value=self.well_names[0] if self.well_names else "",
+                        value=self._well_names[0] if self._well_names else "",
                         clearable=False,
                     ),
                     wcc.Dropdown(
@@ -73,9 +73,9 @@ class ParameterResponseSettings(SettingsGroupABC):
                         id=self.register_component_unique_id(self.Ids.DATE),
                         options=[
                             {"label": date, "value": date}
-                            for date in self.dates_in_well
+                            for date in self._dates_in_well
                         ],
-                        value=self.dates_in_well[0],
+                        value=self._dates_in_well[0],
                         clearable=False,
                     ),
                     wcc.Dropdown(
@@ -83,16 +83,16 @@ class ParameterResponseSettings(SettingsGroupABC):
                         id=self.register_component_unique_id(self.Ids.ZONE),
                         options=[
                             {"label": zone, "value": zone}
-                            for zone in self.zones_in_well
+                            for zone in self._zones_in_well
                         ],
-                        value=self.zones_in_well[0],
+                        value=self._zones_in_well[0],
                         clearable=False,
                     ),
                     wcc.Dropdown(
                         label="Parameter",
                         id=self.register_component_unique_id(self.Ids.PARAM),
                         options=[
-                            {"label": param, "value": param} for param in self.params
+                            {"label": param, "value": param} for param in self._params
                         ],
                         clearable=False,
                         value=None,
@@ -148,7 +148,7 @@ class ParameterResponseSettings(SettingsGroupABC):
                 flex=1,
                 children=wcc.Frame(
                     style={"height": "87vh"},
-                    children=self.parameter_filter.layout,
+                    children=self._parameter_filter.layout,
                 ),
             ),
         ]
@@ -199,7 +199,7 @@ class ParameterResponseSettings(SettingsGroupABC):
             selected zone is also present in the new well it will be kept as value.
             """
 
-            dates_in_well, zones_in_well = self.datamodel.well_dates_and_zones(well)
+            dates_in_well, zones_in_well = self._datamodel.well_dates_and_zones(well)
             return (
                 [{"label": date, "value": date} for date in dates_in_well],
                 dates_in_well[0],
