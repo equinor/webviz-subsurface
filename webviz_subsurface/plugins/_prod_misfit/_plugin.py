@@ -10,7 +10,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_subsurface._models import WellAttributesModel
 from webviz_subsurface._providers import Frequency
 
-from .._simulation_time_series.types.provider_set import (
+from .._simulation_time_series._utils.create_provider_set_from_paths import (
     create_presampled_provider_set_from_paths,
 )
 from ._callbacks import plugin_callbacks

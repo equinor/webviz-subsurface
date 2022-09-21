@@ -315,8 +315,6 @@ class WellOverviewView(ViewABC):
             checklist_ids: List[Dict[str, str]],
             current_fig_dict: Optional[Dict],
         ) -> Component:
-            # pylint: disable=too-many-locals
-            # pylint: disable=too-many-arguments
             """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 

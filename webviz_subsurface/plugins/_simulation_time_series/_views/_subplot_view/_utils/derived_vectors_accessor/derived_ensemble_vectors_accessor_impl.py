@@ -10,8 +10,8 @@ from webviz_subsurface._utils.vector_calculator import (
     get_selected_expressions,
 )
 
-from ..utils import dataframe_utils
-from ..utils.from_timeseries_cumulatives import (
+from .. import dataframe_utils
+from ..from_timeseries_cumulatives import (
     calculate_from_resampled_cumulative_vectors_df,
     get_cumulative_vector_name,
     is_per_interval_or_per_day_vector,
@@ -31,7 +31,7 @@ class DerivedEnsembleVectorsAccessorImpl(DerivedVectorsAccessor):
     Vector names can be regular vectors existing among vector names in the provider, Per
     Interval/Per Day vector or a calculated vector from vector calculator.
 
-    Based on the vector type, the class provides an interface for retrieveing dataframes
+    Based on the vector type, the class provides an interface for retrieving dataframes
     for the set of such vectors for the provider.
     """
 
