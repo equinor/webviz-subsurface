@@ -74,7 +74,7 @@ class MapViewElement(ViewElementABC):
                                     toolbar={"visible": True},
                                     coordinateUnit="m",
                                     colorTables=self._color_scales,
-                                    zoom=-7,
+                                    zoom=-5,
                                 ),
                             ],
                             style=self.Style.MAP_WRAPPER,
