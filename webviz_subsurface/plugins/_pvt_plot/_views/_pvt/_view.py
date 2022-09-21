@@ -9,7 +9,7 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ._settings import DataSettings, ViewSettings
-from ._utils._plot_utils import create_graph, filter_data_frame
+from ._utils._plot_utils import create_graph, filter_data_frame, ColorBy
 
 
 class PvtView(ViewABC):
@@ -155,10 +155,10 @@ class PvtView(ViewABC):
         @callback_typecheck
         # pylint: disable=too-many-locals
         def _update_plots(
-            color_by: str,
-            selected_ensembles: Union[str, List[str]],
+            color_by: ColorBy,
+            selected_ensembles: Union[List[str], str],
             phase: str,
-            selected_pvtnum: Union[str, List[str]],
+            selected_pvtnum: Union[List[int], int],
             plots_visibility_ids: List[dict],
             plots_visibility: List[str],
         ) -> List[Component]:
@@ -167,16 +167,16 @@ class PvtView(ViewABC):
                 ensembles = [selected_ensembles]
             else:
                 ensembles = selected_ensembles
-            if isinstance(selected_pvtnum, str):
+            if isinstance(selected_pvtnum, int):
                 pvtnum = [selected_pvtnum]
             else:
                 pvtnum = selected_pvtnum
 
             pvt_df = filter_data_frame(self.pvt_df, ensembles, pvtnum)
 
-            if color_by == "ENSEMBLE":
+            if color_by == ColorBy.ENSEMBLE:
                 colors = self.ensemble_colors
-            elif color_by == "PVTNUM":
+            elif color_by == ColorBy.PVTNUM:
                 colors = self.pvtnum_colors
 
             max_num_columns = 2
@@ -196,12 +196,15 @@ class PvtView(ViewABC):
             graph_height = max(
                 40.0,
                 80.0
-                / len(
-                    [
-                        plot
-                        for plot in ViewSettings.plot_visibility_options(phase)
-                        if visible_plots[plot]
-                    ]
+                / max(
+                    len(
+                        [
+                            plot
+                            for plot in ViewSettings.plot_visibility_options(phase)
+                            if visible_plots[plot]
+                        ]
+                    ),
+                    1,
                 ),
             )
 

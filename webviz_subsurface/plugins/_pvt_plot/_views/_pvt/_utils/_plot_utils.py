@@ -6,11 +6,17 @@ import webviz_core_components as wcc
 from dash import html
 from dash.development.base_component import Component
 from webviz_config.common_cache import CACHE
+from webviz_config.utils import StrEnum
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
+
+
+class ColorBy(StrEnum):
+    ENSEMBLE = "ENSEMBLE"
+    PVTNUM = "PVTNUM"
 
 
 class LayoutAttributes(TypedDict):
@@ -23,7 +29,7 @@ class LayoutAttributes(TypedDict):
 
 
 def filter_data_frame(
-    data_frame: pd.DataFrame, ensembles: List[str], pvtnums: List[str]
+    data_frame: pd.DataFrame, ensembles: List[str], pvtnums: List[int]
 ) -> pd.DataFrame:
 
     data_frame = data_frame.copy()
@@ -36,7 +42,7 @@ def create_hovertext(
     keyword: str,
     constant_group: str,
     group: str,
-    color_by: str,
+    color_by: ColorBy,
     realization: str,
     ratio_value: float,
 ) -> str:
@@ -47,8 +53,8 @@ def create_hovertext(
         if keyword == "PVTG"
         else ""
     )
-    pvt_num = group if color_by == "PVTNUM" else constant_group
-    ensemble = group if color_by == "ENSEMBLE" else constant_group
+    pvt_num = group if color_by == ColorBy.PVTNUM else constant_group
+    ensemble = group if color_by == ColorBy.ENSEMBLE else constant_group
 
     return (
         f"{rs_v}Pvtnum: {pvt_num}<br />Realization: {realization}, Ensemble: {ensemble}"
@@ -57,7 +63,7 @@ def create_hovertext(
 
 def create_traces(
     data_frame: pd.DataFrame,
-    color_by: str,
+    color_by: ColorBy,
     colors: Dict[str, List[str]],
     phase: str,
     column_name: str,
@@ -97,7 +103,7 @@ def create_traces(
 
     constant_group = (
         data_frame["PVTNUM"].iloc[0]
-        if color_by == "ENSEMBLE"
+        if color_by == ColorBy.ENSEMBLE
         else data_frame["ENSEMBLE"].iloc[0]
     )
 
@@ -231,7 +237,7 @@ def create_traces(
 
 def create_graph(
     data_frame: pd.DataFrame,
-    color_by: str,
+    color_by: ColorBy,
     colors: Dict[str, List[str]],
     phase: str,
     plot: str,
@@ -319,7 +325,7 @@ def create_graph(
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def plot_layout(
-    color_by: str,
+    color_by: ColorBy,
     theme: dict,
     x_unit: str,
     y_unit: str,
