@@ -43,41 +43,39 @@ class PlotSettings(SettingsGroupABC):
         self,
     ) -> None:
         super().__init__("Plot settings")
-        self.plot_options = [
-            {
-                "label": "Show realization points",
-                "value": PlotOption.SHOW_REAL_POINTS,
-            },
-            {
-                "label": "Color bars by sensitivity",
-                "value": PlotOption.COLOR_BARS_BY_SENS,
-            },
-        ]
-        self.label_options = [
-            {"label": "No label", "value": LabelOption.HIDE},
-            {
-                "label": "Simple label",
-                "value": LabelOption.SIMPLE,
-            },
-            {
-                "label": "Detailed label",
-                "value": LabelOption.DETAILED,
-            },
-        ]
 
     def layout(self) -> List[Component]:
         return [
             wcc.Checklist(
                 id=self.register_component_unique_id(PlotSettings.IDs.PLOT_OPTIONS),
                 label="Plot options",
-                options=self.plot_options,
+                options=[
+                    {
+                        "label": "Show realization points",
+                        "value": PlotOption.SHOW_REAL_POINTS,
+                    },
+                    {
+                        "label": "Color bars by sensitivity",
+                        "value": PlotOption.COLOR_BARS_BY_SENS,
+                    },
+                ],
                 value=[],
                 labelStyle={"display": "block"},
             ),
             wcc.Dropdown(
                 id=self.register_component_unique_id(PlotSettings.IDs.LABEL),
                 label="Label",
-                options=self.label_options,
+                options=[
+                    {"label": "No label", "value": LabelOption.HIDE},
+                    {
+                        "label": "Simple label",
+                        "value": LabelOption.SIMPLE,
+                    },
+                    {
+                        "label": "Detailed label",
+                        "value": LabelOption.DETAILED,
+                    },
+                ],
                 value=LabelOption.DETAILED,
                 clearable=False,
             ),

@@ -34,15 +34,6 @@ class ViewSettings(SettingsGroupABC):
 
         self.sensnames = list(realizations["SENSNAME"].unique())
 
-        self.scales = [Scale.REL_VALUE_PERC, Scale.REL_VALUE, Scale.TRUE_VALUE]
-
-        self.filter_options = [
-            {
-                "label": "Remove sensitivities with no impact",
-                "value": FilterOption.REMOVE_SENS_WITH_NO_IMPACT,
-            }
-        ]
-
         self.initial_reference = (
             reference if reference in self.sensnames else self.sensnames[0]
         )
@@ -62,8 +53,8 @@ class ViewSettings(SettingsGroupABC):
             wcc.Dropdown(
                 id=self.register_component_unique_id(ViewSettings.IDs.SCALE),
                 label="Scale",
-                options=[{"label": r, "value": r} for r in self.scales],
-                value=self.scales[0],
+                options=[{"label": r, "value": r} for r in Scale],
+                value=Scale.REL_VALUE_PERC,
                 multi=False,
                 clearable=False,
             ),
@@ -77,7 +68,12 @@ class ViewSettings(SettingsGroupABC):
             wcc.Checklist(
                 id=self.register_component_unique_id(ViewSettings.IDs.FILTER_OPTIONS),
                 label="Filter options",
-                options=self.filter_options,
+                options=[
+                    {
+                        "label": "Remove sensitivities with no impact",
+                        "value": FilterOption.REMOVE_SENS_WITH_NO_IMPACT,
+                    }
+                ],
                 value=[],
                 labelStyle={"display": "block"},
             ),
