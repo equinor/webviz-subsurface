@@ -7,9 +7,9 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ..._types import ColorAndSizeByType, DepthType, LineType
-from ..._utils import RftPlotterDataModel
+from ..._utils import FormationFigure, RftPlotterDataModel
 from ._settings import FormationPlotSettings, MapSettings
-from ._utils import FormationFigure, MapFigure
+from ._utils import MapFigure
 from ._view_elements import FormationPlotViewElement, MapViewElement
 
 

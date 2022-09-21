@@ -6,6 +6,7 @@ from webviz_config.utils import StrEnum
 
 from ._utils._rft_plotter_data_model import RftPlotterDataModel
 from ._views._map_view import MapView
+from ._views._parameter_response_view import ParameterResponseView
 
 # from ._callbacks import paramresp_callbacks, plugin_callbacks
 # from ._layout import main_layout
@@ -119,10 +120,10 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
         self.add_view(MapView(self._datamodel), self.Ids.MAP_VIEW)
 
-        # if not self._datamodel.param_model.sensrun:
-        #     self.add_view(
-        #         ParameterResponseView(self._datamodel)
-        #     )
+        if not self._datamodel.param_model.sensrun:
+            self.add_view(
+                ParameterResponseView(self._datamodel), self.Ids.PARAMETER_RESPONSE_VIEW
+            )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return self._datamodel.webviz_store

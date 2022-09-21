@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional, Sequence
 import numpy as np
 import pandas as pd
 
-from ......_utils.colors import find_intermediate_color, rgba_to_str
-from ......_utils.fanchart_plotting import (
+from ...._utils.colors import find_intermediate_color, rgba_to_str
+from ...._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
     LowHighData,
@@ -12,8 +12,8 @@ from ......_utils.fanchart_plotting import (
     TraceDirection,
     get_fanchart_traces,
 )
-from ...._types import DepthType, LineType
-from ...._utils import filter_frame, interpolate_depth
+from .._types import DepthType, LineType
+from ._rft_plotter_data_model import filter_frame, interpolate_depth
 
 
 class FormationFigure:
@@ -77,12 +77,12 @@ class FormationFigure:
     def pressure_range(self) -> List[float]:
         min_sim = (
             self._ertdf["SIMULATED"].min()
-            if self._use_ertdf
+            if self.use_ertdf
             else self._simdf["PRESSURE"].min()
         )
         max_sim = (
             self._ertdf["SIMULATED"].max()
-            if self._use_ertdf
+            if self.use_ertdf
             else self._simdf["PRESSURE"].max()
         )
         min_obs = (self._ertdf["OBSERVED"] - self._ertdf["OBSERVED_ERR"]).min()
@@ -100,7 +100,7 @@ class FormationFigure:
         ]
 
     @property
-    def _simdf_has_md(self) -> bool:
+    def simdf_has_md(self) -> bool:
         if (
             self._simdf is not None
             and "CONMD" in self._simdf
@@ -110,9 +110,9 @@ class FormationFigure:
         return False
 
     @property
-    def _use_ertdf(self) -> bool:
+    def use_ertdf(self) -> bool:
         return self._simdf is None or (
-            self._depthtype == DepthType.MD.value and not self._simdf_has_md
+            self._depthtype == DepthType.MD.value and not self.simdf_has_md
         )
 
     @property
@@ -125,7 +125,7 @@ class FormationFigure:
 
         if self._depthtype == DepthType.MD:
             self._ertdf["DEPTH"] = self._ertdf[DepthType.MD.value]
-            if self._simdf_has_md:
+            if self.simdf_has_md:
                 self._simdf["DEPTH"] = self._simdf["CONMD"]
             if self._obsdf is not None and DepthType.MD.value in self._obsdf:
                 self._obsdf["DEPTH"] = self._obsdf[DepthType.MD.value]
@@ -229,7 +229,7 @@ class FormationFigure:
             )
 
     def add_simulated_lines(self, linetype: LineType) -> None:
-        if self._use_ertdf:
+        if self.use_ertdf:
             for ensemble, ensdf in self._ertdf.groupby("ENSEMBLE"):
                 self._traces.append(
                     {
@@ -288,7 +288,7 @@ class FormationFigure:
                         )
                     )
 
-    def _color_by_param_value(self, df_norm: pd.DataFrame, selected_param: str) -> None:
+    def color_by_param_value(self, df_norm: pd.DataFrame, selected_param: str) -> None:
         """This method colors the RFT traces according to the value of the input
         selected_param
         """
