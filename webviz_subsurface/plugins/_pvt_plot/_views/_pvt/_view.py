@@ -9,7 +9,7 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ._settings import DataSettings, ViewSettings
-from ._utils._plot_utils import create_graph, filter_data_frame, ColorBy
+from ._utils._plot_utils import ColorBy, create_graph, filter_data_frame
 
 
 class PvtView(ViewABC):
