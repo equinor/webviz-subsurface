@@ -5,18 +5,18 @@ from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import Frequency
 
-from ..types import (
-    DeltaEnsemble,
-    DerivedDeltaEnsembleVectorsAccessorImpl,
-    DerivedEnsembleVectorsAccessorImpl,
-    DerivedVectorsAccessor,
-    ProviderSet,
-)
+from .._types import DeltaEnsemble
 from .delta_ensemble_utils import (
     create_delta_ensemble_name_dict,
     create_delta_ensemble_provider_pair,
     is_delta_ensemble_providers_in_provider_set,
 )
+from .derived_vectors_accessor import (
+    DerivedDeltaEnsembleVectorsAccessorImpl,
+    DerivedEnsembleVectorsAccessorImpl,
+    DerivedVectorsAccessor,
+)
+from .provider_set import ProviderSet
 
 
 def create_derived_vectors_accessor_dict(
@@ -40,7 +40,7 @@ def create_derived_vectors_accessor_dict(
 
     `Input:`
     * ensembles: List[str] - list of ensemble names
-    * vectors List[str] - list of vectors to create accessess for
+    * vectors List[str] - list of vectors to create accesses for
     * provider_set: ProviderSet - set of EnsembleSummaryProviders to obtain vector data
     * expressions: List[ExpressionInfo] - list of expressions for calculating vectors
     * delta_ensembles: List[DeltaEnsemble] - list of created delta ensembles
