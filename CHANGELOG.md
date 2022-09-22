@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1080](https://github.com/equinor/webviz-subsurface/pull/1080) - Converted the `GroupTree` plugin to WLF (Webviz Layout Framework).
 - [#1089](https://github.com/equinor/webviz-subsurface/pull/1089) - Converted the `WellAnalysis` plugin to WLF (Webviz Layout Framework).
 - [#1086](https://github.com/equinor/webviz-subsurface/pull/1086) - Converted the `SimulationTimeSeries` plugin to WLF (Webviz Layout Framework). Also increase maximum number of initial vectors from 3 to 5.
+- [#1078](https://github.com/equinor/webviz-subsurface/pull/1078) - Refactored `PvtPlot` plugin with `WLF`.
 
 ## [0.2.14] - 2022-06-28
 
