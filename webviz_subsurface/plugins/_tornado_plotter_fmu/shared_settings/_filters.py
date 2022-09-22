@@ -55,7 +55,7 @@ class Filters(SettingsGroupABC):
         for selector in self._multi_filters:
             values = self._table_provider.get_column_data([selector])[selector].unique()
             multi_filter_elements.append(
-                wcc.Dropdown(
+                wcc.SelectWithLabel(
                     label=selector,
                     id={
                         "id": self.multi_filter_id,
