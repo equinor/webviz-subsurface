@@ -76,6 +76,7 @@ def parameter_qc_controller(
             [ensemble, delta_ensemble]
         )
         sorted_params = [x for x in parametermodel.parameters if x in valid_params]
-        return [{"label": i, "value": i} for i in sorted_params], [
-            x for x in current_params if x in sorted_params
-        ]
+        return (
+            [{"label": i, "value": i} for i in sorted_params],
+            [x for x in current_params if x in sorted_params],
+        )

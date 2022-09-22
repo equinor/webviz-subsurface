@@ -1,1 +1,1 @@
-from .tornado_plotter_fmu import TornadoPlotterFMU
+from ._plugin import TornadoPlotterFMU
