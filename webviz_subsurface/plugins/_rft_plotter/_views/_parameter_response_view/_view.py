@@ -7,6 +7,7 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ....._figures import BarChart, ScatterPlot
+from ..._shared_view_element import GeneralViewElement
 from ..._types import DepthType, LineType
 from ..._utils import FormationFigure, RftPlotterDataModel, correlate
 from ._settings import ParameterResponseSettings
@@ -30,27 +31,28 @@ class ParameterResponseView(ViewABC):
         )
 
         first_column = self.add_column()
-        first_column.make_row(self.Ids.CORR_BARCHART)
-        first_column.make_row(self.Ids.SCATTERPLOT)
+        first_column.add_view_element(GeneralViewElement(), self.Ids.CORR_BARCHART)
+        first_column.add_view_element(GeneralViewElement(), self.Ids.SCATTERPLOT)
+        second_column = self.add_column()
+        second_column.add_view_element(GeneralViewElement(), self.Ids.FORMATION_PLOT)
 
-        self.add_column(self.Ids.FORMATION_PLOT)
-
-    def get_settings_element_id(self, element_id: str) -> str:
-        return (
-            self.settings_group(self.Ids.SETTINGS)
-            .component_unique_id(element_id)
-            .to_string()
-        )
+        self._corr_barchart_figure_id = self.view_element(
+            self.Ids.CORR_BARCHART
+        ).register_component_unique_id(self.Ids.CORR_BARCHART_FIGURE)
 
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.PARAM),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.PARAM)
+                .to_string(),
                 "value",
             ),
-            Input(self.Ids.CORR_BARCHART_FIGURE, "clickData"),
+            Input(self._corr_barchart_figure_id, "clickData"),
             State(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.CORRTYPE),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.CORRTYPE)
+                .to_string(),
                 "value",
             ),
             prevent_initial_call=True,
@@ -66,12 +68,16 @@ class ParameterResponseView(ViewABC):
 
         @callback(
             Output(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.WELL),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.WELL)
+                .to_string(),
                 "value",
             ),
-            Input(self.Ids.CORR_BARCHART_FIGURE, "clickData"),
+            Input(self._corr_barchart_figure_id, "clickData"),
             State(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.CORRTYPE),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.CORRTYPE)
+                .to_string(),
                 "value",
             ),
             prevent_initial_call=True,
@@ -91,41 +97,57 @@ class ParameterResponseView(ViewABC):
 
         @callback(
             Output(
-                self.layout_element(self.Ids.CORR_BARCHART).get_unique_id().to_string(),
+                self.view_element(self.Ids.CORR_BARCHART)
+                .component_unique_id(GeneralViewElement.Ids.CHART)
+                .to_string(),
                 "children",
             ),
             Output(
-                self.layout_element(self.Ids.SCATTERPLOT).get_unique_id().to_string(),
+                self.view_element(self.Ids.SCATTERPLOT)
+                .component_unique_id(GeneralViewElement.Ids.CHART)
+                .to_string(),
                 "children",
             ),
             Output(
-                self.layout_element(self.Ids.FORMATION_PLOT)
-                .get_unique_id()
+                self.view_element(self.Ids.FORMATION_PLOT)
+                .component_unique_id(GeneralViewElement.Ids.CHART)
                 .to_string(),
                 "children",
             ),
             Input(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.ENSEMBLE),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.ENSEMBLE)
+                .to_string(),
                 "value",
             ),
             Input(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.WELL),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.WELL)
+                .to_string(),
                 "value",
             ),
             Input(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.DATE),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.DATE)
+                .to_string(),
                 "value",
             ),
             Input(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.ZONE),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.ZONE)
+                .to_string(),
                 "value",
             ),
             Input(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.PARAM),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.PARAM)
+                .to_string(),
                 "value",
             ),
             Input(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.CORRTYPE),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.CORRTYPE)
+                .to_string(),
                 "value",
             ),
             Input(
@@ -136,7 +158,9 @@ class ParameterResponseView(ViewABC):
                 "data",
             ),
             Input(
-                self.get_settings_element_id(ParameterResponseSettings.Ids.DEPTHOPTION),
+                self.settings_group(self.Ids.SETTINGS)
+                .component_unique_id(ParameterResponseSettings.Ids.DEPTHOPTION)
+                .to_string(),
                 "value",
             ),
         )
@@ -204,7 +228,7 @@ class ParameterResponseView(ViewABC):
                 style={"height": "40vh"},
                 config={"displayModeBar": False},
                 figure=corrfig.figure,
-                id=self.Ids.CORR_BARCHART_FIGURE,
+                id=self._corr_barchart_figure_id,
             )
 
             # Scatter plot
