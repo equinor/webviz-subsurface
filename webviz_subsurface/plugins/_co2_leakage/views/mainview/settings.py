@@ -35,6 +35,7 @@ class ViewSettings(SettingsGroupABC):
         self,
         ensemble_paths: Dict[str, str],
         ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
+        initial_surface: Optional[str],
         map_attribute_names: Dict[MapAttribute, str],
         color_scale_names: List[str],
     ):
@@ -43,6 +44,7 @@ class ViewSettings(SettingsGroupABC):
         self._ensemble_surface_providers = ensemble_surface_providers
         self._map_attribute_names = map_attribute_names
         self._color_scale_names = color_scale_names
+        self._initial_surface = initial_surface
 
     def layout(self) -> List[Component]:
         return [
@@ -103,7 +105,9 @@ class ViewSettings(SettingsGroupABC):
             formations = [{"label": v.title(), "value": v} for v in surfaces]
             picked_formation = None
             if len(formations) != 0:
-                if any(fmt["value"] == current_value for fmt in formations):
+                if current_value is None and self._initial_surface in surfaces:
+                    picked_formation = self._initial_surface
+                elif current_value in surfaces:
                     picked_formation = dash.no_update
                 else:
                     picked_formation = formations[0]["value"]

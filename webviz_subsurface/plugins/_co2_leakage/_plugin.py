@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional, Tuple, Any
 
 import dash
+from blib2to3.pygram import initialize
 from dash import Dash, Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
@@ -55,8 +56,8 @@ class CO2Leakage(WebvizPluginABC):
     * **`map_attribute_names`:** Dictionary for overriding the default mapping between
         attributes visualized by the plugin and attributes names used by
         EnsembleSurfaceProvider
-    * **`formation_aliases`:** List of formation aliases. Relevant when the formation
-        name convention of e.g. well picks is different from that of surface maps
+    * **`initial_surface`:** Name of the surface/formation to show when the plugin is
+        launched. If no name is provided, the first alphabetical surface is shown.
     * **`map_surface_names_to_well_pick_names`:** Optional mapping between surface map
         names and surface names used in the well pick file
     * **`map_surface_names_to_fault_polygons`:** Optional mapping between surface map
@@ -76,6 +77,7 @@ class CO2Leakage(WebvizPluginABC):
         well_pick_file: Optional[str] = None,
         co2_containment_relpath: str = "share/results/tables/co2_volumes.csv",
         fault_polygon_attribute: str = "dl_extracted_faultlines",
+        initial_surface: Optional[str] = None,
         map_attribute_names: Optional[Dict[str, str]] = None,
         map_surface_names_to_well_pick_names: Optional[Dict[str, str]] = None,
         map_surface_names_to_fault_polygons: Optional[Dict[str, str]] = None,
@@ -122,6 +124,7 @@ class CO2Leakage(WebvizPluginABC):
             ViewSettings(
                 self._ensemble_paths,
                 self._ensemble_surface_providers,
+                initial_surface,
                 self._map_attribute_names,
                 [c["name"] for c in CO2LEAKAGE_COLOR_TABLES],  # type: ignore
             ),
