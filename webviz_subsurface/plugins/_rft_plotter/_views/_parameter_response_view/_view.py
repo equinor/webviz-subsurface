@@ -10,12 +10,14 @@ from ....._figures import BarChart, ScatterPlot
 from ..._shared_view_element import GeneralViewElement
 from ..._types import DepthType, LineType
 from ..._utils import FormationFigure, RftPlotterDataModel, correlate
-from ._settings import ParameterResponseSettings
+from ._settings import Options, ParameterFilterSettings, Selections
 
 
 class ParameterResponseView(ViewABC):
     class Ids(StrEnum):
-        SETTINGS = "settings"
+        SELECTIONS = "selections"
+        OPTIONS = "options"
+        PARAMETER_FILTER = "parameter-filter"
         FORMATION_PLOT = "formation-plot"
         CORR_BARCHART = "corr-barchart"
         CORR_BARCHART_FIGURE = "corr-barchart-figure"
@@ -23,11 +25,13 @@ class ParameterResponseView(ViewABC):
 
     def __init__(self, datamodel: RftPlotterDataModel) -> None:
         super().__init__("Parameter Response")
-        self.datamodel = datamodel
-        self.parameter_df = datamodel.param_model.dataframe
+        self._datamodel = datamodel
+        self._parameter_df = datamodel.param_model.dataframe
 
+        self.add_settings_group(Selections(self._datamodel), self.Ids.SELECTIONS)
+        self.add_settings_group(Options(), self.Ids.OPTIONS)
         self.add_settings_group(
-            ParameterResponseSettings(self.datamodel), self.Ids.SETTINGS
+            ParameterFilterSettings(self._datamodel), self.Ids.PARAMETER_FILTER
         )
 
         first_column = self.add_column()
@@ -43,15 +47,15 @@ class ParameterResponseView(ViewABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.PARAM)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.PARAM)
                 .to_string(),
                 "value",
             ),
             Input(self._corr_barchart_figure_id, "clickData"),
             State(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.CORRTYPE)
+                self.settings_group(self.Ids.OPTIONS)
+                .component_unique_id(Options.Ids.CORRTYPE)
                 .to_string(),
                 "value",
             ),
@@ -68,15 +72,15 @@ class ParameterResponseView(ViewABC):
 
         @callback(
             Output(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.WELL)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.WELL)
                 .to_string(),
                 "value",
             ),
             Input(self._corr_barchart_figure_id, "clickData"),
             State(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.CORRTYPE)
+                self.settings_group(self.Ids.OPTIONS)
+                .component_unique_id(Options.Ids.CORRTYPE)
                 .to_string(),
                 "value",
             ),
@@ -115,51 +119,51 @@ class ParameterResponseView(ViewABC):
                 "children",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.ENSEMBLE)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.ENSEMBLE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.WELL)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.WELL)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.DATE)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.DATE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.ZONE)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.ZONE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.PARAM)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.PARAM)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.CORRTYPE)
+                self.settings_group(self.Ids.OPTIONS)
+                .component_unique_id(Options.Ids.CORRTYPE)
                 .to_string(),
                 "value",
             ),
             Input(
                 {
-                    "id": ParameterResponseSettings.Ids.PARAM_FILTER,
+                    "id": ParameterFilterSettings.Ids.PARAM_FILTER,
                     "type": "data-store",
                 },
                 "data",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(ParameterResponseSettings.Ids.DEPTHOPTION)
+                self.settings_group(self.Ids.OPTIONS)
+                .component_unique_id(Options.Ids.DEPTHOPTION)
                 .to_string(),
                 "value",
             ),
@@ -187,7 +191,7 @@ class ParameterResponseView(ViewABC):
                 obs_err,
                 ens_params,
                 ens_rfts,
-            ) = self.datamodel.create_rft_and_param_pivot_table(
+            ) = self._datamodel.create_rft_and_param_pivot_table(
                 ensemble=ensemble,
                 well=well,
                 date=date,
@@ -252,14 +256,14 @@ class ParameterResponseView(ViewABC):
             # Formations plot
             formations_figure = FormationFigure(
                 well=well,
-                ertdf=self.datamodel.ertdatadf,
-                enscolors=self.datamodel.enscolors,
+                ertdf=self._datamodel.ertdatadf,
+                enscolors=self._datamodel.enscolors,
                 depthtype=depthtype,
                 date=date,
                 ensembles=[ensemble],
                 reals=real_filter[ensemble],
-                simdf=self.datamodel.simdf,
-                obsdf=self.datamodel.obsdatadf,
+                simdf=self._datamodel.simdf,
+                obsdf=self._datamodel.obsdatadf,
             )
 
             if formations_figure.use_ertdf:
@@ -269,16 +273,16 @@ class ParameterResponseView(ViewABC):
                     f"Realization lines not available for depth option {depthtype}",
                 ]
 
-            if self.datamodel.formations is not None:
+            if self._datamodel.formations is not None:
                 formations_figure.add_formation(
-                    self.datamodel.formationdf, fill_color=False
+                    self._datamodel.formationdf, fill_color=False
                 )
 
             formations_figure.add_simulated_lines(LineType.REALIZATION)
             formations_figure.add_additional_observations()
             formations_figure.add_ert_observed()
 
-            df_value_norm = self.datamodel.get_param_real_and_value_df(
+            df_value_norm = self._datamodel.get_param_real_and_value_df(
                 ensemble, parameter=param, normalize=True
             )
             formations_figure.color_by_param_value(df_value_norm, param)
@@ -291,3 +295,22 @@ class ParameterResponseView(ViewABC):
                     figure=formations_figure.figure,
                 ),
             ]
+
+        @callback(
+            Output(
+                {
+                    "id": ParameterFilterSettings.Ids.PARAM_FILTER,
+                    "type": "ensemble-update",
+                },
+                "data",
+            ),
+            Input(
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.ENSEMBLE)
+                .to_string(),
+                "value",
+            ),
+        )
+        def _update_parameter_filter_selection(ensemble: str) -> List[str]:
+            """Update ensemble in parameter filter"""
+            return [ensemble]
