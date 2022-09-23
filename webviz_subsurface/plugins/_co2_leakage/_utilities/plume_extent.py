@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import Iterable, List
 
 import geojson
 import numpy as np

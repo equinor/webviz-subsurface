@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
 import xtgeo
 
@@ -9,7 +9,8 @@ from webviz_subsurface._providers import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-    SurfaceServer, SurfaceMeta,
+    SurfaceMeta,
+    SurfaceServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,

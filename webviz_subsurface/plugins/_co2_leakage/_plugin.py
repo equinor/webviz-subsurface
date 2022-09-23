@@ -1,10 +1,9 @@
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import dash
-from blib2to3.pygram import initialize
+import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
-import plotly.graph_objects as go
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import FaultPolygonsServer, SurfaceServer
