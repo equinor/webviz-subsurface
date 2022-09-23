@@ -206,6 +206,7 @@ class MapSelectorLayout(wcc.Selectors):
                             id=colormap_id,
                             options=color_scale_names,
                             value=color_scale_names[0],
+                            clearable=False,
                         ),
                         "Minimum",
                         html.Div(
