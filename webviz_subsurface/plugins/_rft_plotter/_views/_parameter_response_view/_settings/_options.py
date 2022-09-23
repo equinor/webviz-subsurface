@@ -2,14 +2,16 @@ from typing import List
 
 import webviz_core_components as wcc
 from dash.development.base_component import Component
-from webviz_config.utils import StrEnum, callback_typecheck
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
+
+from ...._types import CorrType, DepthType
 
 
 class Options(SettingsGroupABC):
     class Ids(StrEnum):
-        CORRTYPE = "param-response-corrtype"
-        DEPTHOPTION = "paramresp-depthoption"
+        CORRTYPE = "corrtype"
+        DEPTHTYPE = "depthtype"
 
     def __init__(self) -> None:
         super().__init__("Options")
@@ -22,28 +24,28 @@ class Options(SettingsGroupABC):
                 options=[
                     {
                         "label": "Simulated vs parameters",
-                        "value": "sim_vs_param",
+                        "value": CorrType.SIM_VS_PARAM,
                     },
                     {
                         "label": "Parameter vs simulated",
-                        "value": "param_vs_sim",
+                        "value": CorrType.PARAM_VS_SIM,
                     },
                 ],
                 value="sim_vs_param",
             ),
             wcc.RadioItems(
                 label="Depth option",
-                id=self.register_component_unique_id(self.Ids.DEPTHOPTION),
+                id=self.register_component_unique_id(self.Ids.DEPTHTYPE),
                 options=[
                     {
                         "label": "TVD",
-                        "value": "TVD",
+                        "value": DepthType.TVD,
                     },
                     {
                         "label": "MD",
-                        "value": "MD",
+                        "value": DepthType.MD,
                     },
                 ],
-                value="TVD",
+                value=DepthType.TVD,
             ),
         ]

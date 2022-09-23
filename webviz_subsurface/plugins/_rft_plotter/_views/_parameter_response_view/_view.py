@@ -8,7 +8,7 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ....._figures import BarChart, ScatterPlot
 from ..._shared_view_element import GeneralViewElement
-from ..._types import DepthType, LineType
+from ..._types import CorrType, DepthType, LineType
 from ..._utils import FormationFigure, RftPlotterDataModel, correlate
 from ._settings import Options, ParameterFilterSettings, Selections
 
@@ -61,12 +61,13 @@ class ParameterResponseView(ViewABC):
             ),
             prevent_initial_call=True,
         )
+        @callback_typecheck
         def _update_param_from_clickdata(
             corr_vector_clickdata: Union[None, dict],
-            corrtype: str,
+            corrtype: CorrType,
         ) -> str:
             """Update the selected parameter from clickdata"""
-            if corr_vector_clickdata is None or corrtype == "param_vs_sim":
+            if corr_vector_clickdata is None or corrtype == CorrType.PARAM_VS_SIM:
                 raise PreventUpdate
             return corr_vector_clickdata.get("points", [{}])[0].get("y")
 
@@ -86,12 +87,13 @@ class ParameterResponseView(ViewABC):
             ),
             prevent_initial_call=True,
         )
+        @callback_typecheck
         def _update_selections_from_clickdata(
             corr_vector_clickdata: Union[None, dict],
-            corrtype: str,
+            corrtype: CorrType,
         ) -> str:
             """Update well, date and zone from clickdata"""
-            if corr_vector_clickdata is None or corrtype == "sim_vs_param":
+            if corr_vector_clickdata is None or corrtype == CorrType.SIM_VS_PARAM:
                 raise PreventUpdate
 
             clickdata = corr_vector_clickdata.get("points", [{}])[0].get("y")
@@ -163,7 +165,7 @@ class ParameterResponseView(ViewABC):
             ),
             Input(
                 self.settings_group(self.Ids.OPTIONS)
-                .component_unique_id(Options.Ids.DEPTHOPTION)
+                .component_unique_id(Options.Ids.DEPTHTYPE)
                 .to_string(),
                 "value",
             ),
@@ -176,7 +178,7 @@ class ParameterResponseView(ViewABC):
             date: str,
             zone: str,
             param: Optional[str],
-            corrtype: str,
+            corrtype: CorrType,
             real_filter: Dict[str, List[int]],
             depthtype: DepthType,
         ) -> List[Optional[Any]]:
@@ -197,7 +199,7 @@ class ParameterResponseView(ViewABC):
                 date=date,
                 zone=zone,
                 reals=real_filter[ensemble],
-                keep_all_rfts=(corrtype == "param_vs_sim"),
+                keep_all_rfts=(corrtype == CorrType.PARAM_VS_SIM),
             )
             current_key = f"{well} {date} {zone}"
 
@@ -214,13 +216,13 @@ class ParameterResponseView(ViewABC):
                 # doesn't have non-constant parameters.
                 return ["The selected ensemble has no non-constant parameters."] * 3
 
-            if corrtype == "sim_vs_param" or param is None:
+            if corrtype == CorrType.SIM_VS_PARAM or param is None:
                 corrseries = correlate(df[ens_params + [current_key]], current_key)
                 param = param if param is not None else corrseries.abs().idxmax()
                 corr_title = f"{current_key} vs parameters"
                 scatter_x, scatter_y, highlight_bar = param, current_key, param
 
-            if corrtype == "param_vs_sim":
+            if corrtype == CorrType.PARAM_VS_SIM:
                 corrseries = correlate(df[ens_rfts + [param]], param)
                 corr_title = f"{param} vs simulated RFTs"
                 scatter_x, scatter_y, highlight_bar = param, current_key, current_key
