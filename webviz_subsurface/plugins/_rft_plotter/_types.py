@@ -1,5 +1,3 @@
-from smtplib import SMTPRecipientsRefused
-
 from webviz_config.utils import StrEnum
 
 
