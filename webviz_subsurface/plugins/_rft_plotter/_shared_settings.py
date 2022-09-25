@@ -34,7 +34,7 @@ class FilterLayout(SettingsGroupABC):
             ),
             wcc.SelectWithLabel(
                 label="Wells",
-                size=min(15, len(self._well_names)),
+                size=min(10, len(self._well_names)),
                 id=self.register_component_unique_id(self.Ids.FILTER_WELLS),
                 options=[{"label": name, "value": name} for name in self._well_names],
                 value=self._well_names,
