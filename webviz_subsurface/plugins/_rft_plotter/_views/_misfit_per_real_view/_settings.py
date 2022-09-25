@@ -6,14 +6,8 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
-class PlotType(StrEnum):
-    CROSSPLOT = "crossplot"
-    ERROR_BOXPLOT = "error-boxplot"
-
-
 class Selections(SettingsGroupABC):
     class Ids(StrEnum):
-        PLOT_TYPE = "plot-type"
         ENSEMBLES = "ensembles"
 
     def __init__(self, ensembles: List[str]) -> None:
@@ -22,22 +16,6 @@ class Selections(SettingsGroupABC):
 
     def layout(self) -> List[Component]:
         return [
-            wcc.Dropdown(
-                label="Plot Type",
-                id=self.register_component_unique_id(self.Ids.PLOT_TYPE),
-                options=[
-                    {
-                        "label": "CrossPlot",
-                        "value": PlotType.CROSSPLOT,
-                    },
-                    {
-                        "label": "Error BoxPlot",
-                        "value": PlotType.ERROR_BOXPLOT,
-                    },
-                ],
-                value=PlotType.CROSSPLOT,
-                clearable=False,
-            ),
             wcc.Dropdown(
                 label="Ensembles",
                 id=self.register_component_unique_id(self.Ids.ENSEMBLES),

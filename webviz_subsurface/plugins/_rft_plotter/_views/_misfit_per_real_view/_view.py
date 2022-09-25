@@ -8,11 +8,13 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 from ..._shared_settings import FilterLayout
 from ..._shared_view_element import GeneralViewElement
 from ..._utils import RftPlotterDataModel, filter_frame
+from ._settings import Selections
 from ._utils import update_misfit_per_real_plot
 
 
 class MisfitPerRealView(ViewABC):
     class Ids(StrEnum):
+        SELECTIONS = "selections"
         FILTERS = "filters"
         VIEW_ELEMENT = "view-element"
 
@@ -20,7 +22,12 @@ class MisfitPerRealView(ViewABC):
         super().__init__("Misfit per real")
         self._datamodel = datamodel
 
-        self.add_settings_group(FilterLayout(self._datamodel), self.Ids.FILTERS)
+        self.add_settings_groups(
+            {
+                self.Ids.SELECTIONS: Selections(self._datamodel.ensembles),
+                self.Ids.FILTERS: FilterLayout(self._datamodel),
+            }
+        )
 
         self.add_view_element(GeneralViewElement(), self.Ids.VIEW_ELEMENT)
 
@@ -33,8 +40,8 @@ class MisfitPerRealView(ViewABC):
                 "children",
             ),
             Input(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(FilterLayout.Ids.FILTER_ENSEMBLES)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.ENSEMBLES)
                 .to_string(),
                 "value",
             ),

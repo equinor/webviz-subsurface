@@ -26,7 +26,7 @@ class SimVsObsView(ViewABC):
 
         self.add_settings_groups(
             {
-                self.Ids.SELECTIONS: Selections(),
+                self.Ids.SELECTIONS: Selections(self._datamodel.ensembles),
                 self.Ids.FILTERS: FilterLayout(self._datamodel),
                 self.Ids.SIZE_COLOR_SETTINGS: SizeColorSettings(),
             }
@@ -49,8 +49,8 @@ class SimVsObsView(ViewABC):
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(FilterLayout.Ids.FILTER_ENSEMBLES)
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.ENSEMBLES)
                 .to_string(),
                 "value",
             ),
