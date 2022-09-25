@@ -9,14 +9,15 @@ from ..._shared_settings import FilterLayout
 from ..._shared_view_element import GeneralViewElement
 from ..._types import ColorAndSizeByType
 from ..._utils import RftPlotterDataModel, filter_frame
-from ._settings import SizeColorLayout
+from ._settings import PlotType, Selections, SizeColorSettings
 from ._utils import update_crossplot, update_errorplot
 
 
 class SimVsObsView(ViewABC):
     class Ids(StrEnum):
+        SELECTIONS = "selections"
         FILTERS = "filters"
-        SETTINGS = "settings"
+        SIZE_COLOR_SETTINGS = "size-color-settings"
         VIEW_ELEMENT = "view-element"
 
     def __init__(self, datamodel: RftPlotterDataModel) -> None:
@@ -25,8 +26,9 @@ class SimVsObsView(ViewABC):
 
         self.add_settings_groups(
             {
+                self.Ids.SELECTIONS: Selections(),
                 self.Ids.FILTERS: FilterLayout(self._datamodel),
-                self.Ids.SETTINGS: SizeColorLayout(),
+                self.Ids.SIZE_COLOR_SETTINGS: SizeColorSettings(),
             }
         )
 
@@ -39,6 +41,12 @@ class SimVsObsView(ViewABC):
                 .component_unique_id(GeneralViewElement.Ids.CHART)
                 .to_string(),
                 "children",
+            ),
+            Input(
+                self.settings_group(self.Ids.SELECTIONS)
+                .component_unique_id(Selections.Ids.PLOT_TYPE)
+                .to_string(),
+                "value",
             ),
             Input(
                 self.settings_group(self.Ids.FILTERS)
@@ -65,20 +73,21 @@ class SimVsObsView(ViewABC):
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(SizeColorLayout.Ids.CROSSPLOT_SIZE_BY)
+                self.settings_group(self.Ids.SIZE_COLOR_SETTINGS)
+                .component_unique_id(SizeColorSettings.Ids.CROSSPLOT_SIZE_BY)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(SizeColorLayout.Ids.CROSSPLOT_COLOR_BY)
+                self.settings_group(self.Ids.SIZE_COLOR_SETTINGS)
+                .component_unique_id(SizeColorSettings.Ids.CROSSPLOT_COLOR_BY)
                 .to_string(),
                 "value",
             ),
         )
         @callback_typecheck
         def _update_graph(
+            plot_type: PlotType,
             ensembles: List[str],
             wells: List[str],
             zones: List[str],
@@ -93,4 +102,8 @@ class SimVsObsView(ViewABC):
             if df.empty:
                 return "No data matching the given filter criterias"
 
-            return update_crossplot(df, sizeby, colorby)
+            if plot_type == PlotType.CROSSPLOT:
+                return update_crossplot(df, sizeby, colorby)
+            if plot_type == PlotType.ERROR_BOXPLOT:
+                return [update_errorplot(df, self._datamodel.enscolors)]
+            raise ValueError(f"Plot type: {plot_type.value} not implemented")
