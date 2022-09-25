@@ -841,7 +841,7 @@ def view_layout(views: int, columns: Optional[int] = None) -> List[int]:
     columns = (
         columns
         if columns is not None
-        else min([x for x in range(20) if (x * x) >= views])
+        else min([x for x in range(1, 20, 1) if (x * x) >= views])
     )
     rows = math.ceil(views / columns)
     return [rows, columns]

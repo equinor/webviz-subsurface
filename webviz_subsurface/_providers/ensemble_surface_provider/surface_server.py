@@ -195,7 +195,6 @@ class SurfaceServer:
     ) -> None:
 
         timer = PerfTimer()
-
         LOGGER.debug("Converting surface to PNG image...")
         png_bytes: bytes = surface_to_png_bytes_optimized(surface)
         LOGGER.debug(f"Got PNG image, size={(len(png_bytes) / (1024 * 1024)):.2f}MB")
