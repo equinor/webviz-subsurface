@@ -1,7 +1,7 @@
-from typing import List, Union
+from typing import Any, Dict, List, Union
 
 import webviz_core_components as wcc
-from dash import Input, Output, callback
+from dash import Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
@@ -19,6 +19,7 @@ class MapView(ViewABC):
         FORMATION_PLOT_SETTINGS = "formation-plot-settings"
         MAP_VIEW_ELEMENT = "map-view-element"
         FORMATION_PLOT_VIEW_ELEMENT = "formation-plot-view-element"
+        MAP_FIGURE = "map-figure"
 
     def __init__(self, datamodel: RftPlotterDataModel) -> None:
         super().__init__("Map")
@@ -36,7 +37,41 @@ class MapView(ViewABC):
             GeneralViewElement(), self.Ids.FORMATION_PLOT_VIEW_ELEMENT
         )
 
+        self._map_figure_id = self.view_element(
+            self.Ids.MAP_VIEW_ELEMENT
+        ).register_component_unique_id(self.Ids.MAP_FIGURE)
+
     def set_callbacks(self) -> None:
+        @callback(
+            Output(
+                self.settings_group(self.Ids.FORMATION_PLOT_SETTINGS)
+                .component_unique_id(FormationPlotSettings.Ids.WELL)
+                .to_string(),
+                "value",
+            ),
+            Input(
+                self._map_figure_id,
+                "clickData",
+            ),
+            State(
+                self.settings_group(self.Ids.FORMATION_PLOT_SETTINGS)
+                .component_unique_id(FormationPlotSettings.Ids.WELL)
+                .to_string(),
+                "value",
+            ),
+        )
+        def _get_clicked_well(
+            click_data: Dict[str, List[Dict[str, Any]]], well: str
+        ) -> str:
+            if not click_data:
+                return well
+            for layer in click_data["points"]:
+                try:
+                    return layer["customdata"]
+                except KeyError:
+                    pass
+            raise PreventUpdate
+
         @callback(
             Output(
                 self.view_element(self.Ids.MAP_VIEW_ELEMENT)
@@ -91,6 +126,7 @@ class MapView(ViewABC):
             return [
                 wcc.Graph(
                     style={"height": "84vh"},
+                    id=self._map_figure_id,
                     figure={"data": figure.traces, "layout": figure.layout},
                 )
             ]
