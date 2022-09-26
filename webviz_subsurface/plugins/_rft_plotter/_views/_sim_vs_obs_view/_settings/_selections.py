@@ -22,7 +22,7 @@ class Selections(SettingsGroupABC):
 
     def layout(self) -> List[Component]:
         return [
-            wcc.Dropdown(
+            wcc.RadioItems(
                 label="Plot Type",
                 id=self.register_component_unique_id(self.Ids.PLOT_TYPE),
                 options=[
@@ -36,7 +36,6 @@ class Selections(SettingsGroupABC):
                     },
                 ],
                 value=PlotType.CROSSPLOT,
-                clearable=False,
             ),
             wcc.Dropdown(
                 label="Ensembles",

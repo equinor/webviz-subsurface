@@ -64,7 +64,7 @@ class FormationPlotSettings(SettingsGroupABC):
                         "value": LineType.FANCHART,
                     },
                 ],
-                value="realization",
+                value=LineType.REALIZATION,
             ),
             wcc.RadioItems(
                 label="Depth option",
