@@ -5,16 +5,13 @@ import pytest
 from _pytest.config.argparsing import Parser
 from _pytest.fixtures import SubRequest
 
-import dash
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.themes import default_theme
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO, WebvizRunMode
 
-import webviz_core_components as wcc
-
-from .webviz_testing import WebvizComposite
+import dash
 
 
 def pytest_addoption(parser: Parser) -> None:
@@ -51,23 +48,6 @@ def app() -> dash.Dash:
     dash_app.config.suppress_callback_exceptions = True
     CACHE.init_app(dash_app.server)
     yield dash_app
-
-
-@pytest.fixture
-def webviz_duo(request, dash_thread_server, tmpdir) -> WebvizComposite:
-    with WebvizComposite(
-        dash_thread_server,
-        browser=request.config.getoption("webdriver"),
-        remote=request.config.getoption("remote"),
-        remote_url=request.config.getoption("remote_url"),
-        headless=request.config.getoption("headless"),
-        options=request.config.hook.pytest_setup_options(),
-        download_path=tmpdir.mkdir("download").strpath,
-        percy_assets_root=request.config.getoption("percy_assets"),
-        percy_finalize=request.config.getoption("nopercyfinalize"),
-        pause=request.config.getoption("pause"),
-    ) as dc:
-        yield dc
 
 
 @pytest.fixture()
