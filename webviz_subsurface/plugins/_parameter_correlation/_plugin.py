@@ -1,9 +1,7 @@
 from typing import Callable, List, Tuple, Type
 
-import pandas as pd
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
 
 from ._error import error
 from ._plugin_ids import PluginIds

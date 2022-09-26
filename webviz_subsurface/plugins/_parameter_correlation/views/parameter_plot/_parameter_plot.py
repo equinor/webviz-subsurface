@@ -1,22 +1,17 @@
 from pathlib import Path
-from typing import List, Union, Type
+from typing import List, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
 from dash import Input, Output, State, callback, callback_context, no_update
+from dash.development.base_component import Component
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
-from webviz_config.webviz_plugin_subclasses import ViewABC
+from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 from webviz_config.webviz_store import webvizstore
-
-
-from dash.development.base_component import Component
-from webviz_config.webviz_plugin_subclasses import ViewElementABC
 from webviz_core_components import Graph as WccGraph
 
 from webviz_subsurface._datainput.fmu_input import scratch_ensemble
-
-# from ..._plugin_ids import PluginIds
 
 from .settings._parameter_settings import ParameterSettings
 
@@ -186,7 +181,7 @@ class ParameterPlot(ViewABC):
                 "clickData",
             ),
         )
-        def _update_parameter_selections(cell_data: dict):
+        def _update_parameter_selections(cell_data: dict) -> Tuple:
             if cell_data is not None:
                 return (cell_data["points"][0]["x"], cell_data["points"][0]["y"])
             return no_update
@@ -543,32 +538,4 @@ def get_parameters(ensemble_path: Path) -> pd.DataFrame:
         scratch_ensemble("", ensemble_path)
         .parameters.apply(pd.to_numeric, errors="coerce")
         .dropna(how="all", axis="columns")
-    )
-
-
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
-def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFrame:
-    """
-    if drop_constants:
-    .dropna() removes undefined entries in correlation matrix after
-    it is calculated. Correlations between constants yield nan values since
-    they are undefined.
-    Passing tuple or list to drop on multiple axes is deprecated since
-    version 0.23.0. Therefor split in 2x .dropnan()
-    """
-    data = get_parameters(ensemble_path)
-
-    # Necessary to drop constant before correlations due to
-    # https://github.com/pandas-dev/pandas/issues/37448
-    if drop_constants is True:
-        for col in data.columns:
-            if len(data[col].unique()) == 1:
-                data = data.drop(col, axis=1)
-
-    return (
-        data.corr()
-        if not drop_constants
-        else data.corr()
-        .dropna(axis="index", how="all")
-        .dropna(axis="columns", how="all")
     )

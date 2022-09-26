@@ -9,7 +9,7 @@ from webviz_config.common_cache import CACHE
 from webviz_config.testing import WebvizComposite
 
 # pylint: disable=no-name-in-module
-from webviz_config.plugins import ParameterCorrelation
+from webviz_config.plugins import ParameterCorrelation  # type: ignore
 from webviz_config.themes import default_theme
 
 # pylint: enable=no-name-in-module
