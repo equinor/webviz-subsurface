@@ -170,8 +170,8 @@ class ParameterResponseView(ViewABC):
                 "value",
             ),
         )
-        # pylint: disable=too-many-locals
         @callback_typecheck
+        # pylint: disable=too-many-locals
         def _update_paramresp_graphs(
             ensemble: str,
             well: str,
