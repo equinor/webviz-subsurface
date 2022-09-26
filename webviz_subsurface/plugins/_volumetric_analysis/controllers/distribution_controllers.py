@@ -362,8 +362,13 @@ def make_tables(
         statcols = ["Mean", "Stddev", "P90", "P10", "Min", "Max"]
         groups = [x for x in groups if x != "REAL"]
         responses = [x for x in responses if x != "REAL" and x is not None]
-        df_groups = dframe.groupby(groups) if groups else [(None, dframe)]
 
+        if not groups:
+            df_groups = [(None, dframe)]
+        elif len(groups) == 1:
+            df_groups = dframe.groupby(groups[0])
+        else:
+            df_groups = dframe.groupby(groups)
         data_properties = []
         data_volcols = []
         for response in responses:
