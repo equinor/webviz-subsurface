@@ -1,17 +1,15 @@
 import pathlib
 from typing import Any, Dict
 
+import dash
 import pytest
 from _pytest.config.argparsing import Parser
 from _pytest.fixtures import SubRequest
-
 from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.themes import default_theme
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO, WebvizRunMode
-
-import dash
 
 
 def pytest_addoption(parser: Parser) -> None:

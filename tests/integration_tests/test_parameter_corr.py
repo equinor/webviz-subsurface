@@ -1,11 +1,8 @@
 # isort: skip_file
 from unittest import mock
 
-import dash
 import pandas as pd
-import webviz_core_components as wcc
 from webviz_config import WebvizSettings
-from webviz_config.common_cache import CACHE
 from webviz_config.testing import WebvizComposite
 
 # pylint: disable=no-name-in-module
