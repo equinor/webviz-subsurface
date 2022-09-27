@@ -18,13 +18,13 @@ class ParameterFilterSettings(SettingsGroupABC):
         self._params = datamodel.parameters if not datamodel.parameters is None else []
         self._parameter_df = datamodel.param_model.dataframe
 
-        self._parameter_filter = ParameterFilter(
-            uuid=self.Ids.PARAM_FILTER,
+    def layout(self) -> List[Component]:
+        return ParameterFilter(
+            uuid=self.register_component_unique_id(self.Ids.PARAM_FILTER),
             dframe=self._parameter_df[
-                self._parameter_df["ENSEMBLE"].isin(datamodel.param_model.mc_ensembles)
+                self._parameter_df["ENSEMBLE"].isin(
+                    self._datamodel.param_model.mc_ensembles
+                )
             ].copy(),
             reset_on_ensemble_update=True,
-        )
-
-    def layout(self) -> List[Component]:
-        return self._parameter_filter.layout
+        ).layout

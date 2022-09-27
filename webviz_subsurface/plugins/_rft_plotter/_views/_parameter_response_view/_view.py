@@ -40,11 +40,12 @@ class ParameterResponseView(ViewABC):
         second_column = self.add_column()
         second_column.add_view_element(GeneralViewElement(), self.Ids.FORMATION_PLOT)
 
-        self._corr_barchart_figure_id = self.view_element(
+    def set_callbacks(self) -> None:
+
+        corr_barchart_figure_id = self.view_element(
             self.Ids.CORR_BARCHART
         ).register_component_unique_id(self.Ids.CORR_BARCHART_FIGURE)
 
-    def set_callbacks(self) -> None:
         @callback(
             Output(
                 self.settings_group(self.Ids.SELECTIONS)
@@ -52,7 +53,7 @@ class ParameterResponseView(ViewABC):
                 .to_string(),
                 "value",
             ),
-            Input(self._corr_barchart_figure_id, "clickData"),
+            Input(corr_barchart_figure_id, "clickData"),
             State(
                 self.settings_group(self.Ids.OPTIONS)
                 .component_unique_id(Options.Ids.CORRTYPE)
@@ -78,7 +79,7 @@ class ParameterResponseView(ViewABC):
                 .to_string(),
                 "value",
             ),
-            Input(self._corr_barchart_figure_id, "clickData"),
+            Input(corr_barchart_figure_id, "clickData"),
             State(
                 self.settings_group(self.Ids.OPTIONS)
                 .component_unique_id(Options.Ids.CORRTYPE)
@@ -158,7 +159,9 @@ class ParameterResponseView(ViewABC):
             ),
             Input(
                 {
-                    "id": ParameterFilterSettings.Ids.PARAM_FILTER,
+                    "id": self.settings_group(self.Ids.PARAMETER_FILTER)
+                    .component_unique_id(ParameterFilterSettings.Ids.PARAM_FILTER)
+                    .to_string(),
                     "type": "data-store",
                 },
                 "data",
@@ -234,7 +237,7 @@ class ParameterResponseView(ViewABC):
                 style={"height": "40vh"},
                 config={"displayModeBar": False},
                 figure=corrfig.figure,
-                id=self._corr_barchart_figure_id,
+                id=corr_barchart_figure_id,
             )
 
             # Scatter plot

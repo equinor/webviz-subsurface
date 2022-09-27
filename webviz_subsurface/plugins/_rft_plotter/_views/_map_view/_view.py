@@ -37,11 +37,11 @@ class MapView(ViewABC):
             GeneralViewElement(), self.Ids.FORMATION_PLOT_VIEW_ELEMENT
         )
 
-        self._map_figure_id = self.view_element(
+    def set_callbacks(self) -> None:
+        map_figure_id = self.view_element(
             self.Ids.MAP_VIEW_ELEMENT
         ).register_component_unique_id(self.Ids.MAP_FIGURE)
 
-    def set_callbacks(self) -> None:
         @callback(
             Output(
                 self.settings_group(self.Ids.FORMATION_PLOT_SETTINGS)
@@ -50,7 +50,7 @@ class MapView(ViewABC):
                 "value",
             ),
             Input(
-                self._map_figure_id,
+                map_figure_id,
                 "clickData",
             ),
             State(
@@ -126,7 +126,7 @@ class MapView(ViewABC):
             return [
                 wcc.Graph(
                     style={"height": "84vh"},
-                    id=self._map_figure_id,
+                    id=map_figure_id,
                     figure={"data": figure.traces, "layout": figure.layout},
                 )
             ]
