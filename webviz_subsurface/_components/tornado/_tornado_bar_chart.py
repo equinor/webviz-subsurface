@@ -16,7 +16,7 @@ class TornadoBarChart:
         self,
         tornado_data: TornadoData,
         plotly_theme: Dict[str, Any],
-        figure_height: Optional[int] = None,
+        figure_height: Optional[float] = None,
         label_options: str = "detailed",
         locked_si_prefix: Optional[Union[int, str]] = None,
         number_format: str = "",
@@ -60,7 +60,7 @@ class TornadoBarChart:
         )
 
     @property
-    def figure_height(self) -> Optional[int]:
+    def figure_height(self) -> Optional[float]:
         """Set height of figure as a function of number of senscases(bars)"""
         return self._figure_height
 
