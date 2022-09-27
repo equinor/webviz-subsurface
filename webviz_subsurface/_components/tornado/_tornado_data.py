@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ class TornadoData:
     def __init__(
         self,
         dframe: pd.DataFrame,
-        response_name: str = "Response",
+        response_name: Optional[str] = "Response",
         reference: str = "rms_seed",
         cutbyref: bool = False,
         scale: str = "Percentage",

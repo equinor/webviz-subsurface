@@ -399,7 +399,7 @@ class TornadoWidget:
             data: Union[str, bytes, bytearray],
             sens_filter: List[str],
             client_height: Optional[int],
-        ) -> Tuple[dict, dict]:
+        ) -> Tuple[Any, List[Any], List[Dict[Any, Any]], Dict[str, Dict[Any, Any]]]:
             if not data:
                 raise PreventUpdate
             plot_options = plot_options if plot_options else []
