@@ -1,7 +1,7 @@
 import json
 import sys
 from dataclasses import dataclass
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 from dash import Input, Output, callback
@@ -73,7 +73,7 @@ class TornadoTableView(ViewABC):
             filter_options: List[FilterOption],
             data: Union[str, bytes, bytearray],
             sens_filter: Union[List[str], str],
-        ) -> Tuple[dict, dict, dict]:
+        ) -> Tuple[List[Any], List[Dict[Any, Any]]]:
             if not data:
                 raise PreventUpdate
             filter_options = filter_options if filter_options else []
