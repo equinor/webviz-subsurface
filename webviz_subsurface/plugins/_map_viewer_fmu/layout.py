@@ -253,9 +253,7 @@ class MapViewLayout(FullScreen):
                 DeckGLMap(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
                     layers=update_map_layers(1),
-                    zoom=-4,
                     colorTables=color_tables,
-                    bounds=[0, 0, 1000, 1000],
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
             ),
