@@ -39,6 +39,7 @@ from ._callbacks import plugin_callbacks
 from ._layout import LayoutElements, main_layout
 from .types import VisualizationOptions
 from .types.provider_set import (
+    create_lazy_provider_set_from_sumo,
     create_lazy_provider_set_from_paths,
     create_presampled_provider_set_from_paths,
 )
@@ -71,6 +72,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         self,
         app: dash.Dash,
         webviz_settings: WebvizSettings,
+        sumo_ids: Optional[list] = None,
         ensembles: Optional[list] = None,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         perform_presampling: bool = False,
@@ -127,7 +129,30 @@ class SimulationTimeSeries(WebvizPluginABC):
         # TODO: Update functionality when allowing raw data and csv file input
         # NOTE: If csv is implemented-> handle/disable statistics, PER_INTVL_, PER_DAY_, delta
         # ensemble, etc.
-        if ensembles is not None:
+
+        if ensembles and sumo_ids:
+            raise ValueError("You need to specify either ensembles or sumo_ids")
+        if sumo_ids is not None:
+            sumo_paths: Dict[str, str] = {
+                ensemble_name: webviz_settings.shared_settings["sumo_ids"][
+                    ensemble_name
+                ]
+                for ensemble_name in sumo_ids
+            }
+            # if perform_presampling:
+            #     self._presampled_frequency = self._sampling
+            #     self._input_provider_set = create_presampled_provider_set_from_paths(
+            #         ensemble_paths, rel_file_pattern, self._presampled_frequency
+            #     )
+            # else:
+            #     self._input_provider_set = create_lazy_provider_set_from_paths(
+            #         ensemble_paths, rel_file_pattern
+            #     )
+
+            # Skip sampling for now
+            self._input_provider_set = create_lazy_provider_set_from_sumo(sumo_paths)
+
+        elif ensembles is not None:
             ensemble_paths: Dict[str, Path] = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                     ensemble_name

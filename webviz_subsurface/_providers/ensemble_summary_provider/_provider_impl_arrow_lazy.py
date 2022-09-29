@@ -115,6 +115,15 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             raise ValueError("Init from backing store failed NO vector_names")
 
     @staticmethod
+    def write_backing_store_from_aggregated_table(
+        storage_dir: Path, storage_key: str, agg_table: pa.Table
+    ) -> None:
+        arrow_file_name = storage_dir / (storage_key + ".arrow")
+        with pa.OSFile(str(arrow_file_name), "wb") as sink:
+            with pa.RecordBatchFileWriter(sink, agg_table.schema) as writer:
+                writer.write_table(agg_table)
+
+    @staticmethod
     def write_backing_store_from_per_realization_tables(
         storage_dir: Path, storage_key: str, per_real_tables: Dict[int, pa.Table]
     ) -> None:

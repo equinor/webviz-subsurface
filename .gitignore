@@ -10,3 +10,5 @@ venv
 dist
 *~
 *.mypy_cache*
+build/
+tests/

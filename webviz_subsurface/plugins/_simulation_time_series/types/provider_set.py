@@ -140,6 +140,23 @@ class ProviderSet:
         return metadata
 
 
+def create_lazy_provider_set_from_sumo(sumo_path: Dict[str, str]) -> ProviderSet:
+    """Create set of providers with lazy (on-demand) resampling/interpolation, from
+    dictionary of sumo ID
+
+    `Input:`
+    * sumo_path_dict: Dict[str, str] - Sumo ID to the aggregate arrow blob
+
+    `Return:`
+    Provider set with ensemble summary providers with lazy (on-demand) resampling/interpolation
+    """
+    provider_factory = EnsembleSummaryProviderFactory.instance()
+    provider_dict: Dict[str, EnsembleSummaryProvider] = {}
+    for name, path in sumo_path.items():
+        provider_dict[name] = provider_factory.create_from_sumo_blob(str(path))
+    return ProviderSet(provider_dict)
+
+
 def create_lazy_provider_set_from_paths(
     name_path_dict: Dict[str, Path],
     rel_file_pattern: str,

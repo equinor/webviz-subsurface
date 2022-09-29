@@ -10,7 +10,10 @@ from webviz_config.webviz_instance_info import WebvizRunMode
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from ._arrow_unsmry_import import load_per_realization_arrow_unsmry_files
+from ._arrow_unsmry_import import (
+    load_per_realization_arrow_unsmry_files,
+    _load_arrow_from_sumo_blob,
+)
 from ._csv_import import (
     load_ensemble_summary_csv_file,
     load_per_real_csv_file_using_fmu,
@@ -180,6 +183,43 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         return provider
 
+    def create_from_sumo_blob(self, sumo_id: str) -> EnsembleSummaryProvider:
+        """Create EnsembleSummaryProvider from one big arrow file.
+
+        The returned summary provider supports lazy resampling.
+        """
+        storage_key = f"arrow_unsmry_lazy__{sumo_id}"
+        provider = ProviderImplArrowLazy.from_backing_store(
+            self._storage_dir, storage_key
+        )
+        if provider:
+            LOGGER.info(
+                f"Loaded lazy summary provider from backing store in {timer.elapsed_s():.2f}s ("
+                f"sumo_id={sumo_id})"
+            )
+            return provider
+
+        # We can only import data from data source if storage writes are allowed
+        if not self._allow_storage_writes:
+            raise ValueError(f"Failed to load lazy summary provider for {sumo_id}")
+
+        agg_table = _load_arrow_from_sumo_blob(sumo_id)
+
+        try:
+            ProviderImplArrowLazy.write_backing_store_from_aggregated_table(
+                self._storage_dir, storage_key, agg_table
+            )
+        except ValueError as exc:
+            raise ValueError(f"Failed to write backing store for: {sumo_id}") from exc
+
+        provider = ProviderImplArrowLazy.from_backing_store(
+            self._storage_dir, storage_key
+        )
+        if not provider:
+            raise ValueError(f"Failed to load/create lazy provider for {sumo_id}")
+
+        return provider
+
     def create_from_arrow_unsmry_lazy(
         self, ens_path: str, rel_file_pattern: str
     ) -> EnsembleSummaryProvider:
@@ -194,7 +234,6 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         """
 
         timer = PerfTimer()
-
         storage_key = (
             f"arrow_unsmry_lazy__{_make_hash_string(ens_path + rel_file_pattern)}"
         )

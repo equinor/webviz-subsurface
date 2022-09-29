@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Set
 
 import pyarrow as pa
+from sumo.wrapper import SumoClient
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -49,6 +50,11 @@ def _discover_arrow_unsmry_files(globpattern: str) -> List[FileEntry]:
     # Sort the file entries on realization number
     file_list = sorted(file_list, key=lambda e: e.real)
     return file_list
+
+def _load_arrow_from_sumo_blob(sumo_id: str) -> pa.Table:
+    sumo = SumoClient(env="dev")
+    blob = sumo.get(f"/objects('{sumo_id}')/blob")
+    return pa.ipc.RecordBatchFileReader(blob).read_all()
 
 
 def _load_table_from_arrow_file(entry: FileEntry) -> pa.Table:
