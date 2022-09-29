@@ -25,9 +25,19 @@ class MapView(ViewABC):
         super().__init__("Map")
         self._datamodel = datamodel
 
-        self.add_settings_group(MapSettings(self._datamodel), self.Ids.MAP_SETTINGS)
         self.add_settings_group(
-            FormationPlotSettings(self._datamodel), self.Ids.FORMATION_PLOT_SETTINGS
+            MapSettings(
+                ensembles=self._datamodel.ensembles,
+                zones=self._datamodel.zone_names,
+                date_marks=self._datamodel.date_marks,
+                date_range_min=self._datamodel.ertdatadf["DATE_IDX"].min(),
+                date_range_max=self._datamodel.ertdatadf["DATE_IDX"].max(),
+            ),
+            self.Ids.MAP_SETTINGS,
+        )
+        self.add_settings_group(
+            FormationPlotSettings(self._datamodel),
+            self.Ids.FORMATION_PLOT_SETTINGS,
         )
 
         map_column = self.add_column()
@@ -181,7 +191,6 @@ class MapView(ViewABC):
                 return "No ensembles selected"
 
             if date not in self._datamodel.date_in_well(well):
-                print("prevenr update")
                 raise PreventUpdate
 
             figure = FormationFigure(

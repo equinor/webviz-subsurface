@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback
@@ -25,12 +25,15 @@ class FormationPlotSettings(SettingsGroupABC):
         self._well_names = datamodel.well_names
 
     def layout(self) -> List[Component]:
+        ensemble = self._ensembles[0] if len(self._ensembles) > 0 else None
+        well = self._well_names[0] if len(self._well_names) > 0 else None
+        dates_in_well = self._datamodel.date_in_well(well) if well is not None else []
         return [
             wcc.Dropdown(
                 label="Ensemble",
                 id=self.register_component_unique_id(self.Ids.ENSEMBLE),
                 options=[{"label": ens, "value": ens} for ens in self._ensembles],
-                value=[self._ensembles[0]],
+                value=[ensemble],
                 multi=True,
                 clearable=False,
             ),
@@ -38,18 +41,15 @@ class FormationPlotSettings(SettingsGroupABC):
                 label="Well",
                 id=self.register_component_unique_id(self.Ids.WELL),
                 options=[{"label": well, "value": well} for well in self._well_names],
-                value=self._well_names[0],
+                value=well,
                 clearable=False,
             ),
             wcc.Dropdown(
                 label="Date",
                 id=self.register_component_unique_id(self.Ids.DATE),
-                options=[
-                    {"label": date, "value": date}
-                    for date in self._datamodel.date_in_well(self._well_names[0])
-                ],
+                options=[{"label": date, "value": date} for date in dates_in_well],
                 clearable=False,
-                value=self._datamodel.date_in_well(self._well_names[0])[0],
+                value=dates_in_well[0] if len(dates_in_well) > 0 else None,
             ),
             wcc.RadioItems(
                 label="Plot simulations as",
@@ -149,10 +149,12 @@ class FormationPlotSettings(SettingsGroupABC):
             Input(self.component_unique_id(self.Ids.WELL).to_string(), "value"),
             State(self.component_unique_id(self.Ids.DATE).to_string(), "value"),
         )
+        @callback_typecheck
         def _update_date(
             well: str, current_date: str
-        ) -> Tuple[List[Dict[str, str]], str]:
+        ) -> Tuple[List[Dict[str, str]], Optional[str]]:
             dates = self._datamodel.date_in_well(well)
+            first_date = dates[0] if len(dates) > 0 else None
             available_dates = [{"label": date, "value": date} for date in dates]
-            date = current_date if current_date in dates else dates[0]
+            date = current_date if current_date in dates else first_date
             return available_dates, date

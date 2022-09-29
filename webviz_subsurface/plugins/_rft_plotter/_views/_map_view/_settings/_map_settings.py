@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 import webviz_core_components as wcc
 from dash.development.base_component import Component
@@ -6,7 +6,6 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ...._types import ColorAndSizeByType
-from ...._utils import RftPlotterDataModel
 
 
 class MapSettings(SettingsGroupABC):
@@ -17,11 +16,20 @@ class MapSettings(SettingsGroupABC):
         DATE_RANGE = "map-date-range"
         ZONES = "map-zones"
 
-    def __init__(self, datamodel: RftPlotterDataModel) -> None:
+    def __init__(
+        self,
+        ensembles: List[str],
+        zones: List[str],
+        date_marks: Dict[str, Dict[str, Any]],
+        date_range_min: int,
+        date_range_max: int,
+    ) -> None:
         super().__init__("Map settings")
-        self._datamodel = datamodel
-        self._ensembles = datamodel.ensembles
-        self._zone_names = datamodel.zone_names
+        self._ensembles = ensembles
+        self._zone_names = zones
+        self._date_marks = date_marks
+        self._date_range_min = date_range_min
+        self._date_range_max = date_range_max
 
     def layout(self) -> List[Component]:
         return [
@@ -71,13 +79,13 @@ class MapSettings(SettingsGroupABC):
             wcc.RangeSlider(
                 label="Filter date range",
                 id=self.register_component_unique_id(self.Ids.DATE_RANGE),
-                min=self._datamodel.ertdatadf["DATE_IDX"].min(),
-                max=self._datamodel.ertdatadf["DATE_IDX"].max(),
+                min=self._date_range_min,
+                max=self._date_range_max,
                 value=[
-                    self._datamodel.ertdatadf["DATE_IDX"].min(),
-                    self._datamodel.ertdatadf["DATE_IDX"].max(),
+                    self._date_range_min,
+                    self._date_range_max,
                 ],
-                marks=self._datamodel.date_marks,
+                marks=self._date_marks,
             ),
             wcc.Label(
                 "Zone filter",
