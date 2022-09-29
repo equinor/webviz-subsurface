@@ -31,13 +31,13 @@ def test_rft_plotter(
 
     _webviz_duo.toggle_webviz_settings_drawer()
     _webviz_duo.toggle_webviz_settings_group(
-        plugin.view("paracorr").settings_group_unique_id("settings")
+        plugin.view("map-view").settings_group_unique_id("map-settings")
     )
     # Using str literals directly, not IDs from the plugin as intended because
     # the run test did not accept the imports
 
     my_component_id = _webviz_duo.view_settings_group_unique_component_id(
-        "paracorr", "settings", "shared-ensemble"
+        "map-view", "map-settings", "map-ensemble"
     )
     _webviz_duo.wait_for_contains_text(my_component_id, "iter-0")
     assert _webviz_duo.get_logs() == []
