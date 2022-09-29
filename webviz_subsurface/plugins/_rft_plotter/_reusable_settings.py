@@ -5,8 +5,6 @@ from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ._utils import RftPlotterDataModel
-
 
 class FilterLayout(SettingsGroupABC):
     class Ids(StrEnum):
@@ -14,28 +12,28 @@ class FilterLayout(SettingsGroupABC):
         FILTER_ZONES = "filter-zones"
         FILTER_DATES = "filter-dates"
 
-    def __init__(self, datamodel: RftPlotterDataModel) -> None:
+    def __init__(self, wells: List[str], zones: List[str], dates: List[str]) -> None:
         super().__init__("Filters")
-        self._well_names = datamodel.well_names
-        self._zone_names = datamodel.zone_names
-        self._dates = datamodel.dates
+        self._wells = wells
+        self._zones = zones
+        self._dates = dates
 
     def layout(self) -> List[Component]:
         return [
             wcc.SelectWithLabel(
                 label="Wells",
-                size=min(10, len(self._well_names)),
+                size=min(10, len(self._wells)),
                 id=self.register_component_unique_id(self.Ids.FILTER_WELLS),
-                options=[{"label": name, "value": name} for name in self._well_names],
-                value=self._well_names,
+                options=[{"label": name, "value": name} for name in self._wells],
+                value=self._wells,
                 multi=True,
             ),
             wcc.SelectWithLabel(
                 label="Zones",
-                size=min(10, len(self._zone_names)),
+                size=min(10, len(self._zones)),
                 id=self.register_component_unique_id(self.Ids.FILTER_ZONES),
-                options=[{"label": name, "value": name} for name in self._zone_names],
-                value=self._zone_names,
+                options=[{"label": name, "value": name} for name in self._zones],
+                value=self._zones,
                 multi=True,
             ),
             wcc.SelectWithLabel(

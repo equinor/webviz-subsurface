@@ -5,8 +5,8 @@ from dash import Input, Output, callback
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ..._shared_settings import FilterLayout
-from ..._shared_view_element import GeneralViewElement
+from ..._reusable_settings import FilterLayout
+from ..._reusable_view_element import GeneralViewElement
 from ..._utils import RftPlotterDataModel, filter_frame
 from ._settings import Selections
 from ._utils import update_misfit_per_real_plot
@@ -25,7 +25,11 @@ class MisfitPerRealView(ViewABC):
         self.add_settings_groups(
             {
                 self.Ids.SELECTIONS: Selections(self._datamodel.ensembles),
-                self.Ids.FILTERS: FilterLayout(self._datamodel),
+                self.Ids.FILTERS: FilterLayout(
+                    wells=self._datamodel.well_names,
+                    zones=self._datamodel.zone_names,
+                    dates=self._datamodel.dates,
+                ),
             }
         )
 

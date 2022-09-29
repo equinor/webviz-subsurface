@@ -7,7 +7,7 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ....._figures import BarChart, ScatterPlot
-from ..._shared_view_element import GeneralViewElement
+from ..._reusable_view_element import GeneralViewElement
 from ..._types import CorrType, DepthType, LineType
 from ..._utils import FormationFigure, RftPlotterDataModel, correlate
 from ._settings import Options, ParameterFilterSettings, Selections
