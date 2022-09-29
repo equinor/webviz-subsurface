@@ -31,7 +31,7 @@ class PlotSettingsCoverage(SettingsGroupABC):
     def layout(self) -> List[Component]:
         return [
             wcc.Dropdown(
-                label="Colorby",
+                label="Color by",
                 id=self.register_component_unique_id(PlotSettingsCoverage.Ids.COLORBY),
                 options=[
                     {
@@ -99,7 +99,7 @@ class PlotSettingsCoverage(SettingsGroupABC):
                 persistence_type="memory",
             ),
             wcc.RadioItems(
-                label="Colorby grouping",
+                label="Grouping",
                 id=self.register_component_unique_id(
                     PlotSettingsCoverage.Ids.COLORBY_GROUPING
                 ),

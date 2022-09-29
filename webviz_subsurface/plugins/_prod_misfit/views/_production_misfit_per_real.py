@@ -29,7 +29,7 @@ class PlotSettingsMisfit(SettingsGroupABC):
     def layout(self) -> List[Component]:
         return [
             wcc.Dropdown(
-                label="Colorby",
+                label="Color by",
                 id=self.register_component_unique_id(PlotSettingsMisfit.Ids.COLORBY),
                 options=[
                     {
