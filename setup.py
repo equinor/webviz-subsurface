@@ -106,7 +106,7 @@ setup(
         "webviz-core-components>=0.5.6",
         "webviz-subsurface-components>=0.4.13",
         "webviz_vtk@git+https://github.com/equinor/webviz-vtk",
-        "xtgeo>=2.20rc1",
+        "xtgeo>=2.20.0",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
