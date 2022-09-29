@@ -5,7 +5,9 @@ import pandas as pd
 import webviz_core_components as wcc
 
 
-def update_misfit_plot(df: pd.DataFrame, enscolors: Dict[str, Any]) -> List[wcc.Graph]:
+def update_misfit_per_real_plot(
+    df: pd.DataFrame, enscolors: Dict[str, Any]
+) -> List[wcc.Graph]:
 
     max_diff = find_max_diff(df)
     figures = []

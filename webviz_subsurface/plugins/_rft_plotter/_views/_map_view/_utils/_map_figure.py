@@ -2,24 +2,32 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
+from ...._types import ColorAndSizeByType
+
 
 class MapFigure:
     def __init__(self, ertdf: pd.DataFrame, ensemble: str, zones: List[str]) -> None:
 
-        self.ertdf = (
+        self._ertdf = (
             ertdf.loc[(ertdf["ENSEMBLE"] == ensemble) & (ertdf["ZONE"].isin(zones))]
             .groupby(["WELL", "DATE", "ENSEMBLE"])
             .aggregate("mean")
             .reset_index()
         )
-        self.traces: List[Dict[str, Any]] = []
 
-    def add_misfit_plot(self, sizeby: str, colorby: str, dates: List[float]) -> None:
-        df = self.ertdf.loc[
-            (self.ertdf["DATE_IDX"] >= dates[0]) & (self.ertdf["DATE_IDX"] <= dates[1])
+        self._traces: List[Dict[str, Any]] = []
+
+    def add_misfit_plot(
+        self,
+        sizeby: ColorAndSizeByType,
+        colorby: ColorAndSizeByType,
+        dates: List[float],
+    ) -> None:
+        df = self._ertdf.loc[
+            (self._ertdf["DATE_IDX"] >= dates[0])
+            & (self._ertdf["DATE_IDX"] <= dates[1])
         ]
-
-        self.traces.append(
+        self._traces.append(
             {
                 "x": df["EAST"],
                 "y": df["NORTH"],
@@ -39,13 +47,15 @@ class MapFigure:
                 # "name": date,
                 "showlegend": False,
                 "marker": {
-                    "size": df[sizeby],
-                    "sizeref": 2.0 * self.ertdf[sizeby].quantile(0.9) / (40.0**2),
+                    "size": df[sizeby.value],
+                    "sizeref": 2.0
+                    * self._ertdf[sizeby.value].quantile(0.9)
+                    / (40.0**2),
                     "sizemode": "area",
                     "sizemin": 6,
-                    "color": df[colorby],
-                    "cmin": self.ertdf[colorby].min(),
-                    "cmax": self.ertdf[colorby].quantile(0.9),
+                    "color": df[colorby.value],
+                    "cmin": self._ertdf[colorby.value].min(),
+                    "cmax": self._ertdf[colorby.value].quantile(0.9),
                     "colorscale": [[0, "#2584DE"], [1, "#E50000"]],
                     "showscale": True,
                 },
@@ -54,7 +64,7 @@ class MapFigure:
 
     def add_fault_lines(self, df: pd.DataFrame) -> None:
         for _fault, faultdf in df.groupby("POLY_ID"):
-            self.traces.append(
+            self._traces.append(
                 {
                     "x": faultdf["X_UTME"],
                     "y": faultdf["Y_UTMN"],
@@ -77,3 +87,8 @@ class MapFigure:
             "xaxis": {"constrain": "domain", "showgrid": False},
             "yaxis": {"scaleanchor": "x", "showgrid": False},
         }
+
+    @property
+    def traces(self) -> List[Dict[str, Any]]:
+        """Returns the list of traces"""
+        return self._traces

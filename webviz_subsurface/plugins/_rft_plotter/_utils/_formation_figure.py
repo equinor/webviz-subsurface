@@ -12,7 +12,8 @@ from ...._utils.fanchart_plotting import (
     TraceDirection,
     get_fanchart_traces,
 )
-from .._business_logic import filter_frame, interpolate_depth
+from .._types import DepthType, LineType
+from ._rft_plotter_data_model import filter_frame, interpolate_depth
 
 
 class FormationFigure:
@@ -22,30 +23,30 @@ class FormationFigure:
         well: str,
         ertdf: pd.DataFrame,
         enscolors: dict,
-        depth_option: str,
+        depthtype: DepthType,
         date: str,
         ensembles: List[str],
         simdf: Optional[pd.DataFrame] = None,
         obsdf: Optional[pd.DataFrame] = None,
         reals: Optional[Sequence] = None,
     ) -> None:
-        self.well = well
+        self._well = well
         rft_filter = {"WELL": well, "DATE": date, "ENSEMBLE": ensembles}
         if reals is not None:
             rft_filter.update({"REAL": reals})
 
-        self.simdf = filter_frame(simdf, rft_filter) if simdf is not None else None
-        self.obsdf = (
+        self._simdf = filter_frame(simdf, rft_filter) if simdf is not None else None
+        self._obsdf = (
             filter_frame(obsdf, {"WELL": well, "DATE": date})
             if obsdf is not None
             else None
         )
-        self.ertdf = filter_frame(ertdf, rft_filter)
-        self.depth_option = depth_option
-        self.enscolors = enscolors
-        self.set_depth_columns()
+        self._ertdf = filter_frame(ertdf, rft_filter)
+        self._depthtype = depthtype
+        self._enscolors = enscolors
+        self._set_depth_columns()
 
-        self.traces: List[Dict[str, Any]] = []
+        self._traces: List[Dict[str, Any]] = []
         self._layout = {
             "yaxis": {"autorange": "reversed", "title": "Depth", "showgrid": False},
             "xaxis": {
@@ -59,13 +60,13 @@ class FormationFigure:
             "legend": {"orientation": "h"},
             "margin": {"t": 50},
             "hovermode": "closest",
-            "uirevision": f"{well}{depth_option}",
+            "uirevision": f"{well}{depthtype.value}",
             "title": f"{well} at {date}",
         }
 
     @property
     def figure(self) -> Dict[str, Any]:
-        return {"data": self.traces, "layout": self._layout}
+        return {"data": self._traces, "layout": self._layout}
 
     @property
     def xaxis_extension(self) -> float:
@@ -75,17 +76,17 @@ class FormationFigure:
     @property
     def pressure_range(self) -> List[float]:
         min_sim = (
-            self.ertdf["SIMULATED"].min()
+            self._ertdf["SIMULATED"].min()
             if self.use_ertdf
-            else self.simdf["PRESSURE"].min()
+            else self._simdf["PRESSURE"].min()
         )
         max_sim = (
-            self.ertdf["SIMULATED"].max()
+            self._ertdf["SIMULATED"].max()
             if self.use_ertdf
-            else self.simdf["PRESSURE"].max()
+            else self._simdf["PRESSURE"].max()
         )
-        min_obs = (self.ertdf["OBSERVED"] - self.ertdf["OBSERVED_ERR"]).min()
-        max_obs = (self.ertdf["OBSERVED"] + self.ertdf["OBSERVED_ERR"]).max()
+        min_obs = (self._ertdf["OBSERVED"] - self._ertdf["OBSERVED_ERR"]).min()
+        max_obs = (self._ertdf["OBSERVED"] + self._ertdf["OBSERVED_ERR"]).max()
 
         return [
             min(
@@ -101,29 +102,33 @@ class FormationFigure:
     @property
     def simdf_has_md(self) -> bool:
         if (
-            self.simdf is not None
-            and "CONMD" in self.simdf
-            and len(self.simdf["CONMD"].unique()) == len(self.simdf["DEPTH"].unique())
+            self._simdf is not None
+            and "CONMD" in self._simdf
+            and len(self._simdf["CONMD"].unique()) == len(self._simdf["DEPTH"].unique())
         ):
             return True
         return False
 
     @property
     def use_ertdf(self) -> bool:
-        return self.simdf is None or (
-            self.depth_option == "MD" and not self.simdf_has_md
+        return self._simdf is None or (
+            self._depthtype == DepthType.MD.value and not self.simdf_has_md
         )
 
-    def set_depth_columns(self) -> None:
-        """Set depth columns (md vs tvd)"""
-        self.ertdf["DEPTH"] = self.ertdf["TVD"]
+    @property
+    def ertdf_empty(self) -> bool:
+        return self._ertdf.empty
 
-        if self.depth_option == "MD":
-            self.ertdf["DEPTH"] = self.ertdf["MD"]
+    def _set_depth_columns(self) -> None:
+        """Set depth columns (md vs tvd)"""
+        self._ertdf["DEPTH"] = self._ertdf["TVD"]
+
+        if self._depthtype == DepthType.MD:
+            self._ertdf["DEPTH"] = self._ertdf[DepthType.MD.value]
             if self.simdf_has_md:
-                self.simdf["DEPTH"] = self.simdf["CONMD"]
-            if self.obsdf is not None and "MD" in self.obsdf:
-                self.obsdf["DEPTH"] = self.obsdf["MD"]
+                self._simdf["DEPTH"] = self._simdf["CONMD"]
+            if self._obsdf is not None and DepthType.MD.value in self._obsdf:
+                self._obsdf["DEPTH"] = self._obsdf[DepthType.MD.value]
 
     def add_formation(self, df: pd.DataFrame, fill_color: bool = True) -> None:
         """Plot zonation"""
@@ -133,10 +138,10 @@ class FormationFigure:
             for x in np.linspace(0, 1, len(df["ZONE"].unique()))
         ]
 
-        top_col = "TOP_TVD" if self.depth_option == "TVD" else "TOP_MD"
-        base_col = "BASE_TVD" if self.depth_option == "TVD" else "BASE_MD"
+        top_col = "TOP_TVD" if self._depthtype == DepthType.TVD else "TOP_MD"
+        base_col = "BASE_TVD" if self._depthtype == DepthType.TVD else "BASE_MD"
 
-        df = filter_frame(df, {"WELL": self.well})
+        df = filter_frame(df, {"WELL": self._well})
         df = df[df["TOP_MD"] != df["BASE_MD"]]
 
         for (_index, row) in df.iterrows():
@@ -163,7 +168,7 @@ class FormationFigure:
                 }
             )
             # Add formation names
-            self.traces.append(
+            self._traces.append(
                 {
                     "showlegend": _index - 1 == df.index.min(),
                     "name": "Formations",
@@ -181,11 +186,11 @@ class FormationFigure:
         self._layout.update({"shapes": formation_names})
 
     def add_additional_observations(self) -> None:
-        if self.obsdf is not None:
-            self.traces.append(
+        if self._obsdf is not None:
+            self._traces.append(
                 {
-                    "x": self.obsdf["PRESSURE"],
-                    "y": self.obsdf["DEPTH"],
+                    "x": self._obsdf["PRESSURE"],
+                    "y": self._obsdf["DEPTH"],
                     "type": "scatter",
                     "mode": "markers",
                     "name": "Observations",
@@ -194,7 +199,7 @@ class FormationFigure:
             )
 
     def add_ert_observed(self) -> None:
-        df = self.ertdf
+        df = self._ertdf
         if not df.empty:
             df = filter_frame(
                 df,
@@ -203,7 +208,7 @@ class FormationFigure:
                     "ENSEMBLE": df["ENSEMBLE"].unique()[0],
                 },
             )
-            self.traces.append(
+            self._traces.append(
                 {
                     "x": df["OBSERVED"],
                     "y": df["DEPTH"],
@@ -223,10 +228,10 @@ class FormationFigure:
                 }
             )
 
-    def add_simulated_lines(self, linetype: str) -> None:
+    def add_simulated_lines(self, linetype: LineType) -> None:
         if self.use_ertdf:
-            for ensemble, ensdf in self.ertdf.groupby("ENSEMBLE"):
-                self.traces.append(
+            for ensemble, ensdf in self._ertdf.groupby("ENSEMBLE"):
+                self._traces.append(
                     {
                         "x": ensdf["SIMULATED"],
                         "y": ensdf["DEPTH"],
@@ -234,17 +239,17 @@ class FormationFigure:
                         "mode": "markers",
                         "name": ensemble,
                         "marker": {
-                            "color": self.enscolors[ensemble],
+                            "color": self._enscolors[ensemble],
                             "size": 20,
                             "line": {"width": 1, "color": "grey"},
                         },
                     }
                 )
         else:
-            if linetype == "realization":
-                for ensemble, ensdf in self.simdf.groupby("ENSEMBLE"):
+            if linetype == LineType.REALIZATION:
+                for ensemble, ensdf in self._simdf.groupby("ENSEMBLE"):
                     for i, (real, realdf) in enumerate(ensdf.groupby("REAL")):
-                        self.traces.append(
+                        self._traces.append(
                             {
                                 "x": realdf["PRESSURE"],
                                 "y": realdf["DEPTH"],
@@ -252,15 +257,15 @@ class FormationFigure:
                                 "hovertext": f"Realization: {real}, Ensemble: {ensemble}",
                                 "type": "scatter",
                                 "mode": "lines",
-                                "line": {"color": self.enscolors[ensemble]},
+                                "line": {"color": self._enscolors[ensemble]},
                                 "name": ensemble,
                                 "showlegend": i == 0,
                                 "legendgroup": ensemble,
                                 "customdata": real,
                             }
                         )
-            if linetype == "fanchart":
-                for ensemble, ensdf in self.simdf.groupby("ENSEMBLE"):
+            if linetype == LineType.FANCHART:
+                for ensemble, ensdf in self._simdf.groupby("ENSEMBLE"):
                     quantiles = [10, 90]
                     dframe = (
                         interpolate_depth(ensdf).drop(columns=["REAL"]).groupby("DEPTH")
@@ -273,12 +278,12 @@ class FormationFigure:
                         dframes[quantile_str] = dframe.quantile(q=quantile / 100.0)
                     dframes["maximum"] = dframe.max()
                     dframes["minimum"] = dframe.min()
-                    self.traces.extend(
+                    self._traces.extend(
                         _get_fanchart_traces(
                             pd.concat(dframes, names=["STATISTIC"], sort=False)[
                                 "PRESSURE"
                             ],
-                            self.enscolors[ensemble],
+                            self._enscolors[ensemble],
                             ensemble,
                         )
                     )
@@ -287,7 +292,7 @@ class FormationFigure:
         """This method colors the RFT traces according to the value of the input
         selected_param
         """
-        for trace in self.traces:
+        for trace in self._traces:
             if "customdata" in trace:
                 trace["line"]["color"] = set_real_color(
                     real_no=trace["customdata"], df_norm=df_norm
@@ -298,7 +303,7 @@ class FormationFigure:
                 )
 
         self._layout["title"] = {
-            "text": f"{self.well} colored by {selected_param}",
+            "text": f"{self._well} colored by {selected_param}",
         }
 
 
@@ -306,7 +311,6 @@ def set_real_color(df_norm: pd.DataFrame, real_no: str) -> str:
     """
     Return color for trace based on normalized parameter value.
     Midpoint for the colorscale is set on the average value
-
     Same function as in Parameter Analysis. Shout be generalized
     """
     red = rgba_to_str((255, 18, 67, 1))

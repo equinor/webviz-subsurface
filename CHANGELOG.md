@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1078](https://github.com/equinor/webviz-subsurface/pull/1078) - Converted the `PvtPlot` plugin to WLF (Webviz Layout Framework).
 - [#1092](https://github.com/equinor/webviz-subsurface/pull/1092) - Converted the `TornadoPlotterFMU` plugin to WLF (Webviz Layout Framework).
 - [#1085](https://github.com/equinor/webviz-subsurface/pull/1085) - Converted the `ProdMisfit` plugin to WLF (Webviz Layout Framework).
+- [#1113](https://github.com/equinor/webviz-subsurface/pull/1113) - Converted the `RftPlotter` plugin to WLF (Webviz Layout Framework). Combined the crossplot and misfit per observation to one new view: `Sim vs Obs`.
 
 
 ## [0.2.14] - 2022-06-28

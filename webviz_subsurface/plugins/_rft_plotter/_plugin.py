@@ -1,13 +1,14 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import webviz_core_components as wcc
-from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
-from ._business_logic import RftPlotterDataModel
-from ._callbacks import paramresp_callbacks, plugin_callbacks
-from ._layout import main_layout
+from ._utils._rft_plotter_data_model import RftPlotterDataModel
+from ._views._map_view import MapView
+from ._views._misfit_per_real_view import MisfitPerRealView
+from ._views._parameter_response_view import ParameterResponseView
+from ._views._sim_vs_obs_view import SimVsObsView
 
 
 class RftPlotter(WebvizPluginABC):
@@ -90,10 +91,14 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
 
 """
 
-    # pylint: disable=too-many-arguments
+    class Ids(StrEnum):
+        MAP_VIEW = "map-view"
+        MISFIT_PER_REAL_VIEW = "misfit-per-real-view"
+        SIM_VS_OBS_VIEW = "sim-vs-obs-view"
+        PARAMETER_RESPONSE_VIEW = "parameter-response-view"
+
     def __init__(
         self,
-        app: Dash,
         webviz_settings: WebvizSettings,
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
@@ -114,18 +119,13 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
             csvfile_rft_ert,
         )
 
-        self.set_callbacks(app)
+        self.add_view(MapView(self._datamodel), self.Ids.MAP_VIEW)
+        self.add_view(MisfitPerRealView(self._datamodel), self.Ids.MISFIT_PER_REAL_VIEW)
+        self.add_view(SimVsObsView(self._datamodel), self.Ids.SIM_VS_OBS_VIEW)
+        if not self._datamodel.param_model.sensrun:
+            self.add_view(
+                ParameterResponseView(self._datamodel), self.Ids.PARAMETER_RESPONSE_VIEW
+            )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return self._datamodel.webviz_store
-
-    @property
-    def layout(self) -> wcc.Tabs:
-        return main_layout(self.uuid, self._datamodel)
-
-    def set_callbacks(self, app: Dash) -> None:
-        plugin_callbacks(app, self.uuid, self._datamodel)
-
-        # It this is not a sensitivity run, add the parameter response callbacks
-        if not self._datamodel.param_model.sensrun:
-            paramresp_callbacks(app, self.uuid, self._datamodel)

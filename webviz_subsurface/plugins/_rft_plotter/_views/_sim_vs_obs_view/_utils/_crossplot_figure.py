@@ -4,8 +4,12 @@ import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 
+from ...._types import ColorAndSizeByType
 
-def update_crossplot(df: pd.DataFrame, sizeby: str, colorby: str) -> List[wcc.Graph]:
+
+def update_crossplot(
+    df: pd.DataFrame, sizeby: ColorAndSizeByType, colorby: ColorAndSizeByType
+) -> List[wcc.Graph]:
 
     sim_range = find_sim_range(df)
     sizeref, cmin, cmax = size_color_settings(df, sizeby, colorby)
@@ -40,11 +44,11 @@ def update_crossplot(df: pd.DataFrame, sizeby: str, colorby: str) -> List[wcc.Gr
             ],
             "hoverinfo": "text",
             "marker": {
-                "size": dframe[sizeby],
+                "size": dframe[sizeby.value],
                 "sizeref": 2.0 * sizeref / (30.0**2),
                 "sizemode": "area",
                 "sizemin": 6,
-                "color": dframe[colorby],
+                "color": dframe[colorby.value],
                 "cmin": cmin,
                 "cmax": cmax,
                 "colorscale": [[0, "#2584DE"], [1, "#E50000"]],
@@ -90,14 +94,14 @@ def update_crossplot(df: pd.DataFrame, sizeby: str, colorby: str) -> List[wcc.Gr
 
 
 def size_color_settings(
-    df: pd.DataFrame, sizeby: str, colorby: str
+    df: pd.DataFrame, sizeby: ColorAndSizeByType, colorby: ColorAndSizeByType
 ) -> Tuple[np.float64, np.float64, np.float64]:
 
     df = df.groupby(["WELL", "DATE", "ZONE", "TVD", "ENSEMBLE"]).mean().reset_index()
 
-    sizeref = df[sizeby].quantile(0.9)
-    cmin = df[colorby].min()
-    cmax = df[colorby].quantile(0.9)
+    sizeref = df[sizeby.value].quantile(0.9)
+    cmin = df[colorby.value].min()
+    cmax = df[colorby.value].quantile(0.9)
 
     return sizeref, cmin, cmax
 
