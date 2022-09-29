@@ -41,7 +41,7 @@ class Selections(SettingsGroupABC):
                 label="Ensembles",
                 id=self.register_component_unique_id(self.Ids.ENSEMBLES),
                 options=[{"label": ens, "value": ens} for ens in self._ensembles],
-                value=[self._ensembles[0]],
+                value=[self._ensembles[0] if len(self._ensembles) > 0 else None],
                 clearable=False,
                 multi=True,
             ),

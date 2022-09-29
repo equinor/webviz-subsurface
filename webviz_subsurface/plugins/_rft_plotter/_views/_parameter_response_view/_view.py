@@ -31,7 +31,11 @@ class ParameterResponseView(ViewABC):
         self.add_settings_group(Selections(self._datamodel), self.Ids.SELECTIONS)
         self.add_settings_group(Options(), self.Ids.OPTIONS)
         self.add_settings_group(
-            ParameterFilterSettings(self._datamodel), self.Ids.PARAMETER_FILTER
+            ParameterFilterSettings(
+                parameter_df=self._datamodel.param_model.dataframe,
+                mc_ensembles=self._datamodel.param_model.mc_ensembles,
+            ),
+            self.Ids.PARAMETER_FILTER,
         )
 
         first_column = self.add_column()
@@ -235,7 +239,6 @@ class ParameterResponseView(ViewABC):
             corrfig.color_bars(highlight_bar, "#007079", 0.5)
             corr_graph = wcc.Graph(
                 style={"height": "40vh"},
-                config={"displayModeBar": False},
                 figure=corrfig.figure,
                 id=corr_barchart_figure_id,
             )
@@ -253,7 +256,6 @@ class ParameterResponseView(ViewABC):
             scatter_graph = (
                 wcc.Graph(
                     style={"height": "40vh"},
-                    config={"displayModeBar": False},
                     figure=scatterplot.figure,
                 ),
             )

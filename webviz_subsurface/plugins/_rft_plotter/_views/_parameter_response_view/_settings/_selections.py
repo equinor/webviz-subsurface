@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback
 from dash.development.base_component import Component
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ...._utils import RftPlotterDataModel
@@ -83,6 +83,7 @@ class Selections(SettingsGroupABC):
             Input(self.component_unique_id(self.Ids.WELL).to_string(), "value"),
             State(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
         )
+        @callback_typecheck
         def _update_date_and_zone(
             well: str, zone_state: str
         ) -> Tuple[List[Dict[str, str]], str, List[Dict[str, str]], str]:
