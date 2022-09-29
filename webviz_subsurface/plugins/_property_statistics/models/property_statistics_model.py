@@ -96,6 +96,10 @@ class PropertyStatisticsModel:
         return list(self.dataframe["PROPERTY"].unique())
 
     @property
+    def zones(self) -> List[str]:
+        return list(self.dataframe["ZONE"].unique())
+
+    @property
     def sources(self) -> List[str]:
         return list(self.dataframe["SOURCE"].unique())
 

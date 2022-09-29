@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Fixed
+- [#1061](https://github.com/equinor/webviz-subsurface/pull/1061) - Removed a pandas dataframe as function argument from a webvizstore decorated function as it can cause incompabilities between different environments.
 - [#1114](https://github.com/equinor/webviz-subsurface/pull/1114) - Fixed an exception in `MapViewerFMU` when a map does not exist.
-
 - [#1118](https://github.com/equinor/webviz-subsurface/pull/1118) - `MapViewerFMU` - Removed `zoom` and `bounds` props from `DeckGLMap` as they are now automatically calculated.
 - [#1094](https://github.com/equinor/webviz-subsurface/pull/1094) - Fixed issues with ambiguous truth of `pandas.Series` in `EnsembleSummaryProvider`.
 - [#1107](https://github.com/equinor/webviz-subsurface/pull/1107) - Fixed bug in `ParameterResponseCorrelation` that caused the plugin to fail if the `response_filters` parameter was not given.
