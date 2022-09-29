@@ -309,7 +309,7 @@ class InplaceVolumesModel:
             aggregations.update({x: "mean" for x in parameters})
 
             dframe = dframe.groupby(sum_over_groups).agg(aggregations).reset_index()
-            dframe = dframe.groupby(groups).mean().reset_index()
+            dframe = dframe.groupby(groups).mean(numeric_only=True).reset_index()
 
         dframe = self.compute_property_columns(dframe, properties)
         if "FLUID_ZONE" not in groups:
