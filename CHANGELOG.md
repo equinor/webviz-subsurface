@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1086](https://github.com/equinor/webviz-subsurface/pull/1086) - Converted the `SimulationTimeSeries` plugin to WLF (Webviz Layout Framework). Also increase maximum number of initial vectors from 3 to 5.
 - [#1078](https://github.com/equinor/webviz-subsurface/pull/1078) - Converted the `PvtPlot` plugin to WLF (Webviz Layout Framework).
 - [#1092](https://github.com/equinor/webviz-subsurface/pull/1092) - Converted the `TornadoPlotterFMU` plugin to WLF (Webviz Layout Framework).
+- [#1085](https://github.com/equinor/webviz-subsurface/pull/1085) - Converted the `ProdMisfit` plugin to WLF (Webviz Layout Framework).
+
 
 ## [0.2.14] - 2022-06-28
 
