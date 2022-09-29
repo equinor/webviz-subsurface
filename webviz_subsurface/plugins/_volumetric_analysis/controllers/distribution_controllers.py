@@ -364,7 +364,7 @@ def make_tables(
         responses = [x for x in responses if x != "REAL" and x is not None]
 
         if not groups:
-            df_groups = [(None, dframe)]
+            df_groups = [("", dframe)]
         elif len(groups) == 1:
             df_groups = dframe.groupby(groups[0])
         else:
@@ -388,10 +388,11 @@ def make_tables(
                     data.update(
                         FLUID_ZONE=(" + ").join(selections["filters"]["FLUID_ZONE"])
                     )
-
                 for idx, group in enumerate(groups):
                     data[group] = (
-                        name if not isinstance(name, tuple) else list(name)[idx]
+                        name
+                        if name is not None or name is not isinstance(name, str)
+                        else list(name)[idx]
                     )
                 if response in volumemodel.volume_columns:
                     data["Response"] = response
