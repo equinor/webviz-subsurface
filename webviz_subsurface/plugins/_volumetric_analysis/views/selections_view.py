@@ -244,6 +244,8 @@ def histogram_options(uuid: str, tab: str) -> html.Div:
                 label="Histogram bins:",
                 id={"id": uuid, "tab": tab, "selector": "hist_bins"},
                 value=15,
+                step=1,
+                marks={1: 1, 10: 10, 20: 20, 30: 30},
                 min=1,
                 max=30,
             ),
