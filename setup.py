@@ -105,6 +105,8 @@ setup(
         "webviz-core-components>=0.5.6",
         "webviz-subsurface-components>=0.4.13",
         "xtgeo>=2.14",
+        "fmu-sumo@git+https://github.com/equinor/fmu-sumo@explorer",
+        "sumo-wrapper-python@git+https://github.com/equinor/sumo-wrapper-python.git@master",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
