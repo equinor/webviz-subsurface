@@ -119,6 +119,13 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         storage_dir: Path, storage_key: str, agg_table: pa.Table
     ) -> None:
         arrow_file_name = storage_dir / (storage_key + ".arrow")
+
+        # Find per column min/max values and store them as metadata on table's schema
+        per_vector_min_max = find_min_max_for_numeric_table_columns(agg_table)
+        agg_table = add_per_vector_min_max_to_table_schema_metadata(
+            agg_table, per_vector_min_max
+        )
+
         with pa.OSFile(str(arrow_file_name), "wb") as sink:
             with pa.RecordBatchFileWriter(sink, agg_table.schema) as writer:
                 writer.write_table(agg_table)
