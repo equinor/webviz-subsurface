@@ -72,7 +72,7 @@ class SimulationTimeSeries(WebvizPluginABC):
         self,
         app: dash.Dash,
         webviz_settings: WebvizSettings,
-        sumo_ids: Optional[list] = None,
+        sumo_blob_ids: Optional[list] = None,
         ensembles: Optional[list] = None,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         perform_presampling: bool = False,
@@ -130,14 +130,14 @@ class SimulationTimeSeries(WebvizPluginABC):
         # NOTE: If csv is implemented-> handle/disable statistics, PER_INTVL_, PER_DAY_, delta
         # ensemble, etc.
 
-        if ensembles and sumo_ids:
-            raise ValueError("You need to specify either ensembles or sumo_ids")
-        if sumo_ids is not None:
+        if ensembles and sumo_blob_ids:
+            raise ValueError("You need to specify either ensembles or sumo blob ids")
+        if sumo_blob_ids is not None:
             sumo_paths: Dict[str, str] = {
-                ensemble_name: webviz_settings.shared_settings["sumo_ids"][
+                ensemble_name: webviz_settings.shared_settings["sumo_blob_ids"][
                     ensemble_name
                 ]
-                for ensemble_name in sumo_ids
+                for ensemble_name in sumo_blob_ids
             }
             # if perform_presampling:
             #     self._presampled_frequency = self._sampling
