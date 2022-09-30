@@ -3,15 +3,19 @@ from typing import Iterable, List
 import geojson
 import numpy as np
 import scipy.ndimage
-import shapely.geometry
 import xtgeo
 
-# Use _contour from MPL. Under the hood, this is the same functionality pyplot is
-# using. Direct use is implemented (instead of pyplot.contour directly) to avoid the
-# overhead related to figure/axis creation in MPL.
-# pylint: disable=no-name-in-module
-from matplotlib import __version__ as mpl_ver
-from matplotlib import _contour
+MISSING_DEPENDENCIES = False
+try:
+    import shapely.geometry
+
+    # Use _contour from MPL. Under the hood, this is the same functionality pyplot is
+    # using. Direct use is implemented (instead of pyplot.contour directly) to avoid the
+    # overhead related to figure/axis creation in MPL.
+    from matplotlib import __version__ as mpl_ver
+    from matplotlib import _contour
+except ImportError:
+    MISSING_DEPENDENCIES = True
 
 
 def plume_polygons(
@@ -20,6 +24,8 @@ def plume_polygons(
     smoothing: float = 10.0,
     simplify_factor: float = 1.2,
 ) -> geojson.FeatureCollection:
+    if MISSING_DEPENDENCIES:
+        return geojson.FeatureCollection(features=[])
     plume_count = truncate_surfaces(surfaces, threshold, smoothing)
     p_levels = [0.1]
     if len(surfaces) > 2:
