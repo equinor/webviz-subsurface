@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Set
 
 import pyarrow as pa
-from sumo.wrapper import SumoClient
+from fmu.sumo.explorer import Explorer
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -51,8 +51,10 @@ def _discover_arrow_unsmry_files(globpattern: str) -> List[FileEntry]:
     file_list = sorted(file_list, key=lambda e: e.real)
     return file_list
 
+
 def _load_arrow_from_sumo_blob(sumo_id: str) -> pa.Table:
-    sumo = SumoClient(env="dev")
+    LOGGER.debug(f"loading table from sumo id : {sumo_id}")
+    sumo = Explorer(env="dev")
     blob = sumo.get(f"/objects('{sumo_id}')/blob")
     return pa.ipc.RecordBatchFileReader(blob).read_all()
 
