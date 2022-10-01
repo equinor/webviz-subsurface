@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import pandas as pd
-from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from .fmu_input import load_ensemble_set
@@ -18,7 +17,6 @@ except ImportError:
     pass
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_satfunc(
     ensemble_paths: dict,
@@ -30,11 +28,25 @@ def load_satfunc(
     return load_ensemble_set(ensemble_paths, ensemble_set_name).apply(ecl2df_satfunc)
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
 @webvizstore
 def load_scal_recommendation(
     scalfile: Path, sheet_name: Optional[Union[str, int, list]] = None
 ) -> pd.DataFrame:
-    return PyscalFactory.create_scal_recommendation_list(
-        PyscalFactory.load_relperm_df(str(scalfile), sheet_name)
-    ).df()
+    return (
+        PyscalFactory.create_scal_recommendation_list(
+            PyscalFactory.load_relperm_df(str(scalfile), sheet_name)
+        )
+        .df()
+        .replace(
+            {
+                "CASE": {
+                    "(?i)low": "pess",
+                    r"(?i)^pes.*": "pess",
+                    "(?i)base": "base",
+                    "(?i)high": "opt",
+                    r"(?i)^opt.*": "opt",
+                }
+            },
+            regex=True,
+        )
+    )

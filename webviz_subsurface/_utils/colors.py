@@ -1,9 +1,10 @@
 import colorsys
-from enum import Enum
 from typing import Tuple
 
+from webviz_config.utils import StrEnum
 
-class StandardColors(Enum):
+
+class StandardColors(StrEnum):
     OIL_GREEN = "#2ca02c"
     WATER_BLUE = "#1f77b4"
     GAS_RED = "#d62728"
