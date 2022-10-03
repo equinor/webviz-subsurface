@@ -116,6 +116,7 @@ class TimeSeriesSettings(SettingsGroupABC):
                     TimeSeriesSettings.Ids.VECTOR_CALCULATOR_DIALOG
                 ),
                 draggable=True,
+                open=False,
                 max_width="lg",
                 children=[
                     html.Div(
