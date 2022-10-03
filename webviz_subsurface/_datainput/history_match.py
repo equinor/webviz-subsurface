@@ -1,9 +1,20 @@
 from pathlib import Path
 
-import fmu.ensemble
 import pandas as pd
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
+
+# The fmu.ensemble dependency ecl is only available for Linux,
+# hence, ignore any import exception here to make
+# it still possible to use the PvtPlugin on
+# machines with other OSes.
+#
+# NOTE: Functions in this file cannot be used
+#       on non-Linux OSes.
+try:
+    import fmu.ensemble
+except ImportError:
+    pass
 
 from .fmu_input import load_ensemble_set
 

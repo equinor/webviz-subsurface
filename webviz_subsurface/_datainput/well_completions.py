@@ -6,7 +6,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from ecl2df import EclFiles, common
+
+# opm and ecl2df are only available for Linux,
+# hence, ignore any import exception here to make
+# it still possible to use the PvtPlugin on
+# machines with other OSes.
+#
+# NOTE: Functions in this file cannot be used
+#       on non-Linux OSes.
+try:
+    from ecl2df import EclFiles, common
+except ImportError:
+    pass
 
 from .fmu_input import scratch_ensemble
 
