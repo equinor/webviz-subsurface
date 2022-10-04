@@ -313,7 +313,7 @@ class WellOverviewView(ViewABC):
             charttype_selected: ChartType,
             wells_selected: List[str],
             checklist_ids: List[Dict[str, str]],
-            current_fig_dict: Optional[Dict],
+            current_fig_dict: Optional[dict],
         ) -> Component:
             """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
