@@ -24,4 +24,5 @@ class ParameterFilterSettings(SettingsGroupABC):
                 self._parameter_df["ENSEMBLE"].isin(self._mc_ensembles)
             ].copy(),
             reset_on_ensemble_update=True,
+            display_header=False,
         ).layout
