@@ -156,11 +156,18 @@ def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
             stacklevel=0,
         )
     else:
-        df = df.append(
-            {
-                "userid": "<b>Free space</b>",
-                "usageGiB": free_space_gib,
-            },
+        df = pd.concat(
+            [
+                df,
+                pd.DataFrame.from_records(
+                    [
+                        {
+                            "userid": "<b>Free space</b>",
+                            "usageGiB": free_space_gib,
+                        }
+                    ]
+                ),
+            ],
             ignore_index=True,
         )
 
