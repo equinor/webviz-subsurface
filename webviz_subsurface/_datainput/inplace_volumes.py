@@ -8,7 +8,7 @@ from webviz_config.webviz_store import webvizstore
 from .fmu_input import scratch_ensemble
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def extract_volumes(
     ensemble_paths: dict, volfolder: str, volfiles: Dict[str, str]

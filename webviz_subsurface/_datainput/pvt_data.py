@@ -33,7 +33,7 @@ from .eclipse_init_io.pvt_water import Water
 from .fmu_input import load_csv, load_ensemble_set
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def filter_pvt_data_frame(
     data_frame: pd.DataFrame, drop_ensemble_duplicates: bool = False
@@ -179,7 +179,7 @@ def calculate_densities(data_frame: pd.DataFrame) -> pd.DataFrame:
     return data_frame
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def load_pvt_csv(
     ensemble_paths: dict,
@@ -192,7 +192,7 @@ def load_pvt_csv(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def load_pvt_dataframe(
     ensemble_paths: Dict[str, str],

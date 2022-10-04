@@ -22,7 +22,7 @@ class HuvXsection:
         self.planned_attributes = {}
         self.fig = None
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def get_xsec_well_data(self, well_settings, well, is_planned=False):
         """Finds data for well to plot in cross section
         Args:
@@ -76,7 +76,7 @@ class HuvXsection:
                 ]
         return data
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def set_de_and_surface_lines(self, surfacefiles, de_keys, well, polyline):
         """Surface lines and corresponding depth error lines with fence from wellfile or polyline
         Args:
@@ -259,7 +259,7 @@ class HuvXsection:
         """
         return np.around(self.surface_attributes[sfc_file]["de_line"][:, 1], 2)
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def set_xsec_fig(
         self, surfacefiles, de_keys, well_settings, well, is_planned=False
     ):
@@ -279,7 +279,7 @@ class HuvXsection:
         )
         self.fig = go.Figure(dict({"data": data, "layout": layout}))
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def get_intersection_dataframe(self, well):
         """Get intersection between surfaces and well with XTGeo
         Args:
@@ -312,7 +312,7 @@ class HuvXsection:
                     data["Direction"].append(row["DIRECTION"])
         return pd.DataFrame(data=data)
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     # pylint: disable=too-many-locals
     def get_zonelog_data(self, well, well_df, zonelogname="Zonelog"):
         """Find zonelogs where well trajectory intersects surfaces and assigns color.
@@ -420,7 +420,7 @@ def stratigraphic_sort(elem):
     return elem[1]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_zonation_points(well_df, wellname, zonation_status_file):
     """Finds zonation points along well trajectory
     Args:
@@ -444,7 +444,7 @@ def get_zonation_points(well_df, wellname, zonation_status_file):
     return np.array([zone_rhlen, zone_df["TVD"]])
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_conditional_points(well_df, wellname, well_points_file):
     """Finds conditional points where surfaces and well intersect
     Args:
@@ -468,7 +468,7 @@ def get_conditional_points(well_df, wellname, well_points_file):
     return np.array([cond_rhlen, wellpoint_df["TVD"]])
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_range_from_well(well_df, ymin):
     """Finds min and max x values of well trajectory used in layout of cross section graph
     Args:
@@ -486,7 +486,7 @@ def get_range_from_well(well_df, ymin):
     return x_well_min, x_well_max
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_fencespec(polyline):
     """Create a XTGeo fence spec from polyline coordinates
     Args:

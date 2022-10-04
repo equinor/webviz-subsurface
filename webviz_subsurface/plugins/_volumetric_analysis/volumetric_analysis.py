@@ -235,7 +235,7 @@ reek_test_data/aggregated_data/parameters.csv)
         return store_functions
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file)

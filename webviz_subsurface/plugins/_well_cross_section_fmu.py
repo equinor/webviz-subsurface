@@ -666,7 +666,7 @@ def calculate_surface_statistics(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_surface_statistics(
     realdf_dict: list, ensemble: str, surfacefile: str, surfacefolder: Path
 ) -> Dict[str, xtgeo.RegularSurface]:
@@ -701,7 +701,7 @@ def surface_from_json(surfaceobj: Union[str, bytes]) -> xtgeo.RegularSurface:
     return surface
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_surfaces(fns: List[str]) -> xtgeo.Surfaces:
     return xtgeo.Surfaces(fns)
 

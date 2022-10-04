@@ -6,7 +6,7 @@ import xtgeo
 from webviz_config.common_cache import CACHE
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def load_well(
     wfile: Union[str, Path],
     zonelogname: Optional[str] = None,
@@ -27,7 +27,7 @@ def load_well(
     return well
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def make_well_layer(
     well: xtgeo.Well, name: str = "well", zmin: float = 0
 ) -> Dict[str, Any]:
@@ -66,7 +66,7 @@ def make_well_layer(
     }
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def make_well_layers(
     wellfiles: List[str], zmin: float = 0, max_points: float = 100
 ) -> Dict[str, Any]:
@@ -184,7 +184,7 @@ def append_well_to_data(
             )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def create_leaflet_well_marker_layer(
     wells: List[xtgeo.Well],
     surface: xtgeo.RegularSurface,

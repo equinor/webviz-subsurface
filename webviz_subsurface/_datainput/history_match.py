@@ -19,7 +19,7 @@ except ImportError:
 from .fmu_input import load_ensemble_set
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def extract_mismatch(ens_paths: dict, observation_file: Path) -> pd.DataFrame:
     """Convert the fmu-ensemble mismatch dataframe into the the format

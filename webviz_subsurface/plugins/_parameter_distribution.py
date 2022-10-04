@@ -241,7 +241,7 @@ def next_value(current_value: str, options: List[str]) -> str:
         return current_value
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)

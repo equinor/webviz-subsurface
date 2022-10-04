@@ -53,7 +53,7 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
 {self.well_attributes_file}
         """
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     @webvizstore
     def create_ensemble_dataset(self) -> io.BytesIO:
         """Creates the well completion data set for the WellCompletions component

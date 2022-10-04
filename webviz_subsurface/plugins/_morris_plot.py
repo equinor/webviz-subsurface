@@ -86,7 +86,7 @@ aggregated_data/morris.csv).
             return output, vector, parameters
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file)

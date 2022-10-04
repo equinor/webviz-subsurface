@@ -24,7 +24,7 @@ class FanChartStatistics(str, Enum):
 
 
 # pylint: disable=too-many-arguments
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_plotly_trace_statistical_surface(
     surfaceset: SurfaceSetModel,
     fence_spec: np.ndarray,
@@ -63,7 +63,7 @@ def get_plotly_trace_statistical_surface(
 
 
 # pylint: disable=too-many-arguments
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_plotly_traces_uncertainty_envelope(
     surfaceset: SurfaceSetModel,
     fence_spec: np.ndarray,
@@ -129,7 +129,7 @@ def get_plotly_traces_uncertainty_envelope(
 
 
 # pylint: disable=too-many-arguments
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_plotly_trace_realization_surface(
     surfaceset: SurfaceSetModel,
     fence_spec: np.ndarray,
@@ -159,7 +159,7 @@ def get_plotly_trace_realization_surface(
     }
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_plotly_zonelog_trace(
     well: xtgeo.Well,
     zonelog: str,
@@ -191,7 +191,7 @@ def get_plotly_zonelog_trace(
     return traces
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_well_xyarray(well: xtgeo.Well) -> List:
     """Returns a copy of the x,y values representing the well fence"""
     dfr = well.dataframe

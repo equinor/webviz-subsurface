@@ -316,7 +316,7 @@ def create_graph(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def plot_layout(
     color_by: ColorBy,
     theme: dict,

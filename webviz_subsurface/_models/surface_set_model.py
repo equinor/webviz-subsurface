@@ -115,7 +115,7 @@ class SurfaceSetModel:
                 df = df.loc[df[col] == filt]
         return df
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def calculate_statistical_surface(
         self,
         name: str,

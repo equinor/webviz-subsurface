@@ -237,7 +237,7 @@ def build_figure(
         )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def calc_series_statistics(
     df: pd.DataFrame, vectors: list, refaxis: str = "DATE"
 ) -> pd.DataFrame:
@@ -272,7 +272,7 @@ def calc_series_statistics(
     return stat_df
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_table_data(
     tableproviders: Dict[str, EnsembleTableProvider],
     ensemble_names: List,

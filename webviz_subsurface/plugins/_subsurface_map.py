@@ -116,7 +116,7 @@ that you are reading the correct data.
         ]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_map_data(
     ensemble_path: str, map_value: str, flow_value: str, time_step: int
 ) -> str:

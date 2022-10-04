@@ -770,7 +770,7 @@ def theme_layout(theme, specific_layout) -> Dict:
     return layout
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)

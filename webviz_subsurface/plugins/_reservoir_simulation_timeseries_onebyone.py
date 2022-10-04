@@ -620,7 +620,7 @@ folder, to avoid risk of not extracting the right data.
             return figure
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def calculate_table(df: pd.DataFrame, vector: str) -> Tuple[List[dict], List[dict]]:
     table = []
     for (sensname, senscase), dframe in df.groupby(["SENSNAME", "SENSCASE"]):
@@ -663,12 +663,12 @@ def filter_ensemble(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_unit(smry_meta: Union[pd.DataFrame, None], vec: str) -> Union[str, None]:
     return None if smry_meta is None else simulation_unit_reformat(smry_meta.unit[vec])

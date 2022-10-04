@@ -71,7 +71,7 @@ class EnsembleGroupTreeData:
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
         return self._gruptree_model.webviz_store
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def create_grouptree_dataset(
         self,
         tree_mode: TreeModeOptions,
@@ -139,12 +139,12 @@ class EnsembleGroupTreeData:
             ],
         )
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def get_unique_real(self) -> List[int]:
         """Returns a list of unique realizations"""
         return self._provider.realizations()
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def tree_is_equivalent_in_all_real(self) -> bool:
         """Checks if the group tree is equivalent in all realizations,
         in which case there is only one REAL number in the dataframe
@@ -216,7 +216,7 @@ class EnsembleGroupTreeData:
                 f"{str_missing_sumvecs}."
             )
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def get_edge_options(self, node_types: List[NodeType]) -> List[Dict[str, str]]:
         """Returns a list with edge node options for the dropdown
         menu in the GroupTree component. The output list has the format:

@@ -20,7 +20,7 @@ except ImportError:
     pass
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def scratch_ensemble(
     ensemble_name: str, ensemble_path: Path, filter_file: Union[str, None] = "OK"
 ) -> ScratchEnsemble:
@@ -31,7 +31,7 @@ def scratch_ensemble(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def load_ensemble_set(
     ensemble_paths: dict,
     ensemble_set_name: str = "EnsembleSet",
@@ -46,7 +46,7 @@ def load_ensemble_set(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def load_parameters(
     ensemble_paths: dict,
@@ -56,7 +56,7 @@ def load_parameters(
     return load_ensemble_set(ensemble_paths, ensemble_set_name, filter_file).parameters
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def load_csv(
     ensemble_paths: dict, csv_file: str, ensemble_set_name: str = "EnsembleSet"
@@ -64,7 +64,7 @@ def load_csv(
     return load_ensemble_set(ensemble_paths, ensemble_set_name).load_csv(csv_file)
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def load_smry(
     ensemble_paths: dict,
@@ -77,7 +77,7 @@ def load_smry(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def load_smry_meta(
     ensemble_paths: dict,
@@ -95,7 +95,7 @@ def load_smry_meta(
     return pd.DataFrame(smry_meta).transpose()
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def get_realizations(
     ensemble_paths: dict, ensemble_set_name: str = "EnsembleSet"
@@ -135,7 +135,7 @@ def find_sens_type(senscase: str) -> Optional[str]:
     return "scalar"
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def find_surfaces(
     ensemble_paths: dict,
