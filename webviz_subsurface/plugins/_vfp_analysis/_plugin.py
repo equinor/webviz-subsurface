@@ -1,19 +1,22 @@
 from typing import Optional
 
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
-from ._business_logic import VfpDataModel
-from ._plugin_ids import PluginIds
-from .views import VfpView
+from ._utils import VfpDataModel
+from ._views._vfp_view import VfpView
 
 
 class VfpAnalysis(WebvizPluginABC):
     """Vizualises VFP curves"""
 
+    class Ids(StrEnum):
+        VFP_VIEW = "vpf-view"
+
     def __init__(
         self,
         webviz_settings: WebvizSettings,
-        csvfile: str = "share/results/tables/vfp.csv",
+        vfp_file_pattern: str = "share/results/tables/vfp_*.arrow",
         ensemble: Optional[str] = None,
         realization: Optional[int] = None,
     ) -> None:
@@ -21,9 +24,9 @@ class VfpAnalysis(WebvizPluginABC):
 
         self._datamodel = VfpDataModel(
             webviz_settings=webviz_settings,
-            csvfile=csvfile,
+            vfp_file_pattern=vfp_file_pattern,
             ensemble=ensemble,
             realization=realization,
         )
 
-        self.add_view(VfpView(self._datamodel), PluginIds.Views.VFP_VIEW)
+        self.add_view(VfpView(self._datamodel), self.Ids.VFP_VIEW)

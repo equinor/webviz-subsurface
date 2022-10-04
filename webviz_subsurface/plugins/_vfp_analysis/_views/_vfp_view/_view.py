@@ -4,8 +4,8 @@ import webviz_core_components as wcc
 from dash import Input, Output, callback, html
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from .._business_logic import VfpDataModel, VfpTable
-from ..view_elements import VfpViewElement
+from ..._utils import VfpDataModel
+from ._view_element import VfpViewElement
 
 
 class ViewSettings(SettingsGroupABC):
