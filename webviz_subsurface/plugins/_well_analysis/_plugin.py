@@ -73,7 +73,7 @@ class WellAnalysis(WebvizPluginABC):
         time_index: str = Frequency.YEARLY.value,
         filter_out_startswith: Optional[str] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
         self._ensembles = ensembles
         self._theme = webviz_settings.theme
