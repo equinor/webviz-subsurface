@@ -20,13 +20,13 @@ class VfpAnalysis(WebvizPluginABC):
         ensemble: Optional[str] = None,
         realization: Optional[int] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(stretch=True)
 
-        self._datamodel = VfpDataModel(
-            webviz_settings=webviz_settings,
-            vfp_file_pattern=vfp_file_pattern,
-            ensemble=ensemble,
-            realization=realization,
-        )
+        # self._datamodel = VfpDataModel(
+        #     webviz_settings=webviz_settings,
+        #     vfp_file_pattern=vfp_file_pattern,
+        #     ensemble=ensemble,
+        #     realization=realization,
+        # )
 
-        self.add_view(VfpView(self._datamodel), self.Ids.VFP_VIEW)
+        self.add_view(VfpView(), self.Ids.VFP_VIEW)
