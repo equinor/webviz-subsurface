@@ -101,9 +101,9 @@ def filter_pvt_data_frame(
         ens_merged_dataframe = data_frame.iloc[0:0]
         for _rno, realization_data_frame in ens_data_frame.groupby("REAL"):
             if ens_merged_dataframe.empty:
-                ens_merged_dataframe = ens_merged_dataframe.append(
-                    realization_data_frame
-                ).reset_index(drop=True)
+                ens_merged_dataframe = pd.concat(
+                    [ens_merged_dataframe, realization_data_frame], ignore_index=True
+                )
             else:
                 ens_merged_dataframe = (
                     pd.concat([ens_merged_dataframe, realization_data_frame])
