@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
@@ -313,7 +313,7 @@ class WellOverviewView(ViewABC):
             charttype_selected: ChartType,
             wells_selected: List[str],
             checklist_ids: List[Dict[str, str]],
-            current_fig_dict: Optional[Dict],
+            current_fig_dict: Optional[Dict[str, Any]],
         ) -> Component:
             """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
