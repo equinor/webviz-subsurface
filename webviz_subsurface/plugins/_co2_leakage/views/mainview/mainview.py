@@ -8,7 +8,6 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 from webviz_subsurface_components import DeckGLMap
 
-
 INITIAL_BOUNDS = (0, 0, 1, 1)
 
 
