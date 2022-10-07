@@ -95,7 +95,6 @@ def _find_contours(
     y_mesh: np.ndarray,
     z_values: np.ndarray,
 ) -> Iterable[np.ndarray]:
-    # pylint: disable=c-extension-no-member
     contour_output = _contour.QuadContourGenerator(
         x_mesh, y_mesh, z_values, np.zeros_like(z_values, dtype=bool), False, 0
     ).create_contour(0.5)

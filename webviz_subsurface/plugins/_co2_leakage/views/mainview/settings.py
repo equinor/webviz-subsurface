@@ -4,6 +4,7 @@ import dash
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback, dcc, html
 from dash.development.base_component import Component
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
@@ -15,7 +16,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribu
 
 
 class ViewSettings(SettingsGroupABC):
-    class Ids:
+    class Ids(StrEnum):
         FORMATION = "formation"
         ENSEMBLE = "ensemble"
         REALIZATION = "realization"
@@ -157,12 +158,12 @@ class FilterSelectorLayout(wcc.Selectors):
 
 
 class MapSelectorLayout(wcc.Selectors):
-    class Style:
-        CM_RANGE = {
-            "display": "flex",
-            "flexDirection": "row",
-        }
+    _CM_RANGE = {
+        "display": "flex",
+        "flexDirection": "row",
+    }
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         color_scale_names: List[str],
@@ -218,7 +219,7 @@ class MapSelectorLayout(wcc.Selectors):
                                     id=cm_min_auto_id,
                                 ),
                             ],
-                            style=self.Style.CM_RANGE,
+                            style=self._CM_RANGE,
                         ),
                         "Maximum",
                         html.Div(
@@ -230,7 +231,7 @@ class MapSelectorLayout(wcc.Selectors):
                                     id=cm_max_auto_id,
                                 ),
                             ],
-                            style=self.Style.CM_RANGE,
+                            style=self._CM_RANGE,
                         ),
                     ],
                 )

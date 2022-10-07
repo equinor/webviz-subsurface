@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
+from webviz_config.utils import StrEnum
 
 from webviz_subsurface._providers import FaultPolygonsServer, SurfaceServer
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
@@ -62,11 +63,11 @@ class CO2Leakage(WebvizPluginABC):
     * **`map_surface_names_to_fault_polygons`:** Optional mapping between surface map
         names and surface names used by the fault polygons
     """
-
-    class Ids:
+    class Ids(StrEnum):
         MAIN_VIEW = "main-view"
         MAIN_SETTINGS = "main-settings"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         app: Dash,
