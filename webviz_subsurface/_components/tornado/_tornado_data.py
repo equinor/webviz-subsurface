@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ class TornadoData:
     def __init__(
         self,
         dframe: pd.DataFrame,
-        response_name: str = "Response",
+        response_name: Optional[str] = "Response",
         reference: str = "rms_seed",
         cutbyref: bool = False,
         scale: str = "Percentage",
@@ -106,7 +106,7 @@ class TornadoData:
     ) -> List[Dict[str, Union[str, list, float]]]:
         avg_per_sensitivity = []
 
-        for sens_name, sens_name_df in dframe.groupby(["SENSNAME"]):
+        for sens_name, sens_name_df in dframe.groupby("SENSNAME"):
             # Excluding cases if `ref` is used as `SENSNAME`, and only one realization
             # is present for this `SENSNAME`
             if sens_name == "ref" and len(sens_name_df["REAL"].unique()) == 1:
@@ -114,7 +114,7 @@ class TornadoData:
 
             # If `SENSTYPE` is scalar get the mean for each `SENSCASE`
             if (sens_name_df["SENSTYPE"] == "scalar").all():
-                for sens_case, sens_case_df in sens_name_df.groupby(["SENSCASE"]):
+                for sens_case, sens_case_df in sens_name_df.groupby("SENSCASE"):
                     avg_per_sensitivity.append(
                         {
                             "sensname": sens_name,
@@ -179,7 +179,7 @@ class TornadoData:
     ) -> List[Dict[str, Union[str, list, float]]]:
         low_high_per_sensitivity = []
         for sensname, sens_name_df in pd.DataFrame(avg_per_sensitivity).groupby(
-            ["sensname"]
+            "sensname"
         ):
             low = sens_name_df.copy().loc[sens_name_df["values_ref"].idxmin()]
             high = sens_name_df.copy().loc[sens_name_df["values_ref"].idxmax()]
@@ -259,7 +259,7 @@ class TornadoData:
                 "real_low": sens_name_df["low_reals"].tolist()[0],
                 "real_high": sens_name_df["high_reals"].tolist()[0],
             }
-            for sensname, sens_name_df in self.tornadotable.groupby(["sensname"])
+            for sensname, sens_name_df in self.tornadotable.groupby("sensname")
         }
 
     @staticmethod

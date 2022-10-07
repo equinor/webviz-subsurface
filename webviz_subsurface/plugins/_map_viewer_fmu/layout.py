@@ -181,6 +181,7 @@ def main_layout(
     realizations: List[int],
     color_tables: List[Dict],
     show_fault_polygons: bool = True,
+    hillshading_enabled: bool = True,
 ) -> html.Div:
     return html.Div(
         children=[
@@ -230,7 +231,13 @@ def main_layout(
                     for tab in Tabs
                 ],
             ),
-            DialogLayout(get_uuid, show_fault_polygons, well_names, realizations),
+            DialogLayout(
+                get_uuid,
+                show_fault_polygons,
+                well_names,
+                realizations,
+                hillshading_enabled,
+            ),
         ]
     )
 
@@ -253,9 +260,7 @@ class MapViewLayout(FullScreen):
                 DeckGLMap(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
                     layers=update_map_layers(1),
-                    zoom=-4,
                     colorTables=color_tables,
-                    bounds=[0, 0, 1000, 1000],
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
             ),
@@ -289,13 +294,20 @@ class DialogLayout(wcc.Dialog):
         show_fault_polygons: bool,
         well_names: List[str],
         realizations: List[int],
+        hillshading_enabled: bool = True,
     ) -> None:
 
         checklist_options = [LayoutLabels.SHOW_HILLSHADING]
+        checklist_values = (
+            [LayoutLabels.SHOW_HILLSHADING] if hillshading_enabled else []
+        )
         if show_fault_polygons:
             checklist_options.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+            checklist_values.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+
         if well_names:
             checklist_options.append(LayoutLabels.SHOW_WELLS)
+            checklist_values.append(LayoutLabels.SHOW_FAULTPOLYGONS)
 
         super().__init__(
             title=LayoutLabels.COMMON_SELECTIONS,
@@ -307,7 +319,7 @@ class DialogLayout(wcc.Dialog):
                 wcc.Checklist(
                     id=get_uuid(LayoutElements.OPTIONS),
                     options=[{"label": opt, "value": opt} for opt in checklist_options],
-                    value=checklist_options,
+                    value=checklist_values,
                 ),
                 wcc.FlexBox(
                     children=[

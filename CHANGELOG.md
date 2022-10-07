@@ -7,14 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
-### Fixed
+### Added
+- [#1114](https://github.com/equinor/webviz-subsurface/pull/1114) - Added a flag in config for `MapViewerFMU` to set initial state of hillshading.
+- [#1058](https://github.com/equinor/webviz-subsurface/pull/1058) - `WellCompletion` - New implementation of the `WellCompletions` plugin, which is faster, has more functionality (single realization) and utilizes the webviz layout framework (WLF).
 
+
+### Fixed
+- [#1061](https://github.com/equinor/webviz-subsurface/pull/1061) - Removed a pandas dataframe as function argument from a webvizstore decorated function as it can cause incompabilities between different environments.
+- [#1114](https://github.com/equinor/webviz-subsurface/pull/1114) - Fixed an exception in `MapViewerFMU` when a map does not exist.
+- [#1118](https://github.com/equinor/webviz-subsurface/pull/1118) - `MapViewerFMU` - Removed `zoom` and `bounds` props from `DeckGLMap` as they are now automatically calculated.
 - [#1094](https://github.com/equinor/webviz-subsurface/pull/1094) - Fixed issues with ambiguous truth of `pandas.Series` in `EnsembleSummaryProvider`.
 - [#1107](https://github.com/equinor/webviz-subsurface/pull/1107) - Fixed bug in `ParameterResponseCorrelation` that caused the plugin to fail if the `response_filters` parameter was not given.
 
 ### Changed
 
 - [#1097](https://github.com/equinor/webviz-subsurface/pull/1007) - `smry2arrow_batch` - Now supports an arbitrary number of paths as input, meaning that it is no longer needed to wrap a wildcarded runpath pattern with "". It is though still required if defining a wildcarded eclbase.
+- [#1083](https://github.com/equinor/webviz-subsurface/pull/1083) - Converted the `ParameterCorrelation` plugin to WLF (Webviz Layout Framework).
+- [#1080](https://github.com/equinor/webviz-subsurface/pull/1080) - Converted the `GroupTree` plugin to WLF (Webviz Layout Framework).
+- [#1089](https://github.com/equinor/webviz-subsurface/pull/1089) - Converted the `WellAnalysis` plugin to WLF (Webviz Layout Framework).
+- [#1086](https://github.com/equinor/webviz-subsurface/pull/1086) - Converted the `SimulationTimeSeries` plugin to WLF (Webviz Layout Framework). Also increase maximum number of initial vectors from 3 to 5.
+- [#1078](https://github.com/equinor/webviz-subsurface/pull/1078) - Converted the `PvtPlot` plugin to WLF (Webviz Layout Framework).
+- [#1092](https://github.com/equinor/webviz-subsurface/pull/1092) - Converted the `TornadoPlotterFMU` plugin to WLF (Webviz Layout Framework).
+- [#1085](https://github.com/equinor/webviz-subsurface/pull/1085) - Converted the `ProdMisfit` plugin to WLF (Webviz Layout Framework).
+- [#1113](https://github.com/equinor/webviz-subsurface/pull/1113) - Converted the `RftPlotter` plugin to WLF (Webviz Layout Framework). Combined the crossplot and misfit per observation to one new view: `Sim vs Obs`.
+
 
 ## [0.2.14] - 2022-06-28
 

@@ -25,7 +25,11 @@ class ParameterFilter:
     """Component that can be added to a plugin to filter parameters"""
 
     def __init__(
-        self, uuid: str, dframe: pd.DataFrame, reset_on_ensemble_update: bool = False
+        self,
+        uuid: str,
+        dframe: pd.DataFrame,
+        reset_on_ensemble_update: bool = False,
+        display_header: bool = True,
     ) -> None:
         """
         * **`uuid`:** Unique id (use the plugin id).
@@ -33,6 +37,7 @@ class ParameterFilter:
 
         self._uuid = uuid
         self._reset_on_ensemble_update = reset_on_ensemble_update
+        self._display_header = display_header
         self._pmodel = ParametersModel(
             dataframe=dframe,
             drop_constants=True,
@@ -138,18 +143,20 @@ class ParameterFilter:
 
     @property
     def layout(self) -> html.Div:
+        children = [
+            self.buttons,
+            self.settings_layout,
+            self.realizations_removed_layout,
+            self.active_filters_layout,
+            self.parameter_filter_layout,
+        ]
+
+        if self._display_header:
+            children = [self.header] + children
+
         return html.Div(
             children=[
-                html.Div(
-                    children=[
-                        self.header,
-                        self.buttons,
-                        self.settings_layout,
-                        self.realizations_removed_layout,
-                        self.active_filters_layout,
-                        self.parameter_filter_layout,
-                    ]
-                ),
+                html.Div(children=children),
                 dcc.Store(
                     id={"id": self._uuid, "type": "data-store"},
                     data=self._initial_store,

@@ -18,7 +18,7 @@ from .._utils.fanchart_plotting import (
     get_fanchart_traces,
 )
 from .._utils.unique_theming import unique_colors
-from ._simulation_time_series.types.provider_set import (
+from ._simulation_time_series._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
 )
 

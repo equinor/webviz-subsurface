@@ -32,14 +32,13 @@ def surface_from_zone_prop(
 
 @webvizstore
 def generate_surface_table(
-    statistics_dframe: pd.DataFrame,
+    zones: List[str],
+    properties: List[str],
     ensembles: List,
     surface_renaming: Dict,
     surface_folders: Optional[Dict],
 ) -> pd.DataFrame:
     surface_folders = {} if not surface_folders else surface_folders
-    zones = statistics_dframe["ZONE"].unique()
-    properties = statistics_dframe["PROPERTY"].unique()
     statistics = ["mean", "stddev", "min", "max", "p10", "p90"]
     surface_table = []
     for ensemble in ensembles:

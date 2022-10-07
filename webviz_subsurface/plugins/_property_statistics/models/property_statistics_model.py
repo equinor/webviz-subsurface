@@ -96,6 +96,10 @@ class PropertyStatisticsModel:
         return list(self.dataframe["PROPERTY"].unique())
 
     @property
+    def zones(self) -> List[str]:
+        return list(self.dataframe["ZONE"].unique())
+
+    @property
     def sources(self) -> List[str]:
         return list(self.dataframe["SOURCE"].unique())
 
@@ -201,6 +205,9 @@ class PropertyStatisticsModel:
         df["label"] = df.agg(
             lambda x: " | ".join([f"{x[sel]}" for sel in self.selectors]), axis=1
         )
+
+        # Drop non-numerical columns before aggregations
+        df = df.drop(columns=["SOURCE", "PROPERTY"] + self.selectors)
 
         df = df[df["ENSEMBLE"].isin([ensemble, delta_ensemble])]
         df = df.pivot_table(columns=["ENSEMBLE"], index="label").reset_index()
@@ -311,6 +318,8 @@ class PropertyStatisticsModel:
         if selector_values is not None:
             df = self.filter_dataframe(df, self.selectors, selector_values)
 
+        # Drop non-numerical columns before aggregations
+        df = df.drop(columns=["SOURCE", "PROPERTY"] + self.selectors)
         df = df[df["ENSEMBLE"].isin(ensembles)]
         df = df.pivot_table(columns=["ENSEMBLE"], index="label").reset_index()
         return self.make_table(df)

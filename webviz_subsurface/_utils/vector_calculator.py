@@ -1,6 +1,5 @@
-import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, TypedDict, Union
 from uuid import uuid4
 
 import numpy as np
@@ -20,11 +19,6 @@ from .vector_selector import (
     add_vector_to_vector_selector_data,
     is_vector_name_in_vector_selector_data,
 )
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
 
 # JSON Schema for predefined expressions configuration
 # Used as schema input for json_schema.validate()

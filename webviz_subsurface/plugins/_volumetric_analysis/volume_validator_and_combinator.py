@@ -170,7 +170,7 @@ class VolumeValidatorAndCombinator:
         """Sum Eclipse and RMS volumetrics over the common disjoints sets."""
         region_selectors = self.find_region_selectors()
         set_data_list = []
-        for set_idx, df in self.disjoint_set_df.groupby(["SET"]):
+        for set_idx, df in self.disjoint_set_df.groupby("SET"):
             for voldf in volume_dfs:
                 source = voldf["SOURCE"].unique()[0]
                 if "FIPNUM" in voldf.columns:
@@ -187,7 +187,7 @@ class VolumeValidatorAndCombinator:
                     )
                 set_df = (
                     filtered_df.groupby(["ENSEMBLE", "REAL"])
-                    .sum()
+                    .sum(numeric_only=True)
                     .reset_index()
                     .drop(labels=["FIPNUM", "REGION", "ZONE"], errors="ignore")
                 )
