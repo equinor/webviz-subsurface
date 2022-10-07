@@ -63,6 +63,7 @@ class CO2Leakage(WebvizPluginABC):
     * **`map_surface_names_to_fault_polygons`:** Optional mapping between surface map
         names and surface names used by the fault polygons
     """
+
     class Ids(StrEnum):
         MAIN_VIEW = "main-view"
         MAIN_SETTINGS = "main-settings"
