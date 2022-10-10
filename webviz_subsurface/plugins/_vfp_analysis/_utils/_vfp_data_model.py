@@ -10,6 +10,7 @@ from webviz_config.webviz_store import webvizstore
 
 class VfpTable:
     """Descr"""
+
     # pylint: disable=too-few-public-methods
 
     def __init__(self, filename: str):
@@ -64,14 +65,13 @@ class VfpDataModel:
             self._vfp_file_pattern = vfp_file_pattern
 
         self._vfp_tables = {
-            filename.replace(".arrow", ""): VfpTable(filename)
+            filename.split("/")[-1].replace(".arrow", ""): VfpTable(filename)
             for filename in glob.glob(self._vfp_file_pattern)
         }
-        print(self._vfp_tables)
 
     @property
     def vfp_names(self) -> List[str]:
-        """Return unique vfp numbers"""
+        """Return unique vfp names"""
         return list(self._vfp_tables.keys())
 
     def get_vfp_table(self, vfp_name: str) -> VfpTable:
