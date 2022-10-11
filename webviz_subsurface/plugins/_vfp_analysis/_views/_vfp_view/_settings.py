@@ -30,13 +30,11 @@ class Settings(SettingsGroupABC):
 
 class Filters(SettingsGroupABC):
     class Ids(StrEnum):
-        RATE_LABEL = "rate-label"
-        PRESSURE_LABEL = "pressure-label"
+        THP_LABEL = "thp-label"
         WFR_LABEL = "wfr-label"
         GFR_LABEL = "gfr-label"
         ALQ_LABEL = "alq-label"
-        RATE = "RATE"
-        PRESSURE = "pressure"
+        THP = "thp"
         WFR = "wfr"
         GFR = "gfr"
         ALQ = "alq"
@@ -47,16 +45,10 @@ class Filters(SettingsGroupABC):
     def layout(self) -> List[Any]:
         return [
             html.Label(
-                id=self.register_component_unique_id(Filters.Ids.RATE_LABEL),
+                id=self.register_component_unique_id(Filters.Ids.THP_LABEL),
             ),
             wcc.SelectWithLabel(
-                id=self.register_component_unique_id(Filters.Ids.RATE),
-            ),
-            html.Label(
-                id=self.register_component_unique_id(Filters.Ids.PRESSURE_LABEL),
-            ),
-            wcc.SelectWithLabel(
-                id=self.register_component_unique_id(Filters.Ids.PRESSURE),
+                id=self.register_component_unique_id(Filters.Ids.THP),
             ),
             html.Label(
                 id=self.register_component_unique_id(Filters.Ids.WFR_LABEL),

@@ -1,8 +1,7 @@
+import webviz_core_components as wcc
 from dash import html
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
-
-import webviz_core_components as wcc
 
 
 class VfpViewElement(ViewElementABC):

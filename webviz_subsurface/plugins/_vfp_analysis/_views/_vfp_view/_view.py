@@ -1,11 +1,12 @@
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
-from dash import Input, Output, callback
+from dash import Input, Output, State, callback
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ..._utils import VfpDataModel, VfpTable
 from ._settings import Filters, Settings
+from ._utils import VfpFigureBuilder
 from ._view_element import VfpViewElement
 
 
@@ -32,13 +33,7 @@ class VfpView(ViewABC):
             # Options
             Output(
                 self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.RATE)
-                .to_string(),
-                "options",
-            ),
-            Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.PRESSURE)
+                .component_unique_id(Filters.Ids.THP)
                 .to_string(),
                 "options",
             ),
@@ -63,13 +58,7 @@ class VfpView(ViewABC):
             # Values
             Output(
                 self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.RATE)
-                .to_string(),
-                "value",
-            ),
-            Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.PRESSURE)
+                .component_unique_id(Filters.Ids.THP)
                 .to_string(),
                 "value",
             ),
@@ -94,13 +83,7 @@ class VfpView(ViewABC):
             # Labels
             Output(
                 self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.RATE_LABEL)
-                .to_string(),
-                "children",
-            ),
-            Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.PRESSURE_LABEL)
+                .component_unique_id(Filters.Ids.THP_LABEL)
                 .to_string(),
                 "children",
             ),
@@ -137,13 +120,10 @@ class VfpView(ViewABC):
             List[Dict[str, float]],
             List[Dict[str, float]],
             List[Dict[str, float]],
-            List[Dict[str, float]],
             List[float],
             List[float],
             List[float],
             List[float],
-            List[float],
-            str,
             str,
             str,
             str,
@@ -152,26 +132,75 @@ class VfpView(ViewABC):
 
             vfp_table: VfpTable = self._data_model.get_vfp_table(vfp_name)
 
-            rate_values = vfp_table.rate_values
-            thp_values = vfp_table.thp_values
-            wfr_values = vfp_table.wfr_values
-            gfr_values = vfp_table.gfr_values
-            alq_values = vfp_table.alq_values
+            thp_dict = vfp_table.thp_dict
+            wfr_dict = vfp_table.wfr_dict
+            gfr_dict = vfp_table.gfr_dict
+            alq_dict = vfp_table.alq_dict
 
             return (
-                [{"label": value, "value": value} for value in rate_values],
-                [{"label": value, "value": value} for value in thp_values],
-                [{"label": value, "value": value} for value in wfr_values],
-                [{"label": value, "value": value} for value in gfr_values],
-                [{"label": value, "value": value} for value in alq_values],
-                rate_values,
-                thp_values,
-                wfr_values,
-                gfr_values,
-                alq_values,
-                vfp_table.rate_type,
+                [{"label": value, "value": idx} for idx, value in thp_dict.items()],
+                [{"label": value, "value": idx} for idx, value in wfr_dict.items()],
+                [{"label": value, "value": idx} for idx, value in gfr_dict.items()],
+                [{"label": value, "value": idx} for idx, value in alq_dict.items()],
+                list(thp_dict.keys()),
+                list(wfr_dict.keys()),
+                list(gfr_dict.keys()),
+                list(alq_dict.keys()),
                 vfp_table.thp_type,
                 vfp_table.wfr_type,
                 vfp_table.gfr_type,
                 vfp_table.alq_type,
             )
+
+        @callback(
+            # Options
+            Output(
+                self.view_element_unique_id(
+                    self.Ids.VIEW_ELEMENT, VfpViewElement.Ids.GRAPH
+                ),
+                "figure",
+            ),
+            Input(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.THP),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.WFR),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.GFR),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ),
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(self.Ids.SETTINGS, Settings.Ids.VFP_NAME),
+                "value",
+            ),
+        )
+        def _update_vfp_graph(
+            thps: List[int],
+            wfrs: List[int],
+            gfrs: List[int],
+            alqs: List[int],
+            vfp_name: str,
+        ) -> Dict[str, Any]:
+            vfp_table = self._data_model.get_vfp_table(vfp_name)
+
+            figure_builder = VfpFigureBuilder()
+
+            for thp_idx in thps:
+                for wfr_idx in wfrs:
+                    for gfr_idx in gfrs:
+                        for alq_idx in alqs:
+                            figure_builder.add_vfp_curve(
+                                vfp_table.rate_values,
+                                vfp_table.get_bhp_series(
+                                    thp_idx, wfr_idx, gfr_idx, alq_idx
+                                ),
+                            )
+
+            return figure_builder.get_serialized_figure()
