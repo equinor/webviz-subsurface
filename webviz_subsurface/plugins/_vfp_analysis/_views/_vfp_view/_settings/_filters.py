@@ -6,28 +6,6 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
-class Settings(SettingsGroupABC):
-    class Ids(StrEnum):
-        VFP_NAME = "vfp-name"
-
-    def __init__(self, vfp_names: List[str]) -> None:
-        super().__init__("Settings")
-        self._vfp_names = vfp_names
-
-    def layout(self) -> List[Any]:
-        return [
-            wcc.Dropdown(
-                id=self.register_component_unique_id(Settings.Ids.VFP_NAME),
-                label="VFP name",
-                options=[{"label": vfp, "value": vfp} for vfp in self._vfp_names],
-                clearable=False,
-                value=self._vfp_names[0] if len(self._vfp_names) > 0 else None,
-                persistence=True,
-                persistence_type="session",
-            )
-        ]
-
-
 class Filters(SettingsGroupABC):
     class Ids(StrEnum):
         THP_LABEL = "thp-label"
@@ -49,21 +27,27 @@ class Filters(SettingsGroupABC):
             ),
             wcc.SelectWithLabel(
                 id=self.register_component_unique_id(Filters.Ids.THP),
+                size=6,
             ),
             html.Label(
                 id=self.register_component_unique_id(Filters.Ids.WFR_LABEL),
             ),
             wcc.SelectWithLabel(
                 id=self.register_component_unique_id(Filters.Ids.WFR),
+                size=6,
             ),
             html.Label(
                 id=self.register_component_unique_id(Filters.Ids.GFR_LABEL),
             ),
-            wcc.SelectWithLabel(id=self.register_component_unique_id(Filters.Ids.GFR)),
+            wcc.SelectWithLabel(
+                id=self.register_component_unique_id(Filters.Ids.GFR),
+                size=6,
+            ),
             html.Label(
                 id=self.register_component_unique_id(Filters.Ids.ALQ_LABEL),
             ),
             wcc.SelectWithLabel(
                 id=self.register_component_unique_id(Filters.Ids.ALQ),
+                size=6,
             ),
         ]

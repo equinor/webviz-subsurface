@@ -5,7 +5,7 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ..._utils import VfpDataModel, VfpTable
-from ._settings import Filters, Settings
+from ._settings import Filters, Selections, Vizualisation
 from ._utils import VfpFigureBuilder
 from ._view_element import VfpViewElement
 
@@ -13,8 +13,9 @@ from ._view_element import VfpViewElement
 class VfpView(ViewABC):
     class Ids(StrEnum):
         VIEW_ELEMENT = "view-element"
-        SETTINGS = "settings"
+        SELECTIONS = "selections"
         FILTERS = "filters"
+        VIZUALISATION = "vizualisation"
 
     def __init__(self, data_model: VfpDataModel) -> None:
         super().__init__("VFP Analysis")
@@ -22,7 +23,10 @@ class VfpView(ViewABC):
         self._data_model = data_model
 
         self.add_settings_group(
-            Settings(self._data_model.vfp_names), VfpView.Ids.SETTINGS
+            Selections(self._data_model.vfp_names), VfpView.Ids.SELECTIONS
+        )
+        self.add_settings_group(
+            Vizualisation(self._data_model.vfp_names), VfpView.Ids.VIZUALISATION
         )
         self.add_settings_group(Filters(), VfpView.Ids.FILTERS)
 
@@ -32,84 +36,60 @@ class VfpView(ViewABC):
         @callback(
             # Options
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.THP)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.THP),
                 "options",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.WFR)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.WFR),
                 "options",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.GFR)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.GFR),
                 "options",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.ALQ)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ),
                 "options",
             ),
             # Values
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.THP)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.THP),
                 "value",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.WFR)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.WFR),
                 "value",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.GFR)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.GFR),
                 "value",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.ALQ)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ),
                 "value",
             ),
             # Labels
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.THP_LABEL)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.THP_LABEL),
                 "children",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.WFR_LABEL)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.WFR_LABEL),
                 "children",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.GFR_LABEL)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.GFR_LABEL),
                 "children",
             ),
             Output(
-                self.settings_group(self.Ids.FILTERS)
-                .component_unique_id(Filters.Ids.ALQ_LABEL)
-                .to_string(),
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ_LABEL),
                 "children",
             ),
             # Input
             Input(
-                self.settings_group(self.Ids.SETTINGS)
-                .component_unique_id(Settings.Ids.VFP_NAME)
-                .to_string(),
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, Selections.Ids.VFP_NAME
+                ),
                 "value",
             ),
         )
@@ -143,13 +123,13 @@ class VfpView(ViewABC):
                 [{"label": value, "value": idx} for idx, value in gfr_dict.items()],
                 [{"label": value, "value": idx} for idx, value in alq_dict.items()],
                 list(thp_dict.keys()),
-                list(wfr_dict.keys()),
-                list(gfr_dict.keys()),
-                list(alq_dict.keys()),
-                vfp_table.thp_type,
-                vfp_table.wfr_type,
-                vfp_table.gfr_type,
-                vfp_table.alq_type,
+                [list(wfr_dict.keys())[0]],
+                [list(gfr_dict.keys())[0]],
+                [list(alq_dict.keys())[0]],
+                f"THP = {vfp_table.thp_type}",
+                f"WFR = {vfp_table.wfr_type}",
+                f"GFR = {vfp_table.gfr_type}",
+                f"ALQ = {vfp_table.alq_type}",
             )
 
         @callback(
@@ -177,7 +157,9 @@ class VfpView(ViewABC):
                 "value",
             ),
             State(
-                self.settings_group_unique_id(self.Ids.SETTINGS, Settings.Ids.VFP_NAME),
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, Selections.Ids.VFP_NAME
+                ),
                 "value",
             ),
         )
@@ -190,7 +172,7 @@ class VfpView(ViewABC):
         ) -> Dict[str, Any]:
             vfp_table = self._data_model.get_vfp_table(vfp_name)
 
-            figure_builder = VfpFigureBuilder()
+            figure_builder = VfpFigureBuilder(vfp_name=vfp_name)
 
             for thp_idx in thps:
                 for wfr_idx in wfrs:
@@ -203,4 +185,4 @@ class VfpView(ViewABC):
                                 ),
                             )
 
-            return figure_builder.get_serialized_figure()
+            return figure_builder.get_figure()
