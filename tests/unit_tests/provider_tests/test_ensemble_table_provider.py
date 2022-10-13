@@ -6,7 +6,7 @@ import pandas as pd
 from webviz_subsurface._providers import (
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
-    TableVectorMetadata
+    TableVectorMetadata,
 )
 from webviz_subsurface._providers.ensemble_table_provider import (
     EnsembleTableProviderImplArrow,
