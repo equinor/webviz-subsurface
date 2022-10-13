@@ -88,9 +88,9 @@ def test_create_from_aggregated_csv_file_smry_csv(
     assert valdf.columns[1] == "YEARS"
     assert valdf["REAL"].nunique() == 3
 
+    # No metadata in csv files
     meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOPR")
-    assert meta is not None
-    assert meta.unit == "SM3/DAY"
+    assert meta is None
 
 
 def test_create_from_per_realization_csv_file(
@@ -132,6 +132,11 @@ def test_create_from_per_realization_arrow_file(
     assert valdf.shape[0] == 25284
     assert "FOPT" in valdf.columns
     assert valdf["REAL"].nunique() == 100
+
+    # Test metadata in arrow files
+    meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOPR")
+    assert meta is not None
+    assert meta.unit == "SM3/DAY"
 
 
 def test_create_from_per_realization_parameter_file(
