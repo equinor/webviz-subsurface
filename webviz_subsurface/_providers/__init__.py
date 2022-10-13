@@ -30,5 +30,6 @@ from .ensemble_table_provider import (
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
     EnsembleTableProviderImplArrow,
+    TableVectorMetadata,
 )
 from .well_provider import WellProvider, WellProviderFactory, WellServer

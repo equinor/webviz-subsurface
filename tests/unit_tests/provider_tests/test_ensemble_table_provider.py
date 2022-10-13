@@ -6,6 +6,7 @@ import pandas as pd
 from webviz_subsurface._providers import (
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
+    TableVectorMetadata
 )
 from webviz_subsurface._providers.ensemble_table_provider import (
     EnsembleTableProviderImplArrow,
@@ -58,6 +59,8 @@ def test_synthetic_get_column_data(testdata_folder: Path) -> None:
     assert df.shape == (4, 2)
     assert df.columns.tolist() == ["REAL", "STR"]
 
+    assert model.vector_metadata("REAL") is None
+
 
 def test_create_from_aggregated_csv_file_smry_csv(
     testdata_folder: Path, tmp_path: Path
@@ -84,6 +87,10 @@ def test_create_from_aggregated_csv_file_smry_csv(
     assert valdf.columns[0] == "REAL"
     assert valdf.columns[1] == "YEARS"
     assert valdf["REAL"].nunique() == 3
+
+    meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOPR")
+    assert meta is not None
+    assert meta.unit == "SM3/DAY"
 
 
 def test_create_from_per_realization_csv_file(
