@@ -142,10 +142,6 @@ def test_create_from_per_realization_arrow_file(
     assert meta is not None
     assert meta.unit == "SM3/DAY"
 
-    # Test metadata for non-existen column
-    meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOOBAR")
-    assert meta is None
-
 
 def test_create_from_per_realization_parameter_file(
     testdata_folder: Path, tmp_path: Path
