@@ -117,6 +117,10 @@ def test_create_from_per_realization_csv_file(
     assert valdf["CONIDX"].nunique() == 24
     assert sorted(valdf["CONIDX"].unique()) == list(range(1, 25))
 
+    # No metadata in csv files
+    meta: Optional[TableVectorMetadata] = provider.vector_metadata("CONIDX")
+    assert meta is None
+
 
 def test_create_from_per_realization_arrow_file(
     testdata_folder: Path, tmp_path: Path
@@ -133,10 +137,14 @@ def test_create_from_per_realization_arrow_file(
     assert "FOPT" in valdf.columns
     assert valdf["REAL"].nunique() == 100
 
-    # Test metadata in arrow files
+    # Test metadata
     meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOPR")
     assert meta is not None
     assert meta.unit == "SM3/DAY"
+
+    # Test metadata for non-existen column
+    meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOOBAR")
+    assert meta is None
 
 
 def test_create_from_per_realization_parameter_file(
@@ -151,6 +159,12 @@ def test_create_from_per_realization_parameter_file(
     valdf = provider.get_column_data(provider.column_names())
     assert "GLOBVAR:FAULT_SEAL_SCALING" in valdf.columns
     assert valdf["REAL"].nunique() == 100
+
+    # No metadata in parameter files
+    meta: Optional[TableVectorMetadata] = provider.vector_metadata(
+        "GLOBVAR:FAULT_SEAL_SCALING"
+    )
+    assert meta is None
 
 
 def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
@@ -177,3 +191,7 @@ def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
             "STOIIP_OIL",
             "SOURCE",
         }.issubset(set(provider.column_names()))
+
+        # No metadata in csv files
+        meta: Optional[TableVectorMetadata] = provider.vector_metadata("ZONE")
+        assert meta is None
