@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
@@ -62,6 +62,8 @@ class GroupTree(WebvizPluginABC):
         gruptree_file: str = "share/results/tables/gruptree.csv",
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         time_index: str = "yearly",
+        terminal_node: str = "FIELD",
+        excl_well_startswith: Optional[List[str]] = None,
     ) -> None:
         super().__init__(stretch=True)
 
@@ -70,8 +72,6 @@ class GroupTree(WebvizPluginABC):
 
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
-
-        sampling = Frequency(time_index)
 
         self._ensemble_paths: Dict[str, Path] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -92,7 +92,10 @@ class GroupTree(WebvizPluginABC):
                 )
             )
             self._group_tree_data[ens_name] = EnsembleGroupTreeData(
-                provider, GruptreeModel(ens_name, ens_path, gruptree_file)
+                provider=provider,
+                gruptree_model=GruptreeModel(ens_name, ens_path, gruptree_file),
+                terminal_node=terminal_node,
+                excl_well_startswith=excl_well_startswith,
             )
 
         self.add_view(

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -17,12 +17,33 @@ class EnsembleGroupTreeData:
     """
 
     def __init__(
-        self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
+        self,
+        provider: EnsembleSummaryProvider,
+        gruptree_model: GruptreeModel,
+        terminal_node: str,
+        excl_well_startswith: Optional[List[str]] = None,
     ):
 
         self._provider = provider
         self._gruptree_model = gruptree_model
+        self._terminal_node = terminal_node
         self._gruptree = self._gruptree_model.dataframe
+
+        if excl_well_startswith is not None:
+            # Filter out WELSPECS rows where CHILD startswith
+            # any of the elements in excl_well_startswith
+            self._gruptree = self._gruptree[
+                (self._gruptree["KEYWORD"] != "WELSPECS")
+                | (
+                    (self._gruptree["KEYWORD"] == "WELSPECS")
+                    & (
+                        ~self._gruptree["CHILD"].str.startswith(
+                            tuple(excl_well_startswith)
+                        )
+                    )
+                )
+            ].copy()
+
         self._wells: List[str] = self._gruptree[
             self._gruptree["KEYWORD"] == "WELSPECS"
         ]["CHILD"].unique()
@@ -39,7 +60,9 @@ class EnsembleGroupTreeData:
         self._has_gasinj = smry["FGIR"].sum() > 0
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
-        self._gruptree = add_nodetype(self._gruptree, self._provider, self._wells)
+        self._gruptree = add_nodetype(
+            self._gruptree, self._provider, self._wells, self._terminal_node
+        )
 
         # Add edge label
         self._gruptree["EDGE_LABEL"] = self._gruptree.apply(get_edge_label, axis=1)
@@ -106,7 +129,7 @@ class EnsembleGroupTreeData:
         gruptree_filtered = pd.concat(dfs).drop_duplicates()
 
         return (
-            create_dataset(smry, gruptree_filtered, self._sumvecs),
+            create_dataset(smry, gruptree_filtered, self._sumvecs, self._terminal_node),
             self.get_edge_options(node_types),
             [
                 {"name": option, "label": get_label(option)}
@@ -295,7 +318,10 @@ def get_edge_node(datatype: str) -> str:
 
 
 def create_dataset(
-    smry: pd.DataFrame, gruptree: pd.DataFrame, sumvecs: pd.DataFrame
+    smry: pd.DataFrame,
+    gruptree: pd.DataFrame,
+    sumvecs: pd.DataFrame,
+    terminal_node: str,
 ) -> List[dict]:
     """The function puts together the GroupTree component input dataset.
 
@@ -319,7 +345,7 @@ def create_dataset(
                 {
                     "dates": [date.strftime("%Y-%m-%d") for date in dates],
                     "tree": extract_tree(
-                        gruptree_date, "FIELD", smry_in_datespan, dates, sumvecs
+                        gruptree_date, terminal_node, smry_in_datespan, dates, sumvecs
                     ),
                 }
             )
@@ -338,7 +364,9 @@ def extract_tree(
     sumvecs: pd.DataFrame,
 ) -> dict:
     """Extract the tree part of the GroupTree component dataset. This functions
-    works recursively and is initially called with the top node of the tree: FIELD."""
+    works recursively and is initially called with the terminal node of the tree
+    (usually FIELD)
+    """
     # pylint: disable=too-many-locals
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
     nodedict = get_nodedict(gruptree, nodename)
@@ -391,7 +419,10 @@ def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
 
 
 def add_nodetype(
-    gruptree: pd.DataFrame, provider: EnsembleSummaryProvider, all_wells: List[str]
+    gruptree: pd.DataFrame,
+    provider: EnsembleSummaryProvider,
+    all_wells: List[str],
+    terminal_node: str,
 ) -> pd.DataFrame:
     """Adds nodetype IS_PROD, IS_INJ and IS_OTHER."""
 
@@ -425,10 +456,11 @@ def add_nodetype(
         is_inj_map[node["CHILD"]] = any(leafs_are_inj)
         is_other_map[node["CHILD"]] = any(leafs_are_other)
 
-    # FIELD node must not be filtered out, so it is set True for all categories
-    is_prod_map["FIELD"] = True
-    is_inj_map["FIELD"] = True
-    is_other_map["FIELD"] = True
+    # The terminal (usually FIELD) node must not be filtered out,
+    # so it is set True for all categories
+    is_prod_map[terminal_node] = True
+    is_inj_map[terminal_node] = True
+    is_other_map[terminal_node] = True
 
     # Tag all nodes as IS_PROD, IS_INJ and IS_OTHER
     gruptree["IS_PROD"] = gruptree["CHILD"].map(is_prod_map)
