@@ -27,22 +27,9 @@ class EnsembleGroupTreeData:
         self._provider = provider
         self._gruptree_model = gruptree_model
         self._terminal_node = terminal_node
-        self._gruptree = self._gruptree_model.dataframe
-
-        if excl_well_startswith is not None:
-            # Filter out WELSPECS rows where CHILD startswith
-            # any of the elements in excl_well_startswith
-            self._gruptree = self._gruptree[
-                (self._gruptree["KEYWORD"] != "WELSPECS")
-                | (
-                    (self._gruptree["KEYWORD"] == "WELSPECS")
-                    & (
-                        ~self._gruptree["CHILD"].str.startswith(
-                            tuple(excl_well_startswith)
-                        )
-                    )
-                )
-            ].copy()
+        self._gruptree = self._gruptree_model.get_filtered_dataframe(
+            terminal_node=self._terminal_node, excl_well_startswith=excl_well_startswith
+        )
 
         self._wells: List[str] = self._gruptree[
             self._gruptree["KEYWORD"] == "WELSPECS"

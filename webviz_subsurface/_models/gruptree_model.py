@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
 from webviz_config.webviz_store import webvizstore
@@ -45,6 +45,41 @@ class GruptreeModel:
         If not, all trees are stored.
         """
         return self._dataframe
+
+    def get_filtered_dataframe(
+        self, terminal_node: str, excl_well_startswith: Optional[List[str]] = None
+    ) -> pd.DataFrame:
+        """
+        Descr
+        """
+        df = self.dataframe
+
+        if terminal_node != "FIELD":
+            branch_nodes = self._get_branch_nodes(terminal_node)
+            df = self._dataframe[self._dataframe["CHILD"].isin(branch_nodes)]
+
+        if excl_well_startswith is not None:
+            # Filter out WELSPECS rows where CHILD startswith
+            # any of the elements in excl_well_startswith
+            df = df[
+                (df["KEYWORD"] != "WELSPECS")
+                | (
+                    (df["KEYWORD"] == "WELSPECS")
+                    & (~df["CHILD"].str.startswith(tuple(excl_well_startswith)))
+                )
+            ]
+        return df.copy()
+
+    def _get_branch_nodes(self, terminal_node: str) -> List[str]:
+        """The function is using recursion to find all wells below the node
+        in the three.
+        """
+        branch_nodes = [terminal_node]
+
+        children = self._dataframe[self._dataframe["PARENT"] == terminal_node]
+        for _, childrow in children.iterrows():
+            branch_nodes.extend(self._get_branch_nodes(childrow["CHILD"]))
+        return branch_nodes
 
     @property
     def gruptrees_are_equal_over_reals(self) -> bool:
