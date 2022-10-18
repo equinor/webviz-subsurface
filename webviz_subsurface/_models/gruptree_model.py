@@ -47,7 +47,10 @@ class GruptreeModel:
         return self._dataframe
 
     def get_filtered_dataframe(
-        self, terminal_node: str, excl_well_startswith: Optional[List[str]] = None
+        self,
+        terminal_node: str,
+        excl_well_startswith: Optional[List[str]] = None,
+        excl_well_endswith: Optional[List[str]] = None,
     ) -> pd.DataFrame:
         """
         Descr
@@ -58,16 +61,27 @@ class GruptreeModel:
             branch_nodes = self._get_branch_nodes(terminal_node)
             df = self._dataframe[self._dataframe["CHILD"].isin(branch_nodes)]
 
-        if excl_well_startswith is not None:
-            # Filter out WELSPECS rows where CHILD startswith
-            # any of the elements in excl_well_startswith
-            df = df[
-                (df["KEYWORD"] != "WELSPECS")
+        def filter_wells(
+            dframe: pd.DataFrame, well_name_criteria: Callable
+        ) -> pd.DataFrame:
+            return dframe[
+                (dframe["KEYWORD"] != "WELSPECS")
                 | (
-                    (df["KEYWORD"] == "WELSPECS")
-                    & (~df["CHILD"].str.startswith(tuple(excl_well_startswith)))
+                    (dframe["KEYWORD"] == "WELSPECS")
+                    & (~well_name_criteria(dframe["CHILD"]))
                 )
             ]
+
+        if excl_well_startswith is not None:
+            # Filter out WELSPECS rows where CHILD starts with any element in excl_well_startswith
+            df = filter_wells(
+                df, lambda x: x.str.startswith(tuple(excl_well_startswith))
+            )
+
+        if excl_well_endswith is not None:
+            # Filter out WELSPECS rows where CHILD ends with any element in excl_well_endswith
+            df = filter_wells(df, lambda x: x.str.endswith(tuple(excl_well_endswith)))
+
         return df.copy()
 
     def _get_branch_nodes(self, terminal_node: str) -> List[str]:

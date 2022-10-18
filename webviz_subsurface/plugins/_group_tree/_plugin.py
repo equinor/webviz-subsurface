@@ -63,12 +63,20 @@ class GroupTree(WebvizPluginABC):
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         time_index: str = "yearly",
         terminal_node: str = "FIELD",
-        excl_well_startswith: Optional[List[str]] = None,
+        excl_well_startswith: Optional[List] = None,
+        excl_well_endswith: Optional[List] = None,
     ) -> None:
         super().__init__(stretch=True)
 
         self._ensembles = ensembles
         self._gruptree_file = gruptree_file
+
+        if excl_well_startswith is None:
+            excl_well_startswith = []
+        excl_well_startswith = [str(element) for element in excl_well_startswith]
+        if excl_well_endswith is None:
+            excl_well_endswith = []
+        excl_well_endswith = [str(element) for element in excl_well_endswith]
 
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
@@ -96,6 +104,7 @@ class GroupTree(WebvizPluginABC):
                 gruptree_model=GruptreeModel(ens_name, ens_path, gruptree_file),
                 terminal_node=terminal_node,
                 excl_well_startswith=excl_well_startswith,
+                excl_well_endswith=excl_well_endswith,
             )
 
         self.add_view(

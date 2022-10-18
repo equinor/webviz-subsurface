@@ -22,13 +22,16 @@ class EnsembleGroupTreeData:
         gruptree_model: GruptreeModel,
         terminal_node: str,
         excl_well_startswith: Optional[List[str]] = None,
+        excl_well_endswith: Optional[List[str]] = None,
     ):
 
         self._provider = provider
         self._gruptree_model = gruptree_model
         self._terminal_node = terminal_node
         self._gruptree = self._gruptree_model.get_filtered_dataframe(
-            terminal_node=self._terminal_node, excl_well_startswith=excl_well_startswith
+            terminal_node=self._terminal_node,
+            excl_well_startswith=excl_well_startswith,
+            excl_well_endswith=excl_well_endswith,
         )
 
         self._wells: List[str] = self._gruptree[
