@@ -128,8 +128,7 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
 
         If the trees are equal in every realization, only one realization is kept.
         """
-
-        ens = scratch_ensemble(self._ens_name, self._ens_path, filter_file="OK")
+        ens = scratch_ensemble(self._ens_name, str(self._ens_path), filter_file="OK")
         df_files = ens.find_files(self._gruptree_file)
 
         if df_files.empty:
