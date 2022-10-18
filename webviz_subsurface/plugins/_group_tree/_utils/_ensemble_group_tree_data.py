@@ -294,7 +294,17 @@ def get_sumvec(
         if datatype == "pressure":
             return f"{datatype_ecl}:{nodename}"
         return datatype_ecl
-    datatype_ecl = datatype_map[keyword][datatype]
+    try:
+        datatype_ecl = datatype_map[keyword][datatype]
+    except KeyError as exc:
+        error = (
+            f"Summary vector not found for eclipse keyword: {keyword}, "
+            f"data type: {datatype} and node name: {nodename}. "
+        )
+        if keyword == "BRANPROP" and (datatype in ["gasinjrate", "waterinjrate"]):
+            error += "Can be solved by connecting the injection to a node not defined in BRANPROP."
+
+        raise KeyError(error) from exc
     return f"{datatype_ecl}:{nodename}"
 
 
