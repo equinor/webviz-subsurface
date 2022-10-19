@@ -22,7 +22,10 @@ def fixture_model(testdata_folder) -> GruptreeModel:
 
 @pytest.mark.usefixtures("app")
 def test_gruptree_model_init(testdata_folder, gruptree_model: GruptreeModel):
-    assert len(gruptree_model.dataframe["REAL"]) == 1
+
+    # Check that there is only one REAL (means that the gruptree is
+    # the same for all realizations)
+    assert gruptree_model.dataframe["REAL"].nunique() == 1
 
     # Load gruptree table from realization-0 and compare with
     # the dataframe from the gruptree_model
