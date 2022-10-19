@@ -37,6 +37,7 @@ def test_gruptree_model_init(testdata_folder, gruptree_model: GruptreeModel):
     assert_frame_equal(gruptree_model.dataframe[CHECK_COLUMNS], exp_df[CHECK_COLUMNS])
 
 
+@pytest.mark.usefixtures("app")
 def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
     # Test the get_filtered_dataframe function with terminal node different than FIELD
     filtered_df = gruptree_model.get_filtered_dataframe(terminal_node="OP")
