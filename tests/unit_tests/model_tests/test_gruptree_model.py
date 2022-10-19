@@ -12,7 +12,7 @@ ENSEMBLE = "01_drogon_ahm"
 GRUPTREE_FILE = "share/results/tables/gruptree.csv"
 
 
-@pytest.fixture
+@pytest.fixture(name="gruptree_model")
 def fixture_model(testdata_folder) -> GruptreeModel:
     ens_path = Path(testdata_folder) / ENSEMBLE / "realization-*" / "iter-0"
     return GruptreeModel(
@@ -21,9 +21,8 @@ def fixture_model(testdata_folder) -> GruptreeModel:
 
 
 @pytest.mark.usefixtures("app")
-def test_gruptree_model_init(testdata_folder):
-
-    assert len(fixture_model.dataframe["REAL"]) == 1
+def test_gruptree_model_init(testdata_folder, gruptree_model: GruptreeModel):
+    assert len(gruptree_model.dataframe["REAL"]) == 1
 
     # Load gruptree table from realization-0 and compare with
     # the dataframe from the gruptree_model
@@ -32,13 +31,12 @@ def test_gruptree_model_init(testdata_folder):
     exp_df["DATE"] = pd.to_datetime(exp_df["DATE"])
     exp_df = exp_df.where(pd.notnull(exp_df), None)
 
-    assert_frame_equal(fixture_model.dataframe[CHECK_COLUMNS], exp_df[CHECK_COLUMNS])
+    assert_frame_equal(gruptree_model.dataframe[CHECK_COLUMNS], exp_df[CHECK_COLUMNS])
 
 
-def test_get_filtered_dataframe():
-
+def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
     # Test the get_filtered_dataframe function with terminal node different than FIELD
-    filtered_df = fixture_model.get_filtered_dataframe(terminal_node="OP")
+    filtered_df = gruptree_model.get_filtered_dataframe(terminal_node="OP")
     filtered_df = filtered_df[
         filtered_df["DATE"] == filtered_df["DATE"].max()
     ].reset_index()
@@ -56,7 +54,7 @@ def test_get_filtered_dataframe():
 
     # Test excl_wells_startswith and excl_wells_endswith
     assert set(
-        fixture_model.get_filtered_dataframe(
+        gruptree_model.get_filtered_dataframe(
             terminal_node="FIELD",
             excl_well_startswith=["R_"],
             excl_well_endswith=["3", "5"],
