@@ -48,16 +48,16 @@ class GruptreeModel:
 
     def get_filtered_dataframe(
         self,
-        terminal_node: str,
+        terminal_node: Optional[str] = None,
         excl_well_startswith: Optional[List[str]] = None,
         excl_well_endswith: Optional[List[str]] = None,
     ) -> pd.DataFrame:
         """
         Descr
         """
-        df = self.dataframe
+        df = self._dataframe
 
-        if terminal_node != "FIELD":
+        if terminal_node is not None:
             branch_nodes = self._get_branch_nodes(terminal_node)
             df = self._dataframe[self._dataframe["CHILD"].isin(branch_nodes)]
 

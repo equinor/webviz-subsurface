@@ -39,6 +39,7 @@ def test_gruptree_model_init(testdata_folder, gruptree_model: GruptreeModel):
 
 @pytest.mark.usefixtures("app")
 def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
+
     # Test the get_filtered_dataframe function with terminal node different than FIELD
     filtered_df = gruptree_model.get_filtered_dataframe(terminal_node="OP")
     filtered_df = filtered_df[
@@ -59,7 +60,6 @@ def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
     # Test excl_wells_startswith and excl_wells_endswith
     assert set(
         gruptree_model.get_filtered_dataframe(
-            terminal_node="FIELD",
             excl_well_startswith=["R_"],
             excl_well_endswith=["3", "5"],
         )["CHILD"].unique()
