@@ -66,6 +66,7 @@ class GroupTree(WebvizPluginABC):
         excl_well_startswith: Optional[List] = None,
         excl_well_endswith: Optional[List] = None,
     ) -> None:
+        # pylint: disable=too-many-arguments
         super().__init__(stretch=True)
 
         self._ensembles = ensembles

@@ -74,13 +74,17 @@ class GruptreeModel:
 
         if excl_well_startswith is not None:
             # Filter out WELSPECS rows where CHILD starts with any element in excl_well_startswith
+            # Conversion to tuple done outside lambda due to mypy
+            excl_well_startswith_tuple = tuple(excl_well_startswith)
             df = filter_wells(
-                df, lambda x: x.str.startswith(tuple(excl_well_startswith))
+                df, lambda x: x.str.startswith(excl_well_startswith_tuple)
             )
 
         if excl_well_endswith is not None:
             # Filter out WELSPECS rows where CHILD ends with any element in excl_well_endswith
-            df = filter_wells(df, lambda x: x.str.endswith(tuple(excl_well_endswith)))
+            # Conversion to tuple done outside lambda due to mypy
+            excl_well_endswith_tuple = tuple(excl_well_endswith)
+            df = filter_wells(df, lambda x: x.str.endswith(excl_well_endswith_tuple))
 
         return df.copy()
 
