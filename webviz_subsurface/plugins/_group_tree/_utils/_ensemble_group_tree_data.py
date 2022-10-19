@@ -272,11 +272,15 @@ def get_sumvec(
             "gasinjrate": "GGIR",
             "pressure": "GPR",
         },
+        # BRANPROP can not be used for injection, but the nodes
+        # might also be GNETINJE and could therefore have injection.
         "BRANPROP": {
             "oilrate": "GOPRNB",
             "gasrate": "GGPRNB",
             "waterrate": "GWPRNB",
             "pressure": "GPR",
+            "waterinjrate": "GWIR",
+            "gasinjrate": "GGIR",
         },
         "WELSPECS": {
             "oilrate": "WOPR",
@@ -301,9 +305,6 @@ def get_sumvec(
             f"Summary vector not found for eclipse keyword: {keyword}, "
             f"data type: {datatype} and node name: {nodename}. "
         )
-        if keyword == "BRANPROP" and (datatype in ["gasinjrate", "waterinjrate"]):
-            error += "Can be solved by connecting the injection to a node not defined in BRANPROP."
-
         raise KeyError(error) from exc
     return f"{datatype_ecl}:{nodename}"
 
