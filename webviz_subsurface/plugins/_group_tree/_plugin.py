@@ -63,6 +63,7 @@ class GroupTree(WebvizPluginABC):
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         time_index: str = "yearly",
         terminal_node: str = "FIELD",
+        tree_type: str = "GRUPTREE",
         excl_well_startswith: Optional[List] = None,
         excl_well_endswith: Optional[List] = None,
     ) -> None:
@@ -102,7 +103,12 @@ class GroupTree(WebvizPluginABC):
             )
             self._group_tree_data[ens_name] = EnsembleGroupTreeData(
                 provider=provider,
-                gruptree_model=GruptreeModel(ens_name, ens_path, gruptree_file),
+                gruptree_model=GruptreeModel(
+                    ens_name=ens_name,
+                    ens_path=ens_path,
+                    gruptree_file=gruptree_file,
+                    tree_type=tree_type,
+                ),
                 terminal_node=terminal_node,
                 excl_well_startswith=excl_well_startswith,
                 excl_well_endswith=excl_well_endswith,

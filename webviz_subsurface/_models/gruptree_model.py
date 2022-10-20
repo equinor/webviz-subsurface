@@ -2,9 +2,15 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._datainput.fmu_input import scratch_ensemble
+
+
+class TreeType(StrEnum):
+    GRUPTREE = "GRUPTREE"
+    BRANPROP = "BRANPROP"
 
 
 class GruptreeModel:
@@ -18,13 +24,14 @@ class GruptreeModel:
         ens_name: str,
         ens_path: Path,
         gruptree_file: str,
-        remove_gruptree_if_branprop: bool = True,
+        tree_type: str,
     ):
         self._ens_name = ens_name
         self._ens_path = ens_path
         self._gruptree_file = gruptree_file
-        self._remove_gruptree_if_branprop = remove_gruptree_if_branprop
+        self._tree_type = TreeType(tree_type)
         self._dataframe = self.read_ensemble_gruptree()
+
         self._gruptrees_are_equal_over_reals = (
             self._dataframe["REAL"].nunique() == 1
             if not self._dataframe.empty
@@ -58,6 +65,13 @@ class GruptreeModel:
         df = self._dataframe
 
         if terminal_node is not None:
+
+            if terminal_node not in self._dataframe["CHILD"].unique():
+                raise ValueError(
+                    f"Terminal node '{terminal_node}' not found in 'CHILD' column "
+                    "of the gruptree data."
+                )
+
             branch_nodes = self._get_branch_nodes(terminal_node)
             df = self._dataframe[self._dataframe["CHILD"].isin(branch_nodes)]
 
@@ -145,12 +159,23 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
         gruptrees_are_equal = True
         for i, row in df_files.iterrows():
             df_real = pd.read_csv(row["FULLPATH"])
+            unique_keywords = df_real["KEYWORD"].unique()
+
+            if self._tree_type.value not in unique_keywords:
+                raise ValueError(
+                    f"Keyword {self._tree_type.value} not found in {row['FULLPATH']}"
+                )
 
             if (
-                self._remove_gruptree_if_branprop
-                and "BRANPROP" in df_real["KEYWORD"].unique()
+                self._tree_type == TreeType.GRUPTREE
+                and TreeType.BRANPROP.value in unique_keywords
             ):
-                df_real = df_real[df_real["KEYWORD"] != "GRUPTREE"]
+                # Filter out BRANPROP entries
+                df_real = df_real[df_real["KEYWORD"] != TreeType.BRANPROP.value]
+
+            if self._tree_type == TreeType.BRANPROP:
+                # Filter out GRUPTREE entries
+                df_real = df_real[df_real["KEYWORD"] != TreeType.GRUPTREE.value]
 
             if (
                 i > 0
