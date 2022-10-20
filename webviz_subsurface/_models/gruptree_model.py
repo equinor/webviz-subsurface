@@ -24,7 +24,7 @@ class GruptreeModel:
         ens_name: str,
         ens_path: Path,
         gruptree_file: str,
-        tree_type: str,
+        tree_type: str = "GRUPTREE",
     ):
         self._ens_name = ens_name
         self._ens_path = ens_path

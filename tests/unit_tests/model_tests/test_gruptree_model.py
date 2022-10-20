@@ -16,7 +16,10 @@ GRUPTREE_FILE = "share/results/tables/gruptree.csv"
 def fixture_model(testdata_folder) -> GruptreeModel:
     ens_path = Path(testdata_folder) / ENSEMBLE / "realization-*" / "iter-0"
     return GruptreeModel(
-        ens_name="iter-0", ens_path=ens_path, gruptree_file=GRUPTREE_FILE
+        ens_name="iter-0",
+        ens_path=ens_path,
+        gruptree_file=GRUPTREE_FILE,
+        tree_type="GRUPTREE",
     )
 
 
