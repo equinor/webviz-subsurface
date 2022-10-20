@@ -50,6 +50,27 @@ class GroupTree(WebvizPluginABC):
 
     This is the sampling interval of the summary data. It is `yearly` by default, but can be set
     to `monthly` if needed.
+
+    **terminal_node**
+
+    This parameter allows you to specify the terminal node used. It is `FIELD` by default.
+
+    **tree_type**
+
+    This parameter allows you to specify which tree type is vizualised. It is `GRUPTREE` by
+    default, but can also be set to `BRANPROP`.
+
+    **excl_well_startswith**
+
+    This parameter allows you to remove wells that starts with any of the strings in this list.
+    It is intended to be used to remove f.ex RFT wells that don't have any production or injection.
+    Be aware that if actual producers/injectors are removed, the rates in the tree might not be
+    consistant.
+
+    **excl_well_endswith**
+
+    Same as excl_well_startswith, but removes wells that ends with any of the strings in this list.
+
     """
 
     class Ids(StrEnum):

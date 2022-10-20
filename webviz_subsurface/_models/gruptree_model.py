@@ -59,8 +59,16 @@ class GruptreeModel:
         excl_well_startswith: Optional[List[str]] = None,
         excl_well_endswith: Optional[List[str]] = None,
     ) -> pd.DataFrame:
-        """
-        Descr
+        """This function returns a sub-set of the rows in the gruptree dataframe
+        filtered according to the input arguments:
+
+        - terminal_node: returns the terminal node and all nodes below it in the
+        tree (for all realizations and dates)
+        - excl_well_startswith: removes WELSPECS rows where CHILD starts with any
+        of the entries in the list.
+        - excl_well_endswith: removes WELSPECS rows where CHILD ends with any
+        of the entries in the list.
+
         """
         df = self._dataframe
 
