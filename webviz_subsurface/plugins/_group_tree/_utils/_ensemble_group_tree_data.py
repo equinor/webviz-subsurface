@@ -64,7 +64,9 @@ class EnsembleGroupTreeData:
         self._sumvecs: pd.DataFrame = self._get_sumvecs_with_metadata()
 
         # Check that all summary vectors exist
-        self._check_that_sumvecs_exists(list(self._sumvecs["SUMVEC"]))
+        self._check_that_sumvecs_exists(
+            list(self._sumvecs[self._sumvecs["EDGE_NODE"] == "edge"]["SUMVEC"])
+        )
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
@@ -91,7 +93,12 @@ class EnsembleGroupTreeData:
         """  # noqa
 
         # Filter smry
-        smry = self._provider.get_vectors_df(list(self._sumvecs["SUMVEC"]), None)
+        vectors = [
+            sumvec
+            for sumvec in self._sumvecs["SUMVEC"]
+            if sumvec in self._provider.vector_names()
+        ]
+        smry = self._provider.get_vectors_df(vectors, None)
 
         if tree_mode is TreeModeOptions.STATISTICS:
             if stat_option is StatOptions.MEAN:
@@ -420,9 +427,12 @@ def extract_tree(
                 round(smry_at_date[item["SUMVEC"]].values[0], 2)
             )
         for item in nodes:
-            node_data[item["DATATYPE"]].append(
-                round(smry_at_date[item["SUMVEC"]].values[0], 2)
-            )
+            try:
+                node_data[item["DATATYPE"]].append(
+                    round(smry_at_date[item["SUMVEC"]].values[0], 2)
+                )
+            except KeyError:
+                node_data[item["DATATYPE"]].append(np.nan)
 
     result["edge_data"] = edge_data
     result["node_data"] = node_data
