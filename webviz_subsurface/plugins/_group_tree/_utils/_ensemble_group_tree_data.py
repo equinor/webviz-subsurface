@@ -38,21 +38,25 @@ class EnsembleGroupTreeData:
             self._gruptree["KEYWORD"] == "WELSPECS"
         ]["CHILD"].unique()
 
-        # Check that all field rate and WSTAT summary vectors exist
-        self._check_that_sumvecs_exists(
-            ["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"]
-            + [f"WSTAT:{well}" for well in self._wells]
-        )
-
-        # Check if the ensemble has waterinj and/or gasinj
-        smry = self._provider.get_vectors_df(["FWIR", "FGIR"], None)
-        self._has_waterinj = smry["FWIR"].sum() > 0
-        self._has_gasinj = smry["FGIR"].sum() > 0
+        # Check that all WSTAT summary vectors exist
+        # They are used to determine which summary vector are needed later.
+        self._check_that_sumvecs_exists([f"WSTAT:{well}" for well in self._wells])
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
         self._gruptree = add_nodetype(
             self._gruptree, self._provider, self._wells, self._terminal_node
         )
+
+        self._has_waterinj = False
+        self._has_gasinj = False
+        if True in self._gruptree["IS_INJ"].unique():
+            print("her")
+            # If there is injection in the tree we need to determine
+            # which kind of injection. For that wee need FWIR and FGIR
+            self._check_that_sumvecs_exists(["FWIR", "FGIR"])
+            smry = self._provider.get_vectors_df(["FWIR", "FGIR"], None)
+            self._has_waterinj = smry["FWIR"].sum() > 0
+            self._has_gasinj = smry["FGIR"].sum() > 0
 
         # Add edge label
         self._gruptree["EDGE_LABEL"] = self._gruptree.apply(get_edge_label, axis=1)
@@ -148,6 +152,8 @@ class EnsembleGroupTreeData:
         * nodename: name in eclipse network
         * datatype: oilrate, gasrate, pressure etc
         * edge_node: whether the datatype is edge (f.ex rates) or node (f.ex pressure)
+
+        Rates are not required for the terminal node since they will not be used.
         """
         records = []
 
@@ -157,11 +163,19 @@ class EnsembleGroupTreeData:
             keyword = noderow["KEYWORD"]
 
             datatypes = ["pressure"]
-            if noderow["IS_PROD"]:
+            if noderow["IS_PROD"] and nodename != self._terminal_node:
                 datatypes += ["oilrate", "gasrate", "waterrate"]
-            if noderow["IS_INJ"] and self._has_waterinj:
+            if (
+                noderow["IS_INJ"]
+                and self._has_waterinj
+                and nodename != self._terminal_node
+            ):
                 datatypes.append("waterinjrate")
-            if noderow["IS_INJ"] and self._has_gasinj:
+            if (
+                noderow["IS_INJ"]
+                and self._has_gasinj
+                and nodename != self._terminal_node
+            ):
                 datatypes.append("gasinjrate")
             if keyword == "WELSPECS":
                 datatypes += ["bhp", "wmctl"]
