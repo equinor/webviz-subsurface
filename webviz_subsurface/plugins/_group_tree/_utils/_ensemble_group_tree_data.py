@@ -8,7 +8,7 @@ from webviz_config.common_cache import CACHE
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from .._types import NodeType, StatOptions, TreeModeOptions
+from .._types import DataType, NodeType, StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:
@@ -50,7 +50,6 @@ class EnsembleGroupTreeData:
         self._has_waterinj = False
         self._has_gasinj = False
         if True in self._gruptree["IS_INJ"].unique():
-            print("her")
             # If there is injection in the tree we need to determine
             # which kind of injection. For that wee need FWIR and FGIR
             self._check_that_sumvecs_exists(["FWIR", "FGIR"])
@@ -112,7 +111,10 @@ class EnsembleGroupTreeData:
             smry = smry[smry["REAL"] == real]
 
         gruptree_filtered = self._gruptree
-        if tree_mode == "single_real" and not self.tree_is_equivalent_in_all_real():
+        if (
+            tree_mode == TreeModeOptions.SINGLE_REAL
+            and not self.tree_is_equivalent_in_all_real()
+        ):
             # Trees are not equal. Filter on realization
             gruptree_filtered = gruptree_filtered[gruptree_filtered["REAL"] == real]
 
@@ -126,8 +128,8 @@ class EnsembleGroupTreeData:
             create_dataset(smry, gruptree_filtered, self._sumvecs, self._terminal_node),
             self.get_edge_options(node_types),
             [
-                {"name": option, "label": get_label(option)}
-                for option in ["pressure", "bhp", "wmctl"]
+                {"name": datatype, "label": get_label(datatype)}
+                for datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]
             ],
         )
 
@@ -162,23 +164,23 @@ class EnsembleGroupTreeData:
             nodename = noderow["CHILD"]
             keyword = noderow["KEYWORD"]
 
-            datatypes = ["pressure"]
+            datatypes = [DataType.PRESSURE]
             if noderow["IS_PROD"] and nodename != self._terminal_node:
-                datatypes += ["oilrate", "gasrate", "waterrate"]
+                datatypes += [DataType.OILRATE, DataType.GASRATE, DataType.WATERRATE]
             if (
                 noderow["IS_INJ"]
                 and self._has_waterinj
                 and nodename != self._terminal_node
             ):
-                datatypes.append("waterinjrate")
+                datatypes.append(DataType.WATERINJRATE)
             if (
                 noderow["IS_INJ"]
                 and self._has_gasinj
                 and nodename != self._terminal_node
             ):
-                datatypes.append("gasinjrate")
+                datatypes.append(DataType.GASINJRATE)
             if keyword == "WELSPECS":
-                datatypes += ["bhp", "wmctl"]
+                datatypes += [DataType.BHP, DataType.WMCTL]
 
             for datatype in datatypes:
                 records.append(
@@ -213,21 +215,28 @@ class EnsembleGroupTreeData:
         """Returns a list with edge node options for the dropdown
         menu in the GroupTree component. The output list has the format:
         [
-            {"name": "oilrate", "label": "Oil Rate"},
-            {"name": "gasrate", "label": "Gas Rate"},
+            {"name": DataType.OILRATE, "label": "Oil Rate"},
+            {"name": DataType.GasRATE, "label": "Gas Rate"},
         ]
         """
         options = []
         if NodeType.PROD in node_types:
-            for rate in ["oilrate", "gasrate", "waterrate"]:
+            for rate in [DataType.OILRATE, DataType.GASRATE, DataType.WATERRATE]:
                 options.append({"name": rate, "label": get_label(rate)})
         if NodeType.INJ in node_types and self._has_waterinj:
-            options.append({"name": "waterinjrate", "label": get_label("waterinjrate")})
+            options.append(
+                {
+                    "name": DataType.WATERINJRATE,
+                    "label": get_label(DataType.WATERINJRATE),
+                }
+            )
         if NodeType.INJ in node_types and self._has_gasinj:
-            options.append({"name": "gasinjrate", "label": get_label("gasinjrate")})
+            options.append(
+                {"name": DataType.GASINJRATE, "label": get_label(DataType.GASINJRATE)}
+            )
         if options:
             return options
-        return [{"name": "oilrate", "label": get_label("oilrate")}]
+        return [{"name": DataType.OILRATE, "label": get_label(DataType.OILRATE)}]
 
 
 def get_edge_label(row: pd.Series) -> str:
@@ -242,25 +251,25 @@ def get_edge_label(row: pd.Series) -> str:
     return f"VFP {vfp_nb}"
 
 
-def get_label(datatype: str) -> str:
+def get_label(datatype: DataType) -> str:
     """Returns a more readable label for the summary datatypes"""
     labels = {
-        "oilrate": "Oil Rate",
-        "gasrate": "Gas Rate",
-        "waterrate": "Water Rate",
-        "waterinjrate": "Water Inj Rate",
-        "gasinjrate": "Gas Inj Rate",
-        "pressure": "Pressure",
-        "bhp": "BHP",
-        "wmctl": "WMCTL",
+        DataType.OILRATE: "Oil Rate",
+        DataType.GASRATE: "Gas Rate",
+        DataType.WATERRATE: "Water Rate",
+        DataType.WATERINJRATE: "Water Inj Rate",
+        DataType.GASINJRATE: "Gas Inj Rate",
+        DataType.PRESSURE: "Pressure",
+        DataType.BHP: "BHP",
+        DataType.WMCTL: "WMCTL",
     }
     if datatype in labels:
         return labels[datatype]
-    raise ValueError(f"Label for dataype {datatype} not implemented.")
+    raise ValueError(f"Label for datatype {datatype.value} not implemented.")
 
 
 def get_sumvec(
-    datatype: str,
+    datatype: DataType,
     nodename: str,
     keyword: str,
 ) -> str:
@@ -271,40 +280,40 @@ def get_sumvec(
     """
     datatype_map = {
         "FIELD": {
-            "oilrate": "FOPR",
-            "gasrate": "FGPR",
-            "waterrate": "FWPR",
-            "waterinjrate": "FWIR",
-            "gasinjrate": "FGIR",
-            "pressure": "GPR",
+            DataType.OILRATE: "FOPR",
+            DataType.GASRATE: "FGPR",
+            DataType.WATERRATE: "FWPR",
+            DataType.WATERINJRATE: "FWIR",
+            DataType.GASINJRATE: "FGIR",
+            DataType.PRESSURE: "GPR",
         },
         "GRUPTREE": {
-            "oilrate": "GOPR",
-            "gasrate": "GGPR",
-            "waterrate": "GWPR",
-            "waterinjrate": "GWIR",
-            "gasinjrate": "GGIR",
-            "pressure": "GPR",
+            DataType.OILRATE: "GOPR",
+            DataType.GASRATE: "GGPR",
+            DataType.WATERRATE: "GWPR",
+            DataType.WATERINJRATE: "GWIR",
+            DataType.GASINJRATE: "GGIR",
+            DataType.PRESSURE: "GPR",
         },
         # BRANPROP can not be used for injection, but the nodes
         # might also be GNETINJE and could therefore have injection.
         "BRANPROP": {
-            "oilrate": "GOPRNB",
-            "gasrate": "GGPRNB",
-            "waterrate": "GWPRNB",
-            "pressure": "GPR",
-            "waterinjrate": "GWIR",
-            "gasinjrate": "GGIR",
+            DataType.OILRATE: "GOPRNB",
+            DataType.GASRATE: "GGPRNB",
+            DataType.WATERRATE: "GWPRNB",
+            DataType.PRESSURE: "GPR",
+            DataType.WATERINJRATE: "GWIR",
+            DataType.GASINJRATE: "GGIR",
         },
         "WELSPECS": {
-            "oilrate": "WOPR",
-            "gasrate": "WGPR",
-            "waterrate": "WWPR",
-            "waterinjrate": "WWIR",
-            "gasinjrate": "WGIR",
-            "pressure": "WTHP",
-            "bhp": "WBHP",
-            "wmctl": "WMCTL",
+            DataType.OILRATE: "WOPR",
+            DataType.GASRATE: "WGPR",
+            DataType.WATERRATE: "WWPR",
+            DataType.WATERINJRATE: "WWIR",
+            DataType.GASINJRATE: "WGIR",
+            DataType.PRESSURE: "WTHP",
+            DataType.BHP: "WBHP",
+            DataType.WMCTL: "WMCTL",
         },
     }
     if nodename == "FIELD":
@@ -317,19 +326,25 @@ def get_sumvec(
     except KeyError as exc:
         error = (
             f"Summary vector not found for eclipse keyword: {keyword}, "
-            f"data type: {datatype} and node name: {nodename}. "
+            f"data type: {datatype.value} and node name: {nodename}. "
         )
         raise KeyError(error) from exc
     return f"{datatype_ecl}:{nodename}"
 
 
-def get_edge_node(datatype: str) -> str:
+def get_edge_node(datatype: DataType) -> str:
     """Returns if a given datatype is edge (typically rates) or node (f.ex pressures)"""
-    if datatype in ["oilrate", "gasrate", "waterrate", "waterinjrate", "gasinjrate"]:
+    if datatype in [
+        DataType.OILRATE,
+        DataType.GASRATE,
+        DataType.WATERRATE,
+        DataType.WATERINJRATE,
+        DataType.GASINJRATE,
+    ]:
         return "edge"
-    if datatype in ["pressure", "bhp", "wmctl"]:
+    if datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]:
         return "node"
-    raise ValueError(f"Data type {datatype} not implemented.")
+    raise ValueError(f"Data type {datatype.value} not implemented.")
 
 
 def create_dataset(
@@ -535,12 +550,12 @@ def create_leafnodetype_maps(
             # The leaf node is a group
             prod_sumvecs = [
                 get_sumvec(datatype, nodename, nodekeyword)
-                for datatype in ["oilrate", "gasrate", "waterrate"]
+                for datatype in [DataType.OILRATE, DataType.GASRATE, DataType.WATERRATE]
             ]
             inj_sumvecs = (
                 [
                     get_sumvec(datatype, nodename, nodekeyword)
-                    for datatype in ["waterinjrate", "gasinjrate"]
+                    for datatype in [DataType.WATERINJRATE, DataType.GASINJRATE]
                 ]
                 if nodekeyword != "BRANPROP"
                 else []
