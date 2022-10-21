@@ -30,3 +30,8 @@ class DataType(StrEnum):
     PRESSURE = "pressure"
     BHP = "bhp"
     WMCTL = "wmctl"
+
+
+class EdgeOrNode(StrEnum):
+    EDGE = "edge"
+    NODE = "node"

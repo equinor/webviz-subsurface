@@ -30,13 +30,16 @@ class GroupTree(WebvizPluginABC):
     This plugin needs the following summary vectors to be exported:
     * WSTAT for all wells
     * FWIR and FGIR if there are injector wells in the network
-    * GPR for all group nodes in the network
     * GOPR, GWPR and GGPR for all group nodes in the production network \
-    (GOPRNB etc for BRANPROP trees)
-    * GGIR and/or GWIR for all group nodes in the injection network
-    * WTHP, WBHP, WMCTL for all wells
+    except the terminal node (GOPRNB etc for BRANPROP trees)
+    * GGIR and/or GWIR for all group nodes in the injection network \
+    except the terminal node.
     * WOPR, WWPR, WGPR for all producers
     * WWIR and/or WGIR for all injectors
+
+    The following data will be displayed if available:
+    * GPR for all group nodes
+    * WTHP, WBHP, WMCTL for all wells
 
     **GRUPTREE input**
 

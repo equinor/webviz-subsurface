@@ -8,7 +8,7 @@ from webviz_config.common_cache import CACHE
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from .._types import DataType, NodeType, StatOptions, TreeModeOptions
+from .._types import DataType, EdgeOrNode, NodeType, StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:
@@ -65,7 +65,7 @@ class EnsembleGroupTreeData:
 
         # Check that all summary vectors exist
         self._check_that_sumvecs_exists(
-            list(self._sumvecs[self._sumvecs["EDGE_NODE"] == "edge"]["SUMVEC"])
+            list(self._sumvecs[self._sumvecs["EDGE_NODE"] == EdgeOrNode.EDGE]["SUMVEC"])
         )
 
     @property
@@ -339,7 +339,7 @@ def get_sumvec(
     return f"{datatype_ecl}:{nodename}"
 
 
-def get_edge_node(datatype: DataType) -> str:
+def get_edge_node(datatype: DataType) -> EdgeOrNode:
     """Returns if a given datatype is edge (typically rates) or node (f.ex pressures)"""
     if datatype in [
         DataType.OILRATE,
@@ -348,9 +348,9 @@ def get_edge_node(datatype: DataType) -> str:
         DataType.WATERINJRATE,
         DataType.GASINJRATE,
     ]:
-        return "edge"
+        return EdgeOrNode.EDGE
     if datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]:
-        return "node"
+        return EdgeOrNode.NODE
     raise ValueError(f"Data type {datatype.value} not implemented.")
 
 
@@ -414,8 +414,12 @@ def extract_tree(
         "edge_label": nodedict["EDGE_LABEL"],
     }
 
-    edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == "edge"].to_dict("records")
-    nodes = node_sumvecs[node_sumvecs["EDGE_NODE"] == "node"].to_dict("records")
+    edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == EdgeOrNode.EDGE].to_dict(
+        "records"
+    )
+    nodes = node_sumvecs[node_sumvecs["EDGE_NODE"] == EdgeOrNode.NODE].to_dict(
+        "records"
+    )
 
     edge_data: Dict[str, List[float]] = {item["DATATYPE"]: [] for item in edges}
     node_data: Dict[str, List[float]] = {item["DATATYPE"]: [] for item in nodes}
