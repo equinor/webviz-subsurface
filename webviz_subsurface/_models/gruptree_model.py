@@ -149,8 +149,8 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
         files can be exported in the FMU workflow using the ECL2CSV
         forward model with subcommand gruptree.
 
-        If BRANPROP is found in the KEYWORD column, then GRUPTREE rows
-        are filtered out.
+        If tree_type == BRANPROP then GRUPTREE rows are filtered out
+        If tree_type == GRUPTREE then BRANPROP rows are filtered out
 
         If the trees are equal in every realization, only one realization is kept.
         """

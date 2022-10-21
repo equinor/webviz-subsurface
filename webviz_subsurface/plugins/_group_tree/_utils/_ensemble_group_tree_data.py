@@ -457,7 +457,7 @@ def add_nodetype(
         is_inj_map[node["CHILD"]] = any(leafs_are_inj)
         is_other_map[node["CHILD"]] = any(leafs_are_other)
 
-    # The terminal (usually FIELD) node must not be filtered out,
+    # The terminal node must not be filtered out,
     # so it is set True for all categories
     is_prod_map[terminal_node] = True
     is_inj_map[terminal_node] = True
