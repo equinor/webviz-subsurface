@@ -39,7 +39,7 @@ class EnsembleGroupTreeData:
         ]["CHILD"].unique()
 
         # Check that all WSTAT summary vectors exist
-        # They are used to determine which summary vector are needed later.
+        # They are used to determine which summary vector are needed next.
         self._check_that_sumvecs_exists([f"WSTAT:{well}" for well in self._wells])
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
