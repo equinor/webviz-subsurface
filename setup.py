@@ -98,7 +98,7 @@ setup(
         "pillow>=6.1",
         "pyarrow>=5.0.0",
         "pyscal>=0.7.5",
-        "scipy>=1.2",
+        "scipy=1.9.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "webviz-config>=0.5",
         "webviz-core-components>=0.6",
