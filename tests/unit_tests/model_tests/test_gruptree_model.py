@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from pandas._testing import assert_frame_equal
 
-from webviz_subsurface._models.gruptree_model import GruptreeModel
+from webviz_subsurface._models.gruptree_model import GruptreeModel, TreeType
 
 CHECK_COLUMNS = ["DATE", "CHILD", "KEYWORD", "PARENT"]
 ENSEMBLE = "01_drogon_ahm"
@@ -21,6 +21,15 @@ def fixture_model(testdata_folder) -> GruptreeModel:
         gruptree_file=GRUPTREE_FILE,
         tree_type="GRUPTREE",
     )
+
+
+# Mock class that loads local csv file
+class GruptreeModelMock(GruptreeModel):
+    # pylint: disable=super-init-not-called
+    def __init__(self, tree_type: TreeType):
+        self._tree_type = tree_type
+        df_files = pd.DataFrame([{"REAL": 0, "FULLPATH": "tests/data/gruptree.csv"}])
+        self._dataframe = self.read_ensemble_gruptree(df_files=df_files)
 
 
 @pytest.mark.usefixtures("app")
@@ -67,3 +76,12 @@ def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
             excl_well_endswith=["3", "5"],
         )["CHILD"].unique()
     ) == {"FIELD", "OP", "RFT", "WI", "A1", "A2", "A4", "A6"}
+
+
+def test_tree_type_filtering():
+
+    mock_model = GruptreeModelMock(tree_type=TreeType.GRUPTREE)
+    assert "BRANPROP" not in mock_model.dataframe["KEYWORD"].unique()
+
+    mock_model = GruptreeModelMock(tree_type=TreeType.BRANPROP)
+    assert "GRUPTREE" not in mock_model.dataframe["KEYWORD"].unique()
