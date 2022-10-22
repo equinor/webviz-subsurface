@@ -24,7 +24,7 @@ def fixture_model(testdata_folder) -> GruptreeModel:
 
 
 # Mock class that loads local csv file
-class GruptreeModelMock(GruptreeModel):
+class MockGruptreeModel(GruptreeModel):
     # pylint: disable=super-init-not-called
     def __init__(self, tree_type: TreeType):
         self._tree_type = tree_type
@@ -80,8 +80,8 @@ def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
 
 def test_tree_type_filtering():
 
-    mock_model = GruptreeModelMock(tree_type=TreeType.GRUPTREE)
+    mock_model = MockGruptreeModel(tree_type=TreeType.GRUPTREE)
     assert "BRANPROP" not in mock_model.dataframe["KEYWORD"].unique()
 
-    mock_model = GruptreeModelMock(tree_type=TreeType.BRANPROP)
+    mock_model = MockGruptreeModel(tree_type=TreeType.BRANPROP)
     assert "GRUPTREE" not in mock_model.dataframe["KEYWORD"].unique()
