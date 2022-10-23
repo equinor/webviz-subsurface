@@ -1,5 +1,6 @@
 import datetime
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 import pytest
@@ -26,7 +27,7 @@ def fixture_model(testdata_folder) -> GruptreeModel:
 # Mock class that loads local csv file
 class MockGruptreeModel(GruptreeModel):
     # pylint: disable=super-init-not-called
-    def __init__(self, tree_type: TreeType):
+    def __init__(self, tree_type: Optional[TreeType] = None):
         self._tree_type = tree_type
         df_files = pd.DataFrame([{"REAL": 0, "FULLPATH": "tests/data/gruptree.csv"}])
         self._dataframe = self.read_ensemble_gruptree(df_files=df_files)
