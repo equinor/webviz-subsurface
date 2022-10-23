@@ -24,12 +24,12 @@ class GruptreeModel:
         ens_name: str,
         ens_path: Path,
         gruptree_file: str,
-        tree_type: str = "GRUPTREE",
+        tree_type: Optional[str] = None,
     ):
         self._ens_name = ens_name
         self._ens_path = ens_path
         self._gruptree_file = gruptree_file
-        self._tree_type = TreeType(tree_type)
+        self._tree_type = TreeType(tree_type) if tree_type is not None else None
         self._dataframe = self.read_ensemble_gruptree()
 
         self._gruptrees_are_equal_over_reals = (
@@ -174,21 +174,27 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
             df_real = pd.read_csv(row["FULLPATH"])
             unique_keywords = df_real["KEYWORD"].unique()
 
-            if self._tree_type.value not in unique_keywords:
-                raise ValueError(
-                    f"Keyword {self._tree_type.value} not found in {row['FULLPATH']}"
-                )
+            if self._tree_type is None:
+                # if tree_type is None, then we filter out GRUPTREE if BRANPROP
+                # exists, if else we do nothing.
+                if TreeType.BRANPROP.value in unique_keywords:
+                    df_real = df_real[df_real["KEYWORD"] != TreeType.GRUPTREE.value]
 
-            if (
-                self._tree_type == TreeType.GRUPTREE
-                and TreeType.BRANPROP.value in unique_keywords
-            ):
-                # Filter out BRANPROP entries
-                df_real = df_real[df_real["KEYWORD"] != TreeType.BRANPROP.value]
+            else:
+                if self._tree_type.value not in unique_keywords:
+                    raise ValueError(
+                        f"Keyword {self._tree_type.value} not found in {row['FULLPATH']}"
+                    )
+                if (
+                    self._tree_type == TreeType.GRUPTREE
+                    and TreeType.BRANPROP.value in unique_keywords
+                ):
+                    # Filter out BRANPROP entries
+                    df_real = df_real[df_real["KEYWORD"] != TreeType.BRANPROP.value]
 
-            if self._tree_type == TreeType.BRANPROP:
-                # Filter out GRUPTREE entries
-                df_real = df_real[df_real["KEYWORD"] != TreeType.GRUPTREE.value]
+                if self._tree_type == TreeType.BRANPROP:
+                    # Filter out GRUPTREE entries
+                    df_real = df_real[df_real["KEYWORD"] != TreeType.GRUPTREE.value]
 
             if (
                 i > 0

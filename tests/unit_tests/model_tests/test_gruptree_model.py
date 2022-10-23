@@ -85,3 +85,7 @@ def test_tree_type_filtering():
 
     mock_model = MockGruptreeModel(tree_type=TreeType.BRANPROP)
     assert "GRUPTREE" not in mock_model.dataframe["KEYWORD"].unique()
+
+    # If tree_type is defaulted then the BRANPROP tree is selected
+    mock_model = MockGruptreeModel()
+    assert "GRUPTREE" not in mock_model.dataframe["KEYWORD"].unique()
