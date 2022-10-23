@@ -155,6 +155,10 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
         If tree_type == GRUPTREE then BRANPROP rows are filtered out
 
         If the trees are equal in every realization, only one realization is kept.
+
+        It is possible to pass a dataframe of file names (only columns required is
+        REAL and FULLPATH). This is mostly intended for testing. If this is defaulted
+        the files are found automatically using the scratch_ensemble.
         """
         if df_files is None:
             ens = scratch_ensemble(
