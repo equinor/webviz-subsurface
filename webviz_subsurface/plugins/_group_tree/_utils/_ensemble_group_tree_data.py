@@ -63,7 +63,7 @@ class EnsembleGroupTreeData:
         # Get summary data with metadata (nodename, datatype, edge_or_node)
         self._sumvecs: pd.DataFrame = self._get_sumvecs_with_metadata()
 
-        # Check that all summary vectors exist
+        # Check that all edge summary vectors exist
         self._check_that_sumvecs_exists(
             list(self._sumvecs[self._sumvecs["EDGE_NODE"] == EdgeOrNode.EDGE]["SUMVEC"])
         )
