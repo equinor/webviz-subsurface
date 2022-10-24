@@ -4,9 +4,9 @@ from typing import Dict, Optional
 import pandas as pd
 
 from webviz_subsurface._providers import (
+    ColumnMetadata,
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
-    TableVectorMetadata,
 )
 from webviz_subsurface._providers.ensemble_table_provider import (
     EnsembleTableProviderImplArrow,
@@ -59,7 +59,7 @@ def test_synthetic_get_column_data(testdata_folder: Path) -> None:
     assert df.shape == (4, 2)
     assert df.columns.tolist() == ["REAL", "STR"]
 
-    assert model.vector_metadata("REAL") is None
+    assert model.column_metadata("REAL") is None
 
 
 def test_create_from_aggregated_csv_file_smry_csv(
@@ -89,7 +89,7 @@ def test_create_from_aggregated_csv_file_smry_csv(
     assert valdf["REAL"].nunique() == 3
 
     # No metadata in csv files
-    meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOPR")
+    meta: Optional[ColumnMetadata] = provider.column_metadata("FOPR")
     assert meta is None
 
 
@@ -118,7 +118,7 @@ def test_create_from_per_realization_csv_file(
     assert sorted(valdf["CONIDX"].unique()) == list(range(1, 25))
 
     # No metadata in csv files
-    meta: Optional[TableVectorMetadata] = provider.vector_metadata("CONIDX")
+    meta: Optional[ColumnMetadata] = provider.column_metadata("CONIDX")
     assert meta is None
 
 
@@ -138,7 +138,7 @@ def test_create_from_per_realization_arrow_file(
     assert valdf["REAL"].nunique() == 100
 
     # Test metadata
-    meta: Optional[TableVectorMetadata] = provider.vector_metadata("FOPR")
+    meta: Optional[ColumnMetadata] = provider.column_metadata("FOPR")
     assert meta is not None
     assert meta.unit == "SM3/DAY"
 
@@ -157,7 +157,7 @@ def test_create_from_per_realization_parameter_file(
     assert valdf["REAL"].nunique() == 100
 
     # No metadata in parameter files
-    meta: Optional[TableVectorMetadata] = provider.vector_metadata(
+    meta: Optional[ColumnMetadata] = provider.column_metadata(
         "GLOBVAR:FAULT_SEAL_SCALING"
     )
     assert meta is None
@@ -189,5 +189,5 @@ def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
         }.issubset(set(provider.column_names()))
 
         # No metadata in csv files
-        meta: Optional[TableVectorMetadata] = provider.vector_metadata("ZONE")
+        meta: Optional[ColumnMetadata] = provider.column_metadata("ZONE")
         assert meta is None

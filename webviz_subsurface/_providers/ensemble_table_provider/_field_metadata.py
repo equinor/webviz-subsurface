@@ -2,12 +2,12 @@ from typing import Optional
 
 import pyarrow as pa
 
-from .ensemble_table_provider import TableVectorMetadata
+from .ensemble_table_provider import ColumnMetadata
 
 
-def create_vector_metadata_from_field_meta(
+def create_column_metadata_from_field_meta(
     field: pa.Field,
-) -> Optional[TableVectorMetadata]:
+) -> Optional[ColumnMetadata]:
     """Create VectorMetadata from keywords stored in the field's metadata"""
 
     meta_dict = field.metadata
@@ -17,8 +17,8 @@ def create_vector_metadata_from_field_meta(
     try:
         unit_bytestr = meta_dict[b"unit"]
     except KeyError:
-        return None
+        return ColumnMetadata(unit=None)
 
-    return TableVectorMetadata(
+    return ColumnMetadata(
         unit=unit_bytestr.decode("ascii"),
     )

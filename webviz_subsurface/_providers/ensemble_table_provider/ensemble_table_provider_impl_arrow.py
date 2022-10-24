@@ -13,8 +13,8 @@ from ..ensemble_summary_provider._table_utils import (
     add_per_vector_min_max_to_table_schema_metadata,
     find_min_max_for_numeric_table_columns,
 )
-from ._field_metadata import create_vector_metadata_from_field_meta
-from .ensemble_table_provider import EnsembleTableProvider, TableVectorMetadata
+from ._field_metadata import create_column_metadata_from_field_meta
+from .ensemble_table_provider import ColumnMetadata, EnsembleTableProvider
 
 # Since PyArrow's actual compute functions are not seen by pylint
 # pylint: disable=no-member
@@ -224,7 +224,7 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
 
         return df
 
-    def vector_metadata(self, vector_name: str) -> Optional[TableVectorMetadata]:
+    def column_metadata(self, column_name: str) -> Optional[ColumnMetadata]:
         schema = self._get_or_read_schema()
-        field = schema.field(vector_name)
-        return create_vector_metadata_from_field_meta(field)
+        field = schema.field(column_name)
+        return create_column_metadata_from_field_meta(field)

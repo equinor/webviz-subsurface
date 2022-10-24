@@ -27,9 +27,9 @@ from .ensemble_surface_provider import (
     SurfaceServer,
 )
 from .ensemble_table_provider import (
+    ColumnMetadata,
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
     EnsembleTableProviderImplArrow,
-    TableVectorMetadata,
 )
 from .well_provider import WellProvider, WellProviderFactory, WellServer

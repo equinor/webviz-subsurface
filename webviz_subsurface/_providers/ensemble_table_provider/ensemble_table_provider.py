@@ -6,7 +6,7 @@ import pandas as pd
 
 
 @dataclass(frozen=True)
-class TableVectorMetadata:
+class ColumnMetadata:
     unit: Optional[str]
 
 
@@ -26,8 +26,10 @@ class EnsembleTableProvider(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def vector_metadata(self, vector_name: str) -> Optional[TableVectorMetadata]:
-        """Returns metadata for the specified vector. Returns None if no metadata
-        exists or if any of the non-optional properties of `TableVectorMetadata`
-        are missing.
+    def column_metadata(self, column_name: str) -> Optional[ColumnMetadata]:
+        """Returns metadata for the specified column.
+
+        Returns None if no metadata is found for the column.
+        Returns a empty ColumnMetadata object if there is metadata, but it's
+        not the columns specified in ColumnMetadata.
         """
