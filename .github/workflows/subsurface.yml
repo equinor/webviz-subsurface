@@ -53,6 +53,8 @@ jobs:
         pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
         pip install "selenium<4.3"  # breaking change in selenium==4.3
         pip install "scipy<1.9.3"   # breaking change in scipy==1.9.3
+        pip install "pytest<7.2.0"
+        pip install "pytest-xdist<3.0"
         pip install .
 
         # Testing against our latest release (including pre-releases)
