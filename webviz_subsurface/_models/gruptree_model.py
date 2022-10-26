@@ -1,10 +1,16 @@
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._datainput.fmu_input import scratch_ensemble
+
+
+class TreeType(StrEnum):
+    GRUPTREE = "GRUPTREE"
+    BRANPROP = "BRANPROP"
 
 
 class GruptreeModel:
@@ -18,13 +24,14 @@ class GruptreeModel:
         ens_name: str,
         ens_path: Path,
         gruptree_file: str,
-        remove_gruptree_if_branprop: bool = True,
+        tree_type: Optional[str] = None,
     ):
         self._ens_name = ens_name
         self._ens_path = ens_path
         self._gruptree_file = gruptree_file
-        self._remove_gruptree_if_branprop = remove_gruptree_if_branprop
+        self._tree_type = TreeType(tree_type) if tree_type is not None else None
         self._dataframe = self.read_ensemble_gruptree()
+
         self._gruptrees_are_equal_over_reals = (
             self._dataframe["REAL"].nunique() == 1
             if not self._dataframe.empty
@@ -45,6 +52,74 @@ class GruptreeModel:
         If not, all trees are stored.
         """
         return self._dataframe
+
+    def get_filtered_dataframe(
+        self,
+        terminal_node: Optional[str] = None,
+        excl_well_startswith: Optional[List[str]] = None,
+        excl_well_endswith: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
+        """This function returns a sub-set of the rows in the gruptree dataframe
+        filtered according to the input arguments:
+
+        - terminal_node: returns the terminal node and all nodes below it in the
+        tree (for all realizations and dates)
+        - excl_well_startswith: removes WELSPECS rows where CHILD starts with any
+        of the entries in the list.
+        - excl_well_endswith: removes WELSPECS rows where CHILD ends with any
+        of the entries in the list.
+
+        """
+        df = self._dataframe
+
+        if terminal_node is not None:
+
+            if terminal_node not in self._dataframe["CHILD"].unique():
+                raise ValueError(
+                    f"Terminal node '{terminal_node}' not found in 'CHILD' column "
+                    "of the gruptree data."
+                )
+
+            branch_nodes = self._get_branch_nodes(terminal_node)
+            df = self._dataframe[self._dataframe["CHILD"].isin(branch_nodes)]
+
+        def filter_wells(
+            dframe: pd.DataFrame, well_name_criteria: Callable
+        ) -> pd.DataFrame:
+            return dframe[
+                (dframe["KEYWORD"] != "WELSPECS")
+                | (
+                    (dframe["KEYWORD"] == "WELSPECS")
+                    & (~well_name_criteria(dframe["CHILD"]))
+                )
+            ]
+
+        if excl_well_startswith is not None:
+            # Filter out WELSPECS rows where CHILD starts with any element in excl_well_startswith
+            # Conversion to tuple done outside lambda due to mypy
+            excl_well_startswith_tuple = tuple(excl_well_startswith)
+            df = filter_wells(
+                df, lambda x: x.str.startswith(excl_well_startswith_tuple)
+            )
+
+        if excl_well_endswith is not None:
+            # Filter out WELSPECS rows where CHILD ends with any element in excl_well_endswith
+            # Conversion to tuple done outside lambda due to mypy
+            excl_well_endswith_tuple = tuple(excl_well_endswith)
+            df = filter_wells(df, lambda x: x.str.endswith(excl_well_endswith_tuple))
+
+        return df.copy()
+
+    def _get_branch_nodes(self, terminal_node: str) -> List[str]:
+        """The function is using recursion to find all wells below the node
+        in the three.
+        """
+        branch_nodes = [terminal_node]
+
+        children = self._dataframe[self._dataframe["PARENT"] == terminal_node]
+        for _, childrow in children.iterrows():
+            branch_nodes.extend(self._get_branch_nodes(childrow["CHILD"]))
+        return branch_nodes
 
     @property
     def gruptrees_are_equal_over_reals(self) -> bool:
@@ -69,19 +144,27 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
         )
 
     @webvizstore
-    def read_ensemble_gruptree(self) -> pd.DataFrame:
+    def read_ensemble_gruptree(
+        self, df_files: Optional[pd.DataFrame] = None
+    ) -> pd.DataFrame:
         """Reads the gruptree files for an ensemble from the scratch disk. These
         files can be exported in the FMU workflow using the ECL2CSV
         forward model with subcommand gruptree.
 
-        If BRANPROP is found in the KEYWORD column, then GRUPTREE rows
-        are filtered out.
+        If tree_type == BRANPROP then GRUPTREE rows are filtered out
+        If tree_type == GRUPTREE then BRANPROP rows are filtered out
 
         If the trees are equal in every realization, only one realization is kept.
-        """
 
-        ens = scratch_ensemble(self._ens_name, self._ens_path, filter_file="OK")
-        df_files = ens.find_files(self._gruptree_file)
+        It is possible to pass a dataframe of file names (only columns required is
+        REAL and FULLPATH). This is mostly intended for testing. If this is defaulted
+        the files are found automatically using the scratch_ensemble.
+        """
+        if df_files is None:
+            ens = scratch_ensemble(
+                self._ens_name, str(self._ens_path), filter_file="OK"
+            )
+            df_files = ens.find_files(self._gruptree_file)
 
         if df_files.empty:
             return pd.DataFrame()
@@ -93,12 +176,29 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
         gruptrees_are_equal = True
         for i, row in df_files.iterrows():
             df_real = pd.read_csv(row["FULLPATH"])
+            unique_keywords = df_real["KEYWORD"].unique()
 
-            if (
-                self._remove_gruptree_if_branprop
-                and "BRANPROP" in df_real["KEYWORD"].unique()
-            ):
-                df_real = df_real[df_real["KEYWORD"] != "GRUPTREE"]
+            if self._tree_type is None:
+                # if tree_type is None, then we filter out GRUPTREE if BRANPROP
+                # exists, if else we do nothing.
+                if TreeType.BRANPROP.value in unique_keywords:
+                    df_real = df_real[df_real["KEYWORD"] != TreeType.GRUPTREE.value]
+
+            else:
+                if self._tree_type.value not in unique_keywords:
+                    raise ValueError(
+                        f"Keyword {self._tree_type.value} not found in {row['FULLPATH']}"
+                    )
+                if (
+                    self._tree_type == TreeType.GRUPTREE
+                    and TreeType.BRANPROP.value in unique_keywords
+                ):
+                    # Filter out BRANPROP entries
+                    df_real = df_real[df_real["KEYWORD"] != TreeType.BRANPROP.value]
+
+                if self._tree_type == TreeType.BRANPROP:
+                    # Filter out GRUPTREE entries
+                    df_real = df_real[df_real["KEYWORD"] != TreeType.GRUPTREE.value]
 
             if (
                 i > 0

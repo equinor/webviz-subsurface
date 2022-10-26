@@ -52,10 +52,13 @@ jobs:
         pip install "bleach<5"  # https://github.com/equinor/webviz-config/issues/586
         pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
         pip install "selenium<4.3"  # breaking change in selenium==4.3
+        pip install "scipy<1.9.3"   # breaking change in scipy==1.9.3
+        pip install "pytest<7.2.0"
+        pip install "pytest-xdist<3.0"
         pip install .
-        
+
         # Testing against our latest release (including pre-releases)
-        pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components 
+        pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components
 
     - name: 📦 Install test dependencies
       run: |

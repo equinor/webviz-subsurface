@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
@@ -28,14 +28,18 @@ class GroupTree(WebvizPluginABC):
     **Summary data**
 
     This plugin needs the following summary vectors to be exported:
-    * FOPR, FWPR, FOPR, FWIR and FGIR
-    * GPR for all group nodes in the network
+    * WSTAT for all wells
+    * FWIR and FGIR if there are injector wells in the network
     * GOPR, GWPR and GGPR for all group nodes in the production network \
-    (GOPRNB etc for BRANPROP trees)
-    * GGIR and/or GWIR for all group nodes in the injection network
-    * WSTAT, WTHP, WBHP, WMCTL for all wells
+    except the terminal node (GOPRNB etc for BRANPROP trees)
+    * GGIR and/or GWIR for all group nodes in the injection network \
+    except the terminal node.
     * WOPR, WWPR, WGPR for all producers
     * WWIR and/or WGIR for all injectors
+
+    The following data will be displayed if available:
+    * GPR for all group nodes
+    * WTHP, WBHP, WMCTL for all wells
 
     **GRUPTREE input**
 
@@ -50,6 +54,27 @@ class GroupTree(WebvizPluginABC):
 
     This is the sampling interval of the summary data. It is `yearly` by default, but can be set
     to `monthly` if needed.
+
+    **terminal_node**
+
+    This parameter allows you to specify the terminal node used. It is `FIELD` by default.
+
+    **tree_type**
+
+    This parameter allows you to specify which tree type is vizualised. It is `GRUPTREE` by
+    default, but can also be set to `BRANPROP`.
+
+    **excl_well_startswith**
+
+    This parameter allows you to remove wells that starts with any of the strings in this list.
+    It is intended to be used to remove f.ex RFT wells that don't have any production or injection.
+    Be aware that if actual producers/injectors are removed, the rates in the tree might not be
+    consistant.
+
+    **excl_well_endswith**
+
+    Same as excl_well_startswith, but removes wells that ends with any of the strings in this list.
+
     """
 
     class Ids(StrEnum):
@@ -62,16 +87,26 @@ class GroupTree(WebvizPluginABC):
         gruptree_file: str = "share/results/tables/gruptree.csv",
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
         time_index: str = "yearly",
+        terminal_node: str = "FIELD",
+        tree_type: str = "GRUPTREE",
+        excl_well_startswith: Optional[List] = None,
+        excl_well_endswith: Optional[List] = None,
     ) -> None:
+        # pylint: disable=too-many-arguments
         super().__init__(stretch=True)
 
         self._ensembles = ensembles
         self._gruptree_file = gruptree_file
 
+        if excl_well_startswith is None:
+            excl_well_startswith = []
+        excl_well_startswith = [str(element) for element in excl_well_startswith]
+        if excl_well_endswith is None:
+            excl_well_endswith = []
+        excl_well_endswith = [str(element) for element in excl_well_endswith]
+
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
-
-        sampling = Frequency(time_index)
 
         self._ensemble_paths: Dict[str, Path] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -92,7 +127,16 @@ class GroupTree(WebvizPluginABC):
                 )
             )
             self._group_tree_data[ens_name] = EnsembleGroupTreeData(
-                provider, GruptreeModel(ens_name, ens_path, gruptree_file)
+                provider=provider,
+                gruptree_model=GruptreeModel(
+                    ens_name=ens_name,
+                    ens_path=ens_path,
+                    gruptree_file=gruptree_file,
+                    tree_type=tree_type,
+                ),
+                terminal_node=terminal_node,
+                excl_well_startswith=excl_well_startswith,
+                excl_well_endswith=excl_well_endswith,
             )
 
         self.add_view(
