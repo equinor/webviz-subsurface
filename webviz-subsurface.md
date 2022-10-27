@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.15` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.16rc0` of `webviz-subsurface`.
 
 
 
@@ -204,6 +204,14 @@ rates and other network related information.
 
 
 
+
+
+
+
+
+
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to include.
 * **`gruptree_file`:** `.csv` with gruptree information.
 * **`time_index`:** Frequency for the data sampling.
@@ -217,6 +225,10 @@ How to use in YAML config file:
         gruptree_file:  # Optional, type str.
         rel_file_pattern:  # Optional, type str.
         time_index:  # Optional, type str.
+        terminal_node:  # Optional, type str.
+        tree_type:  # Optional, type str.
+        excl_well_startswith:  # Optional, type Union[typing.List, NoneType].
+        excl_well_endswith:  # Optional, type Union[typing.List, NoneType].
 ```
 
 
@@ -227,13 +239,16 @@ How to use in YAML config file:
 **Summary data**
 
 This plugin needs the following summary vectors to be exported:
-* FOPR, FWPR, FOPR, FWIR and FGIR
-* GPR for all group nodes in the network
-* GOPR, GWPR and GGPR for all group nodes in the production network     (GOPRNB etc for BRANPROP trees)
-* GGIR and/or GWIR for all group nodes in the injection network
-* WSTAT, WTHP, WBHP, WMCTL for all wells
+* WSTAT for all wells
+* FWIR and FGIR if there are injector wells in the network
+* GOPR, GWPR and GGPR for all group nodes in the production network     except the terminal node (GOPRNB etc for BRANPROP trees)
+* GGIR and/or GWIR for all group nodes in the injection network     except the terminal node.
 * WOPR, WWPR, WGPR for all producers
 * WWIR and/or WGIR for all injectors
+
+The following data will be displayed if available:
+* GPR for all group nodes
+* WTHP, WBHP, WMCTL for all wells
 
 **GRUPTREE input**
 
@@ -247,6 +262,26 @@ representation of the Eclipse network:
 
 This is the sampling interval of the summary data. It is `yearly` by default, but can be set
 to `monthly` if needed.
+
+**terminal_node**
+
+This parameter allows you to specify the terminal node used. It is `FIELD` by default.
+
+**tree_type**
+
+This parameter allows you to specify which tree type is vizualised. It is `GRUPTREE` by
+default, but can also be set to `BRANPROP`.
+
+**excl_well_startswith**
+
+This parameter allows you to remove wells that starts with any of the strings in this list.
+It is intended to be used to remove f.ex RFT wells that don't have any production or injection.
+Be aware that if actual producers/injectors are removed, the rates in the tree might not be
+consistant.
+
+**excl_well_endswith**
+
+Same as excl_well_startswith, but removes wells that ends with any of the strings in this list.
 
 
 
