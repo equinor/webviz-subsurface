@@ -7,7 +7,7 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from .._simulation_time_series.types.provider_set import (
+from .._simulation_time_series._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
 )
 from ._error import error
