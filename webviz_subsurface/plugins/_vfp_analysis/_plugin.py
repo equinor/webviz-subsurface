@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
@@ -28,3 +28,6 @@ class VfpAnalysis(WebvizPluginABC):
         )
 
         self.add_view(VfpView(self._datamodel), self.Ids.VFP_VIEW)
+
+    def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
+        return self._datamodel.webviz_store
