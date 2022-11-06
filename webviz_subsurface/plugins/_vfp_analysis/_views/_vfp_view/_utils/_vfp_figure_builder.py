@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+import plotly.graph_objects as go
+
 
 class VfpFigureBuilder:
     """Descr"""
@@ -16,11 +18,20 @@ class VfpFigureBuilder:
         }
 
     def get_figure(self) -> Dict[str, Any]:
-        return {"data": self._traces, "layout": self._layout}
+        return go.Figure(data=self._traces, layout=self._layout)
+        # return {"data": self._traces, "layout": self._layout}
 
-    def add_vfp_curve(self, rates: List[float], bhp_values: List[float]) -> None:
+    def add_vfp_curve(
+        self,
+        rates: List[float],
+        bhp_values: List[float],
+        cmax: float,
+        cmin: float,
+        cvalue: float,
+    ) -> None:
         """Descr"""
-        color = "#1f77b4"
+        #color = "#1f77b4"
+        cvalues = [cvalue] * len(rates)
         self._traces.append(
             {
                 "x": rates,
@@ -29,6 +40,14 @@ class VfpFigureBuilder:
                 # "name": name,
                 "showlegend": False,
                 "mode": "lines",
-                "line": {"color": color},
+                "marker_line": dict(
+                    cmax=cmax,
+                    cmin=cmin,
+                    color=cvalues,
+                    colorscale="Viridis",
+                    autocolorscale=False,
+                    cauto=False,
+                )
+                # "line": {"color": color},
             }
         )

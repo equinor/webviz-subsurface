@@ -4,6 +4,8 @@ import webviz_core_components as wcc
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
+from ...._types import VfpParam
+
 
 class Vizualisation(SettingsGroupABC):
     class Ids(StrEnum):
@@ -19,13 +21,13 @@ class Vizualisation(SettingsGroupABC):
                 id=self.register_component_unique_id(Vizualisation.Ids.COLOR_BY),
                 label="Color by",
                 options=[
-                    {"label": "THP", "value": "thp"},
-                    {"label": "WFR", "value": "wfr"},
-                    {"label": "GFR", "value": "gfr"},
-                    {"label": "ALQ", "value": "alq"},
+                    {"label": "THP", "value": VfpParam.THP},
+                    {"label": "WFR", "value": VfpParam.WFR},
+                    {"label": "GFR", "value": VfpParam.GFR},
+                    {"label": "ALQ", "value": VfpParam.ALQ},
                 ],
                 clearable=False,
-                value="thp",
+                value=VfpParam.THP,
                 persistence=True,
                 persistence_type="session",
             )

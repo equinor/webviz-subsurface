@@ -1,12 +1,14 @@
 import glob
 import io
 import json
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import pyarrow as pa
 from ecl2df.vfp import pyarrow2basic_data
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
+
+from .._types import VfpParam
 
 
 class VfpTable:
@@ -19,10 +21,12 @@ class VfpTable:
         self.vfp_type = self._data["VFP_TYPE"]
         self.tab_type = self._data["TAB_TYPE"]
         self.rate_values = self._data["FLOW_VALUES"]
-        self.thp_dict = dict(enumerate(self._data["THP_VALUES"]))
-        self.wfr_dict = dict(enumerate(self._data["WFR_VALUES"]))
-        self.gfr_dict = dict(enumerate(self._data["GFR_VALUES"]))
-        self.alq_dict = dict(enumerate(self._data["ALQ_VALUES"]))
+        self.params = {
+            VfpParam.THP: dict(enumerate(self._data["THP_VALUES"])),
+            VfpParam.WFR: dict(enumerate(self._data["WFR_VALUES"])),
+            VfpParam.GFR: dict(enumerate(self._data["GFR_VALUES"])),
+            VfpParam.ALQ: dict(enumerate(self._data["ALQ_VALUES"])),
+        }
         self.rate_type = self._data["RATE_TYPE"]
         self.thp_type = self._data["THP_TYPE"]
         self.wfr_type = self._data["WFR_TYPE"]
@@ -30,10 +34,10 @@ class VfpTable:
         self.alq_type = self._data["ALQ_TYPE"]
 
         self._reshaped_bhp_table = self._data["BHP_TABLE"].reshape(
-            len(self.thp_dict),
-            len(self.wfr_dict),
-            len(self.gfr_dict),
-            len(self.alq_dict),
+            len(self.params[VfpParam.THP]),
+            len(self.params[VfpParam.WFR]),
+            len(self.params[VfpParam.GFR]),
+            len(self.params[VfpParam.ALQ]),
             len(self.rate_values),
         )
 
@@ -110,7 +114,7 @@ def _discover_files(file_pattern: str) -> io.BytesIO:
 
 
 @webvizstore
-def _read_arrow_file(filename) -> io.BytesIO:
+def _read_arrow_file(filename: str) -> io.BytesIO:
     source = pa.memory_map(filename, "r")
     reader = pa.ipc.RecordBatchFileReader(source)
     pa_table = reader.read_all()

@@ -1,9 +1,10 @@
 from typing import Any, Dict, List, Tuple
 
 from dash import Input, Output, State, callback
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
+from ..._types import VfpParam
 from ..._utils import VfpDataModel, VfpTable
 from ._settings import Filters, Selections, Vizualisation
 from ._utils import VfpFigureBuilder
@@ -112,10 +113,10 @@ class VfpView(ViewABC):
 
             vfp_table: VfpTable = self._data_model.get_vfp_table(vfp_name)
 
-            thp_dict = vfp_table.thp_dict
-            wfr_dict = vfp_table.wfr_dict
-            gfr_dict = vfp_table.gfr_dict
-            alq_dict = vfp_table.alq_dict
+            thp_dict = vfp_table.params[VfpParam.THP]
+            wfr_dict = vfp_table.params[VfpParam.WFR]
+            gfr_dict = vfp_table.params[VfpParam.GFR]
+            alq_dict = vfp_table.params[VfpParam.ALQ]
 
             return (
                 [{"label": value, "value": idx} for idx, value in thp_dict.items()],
@@ -156,6 +157,12 @@ class VfpView(ViewABC):
                 self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ),
                 "value",
             ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION, Vizualisation.Ids.COLOR_BY
+                ),
+                "value",
+            ),
             State(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, Selections.Ids.VFP_NAME
@@ -163,26 +170,50 @@ class VfpView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_vfp_graph(
             thps: List[int],
             wfrs: List[int],
             gfrs: List[int],
             alqs: List[int],
+            color_by: VfpParam,
             vfp_name: str,
         ) -> Dict[str, Any]:
             vfp_table = self._data_model.get_vfp_table(vfp_name)
 
             figure_builder = VfpFigureBuilder(vfp_name=vfp_name)
 
+            color_by_indices = {
+                VfpParam.THP: thps,
+                VfpParam.WFR: wfrs,
+                VfpParam.GFR: gfrs,
+                VfpParam.ALQ: alqs,
+            }[color_by]
+            color_by_values = vfp_table.params[color_by]
+            selected_color_by_values = [
+                color_by_values[idx] for idx in color_by_indices
+            ]
+            cmax = max(selected_color_by_values)
+            cmin = min(selected_color_by_values)
             for thp_idx in thps:
                 for wfr_idx in wfrs:
                     for gfr_idx in gfrs:
                         for alq_idx in alqs:
+                            color_by_idx = {
+                                VfpParam.THP: thp_idx,
+                                VfpParam.WFR: wfr_idx,
+                                VfpParam.GFR: gfr_idx,
+                                VfpParam.ALQ: alq_idx,
+                            }[color_by]
+
                             figure_builder.add_vfp_curve(
-                                vfp_table.rate_values,
-                                vfp_table.get_bhp_series(
+                                rates=vfp_table.rate_values,
+                                bhp_values=vfp_table.get_bhp_series(
                                     thp_idx, wfr_idx, gfr_idx, alq_idx
                                 ),
+                                cmax=float(cmax),
+                                cmin=float(cmin),
+                                cvalue=float(color_by_values[color_by_idx]),
                             )
 
             return figure_builder.get_figure()
