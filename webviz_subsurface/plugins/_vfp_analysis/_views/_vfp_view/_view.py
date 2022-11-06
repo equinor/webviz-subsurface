@@ -179,6 +179,7 @@ class VfpView(ViewABC):
             color_by: VfpParam,
             vfp_name: str,
         ) -> Dict[str, Any]:
+            # pylint: disable=too-many-locals
             vfp_table = self._data_model.get_vfp_table(vfp_name)
 
             figure_builder = VfpFigureBuilder(vfp_name=vfp_name)
@@ -190,11 +191,10 @@ class VfpView(ViewABC):
                 VfpParam.ALQ: alqs,
             }[color_by]
             color_by_values = vfp_table.params[color_by]
-            selected_color_by_values = [
-                color_by_values[idx] for idx in color_by_indices
-            ]
-            cmax = max(selected_color_by_values)
-            cmin = min(selected_color_by_values)
+            selected_values = [color_by_values[idx] for idx in color_by_indices]
+            cmax = max(selected_values)
+            cmin = min(selected_values)
+
             for thp_idx in thps:
                 for wfr_idx in wfrs:
                     for gfr_idx in gfrs:
@@ -211,9 +211,9 @@ class VfpView(ViewABC):
                                 bhp_values=vfp_table.get_bhp_series(
                                     thp_idx, wfr_idx, gfr_idx, alq_idx
                                 ),
-                                cmax=float(cmax),
-                                cmin=float(cmin),
-                                cvalue=float(color_by_values[color_by_idx]),
+                                cmax=cmax,
+                                cmin=cmin,
+                                cvalue=color_by_values[color_by_idx],
                             )
 
             return figure_builder.get_figure()
