@@ -37,7 +37,7 @@ class VfpFigureBuilder:
         cvalue: float,
     ) -> None:
         """Descr"""
-
+        cmid = (cmin + cmax) / 2
         self._traces.append(
             {
                 "x": rates,
@@ -45,7 +45,15 @@ class VfpFigureBuilder:
                 # "hovertext": tracelabel,
                 # "name": name,
                 "showlegend": False,
-                "mode": "lines",
+                "mode": "markers+lines",
+                "marker": dict(
+                    cmax=cmax,
+                    cmin=cmin,
+                    cmid=cmid,
+                    color=[cvalue] * len(rates),
+                    colorscale=[[0, RED], [0.5, MID_COLOR], [1, GREEN]],
+                    showscale=True,
+                ),
                 "line": {"color": _get_color(cmax, cmin, cvalue)},
             }
         )
