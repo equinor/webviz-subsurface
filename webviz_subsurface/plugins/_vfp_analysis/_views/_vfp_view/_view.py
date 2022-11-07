@@ -127,10 +127,10 @@ class VfpView(ViewABC):
                 [list(wfr_dict.keys())[0]],
                 [list(gfr_dict.keys())[0]],
                 [list(alq_dict.keys())[0]],
-                f"THP = {vfp_table.thp_type}",
-                f"WFR = {vfp_table.wfr_type}",
-                f"GFR = {vfp_table.gfr_type}",
-                f"ALQ = {vfp_table.alq_type}",
+                f"THP = {vfp_table.param_types[VfpParam.THP].name}",
+                f"WFR = {vfp_table.param_types[VfpParam.WFR].name}",
+                f"GFR = {vfp_table.param_types[VfpParam.GFR].name}",
+                f"ALQ = {vfp_table.param_types[VfpParam.ALQ].name}",
             )
 
         @callback(
@@ -184,28 +184,22 @@ class VfpView(ViewABC):
 
             figure_builder = VfpFigureBuilder(vfp_name=vfp_name)
 
-            color_by_indices = {
+            selected_indices = {
                 VfpParam.THP: thps,
                 VfpParam.WFR: wfrs,
                 VfpParam.GFR: gfrs,
                 VfpParam.ALQ: alqs,
-            }[color_by]
-            color_by_values = vfp_table.params[color_by]
-            selected_values = [color_by_values[idx] for idx in color_by_indices]
-            cmax = max(selected_values)
-            cmin = min(selected_values)
+            }
+            selected_color_by_values = vfp_table.get_values(
+                color_by, selected_indices[color_by]
+            )
+            cmax = max(selected_color_by_values)
+            cmin = min(selected_color_by_values)
 
             for thp_idx in thps:
                 for wfr_idx in wfrs:
                     for gfr_idx in gfrs:
                         for alq_idx in alqs:
-                            color_by_idx = {
-                                VfpParam.THP: thp_idx,
-                                VfpParam.WFR: wfr_idx,
-                                VfpParam.GFR: gfr_idx,
-                                VfpParam.ALQ: alq_idx,
-                            }[color_by]
-
                             figure_builder.add_vfp_curve(
                                 rates=vfp_table.rate_values,
                                 bhp_values=vfp_table.get_bhp_series(
@@ -213,7 +207,14 @@ class VfpView(ViewABC):
                                 ),
                                 cmax=cmax,
                                 cmin=cmin,
-                                cvalue=color_by_values[color_by_idx],
+                                vfp_table=vfp_table,
+                                indices={
+                                    VfpParam.THP: thp_idx,
+                                    VfpParam.WFR: wfr_idx,
+                                    VfpParam.GFR: gfr_idx,
+                                    VfpParam.ALQ: alq_idx,
+                                },
+                                color_by=color_by,
                             )
 
             return figure_builder.get_figure()

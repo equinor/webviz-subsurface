@@ -1,14 +1,14 @@
 import glob
 import io
 import json
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import pyarrow as pa
 from ecl2df.vfp import pyarrow2basic_data
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
-from .._types import VfpParam
+from .._types import ALQType, GFRType, THPType, VfpParam, WFRType
 
 
 class VfpTable:
@@ -21,17 +21,20 @@ class VfpTable:
         self.vfp_type = self._data["VFP_TYPE"]
         self.tab_type = self._data["TAB_TYPE"]
         self.rate_values = self._data["FLOW_VALUES"]
+        self.rate_type = self._data["RATE_TYPE"]
+
         self.params = {
             VfpParam.THP: dict(enumerate(self._data["THP_VALUES"])),
             VfpParam.WFR: dict(enumerate(self._data["WFR_VALUES"])),
             VfpParam.GFR: dict(enumerate(self._data["GFR_VALUES"])),
             VfpParam.ALQ: dict(enumerate(self._data["ALQ_VALUES"])),
         }
-        self.rate_type = self._data["RATE_TYPE"]
-        self.thp_type = self._data["THP_TYPE"]
-        self.wfr_type = self._data["WFR_TYPE"]
-        self.gfr_type = self._data["GFR_TYPE"]
-        self.alq_type = self._data["ALQ_TYPE"]
+        self.param_types = {
+            VfpParam.THP: THPType(self._data["THP_TYPE"]),
+            VfpParam.WFR: WFRType(self._data["WFR_TYPE"]),
+            VfpParam.GFR: GFRType(self._data["GFR_TYPE"]),
+            VfpParam.ALQ: ALQType(self._data["ALQ_TYPE"]),
+        }
 
         self._reshaped_bhp_table = self._data["BHP_TABLE"].reshape(
             len(self.params[VfpParam.THP]),
@@ -46,6 +49,14 @@ class VfpTable:
     ) -> List[float]:
         """Descr"""
         return self._reshaped_bhp_table[thp_idx][wfr_idx][gfr_idx][alq_idx]
+
+    def get_values(
+        self, param_type: VfpParam, indices: Optional[List[int]]
+    ) -> List[float]:
+        """Descr"""
+        if indices is None:
+            return list(self.params[param_type].values())
+        return [self.params[param_type][idx] for idx in indices]
 
 
 class VfpDataModel:

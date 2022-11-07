@@ -3,6 +3,8 @@ from typing import Any, Dict, List
 import plotly.graph_objects as go
 
 from ......_utils.colors import find_intermediate_color, rgba_to_str
+from ...._types import VfpParam
+from ...._utils import VfpTable
 
 RED = rgba_to_str((255, 18, 67, 1))
 MID_COLOR = rgba_to_str((31, 119, 180, 1))
@@ -34,22 +36,31 @@ class VfpFigureBuilder:
         bhp_values: List[float],
         cmax: float,
         cmin: float,
-        cvalue: float,
+        vfp_table: VfpTable,
+        indices: Dict[VfpParam, int],
+        color_by: VfpParam,
     ) -> None:
         """Descr"""
-        cmid = (cmin + cmax) / 2
+        cvalue = vfp_table.params[color_by][indices[color_by]]
+        hovertext = "<br>".join(
+            [
+                f"{vfp_table.param_types[tpe].name}={vfp_table.params[tpe][idx]}"
+                for tpe, idx in indices.items()
+            ]
+        )
+
         self._traces.append(
             {
                 "x": rates,
                 "y": bhp_values,
-                # "hovertext": tracelabel,
-                # "name": name,
+                "hovertext": hovertext,
+                "hoverinfo": "y+x+text",
                 "showlegend": False,
                 "mode": "markers+lines",
                 "marker": dict(
                     cmax=cmax,
                     cmin=cmin,
-                    cmid=cmid,
+                    cmid=(cmin + cmax) / 2,
                     color=[cvalue] * len(rates),
                     colorscale=[[0, RED], [0.5, MID_COLOR], [1, GREEN]],
                     showscale=True,
@@ -60,10 +71,12 @@ class VfpFigureBuilder:
 
 
 def _get_color(cmax: float, cmin: float, cvalue: float) -> str:
+    """"""
+    if cmax < cmin:
+        raise ValueError("'cmax' must be equal to or larger than 'cmin'")
     if cvalue < cmin or cvalue > cmax:
         raise ValueError("'cvalue' must be between 'cmin' and 'cmax'")
-
-    if cmax <= cmin:
+    if cmax == cmin:
         return MID_COLOR
     factor = (cvalue - cmin) / (cmax - cmin)
     if factor >= 0.5:
