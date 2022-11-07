@@ -72,6 +72,7 @@ setup(
             "SwatinitQC = webviz_subsurface.plugins:SwatinitQC",
             "TornadoPlotterFMU = webviz_subsurface.plugins:TornadoPlotterFMU",
             "VolumetricAnalysis = webviz_subsurface.plugins:VolumetricAnalysis",
+            "UpscalingQC = webviz_subsurface.plugins:UpscalingQC",
             "WellCrossSection = webviz_subsurface.plugins:WellCrossSection",
             "WellCrossSectionFMU = webviz_subsurface.plugins:WellCrossSectionFMU",
             "AssistedHistoryMatchingAnalysis = webviz_subsurface.plugins:AssistedHistoryMatchingAnalysis",
