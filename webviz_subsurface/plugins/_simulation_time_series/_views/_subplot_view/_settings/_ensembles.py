@@ -53,7 +53,7 @@ class EnsemblesSettings(SettingsGroupABC):
                 ],
                 value=None if len(self._ensembles) <= 0 else [self._ensembles[0]],
             ),
-            wcc.LabeledContainer(
+            wcc.Selectors(
                 label="Delta Ensembles",
                 id=self.register_component_unique_id(
                     EnsemblesSettings.Ids.DELTA_ENSEMBLE
