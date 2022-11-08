@@ -56,6 +56,7 @@ jobs:
         pip install "pytest<7.2.0"
         pip install "pytest-xdist<3.0"
         pip install "xtgeo<2.20.2"
+        pip install "mypy<0.990"
         pip install .
 
         # Testing against our latest release (including pre-releases)
