@@ -79,9 +79,9 @@ class GruptreeModel:
                     f"Terminal node '{terminal_node}' not found in 'CHILD' column "
                     "of the gruptree data."
                 )
-
-            branch_nodes = self._get_branch_nodes(terminal_node)
-            df = self._dataframe[self._dataframe["CHILD"].isin(branch_nodes)]
+            if terminal_node != "FIELD":
+                branch_nodes = self._get_branch_nodes(terminal_node)
+                df = self._dataframe[self._dataframe["CHILD"].isin(branch_nodes)]
 
         def filter_wells(
             dframe: pd.DataFrame, well_name_criteria: Callable
@@ -116,7 +116,10 @@ class GruptreeModel:
         """
         branch_nodes = [terminal_node]
 
-        children = self._dataframe[self._dataframe["PARENT"] == terminal_node]
+        children = self._dataframe[
+            self._dataframe["PARENT"] == terminal_node
+        ].drop_duplicates(subset=["CHILD"], keep="first")
+
         for _, childrow in children.iterrows():
             branch_nodes.extend(self._get_branch_nodes(childrow["CHILD"]))
         return branch_nodes
