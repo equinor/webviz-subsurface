@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.16] - 2022-11-09
+
 ### Changed
 - [#1138](https://github.com/equinor/webviz-subsurface/pull/1138) - More flexibility in the input to the `GroupTree` plugin. New input parameters `terminal_node`, `tree_type`, `excl_well_startswith` and `excl_well_endswith`. Relaxed requirements on summary input.
 
