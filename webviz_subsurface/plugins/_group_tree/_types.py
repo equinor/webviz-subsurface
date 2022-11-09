@@ -19,3 +19,19 @@ class NodeType(StrEnum):
     PROD = "prod"
     INJ = "inj"
     OTHER = "other"
+
+
+class DataType(StrEnum):
+    OILRATE = "oilrate"
+    GASRATE = "gasrate"
+    WATERRATE = "waterrate"
+    WATERINJRATE = "waterinjrate"
+    GASINJRATE = "gasinjrate"
+    PRESSURE = "pressure"
+    BHP = "bhp"
+    WMCTL = "wmctl"
+
+
+class EdgeOrNode(StrEnum):
+    EDGE = "edge"
+    NODE = "node"

@@ -38,6 +38,7 @@ setup(
     entry_points={
         "webviz_config_plugins": [
             "BhpQc = webviz_subsurface.plugins:BhpQc",
+            "CO2Leakage = webviz_subsurface.plugins:CO2Leakage",
             "DiskUsage = webviz_subsurface.plugins:DiskUsage",
             "EXPERIMENTALGridViewerFMU = webviz_subsurface.plugins:EXPERIMENTALGridViewerFMU",
             "GroupTree = webviz_subsurface.plugins:GroupTree",
@@ -101,12 +102,12 @@ setup(
         "pyscal>=0.7.5",
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
-        "vtk>=9.2.2",
-        "webviz-config>=0.3.8",
-        "webviz-core-components>=0.5.6",
-        "webviz-subsurface-components>=0.4.13",
-        "webviz_vtk@git+https://github.com/equinor/webviz-vtk",
         "xtgeo>=2.20.0",
+        "vtk>=9.2.2",
+        "webviz_vtk@git+https://github.com/equinor/webviz-vtk",
+        "webviz-config>=0.5",
+        "webviz-core-components>=0.6",
+        "webviz-subsurface-components>=0.4.14",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],

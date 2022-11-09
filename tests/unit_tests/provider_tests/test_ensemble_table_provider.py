@@ -4,6 +4,7 @@ from typing import Dict, Optional
 import pandas as pd
 
 from webviz_subsurface._providers import (
+    ColumnMetadata,
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
 )
@@ -58,6 +59,8 @@ def test_synthetic_get_column_data(testdata_folder: Path) -> None:
     assert df.shape == (4, 2)
     assert df.columns.tolist() == ["REAL", "STR"]
 
+    assert model.column_metadata("REAL") is None
+
 
 def test_create_from_aggregated_csv_file_smry_csv(
     testdata_folder: Path, tmp_path: Path
@@ -85,6 +88,10 @@ def test_create_from_aggregated_csv_file_smry_csv(
     assert valdf.columns[1] == "YEARS"
     assert valdf["REAL"].nunique() == 3
 
+    # No metadata in csv files
+    meta: Optional[ColumnMetadata] = provider.column_metadata("FOPR")
+    assert meta is None
+
 
 def test_create_from_per_realization_csv_file(
     testdata_folder: Path, tmp_path: Path
@@ -110,6 +117,10 @@ def test_create_from_per_realization_csv_file(
     assert valdf["CONIDX"].nunique() == 24
     assert sorted(valdf["CONIDX"].unique()) == list(range(1, 25))
 
+    # No metadata in csv files
+    meta: Optional[ColumnMetadata] = provider.column_metadata("CONIDX")
+    assert meta is None
+
 
 def test_create_from_per_realization_arrow_file(
     testdata_folder: Path, tmp_path: Path
@@ -126,6 +137,11 @@ def test_create_from_per_realization_arrow_file(
     assert "FOPT" in valdf.columns
     assert valdf["REAL"].nunique() == 100
 
+    # Test metadata
+    meta: Optional[ColumnMetadata] = provider.column_metadata("FOPR")
+    assert meta is not None
+    assert meta.unit == "SM3/DAY"
+
 
 def test_create_from_per_realization_parameter_file(
     testdata_folder: Path, tmp_path: Path
@@ -139,6 +155,12 @@ def test_create_from_per_realization_parameter_file(
     valdf = provider.get_column_data(provider.column_names())
     assert "GLOBVAR:FAULT_SEAL_SCALING" in valdf.columns
     assert valdf["REAL"].nunique() == 100
+
+    # No metadata in parameter files
+    meta: Optional[ColumnMetadata] = provider.column_metadata(
+        "GLOBVAR:FAULT_SEAL_SCALING"
+    )
+    assert meta is None
 
 
 def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
@@ -165,3 +187,7 @@ def test_create_provider_set_from_aggregated_csv_file(tmp_path: Path) -> None:
             "STOIIP_OIL",
             "SOURCE",
         }.issubset(set(provider.column_names()))
+
+        # No metadata in csv files
+        meta: Optional[ColumnMetadata] = provider.column_metadata("ZONE")
+        assert meta is None

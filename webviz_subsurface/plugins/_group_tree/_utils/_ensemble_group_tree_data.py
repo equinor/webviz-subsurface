@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ from webviz_config.common_cache import CACHE
 from webviz_subsurface._models import GruptreeModel
 from webviz_subsurface._providers import EnsembleSummaryProvider
 
-from .._types import NodeType, StatOptions, TreeModeOptions
+from .._types import DataType, EdgeOrNode, NodeType, StatOptions, TreeModeOptions
 
 
 class EnsembleGroupTreeData:
@@ -17,29 +17,45 @@ class EnsembleGroupTreeData:
     """
 
     def __init__(
-        self, provider: EnsembleSummaryProvider, gruptree_model: GruptreeModel
+        self,
+        provider: EnsembleSummaryProvider,
+        gruptree_model: GruptreeModel,
+        terminal_node: str,
+        excl_well_startswith: Optional[List[str]] = None,
+        excl_well_endswith: Optional[List[str]] = None,
     ):
 
         self._provider = provider
         self._gruptree_model = gruptree_model
-        self._gruptree = self._gruptree_model.dataframe
+        self._terminal_node = terminal_node
+        self._gruptree = self._gruptree_model.get_filtered_dataframe(
+            terminal_node=self._terminal_node,
+            excl_well_startswith=excl_well_startswith,
+            excl_well_endswith=excl_well_endswith,
+        )
+
         self._wells: List[str] = self._gruptree[
             self._gruptree["KEYWORD"] == "WELSPECS"
         ]["CHILD"].unique()
 
-        # Check that all field rate and WSTAT summary vectors exist
-        self._check_that_sumvecs_exists(
-            ["FOPR", "FGPR", "FWPR", "FWIR", "FGIR"]
-            + [f"WSTAT:{well}" for well in self._wells]
-        )
-
-        # Check if the ensemble has waterinj and/or gasinj
-        smry = self._provider.get_vectors_df(["FWIR", "FGIR"], None)
-        self._has_waterinj = smry["FWIR"].sum() > 0
-        self._has_gasinj = smry["FGIR"].sum() > 0
+        # Check that all WSTAT summary vectors exist
+        # They are used to determine which summary vector are needed next.
+        self._check_that_sumvecs_exists([f"WSTAT:{well}" for well in self._wells])
 
         # Add nodetypes IS_PROD, IS_INJ and IS_OTHER to gruptree
-        self._gruptree = add_nodetype(self._gruptree, self._provider, self._wells)
+        self._gruptree = add_nodetype(
+            self._gruptree, self._provider, self._wells, self._terminal_node
+        )
+
+        self._has_waterinj = False
+        self._has_gasinj = False
+        if True in self._gruptree["IS_INJ"].unique():
+            # If there is injection in the tree we need to determine
+            # which kind of injection. For that wee need FWIR and FGIR
+            self._check_that_sumvecs_exists(["FWIR", "FGIR"])
+            smry = self._provider.get_vectors_df(["FWIR", "FGIR"], None)
+            self._has_waterinj = smry["FWIR"].sum() > 0
+            self._has_gasinj = smry["FGIR"].sum() > 0
 
         # Add edge label
         self._gruptree["EDGE_LABEL"] = self._gruptree.apply(get_edge_label, axis=1)
@@ -47,8 +63,10 @@ class EnsembleGroupTreeData:
         # Get summary data with metadata (nodename, datatype, edge_or_node)
         self._sumvecs: pd.DataFrame = self._get_sumvecs_with_metadata()
 
-        # Check that all summary vectors exist
-        self._check_that_sumvecs_exists(list(self._sumvecs["SUMVEC"]))
+        # Check that all edge summary vectors exist
+        self._check_that_sumvecs_exists(
+            list(self._sumvecs[self._sumvecs["EDGE_NODE"] == EdgeOrNode.EDGE]["SUMVEC"])
+        )
 
     @property
     def webviz_store(self) -> Tuple[Callable, List[Dict]]:
@@ -75,7 +93,12 @@ class EnsembleGroupTreeData:
         """  # noqa
 
         # Filter smry
-        smry = self._provider.get_vectors_df(list(self._sumvecs["SUMVEC"]), None)
+        vectors = [
+            sumvec
+            for sumvec in self._sumvecs["SUMVEC"]
+            if sumvec in self._provider.vector_names()
+        ]
+        smry = self._provider.get_vectors_df(vectors, None)
 
         if tree_mode is TreeModeOptions.STATISTICS:
             if stat_option is StatOptions.MEAN:
@@ -95,7 +118,10 @@ class EnsembleGroupTreeData:
             smry = smry[smry["REAL"] == real]
 
         gruptree_filtered = self._gruptree
-        if tree_mode == "single_real" and not self.tree_is_equivalent_in_all_real():
+        if (
+            tree_mode == TreeModeOptions.SINGLE_REAL
+            and not self.tree_is_equivalent_in_all_real()
+        ):
             # Trees are not equal. Filter on realization
             gruptree_filtered = gruptree_filtered[gruptree_filtered["REAL"] == real]
 
@@ -106,11 +132,11 @@ class EnsembleGroupTreeData:
         gruptree_filtered = pd.concat(dfs).drop_duplicates()
 
         return (
-            create_dataset(smry, gruptree_filtered, self._sumvecs),
+            create_dataset(smry, gruptree_filtered, self._sumvecs, self._terminal_node),
             self.get_edge_options(node_types),
             [
-                {"name": option, "label": get_label(option)}
-                for option in ["pressure", "bhp", "wmctl"]
+                {"name": datatype, "label": get_label(datatype)}
+                for datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]
             ],
         )
 
@@ -135,6 +161,8 @@ class EnsembleGroupTreeData:
         * nodename: name in eclipse network
         * datatype: oilrate, gasrate, pressure etc
         * edge_node: whether the datatype is edge (f.ex rates) or node (f.ex pressure)
+
+        Rates are not required for the terminal node since they will not be used.
         """
         records = []
 
@@ -143,15 +171,23 @@ class EnsembleGroupTreeData:
             nodename = noderow["CHILD"]
             keyword = noderow["KEYWORD"]
 
-            datatypes = ["pressure"]
-            if noderow["IS_PROD"]:
-                datatypes += ["oilrate", "gasrate", "waterrate"]
-            if noderow["IS_INJ"] and self._has_waterinj:
-                datatypes.append("waterinjrate")
-            if noderow["IS_INJ"] and self._has_gasinj:
-                datatypes.append("gasinjrate")
+            datatypes = [DataType.PRESSURE]
+            if noderow["IS_PROD"] and nodename != self._terminal_node:
+                datatypes += [DataType.OILRATE, DataType.GASRATE, DataType.WATERRATE]
+            if (
+                noderow["IS_INJ"]
+                and self._has_waterinj
+                and nodename != self._terminal_node
+            ):
+                datatypes.append(DataType.WATERINJRATE)
+            if (
+                noderow["IS_INJ"]
+                and self._has_gasinj
+                and nodename != self._terminal_node
+            ):
+                datatypes.append(DataType.GASINJRATE)
             if keyword == "WELSPECS":
-                datatypes += ["bhp", "wmctl"]
+                datatypes += [DataType.BHP, DataType.WMCTL]
 
             for datatype in datatypes:
                 records.append(
@@ -186,21 +222,28 @@ class EnsembleGroupTreeData:
         """Returns a list with edge node options for the dropdown
         menu in the GroupTree component. The output list has the format:
         [
-            {"name": "oilrate", "label": "Oil Rate"},
-            {"name": "gasrate", "label": "Gas Rate"},
+            {"name": DataType.OILRATE, "label": "Oil Rate"},
+            {"name": DataType.GasRATE, "label": "Gas Rate"},
         ]
         """
         options = []
         if NodeType.PROD in node_types:
-            for rate in ["oilrate", "gasrate", "waterrate"]:
+            for rate in [DataType.OILRATE, DataType.GASRATE, DataType.WATERRATE]:
                 options.append({"name": rate, "label": get_label(rate)})
         if NodeType.INJ in node_types and self._has_waterinj:
-            options.append({"name": "waterinjrate", "label": get_label("waterinjrate")})
+            options.append(
+                {
+                    "name": DataType.WATERINJRATE,
+                    "label": get_label(DataType.WATERINJRATE),
+                }
+            )
         if NodeType.INJ in node_types and self._has_gasinj:
-            options.append({"name": "gasinjrate", "label": get_label("gasinjrate")})
+            options.append(
+                {"name": DataType.GASINJRATE, "label": get_label(DataType.GASINJRATE)}
+            )
         if options:
             return options
-        return [{"name": "oilrate", "label": get_label("oilrate")}]
+        return [{"name": DataType.OILRATE, "label": get_label(DataType.OILRATE)}]
 
 
 def get_edge_label(row: pd.Series) -> str:
@@ -215,25 +258,25 @@ def get_edge_label(row: pd.Series) -> str:
     return f"VFP {vfp_nb}"
 
 
-def get_label(datatype: str) -> str:
+def get_label(datatype: DataType) -> str:
     """Returns a more readable label for the summary datatypes"""
     labels = {
-        "oilrate": "Oil Rate",
-        "gasrate": "Gas Rate",
-        "waterrate": "Water Rate",
-        "waterinjrate": "Water Inj Rate",
-        "gasinjrate": "Gas Inj Rate",
-        "pressure": "Pressure",
-        "bhp": "BHP",
-        "wmctl": "WMCTL",
+        DataType.OILRATE: "Oil Rate",
+        DataType.GASRATE: "Gas Rate",
+        DataType.WATERRATE: "Water Rate",
+        DataType.WATERINJRATE: "Water Inj Rate",
+        DataType.GASINJRATE: "Gas Inj Rate",
+        DataType.PRESSURE: "Pressure",
+        DataType.BHP: "BHP",
+        DataType.WMCTL: "WMCTL",
     }
     if datatype in labels:
         return labels[datatype]
-    raise ValueError(f"Label for dataype {datatype} not implemented.")
+    raise ValueError(f"Label for datatype {datatype.value} not implemented.")
 
 
 def get_sumvec(
-    datatype: str,
+    datatype: DataType,
     nodename: str,
     keyword: str,
 ) -> str:
@@ -244,36 +287,40 @@ def get_sumvec(
     """
     datatype_map = {
         "FIELD": {
-            "oilrate": "FOPR",
-            "gasrate": "FGPR",
-            "waterrate": "FWPR",
-            "waterinjrate": "FWIR",
-            "gasinjrate": "FGIR",
-            "pressure": "GPR",
+            DataType.OILRATE: "FOPR",
+            DataType.GASRATE: "FGPR",
+            DataType.WATERRATE: "FWPR",
+            DataType.WATERINJRATE: "FWIR",
+            DataType.GASINJRATE: "FGIR",
+            DataType.PRESSURE: "GPR",
         },
         "GRUPTREE": {
-            "oilrate": "GOPR",
-            "gasrate": "GGPR",
-            "waterrate": "GWPR",
-            "waterinjrate": "GWIR",
-            "gasinjrate": "GGIR",
-            "pressure": "GPR",
+            DataType.OILRATE: "GOPR",
+            DataType.GASRATE: "GGPR",
+            DataType.WATERRATE: "GWPR",
+            DataType.WATERINJRATE: "GWIR",
+            DataType.GASINJRATE: "GGIR",
+            DataType.PRESSURE: "GPR",
         },
+        # BRANPROP can not be used for injection, but the nodes
+        # might also be GNETINJE and could therefore have injection.
         "BRANPROP": {
-            "oilrate": "GOPRNB",
-            "gasrate": "GGPRNB",
-            "waterrate": "GWPRNB",
-            "pressure": "GPR",
+            DataType.OILRATE: "GOPRNB",
+            DataType.GASRATE: "GGPRNB",
+            DataType.WATERRATE: "GWPRNB",
+            DataType.PRESSURE: "GPR",
+            DataType.WATERINJRATE: "GWIR",
+            DataType.GASINJRATE: "GGIR",
         },
         "WELSPECS": {
-            "oilrate": "WOPR",
-            "gasrate": "WGPR",
-            "waterrate": "WWPR",
-            "waterinjrate": "WWIR",
-            "gasinjrate": "WGIR",
-            "pressure": "WTHP",
-            "bhp": "WBHP",
-            "wmctl": "WMCTL",
+            DataType.OILRATE: "WOPR",
+            DataType.GASRATE: "WGPR",
+            DataType.WATERRATE: "WWPR",
+            DataType.WATERINJRATE: "WWIR",
+            DataType.GASINJRATE: "WGIR",
+            DataType.PRESSURE: "WTHP",
+            DataType.BHP: "WBHP",
+            DataType.WMCTL: "WMCTL",
         },
     }
     if nodename == "FIELD":
@@ -281,21 +328,37 @@ def get_sumvec(
         if datatype == "pressure":
             return f"{datatype_ecl}:{nodename}"
         return datatype_ecl
-    datatype_ecl = datatype_map[keyword][datatype]
+    try:
+        datatype_ecl = datatype_map[keyword][datatype]
+    except KeyError as exc:
+        error = (
+            f"Summary vector not found for eclipse keyword: {keyword}, "
+            f"data type: {datatype.value} and node name: {nodename}. "
+        )
+        raise KeyError(error) from exc
     return f"{datatype_ecl}:{nodename}"
 
 
-def get_edge_node(datatype: str) -> str:
+def get_edge_node(datatype: DataType) -> EdgeOrNode:
     """Returns if a given datatype is edge (typically rates) or node (f.ex pressures)"""
-    if datatype in ["oilrate", "gasrate", "waterrate", "waterinjrate", "gasinjrate"]:
-        return "edge"
-    if datatype in ["pressure", "bhp", "wmctl"]:
-        return "node"
-    raise ValueError(f"Data type {datatype} not implemented.")
+    if datatype in [
+        DataType.OILRATE,
+        DataType.GASRATE,
+        DataType.WATERRATE,
+        DataType.WATERINJRATE,
+        DataType.GASINJRATE,
+    ]:
+        return EdgeOrNode.EDGE
+    if datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]:
+        return EdgeOrNode.NODE
+    raise ValueError(f"Data type {datatype.value} not implemented.")
 
 
 def create_dataset(
-    smry: pd.DataFrame, gruptree: pd.DataFrame, sumvecs: pd.DataFrame
+    smry: pd.DataFrame,
+    gruptree: pd.DataFrame,
+    sumvecs: pd.DataFrame,
+    terminal_node: str,
 ) -> List[dict]:
     """The function puts together the GroupTree component input dataset.
 
@@ -319,7 +382,7 @@ def create_dataset(
                 {
                     "dates": [date.strftime("%Y-%m-%d") for date in dates],
                     "tree": extract_tree(
-                        gruptree_date, "FIELD", smry_in_datespan, dates, sumvecs
+                        gruptree_date, terminal_node, smry_in_datespan, dates, sumvecs
                     ),
                 }
             )
@@ -338,7 +401,9 @@ def extract_tree(
     sumvecs: pd.DataFrame,
 ) -> dict:
     """Extract the tree part of the GroupTree component dataset. This functions
-    works recursively and is initially called with the top node of the tree: FIELD."""
+    works recursively and is initially called with the terminal node of the tree
+    (usually FIELD)
+    """
     # pylint: disable=too-many-locals
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
     nodedict = get_nodedict(gruptree, nodename)
@@ -349,8 +414,12 @@ def extract_tree(
         "edge_label": nodedict["EDGE_LABEL"],
     }
 
-    edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == "edge"].to_dict("records")
-    nodes = node_sumvecs[node_sumvecs["EDGE_NODE"] == "node"].to_dict("records")
+    edges = node_sumvecs[node_sumvecs["EDGE_NODE"] == EdgeOrNode.EDGE].to_dict(
+        "records"
+    )
+    nodes = node_sumvecs[node_sumvecs["EDGE_NODE"] == EdgeOrNode.NODE].to_dict(
+        "records"
+    )
 
     edge_data: Dict[str, List[float]] = {item["DATATYPE"]: [] for item in edges}
     node_data: Dict[str, List[float]] = {item["DATATYPE"]: [] for item in nodes}
@@ -362,9 +431,12 @@ def extract_tree(
                 round(smry_at_date[item["SUMVEC"]].values[0], 2)
             )
         for item in nodes:
-            node_data[item["DATATYPE"]].append(
-                round(smry_at_date[item["SUMVEC"]].values[0], 2)
-            )
+            try:
+                node_data[item["DATATYPE"]].append(
+                    round(smry_at_date[item["SUMVEC"]].values[0], 2)
+                )
+            except KeyError:
+                node_data[item["DATATYPE"]].append(np.nan)
 
     result["edge_data"] = edge_data
     result["node_data"] = node_data
@@ -391,7 +463,10 @@ def get_nodedict(gruptree: pd.DataFrame, nodename: str) -> Dict[str, Any]:
 
 
 def add_nodetype(
-    gruptree: pd.DataFrame, provider: EnsembleSummaryProvider, all_wells: List[str]
+    gruptree: pd.DataFrame,
+    provider: EnsembleSummaryProvider,
+    all_wells: List[str],
+    terminal_node: str,
 ) -> pd.DataFrame:
     """Adds nodetype IS_PROD, IS_INJ and IS_OTHER."""
 
@@ -425,10 +500,11 @@ def add_nodetype(
         is_inj_map[node["CHILD"]] = any(leafs_are_inj)
         is_other_map[node["CHILD"]] = any(leafs_are_other)
 
-    # FIELD node must not be filtered out, so it is set True for all categories
-    is_prod_map["FIELD"] = True
-    is_inj_map["FIELD"] = True
-    is_other_map["FIELD"] = True
+    # The terminal node must not be filtered out,
+    # so it is set True for all categories
+    is_prod_map[terminal_node] = True
+    is_inj_map[terminal_node] = True
+    is_other_map[terminal_node] = True
 
     # Tag all nodes as IS_PROD, IS_INJ and IS_OTHER
     gruptree["IS_PROD"] = gruptree["CHILD"].map(is_prod_map)
@@ -488,12 +564,12 @@ def create_leafnodetype_maps(
             # The leaf node is a group
             prod_sumvecs = [
                 get_sumvec(datatype, nodename, nodekeyword)
-                for datatype in ["oilrate", "gasrate", "waterrate"]
+                for datatype in [DataType.OILRATE, DataType.GASRATE, DataType.WATERRATE]
             ]
             inj_sumvecs = (
                 [
                     get_sumvec(datatype, nodename, nodekeyword)
-                    for datatype in ["waterinjrate", "gasinjrate"]
+                    for datatype in [DataType.WATERINJRATE, DataType.GASINJRATE]
                 ]
                 if nodekeyword != "BRANPROP"
                 else []
