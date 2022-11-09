@@ -170,7 +170,7 @@ def test_add_nodetype(
         "CHILD"
     ].unique()
 
-    output = add_nodetype(gruptree_df, provider, wells)
+    output = add_nodetype(gruptree_df, provider, wells, "FIELD")
     pd.testing.assert_frame_equal(
         output[columns_to_check], expected_df[columns_to_check]
     )
