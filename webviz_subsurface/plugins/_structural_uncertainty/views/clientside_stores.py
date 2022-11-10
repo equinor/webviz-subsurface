@@ -6,7 +6,7 @@ from dash import dcc, html
 def clientside_stores(
     get_uuid: Callable,
     initial_settings: Dict,
-    realizations: List[Union[str, int]],
+    realizations: List[int],
 ) -> html.Div:
     """Contains the clientside stores"""
     return html.Div(

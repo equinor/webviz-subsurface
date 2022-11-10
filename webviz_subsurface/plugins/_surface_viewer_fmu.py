@@ -648,11 +648,15 @@ attribute_settings:
         ]
         for ens in list(self.ens_df["ENSEMBLE"].unique()):
             for calculation in ["Mean", "StdDev", "Min", "Max"]:
-                store_functions.append(
-                    self._surface_ensemble_set_model[
-                        ens
-                    ].webviz_store_statistical_calculation(calculation=calculation)
-                )
+                for attr, vals in self.surfaceconfig.items():
+                    for name in vals["names"]:
+                        store_functions.append(
+                            self._surface_ensemble_set_model[
+                                ens
+                            ].webviz_store_statistical_calculation(
+                                calculation=calculation, attribute=attr, name=name
+                            )
+                        )
             store_functions.append(
                 self._surface_ensemble_set_model[
                     ens
