@@ -20,7 +20,6 @@ class PressureOption(SettingsGroupABC):
                 id=self.register_component_unique_id(
                     PressureOption.Ids.PRESSURE_OPTION
                 ),
-                label="Color by",
                 options=[
                     {"label": "BHP", "value": PressureType.BHP},
                     {"label": "DP (BHP-THP)", "value": PressureType.DP},

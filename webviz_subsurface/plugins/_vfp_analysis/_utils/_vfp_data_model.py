@@ -37,6 +37,7 @@ class VfpTable:
         }
         self._bhp_table = np.array(self._data["BHP_TABLE"])
 
+        # pylint: disable=too-many-function-args
         self._reshaped_bhp_table = self._bhp_table.reshape(
             len(self.params[VfpParam.THP]),
             len(self.params[VfpParam.WFR]),

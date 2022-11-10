@@ -18,8 +18,6 @@ class VfpFigureBuilder:
 
         self._traces: List[Dict[str, Any]] = []
         self._layout = {
-            "yaxis": {"title": "BHP", "showgrid": True},
-            "xaxis": {"title": "Rate", "showgrid": True},
             "legend": {"orientation": "h"},
             "hovermode": "closest",
             "title": f"{vfp_name}",
@@ -28,7 +26,12 @@ class VfpFigureBuilder:
 
     def get_figure(self) -> Dict[str, Any]:
         return go.Figure(data=self._traces, layout=self._layout)
-        # return {"data": self._traces, "layout": self._layout}
+
+    def set_yaxis_settings(self, title: str, showgrid: bool = True) -> None:
+        self._layout["yaxis"] = {"title": title, "showgrid": showgrid}
+
+    def set_xaxis_settings(self, title: str, showgrid: bool = True) -> None:
+        self._layout["xaxis"] = {"title": title, "showgrid": showgrid}
 
     def add_vfp_curve(
         self,
