@@ -3,6 +3,7 @@ import io
 import json
 from typing import Callable, Dict, List, Optional, Tuple
 
+import numpy as np
 import pyarrow as pa
 from ecl2df.vfp import pyarrow2basic_data
 from webviz_config import WebvizSettings
@@ -16,8 +17,8 @@ class VfpTable:
 
     def __init__(self, filename: str):
         self._filename = filename
-        # self._data = json.load(_read_arrow_file(self._filename))
-        self._data = _read_arrow_file(self._filename)
+        self._data = json.load(_read_arrow_file(self._filename))
+        # self._data = _read_arrow_file(self._filename)
         self.vfp_type = self._data["VFP_TYPE"]
         self.tab_type = self._data["TAB_TYPE"]
         self.rate_values = self._data["FLOW_VALUES"]
@@ -35,8 +36,9 @@ class VfpTable:
             VfpParam.GFR: GFRType(self._data["GFR_TYPE"]),
             VfpParam.ALQ: ALQType(self._data["ALQ_TYPE"]),
         }
+        self._bhp_table = np.array(self._data["BHP_TABLE"])
 
-        self._reshaped_bhp_table = self._data["BHP_TABLE"].reshape(
+        self._reshaped_bhp_table = self._bhp_table.reshape(
             len(self.params[VfpParam.THP]),
             len(self.params[VfpParam.WFR]),
             len(self.params[VfpParam.GFR]),
@@ -66,7 +68,7 @@ class VfpDataModel:
         self,
         webviz_settings: WebvizSettings,
         vfp_file_pattern: str,
-        ensemble: str = None,
+        ensemble: Optional[str] = None,
     ):
 
         if ensemble is not None:
@@ -143,5 +145,18 @@ def _read_arrow_file(filename: str) -> io.BytesIO:
     ]:
         vfp_dict[column] = str(vfp_dict[column])
 
-    return vfp_dict
-    # return io.BytesIO(json.dumps(vfp_dict).encode())
+    for column in [
+        "THP_VALUES",
+        "WFR_VALUES",
+        "GFR_VALUES",
+        "ALQ_VALUES",
+        "FLOW_VALUES",
+        "BHP_TABLE",
+        "THP_INDICES",
+        "WFR_INDICES",
+        "GFR_INDICES",
+        "ALQ_INDICES",
+    ]:
+        vfp_dict[column] = vfp_dict[column].tolist()
+
+    return io.BytesIO(json.dumps(vfp_dict).encode())
