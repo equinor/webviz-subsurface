@@ -214,7 +214,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             ens: SurfaceSetModel(surf_ens_df)
             for ens, surf_ens_df in surface_table.groupby("ENSEMBLE")
         }
-        self._realizations = [int(real) for real in sorted(list(surface_table["REAL"].unique()))]
+        self._realizations = [
+            int(real) for real in sorted(list(surface_table["REAL"].unique()))
+        ]
 
         self._zonelog = zonelog
         colors = [
@@ -380,7 +382,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             app=app,
             get_uuid=self.uuid,
             surface_set_models=self._surface_ensemble_set_model,
-            all_realizations = self._realizations,
+            all_realizations=self._realizations,
             well_set_model=self._well_set_model,
             zonelog=self._zonelog,
             color_picker=self._color_picker,
@@ -430,12 +432,24 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     for surf_name in self._surfacenames:
                         store_functions.append(
                             self._surface_ensemble_set_model[
-                            ens
-                        ].webviz_store_statistical_calculation(attribute=surf_attr,name=surf_name,calculation=calculation, realizations=None)
+                                ens
+                            ].webviz_store_statistical_calculation(
+                                attribute=surf_attr,
+                                name=surf_name,
+                                calculation=calculation,
+                                realizations=None,
+                            )
                         )
-                        print(self._surface_ensemble_set_model[
-                            ens
-                        ].webviz_store_statistical_calculation(attribute=surf_attr,name=surf_name,calculation=calculation, realizations=None))
+                        print(
+                            self._surface_ensemble_set_model[
+                                ens
+                            ].webviz_store_statistical_calculation(
+                                attribute=surf_attr,
+                                name=surf_name,
+                                calculation=calculation,
+                                realizations=None,
+                            )
+                        )
 
             store_functions.append(
                 self._surface_ensemble_set_model[
@@ -457,5 +471,5 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             store_functions.append(
                 (find_files, [{"folder": self._wellfolder, "suffix": self._wellsuffix}])
             )
-        
+
         return store_functions

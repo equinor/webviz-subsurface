@@ -134,19 +134,17 @@ class SurfaceSetModel:
             surface_stream = save_statistical_surface(
                 sorted(list(df["path"])), calculation
             )
-            print("calculated")
         except OSError:
             surface_stream = save_statistical_surface_no_store(
                 sorted(list(df["path"])), calculation
             )
-            print("not calculated")
 
         return xtgeo.surface_from_file(surface_stream, fformat="irap_binary")
 
     def webviz_store_statistical_calculation(
         self,
-        attribute:str,
-        name:str,
+        attribute: str,
+        name: str,
         calculation: Optional[str] = "Mean",
         realizations: Optional[List[int]] = None,
     ) -> Tuple[Callable, list]:
@@ -157,24 +155,24 @@ class SurfaceSetModel:
             if realizations is not None
             else self._surface_table
         )
-        df = df.loc[df["attribute"]==attribute]
-        df = df.loc[df["name"]==name]
+        df = df.loc[df["attribute"] == attribute]
+        df = df.loc[df["name"] == name]
         stored_functions_args = []
         if df["date"].isnull().values.all():
-                    stored_functions_args.append(
-                        {
-                            "fns": sorted(list(df["path"].unique())),
-                            "calculation": calculation,
-                        }
-                    )
+            stored_functions_args.append(
+                {
+                    "fns": sorted(list(df["path"].unique())),
+                    "calculation": calculation,
+                }
+            )
         else:
-                    for _date, date_df in df.groupby("date"):
-                        stored_functions_args.append(
-                            {
-                                "fns": sorted(list(date_df["path"].unique())),
-                                "calculation": calculation,
-                            }
-                        )
+            for _date, date_df in df.groupby("date"):
+                stored_functions_args.append(
+                    {
+                        "fns": sorted(list(date_df["path"].unique())),
+                        "calculation": calculation,
+                    }
+                )
 
         return (
             save_statistical_surface,

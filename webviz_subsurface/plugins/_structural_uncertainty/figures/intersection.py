@@ -16,13 +16,6 @@ from ...._utils.fanchart_plotting import (
 )
 
 
-class FanChartStatistics(str, Enum):
-    MINIMUM = "Min"
-    MAXIMUM = "Max"
-    P10 = "P10"
-    P90 = "P90"
-
-
 # pylint: disable=too-many-arguments
 @CACHE.memoize(timeout=CACHE.TIMEOUT)
 def get_plotly_trace_statistical_surface(
@@ -80,7 +73,6 @@ def get_plotly_traces_uncertainty_envelope(
     values_for_fanchart: Dict[str, np.ma.MaskedArray] = {}
     fan_chart_traces: List = []
     for calculation in ["P10", "P90", "Min", "Max"]:
-        print("Calculating stat")
         values = surfaceset.calculate_statistical_surface(
             name=name,
             attribute=attribute,
@@ -100,9 +92,7 @@ def get_plotly_traces_uncertainty_envelope(
     #    the minimum surface is randomly used.
     # 2. Make a set of fanchart traces for each slice.
 
-    for unmasked_slice in np.ma.clump_unmasked(
-        values_for_fanchart["Min"]
-    ):
+    for unmasked_slice in np.ma.clump_unmasked(values_for_fanchart["Min"]):
         fan_chart_data = FanchartData(
             samples=values_for_fanchart["x"][unmasked_slice],
             low_high=LowHighData(

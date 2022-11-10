@@ -113,9 +113,6 @@ def update_intersection(
             )
 
         realizations = [int(real) for real in realizations]
-        print(set(realizations) == set(all_realizations))
-        print(realizations)
-        print(all_realizations)
         for ensemble in ensembles:
             surfset = surface_set_models[ensemble]
             for surfacename in surfacenames:
@@ -138,13 +135,14 @@ def update_intersection(
                                 legendname=f"{surfacename}({ensemble})",
                                 name=surfacename,
                                 attribute=surfaceattribute,
-                                realizations=realizations if set(realizations) != set(all_realizations) else None,
+                                realizations=realizations
+                                if set(realizations) != set(all_realizations)
+                                else None,
                                 showlegend=showlegend,
                                 color=color,
                             )
                             traces.append(trace)
                             showlegend = False
-                    print("Envelope")
                     if "Uncertainty envelope" in statistics:
                         envelope_traces = get_plotly_traces_uncertainty_envelope(
                             surfaceset=surfset,
@@ -152,13 +150,14 @@ def update_intersection(
                             legendname=f"{surfacename}({ensemble})",
                             name=surfacename,
                             attribute=surfaceattribute,
-                            realizations=realizations if set(realizations) != set(all_realizations) else None,
+                            realizations=realizations
+                            if set(realizations) != set(all_realizations)
+                            else None,
                             showlegend=showlegend,
                             color=color,
                         )
                         traces.extend(envelope_traces)
                         showlegend = False
-                    print("Envelope done")
                     if "Realizations" in statistics:
                         for real in realizations:
                             trace = get_plotly_trace_realization_surface(
@@ -173,13 +172,11 @@ def update_intersection(
                             )
                             traces.append(trace)
                             showlegend = False
-        print("Well")
         if intersection_source == "well":
             well = well_set_model.get_well(wellname)
             traces.append(get_plotly_trace_well_trajectory(well))
             if well.zonelogname is not None:
                 traces.extend(get_plotly_zonelog_trace(well, zonelog))
-        print("Well Done")
         return traces
 
     @app.callback(
