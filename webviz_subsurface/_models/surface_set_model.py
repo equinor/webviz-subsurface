@@ -134,15 +134,19 @@ class SurfaceSetModel:
             surface_stream = save_statistical_surface(
                 sorted(list(df["path"])), calculation
             )
+            print("calculated")
         except OSError:
             surface_stream = save_statistical_surface_no_store(
                 sorted(list(df["path"])), calculation
             )
+            print("not calculated")
 
         return xtgeo.surface_from_file(surface_stream, fformat="irap_binary")
 
     def webviz_store_statistical_calculation(
         self,
+        attribute:str,
+        name:str,
         calculation: Optional[str] = "Mean",
         realizations: Optional[List[int]] = None,
     ) -> Tuple[Callable, list]:
@@ -153,19 +157,18 @@ class SurfaceSetModel:
             if realizations is not None
             else self._surface_table
         )
+        df = df.loc[df["attribute"]==attribute]
+        df = df.loc[df["name"]==name]
         stored_functions_args = []
-        for _attr, attr_df in df.groupby("attribute"):
-            for _name, name_df in attr_df.groupby("name"):
-
-                if name_df["date"].isnull().values.all():
+        if df["date"].isnull().values.all():
                     stored_functions_args.append(
                         {
-                            "fns": sorted(list(name_df["path"].unique())),
+                            "fns": sorted(list(df["path"].unique())),
                             "calculation": calculation,
                         }
                     )
-                else:
-                    for _date, date_df in name_df.groupby("date"):
+        else:
+                    for _date, date_df in df.groupby("date"):
                         stored_functions_args.append(
                             {
                                 "fns": sorted(list(date_df["path"].unique())),
