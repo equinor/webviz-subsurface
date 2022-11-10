@@ -9,7 +9,7 @@ from ecl2df.vfp import pyarrow2basic_data
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
-from .._types import ALQType, GFRType, THPType, VfpParam, WFRType
+from .._types import ALQType, GFRType, PressureType, THPType, VfpParam, WFRType
 
 
 class VfpTable:
@@ -18,7 +18,6 @@ class VfpTable:
     def __init__(self, filename: str):
         self._filename = filename
         self._data = json.load(_read_arrow_file(self._filename))
-        # self._data = _read_arrow_file(self._filename)
         self.vfp_type = self._data["VFP_TYPE"]
         self.tab_type = self._data["TAB_TYPE"]
         self.rate_values = self._data["FLOW_VALUES"]
@@ -47,10 +46,20 @@ class VfpTable:
         )
 
     def get_bhp_series(
-        self, thp_idx: int, wfr_idx: int, gfr_idx: int, alq_idx: int
+        self,
+        pressure_type: PressureType,
+        thp_idx: int,
+        wfr_idx: int,
+        gfr_idx: int,
+        alq_idx: int,
     ) -> List[float]:
         """Descr"""
-        return self._reshaped_bhp_table[thp_idx][wfr_idx][gfr_idx][alq_idx]
+        bhp_values = self._reshaped_bhp_table[thp_idx][wfr_idx][gfr_idx][alq_idx]
+        if pressure_type == PressureType.BHP:
+            return bhp_values
+        if pressure_type == PressureType.DP:
+            return bhp_values - self.params[VfpParam.THP][thp_idx]
+        raise ValueError(f"PressureType {pressure_type} not implemented")
 
     def get_values(
         self, param_type: VfpParam, indices: Optional[List[int]]
@@ -92,7 +101,6 @@ class VfpDataModel:
             self._vfp_file_pattern = vfp_file_pattern
 
         self._vfp_files = json.load(_discover_files(self._vfp_file_pattern))
-
         self._vfp_tables = {
             table_name: VfpTable(file_name)
             for table_name, file_name in self._vfp_files.items()
@@ -101,7 +109,8 @@ class VfpDataModel:
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict]]]:
         return [(_discover_files, [{"file_pattern": self._vfp_file_pattern}]),] + [
-            (_read_arrow_file, [{"filename": filename}]) for filename in self._vfp_files
+            (_read_arrow_file, [{"filename": filename}])
+            for filename in self._vfp_files.values()
         ]
 
     @property

@@ -1,6 +1,11 @@
 from webviz_config.utils import StrEnum
 
 
+class PressureType(StrEnum):
+    BHP = "bhp"
+    DP = "dp"
+
+
 class VfpParam(StrEnum):
     THP = "thp"
     WFR = "wfr"

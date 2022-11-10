@@ -4,9 +4,9 @@ from dash import Input, Output, State, callback
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ..._types import VfpParam
+from ..._types import PressureType, VfpParam
 from ..._utils import VfpDataModel, VfpTable
-from ._settings import Filters, Selections, Vizualisation
+from ._settings import Filters, PressureOption, Selections, Vizualisation
 from ._utils import VfpFigureBuilder
 from ._view_element import VfpViewElement
 
@@ -15,8 +15,9 @@ class VfpView(ViewABC):
     class Ids(StrEnum):
         VIEW_ELEMENT = "view-element"
         SELECTIONS = "selections"
-        FILTERS = "filters"
+        PRESSURE_OPTION = "pressure-option"
         VIZUALISATION = "vizualisation"
+        FILTERS = "filters"
 
     def __init__(self, data_model: VfpDataModel) -> None:
         super().__init__("VFP Analysis")
@@ -26,6 +27,7 @@ class VfpView(ViewABC):
         self.add_settings_group(
             Selections(self._data_model.vfp_names), VfpView.Ids.SELECTIONS
         )
+        self.add_settings_group(PressureOption(), VfpView.Ids.PRESSURE_OPTION)
         self.add_settings_group(
             Vizualisation(self._data_model.vfp_names), VfpView.Ids.VIZUALISATION
         )
@@ -163,6 +165,12 @@ class VfpView(ViewABC):
                 ),
                 "value",
             ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.PRESSURE_OPTION, PressureOption.Ids.PRESSURE_OPTION
+                ),
+                "value",
+            ),
             State(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, Selections.Ids.VFP_NAME
@@ -177,6 +185,7 @@ class VfpView(ViewABC):
             gfrs: List[int],
             alqs: List[int],
             color_by: VfpParam,
+            pressure_option: PressureType,
             vfp_name: str,
         ) -> Dict[str, Any]:
             # pylint: disable=too-many-locals
@@ -203,7 +212,7 @@ class VfpView(ViewABC):
                             figure_builder.add_vfp_curve(
                                 rates=vfp_table.rate_values,
                                 bhp_values=vfp_table.get_bhp_series(
-                                    thp_idx, wfr_idx, gfr_idx, alq_idx
+                                    pressure_option, thp_idx, wfr_idx, gfr_idx, alq_idx
                                 ),
                                 cmax=cmax,
                                 cmin=cmin,
