@@ -1,3 +1,4 @@
+import datetime
 from typing import Callable, Tuple, Union
 
 import pandas as pd
@@ -10,11 +11,6 @@ from webviz_subsurface._models import SurfaceLeafletModel
 from webviz_subsurface._utils.dataframe_utils import (
     correlate_response_with_dataframe,
     merge_dataframes_on_realization,
-)
-
-# pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.datetime_utils import (
-    from_str,
 )
 
 from ..models import (
@@ -165,7 +161,11 @@ def property_response_controller(
             if timeseries_clickdata
             else timeseries_model.get_last_date(ensemble)
         )
-        date = from_str(date) if isinstance(date, str) else date
+        date = (
+            datetime.datetime.strptime(date, "%Y-%m-%d")
+            if isinstance(date, str)
+            else date
+        )
 
         # Get dataframe with vector and REAL
         vector_df = timeseries_model.get_vector_df(

@@ -6,13 +6,9 @@ from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_pro
     EnsembleSummaryProvider,
     VectorMetadata,
 )
+from webviz_subsurface._utils.provider_set import ProviderSet
 
-# pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set import (
-    ProviderSet,
-)
-
-from ..mocks.provider_set_tests_ensemble_summary_provider_mock import (
+from .mocks.provider_set_tests_ensemble_summary_provider_mock import (
     EnsembleSummaryProviderMock,
 )
 

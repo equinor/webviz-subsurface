@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from webviz_subsurface._providers import VectorMetadata
 
-from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
+from ....mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 
 ##################################################################################################
 #

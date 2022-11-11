@@ -12,6 +12,7 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_subsurface_components import ExpressionInfo, VectorDefinition
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.provider_set import ProviderSet
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import get_selected_expressions
 
@@ -35,7 +36,7 @@ from ._types import (
     TraceOptions,
     VisualizationOptions,
 )
-from ._utils import DerivedVectorsAccessor, ProviderSet, datetime_utils
+from ._utils import DerivedVectorsAccessor, datetime_utils
 from ._utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )

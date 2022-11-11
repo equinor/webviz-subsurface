@@ -1,9 +1,9 @@
 from typing import Dict, List, Tuple
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
+from webviz_subsurface._utils.provider_set import ProviderSet
 
 from .._types import DeltaEnsemble
-from .provider_set import ProviderSet
 
 
 def create_delta_ensemble_name(delta_ensemble: DeltaEnsemble) -> str:

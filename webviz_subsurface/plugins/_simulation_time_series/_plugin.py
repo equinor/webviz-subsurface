@@ -13,6 +13,10 @@ from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
 )
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.provider_set_factory import (
+    create_lazy_provider_set_from_paths,
+    create_presampled_provider_set_from_paths,
+)
 from webviz_subsurface._utils.simulation_timeseries import (
     check_and_format_observations,
     set_simulation_line_shape_fallback,
@@ -32,10 +36,6 @@ from webviz_subsurface._utils.vector_selector import (
 )
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
-from ._utils.create_provider_set_from_paths import (
-    create_lazy_provider_set_from_paths,
-    create_presampled_provider_set_from_paths,
-)
 from ._views._subplot_view import SubplotView
 from ._views._subplot_view._settings import (
     EnsemblesSettings,

@@ -7,9 +7,10 @@ from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
+from webviz_subsurface._utils.provider_set import ProviderSet
+
 from .._types import DeltaEnsemble
 from .._utils.delta_ensemble_utils import create_delta_ensemble_names
-from .._utils.provider_set import ProviderSet
 
 
 def _create_delta_ensemble_table_column_data(

@@ -8,6 +8,7 @@ from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
 )
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.provider_set import ProviderSet
 from webviz_subsurface._utils.vector_calculator import (
     ExpressionInfo,
     VectorCalculator,
@@ -18,7 +19,6 @@ from .from_timeseries_cumulatives import (
     get_cumulative_vector_name,
     is_per_interval_or_per_day_vector,
 )
-from .provider_set import ProviderSet
 
 
 def create_vector_plot_titles_from_provider_set(

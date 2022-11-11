@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 from webviz_subsurface._utils.colors import find_intermediate_color, rgba_to_str
-from webviz_subsurface._utils.datetime_utils import to_str
 from webviz_subsurface._utils.simulation_timeseries import (
     get_simulation_line_shape,
     set_simulation_line_shape_fallback,
@@ -158,7 +157,7 @@ class TimeSeriesFigure:
                 {
                     "bgcolor": "white",
                     "showarrow": False,
-                    "text": to_str(self.date),
+                    "text": self.date.strftime("%Y-%m-%d"),
                     "x": self.date,
                     "y": 1,
                     "yref": "y domain",

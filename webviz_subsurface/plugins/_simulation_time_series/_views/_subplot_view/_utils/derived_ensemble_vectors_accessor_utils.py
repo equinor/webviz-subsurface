@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.provider_set import ProviderSet
 
 from .._types import DeltaEnsemble
 from .delta_ensemble_utils import (
@@ -16,7 +17,6 @@ from .derived_vectors_accessor import (
     DerivedEnsembleVectorsAccessorImpl,
     DerivedVectorsAccessor,
 )
-from .provider_set import ProviderSet
 
 
 def create_derived_vectors_accessor_dict(

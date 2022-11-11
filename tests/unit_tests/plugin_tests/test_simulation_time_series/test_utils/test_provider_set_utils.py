@@ -7,11 +7,7 @@ from webviz_subsurface_components import (
 )
 
 from webviz_subsurface._providers import VectorMetadata
-
-# pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set import (
-    ProviderSet,
-)
+from webviz_subsurface._utils.provider_set import ProviderSet
 
 # pylint: disable=line-too-long
 from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set_utils import (
@@ -19,7 +15,7 @@ from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._uti
     create_vector_plot_titles_from_provider_set,
 )
 
-from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
+from ....mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 
 # *******************************************************************
 #####################################################################
