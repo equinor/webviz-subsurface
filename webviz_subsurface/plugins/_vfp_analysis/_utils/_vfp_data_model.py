@@ -6,10 +6,21 @@ from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 import pyarrow as pa
 from ecl2df.vfp import pyarrow2basic_data
+from ecl2df.vfp._vfpdefs import (
+    ALQ,
+    GFR,
+    THPTYPE,
+    UNITTYPE,
+    VFPPROD_FLO,
+    VFPPROD_TABTYPE,
+    VFPTYPE,
+    WFR,
+    VFPPROD_UNITS
+)
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore
 
-from .._types import ALQType, GFRType, PressureType, THPType, VfpParam, WFRType
+from .._types import PressureType, VfpParam
 
 
 class VfpTable:
@@ -18,10 +29,11 @@ class VfpTable:
     def __init__(self, filename: str):
         self._filename = filename
         self._data = json.load(_read_arrow_file(self._filename))
-        self.vfp_type = self._data["VFP_TYPE"]
-        self.tab_type = self._data["TAB_TYPE"]
+        self.vfp_type = VFPTYPE(self._data["VFP_TYPE"])
+        self.tab_type = VFPPROD_TABTYPE(self._data["TAB_TYPE"])
+        self.rate_type = VFPPROD_FLO(self._data["RATE_TYPE"])
+        self.unit_type = UNITTYPE(self._data["UNIT_TYPE"])
         self.rate_values = self._data["FLOW_VALUES"]
-        self.rate_type = self._data["RATE_TYPE"]
 
         self.params = {
             VfpParam.THP: dict(enumerate(self._data["THP_VALUES"])),
@@ -30,10 +42,10 @@ class VfpTable:
             VfpParam.ALQ: dict(enumerate(self._data["ALQ_VALUES"])),
         }
         self.param_types = {
-            VfpParam.THP: THPType(self._data["THP_TYPE"]),
-            VfpParam.WFR: WFRType(self._data["WFR_TYPE"]),
-            VfpParam.GFR: GFRType(self._data["GFR_TYPE"]),
-            VfpParam.ALQ: ALQType(self._data["ALQ_TYPE"]),
+            VfpParam.THP: THPTYPE(self._data["THP_TYPE"]),
+            VfpParam.WFR: WFR(self._data["WFR_TYPE"]),
+            VfpParam.GFR: GFR(self._data["GFR_TYPE"]),
+            VfpParam.ALQ: ALQ(self._data["ALQ_TYPE"]),
         }
         self._bhp_table = np.array(self._data["BHP_TABLE"])
 
@@ -153,7 +165,7 @@ def _read_arrow_file(filename: str) -> io.BytesIO:
         "UNIT_TYPE",
         "TAB_TYPE",
     ]:
-        vfp_dict[column] = str(vfp_dict[column])
+        vfp_dict[column] = str(vfp_dict[column].value)
 
     for column in [
         "THP_VALUES",

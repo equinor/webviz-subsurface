@@ -226,7 +226,7 @@ class VfpView(ViewABC):
                                 color_by=color_by,
                             )
 
-            figure_builder.set_xaxis_settings(title=vfp_table.rate_type)
-            figure_builder.set_yaxis_settings(title=pressure_type.name)
+            figure_builder.set_xaxis_settings(title=vfp_table.rate_type.value)
+            figure_builder.set_yaxis_settings(title=pressure_type.value)
 
             return figure_builder.get_figure()
