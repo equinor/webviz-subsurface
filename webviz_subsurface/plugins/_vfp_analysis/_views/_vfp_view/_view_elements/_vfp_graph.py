@@ -4,7 +4,7 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
 
-class VfpViewElement(ViewElementABC):
+class VfpGraph(ViewElementABC):
     class Ids(StrEnum):
         GRAPH = "graph"
 

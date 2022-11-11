@@ -8,7 +8,7 @@ from ..._types import PressureType, VfpParam
 from ..._utils import VfpDataModel, VfpTable
 from ._settings import Filters, PressureOption, Selections, Vizualisation
 from ._utils import VfpFigureBuilder
-from ._view_element import VfpViewElement
+from ._view_elements import VfpGraph
 
 
 class VfpView(ViewABC):
@@ -33,7 +33,7 @@ class VfpView(ViewABC):
         )
         self.add_settings_group(Filters(), VfpView.Ids.FILTERS)
 
-        self.add_view_element(VfpViewElement(), VfpView.Ids.VIEW_ELEMENT)
+        self.add_view_element(VfpGraph(), VfpView.Ids.VIEW_ELEMENT)
 
     def set_callbacks(self) -> None:
         @callback(
@@ -138,9 +138,7 @@ class VfpView(ViewABC):
         @callback(
             # Options
             Output(
-                self.view_element_unique_id(
-                    self.Ids.VIEW_ELEMENT, VfpViewElement.Ids.GRAPH
-                ),
+                self.view_element_unique_id(self.Ids.VIEW_ELEMENT, VfpGraph.Ids.GRAPH),
                 "figure",
             ),
             Input(
