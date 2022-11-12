@@ -15,7 +15,6 @@ from ecl2df.vfp._vfpdefs import (
     VFPPROD_TABTYPE,
     VFPTYPE,
     WFR,
-    VFPPROD_UNITS
 )
 from webviz_config import WebvizSettings
 from webviz_config.webviz_store import webvizstore

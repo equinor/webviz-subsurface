@@ -8,12 +8,13 @@ from ..._types import PressureType, VfpParam
 from ..._utils import VfpDataModel, VfpTable
 from ._settings import Filters, PressureOption, Selections, Vizualisation
 from ._utils import VfpFigureBuilder
-from ._view_elements import VfpGraph
+from ._view_elements import VfpGraph, VfpMetadata
 
 
 class VfpView(ViewABC):
     class Ids(StrEnum):
-        VIEW_ELEMENT = "view-element"
+        VFP_GRAPH = "vfp-graph"
+        VFP_METADATA = "vfp-metadata"
         SELECTIONS = "selections"
         PRESSURE_OPTION = "pressure-option"
         VIZUALISATION = "vizualisation"
@@ -32,8 +33,11 @@ class VfpView(ViewABC):
             Vizualisation(self._data_model.vfp_names), VfpView.Ids.VIZUALISATION
         )
         self.add_settings_group(Filters(), VfpView.Ids.FILTERS)
-
-        self.add_view_element(VfpGraph(), VfpView.Ids.VIEW_ELEMENT)
+        column = self.add_column()
+        column.add_view_element(VfpGraph(), VfpView.Ids.VFP_GRAPH)
+        column.add_view_element(VfpMetadata(), VfpView.Ids.VFP_METADATA)
+        # column.add_row().add_view_element(VfpGraph(), VfpView.Ids.VFP_GRAPH)
+        # column.add_row().add_view_element(VfpMetadata(), VfpView.Ids.VFP_METADATA)
 
     def set_callbacks(self) -> None:
         @callback(
@@ -138,7 +142,7 @@ class VfpView(ViewABC):
         @callback(
             # Options
             Output(
-                self.view_element_unique_id(self.Ids.VIEW_ELEMENT, VfpGraph.Ids.GRAPH),
+                self.view_element_unique_id(self.Ids.VFP_GRAPH, VfpGraph.Ids.GRAPH),
                 "figure",
             ),
             Input(
