@@ -14,5 +14,5 @@ class VfpGraph(ViewElementABC):
     def inner_layout(self) -> html.Div:
         return wcc.Graph(
             id=self.register_component_unique_id(self.Ids.GRAPH),
-            style={"height": "77vh"},
+            style={"height": "87vh"},
         )

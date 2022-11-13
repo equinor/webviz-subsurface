@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Tuple
 
-from dash import Input, Output, State, callback
+from dash import Input, Output, State, callback, dcc
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
@@ -8,7 +8,7 @@ from ..._types import PressureType, VfpParam
 from ..._utils import VfpDataModel, VfpTable
 from ._settings import Filters, PressureOption, Selections, Vizualisation
 from ._utils import VfpFigureBuilder
-from ._view_elements import VfpGraph, VfpMetadata
+from ._view_elements import VfpGraph
 
 
 class VfpView(ViewABC):
@@ -35,9 +35,7 @@ class VfpView(ViewABC):
         self.add_settings_group(Filters(), VfpView.Ids.FILTERS)
         column = self.add_column()
         column.add_view_element(VfpGraph(), VfpView.Ids.VFP_GRAPH)
-        column.add_view_element(VfpMetadata(), VfpView.Ids.VFP_METADATA)
-        # column.add_row().add_view_element(VfpGraph(), VfpView.Ids.VFP_GRAPH)
-        # column.add_row().add_view_element(VfpMetadata(), VfpView.Ids.VFP_METADATA)
+        # column.add_view_element(VfpMetadata(), VfpView.Ids.VFP_METADATA)
 
     def set_callbacks(self) -> None:
         @callback(
@@ -92,6 +90,13 @@ class VfpView(ViewABC):
                 self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ_LABEL),
                 "children",
             ),
+            # Table metadata
+            # Output(
+            #     self.settings_group_unique_id(
+            #         self.Ids.SELECTIONS, VfpMetadata.Ids.METADATA_MARKDOWN
+            #     ),
+            #     "children",
+            # ),
             # Input
             Input(
                 self.settings_group_unique_id(
@@ -100,6 +105,7 @@ class VfpView(ViewABC):
                 "value",
             ),
         )
+        @callback_typecheck
         def _update_filters(
             vfp_name: str,
         ) -> Tuple[
@@ -116,7 +122,6 @@ class VfpView(ViewABC):
             str,
             str,
         ]:
-
             vfp_table: VfpTable = self._data_model.get_vfp_table(vfp_name)
 
             thp_dict = vfp_table.params[VfpParam.THP]
@@ -137,6 +142,7 @@ class VfpView(ViewABC):
                 f"WFR = {vfp_table.param_types[VfpParam.WFR].name}",
                 f"GFR = {vfp_table.param_types[VfpParam.GFR].name}",
                 f"ALQ = {vfp_table.param_types[VfpParam.ALQ].name}",
+                # dcc.Markdown(vfp_table.get_metadata_markdown()),
             )
 
         @callback(

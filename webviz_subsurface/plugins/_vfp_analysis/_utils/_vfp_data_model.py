@@ -81,6 +81,17 @@ class VfpTable:
             return list(self.params[param_type].values())
         return [self.params[param_type][idx] for idx in indices]
 
+    def get_metadata_markdown(self) -> str:
+        return f"""
+> **Metadata**
+> - **VFP type** {self.vfp_type.name}
+> - **Rate type** {self.rate_type.name}
+> - **Units** {self.unit_type.name}
+> - **WFR type** {self.param_types[VfpParam.WFR].name}
+> - **GFR type** {self.param_types[VfpParam.GFR].name}
+> - **ALQ type** {self.param_types[VfpParam.ALQ].name}
+        """
+
 
 class VfpDataModel:
     """Class keeping the VFP data"""

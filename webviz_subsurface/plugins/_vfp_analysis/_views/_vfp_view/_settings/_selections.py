@@ -1,13 +1,17 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 import webviz_core_components as wcc
-from webviz_config.utils import StrEnum
+from dash import Input, Output, State, callback, dcc, html
+from dash.exceptions import PreventUpdate
+from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
 class Selections(SettingsGroupABC):
     class Ids(StrEnum):
         VFP_NAME = "vfp-name"
+        METADATA_BUTTON = "metadata-button"
+        METADATA_DIALOG = "metadata-dialog"
 
     def __init__(self, vfp_names: List[str]) -> None:
         super().__init__("Selections")
@@ -23,5 +27,40 @@ class Selections(SettingsGroupABC):
                 value=self._vfp_names[0] if len(self._vfp_names) > 0 else None,
                 persistence=True,
                 persistence_type="session",
-            )
+            ),
+            html.Button(
+                "Show VFP Metadata",
+                style={
+                    "width": "100%",
+                    "background-color": "white",
+                    "margin-top": "5px",
+                },
+                id=self.register_component_unique_id(Selections.Ids.METADATA_BUTTON),
+            ),
+            wcc.Dialog(
+                title="Metadata",
+                id=self.register_component_unique_id(Selections.Ids.METADATA_DIALOG),
+                max_width="md",
+                open=False,
+                children=dcc.Markdown("VFP Metadata not set."),
+            ),
         ]
+
+    def set_callbacks(self) -> None:
+        @callback(
+            Output(
+                self.component_unique_id(self.Ids.METADATA_DIALOG).to_string(), "open"
+            ),
+            Input(
+                self.component_unique_id(self.Ids.METADATA_BUTTON).to_string(),
+                "n_clicks",
+            ),
+            State(
+                self.component_unique_id(self.Ids.METADATA_DIALOG).to_string(), "open"
+            ),
+        )
+        @callback_typecheck
+        def open_close_metadata_dialog(n_clicks: Optional[int], is_open: bool) -> bool:
+            if n_clicks is not None:
+                return not is_open
+            raise PreventUpdate
