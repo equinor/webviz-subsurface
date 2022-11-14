@@ -4,12 +4,14 @@ from typing import Dict, List
 
 import pandas as pd
 
-from webviz_subsurface._utils.provider_set import ProviderSet
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 
 
 # -------------------
 def get_df_smry(
-    input_provider_set: ProviderSet,
+    input_provider_set: EnsembleSummaryProviderSet,
     ensemble_names: List[str],
     ens_vectors: Dict[str, List[str]],
     ens_realizations: Dict[str, List[int]],
@@ -175,7 +177,7 @@ def _get_vector_types(phases: List[str]) -> List[str]:
 
 # --------------------------------
 def _get_filtered_df(
-    input_provider_set: ProviderSet,
+    input_provider_set: EnsembleSummaryProviderSet,
     ens_name: str,
     ens_vectors: Dict[str, List[str]],
     ens_realizations: Dict[str, List[int]],

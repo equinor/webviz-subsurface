@@ -7,7 +7,9 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from webviz_subsurface._providers import Frequency
-from webviz_subsurface._utils.provider_set import ProviderSet
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 
 from .._utils import datetime_utils
 
@@ -22,7 +24,7 @@ class ResamplingFrequencySettings(SettingsGroupABC):
         disable_resampling_dropdown: bool,
         selected_resampling_frequency: Frequency,
         ensembles_dates: List[datetime.datetime],
-        input_provider_set: ProviderSet,
+        input_provider_set: EnsembleSummaryProviderSet,
     ) -> None:
         super().__init__("Resampling frequency")
         self._disable_resampling_dropdown = disable_resampling_dropdown

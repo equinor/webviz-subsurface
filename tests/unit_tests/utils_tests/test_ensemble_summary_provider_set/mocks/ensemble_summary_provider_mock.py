@@ -6,15 +6,17 @@ from ....mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDum
 
 ##################################################################################################
 #
-# Mock implementations of EnsembleSummaryProvider for testing of ProviderSet class
+# Mock implementations of EnsembleSummaryProvider for testing of EnsembleSummaryProviderSet class
 #
-# Only methods utilized by the ProviderSet is implemented for the EnsembleSummaryProvider mock
+# Only methods utilized by the EnsembleSummaryProviderSet is implemented for the
+# EnsembleSummaryProvider mock
 #
 ##################################################################################################
 
 
 class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
-    """Class for EnsembleSummaryProvider mock implementations for testing of ProviderSet class
+    """Class for EnsembleSummaryProvider mock implementations for testing of
+    EnsembleSummaryProviderSet class.
 
     Contains implementation of methods for utilize in unit tests.
     """

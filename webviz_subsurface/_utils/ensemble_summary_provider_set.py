@@ -8,11 +8,16 @@ from webviz_subsurface._providers import (
 )
 
 
-class ProviderSet:
+class EnsembleSummaryProviderSet:
     """
     Class to create a set of ensemble summary providers with unique names
 
     Provides interface for read-only fetching of provider data
+
+    NOTE:
+        - Assuming same implementation of EnsembleSummaryProvider interface across
+        all providers in set. There is no guarantee of functionality if various
+        provider implementations are mixed in the same set.
     """
 
     def __init__(self, provider_dict: Dict[str, EnsembleSummaryProvider]) -> None:
@@ -89,7 +94,7 @@ class ProviderSet:
     def items(self) -> ItemsView[str, EnsembleSummaryProvider]:
         return self._provider_dict.items()
 
-    def names(self) -> List[str]:
+    def provider_names(self) -> List[str]:
         return self._names
 
     def provider(self, name: str) -> EnsembleSummaryProvider:
@@ -105,7 +110,6 @@ class ProviderSet:
         resampling_frequency: Optional[Frequency],
     ) -> List[datetime.datetime]:
         """List with the union of dates among providers"""
-        # TODO: Adjust when providers are updated!
         dates_union: Set[datetime.datetime] = set()
         for provider in self.all_providers():
             _dates = set(provider.dates(resampling_frequency, None))

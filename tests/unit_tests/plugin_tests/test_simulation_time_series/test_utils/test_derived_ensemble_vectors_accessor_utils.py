@@ -2,7 +2,9 @@ from typing import Dict, List
 
 import pandas as pd
 
-from webviz_subsurface._utils.provider_set import ProviderSet
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._types import (
     DeltaEnsemble,
 )
@@ -33,7 +35,7 @@ from ..mocks.derived_vectors_accessor_ensemble_summary_provider_mock import (
 def test_create_derived_vectors_accessor_dict() -> None:
     ensembles = ["ensA", "ensB", "(ensA)-(ensB)", "(ensC)-(ensA)"]
     vectors = ["vector_1", "vector_2"]
-    provider_set = ProviderSet(
+    provider_set = EnsembleSummaryProviderSet(
         {
             "ensA": EnsembleSummaryProviderMock(pd.DataFrame()),
             "ensB": EnsembleSummaryProviderMock(pd.DataFrame()),

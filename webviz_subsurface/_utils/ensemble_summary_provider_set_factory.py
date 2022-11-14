@@ -7,15 +7,15 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
-from .provider_set import ProviderSet
+from .ensemble_summary_provider_set import EnsembleSummaryProviderSet
 
 
-def create_lazy_provider_set_from_paths(
+def create_lazy_ensemble_summary_provider_set_from_paths(
     name_path_dict: Dict[str, Path],
     rel_file_pattern: str,
-) -> ProviderSet:
-    """Create set of providers with lazy (on-demand) resampling/interpolation, from
-    dictionary of ensemble name and corresponding arrow file paths
+) -> EnsembleSummaryProviderSet:
+    """Create set of ensemble summary providers with lazy (on-demand) resampling/interpolation,
+    from dictionary of ensemble name and corresponding arrow file paths
 
     `Input:`
     * name_path_dict: Dict[str, Path] - ensemble name as key and arrow file path as value
@@ -31,16 +31,16 @@ def create_lazy_provider_set_from_paths(
         provider_dict[name] = provider_factory.create_from_arrow_unsmry_lazy(
             str(path), rel_file_pattern
         )
-    return ProviderSet(provider_dict)
+    return EnsembleSummaryProviderSet(provider_dict)
 
 
-def create_presampled_provider_set_from_paths(
+def create_presampled_ensemble_summary_provider_set_from_paths(
     name_path_dict: Dict[str, Path],
     rel_file_pattern: str,
     presampling_frequency: Frequency,
-) -> ProviderSet:
-    """Create set of providers without lazy resampling, but with specified frequency, from
-    dictionary of ensemble name and corresponding arrow file paths
+) -> EnsembleSummaryProviderSet:
+    """Create set of ensemble summary providers without lazy resampling, but with specified frequency,
+    from dictionary of ensemble name and corresponding arrow file paths
 
     `Input:`
     * name_path_dict: Dict[str, Path] - ensemble name as key and arrow file path as value
@@ -60,4 +60,4 @@ def create_presampled_provider_set_from_paths(
         provider_dict[name] = provider_factory.create_from_arrow_unsmry_presampled(
             str(path), rel_file_pattern, presampling_frequency
         )
-    return ProviderSet(provider_dict)
+    return EnsembleSummaryProviderSet(provider_dict)

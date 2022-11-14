@@ -7,7 +7,9 @@ from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from webviz_subsurface._utils.provider_set import ProviderSet
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 
 from .._types import DeltaEnsemble
 from .._utils.delta_ensemble_utils import create_delta_ensemble_names
@@ -33,7 +35,7 @@ class EnsemblesSettings(SettingsGroupABC):
         )
 
     def __init__(
-        self, ensembles_names: List[str], input_provider_set: ProviderSet
+        self, ensembles_names: List[str], input_provider_set: EnsembleSummaryProviderSet
     ) -> None:
         super().__init__("Ensembles")
         self._ensembles = ensembles_names
@@ -209,7 +211,7 @@ class EnsemblesSettings(SettingsGroupABC):
 
             ensemble_options = [
                 {"label": ensemble, "value": ensemble}
-                for ensemble in self._input_provider_set.names()
+                for ensemble in self._input_provider_set.provider_names()
             ]
             for elm in new_delta_ensemble_names:
                 ensemble_options.append({"label": elm, "value": elm})

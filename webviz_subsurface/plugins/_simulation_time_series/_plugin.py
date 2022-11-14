@@ -13,9 +13,9 @@ from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
 )
 from webviz_subsurface._providers import Frequency
-from webviz_subsurface._utils.provider_set_factory import (
-    create_lazy_provider_set_from_paths,
-    create_presampled_provider_set_from_paths,
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_lazy_ensemble_summary_provider_set_from_paths,
+    create_presampled_ensemble_summary_provider_set_from_paths,
 )
 from webviz_subsurface._utils.simulation_timeseries import (
     check_and_format_observations,
@@ -136,12 +136,16 @@ class SimulationTimeSeries(WebvizPluginABC):
             }
             if perform_presampling:
                 self._presampled_frequency = self._sampling
-                self._input_provider_set = create_presampled_provider_set_from_paths(
-                    ensemble_paths, rel_file_pattern, self._presampled_frequency
+                self._input_provider_set = (
+                    create_presampled_ensemble_summary_provider_set_from_paths(
+                        ensemble_paths, rel_file_pattern, self._presampled_frequency
+                    )
                 )
             else:
-                self._input_provider_set = create_lazy_provider_set_from_paths(
-                    ensemble_paths, rel_file_pattern
+                self._input_provider_set = (
+                    create_lazy_ensemble_summary_provider_set_from_paths(
+                        ensemble_paths, rel_file_pattern
+                    )
                 )
         else:
             raise ValueError('Incorrect argument, must provide "ensembles"')

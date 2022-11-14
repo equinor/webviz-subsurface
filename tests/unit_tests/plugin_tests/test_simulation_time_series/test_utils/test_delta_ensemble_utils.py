@@ -2,7 +2,9 @@ from typing import List
 
 import pytest
 
-from webviz_subsurface._utils.provider_set import ProviderSet
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 
 # pylint: disable=line-too-long
 from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.delta_ensemble_utils import (
@@ -29,7 +31,7 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     """Ensemble summary provider mock for testing
 
     Note empty list returned in override methods, only to allow constructing
-    ProviderSet objects!
+    EnsembleSummaryProviderSet objects!
     """
 
     def __init__(self, name: str) -> None:
@@ -45,11 +47,11 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     #
     ########################################
     def vector_names(self) -> List[str]:
-        """Return empty list only to allow constructing ProviderSet object"""
+        """Return empty list only to allow constructing EnsembleSummaryProviderSet object"""
         return []
 
     def realizations(self) -> List[int]:
-        """Return empty list only to allow constructing ProviderSet object"""
+        """Return empty list only to allow constructing EnsembleSummaryProviderSet object"""
         return []
 
 
@@ -121,7 +123,7 @@ def test_create_delta_ensemble_name_dict() -> None:
 
 
 def test_is_delta_ensemble_providers_in_provider_set() -> None:
-    provider_set = ProviderSet(
+    provider_set = EnsembleSummaryProviderSet(
         {
             "First provider": EnsembleSummaryProviderMock("First mock"),
             "Second provider": EnsembleSummaryProviderMock("Second mock"),
@@ -144,7 +146,7 @@ def test_is_delta_ensemble_providers_in_provider_set() -> None:
 
 
 def test_create_delta_ensemble_provider_pair() -> None:
-    provider_set = ProviderSet(
+    provider_set = EnsembleSummaryProviderSet(
         {
             "First provider": EnsembleSummaryProviderMock("First mock"),
             "Second provider": EnsembleSummaryProviderMock("Second mock"),
@@ -200,7 +202,7 @@ def test_create_delta_ensemble_provider_pair() -> None:
 
 
 def test_create_delta_ensemble_provider_pair_invalid_ensemble() -> None:
-    provider_set = ProviderSet(
+    provider_set = EnsembleSummaryProviderSet(
         {
             "First provider": EnsembleSummaryProviderMock("First mock"),
             "Second provider": EnsembleSummaryProviderMock("Second mock"),

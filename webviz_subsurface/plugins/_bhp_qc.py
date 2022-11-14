@@ -16,8 +16,8 @@ from webviz_subsurface._utils.fanchart_plotting import (
     MinMaxData,
     get_fanchart_traces,
 )
-from webviz_subsurface._utils.provider_set_factory import (
-    create_lazy_provider_set_from_paths,
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_lazy_ensemble_summary_provider_set_from_paths,
 )
 from webviz_subsurface._utils.unique_theming import unique_colors
 
@@ -56,7 +56,7 @@ class BhpQc(WebvizPluginABC):
             for ensemble_name in ensembles
         }
 
-        self._input_provider_set = create_lazy_provider_set_from_paths(
+        self._input_provider_set = create_lazy_ensemble_summary_provider_set_from_paths(
             self.ens_paths,
             rel_file_pattern,
         )
