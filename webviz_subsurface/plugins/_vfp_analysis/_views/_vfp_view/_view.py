@@ -91,12 +91,12 @@ class VfpView(ViewABC):
                 "children",
             ),
             # Table metadata
-            # Output(
-            #     self.settings_group_unique_id(
-            #         self.Ids.SELECTIONS, VfpMetadata.Ids.METADATA_MARKDOWN
-            #     ),
-            #     "children",
-            # ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, Selections.Ids.METADATA_DIALOG
+                ),
+                "children",
+            ),
             # Input
             Input(
                 self.settings_group_unique_id(
@@ -121,6 +121,7 @@ class VfpView(ViewABC):
             str,
             str,
             str,
+            dcc.Markdown,
         ]:
             vfp_table: VfpTable = self._data_model.get_vfp_table(vfp_name)
 
@@ -142,7 +143,7 @@ class VfpView(ViewABC):
                 f"WFR = {vfp_table.param_types[VfpParam.WFR].name}",
                 f"GFR = {vfp_table.param_types[VfpParam.GFR].name}",
                 f"ALQ = {vfp_table.param_types[VfpParam.ALQ].name}",
-                # dcc.Markdown(vfp_table.get_metadata_markdown()),
+                dcc.Markdown(vfp_table.get_metadata_markdown()),
             )
 
         @callback(

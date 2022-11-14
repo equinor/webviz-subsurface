@@ -13,6 +13,7 @@ from ecl2df.vfp._vfpdefs import (
     UNITTYPE,
     VFPPROD_FLO,
     VFPPROD_TABTYPE,
+    VFPPROD_UNITS,
     VFPTYPE,
     WFR,
 )
@@ -28,11 +29,17 @@ class VfpTable:
     def __init__(self, filename: str):
         self._filename = filename
         self._data = json.load(_read_arrow_file(self._filename))
-        self.vfp_type = VFPTYPE(self._data["VFP_TYPE"])
-        self.tab_type = VFPPROD_TABTYPE(self._data["TAB_TYPE"])
+        self._vfp_type = VFPTYPE(self._data["VFP_TYPE"])
+        self._table_number = self._data["TABLE_NUMBER"]
+        self._tab_type = VFPPROD_TABTYPE(self._data["TAB_TYPE"])
+        self._unit_type = UNITTYPE(self._data["UNIT_TYPE"])
+        self._datum = self._data["DATUM"]
+
         self.rate_type = VFPPROD_FLO(self._data["RATE_TYPE"])
-        self.unit_type = UNITTYPE(self._data["UNIT_TYPE"])
         self.rate_values = self._data["FLOW_VALUES"]
+        self._rate_unit = VFPPROD_UNITS[self._unit_type.value]["FLO"][
+            self.rate_type.value
+        ]
 
         self.params = {
             VfpParam.THP: dict(enumerate(self._data["THP_VALUES"])),
@@ -45,6 +52,20 @@ class VfpTable:
             VfpParam.WFR: WFR(self._data["WFR_TYPE"]),
             VfpParam.GFR: GFR(self._data["GFR_TYPE"]),
             VfpParam.ALQ: ALQ(self._data["ALQ_TYPE"]),
+        }
+        self._param_units = {
+            VfpParam.THP: VFPPROD_UNITS[self._unit_type.value]["THP"][
+                self.param_types[VfpParam.THP].value
+            ],
+            VfpParam.WFR: VFPPROD_UNITS[self._unit_type.value]["WFR"][
+                self.param_types[VfpParam.WFR].value
+            ],
+            VfpParam.GFR: VFPPROD_UNITS[self._unit_type.value]["GFR"][
+                self.param_types[VfpParam.GFR].value
+            ],
+            VfpParam.ALQ: VFPPROD_UNITS[self._unit_type.value]["ALQ"][
+                self.param_types[VfpParam.ALQ].value
+            ],
         }
         self._bhp_table = np.array(self._data["BHP_TABLE"])
 
@@ -82,14 +103,26 @@ class VfpTable:
         return [self.params[param_type][idx] for idx in indices]
 
     def get_metadata_markdown(self) -> str:
+        rate_values = ", ".join([str(val) for val in self.rate_values])
+        thp_values = ", ".join([str(val) for val in self.params[VfpParam.THP].values()])
+        wfr_values = ", ".join([str(val) for val in self.params[VfpParam.WFR].values()])
+        gfr_values = ", ".join([str(val) for val in self.params[VfpParam.GFR].values()])
+        alq_values = ", ".join([str(val) for val in self.params[VfpParam.ALQ].values()])
         return f"""
-> **Metadata**
-> - **VFP type** {self.vfp_type.name}
-> - **Rate type** {self.rate_type.name}
-> - **Units** {self.unit_type.name}
-> - **WFR type** {self.param_types[VfpParam.WFR].name}
-> - **GFR type** {self.param_types[VfpParam.GFR].name}
-> - **ALQ type** {self.param_types[VfpParam.ALQ].name}
+> - **VFP type**: {self._vfp_type.name}
+> - **Table number**: {self._table_number}
+> - **Units**: {self._unit_type.name}
+> - **Datum**: {self._datum}
+> - **THP type**: {self.param_types[VfpParam.THP].name} ({self._param_units[VfpParam.THP]})
+> - **WFR type**: {self.param_types[VfpParam.WFR].name} ({self._param_units[VfpParam.WFR]})
+> - **GFR type**: {self.param_types[VfpParam.GFR].name} ({self._param_units[VfpParam.GFR]})
+> - **ALQ type**: {self.param_types[VfpParam.ALQ].name} ({self._param_units[VfpParam.ALQ]})
+> - **Rate type**: {self.rate_type.name} ({self._rate_unit})
+> - **THP values**: {thp_values}
+> - **WFR values**: {wfr_values}
+> - **GFR values**: {gfr_values}
+> - **ALQ values**: {alq_values}
+> - **Rate values**: {rate_values}
         """
 
 

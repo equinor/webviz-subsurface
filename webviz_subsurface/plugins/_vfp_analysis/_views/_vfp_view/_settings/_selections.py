@@ -38,7 +38,7 @@ class Selections(SettingsGroupABC):
                 id=self.register_component_unique_id(Selections.Ids.METADATA_BUTTON),
             ),
             wcc.Dialog(
-                title="Metadata",
+                title="VFP Table Metadata",
                 id=self.register_component_unique_id(Selections.Ids.METADATA_DIALOG),
                 max_width="md",
                 open=False,
