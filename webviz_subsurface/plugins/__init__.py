@@ -22,7 +22,9 @@ pages:
 
 from ._assisted_history_matching_analysis import AssistedHistoryMatchingAnalysis
 from ._bhp_qc import BhpQc
+from ._co2_leakage import CO2Leakage
 from ._disk_usage import DiskUsage
+from ._grid_viewer_fmu import EXPERIMENTALGridViewerFMU
 from ._group_tree import GroupTree
 from ._history_match import HistoryMatch
 from ._horizon_uncertainty_viewer import HorizonUncertaintyViewer
