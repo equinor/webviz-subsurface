@@ -9,15 +9,15 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_lazy_ensemble_summary_provider_set_from_paths,
+)
 from webviz_subsurface._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
     LowHighData,
     MinMaxData,
     get_fanchart_traces,
-)
-from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
-    create_lazy_ensemble_summary_provider_set_from_paths,
 )
 from webviz_subsurface._utils.unique_theming import unique_colors
 

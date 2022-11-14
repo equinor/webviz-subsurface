@@ -10,9 +10,7 @@ from webviz_subsurface._utils.ensemble_summary_provider_set import (
     EnsembleSummaryProviderSet,
 )
 
-from .mocks.ensemble_summary_provider_mock import (
-    EnsembleSummaryProviderMock,
-)
+from .mocks.ensemble_summary_provider_mock import EnsembleSummaryProviderMock
 
 TEST_PROVIDER_DICT: Dict[str, EnsembleSummaryProvider] = {
     "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),

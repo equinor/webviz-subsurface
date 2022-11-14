@@ -42,14 +42,14 @@ from ._utils import DerivedVectorsAccessor, datetime_utils
 from ._utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
 )
+from ._utils.ensemble_summary_provider_set_utils import (
+    create_vector_plot_titles_from_provider_set,
+)
 from ._utils.from_timeseries_cumulatives import (
     datetime_to_intervalstr,
     is_per_interval_or_per_day_vector,
 )
 from ._utils.history_vectors import create_history_vectors_df
-from ._utils.ensemble_summary_provider_set_utils import (
-    create_vector_plot_titles_from_provider_set,
-)
 from ._utils.trace_line_shape import get_simulation_line_shape
 from ._utils.vector_statistics import create_vectors_statistics_df
 from ._view_elements import SubplotGraph

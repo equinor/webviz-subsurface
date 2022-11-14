@@ -39,8 +39,8 @@ def create_presampled_ensemble_summary_provider_set_from_paths(
     rel_file_pattern: str,
     presampling_frequency: Frequency,
 ) -> EnsembleSummaryProviderSet:
-    """Create set of ensemble summary providers without lazy resampling, but with specified frequency,
-    from dictionary of ensemble name and corresponding arrow file paths
+    """Create set of ensemble summary providers without lazy resampling, but with specified
+    frequency, from dictionary of ensemble name and corresponding arrow file paths
 
     `Input:`
     * name_path_dict: Dict[str, Path] - ensemble name as key and arrow file path as value
