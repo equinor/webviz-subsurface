@@ -4,7 +4,18 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from fmu.ensemble import ScratchEnsemble
+
+# The fmu.ensemble dependency ecl is only available for Linux,
+# hence, ignore any import exception here to make
+# it still possible to use the PvtPlugin on
+# machines with other OSes.
+#
+# NOTE: Functions in this file cannot be used
+#       on non-Linux OSes.
+try:
+    from fmu.ensemble import ScratchEnsemble
+except ImportError:
+    pass
 
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,

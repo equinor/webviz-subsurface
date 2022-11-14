@@ -4,9 +4,20 @@ import re
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
-from fmu.ensemble import ScratchEnsemble
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
+
+# The fmu.ensemble dependency ecl is only available for Linux,
+# hence, ignore any import exception here to make
+# it still possible to use the PvtPlugin on
+# machines with other OSes.
+#
+# NOTE: Functions in this file cannot be used
+#       on non-Linux OSes.
+try:
+    from fmu.ensemble import ScratchEnsemble
+except ImportError:
+    pass
 
 
 class EnsembleModel:

@@ -6,10 +6,21 @@ from pathlib import Path
 from typing import Dict
 
 import pandas as pd
-from fmu.ensemble import ScratchEnsemble
 from webviz_config.webviz_factory import WebvizFactory
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_instance_info import WebvizRunMode
+
+# The fmu.ensemble dependency ecl is only available for Linux,
+# hence, ignore any import exception here to make
+# it still possible to use the PvtPlugin on
+# machines with other OSes.
+#
+# NOTE: Functions in this file cannot be used
+#       on non-Linux OSes.
+try:
+    from fmu.ensemble import ScratchEnsemble
+except ImportError:
+    pass
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
