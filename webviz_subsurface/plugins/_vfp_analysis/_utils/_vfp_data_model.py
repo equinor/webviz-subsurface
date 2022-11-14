@@ -35,23 +35,19 @@ class VfpTable:
         self._unit_type = UNITTYPE(self._data["UNIT_TYPE"])
         self._datum = self._data["DATUM"]
 
-        self.rate_type = VFPPROD_FLO(self._data["RATE_TYPE"])
-        self.rate_values = self._data["FLOW_VALUES"]
-        self._rate_unit = VFPPROD_UNITS[self._unit_type.value]["FLO"][
-            self.rate_type.value
-        ]
-
         self.params = {
             VfpParam.THP: dict(enumerate(self._data["THP_VALUES"])),
             VfpParam.WFR: dict(enumerate(self._data["WFR_VALUES"])),
             VfpParam.GFR: dict(enumerate(self._data["GFR_VALUES"])),
             VfpParam.ALQ: dict(enumerate(self._data["ALQ_VALUES"])),
+            VfpParam.RATE: dict(enumerate(self._data["FLOW_VALUES"])),
         }
         self.param_types = {
             VfpParam.THP: THPTYPE(self._data["THP_TYPE"]),
             VfpParam.WFR: WFR(self._data["WFR_TYPE"]),
             VfpParam.GFR: GFR(self._data["GFR_TYPE"]),
             VfpParam.ALQ: ALQ(self._data["ALQ_TYPE"]),
+            VfpParam.RATE: VFPPROD_FLO(self._data["RATE_TYPE"]),
         }
         self._param_units = {
             VfpParam.THP: VFPPROD_UNITS[self._unit_type.value]["THP"][
@@ -66,6 +62,9 @@ class VfpTable:
             VfpParam.ALQ: VFPPROD_UNITS[self._unit_type.value]["ALQ"][
                 self.param_types[VfpParam.ALQ].value
             ],
+            VfpParam.RATE: VFPPROD_UNITS[self._unit_type.value]["FLO"][
+                self.param_types[VfpParam.RATE].value
+            ],
         }
         self._bhp_table = np.array(self._data["BHP_TABLE"])
 
@@ -75,7 +74,7 @@ class VfpTable:
             len(self.params[VfpParam.WFR]),
             len(self.params[VfpParam.GFR]),
             len(self.params[VfpParam.ALQ]),
-            len(self.rate_values),
+            len(self.params[VfpParam.RATE]),
         )
 
     def get_bhp_series(
@@ -95,7 +94,7 @@ class VfpTable:
         raise ValueError(f"PressureType {pressure_type} not implemented")
 
     def get_values(
-        self, param_type: VfpParam, indices: Optional[List[int]]
+        self, param_type: VfpParam, indices: Optional[List[int]] = None
     ) -> List[float]:
         """Descr"""
         if indices is None:
@@ -103,11 +102,13 @@ class VfpTable:
         return [self.params[param_type][idx] for idx in indices]
 
     def get_metadata_markdown(self) -> str:
-        rate_values = ", ".join([str(val) for val in self.rate_values])
         thp_values = ", ".join([str(val) for val in self.params[VfpParam.THP].values()])
         wfr_values = ", ".join([str(val) for val in self.params[VfpParam.WFR].values()])
         gfr_values = ", ".join([str(val) for val in self.params[VfpParam.GFR].values()])
         alq_values = ", ".join([str(val) for val in self.params[VfpParam.ALQ].values()])
+        rate_values = ", ".join(
+            [str(val) for val in self.params[VfpParam.RATE].values()]
+        )
         return f"""
 > - **VFP type**: {self._vfp_type.name}
 > - **Table number**: {self._table_number}
@@ -117,7 +118,7 @@ class VfpTable:
 > - **WFR type**: {self.param_types[VfpParam.WFR].name} ({self._param_units[VfpParam.WFR]})
 > - **GFR type**: {self.param_types[VfpParam.GFR].name} ({self._param_units[VfpParam.GFR]})
 > - **ALQ type**: {self.param_types[VfpParam.ALQ].name} ({self._param_units[VfpParam.ALQ]})
-> - **Rate type**: {self.rate_type.name} ({self._rate_unit})
+> - **Rate type**: {self.param_types[VfpParam.RATE].name} ({self._param_units[VfpParam.RATE]})
 > - **THP values**: {thp_values}
 > - **WFR values**: {wfr_values}
 > - **GFR values**: {gfr_values}

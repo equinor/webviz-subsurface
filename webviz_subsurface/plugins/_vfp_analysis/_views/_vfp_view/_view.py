@@ -219,7 +219,7 @@ class VfpView(ViewABC):
                     for gfr_idx in gfrs:
                         for alq_idx in alqs:
                             figure_builder.add_vfp_curve(
-                                rates=vfp_table.rate_values,
+                                rates=vfp_table.get_values(param_type=VfpParam.RATE),
                                 bhp_values=vfp_table.get_bhp_series(
                                     pressure_type, thp_idx, wfr_idx, gfr_idx, alq_idx
                                 ),
@@ -235,7 +235,9 @@ class VfpView(ViewABC):
                                 color_by=color_by,
                             )
 
-            figure_builder.set_xaxis_settings(title=vfp_table.rate_type.value)
+            figure_builder.set_xaxis_settings(
+                title=vfp_table.param_types[VfpParam.RATE].value
+            )
             figure_builder.set_yaxis_settings(title=pressure_type.value)
 
             return figure_builder.get_figure()

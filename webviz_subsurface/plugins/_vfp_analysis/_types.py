@@ -11,3 +11,4 @@ class VfpParam(StrEnum):
     WFR = "WFR"
     GFR = "GFR"
     ALQ = "ALQ"
+    RATE = "RATE"
