@@ -16,8 +16,9 @@ class VfpAnalysis(WebvizPluginABC):
     def __init__(
         self,
         webviz_settings: WebvizSettings,
-        vfp_file_pattern: str = "share/tables/vfp/vfp_*.arrow",
+        vfp_file_pattern: str = "share/results/tables/vfp/*.arrow",
         ensemble: Optional[str] = None,
+        realization: Optional[int] = None,
     ) -> None:
         super().__init__(stretch=True)
 
@@ -25,6 +26,7 @@ class VfpAnalysis(WebvizPluginABC):
             webviz_settings=webviz_settings,
             vfp_file_pattern=vfp_file_pattern,
             ensemble=ensemble,
+            realization=realization,
         )
 
         self.add_view(VfpView(self._datamodel), self.Ids.VFP_VIEW)

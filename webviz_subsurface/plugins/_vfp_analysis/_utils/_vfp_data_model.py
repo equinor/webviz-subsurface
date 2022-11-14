@@ -1,6 +1,7 @@
 import glob
 import io
 import json
+import re
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -135,6 +136,7 @@ class VfpDataModel:
         webviz_settings: WebvizSettings,
         vfp_file_pattern: str,
         ensemble: Optional[str] = None,
+        realization: Optional[int] = None,
     ):
 
         if ensemble is not None:
@@ -145,19 +147,24 @@ class VfpDataModel:
 
             ens_path = webviz_settings.shared_settings["scratch_ensembles"][ensemble]
 
-            # Remove realization-* and iter_dir
-            folders = []
-            for folder in ens_path.split("/"):
-                if folder.startswith("realization-"):
-                    break
-                folders.append(folder)
+            if realization is None:
+                raise ValueError('Incorrent arguments, "realization" must be specified')
 
-            ens_path = "/".join(folders)
+            ens_path = webviz_settings.shared_settings["scratch_ensembles"][ensemble]
+            # replace realization in string from scratch_ensemble with input realization
+            ens_path = re.sub(
+                "realization-[^/]", f"realization-{realization}", ens_path
+            )
             self._vfp_file_pattern = f"{ens_path}/{vfp_file_pattern}"
         else:
             self._vfp_file_pattern = vfp_file_pattern
 
         self._vfp_files = json.load(_discover_files(self._vfp_file_pattern))
+        if not self._vfp_files:
+            raise FileNotFoundError(
+                "No VFP arrow files found matching input file pattern."
+            )
+
         self._vfp_tables = {
             table_name: VfpTable(file_name)
             for table_name, file_name in self._vfp_files.items()
