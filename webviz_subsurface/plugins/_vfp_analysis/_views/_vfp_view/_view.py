@@ -216,7 +216,7 @@ class VfpView(ViewABC):
             )
             cmax = max(selected_color_by_values)
             cmin = min(selected_color_by_values)
-
+            showscale = True
             for thp_idx in thps:
                 for wfr_idx in wfrs:
                     for gfr_idx in gfrs:
@@ -236,7 +236,10 @@ class VfpView(ViewABC):
                                     VfpParam.ALQ: alq_idx,
                                 },
                                 color_by=color_by,
+                                showscale=showscale,
                             )
+                            if showscale:
+                                showscale = False
 
             figure_builder.set_xaxis_settings(title=vfp_table.get_rate_label())
             figure_builder.set_yaxis_settings(

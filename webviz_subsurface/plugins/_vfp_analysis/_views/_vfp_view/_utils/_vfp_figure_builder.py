@@ -42,7 +42,9 @@ class VfpFigureBuilder:
         vfp_table: VfpTable,
         indices: Dict[VfpParam, int],
         color_by: VfpParam,
+        showscale: bool,
     ) -> None:
+        # pylint: disable=too-many-arguments
         """Adds one vfp trace to the vfp graph, formatted with
         color and hoverdata.
         """
@@ -68,7 +70,7 @@ class VfpFigureBuilder:
                     cmid=(cmin + cmax) / 2,
                     color=[cvalue] * len(rates),
                     colorscale=[[0, RED], [0.5, MID_COLOR], [1, GREEN]],
-                    showscale=True,
+                    showscale=showscale,
                     colorbar={"title": vfp_table.param_types[color_by].value},
                 ),
                 "line": {"color": _get_color(cmax, cmin, cvalue)},
