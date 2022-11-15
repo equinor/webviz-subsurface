@@ -86,6 +86,14 @@ Could not load {self._filename}. VFPINJ tables not implemented.
             len(self.params[VfpParam.RATE]),
         )
 
+    def get_xaxis_label(self) -> str:
+        return f"""
+{self.param_types[VfpParam.RATE].value.capitalize()} rate ({self._param_units[VfpParam.RATE]})
+"""
+
+    def get_yaxis_label(self, pressure_type: PressureType) -> str:
+        return f"{pressure_type.value} ({self._param_units[VfpParam.THP]})"
+
     def get_bhp_series(
         self,
         pressure_type: PressureType,
