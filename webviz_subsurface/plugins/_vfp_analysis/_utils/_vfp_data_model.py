@@ -1,6 +1,7 @@
 import glob
 import io
 import json
+import logging
 import re
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -29,8 +30,15 @@ class VfpTable:
 
     def __init__(self, filename: str):
         self._filename = filename
-        self._data = json.load(_read_arrow_file(self._filename))
+        self._data = json.load(_read_vfp_arrow(self._filename))
         self._vfp_type = VFPTYPE(self._data["VFP_TYPE"])
+        if self._vfp_type == VFPTYPE.VFPINJ:
+            raise NotImplementedError(
+                f"""
+Could not load {self._filename}. VFPINJ tables not implemented.
+            """
+            )
+
         self._table_number = self._data["TABLE_NUMBER"]
         self._tab_type = VFPPROD_TABTYPE(self._data["TAB_TYPE"])
         self._unit_type = UNITTYPE(self._data["UNIT_TYPE"])
@@ -165,15 +173,18 @@ class VfpDataModel:
                 "No VFP arrow files found matching input file pattern."
             )
 
-        self._vfp_tables = {
-            table_name: VfpTable(file_name)
-            for table_name, file_name in self._vfp_files.items()
-        }
+        self._vfp_tables = {}
+
+        for table_name, file_name in self._vfp_files.items():
+            try:
+                self._vfp_tables[table_name] = VfpTable(file_name)
+            except NotImplementedError as exc:
+                logging.warning(exc)
 
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict]]]:
         return [(_discover_files, [{"file_pattern": self._vfp_file_pattern}]),] + [
-            (_read_arrow_file, [{"filename": filename}])
+            (_read_vfp_arrow, [{"filename": filename}])
             for filename in self._vfp_files.values()
         ]
 
@@ -200,36 +211,22 @@ def _discover_files(file_pattern: str) -> io.BytesIO:
 
 
 @webvizstore
-def _read_arrow_file(filename: str) -> io.BytesIO:
+def _read_vfp_arrow(filename: str) -> io.BytesIO:
     source = pa.memory_map(filename, "r")
     reader = pa.ipc.RecordBatchFileReader(source)
     pa_table = reader.read_all()
     vfp_dict = pyarrow2basic_data(pa_table)
 
-    for column in [
-        "VFP_TYPE",
-        "RATE_TYPE",
-        "WFR_TYPE",
-        "GFR_TYPE",
-        "ALQ_TYPE",
-        "THP_TYPE",
-        "UNIT_TYPE",
-        "TAB_TYPE",
-    ]:
-        vfp_dict[column] = str(vfp_dict[column].value)
-
-    for column in [
-        "THP_VALUES",
-        "WFR_VALUES",
-        "GFR_VALUES",
-        "ALQ_VALUES",
-        "FLOW_VALUES",
-        "BHP_TABLE",
-        "THP_INDICES",
-        "WFR_INDICES",
-        "GFR_INDICES",
-        "ALQ_INDICES",
-    ]:
-        vfp_dict[column] = vfp_dict[column].tolist()
+    for key, _ in vfp_dict.items():
+        # Convert types to strings
+        if key.endswith("_TYPE"):
+            vfp_dict[key] = str(vfp_dict[key].value)
+        # Convert ndarrays to lists
+        if (
+            key.endswith("_VALUES")
+            or key.endswith("_TABLE")
+            or key.endswith("_INDICES")
+        ):
+            vfp_dict[key] = vfp_dict[key].tolist()
 
     return io.BytesIO(json.dumps(vfp_dict).encode())
