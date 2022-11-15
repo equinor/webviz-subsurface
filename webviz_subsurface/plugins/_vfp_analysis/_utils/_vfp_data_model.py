@@ -26,7 +26,7 @@ from .._types import PressureType, VfpParam
 
 
 class VfpTable:
-    """Descr"""
+    """Class that contains data and metadata for one VFP table"""
 
     def __init__(self, filename: str):
         self._filename = filename
@@ -86,12 +86,12 @@ Could not load {self._filename}. VFPINJ tables not implemented.
             len(self.params[VfpParam.RATE]),
         )
 
-    def get_xaxis_label(self) -> str:
+    def get_rate_label(self) -> str:
         return f"""
 {self.param_types[VfpParam.RATE].value.capitalize()} rate ({self._param_units[VfpParam.RATE]})
 """
 
-    def get_yaxis_label(self, pressure_type: PressureType) -> str:
+    def get_bhp_label(self, pressure_type: PressureType) -> str:
         return f"{pressure_type.value} ({self._param_units[VfpParam.THP]})"
 
     def get_bhp_series(
@@ -102,7 +102,12 @@ Could not load {self._filename}. VFPINJ tables not implemented.
         gfr_idx: int,
         alq_idx: int,
     ) -> List[float]:
-        """Descr"""
+        """Returns a series of bhp values for the given vfp parameter indices.
+        The series has the same length as the rate values.
+
+        If pressure_type is DP then the THP at the given thp index is subtracted
+        from all the BHP values.
+        """
         bhp_values = self._reshaped_bhp_table[thp_idx][wfr_idx][gfr_idx][alq_idx]
         if pressure_type == PressureType.BHP:
             return bhp_values
@@ -111,14 +116,19 @@ Could not load {self._filename}. VFPINJ tables not implemented.
         raise ValueError(f"PressureType {pressure_type} not implemented")
 
     def get_values(
-        self, param_type: VfpParam, indices: Optional[List[int]] = None
+        self, vfp_param: VfpParam, indices: Optional[List[int]] = None
     ) -> List[float]:
-        """Descr"""
+        """Returns the values for a given vfp param.
+
+        If a list of indices is given, then only the values for those
+        indices is returned.
+        """
         if indices is None:
-            return list(self.params[param_type].values())
-        return [self.params[param_type][idx] for idx in indices]
+            return list(self.params[vfp_param].values())
+        return [self.params[vfp_param][idx] for idx in indices]
 
     def get_metadata_markdown(self) -> str:
+        """Returns a markdown with all the table metadata."""
         thp_values = ", ".join([str(val) for val in self.params[VfpParam.THP].values()])
         wfr_values = ", ".join([str(val) for val in self.params[VfpParam.WFR].values()])
         gfr_values = ", ".join([str(val) for val in self.params[VfpParam.GFR].values()])
@@ -145,7 +155,7 @@ Could not load {self._filename}. VFPINJ tables not implemented.
 
 
 class VfpDataModel:
-    """Class keeping the VFP data"""
+    """Class for loading a keeping all the VFP tables."""
 
     def __init__(
         self,
@@ -154,7 +164,6 @@ class VfpDataModel:
         ensemble: Optional[str] = None,
         realization: Optional[int] = None,
     ):
-
         if ensemble is not None:
             if isinstance(ensemble, list):
                 raise TypeError(
@@ -182,7 +191,6 @@ class VfpDataModel:
             )
 
         self._vfp_tables = {}
-
         for table_name, file_name in self._vfp_files.items():
             try:
                 self._vfp_tables[table_name] = VfpTable(file_name)
@@ -210,7 +218,7 @@ class VfpDataModel:
 
 @webvizstore
 def _discover_files(file_pattern: str) -> io.BytesIO:
-    """Descr"""
+    """Returns all the files that matches the input file pattern."""
     files = {
         file_name.split("/")[-1].replace(".arrow", ""): file_name
         for file_name in glob.glob(file_pattern)
@@ -220,6 +228,14 @@ def _discover_files(file_pattern: str) -> io.BytesIO:
 
 @webvizstore
 def _read_vfp_arrow(filename: str) -> io.BytesIO:
+    """Function to read the vfp arrow files and return them as
+    a io.BytesIO object in order to be stored as portable.
+
+    Uses the pyarrow2basic_data function from ecl2df in order
+    to convert the pyarrow table into a dictionary. But then
+    the columns have to be converted to strings, or lists in order
+    to be encoded.
+    """
     source = pa.memory_map(filename, "r")
     reader = pa.ipc.RecordBatchFileReader(source)
     pa_table = reader.read_all()

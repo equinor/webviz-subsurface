@@ -8,7 +8,24 @@ from ._views._vfp_view import VfpView
 
 
 class VfpAnalysis(WebvizPluginABC):
-    """Vizualises VFP curves"""
+    """Vizualizes VFP curves.
+
+    ---
+
+    * **`vfp_file_pattern`:** File pattern for where to search for vfp arrow files. The path
+    should be relative to the runpath if ensemble and realization is given as input, if not
+    the path needs to be absolute.
+    * **`ensemble`:** Which ensemble in `shared_settings` to use..
+    * **`realization`:** Which realization to pick from the ensemble.
+    ---
+
+    The plugin uses an `.arrow` representation of the VFP curves, which can be exported to disk by
+    using the `ECL2CSV` forward model in ERT with subcommand `vfp`.
+
+    So far, the plugin only vizualizes VFPPROD curves, but the plan is to extend it also to
+    VFPINJ curves soon.
+
+    """
 
     class Ids(StrEnum):
         VFP_VIEW = "vpf-view"

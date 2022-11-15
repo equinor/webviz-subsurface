@@ -123,6 +123,9 @@ class VfpView(ViewABC):
             str,
             dcc.Markdown,
         ]:
+            """Updates the filter values, sets the initial selection, and
+            updates the filter label.
+            """
             vfp_table: VfpTable = self._data_model.get_vfp_table(vfp_name)
 
             thp_dict = vfp_table.params[VfpParam.THP]
@@ -219,7 +222,7 @@ class VfpView(ViewABC):
                     for gfr_idx in gfrs:
                         for alq_idx in alqs:
                             figure_builder.add_vfp_curve(
-                                rates=vfp_table.get_values(param_type=VfpParam.RATE),
+                                rates=vfp_table.get_values(vfp_param=VfpParam.RATE),
                                 bhp_values=vfp_table.get_bhp_series(
                                     pressure_type, thp_idx, wfr_idx, gfr_idx, alq_idx
                                 ),
@@ -235,9 +238,9 @@ class VfpView(ViewABC):
                                 color_by=color_by,
                             )
 
-            figure_builder.set_xaxis_settings(title=vfp_table.get_xaxis_label())
+            figure_builder.set_xaxis_settings(title=vfp_table.get_rate_label())
             figure_builder.set_yaxis_settings(
-                title=vfp_table.get_yaxis_label(pressure_type=pressure_type)
+                title=vfp_table.get_bhp_label(pressure_type=pressure_type)
             )
 
             return figure_builder.get_figure()

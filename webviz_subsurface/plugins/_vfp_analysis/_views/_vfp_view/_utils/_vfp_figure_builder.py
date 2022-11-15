@@ -12,7 +12,7 @@ GREEN = rgba_to_str((62, 208, 62, 1))
 
 
 class VfpFigureBuilder:
-    """Descr"""
+    """Class to build the VFP graph object"""
 
     def __init__(self, vfp_name: str) -> None:
 
@@ -20,7 +20,7 @@ class VfpFigureBuilder:
         self._layout = {
             "legend": {"orientation": "h"},
             "hovermode": "closest",
-            "title": f"{vfp_name}",
+            "title": f"VFP table: {vfp_name}",
             "plot_bgcolor": "white",
         }
 
@@ -43,7 +43,9 @@ class VfpFigureBuilder:
         indices: Dict[VfpParam, int],
         color_by: VfpParam,
     ) -> None:
-        """Descr"""
+        """Adds one vfp trace to the vfp graph, formatted with
+        color and hoverdata.
+        """
         cvalue = vfp_table.params[color_by][indices[color_by]]
         hovertext = "<br>".join(
             [
@@ -67,6 +69,7 @@ class VfpFigureBuilder:
                     color=[cvalue] * len(rates),
                     colorscale=[[0, RED], [0.5, MID_COLOR], [1, GREEN]],
                     showscale=True,
+                    colorbar={"title": vfp_table.param_types[color_by].value},
                 ),
                 "line": {"color": _get_color(cmax, cmin, cvalue)},
             }
@@ -74,7 +77,7 @@ class VfpFigureBuilder:
 
 
 def _get_color(cmax: float, cmin: float, cvalue: float) -> str:
-    """"""
+    """Returns an interpolated color"""
     if cmax < cmin:
         raise ValueError("'cmax' must be equal to or larger than 'cmin'")
     if cvalue < cmin or cvalue > cmax:
