@@ -47,6 +47,11 @@ class VfpFigureBuilder:
         # pylint: disable=too-many-arguments
         """Adds one vfp trace to the vfp graph, formatted with
         color and hoverdata.
+
+        Plotly apparently doesn't support colorscale on both markers and
+        lines: https://github.com/plotly/plotly.js/issues/5259. So I needed
+        to interpolate the line color manually in order to match the marker
+        color.
         """
         cvalue = vfp_table.params[color_by][indices[color_by]]
         hovertext = "<br>".join(
