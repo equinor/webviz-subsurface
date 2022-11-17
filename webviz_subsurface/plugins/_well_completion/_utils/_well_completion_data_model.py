@@ -1,15 +1,11 @@
-import io
 import itertools
-import json
 import logging
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pandas as pd
-from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from ...._datainput.well_completions import get_ecl_unit_system
 from ...._models import StratigraphyModel, WellAttributesModel
 from ...._providers import EnsembleTableProvider
 
@@ -44,18 +40,19 @@ class WellCompletionDataModel:
         self._wellcompletion_df["TIMESTEP"] = self._wellcompletion_df["DATE"].map(
             self._datemap
         )
-        unit_system = json.load(_get_kh_unit(ensemble_path=self._ensemble_path))
-        self._kh_unit, self._kh_decimal_places = (
-            unit_system["unit"],
-            unit_system["decimals"],
+        kh_metadata = wellcompletion_provider.column_metadata("KH")
+        self._kh_unit = (
+            kh_metadata.unit
+            if kh_metadata is not None and kh_metadata.unit is not None
+            else ""
         )
+        self._kh_decimal_places = 2
 
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict]]]:
         return [
             self._well_attributes_model.webviz_store,
             self._stratigraphy_model.webviz_store,
-            (_get_kh_unit, [{"ensemble_path": self._ensemble_path}]),
         ]
 
     @property
@@ -232,18 +229,3 @@ def _filter_valid_nodes(
             output.append(zonedict)
 
     return output, remaining_valid_zones
-
-
-@webvizstore
-def _get_kh_unit(ensemble_path: str) -> io.BytesIO:
-    """Returns kh unit and decimal places based on the unit system of the eclipse deck"""
-    units = {
-        "METRIC": {"unit": "mD·m", "decimals": 2},
-        "FIELD": {"unit": "mD·ft", "decimals": 2},
-        "LAB": {"unit": "mD·cm", "decimals": 2},
-        "PVT-M": {"unit": "mD·m", "decimals": 2},
-    }
-    unit_system = get_ecl_unit_system(ensemble_path=ensemble_path)
-    if unit_system is not None:
-        return io.BytesIO(json.dumps(units[unit_system]).encode())
-    return io.BytesIO(json.dumps({"unit": "", "decimals": 2}).encode())
