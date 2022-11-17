@@ -90,6 +90,23 @@ class VfpView(ViewABC):
                 self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ_LABEL),
                 "children",
             ),
+            # Size of filter boxes
+            Output(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.THP),
+                "size",
+            ),
+            Output(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.WFR),
+                "size",
+            ),
+            Output(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.GFR),
+                "size",
+            ),
+            Output(
+                self.settings_group_unique_id(self.Ids.FILTERS, Filters.Ids.ALQ),
+                "size",
+            ),
             # Table metadata
             Output(
                 self.settings_group_unique_id(
@@ -121,6 +138,10 @@ class VfpView(ViewABC):
             str,
             str,
             str,
+            int,
+            int,
+            int,
+            int,
             dcc.Markdown,
         ]:
             """Updates the filter values, sets the initial selection, and
@@ -142,10 +163,14 @@ class VfpView(ViewABC):
                 [list(wfr_dict.keys())[0]],
                 [list(gfr_dict.keys())[0]],
                 [list(alq_dict.keys())[0]],
-                f"THP = {vfp_table.param_types[VfpParam.THP].name}",
-                f"WFR = {vfp_table.param_types[VfpParam.WFR].name}",
-                f"GFR = {vfp_table.param_types[VfpParam.GFR].name}",
-                f"ALQ = {vfp_table.param_types[VfpParam.ALQ].name}",
+                f"THP: {vfp_table.param_types[VfpParam.THP].name}",
+                f"WFR: {vfp_table.param_types[VfpParam.WFR].name}",
+                f"GFR: {vfp_table.param_types[VfpParam.GFR].name}",
+                f"ALQ: {vfp_table.param_types[VfpParam.ALQ].name}",
+                min(6, len(thp_dict)),
+                min(6, len(wfr_dict)),
+                min(6, len(gfr_dict)),
+                min(6, len(alq_dict)),
                 dcc.Markdown(vfp_table.get_metadata_markdown()),
             )
 
