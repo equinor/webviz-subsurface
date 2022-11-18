@@ -108,6 +108,7 @@ jobs:
           pushd example_subsurface_app
 
           # Necessary as long as VTK is used in a prototype plugin:
+          echo "" >> requirements.txt
           echo "vtk>=9.2.2" >> requirements.txt
           echo "webviz_vtk@git+https://github.com/equinor/webviz-vtk" >> requirements.txt
 
