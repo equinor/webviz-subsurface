@@ -5,11 +5,10 @@ from dash import Input, Output, callback
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC, ViewABC
 
-from ..._simulation_time_series._views._subplot_view._utils.provider_set import (
-    ProviderSet,
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
 )
 
-# from ..._simulation_time_series.types.provider_set import ProviderSet
 from .._plugin_ids import PluginIds
 from ..utils import make_dataframes as makedf
 from ..utils import make_figures as makefigs
@@ -140,7 +139,7 @@ class ProdHeatmapView(ViewABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        input_provider_set: ProviderSet,
+        input_provider_set: EnsembleSummaryProviderSet,
         ens_vectors: Dict[str, List[str]],
         ens_realizations: Dict[str, List[int]],
         well_collections: Dict[str, List[str]],

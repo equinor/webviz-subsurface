@@ -6,15 +6,11 @@ from webviz_subsurface._providers.ensemble_summary_provider.ensemble_summary_pro
     EnsembleSummaryProvider,
     VectorMetadata,
 )
-
-# pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set import (
-    ProviderSet,
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
 )
 
-from ..mocks.provider_set_tests_ensemble_summary_provider_mock import (
-    EnsembleSummaryProviderMock,
-)
+from .mocks.ensemble_summary_provider_mock import EnsembleSummaryProviderMock
 
 TEST_PROVIDER_DICT: Dict[str, EnsembleSummaryProvider] = {
     "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
@@ -30,8 +26,10 @@ TEST_INCONSISTENT_PROVIDER_DICT: Dict[str, EnsembleSummaryProvider] = {
 
 
 def test_verify_consistent_vector_metadata() -> None:
-    consistent_provider_set = ProviderSet(TEST_PROVIDER_DICT)
-    inconsistent_provider_set = ProviderSet(TEST_INCONSISTENT_PROVIDER_DICT)
+    consistent_provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
+    inconsistent_provider_set = EnsembleSummaryProviderSet(
+        TEST_INCONSISTENT_PROVIDER_DICT
+    )
 
     # Expect no ValueError when verifying
     try:
@@ -57,7 +55,7 @@ def test_create_union_of_vector_names_from_providers() -> None:
         "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
         "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
     }
-    provider_set = ProviderSet(provider_dict)
+    provider_set = EnsembleSummaryProviderSet(provider_dict)
 
     # Vector names from first and second mock - without duplicates sorted alphabetically
     expected_vector_names = [
@@ -88,7 +86,7 @@ def test_create_union_of_realizations_from_providers() -> None:
         "First provider": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
         "Second provider": EnsembleSummaryProviderMock.create_mock_with_second_dataset(),
     }
-    provider_set = ProviderSet(provider_dict)
+    provider_set = EnsembleSummaryProviderSet(provider_dict)
 
     # Realizations from first and second mock
     expected_realizations = [1, 2, 3, 4, 5, 8]
@@ -102,17 +100,17 @@ def test_create_union_of_realizations_from_providers() -> None:
 
 
 def test_items() -> None:
-    provider_set = ProviderSet(TEST_PROVIDER_DICT)
+    provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
     assert provider_set.items() == TEST_PROVIDER_DICT.items()
 
 
 def test_names() -> None:
-    provider_set = ProviderSet(TEST_PROVIDER_DICT)
-    assert provider_set.names() == list(TEST_PROVIDER_DICT.keys())
+    provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
+    assert provider_set.provider_names() == list(TEST_PROVIDER_DICT.keys())
 
 
 def test_provider() -> None:
-    provider_set = ProviderSet(TEST_PROVIDER_DICT)
+    provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
 
     first_provider = provider_set.provider("First provider")
     second_provider = provider_set.provider("Second provider")
@@ -144,7 +142,7 @@ def test_provider() -> None:
 
 
 def test_all_providers() -> None:
-    provider_set = ProviderSet(TEST_PROVIDER_DICT)
+    provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
     all_providers = provider_set.all_providers()
 
     assert len(all_providers) == 3
@@ -170,14 +168,14 @@ def test_all_providers() -> None:
 
 
 def test_all_realizations() -> None:
-    provider_set = ProviderSet(TEST_PROVIDER_DICT)
+    provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
     expected_realizations = [1, 2, 3, 4, 5, 7, 8]
 
     assert provider_set.all_realizations() == expected_realizations
 
 
 def test_all_vector_names() -> None:
-    provider_set = ProviderSet(TEST_PROVIDER_DICT)
+    provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
 
     # Vector names from first, second and third mock - without duplicates sorted alphabetically
     expected_vector_names = [
@@ -199,7 +197,7 @@ def test_all_vector_names() -> None:
 
 
 def test_vector_metadata() -> None:
-    provider_set = ProviderSet(TEST_PROVIDER_DICT)
+    provider_set = EnsembleSummaryProviderSet(TEST_PROVIDER_DICT)
 
     first_expected_metadata = VectorMetadata(
         unit="SM3/SM3",
@@ -252,8 +250,8 @@ def test_vector_metadata_order() -> None:
         "Inconsistent": EnsembleSummaryProviderMock.create_mock_with_inconsistent_dataset(),
         "First": EnsembleSummaryProviderMock.create_mock_with_first_dataset(),
     }
-    first_provider_set = ProviderSet(first_provider_dict)
-    second_provider_set = ProviderSet(second_provider_dict)
+    first_provider_set = EnsembleSummaryProviderSet(first_provider_dict)
+    second_provider_set = EnsembleSummaryProviderSet(second_provider_dict)
 
     # Metadata for first ensemble mock implementation
     first_ensemble_wwct_a1 = VectorMetadata(

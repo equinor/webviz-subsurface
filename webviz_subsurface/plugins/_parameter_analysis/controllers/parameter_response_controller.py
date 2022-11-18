@@ -11,8 +11,8 @@ from webviz_subsurface._utils.dataframe_utils import (
     correlate_response_with_dataframe,
     merge_dataframes_on_realization,
 )
-from webviz_subsurface._utils.datetime_utils import from_str, to_str
 
+from .._utils import datetime_utils
 from ..models import (
     ParametersModel,
     ProviderTimeSeriesDataModel,
@@ -65,7 +65,7 @@ def parameter_response_controller(
             raise PreventUpdate
 
         vector = vector[0]
-        date = from_str(date)
+        date = datetime_utils.from_str(date)
         realizations = real_filter[ensemble]
         color = options["color"] if options["color"] is not None else "#007079"
 
@@ -160,7 +160,7 @@ def parameter_response_controller(
             if timeseries_clickdata is not None
             else date
         )
-        return vectormodel.dates.index(from_str(date))
+        return vectormodel.dates.index(datetime_utils.from_str(date))
 
     @app.callback(
         Output(get_uuid("vector-filter-store"), "data"),
@@ -188,7 +188,7 @@ def parameter_response_controller(
     )
     def _update_date(dateidx: int):
         """Update selected date from date-slider"""
-        return to_str(vectormodel.dates[dateidx])
+        return datetime_utils.to_str(vectormodel.dates[dateidx])
 
     @app.callback(
         Output(get_uuid("date-selected-text"), "children"),
@@ -197,7 +197,7 @@ def parameter_response_controller(
     )
     def _update_date(dateidx: int):
         """Update selected date text on date-slider drag"""
-        return to_str(vectormodel.dates[dateidx])
+        return datetime_utils.to_str(vectormodel.dates[dateidx])
 
     @app.callback(
         Output({"id": get_uuid("plot-options"), "tab": "response"}, "data"),

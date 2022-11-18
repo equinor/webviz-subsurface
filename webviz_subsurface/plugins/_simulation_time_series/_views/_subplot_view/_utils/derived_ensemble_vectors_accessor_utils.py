@@ -4,6 +4,9 @@ from typing import Dict, List, Optional
 from webviz_subsurface_components import ExpressionInfo
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 
 from .._types import DeltaEnsemble
 from .delta_ensemble_utils import (
@@ -16,13 +19,12 @@ from .derived_vectors_accessor import (
     DerivedEnsembleVectorsAccessorImpl,
     DerivedVectorsAccessor,
 )
-from .provider_set import ProviderSet
 
 
 def create_derived_vectors_accessor_dict(
     ensembles: List[str],
     vectors: List[str],
-    provider_set: ProviderSet,
+    provider_set: EnsembleSummaryProviderSet,
     expressions: List[ExpressionInfo],
     delta_ensembles: List[DeltaEnsemble],
     resampling_frequency: Optional[Frequency],
@@ -41,7 +43,8 @@ def create_derived_vectors_accessor_dict(
     `Input:`
     * ensembles: List[str] - list of ensemble names
     * vectors List[str] - list of vectors to create accesses for
-    * provider_set: ProviderSet - set of EnsembleSummaryProviders to obtain vector data
+    * provider_set: EnsembleSummaryProviderSet - set of EnsembleSummaryProviders to
+    obtain vector data
     * expressions: List[ExpressionInfo] - list of expressions for calculating vectors
     * delta_ensembles: List[DeltaEnsemble] - list of created delta ensembles
     * resampling_frequency: Optional[Frequency] - Resampling frequency setting for
@@ -56,7 +59,7 @@ def create_derived_vectors_accessor_dict(
     """
     ensemble_data_accessor_dict: Dict[str, DerivedVectorsAccessor] = {}
     delta_ensemble_name_dict = create_delta_ensemble_name_dict(delta_ensembles)
-    provider_names = provider_set.names()
+    provider_names = provider_set.provider_names()
     for ensemble in ensembles:
         if ensemble in provider_names:
             ensemble_data_accessor_dict[ensemble] = DerivedEnsembleVectorsAccessorImpl(

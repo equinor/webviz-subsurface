@@ -7,19 +7,17 @@ from webviz_subsurface_components import (
 )
 
 from webviz_subsurface._providers import VectorMetadata
-
-# pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set import (
-    ProviderSet,
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
 )
 
 # pylint: disable=line-too-long
-from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.provider_set_utils import (
+from webviz_subsurface.plugins._simulation_time_series._views._subplot_view._utils.ensemble_summary_provider_set_utils import (
     create_calculated_unit_from_provider_set,
     create_vector_plot_titles_from_provider_set,
 )
 
-from ..mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
+from ....mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 
 # *******************************************************************
 #####################################################################
@@ -34,7 +32,7 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     """Ensemble summary provider mock for testing
 
     Note empty list returned in override methods, only to allow constructing
-    ProviderSet objects!
+    EnsembleSummaryProviderSet objects!
     """
 
     ########################################
@@ -43,11 +41,11 @@ class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):
     #
     ########################################
     def vector_names(self) -> List[str]:
-        """Return empty list only to allow constructing ProviderSet object"""
+        """Return empty list only to allow constructing EnsembleSummaryProviderSet object"""
         return ["FGIT", "WGOR:A1", "WBHP:A1", "WOPT:A1"]
 
     def realizations(self) -> List[int]:
-        """Return empty list only to allow constructing ProviderSet object"""
+        """Return empty list only to allow constructing EnsembleSummaryProviderSet object"""
         return []
 
     def vector_metadata(self, vector_name: str) -> Optional[VectorMetadata]:
@@ -142,7 +140,9 @@ INVALID_TEST_EXPRESSION = ExpressionInfo(
     isDeletable=False,
 )
 
-TEST_PROVIDER_SET = ProviderSet({"First Provider": EnsembleSummaryProviderMock()})
+TEST_PROVIDER_SET = EnsembleSummaryProviderSet(
+    {"First Provider": EnsembleSummaryProviderMock()}
+)
 
 
 # *******************************************************************

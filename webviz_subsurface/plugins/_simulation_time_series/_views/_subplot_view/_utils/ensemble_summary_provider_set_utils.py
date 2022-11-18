@@ -8,6 +8,9 @@ from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
 )
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 from webviz_subsurface._utils.vector_calculator import (
     ExpressionInfo,
     VectorCalculator,
@@ -18,13 +21,12 @@ from .from_timeseries_cumulatives import (
     get_cumulative_vector_name,
     is_per_interval_or_per_day_vector,
 )
-from .provider_set import ProviderSet
 
 
 def create_vector_plot_titles_from_provider_set(
     vector_names: List[str],
     expressions: List[ExpressionInfo],
-    provider_set: ProviderSet,
+    provider_set: EnsembleSummaryProviderSet,
     user_defined_vector_definitions: Dict[str, VectorDefinition],
     resampling_frequency: Optional[Frequency] = None,
 ) -> Dict[str, str]:
@@ -88,7 +90,7 @@ def create_vector_plot_titles_from_provider_set(
 
 
 def create_calculated_unit_from_provider_set(
-    expression: ExpressionInfo, provider_set: ProviderSet
+    expression: ExpressionInfo, provider_set: EnsembleSummaryProviderSet
 ) -> Optional[str]:
     try:
         # Parse only for validation

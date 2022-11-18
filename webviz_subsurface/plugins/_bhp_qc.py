@@ -9,18 +9,17 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
-
-from .._utils.fanchart_plotting import (
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_lazy_ensemble_summary_provider_set_from_paths,
+)
+from webviz_subsurface._utils.fanchart_plotting import (
     FanchartData,
     FreeLineData,
     LowHighData,
     MinMaxData,
     get_fanchart_traces,
 )
-from .._utils.unique_theming import unique_colors
-from ._simulation_time_series._utils.create_provider_set_from_paths import (
-    create_lazy_provider_set_from_paths,
-)
+from webviz_subsurface._utils.unique_theming import unique_colors
 
 
 class BhpQc(WebvizPluginABC):
@@ -57,7 +56,7 @@ class BhpQc(WebvizPluginABC):
             for ensemble_name in ensembles
         }
 
-        self._input_provider_set = create_lazy_provider_set_from_paths(
+        self._input_provider_set = create_lazy_ensemble_summary_provider_set_from_paths(
             self.ens_paths,
             rel_file_pattern,
         )
