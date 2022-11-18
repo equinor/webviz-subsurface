@@ -2,14 +2,19 @@ from typing import Dict, List
 
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._providers.ensemble_grid_provider import (
-    EnsembleGridProvider,
-    EnsembleGridProviderFactory,
-    GridVizService,
-)
+try:
+    from webviz_subsurface._providers.ensemble_grid_provider import (
+        EnsembleGridProvider,
+        EnsembleGridProviderFactory,
+        GridVizService,
+    )
 
-from ._layout_elements import ElementIds
-from .views.view_3d._view_3d import View3D
+    from ._layout_elements import ElementIds
+    from .views.view_3d._view_3d import View3D
+
+    VTK_INSTALLED = True
+except ImportError:
+    VTK_INSTALLED = False
 
 
 class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
@@ -77,6 +82,11 @@ class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
         eclipse_restart_parameters: List[str] = None,
         initial_ijk_filter: Dict[str, int] = None,
     ):
+        if not VTK_INSTALLED:
+            raise ImportError(
+                "To run this experimental plugin you must install the extra vtk "
+                "packages with `pip install webviz-subsurface[vtk]`."
+            )
         super().__init__(stretch=True)
 
         self.ensemble = webviz_settings.shared_settings["scratch_ensembles"][ensemble]
