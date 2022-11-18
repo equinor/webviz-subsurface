@@ -55,7 +55,7 @@ jobs:
           pip install "pytest<7.2.0"
           pip install "pytest-xdist<3.0"
           pip install "xtgeo<2.20.2"
-          pip install .
+          pip install .[vtk]
 
           # Testing against our latest release (including pre-releases)
           pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components

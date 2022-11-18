@@ -2,14 +2,17 @@ from typing import Dict, List
 
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-from webviz_subsurface._providers.ensemble_grid_provider import (
-    EnsembleGridProvider,
-    EnsembleGridProviderFactory,
-    GridVizService,
-)
+try:
+    from webviz_subsurface._providers.ensemble_grid_provider import (
+        EnsembleGridProvider,
+        EnsembleGridProviderFactory,
+        GridVizService,
+    )
 
-from ._layout_elements import ElementIds
-from .views.view_3d._view_3d import View3D
+    from ._layout_elements import ElementIds
+    from .views.view_3d._view_3d import View3D
+except ImportError:
+    pass
 
 
 class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
