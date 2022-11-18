@@ -1,9 +1,11 @@
 from typing import Dict, List, Tuple
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 
 from .._types import DeltaEnsemble
-from .provider_set import ProviderSet
 
 
 def create_delta_ensemble_name(delta_ensemble: DeltaEnsemble) -> str:
@@ -32,7 +34,7 @@ def create_delta_ensemble_name_dict(
 
 
 def is_delta_ensemble_providers_in_provider_set(
-    delta_ensemble: DeltaEnsemble, provider_set: ProviderSet
+    delta_ensemble: DeltaEnsemble, provider_set: EnsembleSummaryProviderSet
 ) -> bool:
     """Check if the delta ensemble providers exist in provider set
 
@@ -41,13 +43,13 @@ def is_delta_ensemble_providers_in_provider_set(
     false otherwise
     """
     return (
-        delta_ensemble["ensemble_a"] in provider_set.names()
-        and delta_ensemble["ensemble_b"] in provider_set.names()
+        delta_ensemble["ensemble_a"] in provider_set.provider_names()
+        and delta_ensemble["ensemble_b"] in provider_set.provider_names()
     )
 
 
 def create_delta_ensemble_provider_pair(
-    delta_ensemble: DeltaEnsemble, provider_set: ProviderSet
+    delta_ensemble: DeltaEnsemble, provider_set: EnsembleSummaryProviderSet
 ) -> Tuple[EnsembleSummaryProvider, EnsembleSummaryProvider]:
     """Create pair of providers representing a delta ensemble
 
@@ -60,7 +62,7 @@ def create_delta_ensemble_provider_pair(
     ensemble_a = delta_ensemble["ensemble_a"]
     ensemble_b = delta_ensemble["ensemble_b"]
     if not is_delta_ensemble_providers_in_provider_set(delta_ensemble, provider_set):
-        provider_names = provider_set.names()
+        provider_names = provider_set.provider_names()
         raise ValueError(
             f"Request delta ensemble with ensemble {ensemble_a}"
             f" and ensemble {ensemble_b}. Ensemble {ensemble_a} exists: "

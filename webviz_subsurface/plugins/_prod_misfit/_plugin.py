@@ -7,14 +7,10 @@ from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._models import WellAttributesModel
 from webviz_subsurface._providers import Frequency
-
-from .._simulation_time_series._utils.create_provider_set_from_paths import (
-    create_presampled_provider_set_from_paths,
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_presampled_ensemble_summary_provider_set_from_paths,
 )
 
-# from .._simulation_time_series.types.provider_set import (
-#     create_presampled_provider_set_from_paths,
-# )
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter
 from .views import (
@@ -136,13 +132,15 @@ class ProdMisfit(WebvizPluginABC):
             for ensemble_name in ensembles
         }
 
-        self._input_provider_set = create_presampled_provider_set_from_paths(
-            ensemble_paths, rel_file_pattern, self._sampling
+        self._input_provider_set = (
+            create_presampled_ensemble_summary_provider_set_from_paths(
+                ensemble_paths, rel_file_pattern, self._sampling
+            )
         )
 
         logging.debug("Created presampled provider_set.")
 
-        self.ensemble_names = self._input_provider_set.names()
+        self.ensemble_names = self._input_provider_set.provider_names()
 
         self.dates = {}
         self.realizations = {}

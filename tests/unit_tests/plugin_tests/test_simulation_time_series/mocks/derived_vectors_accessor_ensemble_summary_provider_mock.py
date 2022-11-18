@@ -4,7 +4,7 @@ import pandas as pd
 
 from webviz_subsurface._providers import Frequency
 
-from .ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
+from ....mocks.ensemble_summary_provider_dummy import EnsembleSummaryProviderDummy
 
 
 class EnsembleSummaryProviderMock(EnsembleSummaryProviderDummy):

@@ -13,6 +13,10 @@ from webviz_subsurface._abbreviations.reservoir_simulation import (
     simulation_vector_description,
 )
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_lazy_ensemble_summary_provider_set_from_paths,
+    create_presampled_ensemble_summary_provider_set_from_paths,
+)
 from webviz_subsurface._utils.simulation_timeseries import (
     check_and_format_observations,
     set_simulation_line_shape_fallback,
@@ -32,10 +36,6 @@ from webviz_subsurface._utils.vector_selector import (
 )
 from webviz_subsurface._utils.webvizstore_functions import get_path
 
-from ._utils.create_provider_set_from_paths import (
-    create_lazy_provider_set_from_paths,
-    create_presampled_provider_set_from_paths,
-)
 from ._views._subplot_view import SubplotView
 from ._views._subplot_view._settings import (
     EnsemblesSettings,
@@ -136,12 +136,16 @@ class SimulationTimeSeries(WebvizPluginABC):
             }
             if perform_presampling:
                 self._presampled_frequency = self._sampling
-                self._input_provider_set = create_presampled_provider_set_from_paths(
-                    ensemble_paths, rel_file_pattern, self._presampled_frequency
+                self._input_provider_set = (
+                    create_presampled_ensemble_summary_provider_set_from_paths(
+                        ensemble_paths, rel_file_pattern, self._presampled_frequency
+                    )
                 )
             else:
-                self._input_provider_set = create_lazy_provider_set_from_paths(
-                    ensemble_paths, rel_file_pattern
+                self._input_provider_set = (
+                    create_lazy_ensemble_summary_provider_set_from_paths(
+                        ensemble_paths, rel_file_pattern
+                    )
                 )
         else:
             raise ValueError('Incorrect argument, must provide "ensembles"')

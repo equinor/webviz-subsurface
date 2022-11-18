@@ -12,6 +12,9 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 from webviz_subsurface_components import ExpressionInfo, VectorDefinition
 
 from webviz_subsurface._providers import Frequency
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 from webviz_subsurface._utils.unique_theming import unique_colors
 from webviz_subsurface._utils.vector_calculator import get_selected_expressions
 
@@ -35,16 +38,18 @@ from ._types import (
     TraceOptions,
     VisualizationOptions,
 )
-from ._utils import DerivedVectorsAccessor, ProviderSet, datetime_utils
+from ._utils import DerivedVectorsAccessor, datetime_utils
 from ._utils.derived_ensemble_vectors_accessor_utils import (
     create_derived_vectors_accessor_dict,
+)
+from ._utils.ensemble_summary_provider_set_utils import (
+    create_vector_plot_titles_from_provider_set,
 )
 from ._utils.from_timeseries_cumulatives import (
     datetime_to_intervalstr,
     is_per_interval_or_per_day_vector,
 )
 from ._utils.history_vectors import create_history_vectors_df
-from ._utils.provider_set_utils import create_vector_plot_titles_from_provider_set
 from ._utils.trace_line_shape import get_simulation_line_shape
 from ._utils.vector_statistics import create_vectors_statistics_df
 from ._view_elements import SubplotGraph
@@ -70,7 +75,7 @@ class SubplotView(ViewABC):
         initial_selected_vectors: List[str],
         initial_vector_selector_data: list,
         initial_visualization: VisualizationOptions,
-        input_provider_set: ProviderSet,
+        input_provider_set: EnsembleSummaryProviderSet,
         predefined_expressions: List[ExpressionInfo],
         selected_resampling_frequency: Frequency,
         vector_calculator_data: List,
@@ -97,7 +102,7 @@ class SubplotView(ViewABC):
                     input_provider_set=input_provider_set,
                 ),
                 SubplotView.Ids.ENSEMBLE_SETTINGS: EnsemblesSettings(
-                    ensembles_names=input_provider_set.names(),
+                    ensembles_names=input_provider_set.provider_names(),
                     input_provider_set=input_provider_set,
                 ),
                 SubplotView.Ids.TIME_SERIES_SETTINGS: TimeSeriesSettings(
@@ -265,7 +270,7 @@ class SubplotView(ViewABC):
             * Business logic:
                 * Functionality with "strongly typed" and filtered input format - functions and
                 classes
-                * ProviderSet for EnsembleSummaryProviders, i.e. input_provider_set
+                * EnsembleSummaryProviderSet for EnsembleSummaryProviders, i.e. input_provider_set
                 * DerivedEnsembleVectorsAccessor to access derived vector data from ensembles
                 with single providers or delta ensemble with two providers
                 * GraphFigureBuilder to create graph with subplots per vector or subplots per
@@ -489,7 +494,7 @@ class SubplotView(ViewABC):
                         )
 
             # Retrieve selected input providers
-            selected_input_providers = ProviderSet(
+            selected_input_providers = EnsembleSummaryProviderSet(
                 {
                     name: provider
                     for name, provider in self._input_provider_set.items()
@@ -499,7 +504,7 @@ class SubplotView(ViewABC):
 
             # Do not add observations if only delta ensembles are selected
             is_only_delta_ensembles = (
-                len(selected_input_providers.names()) == 0
+                len(selected_input_providers.provider_names()) == 0
                 and len(derived_vectors_accessors) > 0
             )
             if (
@@ -520,10 +525,10 @@ class SubplotView(ViewABC):
             if TraceOptions.HISTORY in trace_options and not relative_date:
                 if (
                     isinstance(figure_builder, VectorSubplotBuilder)
-                    and len(selected_input_providers.names()) > 0
+                    and len(selected_input_providers.provider_names()) > 0
                 ):
                     # Add history trace using first selected ensemble
-                    name = selected_input_providers.names()[0]
+                    name = selected_input_providers.provider_names()[0]
                     provider = selected_input_providers.provider(name)
                     vector_names = provider.vector_names()
 

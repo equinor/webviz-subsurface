@@ -4,8 +4,7 @@ import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import dcc, html
 
-from webviz_subsurface._utils.datetime_utils import to_str
-
+from .._utils import datetime_utils
 from ..figures.color_figure import color_figure
 from ..models import ParametersModel, SimulationTimeSeriesModel
 
@@ -111,14 +110,14 @@ def date_selector(
                 children=[
                     wcc.Label("Date:"),
                     wcc.Label(
-                        to_str(dates[-1]),
+                        datetime_utils.to_str(dates[-1]),
                         id=get_uuid("date-selected-text"),
                         style={"margin-left": "10px"},
                     ),
                     dcc.Store(
                         id=get_uuid("date-selected"),
                         storage_type="session",
-                        data=to_str(dates[-1]),
+                        data=datetime_utils.to_str(dates[-1]),
                     ),
                 ],
             ),
@@ -131,7 +130,7 @@ def date_selector(
                 included=False,
                 marks={
                     idx: {
-                        "label": to_str(dates[idx]),
+                        "label": datetime_utils.to_str(dates[idx]),
                         "style": {"white-space": "nowrap"},
                     }
                     for idx in [0, len(dates) - 1]

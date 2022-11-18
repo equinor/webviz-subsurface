@@ -42,8 +42,19 @@ from enum import Enum
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 import numpy as np
-from opm.io.ecl import EclFile
 from scipy import interpolate
+
+# opm is only available for Linux,
+# hence, ignore any import exception here to make
+# it still possible to use the PvtPlugin on
+# machines with other OSes.
+#
+# NOTE: Functions in this file cannot be used
+#       on non-Linux OSes.
+try:
+    from opm.io.ecl import EclFile
+except ImportError:
+    pass
 
 from ..eclipse_unit import ConvertUnits, EclUnitEnum, EclUnits
 from ..units import Unit
