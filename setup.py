@@ -18,10 +18,6 @@ TESTS_REQUIRE = [
     "types-pyyaml",
 ]
 
-VTK_REQUIRE = [
-    "vtk>=9.2.2",
-    "webviz_vtk@git+https://github.com/equinor/webviz-vtk",
-]
 # pylint: disable=line-too-long
 setup(
     name="webviz-subsurface",
@@ -111,7 +107,7 @@ setup(
         "webviz-core-components>=0.6",
         "webviz-subsurface-components>=0.4.14",
     ],
-    extras_require={"tests": TESTS_REQUIRE, "vtk": VTK_REQUIRE},
+    extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
     python_requires="~=3.8",
     use_scm_version=True,
