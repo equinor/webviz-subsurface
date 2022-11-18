@@ -38,7 +38,7 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
 from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewSettings
 
 from . import _error
-from ._utilities.color_tables import CO2LEAKAGE_COLOR_TABLES
+from ._utilities.color_tables import co2leakage_color_tables
 
 
 class CO2Leakage(WebvizPluginABC):
@@ -121,17 +121,18 @@ class CO2Leakage(WebvizPluginABC):
             self._error_message = f"Plugin initialization failed: {err}"
             raise
 
+        color_tables = co2leakage_color_tables()
         self.add_shared_settings_group(
             ViewSettings(
                 self._ensemble_paths,
                 self._ensemble_surface_providers,
                 initial_surface,
                 self._map_attribute_names,
-                [c["name"] for c in CO2LEAKAGE_COLOR_TABLES],  # type: ignore
+                [c["name"] for c in color_tables],  # type: ignore
             ),
             self.Ids.MAIN_SETTINGS,
         )
-        self.add_view(MainView(CO2LEAKAGE_COLOR_TABLES), self.Ids.MAIN_VIEW)
+        self.add_view(MainView(color_tables), self.Ids.MAIN_VIEW)
 
     @property
     def layout(self) -> html.Div:
