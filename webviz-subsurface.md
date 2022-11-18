@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.16` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.17a0` of `webviz-subsurface`.
 
 
 
@@ -119,6 +119,83 @@ might cover extreme BHP values.
 
 <div class="plugin-doc">
 
+#### CO2Leakage
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+Plugin for analyzing CO2 leakage potential across multiple realizations in an FMU
+ensemble
+
+* **`ensembles`:** Which ensembles in `shared_settings` to visualize.
+* **`boundary_file`:** Path to a polygon representing the containment area
+* **`well_pick_file`:** Path to a file containing well picks
+* **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
+    CO2 outside/inside a boundary). Relative to each realization.
+* **`fault_polygon_attribute`:** Polygons with this attribute are used as fault
+    polygons
+* **`map_attribute_names`:** Dictionary for overriding the default mapping between
+    attributes visualized by the plugin and attributes names used by
+    EnsembleSurfaceProvider
+* **`initial_surface`:** Name of the surface/formation to show when the plugin is
+    launched. If no name is provided, the first alphabetical surface is shown.
+* **`map_surface_names_to_well_pick_names`:** Optional mapping between surface map
+    names and surface names used in the well pick file
+* **`map_surface_names_to_fault_polygons`:** Optional mapping between surface map
+    names and surface names used by the fault polygons
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
+How to use in YAML config file:
+```yaml
+    - CO2Leakage:
+        ensembles:  # Required, type List[str].
+        boundary_file:  # Optional, type Union[str, NoneType].
+        well_pick_file:  # Optional, type Union[str, NoneType].
+        co2_containment_relpath:  # Optional, type str.
+        fault_polygon_attribute:  # Optional, type str.
+        initial_surface:  # Optional, type Union[str, NoneType].
+        map_attribute_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
+        map_surface_names_to_well_pick_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
+        map_surface_names_to_fault_polygons:  # Optional, type Union[typing.Dict[str, str], NoneType].
+```
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
 #### DiskUsage
 
 
@@ -168,6 +245,109 @@ from the last week.
 
 The csv file must have the columns `userid` and `usageKB` (where KB means
 [kibibytes](https://en.wikipedia.org/wiki/Kibibyte)). All other columns are ignored.
+
+
+
+<!-- tabs:end -->
+
+</div>
+
+<div class="plugin-doc">
+
+#### EXPERIMENTALGridViewerFMU
+
+
+<!-- tabs:start -->
+
+
+<!-- tab:Description -->
+
+!> This plugin is an experimental plugin and will see significant changes
+in the future. It is not recommended to use this plugin in a cloud setting.
+There might be unexpected issues and errors in the visualization. Results
+should be validated in ResInsight/RMS!
+
+The plugin allows for basic visualization of 3D grids and properties
+from FMU ensembles.
+
+The performance is related to the number of cells,
+and will probably not handle large modelling grids (10+ million cells) at all.
+
+
+
+
+<!-- tab:Arguments -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* **`ensemble`:** Which ensemble in `shared_settings` to include.
+
+Provide the grid data either as ROFF:
+* **`roff_grid_name`:** Name of roff grid stored in FMU standard.
+* **`roff_attribute_filter`:** Use an optional subset of roff grid parameters
+
+Or as Eclipse:
+* **`eclipse_grid_name`:** Case name of the Eclipse files
+* **`eclipse_init_parameters`:** Which Eclipse init parameters to load
+* **`eclipse_restart_parameters`:** Which Eclipse restart parameters to load
+
+An optional initial cell filter can be set as:
+* **`grid_ijk_filter`:** with one or more of the following:
+    ```yaml
+        i_min: start column
+        i_width: number of columns
+        j_min: start row
+        j_width: number of rows
+        k_min: start layer
+        k_width: number of layers
+    ```
+
+
+
+---
+How to use in YAML config file:
+```yaml
+    - EXPERIMENTALGridViewerFMU:
+        ensemble:  # Required, type str.
+        roff_grid_name:  # Optional, type str.
+        roff_attribute_filter:  # Optional, type List[str].
+        eclipse_grid_name:  # Optional, type str.
+        eclipse_init_parameters:  # Optional, type List[str].
+        eclipse_restart_parameters:  # Optional, type List[str].
+        initial_ijk_filter:  # Optional, type Dict[str, int].
+```
+
+
+
+<!-- tab:Data input -->
+
+Data can be loaded either from an Eclipse simulation case or from roff files.
+
+For Eclipse simulations provide the case name as `eclipse_grid_name`, together
+with a list of `eclipse_init_parameters` and `eclipse_restart_parameters`.
+The plugin will then load from the corresponding EGRID, INIT and UNRST files
+in the `eclipse/model` folder.
+
+For grids stored in ROFF format, the FMU standards are followed. Provide
+a `roff_grid_name` together with an optional `roff_attribute_filter`.
+The corresponding files are then loaded from the `share/results/grids` folder.
+
+Note that the ROFF format is recommended for best performance.
 
 
 
@@ -1691,10 +1871,13 @@ Visualizes relative permeability and capillary pressure curves for FMU ensembles
 
 
 
+
+
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`relpermfile`:** Local path to a csvfile in each realization with dumped relperm data.
 * **`scalfile`:** Path to a reference file with SCAL recommendationed data.     Path to a single file, **not** per realization/ensemble. The path can be absolute or     relative to the `webviz` configuration.
 * **`sheet_name`:** Which sheet to use for the `scalfile`, only relevant if `scalfile` is an     `xlsx` file (recommended to use csv files with `webviz`).
+* **`scal_scenarios`:** Alternative to ensemble based input, using only a dict of where the     keys are arbitrary names used for each scenario and the values are absolute path to     pyscal files for each scenario (if using `scal_scenarios`, this has to be the **only**     input option used).
 
 
 
@@ -1702,10 +1885,11 @@ Visualizes relative permeability and capillary pressure curves for FMU ensembles
 How to use in YAML config file:
 ```yaml
     - RelativePermeability:
-        ensembles:  # Required, type list.
+        ensembles:  # Optional, type Union[list, NoneType].
         relpermfile:  # Optional, type str.
         scalfile:  # Optional, type str (corresponding to a path).
         sheet_name:  # Optional, type Union[str, int, list, NoneType].
+        scal_scenarios:  # Optional, type Union[dict, NoneType].
 ```
 
 
@@ -1740,6 +1924,9 @@ realizations/ensembles). The file has to be compatible with
 
 `sheet_name` defines the sheet to use in the `scalfile`. Only relevant if `scalfile` is an
 `xlsx` file (it is recommended to use `csv` and not `xlsx` for `Webviz`).
+
+`scal_scenarios` is a dict with pyscal formatted files (similar to `scalfile`) as values,
+and arbitrary names for each scenario as keys.
 
 * [Example of relpermfile](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/realization-0/iter-0/share/results/tables/relperm.csv).
 * [Example of scalfile](https://github.com/equinor/webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.csv).
