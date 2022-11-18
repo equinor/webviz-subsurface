@@ -11,8 +11,10 @@ try:
 
     from ._layout_elements import ElementIds
     from .views.view_3d._view_3d import View3D
+
+    VTK_INSTALLED = True
 except ImportError:
-    pass
+    VTK_INSTALLED = False
 
 
 class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
@@ -80,6 +82,11 @@ class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
         eclipse_restart_parameters: List[str] = None,
         initial_ijk_filter: Dict[str, int] = None,
     ):
+        if not VTK_INSTALLED:
+            raise ImportError(
+                "To run this experimental plugin you must install the extra vtk "
+                "packages with `pip install webviz-subsurface[vtk]`."
+            )
         super().__init__(stretch=True)
 
         self.ensemble = webviz_settings.shared_settings["scratch_ensembles"][ensemble]
