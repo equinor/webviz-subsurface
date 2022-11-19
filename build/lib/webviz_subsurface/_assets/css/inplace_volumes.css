@@ -1,0 +1,13 @@
+.webviz-inplace-vol-btn {
+    background-color: #E8E8E8;
+    width: 100%;
+    font-size: 12px;
+    height: 30px;
+    line-height:30px;
+    padding:0px;
+}
+
+
+.webviz-inplace-vol-btn:hover {
+    box-shadow: 0px 0px 3px 0.5px lightgrey;
+}

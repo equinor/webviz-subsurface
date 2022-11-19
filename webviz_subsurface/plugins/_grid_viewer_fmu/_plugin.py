@@ -1,20 +1,17 @@
 from typing import Dict, List
 
+from dash import Dash
 from webviz_config import WebvizPluginABC, WebvizSettings
 
-try:
-    from webviz_subsurface._providers.ensemble_grid_provider import (
-        EnsembleGridProvider,
-        EnsembleGridProviderFactory,
-        GridVizService,
-    )
+from webviz_subsurface._providers.ensemble_grid_provider import (
+    EnsembleGridProvider,
+    EnsembleGridProviderFactory,
+    GridVizService,
+)
 
-    from ._layout_elements import ElementIds
-    from .views.view_3d._view_3d import View3D
-
-    VTK_INSTALLED = True
-except ImportError:
-    VTK_INSTALLED = False
+from ._layout_elements import ElementIds
+from ._routes import set_routes
+from .views.view_3d._view_3d import View3D
 
 
 class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
@@ -73,6 +70,7 @@ class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
+        app: Dash,
         webviz_settings: WebvizSettings,
         ensemble: str,
         roff_grid_name: str = None,
@@ -82,12 +80,7 @@ class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
         eclipse_restart_parameters: List[str] = None,
         initial_ijk_filter: Dict[str, int] = None,
     ):
-        if not VTK_INSTALLED:
-            raise ImportError(
-                "To run this experimental plugin you must install the extra vtk "
-                "packages with `pip install vtk>=9.2.2` and "
-                "`pip install webviz_vtk@git+https://github.com/equinor/webviz-vtk`."
-            )
+
         super().__init__(stretch=True)
 
         self.ensemble = webviz_settings.shared_settings["scratch_ensembles"][ensemble]
@@ -122,6 +115,10 @@ class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
             ),
             ElementIds.ID,
         )
+        try:
+            set_routes(app, self.grid_viz_service)
+        except AssertionError:
+            pass
 
     def add_roff_grid_provider(
         self, grid_name: str, attribute_filter: List[str] = None

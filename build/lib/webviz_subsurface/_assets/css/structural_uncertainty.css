@@ -1,0 +1,82 @@
+.webviz-structunc-uncertainty-table-label {
+    flex: 1;
+    font-size: 1.2em;
+    line-height: 1.6;
+    text-align: middle;
+    min-width: 100px;
+}
+
+.webviz-structunc-uncertainty-table-apply-btn {
+    background-color: #7393B3;
+    border-color: #7393B3;
+    color: #fff;
+    display: inline;
+    margin-left: auto;
+    margin-right: auto;
+    flex: 1;
+    min-width: 100px;
+}
+
+.webviz-structunc-uncertainty-table-wrapper {
+    overflow-y: auto; 
+    height: 90vh; 
+    font-size: 0.8em;
+}
+
+.webviz-structunc-blue-apply-btn {
+    background-color: #E8E8E8;
+    width: 100%;
+    display: block;
+    padding: 0 20px;
+    margin-top: 20px;
+    margin-bottom: 5px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.webviz-structunc-range-input {
+    background-color:  #fff;
+    width: 30%;
+    border-width: thin;
+    position: absolute;
+    right: 15px;
+    margin-right: 10px;
+}
+
+.webviz-structunc-range-label {
+    display: inline;
+    margin-right: 10;
+}
+
+
+
+.webviz-structunc-details-main {
+    cursor: pointer;
+    color: #ff1243;
+    border-bottom-style: solid;
+    border-width: thin;
+    border-color: #ff1243;
+    font-weight: bold;
+    font-size: 20px;
+    margin-bottom: 15px;
+} 
+
+.webviz-structunc-settings {
+    cursor: pointer;
+    color: #555;
+    margin-top: 5px;
+    padding-top: 5px;
+}
+.webviz-structunc-settings:hover {
+    box-shadow: 0px 0px 3px 0.5px lightgrey;
+}
+
+
+
+.webviz-structunc-blue-apply-btn:hover {
+    box-shadow: 0px 0px 3px 0.5px lightgrey;
+}
+
+.leaflet-container {
+    background: transparent !important;
+}
