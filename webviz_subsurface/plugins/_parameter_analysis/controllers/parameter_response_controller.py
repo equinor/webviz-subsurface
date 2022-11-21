@@ -131,8 +131,9 @@ def parameter_response_controller(
 
         # Make timeseries graph
         param_df = parametermodel.get_parameter_df_for_ensemble(
-            ensemble, reals=realizations)
-            
+            ensemble, reals=realizations
+        )
+
         timeseries_fig = TimeSeriesFigure(
             dframe=merge_dataframes_on_realization(
                 vector_df[["DATE", "REAL", vector]], param_df[["REAL", parameter]]

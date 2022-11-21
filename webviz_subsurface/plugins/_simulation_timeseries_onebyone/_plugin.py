@@ -19,7 +19,7 @@ from ._layout import main_view
 from .models import ProviderTimeSeriesDataModel
 
 
-class ReservoirSimulationTimeSeriesOneByOne(WebvizPluginABC):
+class SimulationTimeSeriesOneByOne(WebvizPluginABC):
     """Visualizes reservoir simulation time series data for sensitivity studies based \
 on a design matrix.
 

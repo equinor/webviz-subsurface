@@ -1,1 +1,1 @@
-from ._plugin import ReservoirSimulationTimeSeriesOneByOne
+from ._plugin import SimulationTimeSeriesOneByOne

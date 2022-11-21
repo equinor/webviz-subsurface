@@ -1,13 +1,12 @@
 import datetime
 import json
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Tuple, Union
 from uuid import uuid4
 
 import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
-import webviz_subsurface_components as wsc
 from dash import Dash, Input, Output, State, callback_context, dash_table, dcc, html
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -15,19 +14,9 @@ from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._components import TornadoWidget
-from webviz_subsurface._figures import TimeSeriesFigure
-from webviz_subsurface._models.parameter_model import ParametersModel
-from webviz_subsurface._providers import (
-    EnsembleSummaryProviderFactory,
-    EnsembleTableProviderFactory,
-    EnsembleTableProviderSet,
-    Frequency,
-)
-from webviz_subsurface._utils.dataframe_utils import merge_dataframes_on_realization
-from webviz_subsurface._utils.datetime_utils import from_str, to_str
-from webviz_subsurface.plugins._parameter_analysis.models import (
-    ProviderTimeSeriesDataModel,
-    SimulationTimeSeriesModel,
+from webviz_subsurface._models import (
+    EnsembleSetModel,
+    caching_ensemble_set_model_factory,
 )
 
 from .._abbreviations.number_formatting import table_statistics_base
@@ -123,6 +112,11 @@ folder, to avoid risk of not extracting the right data.
         "RUNPATH",
     ]
 
+    TABLE_STAT: List[Tuple[str, dict]] = [
+        ("Sensitivity", {}),
+        ("Case", {}),
+    ] + table_statistics_base()
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -130,24 +124,19 @@ folder, to avoid risk of not extracting the right data.
         webviz_settings: WebvizSettings,
         csvfile_smry: Path = None,
         csvfile_parameters: Path = None,
-        time_index: str = "monthly",
-        sampling: str = "monthly",
-        rel_file_pattern: str = "share/results/unsmry/*.arrow",
         ensembles: list = None,
         column_keys: list = None,
         initial_vector: str = None,
+        sampling: str = "monthly",
         line_shape_fallback: str = "linear",
     ) -> None:
 
         super().__init__()
 
+        self.time_index = sampling
+        self.column_keys = column_keys
         self.csvfile_smry = csvfile_smry
         self.csvfile_parameters = csvfile_parameters
-        self.ensembles = ensembles
-        self.vmodel: Optional[
-            Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel]
-        ] = None
-        table_provider = EnsembleTableProviderFactory.instance()
 
         if csvfile_smry and ensembles:
             raise ValueError(
@@ -155,72 +144,54 @@ folder, to avoid risk of not extracting the right data.
                 '"ensembles"'
             )
         if csvfile_smry and csvfile_parameters:
-            smry_df = read_csv(csvfile_smry)
-            parameter_df = read_csv(csvfile_parameters)
-
-            self.vmodel = SimulationTimeSeriesModel(
-                dataframe=smry_df, line_shape_fallback=line_shape_fallback
+            self.smry = read_csv(csvfile_smry)
+            self.parameters = read_csv(csvfile_parameters)
+            self.parameters["SENSTYPE"] = self.parameters.apply(
+                lambda row: find_sens_type(row.SENSCASE), axis=1
             )
+            self.smry_meta = None
 
         elif ensembles:
-
-            ensemble_paths = {
-                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
-                    ensemble_name
-                ]
-                for ensemble_name in ensembles
+            self.ens_paths = {
+                ensemble: webviz_settings.shared_settings["scratch_ensembles"][ensemble]
+                for ensemble in ensembles
             }
-
-            resampling_frequency = Frequency(time_index)
-            provider_factory = EnsembleSummaryProviderFactory.instance()
-
-            try:
-                provider_set = {
-                    ens: provider_factory.create_from_arrow_unsmry_presampled(
-                        str(ens_path), rel_file_pattern, resampling_frequency
-                    )
-                    for ens, ens_path in ensemble_paths.items()
-                }
-                self.vmodel = ProviderTimeSeriesDataModel(
-                    provider_set=provider_set, column_keys=column_keys
-                )
-
-            except ValueError as error:
-                message = (
-                    f"Some/all ensembles are missing arrow files at {rel_file_pattern}.\n"
-                    "If no arrow files have been generated with `ERT` using `ECL2CSV`, "
-                    "the commandline tool `smry2arrow_batch` can be used to generate arrow "
-                    "files for an ensemble"
-                )
-                raise ValueError(message) from error
-
-            parameter_df = self.create_df_from_table_provider(
-                table_provider.create_provider_set_from_per_realization_parameter_file(
-                    ensemble_paths
+            self.emodel: EnsembleSetModel = (
+                caching_ensemble_set_model_factory.get_or_create_model(
+                    ensemble_paths=self.ens_paths,
+                    time_index=self.time_index,
+                    column_keys=self.column_keys,
                 )
             )
+            self.smry = self.emodel.get_or_load_smry_cached()
+            self.smry_meta = self.emodel.load_smry_meta()
 
+            # Extract realizations and sensitivity information
+            self.parameters = get_realizations(
+                ensemble_paths=self.ens_paths, ensemble_set_name="EnsembleSet"
+            )
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile_smry" and "csvfile_parameters" or '
                 '"ensembles"'
             )
-
-        self.pmodel = ParametersModel(dataframe=parameter_df, drop_constants=True)
-        self.parameter_df = self.pmodel.dataframe
-
-        self.vectors = self.vmodel.vectors
-        self.smry_meta = None
-
+        self.smry_cols = [
+            c
+            for c in self.smry.columns
+            if c not in ReservoirSimulationTimeSeriesOneByOne.ENSEMBLE_COLUMNS
+            and historical_vector(c, self.smry_meta, False) not in self.smry.columns
+        ]
         self.initial_vector = (
             initial_vector
-            if initial_vector and initial_vector in self.vectors
-            else self.vectors[0]
+            if initial_vector and initial_vector in self.smry_cols
+            else self.smry_cols[0]
         )
-        self.ensembles = list(self.parameter_df["ENSEMBLE"].unique())
-        self.realizations = list(self.parameter_df["REAL"].unique())
+        self.ensembles = list(self.parameters["ENSEMBLE"].unique())
+        self.line_shape_fallback = set_simulation_line_shape_fallback(
+            line_shape_fallback
+        )
         self.tornadoplot = TornadoWidget(
-            app, webviz_settings, self.parameter_df, allow_click=True
+            app, webviz_settings, self.parameters, allow_click=True
         )
         self.uid = uuid4()
         self.theme = webviz_settings.theme
@@ -229,18 +200,6 @@ folder, to avoid risk of not extracting the right data.
     def ids(self, element: str) -> str:
         """Generate unique id for dom element"""
         return f"{element}-id-{self.uid}"
-
-    def create_df_from_table_provider(
-        self, provider: EnsembleTableProviderSet
-    ) -> pd.DataFrame:
-        dfs = []
-        for ens in provider.ensemble_names():
-            df = provider.ensemble_provider(ens).get_column_data(
-                column_names=provider.ensemble_provider(ens).column_names()
-            )
-            df["ENSEMBLE"] = df.get("ENSEMBLE", ens)
-            dfs.append(df)
-        return pd.concat(dfs)
 
     @property
     def tour_steps(self) -> List[dict]:
@@ -283,54 +242,26 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def visualization_selector(self) -> html.Div:
+    def smry_selector(self) -> html.Div:
         """Dropdown to select ensemble"""
-        return wcc.RadioItems(
-            id=self.ids("visualization"),
-            options=[
-                {"label": "Individual realizations", "value": "realizations"},
-                {"label": "Mean over Sensitivities", "value": "sensmean"},
-            ],
-            value="realizations",
-        )
-
-    @property
-    def sensitivity_selector(self) -> html.Div:
-        """Dropdown to select ensemble"""
-        return wcc.SelectWithLabel(
-            id=self.ids("sensitivity_filter"),
-            options=[{"label": i, "value": i} for i in self.pmodel.sensitivities],
-            value=self.pmodel.sensitivities,
-            size=min(20, len(self.pmodel.sensitivities)),
-        )
-
-    @property
-    def vector_selector(self) -> html.Div:
-        """Dropdown to select ensemble"""
-        return wsc.VectorSelector(
+        return wcc.Dropdown(
+            label="Time series",
             id=self.ids("vector"),
-            maxNumSelectedNodes=1,
-            data=self.vmodel.vector_selector_data,
-            persistence=True,
-            persistence_type="session",
-            selectedTags=[self.initial_vector],
-            numSecondsUntilSuggestionsAreShown=0.5,
-            lineBreakAfterTag=True,
+            options=[
+                {
+                    "label": f"{simulation_vector_description(vec)} ({vec})",
+                    "value": vec,
+                }
+                for vec in self.smry_cols
+            ],
+            clearable=False,
+            value=self.initial_vector,
         )
 
     @property
-    def colormap(self) -> dict:
-        return {
-            sens: color
-            for sens, color in zip(
-                self.parameter_df["SENSNAME_CASE"],
-                (self.theme.plotly_theme["layout"]["colorway"] * 3),
-            )
-        }
-
-    @property
-    def initial_date(self) -> str:
-        return to_str(max(self.vmodel.dates))
+    def initial_date(self) -> datetime.date:
+        df = self.smry[["ENSEMBLE", "DATE"]]
+        return df.loc[df["ENSEMBLE"] == df["ENSEMBLE"].unique()[0]]["DATE"].max()
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return (
@@ -344,7 +275,18 @@ folder, to avoid risk of not extracting the right data.
                 )
             ]
             if self.csvfile_smry and self.csvfile_parameters
-            else []
+            else self.emodel.webvizstore
+            + [
+                (
+                    get_realizations,
+                    [
+                        {
+                            "ensemble_paths": self.ens_paths,
+                            "ensemble_set_name": "EnsembleSet",
+                        }
+                    ],
+                )
+            ]
         )
 
     @property
@@ -359,36 +301,51 @@ folder, to avoid risk of not extracting the right data.
                         children=[
                             wcc.Selectors(
                                 label="Selectors",
-                                children=[
-                                    self.ensemble_selector,
-                                    self.vector_selector,
-                                ],
+                                children=[self.ensemble_selector, self.smry_selector],
                             ),
-                            wcc.Selectors(
-                                label="Visualization",
-                                children=self.visualization_selector,
-                            ),
-                            wcc.Selectors(
-                                label="Sensitivity filter",
-                                children=[self.sensitivity_selector],
+                            dcc.Store(
+                                id=self.ids("date-store"),
+                                storage_type="session",
                             ),
                         ],
                     ),
                 ),
                 wcc.FlexColumn(
                     flex=3,
-                    children=[
-                        wcc.Frame(
-                            style={"height": "48vh"},
-                            color="white",
-                            highlight=False,
-                            children=wcc.Graph(
-                                id=self.ids("graph"),
-                                style={"height": "46vh"},
-                                clickData={"points": [{"x": self.initial_date}]},
+                    children=wcc.Frame(
+                        style={"height": "90vh"},
+                        color="white",
+                        highlight=False,
+                        children=[
+                            html.Div(
+                                id=self.ids("graph-wrapper"),
+                                style={"height": "450px"},
+                                children=wcc.Graph(
+                                    id=self.ids("graph"),
+                                    clickData={"points": [{"x": self.initial_date}]},
+                                ),
                             ),
-                        ),
-                    ],
+                            html.Div(
+                                children=[
+                                    html.Div(
+                                        id=self.ids("table_title"),
+                                        style={"textAlign": "center"},
+                                        children="",
+                                    ),
+                                    html.Div(
+                                        style={"fontSize": "15px"},
+                                        children=dash_table.DataTable(
+                                            id=self.ids("table"),
+                                            sort_action="native",
+                                            filter_action="native",
+                                            page_action="native",
+                                            page_size=10,
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
                 ),
                 wcc.FlexColumn(
                     flex=3,
@@ -403,24 +360,20 @@ folder, to avoid risk of not extracting the right data.
             ],
         )
 
-    def create_vectors_statistics_df(self, dframe, vector) -> pd.DataFrame:
-        return (
-            dframe[["DATE", vector, "SENSNAME_CASE"]]
-            .groupby(["DATE", "SENSNAME_CASE"])
-            .mean()
-            .reset_index()
-        )
-
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: Dash) -> None:
         @app.callback(
             [
+                # Output(self.ids("date-store"), "children"),
+                Output(self.ids("table"), "data"),
+                Output(self.ids("table"), "columns"),
+                Output(self.ids("table_title"), "children"),
                 Output(self.tornadoplot.storage_id, "data"),
             ],
             [
                 Input(self.ids("ensemble"), "value"),
                 Input(self.ids("graph"), "clickData"),
-                Input(self.ids("vector"), "selectedNodes"),
+                Input(self.ids("vector"), "value"),
             ],
         )
         def _render_date(
@@ -432,19 +385,25 @@ folder, to avoid risk of not extracting the right data.
                 date = clickdata["points"][0]["x"]
             except TypeError as exc:
                 raise PreventUpdate from exc
-            vector = vector[0]
-
-            vector_df = self.vmodel.get_vector_df(
-                ensemble=ensemble, realizations=self.realizations, vectors=[vector]
-            )
-
-            vector_df = vector_df.loc[vector_df["DATE"] == from_str(date)]
-
+            data = filter_ensemble(self.smry, self.parameters, ensemble, [vector])
+            data = data.loc[data["DATE"].astype(str) == date]
+            table_rows, table_columns = calculate_table(data, vector)
             return (
+                # json.dumps(f"{date}"),
+                table_rows,
+                table_columns,
+                (
+                    f"{simulation_vector_description(vector)} ({vector})"
+                    + (
+                        ""
+                        if get_unit(self.smry_meta, vector) is None
+                        else f" [{get_unit(self.smry_meta, vector)}]"
+                    )
+                ),
                 json.dumps(
                     {
                         "ENSEMBLE": ensemble,
-                        "data": vector_df[["REAL", vector]].values.tolist(),
+                        "data": data[["REAL", vector]].values.tolist(),
                         "number_format": "#.4g",
                         "unit": (
                             ""
@@ -457,20 +416,20 @@ folder, to avoid risk of not extracting the right data.
 
         @app.callback(
             Output(self.ids("graph"), "figure"),
-            Input(self.tornadoplot.click_id, "data"),
-            Input(self.tornadoplot.high_low_storage_id, "data"),
-            Input(self.ids("sensitivity_filter"), "value"),
-            Input(self.ids("visualization"), "value"),
-            State(self.ids("ensemble"), "value"),
-            State(self.ids("vector"), "selectedNodes"),
-            State(self.ids("graph"), "clickData"),
-            State(self.ids("graph"), "figure"),
+            [
+                Input(self.tornadoplot.click_id, "data"),
+                Input(self.tornadoplot.high_low_storage_id, "data"),
+            ],
+            [
+                State(self.ids("ensemble"), "value"),
+                State(self.ids("vector"), "value"),
+                State(self.ids("graph"), "clickData"),
+                State(self.ids("graph"), "figure"),
+            ],
         )
         def _render_tornado(  # pylint: disable=too-many-branches, too-many-locals
             tornado_click_data_str: Union[str, None],
             high_low_storage: dict,
-            sensitivites,
-            visualization,
             ensemble: str,
             vector: str,
             date_click: dict,
@@ -480,7 +439,7 @@ folder, to avoid risk of not extracting the right data.
             if callback_context.triggered is None:
                 raise PreventUpdate
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
-            vector = vector[0]
+
             tornado_click: Union[dict, None] = (
                 json.loads(tornado_click_data_str) if tornado_click_data_str else None
             )
@@ -488,66 +447,221 @@ folder, to avoid risk of not extracting the right data.
                 reset_click = tornado_click["sens_name"] is None
             else:
                 reset_click = False
-            print(ctx)
-            # # Draw initial figure and redraw if ensemble/vector changes
-            # if ctx in ["", self.tornadoplot.high_low_storage_id] or reset_click:
 
-            realizations = list(
-                self.parameter_df[self.parameter_df["SENSNAME"].isin(sensitivites)][
-                    "REAL"
-                ].unique()
-            )
+            # Draw initial figure and redraw if ensemble/vector changes
+            if ctx in ["", self.tornadoplot.high_low_storage_id] or reset_click:
+                vectors = [vector]
+                historical_vector_name = historical_vector(vector, self.smry_meta, True)
+
+                if (
+                    historical_vector_name is not None
+                    and historical_vector_name in self.smry.columns
+                ):
+                    vectors.append(historical_vector_name)
+                data = filter_ensemble(
+                    self.smry,
+                    self.parameters,
+                    ensemble,
+                    vectors,
+                )
+
+                line_shape = get_simulation_line_shape(
+                    line_shape_fallback=self.line_shape_fallback,
+                    vector=vector,
+                    smry_meta=self.smry_meta,
+                )
+                traces = [
+                    {
+                        "type": "line",
+                        "marker": {"color": "grey"},
+                        "hoverinfo": "x+y+text",
+                        "hovertext": f"Real: {r}",
+                        "x": df["DATE"],
+                        "y": df[vector],
+                        "customdata": r,
+                        "line": {"shape": line_shape},
+                        "meta": {
+                            "SENSCASE": df["SENSCASE"].values[0],
+                            "SENSTYPE": df["SENSTYPE"].values[0],
+                        },
+                        "name": ensemble,
+                        "legendgroup": ensemble,
+                        "showlegend": r == data["REAL"][0],
+                    }
+                    for r, df in data.groupby(["REAL"])
+                ]
+                if historical_vector(vector, self.smry_meta, True) in data.columns:
+                    hist = data[data["REAL"] == data["REAL"][0]]
+                    traces.append(
+                        {
+                            "type": "line",
+                            "x": hist["DATE"],
+                            "y": hist[historical_vector(vector, self.smry_meta, True)],
+                            "line": {
+                                "shape": line_shape,
+                                "color": "black",
+                                "width": 3,
+                            },
+                            "name": "History",
+                            "legendgroup": "History",
+                            "showlegend": True,
+                        }
+                    )
+                # traces[0]["hoverinfo"] = "x"
+                figure = {
+                    "data": traces,
+                    "layout": {"margin": {"t": 60}, "hovermode": "closest"},
+                }
+
             # Update line colors if a sensitivity is selected in tornado
             # pylint: disable=too-many-nested-blocks
-            #     if tornado_click and tornado_click["sens_name"] in high_low_storage:
-            if tornado_click and ctx in [
-                self.tornadoplot.click_id,
-                self.tornadoplot.high_low_storage_id,
-            ]:
-                tornado_click["real_low"] = high_low_storage[
-                    tornado_click["sens_name"]
-                ].get("real_low")
-                tornado_click["real_high"] = high_low_storage[
-                    tornado_click["sens_name"]
-                ].get("real_high")
-                realizations = tornado_click["real_low"] + tornado_click["real_high"]
-                print(realizations)
+            if tornado_click and tornado_click["sens_name"] in high_low_storage:
+                if ctx == self.tornadoplot.high_low_storage_id:
+                    tornado_click["real_low"] = high_low_storage[
+                        tornado_click["sens_name"]
+                    ].get("real_low")
+                    tornado_click["real_high"] = high_low_storage[
+                        tornado_click["sens_name"]
+                    ].get("real_high")
+                if reset_click:
+                    add_legend = True
+                    for trace in figure["data"]:
+                        if trace["name"] != "History":
+                            if add_legend:
+                                trace["showlegend"] = True
+                                add_legend = False
+                            else:
+                                trace["showlegend"] = False
+                            trace["marker"] = {"color": "grey"}
+                            trace["opacity"] = 1
+                            trace["name"] = ensemble
+                            trace["legendgroup"] = ensemble
+                            trace["hoverinfo"] = "all"
+                            trace["hovertext"] = f"Real: {trace['customdata']}"
 
-            # Get dataframe with vectors and dataframe with parameters and merge
-            vector_df = self.vmodel.get_vector_df(
-                ensemble=ensemble, realizations=realizations, vectors=[vector]
-            )
-
-            param_df = self.parameter_df[
-                self.parameter_df["ENSEMBLE"] == ensemble
-            ].copy()
-            data = merge_dataframes_on_realization(dframe1=vector_df, dframe2=param_df)
+                else:
+                    add_legend_low = True
+                    add_legend_high = True
+                    for trace in figure["data"]:
+                        if trace["name"] != "History":
+                            if trace["customdata"] in tornado_click["real_low"]:
+                                trace["marker"] = {
+                                    "color": self.theme.plotly_theme["layout"][
+                                        "colorway"
+                                    ][0]
+                                }
+                                trace["opacity"] = 1
+                                trace["legendgroup"] = "real_low"
+                                trace["hoverinfo"] = "all"
+                                trace["name"] = (
+                                    "Below ref"
+                                    if trace["meta"]["SENSTYPE"] == "mc"
+                                    else trace["meta"]["SENSCASE"]
+                                )
+                                if add_legend_low:
+                                    add_legend_low = False
+                                    trace["showlegend"] = True
+                                else:
+                                    trace["showlegend"] = False
+                            elif trace["customdata"] in tornado_click["real_high"]:
+                                trace["marker"] = {
+                                    "color": self.theme.plotly_theme["layout"][
+                                        "colorway"
+                                    ][1]
+                                }
+                                trace["opacity"] = 1
+                                trace["legendgroup"] = "real_high"
+                                trace["hoverinfo"] = "all"
+                                trace["name"] = (
+                                    "Above ref"
+                                    if trace["meta"]["SENSTYPE"] == "mc"
+                                    else trace["meta"]["SENSCASE"]
+                                )
+                                if add_legend_high:
+                                    add_legend_high = False
+                                    trace["showlegend"] = True
+                                else:
+                                    trace["showlegend"] = False
+                            else:
+                                trace["marker"] = {"color": "lightgrey"}
+                                trace["opacity"] = 0.02
+                                trace["showlegend"] = False
+                                trace["hoverinfo"] = "skip"
 
             date = date_click["points"][0]["x"]
-
-            if visualization == "sensmean":
-                data = self.create_vectors_statistics_df(data, vector)
-
-            figure = TimeSeriesFigure(
-                dframe=data,
-                visualization="realizations",
-                vector=vector,
-                ensemble=ensemble,
-                dateline=from_str(date),
-                historical_vector_df=self.vmodel.get_historical_vector_df(
-                    vector, ensemble
-                ),
-                color_col="SENSNAME_CASE",
-                line_shape_fallback=self.vmodel.line_shape_fallback,
-                discrete_color=True,
-                discrete_color_map=self.colormap,
-                groupby="SENSNAME_CASE" if visualization == "sensmean" else "REAL",
-            ).figure
+            if figure is None:
+                raise PreventUpdate
+            ymin = min([min(trace["y"]) for trace in figure["data"]])
+            ymax = max([max(trace["y"]) for trace in figure["data"]])
+            figure["layout"]["shapes"] = [
+                {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
+            ]
             figure["layout"]["title"] = (
                 f"Date: {date}, "
                 f"Sensitivity: {tornado_click['sens_name'] if tornado_click else None}"
             )
+            figure["layout"]["yaxis"] = {
+                "title": f"{simulation_vector_description(vector)} ({vector})"
+                + (
+                    ""
+                    if get_unit(self.smry_meta, vector) is None
+                    else f" [{get_unit(self.smry_meta, vector)}]"
+                ),
+                "uirevision": vector,
+            }
+            figure["layout"]["xaxis"] = {"uirevision": "locked"}
+            figure["layout"]["legend"] = {
+                "orientation": "h",
+                # "traceorder": "reversed",
+                "y": 1.1,
+                "x": 1,
+                "xanchor": "right",
+            }
+            figure["layout"] = self.theme.create_themed_layout(figure["layout"])
             return figure
+
+
+@CACHE.memoize(timeout=CACHE.TIMEOUT)
+def calculate_table(df: pd.DataFrame, vector: str) -> Tuple[List[dict], List[dict]]:
+    table = []
+    for (sensname, senscase), dframe in df.groupby(["SENSNAME", "SENSCASE"]):
+        values = dframe[vector]
+        try:
+            table.append(
+                {
+                    "Sensitivity": str(sensname),
+                    "Case": str(senscase),
+                    "Minimum": values.min(),
+                    "Maximum": values.max(),
+                    "Mean": values.mean(),
+                    "Stddev": values.std(),
+                    "P10": np.percentile(values, 90),
+                    "P90": np.percentile(values, 10),
+                }
+            )
+        except KeyError:
+            pass
+    columns = [
+        {**{"name": i[0], "id": i[0]}, **i[1]}
+        for i in ReservoirSimulationTimeSeriesOneByOne.TABLE_STAT
+    ]
+    return table, columns
+
+
+def filter_ensemble(
+    smry: pd.DataFrame, parameters: pd.DataFrame, ensemble: str, vector: List[str]
+) -> pd.DataFrame:
+    smry_columns = ["DATE", "REAL"] + vector
+    parameter_columns = ["REAL", "SENSCASE", "SENSNAME", "SENSTYPE"]
+    return pd.merge(
+        smry[smry_columns + ["ENSEMBLE"]].loc[smry["ENSEMBLE"] == ensemble][
+            smry_columns
+        ],
+        parameters[parameter_columns + ["ENSEMBLE"]].loc[
+            parameters["ENSEMBLE"] == ensemble
+        ][parameter_columns],
+        on=["REAL"],
+    )
 
 
 @CACHE.memoize(timeout=CACHE.TIMEOUT)

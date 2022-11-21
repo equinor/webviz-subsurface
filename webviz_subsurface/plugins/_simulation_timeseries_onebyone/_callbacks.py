@@ -67,6 +67,7 @@ def plugin_callbacks(
         vector_selector_data = datamodel.vmodel.create_vector_selector_data(
             available_vectors
         )
+
         vector = vector if vector[0] in available_vectors else [available_vectors[0]]
         return (
             [{"label": elm, "value": elm} for elm in sensitivities],
@@ -132,8 +133,12 @@ def plugin_callbacks(
     )
     def _update_date_text(dateidx: List[int], ensemble: str) -> List[str]:
         """Update selected date text on date-slider drag"""
-        dates = datamodel.vmodel.dates_for_ensemble(ensemble)
-        return [datetime_utils.to_str(dates[dateidx[0]])]
+        if ctx.triggered_id == get_uuid("ensemble"):
+            date = datamodel.vmodel.get_last_date(ensemble)
+        else:
+            dates = datamodel.vmodel.dates_for_ensemble(ensemble)
+            date = dates[dateidx[0]]
+        return [to_str(date)]
 
     @callback(
         Output(get_uuid("graph"), "figure"),
@@ -178,7 +183,9 @@ def plugin_callbacks(
         date: str, selections: dict, vector: str, ensemble: str
     ) -> tuple:
 
-        if selections is None:
+        if selections is None or selections[
+            "Reference"
+        ] not in datamodel.get_unique_sensitivities_for_ensemble(ensemble):
             raise PreventUpdate
 
         # Get dataframe with vectors and dataframe with parameters and merge
