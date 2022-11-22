@@ -129,6 +129,11 @@ class EnsembleWellAnalysisData:
         df = df[df["DATE"] == max_date]
 
         if prod_after_date is not None:
+            # Since the prod_after_dates can be chosen from the union of the date
+            # ranges from many ensembles, it can happen that the selecte date is
+            # > than the max_date for this ensemble. In that case we set it equal
+            # to the max date. The resulting sumvec value will then be zero for
+            # all wells.
             prod_after_date = (
                 max_date if prod_after_date > max_date else prod_after_date
             )
