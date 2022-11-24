@@ -85,7 +85,8 @@ class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
         if not VTK_INSTALLED:
             raise ImportError(
                 "To run this experimental plugin you must install the extra vtk "
-                "packages with `pip install webviz-subsurface[vtk]`."
+                "packages with `pip install vtk>=9.2.2` and "
+                "`pip install webviz_vtk@git+https://github.com/equinor/webviz-vtk`."
             )
         super().__init__(stretch=True)
 

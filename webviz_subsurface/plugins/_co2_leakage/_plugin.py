@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-import dash
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
@@ -31,7 +30,6 @@ from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
     init_well_pick_provider,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
-    INITIAL_BOUNDS,
     MainView,
     MapViewElement,
 )
@@ -88,7 +86,12 @@ class CO2Leakage(WebvizPluginABC):
 
         self._boundary_file = boundary_file
         try:
-            self._ensemble_paths = webviz_settings.shared_settings["scratch_ensembles"]
+            self._ensemble_paths = {
+                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                    ensemble_name
+                ]
+                for ensemble_name in ensembles
+            }
             self._surface_server = SurfaceServer.instance(app)
             self._polygons_server = FaultPolygonsServer.instance(app)
 
@@ -210,7 +213,6 @@ class CO2Leakage(WebvizPluginABC):
         # pylint: disable=too-many-arguments,too-many-locals
         @callback(
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
-            Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
             Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
             Input(self._view_component(MapViewElement.Ids.DATE_SLIDER), "value"),
             Input(self._settings_component(ViewSettings.Ids.FORMATION), "value"),
@@ -224,7 +226,6 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
-            State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
         )
         def update_map_attribute(
             attribute: MapAttribute,
@@ -240,8 +241,7 @@ class CO2Leakage(WebvizPluginABC):
             plume_threshold: Optional[float],
             plume_smoothing: Optional[float],
             ensemble: str,
-            current_bounds: List[float],
-        ) -> Tuple[List[Dict[str, Any]], Optional[List[float]]]:
+        ) -> List[Dict[str, Any]]:
             attribute = MapAttribute(attribute)
             if len(realization) == 0:
                 raise PreventUpdate
@@ -289,7 +289,7 @@ class CO2Leakage(WebvizPluginABC):
                     contour_data,
                 )
             # Create layers and view bounds
-            layers, viewport_bounds = create_map_layers(
+            layers = create_map_layers(
                 formation=formation,
                 surface_data=surf_data,
                 fault_polygon_url=(
@@ -302,6 +302,5 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_provider=self._well_pick_provider,
                 plume_extent_data=plume_polygon,
             )
-            if tuple(current_bounds) != INITIAL_BOUNDS or viewport_bounds is None:
-                viewport_bounds = dash.no_update
-            return layers, viewport_bounds
+
+            return layers

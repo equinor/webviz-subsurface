@@ -173,9 +173,8 @@ def create_map_layers(
     license_boundary_file: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
     plume_extent_data: Optional[geojson.FeatureCollection],
-) -> Tuple[List[Dict], Optional[List[float]]]:
+) -> List[Dict]:
     layers = []
-    viewport_bounds = None
     if surface_data is not None:
         # Update ColormapLayer
         layers.append(
@@ -191,12 +190,7 @@ def create_map_layers(
                 "rotDeg": surface_data.meta_data.deckgl_rot_deg,
             }
         )
-        viewport_bounds = [
-            surface_data.meta_data.x_min,
-            surface_data.meta_data.y_min,
-            surface_data.meta_data.x_max,
-            surface_data.meta_data.y_max,
-        ]
+
     if fault_polygon_url is not None:
         layers.append(
             {
@@ -239,7 +233,7 @@ def create_map_layers(
                 "getLineColor": [150, 150, 150, 255],
             }
         )
-    return layers, viewport_bounds
+    return layers
 
 
 def _parse_polygon_file(filename: str) -> Dict[str, Any]:
