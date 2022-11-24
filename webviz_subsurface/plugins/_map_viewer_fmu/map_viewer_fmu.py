@@ -188,6 +188,8 @@ color-tables.json for color_tables format.
             map_surface_names_to_fault_polygons=self.map_surface_names_to_fault_polygons,
             well_picks_provider=self.well_pick_provider,
             color_tables=self.color_tables,
+            plugin_data_output=self.plugin_data_output,
+            plugin_data_requested=self.plugin_data_requested,
         )
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:

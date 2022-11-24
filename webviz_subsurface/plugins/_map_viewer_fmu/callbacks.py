@@ -1,11 +1,15 @@
+import base64
+import io
 import json
 import math
+import zipfile
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
+from webviz_config import EncodedFile
 from webviz_config.utils._dash_component_utils import calculate_slider_step
 
 from webviz_subsurface._providers import (
@@ -46,6 +50,8 @@ def plugin_callbacks(
     well_picks_provider: Optional[WellPickProvider],
     fault_polygon_attribute: Optional[str],
     color_tables: List[Dict],
+    plugin_data_output: Output,
+    plugin_data_requested: Input,
 ) -> None:
     def selections(tab: str, colorselector: bool = False) -> Dict[str, str]:
         uuid = get_uuid(
@@ -437,6 +443,7 @@ def plugin_callbacks(
                     {
                         "id": f"{view}_view",
                         "show3D": False,
+                        "isSync": True,
                         "layerIds": [
                             # f"{LayoutElements.MAP3D_LAYER}-{view}",
                             f"{LayoutElements.COLORMAP_LAYER}-{view}",
@@ -452,6 +459,61 @@ def plugin_callbacks(
                 ],
             },
         )
+
+    @callback(
+        plugin_data_output,
+        plugin_data_requested,
+        State(
+            {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": ALL},
+            "data",
+        ),
+        State(get_uuid("tabs"), "value"),
+        State({"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": ALL}, "id"),
+        prevent_initial_call=True,
+    )
+    def _user_download_data(
+        data_requested: bool,
+        surface_elements_in_tabs: List[List[Dict]],
+        tab_name: str,
+        tab_ids: List[dict],
+    ) -> Optional[EncodedFile]:
+        """Callback for downloading surfaces from the plugin"""
+        if not surface_elements_in_tabs or not data_requested:
+            return no_update
+        index = [x["tab"] for x in tab_ids].index(tab_name)
+        surface_elements_in_tab = surface_elements_in_tabs[index]
+        surface_bytes = {}
+        realizations = []
+        for s_elem in surface_elements_in_tab:
+            if s_elem.get("surf_type") == "diff":
+                continue
+            surface_address = get_surface_address_from_data(s_elem)
+            ensemble = s_elem["ensemble"][0]
+            provider = ensemble_surface_providers[ensemble]
+            surface = provider.get_surface(surface_address)
+            if surface is None:
+                continue
+            surface_name = (
+                f"{s_elem['attribute'][0]}--{s_elem['name'][0]}"
+                f"--{s_elem['date'][0]}--{s_elem['mode']}--{ensemble}.gri"
+            )
+            realizations = s_elem["realizations"]
+            byte_stream = io.BytesIO()
+            surface.to_file(byte_stream)
+            surface_bytes[surface_name] = byte_stream
+
+        with io.BytesIO() as bytes_io:
+            with zipfile.ZipFile(bytes_io, "w") as zipped_data:
+                for surface_name, surface_byte in surface_bytes.items():
+                    zipped_data.writestr(surface_name, surface_byte.getvalue())
+                zipped_data.writestr(
+                    "realizations.txt", "\n".join(str(real) for real in realizations)
+                )
+            return {
+                "filename": "surfaces.zip",
+                "content": base64.b64encode(bytes_io.getvalue()).decode("ascii"),
+                "mime_type": "application/zip",
+            }
 
     def make_viewport_label(data: dict, tab: str, multi: Optional[str]) -> str:
         """Return text-label for each viewport based on which tab is selected"""
