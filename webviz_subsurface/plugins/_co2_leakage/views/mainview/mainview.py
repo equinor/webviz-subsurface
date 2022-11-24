@@ -8,8 +8,6 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 from webviz_subsurface_components import DeckGLMap
 
-INITIAL_BOUNDS = (0, 0, 1, 1)
-
 
 class MainView(ViewABC):
     class Ids(StrEnum):
@@ -48,13 +46,11 @@ class MapViewElement(ViewElementABC):
                                         self.Ids.DECKGL_MAP
                                     ),
                                     layers=[],
-                                    bounds=INITIAL_BOUNDS,
                                     coords={"visible": True},
                                     scale={"visible": True},
                                     toolbar={"visible": True},
                                     coordinateUnit="m",
                                     colorTables=self._color_scales,
-                                    zoom=-5,
                                 ),
                             ],
                             style={
