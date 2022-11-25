@@ -49,8 +49,8 @@ jobs:
             pip freeze | grep -vw "pip" | xargs pip uninstall -y
           fi
           pip install "selenium<4.3"  # breaking change in selenium==4.3
-          pip install "pytest<7.2.0"
-          pip install "pytest-xdist<3.0"
+          # pip install "pytest<7.2.0"
+          # pip install "pytest-xdist<3.0"
           pip install .
 
           # Testing against our latest release (including pre-releases)
