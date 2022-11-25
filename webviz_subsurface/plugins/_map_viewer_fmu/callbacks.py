@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from dash import ALL, MATCH, Input, Output, State, callback, callback_context
+from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile
 from webviz_config.utils._dash_component_utils import calculate_slider_step
