@@ -17,13 +17,13 @@ from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._surface_to_image import surface_to_png_bytes_optimized
+from ._types import QualifiedDiffSurfaceAddress, QualifiedSurfaceAddress
 from .ensemble_surface_provider import (
     ObservedSurfaceAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
 )
-from ._types import QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress
 
 LOGGER = logging.getLogger(__name__)
 

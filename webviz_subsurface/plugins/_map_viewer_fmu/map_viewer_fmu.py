@@ -4,7 +4,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProviderFactory,
@@ -23,14 +22,6 @@ from .callbacks import plugin_callbacks
 from .color_tables import default_color_tables
 from .layout import main_layout
 
-def check_deprecation_argument(hillshading_enabled: bool) -> str:
-    if hillshading_enabled is None:
-        return None
-    return (
-           "The argument 'hillshading_enabled' no longer has any effect "
-           "and can be removed from the config file."
-        )
-    
 
 class MapViewerFMU(WebvizPluginABC):
     """Surface visualizer for FMU ensembles.
@@ -88,7 +79,6 @@ color-tables.json for color_tables format.
 """
 
     # pylint: disable=too-many-arguments, too-many-locals
-    @deprecated_plugin_arguments(check_deprecation_argument)
     def __init__(
         self,
         app: Dash,
@@ -105,7 +95,7 @@ color-tables.json for color_tables format.
     ):
 
         super().__init__()
-
+        self._hillshading = hillshading_enabled
         surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
         fault_polygons_provider_factory = (
             EnsembleFaultPolygonsProviderFactory.instance()

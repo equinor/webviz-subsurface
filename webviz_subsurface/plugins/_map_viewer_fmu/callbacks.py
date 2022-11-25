@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
+from dash import ALL, MATCH, Input, Output, State, callback, callback_context
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile
 from webviz_config.utils._dash_component_utils import calculate_slider_step
@@ -24,12 +24,11 @@ from webviz_subsurface._providers import (
     StatisticalSurfaceAddress,
     SurfaceAddress,
     SurfaceArrayServer,
-    SurfaceArrayMeta,
 )
 
 from ._layer_model import DeckGLMapLayersModel
 from ._tmp_well_pick_provider import WellPickProvider
-from ._types import SurfaceMode, LayerTypes
+from ._types import LayerTypes, SurfaceMode
 from .layout import (
     DefaultSettings,
     LayoutElements,
@@ -366,7 +365,6 @@ def plugin_callbacks(
                 },
                 "colorMapName": data["colormap"],
                 "colorMapRange": color_range,
-
             }
             layer_idx = None
             for layer in layers:

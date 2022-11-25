@@ -23,10 +23,10 @@ from .ensemble_surface_provider import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
+    SurfaceArrayMeta,
+    SurfaceArrayServer,
     SurfaceImageMeta,
     SurfaceImageServer,
-    SurfaceArrayServer,
-    SurfaceArrayMeta,
 )
 from .ensemble_table_provider import (
     ColumnMetadata,

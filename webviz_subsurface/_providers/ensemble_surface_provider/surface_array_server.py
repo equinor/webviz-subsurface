@@ -1,5 +1,5 @@
-import io
 import hashlib
+import io
 import json
 import logging
 import math
@@ -17,13 +17,13 @@ from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._surface_to_float32_array import surface_to_float32_array
+from ._types import QualifiedDiffSurfaceAddress, QualifiedSurfaceAddress
 from .ensemble_surface_provider import (
     ObservedSurfaceAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
 )
-from ._types import QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress
 
 LOGGER = logging.getLogger(__name__)
 
