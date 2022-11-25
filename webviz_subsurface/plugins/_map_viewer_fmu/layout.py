@@ -645,25 +645,10 @@ def update_map_layers(
     include_faultpolygon_layer: bool = True,
     visible_well_layer: bool = True,
     visible_fault_polygons_layer: bool = True,
-    visible_hillshading_layer: bool = True,
 ) -> List[dict]:
     layers: List[Dict] = []
     for idx in range(views):
-        layers.extend(
-            [
-                {
-                    "@@type": LayerTypes.COLORMAP,
-                    "name": LayerNames.COLORMAP,
-                    "id": f"{LayoutElements.COLORMAP_LAYER}-{idx}",
-                },
-                {
-                    "@@type": LayerTypes.HILLSHADING,
-                    "name": LayerNames.HILLSHADING,
-                    "id": f"{LayoutElements.HILLSHADING_LAYER}-{idx}",
-                    "visible": visible_hillshading_layer,
-                },
-            ]
-        )
+
         if include_faultpolygon_layer:
             layers.append(
                 {
@@ -671,6 +656,7 @@ def update_map_layers(
                     "name": LayerNames.FAULTPOLYGONS,
                     "id": f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
                     "visible": visible_fault_polygons_layer,
+                    "parameters": {"depthTest": False},
                 }
             )
 
@@ -689,6 +675,7 @@ def update_map_layers(
                     "lineWidthMinPixels": 2,
                     "pointRadiusMinPixels": 2,
                     "pickable": True,
+                    "parameters": {"depthTest": False},
                 }
             )
     return layers

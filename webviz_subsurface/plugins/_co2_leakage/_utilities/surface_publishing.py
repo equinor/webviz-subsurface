@@ -9,8 +9,8 @@ from webviz_subsurface._providers import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-    SurfaceMeta,
-    SurfaceServer,
+    SurfaceImageMeta,
+    SurfaceImageServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
@@ -35,10 +35,10 @@ class TruncatedSurfaceAddress:
 
 
 def publish_and_get_surface_metadata(
-    server: SurfaceServer,
+    server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
-) -> Tuple[Optional[SurfaceMeta], str]:
+) -> Tuple[Optional[SurfaceImageMeta], str]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
     provider_id: str = provider.provider_id()
@@ -55,10 +55,10 @@ def publish_and_get_surface_metadata(
 
 
 def _publish_and_get_truncated_surface_metadata(
-    server: SurfaceServer,
+    server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: TruncatedSurfaceAddress,
-) -> Tuple[Optional[SurfaceMeta], str]:
+) -> Tuple[Optional[SurfaceImageMeta], str]:
     qualified_address = QualifiedSurfaceAddress(
         provider.provider_id(),
         # TODO: Should probably use a dedicated address type for this. Statistical surface

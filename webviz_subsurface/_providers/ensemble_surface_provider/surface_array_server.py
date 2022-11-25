@@ -1,5 +1,5 @@
-import hashlib
 import io
+import hashlib
 import json
 import logging
 import math
@@ -16,72 +16,64 @@ from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from ._surface_to_image import surface_to_png_bytes_optimized
+from ._surface_to_float32_array import surface_to_float32_array
 from .ensemble_surface_provider import (
     ObservedSurfaceAddress,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
 )
+from ._types import QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress
 
 LOGGER = logging.getLogger(__name__)
 
-_ROOT_URL_PATH = "/SurfaceServer"
+_ROOT_URL_PATH = "/SurfaceArrayServer"
 
-_SURFACE_SERVER_INSTANCE: Optional["SurfaceServer"] = None
-
-
-@dataclass(frozen=True)
-class QualifiedSurfaceAddress:
-    provider_id: str
-    address: SurfaceAddress
+_SURFACE_SERVER_INSTANCE: Optional["SurfaceArrayServer"] = None
 
 
 @dataclass(frozen=True)
-class QualifiedDiffSurfaceAddress:
-    provider_id_a: str
-    address_a: SurfaceAddress
-    provider_id_b: str
-    address_b: SurfaceAddress
-
-
-@dataclass(frozen=True)
-class SurfaceMeta:
+class SurfaceArrayMeta:
     x_min: float
     x_max: float
     y_min: float
     y_max: float
+    x_ori: float
+    y_ori: float
     val_min: float
     val_max: float
-    deckgl_bounds: List[float]
-    deckgl_rot_deg: float  # Around upper left corner
+    rot_deg: float
+    x_count: int
+    y_count: int
+    x_inc: float
+    y_inc: float
 
 
-class SurfaceServer:
+class SurfaceArrayServer:
     def __init__(self, app: Dash) -> None:
         cache_dir = (
-            WEBVIZ_INSTANCE_INFO.storage_folder / f"SurfaceServer_filecache_{uuid4()}"
+            WEBVIZ_INSTANCE_INFO.storage_folder
+            / f"SurfaceArrayServer_filecache_{uuid4()}"
         )
         LOGGER.debug(f"Setting up file cache in: {cache_dir}")
-        self._image_cache = flask_caching.Cache(
+        self._array_cache = flask_caching.Cache(
             config={
                 "CACHE_TYPE": "FileSystemCache",
                 "CACHE_DIR": cache_dir,
                 "CACHE_DEFAULT_TIMEOUT": 0,
-                "CACHE_OPTIONS": {"mode": 0o660},
             }
         )
-        self._image_cache.init_app(app.server)
+        self._array_cache.init_app(app.server)
 
         self._setup_url_rule(app)
 
     @staticmethod
-    def instance(app: Dash) -> "SurfaceServer":
+    def instance(app: Dash) -> "SurfaceArrayServer":
         # pylint: disable=global-statement
         global _SURFACE_SERVER_INSTANCE
         if not _SURFACE_SERVER_INSTANCE:
-            LOGGER.debug("Initializing SurfaceServer instance")
-            _SURFACE_SERVER_INSTANCE = SurfaceServer(app)
+            LOGGER.debug("Initializing SurfaceArrayServer instance")
+            _SURFACE_SERVER_INSTANCE = SurfaceArrayServer(app)
 
         return _SURFACE_SERVER_INSTANCE
 
@@ -109,14 +101,14 @@ class SurfaceServer:
             f"[base_cache_key={base_cache_key}]"
         )
 
-        self._create_and_store_image_in_cache(base_cache_key, surface)
+        self._create_and_store_array_in_cache(base_cache_key, surface)
 
         LOGGER.debug(f"Surface published in: {timer.elapsed_s():.2f}s")
 
     def get_surface_metadata(
         self,
         qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
-    ) -> Optional[SurfaceMeta]:
+    ) -> Optional[SurfaceArrayMeta]:
 
         if isinstance(qualified_address, QualifiedSurfaceAddress):
             base_cache_key = _address_to_str(
@@ -131,12 +123,12 @@ class SurfaceServer:
             )
 
         meta_cache_key = "META:" + base_cache_key
-        meta: Optional[SurfaceMeta] = self._image_cache.get(meta_cache_key)
+        meta: Optional[SurfaceArrayMeta] = self._array_cache.get(meta_cache_key)
         if not meta:
             return None
 
-        if not isinstance(meta, SurfaceMeta):
-            LOGGER.error("Error loading SurfaceMeta from cache")
+        if not isinstance(meta, SurfaceArrayMeta):
+            LOGGER.error("Error loading SurfaceArrayMeta from cache")
             return None
 
         return meta
@@ -171,64 +163,62 @@ class SurfaceServer:
 
             timer = PerfTimer()
 
-            img_cache_key = "IMG:" + full_surf_address_str
-            LOGGER.debug(f"Looking for image in cache (key={img_cache_key}")
+            array_cache_key = "ARRAY:" + full_surf_address_str
+            LOGGER.debug(f"Looking for array in cache (key={array_cache_key}")
 
-            cached_img_bytes = self._image_cache.get(img_cache_key)
-            if not cached_img_bytes:
+            cached_array_bytes = self._array_cache.get(array_cache_key)
+            if not cached_array_bytes:
                 LOGGER.error(
-                    f"Error getting image for address: {full_surf_address_str}"
+                    f"Error getting array for address: {full_surf_address_str}"
                 )
                 flask.abort(404)
 
             response = flask.send_file(
-                io.BytesIO(cached_img_bytes), mimetype="image/png"
+                cached_array_bytes, mimetype="application/octet-stream"
             )
             LOGGER.debug(
-                f"Request handled from image cache in: {timer.elapsed_s():.2f}s"
+                f"Request handled from array cache in: {timer.elapsed_s():.2f}s"
             )
             return response
 
-    def _create_and_store_image_in_cache(
+    def _create_and_store_array_in_cache(
         self,
         base_cache_key: str,
         surface: xtgeo.RegularSurface,
     ) -> None:
 
         timer = PerfTimer()
-        LOGGER.debug("Converting surface to PNG image...")
-        png_bytes: bytes = surface_to_png_bytes_optimized(surface)
-        LOGGER.debug(f"Got PNG image, size={(len(png_bytes) / (1024 * 1024)):.2f}MB")
-        et_to_image_s = timer.lap_s()
+        LOGGER.debug("Converting surface to float32 array...")
+        array_bytes: io.BytesIO = surface_to_float32_array(surface)
 
-        img_cache_key = "IMG:" + base_cache_key
+        et_to_array_s = timer.lap_s()
+
+        array_cache_key = "ARRAY:" + base_cache_key
         meta_cache_key = "META:" + base_cache_key
 
-        self._image_cache.add(img_cache_key, png_bytes)
+        self._array_cache.add(array_cache_key, array_bytes)
 
-        # For debugging rotations
-        # unrot_surf = surface.copy()
-        # unrot_surf.unrotate()
-        # unrot_surf.quickplot("/home/sigurdp/gitRoot/hk-webviz-subsurface/quickplot.png")
-
-        deckgl_bounds, deckgl_rot = _calc_map_component_bounds_and_rot(surface)
-
-        meta = SurfaceMeta(
+        meta = SurfaceArrayMeta(
             x_min=surface.xmin,
             x_max=surface.xmax,
             y_min=surface.ymin,
             y_max=surface.ymax,
+            x_ori=surface.xori,
+            y_ori=surface.yori,
+            x_count=surface.ncol,
+            y_count=surface.nrow,
             val_min=surface.values.min(),
             val_max=surface.values.max(),
-            deckgl_bounds=deckgl_bounds,
-            deckgl_rot_deg=deckgl_rot,
+            rot_deg=surface.rotation,
+            x_inc=surface.xinc,
+            y_inc=surface.yinc,
         )
-        self._image_cache.add(meta_cache_key, meta)
+        self._array_cache.add(meta_cache_key, meta)
         et_write_cache_s = timer.lap_s()
 
         LOGGER.debug(
-            f"Created image and wrote to cache in in: {timer.elapsed_s():.2f}s ("
-            f"to_image={et_to_image_s:.2f}s, write_cache={et_write_cache_s:.2f}s), "
+            f"Created surface array and wrote to cache in in: {timer.elapsed_s():.2f}s ("
+            f"to_array={et_to_array_s:.2f}s, write_cache={et_write_cache_s:.2f}s), "
             f"[base_cache_key={base_cache_key}]"
         )
 

@@ -3,7 +3,7 @@ from enum import Enum
 
 class LayerTypes(str, Enum):
     HILLSHADING = "Hillshading2DLayer"
-    MAP3D = "Map3DLayer"
+    MAP3D = "MapLayer"
     COLORMAP = "ColormapLayer"
     WELL = "WellsLayer"
     WELLTOPSLAYER = "GeoJsonLayer"
