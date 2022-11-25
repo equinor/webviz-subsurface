@@ -493,11 +493,26 @@ def plugin_callbacks(
             surface = provider.get_surface(surface_address)
             if surface is None:
                 continue
+            date_str = s_elem["date"][0] if s_elem["date"] else ""
+            realizations = s_elem["realizations"]
+            mode_str = (
+                s_elem["mode"]
+                if SurfaceMode(s_elem["mode"]) != SurfaceMode.REALIZATION
+                else realizations[0]
+            )
             surface_name = (
                 f"{s_elem['attribute'][0]}--{s_elem['name'][0]}"
-                f"--{s_elem['date'][0]}--{s_elem['mode']}--{ensemble}.gri"
+                f"--{date_str}--{mode_str}--{ensemble}.gri"
             )
-            realizations = s_elem["realizations"]
+            if SurfaceMode(s_elem["mode"]) not in [
+                SurfaceMode.OBSERVED,
+                SurfaceMode.REALIZATION,
+            ]:
+                realizations.append(
+                    f"{surface_name},"
+                    f"INCLUDED REALIZATIONS: {realizations}, EXCLUDED REALIZATIONS: "
+                    f"{[real for real in provider.realizations() if real not in realizations]}"
+                )
             byte_stream = io.BytesIO()
             surface.to_file(byte_stream)
             surface_bytes[surface_name] = byte_stream
@@ -507,7 +522,7 @@ def plugin_callbacks(
                 for surface_name, surface_byte in surface_bytes.items():
                     zipped_data.writestr(surface_name, surface_byte.getvalue())
                 zipped_data.writestr(
-                    "realizations.txt", "\n".join(str(real) for real in realizations)
+                    "statistics.txt", "\n".join(str(real) for real in realizations)
                 )
             return {
                 "filename": "surfaces.zip",
