@@ -483,7 +483,7 @@ def plugin_callbacks(
         index = [x["tab"] for x in tab_ids].index(tab_name)
         surface_elements_in_tab = surface_elements_in_tabs[index]
         surface_bytes = {}
-        realizations = []
+        reals_in_statistics = []
         for s_elem in surface_elements_in_tab:
             if s_elem.get("surf_type") == "diff":
                 continue
@@ -508,7 +508,7 @@ def plugin_callbacks(
                 SurfaceMode.OBSERVED,
                 SurfaceMode.REALIZATION,
             ]:
-                realizations.append(
+                reals_in_statistics.append(
                     f"{surface_name},"
                     f"INCLUDED REALIZATIONS: {realizations}, EXCLUDED REALIZATIONS: "
                     f"{[real for real in provider.realizations() if real not in realizations]}"
@@ -522,7 +522,8 @@ def plugin_callbacks(
                 for surface_name, surface_byte in surface_bytes.items():
                     zipped_data.writestr(surface_name, surface_byte.getvalue())
                 zipped_data.writestr(
-                    "statistics.txt", "\n".join(str(real) for real in realizations)
+                    "statistics.txt",
+                    "\n".join(str(real) for real in reals_in_statistics),
                 )
             return {
                 "filename": "surfaces.zip",
