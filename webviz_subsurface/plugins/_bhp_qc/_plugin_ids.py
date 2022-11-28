@@ -1,23 +1,20 @@
+from webviz_config.utils import StrEnum
+
+
 class PluginIds:
-    # pylint: disable=too-few-public-methods
-    class Stores:
-        # pylint: disable=too-few-public-methods
+    class Stores(StrEnum):
         SELECTED_ENSEMBLE = "selected-ensemble"
         SELECTED_WELLS = "selected-wells"
         SELECTED_MAX_NUMBER_OF_WELLS = "selected-max-number-of-wells"
         SELECTED_SORT_BY = "selected-sort-by"
         SELECTED_ASCENDING_DESCENDING = "selected-ascending-descending"
-        SELECTED_PLOT_TYPE = "selected-plot-type"
         SELECTED_STATISTICS = "selected-statistics"
 
-    class SharedSettings:
-        # pylint: disable=too-few-public-methods
+    class SharedSettings(StrEnum):
         FILTER = "filter"
-        BARLINE_SETTINGS = "barline-settings"
+        VIEW_SETTINGS = "view-settings"
 
-    class BhpID:
-        # pylint: disable=too-few-public-methods
-        GROUP_NAME = "BHP Analyzer"
+    class BhpId(StrEnum):
         LINE_CHART = "line-chart"
         FAN_CHART = "fan-chart"
         BAR_CHART = "bar-chart"

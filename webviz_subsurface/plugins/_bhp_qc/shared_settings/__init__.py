@@ -1,1 +1,1 @@
-from ._filter import BarLineSettings, Filter
+from ._filter import Filter, ViewSettings

@@ -1,8 +1,7 @@
 from pathlib import Path
-from typing import Dict, List, Type
+from typing import Dict, List
 
 import pandas as pd
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
@@ -11,7 +10,7 @@ from .._simulation_time_series._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
 )
 from ._plugin_ids import PluginIds
-from .shared_settings import BarLineSettings, Filter
+from .shared_settings import Filter, ViewSettings
 from .view_elements import Graph
 from .views import BarView, FanView, LineView
 
@@ -94,50 +93,53 @@ class BhpQc(WebvizPluginABC):
 
         self.add_view(
             LineView(self.smry, webviz_settings),
-            PluginIds.BhpID.LINE_CHART,
+            PluginIds.BhpId.LINE_CHART,
         )
         self.add_view(
             FanView(self.smry, webviz_settings),
-            PluginIds.BhpID.FAN_CHART,
+            PluginIds.BhpId.FAN_CHART,
         )
         self.add_view(
             BarView(self.smry, webviz_settings),
-            PluginIds.BhpID.BAR_CHART,
+            PluginIds.BhpId.BAR_CHART,
         )
 
         self.add_shared_settings_group(
             Filter(self.smry), PluginIds.SharedSettings.FILTER
         )
         self.add_shared_settings_group(
-            BarLineSettings(),
-            PluginIds.SharedSettings.BARLINE_SETTINGS,
+            ViewSettings(),
+            PluginIds.SharedSettings.VIEW_SETTINGS,
             [
-                self.view(PluginIds.BhpID.BAR_CHART).get_unique_id().to_string(),
-                self.view(PluginIds.BhpID.LINE_CHART).get_unique_id().to_string(),
+                self.view(PluginIds.BhpId.BAR_CHART).get_unique_id().to_string(),
+                self.view(PluginIds.BhpId.LINE_CHART).get_unique_id().to_string(),
             ],
         )
+
+        # set start-up view (only affects first time use)
+        self.set_active_view_id(PluginIds.BhpId.LINE_CHART)
 
     @property
     def tour_steps(self) -> List[dict]:
         return [
             {
-                "id": self.view(PluginIds.BhpID.FAN_CHART)
+                "id": self.view(PluginIds.BhpId.FAN_CHART)
                 .view_element(FanView.Ids.FAN_CHART)
                 .component_unique_id(Graph.Ids.GRAPH),
                 "content": (
-                    "Dashboard for BHP QC:"
+                    "Dashboard for BHP QC: "
                     "Check that simulated bottom hole pressures are realistic."
                     " Can be viewed in a Fan chart,"
                 ),
             },
             {
-                "id": self.view(PluginIds.BhpID.LINE_CHART)
+                "id": self.view(PluginIds.BhpId.LINE_CHART)
                 .view_element(LineView.Ids.LINE_CHART)
                 .component_unique_id(Graph.Ids.GRAPH),
                 "content": ("Line chart"),
             },
             {
-                "id": self.view(PluginIds.BhpID.BAR_CHART)
+                "id": self.view(PluginIds.BhpId.BAR_CHART)
                 .view_element(BarView.Ids.BAR_CHART)
                 .component_unique_id(Graph.Ids.GRAPH),
                 "content": ("and Bar chart."),

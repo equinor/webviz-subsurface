@@ -3,6 +3,7 @@ from typing import List, Union
 import pandas as pd
 from dash import Input, Output, callback
 from webviz_config import WebvizSettings
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from .._plugin_ids import PluginIds
@@ -11,8 +12,7 @@ from ._view_functions import calc_statistics, filter_df, label_map
 
 
 class BarView(ViewABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(StrEnum):
         BAR_CHART = "bar-chart"
         SETTINGS = "settings"
 

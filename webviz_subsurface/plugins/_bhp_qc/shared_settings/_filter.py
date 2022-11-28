@@ -5,14 +5,14 @@ import webviz_core_components as wcc
 from dash import Input, Output, callback
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from .._plugin_ids import PluginIds
 
 
 class Filter(SettingsGroupABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(str):
         ENSEMBLE = "ensemble"
         WELLS = "wells"
         MAX_NUMBER_OF_WELLS_SLIDER = "max-number-of-wells-slider"
@@ -157,9 +157,8 @@ class Filter(SettingsGroupABC):
 
 
 # ADD SELECT STATISTICS
-class BarLineSettings(SettingsGroupABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+class ViewSettings(SettingsGroupABC):
+    class Ids(StrEnum):
         SELECT_STATISTICS = "select-statistics"
 
     def __init__(self) -> None:
@@ -183,7 +182,7 @@ class BarLineSettings(SettingsGroupABC):
             wcc.SelectWithLabel(
                 label="Select statistics",
                 id=self.register_component_unique_id(
-                    BarLineSettings.Ids.SELECT_STATISTICS
+                    ViewSettings.Ids.SELECT_STATISTICS
                 ),
                 options=[
                     {"label": key, "value": value}
@@ -201,7 +200,7 @@ class BarLineSettings(SettingsGroupABC):
             ),
             Input(
                 self.component_unique_id(
-                    BarLineSettings.Ids.SELECT_STATISTICS
+                    ViewSettings.Ids.SELECT_STATISTICS
                 ).to_string(),
                 "value",
             ),

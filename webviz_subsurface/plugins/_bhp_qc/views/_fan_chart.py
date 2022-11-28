@@ -3,6 +3,7 @@ from typing import List, Union
 import pandas as pd
 from dash import Input, Output, callback
 from webviz_config import WebvizSettings
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ...._utils.unique_theming import unique_colors
@@ -12,8 +13,7 @@ from ._view_functions import _get_fanchart_traces, calc_statistics, filter_df
 
 
 class FanView(ViewABC):
-    class Ids:
-        # pylint: disable=too-few-public-methods
+    class Ids(StrEnum):
         FAN_CHART = "fan-chart"
 
     def __init__(self, bhp_df: pd.DataFrame, webviz_settings: WebvizSettings) -> None:
