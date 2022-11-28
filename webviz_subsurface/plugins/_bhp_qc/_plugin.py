@@ -10,7 +10,6 @@ from webviz_subsurface._providers import EnsembleSummaryProvider
 from .._simulation_time_series._utils.create_provider_set_from_paths import (
     create_lazy_provider_set_from_paths,
 )
-from ._error import error
 from ._plugin_ids import PluginIds
 from .shared_settings import BarLineSettings, Filter
 from .view_elements import Graph
@@ -46,7 +45,6 @@ class BhpQc(WebvizPluginABC):
         self.error_message = ""
 
         if ensembles is None:
-            self.error_message = "Enembles needs to be provided"
             raise ValueError("Enembles needs to be provided")
 
         self.ens_paths: Dict[str, Path] = {
@@ -56,19 +54,10 @@ class BhpQc(WebvizPluginABC):
             for ensemble_name in ensembles
         }
 
-        try:
-            self._input_provider_set = create_lazy_provider_set_from_paths(
-                self.ens_paths,
-                rel_file_pattern,
-            )
-        except PermissionError:
-            self.error_message = f"Access to files '{rel_file_pattern}' denied."
-            "Please check your path for 'rel_file_pattern'"
-            return
-        except FileNotFoundError:
-            self.error_message = f"Files '{rel_file_pattern}' not found."
-            "Please check your path for 'rel_file_pattern'."
-            return
+        self._input_provider_set = create_lazy_provider_set_from_paths(
+            self.ens_paths,
+            rel_file_pattern,
+        )
 
         dfs = []
         column_keys = {}
@@ -103,8 +92,9 @@ class BhpQc(WebvizPluginABC):
             PluginIds.Stores.SELECTED_STATISTICS, WebvizPluginABC.StorageType.SESSION
         )
 
-        self.add_shared_settings_group(
-            Filter(self.smry), PluginIds.SharedSettings.FILTER
+        self.add_view(
+            LineView(self.smry, webviz_settings),
+            PluginIds.BhpID.LINE_CHART,
         )
         self.add_view(
             FanView(self.smry, webviz_settings),
@@ -114,9 +104,9 @@ class BhpQc(WebvizPluginABC):
             BarView(self.smry, webviz_settings),
             PluginIds.BhpID.BAR_CHART,
         )
-        self.add_view(
-            LineView(self.smry, webviz_settings),
-            PluginIds.BhpID.LINE_CHART,
+
+        self.add_shared_settings_group(
+            Filter(self.smry), PluginIds.SharedSettings.FILTER
         )
         self.add_shared_settings_group(
             BarLineSettings(),
@@ -179,10 +169,6 @@ class BhpQc(WebvizPluginABC):
                 "content": "Filter wells.",
             },
         ]
-
-    @property
-    def layout(self) -> Type[Component]:
-        return error(self.error_message)
 
 
 # ---------------------------

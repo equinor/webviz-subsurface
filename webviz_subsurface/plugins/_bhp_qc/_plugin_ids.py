@@ -18,9 +18,6 @@ class PluginIds:
     class BhpID:
         # pylint: disable=too-few-public-methods
         GROUP_NAME = "BHP Analyzer"
-
         LINE_CHART = "line-chart"
-
         FAN_CHART = "fan-chart"
-
         BAR_CHART = "bar-chart"
