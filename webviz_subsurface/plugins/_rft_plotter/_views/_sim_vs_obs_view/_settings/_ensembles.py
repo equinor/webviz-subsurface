@@ -6,7 +6,7 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
-class Selections(SettingsGroupABC):
+class Ensembles(SettingsGroupABC):
     class Ids(StrEnum):
         ENSEMBLES = "ensembles"
 
