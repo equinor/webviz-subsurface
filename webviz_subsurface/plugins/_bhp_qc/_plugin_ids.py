@@ -1,7 +1,7 @@
 from webviz_config.utils import StrEnum
 
 
-class PluginIds:
+class PluginIds:  # pylint: disable=too-few-public-methods
     class Stores(StrEnum):
         SELECTED_ENSEMBLE = "selected-ensemble"
         SELECTED_WELLS = "selected-wells"

@@ -5,10 +5,10 @@ import pandas as pd
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import EnsembleSummaryProvider
-
-from .._simulation_time_series._utils.create_provider_set_from_paths import (
-    create_lazy_provider_set_from_paths,
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_lazy_ensemble_summary_provider_set_from_paths,
 )
+
 from ._plugin_ids import PluginIds
 from .shared_settings import Filter, ViewSettings
 from .view_elements import Graph
@@ -41,8 +41,6 @@ class BhpQc(WebvizPluginABC):
     ):
         super().__init__()
 
-        self.error_message = ""
-
         if ensembles is None:
             raise ValueError("Enembles needs to be provided")
 
@@ -53,7 +51,7 @@ class BhpQc(WebvizPluginABC):
             for ensemble_name in ensembles
         }
 
-        self._input_provider_set = create_lazy_provider_set_from_paths(
+        self._input_provider_set = create_lazy_ensemble_summary_provider_set_from_paths(
             self.ens_paths,
             rel_file_pattern,
         )
