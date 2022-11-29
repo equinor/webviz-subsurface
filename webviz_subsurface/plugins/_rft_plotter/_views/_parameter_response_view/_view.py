@@ -103,7 +103,6 @@ class ParameterResponseView(ViewABC):
 
             clickdata = corr_vector_clickdata.get("points", [{}])[0].get("y")
             ls_clickdata = clickdata.split()
-            print("click dat ais: ", ls_clickdata)
             return ls_clickdata[0]
 
         @callback(
