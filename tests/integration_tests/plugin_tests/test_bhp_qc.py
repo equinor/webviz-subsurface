@@ -1,11 +1,12 @@
 # pylint: disable=no-name-in-module
 from webviz_config.plugins import BhpQc
+from webviz_config.testing import WebvizComposite
 
 
-def test_bhp_qc(app, dash_duo, shared_settings) -> None:
+def test_bhp_qc(_webviz_duo: WebvizComposite, shared_settings: dict) -> None:
     plugin = BhpQc(
         shared_settings["HM_SETTINGS"], ensembles=shared_settings["HM_ENSEMBLES"]
     )
-    app.layout = plugin.layout
-    dash_duo.start_server(app)
-    assert dash_duo.get_logs() == []
+
+    _webviz_duo.start_server(plugin)
+    assert _webviz_duo.get_logs() == []
