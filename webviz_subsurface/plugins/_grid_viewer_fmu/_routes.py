@@ -1,7 +1,7 @@
 import jwt
-from jwt.exceptions import DecodeError
 import orjson as json
 from dash import Dash
+from jwt.exceptions import DecodeError
 
 from webviz_subsurface._providers.ensemble_grid_provider import (
     CellFilter,
