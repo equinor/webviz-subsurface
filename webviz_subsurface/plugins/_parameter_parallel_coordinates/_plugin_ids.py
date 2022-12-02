@@ -17,7 +17,5 @@ class PluginIds:
 
     class ParallelID:
         # pylint: disable=too-few-public-methods
-
         ENSEMBLE_CHART = "ensemble-chart"
-
         RESPONSE_CHART = "response-chart"
