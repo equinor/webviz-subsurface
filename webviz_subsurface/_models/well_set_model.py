@@ -85,6 +85,9 @@ class WellSetModel:
     ) -> np.ndarray:
         """Creates a fence specification from a well"""
         if not self._is_vertical(well_name):
+
+            print(self.wells[well_name])
+            print(nextend, distance)
             return self.wells[well_name].get_fence_polyline(
                 nextend=nextend, sampling=distance, asnumpy=True
             )
