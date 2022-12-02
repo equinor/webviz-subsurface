@@ -1,4 +1,5 @@
 import jwt
+from jwt.exceptions import DecodeError
 import orjson as json
 from dash import Dash
 
@@ -12,10 +13,10 @@ from webviz_subsurface._providers.ensemble_grid_provider import (
 def set_routes(app: Dash, grid_viz_service: GridVizService) -> None:
     @app.server.route("/grid/points/<token>")
     def _get_points(token: str) -> bytes:
+        geometry_token = jwt.decode(token, "secret", algorithms=["HS256"])
         try:
             geometry_token = jwt.decode(token, "secret", algorithms=["HS256"])
-        # pylint: disable=bare-except
-        except:
+        except DecodeError:
             # # pylint: disable=no-member
             return json.dumps([])
         provider_id = geometry_token["provider_id"]
@@ -35,8 +36,7 @@ def set_routes(app: Dash, grid_viz_service: GridVizService) -> None:
     def _get_polys(token: str) -> bytes:
         try:
             geometry_token = jwt.decode(token, "secret", algorithms=["HS256"])
-        # pylint: disable=bare-except
-        except:
+        except DecodeError:
             # pylint: disable=no-member
             return json.dumps([])
         provider_id = geometry_token["provider_id"]
@@ -56,8 +56,7 @@ def set_routes(app: Dash, grid_viz_service: GridVizService) -> None:
     def _get_scalar(token: str) -> bytes:
         try:
             geometry_token = jwt.decode(token, "secret", algorithms=["HS256"])
-        # pylint: disable=bare-except
-        except:
+        except DecodeError:
             # pylint: disable=no-member
             return json.dumps([])
         provider_id = geometry_token["provider_id"]
