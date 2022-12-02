@@ -125,9 +125,18 @@ class EnsembleWellAnalysisData:
         """
         sumvecs = [f"{well_sumvec}:{well}" for well in self._wells]
         df = self._smry[["REAL", "DATE"] + sumvecs]
-        df = df[df["DATE"] == df["DATE"].max()]
+        max_date = df["DATE"].max()
+        df = df[df["DATE"] == max_date]
 
         if prod_after_date is not None:
+            # Since the prod_after_dates can be chosen from the union of the date
+            # ranges from many ensembles, it can happen that the selecte date is
+            # > than the max_date for this ensemble. In that case we set it equal
+            # to the max date. The resulting sumvec value will then be zero for
+            # all wells.
+            prod_after_date = (
+                max_date if prod_after_date > max_date else prod_after_date
+            )
             df_date = self._smry[["REAL", "DATE"] + sumvecs]
             df_date = df_date[df_date["DATE"] >= prod_after_date]
             df_date = df_date[df_date["DATE"] == df_date["DATE"].min()]

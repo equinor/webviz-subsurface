@@ -9,13 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - [#1122](https://github.com/equinor/webviz-subsurface/pull/1122) - `opm` and `ecl2df` are now optional, making `windows-subsurface` possible to install and import on non-unix based systems. **NOTE:** a lot of the functionality in `webviz-subsurface` is built on `opm` and `ecl2df`, and issues are therefore expected on eg Windows and macOS. Use with care.
+- [#1146](https://github.com/equinor/webviz-subsurface/pull/1146) - Converted the `BhpQc` plugin to WLF (Webviz Layout Framework).
 
 ### Added
 - [#1162](https://github.com/equinor/webviz-subsurface/pull/1162) - `RelativePermeability` can now be initialized with only `pyscal` formatted input files instead of paths to ensembles using a new `scal_scenarios` input option.
+- [#1176](https://github.com/equinor/webviz-subsurface/pull/1176) - `MapViewerFMU` now has an option to download visualized surfaces.
+
+### Fixed
+- [#1171](https://github.com/equinor/webviz-subsurface/pull/1171) - Fixed bug in `WellAnalysis` that caused an error if the selected date did not not exist in some selected ensembles.
+- [#1158](https://github.com/equinor/webviz-subsurface/pull/1158) - `CO2Leakage` - Remove deckgl bounds and use only relevant ensembles.
+
 
 ## [0.2.16] - 2022-11-09
 
 ### Changed
+
 - [#1138](https://github.com/equinor/webviz-subsurface/pull/1138) - More flexibility in the input to the `GroupTree` plugin. New input parameters `terminal_node`, `tree_type`, `excl_well_startswith` and `excl_well_endswith`. Relaxed requirements on summary input.
 
 ## [0.2.15] - 2022-10-10
@@ -23,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#1114](https://github.com/equinor/webviz-subsurface/pull/1114) - Added a flag in config for `MapViewerFMU` to set initial state of hillshading.
 - [#1111](https://github.com/equinor/webviz-subsurface/pull/1111) - `EXPERIMENTALGridViewerFMU` - New experimental plugin to visualize grid models.
->>>>>>> Add grid viewer
 - [#1058](https://github.com/equinor/webviz-subsurface/pull/1058) - `WellCompletion` - New implementation of the `WellCompletions` plugin, which is faster, has more functionality (single realization) and utilizes the webviz layout framework (WLF).
 
 
