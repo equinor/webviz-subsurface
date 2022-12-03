@@ -19,7 +19,7 @@ class Ensembles(SettingsGroupABC):
             wcc.Dropdown(
                 id=self.register_component_unique_id(self.Ids.ENSEMBLES),
                 options=[{"label": ens, "value": ens} for ens in self._ensembles],
-                value=[self._ensembles[0] if len(self._ensembles) > 0 else None],
+                value=[self._ensembles[0] if self._ensembles else None],
                 clearable=False,
                 multi=True,
             ),

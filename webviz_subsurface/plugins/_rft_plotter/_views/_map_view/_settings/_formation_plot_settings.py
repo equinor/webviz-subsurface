@@ -25,8 +25,8 @@ class FormationPlotSettings(SettingsGroupABC):
         self._well_names = datamodel.well_names
 
     def layout(self) -> List[Component]:
-        ensemble = self._ensembles[0] if len(self._ensembles) > 0 else None
-        well = self._well_names[0] if len(self._well_names) > 0 else None
+        ensemble = self._ensembles[0] if self._ensembles else None
+        well = self._well_names[0] if self._well_names else None
         dates_in_well = self._datamodel.date_in_well(well) if well is not None else []
         return [
             wcc.Dropdown(
@@ -49,7 +49,7 @@ class FormationPlotSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(self.Ids.DATE),
                 options=[{"label": date, "value": date} for date in dates_in_well],
                 clearable=False,
-                value=dates_in_well[0] if len(dates_in_well) > 0 else None,
+                value=dates_in_well[0] if dates_in_well else None,
             ),
             wcc.RadioItems(
                 label="Plot simulations as",
@@ -154,7 +154,7 @@ class FormationPlotSettings(SettingsGroupABC):
             well: str, current_date: str
         ) -> Tuple[List[Dict[str, str]], Optional[str]]:
             dates = self._datamodel.date_in_well(well)
-            first_date = dates[0] if len(dates) > 0 else None
+            first_date = dates[0] if dates else None
             available_dates = [{"label": date, "value": date} for date in dates]
             date = current_date if current_date in dates else first_date
             return available_dates, date
