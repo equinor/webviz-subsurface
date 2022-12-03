@@ -20,7 +20,24 @@ class ColorScale(SettingsGroupABC):
 
     def __init__(self) -> None:
         super().__init__("Color scale")
-        self.colormaps = ["erdc_rainbow_dark", "Viridis (matplotlib)", "BuRd"]
+        self.colormaps = [
+            "Physics",
+            "Physics reverse",
+            "Rainbow",
+            "Rainbow reverse",
+            "Porosity",
+            "Permeability",
+            "Seismic",
+            "Time/Depth",
+            "Stratigraphy",
+            "Facies",
+            "GasOilWater",
+            "GasWater",
+            "OilWater",
+            "Accent",
+            "Colors_set_1",
+            "Colors_set_3",
+        ]
 
     def layout(self) -> List[Component]:
 
@@ -64,7 +81,6 @@ class ColorScale(SettingsGroupABC):
                                         type="number",
                                         minLength=1,
                                         disabled=True,
-                                        placeholder="From data",
                                     ),
                                     wcc.Label(
                                         style={
@@ -81,7 +97,6 @@ class ColorScale(SettingsGroupABC):
                                         type="number",
                                         minLength=1,
                                         disabled=True,
-                                        placeholder="From data",
                                     ),
                                 ],
                             ),

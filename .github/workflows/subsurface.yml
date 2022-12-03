@@ -60,9 +60,6 @@ jobs:
           # Testing against our latest release (including pre-releases)
           pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components
 
-          # Install additional packages required for experimental plugin:
-          pip install "vtk>=9.2.2"
-          pip install "webviz_vtk@git+https://github.com/equinor/webviz-vtk"
 
       - name: 📦 Install test dependencies
         run: |
@@ -106,11 +103,6 @@ jobs:
           webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
           rm -rf ./webviz-subsurface-testdata
           pushd example_subsurface_app
-
-          # Necessary as long as VTK is used in a prototype plugin:
-          echo "" >> requirements.txt
-          echo "vtk>=9.2.2" >> requirements.txt
-          echo "webviz_vtk@git+https://github.com/equinor/webviz-vtk" >> requirements.txt
 
           docker build -t webviz/example_subsurface_image:equinor-theme .
           popd
