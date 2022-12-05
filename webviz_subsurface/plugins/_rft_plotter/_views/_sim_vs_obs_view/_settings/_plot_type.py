@@ -11,19 +11,16 @@ class PlotType(StrEnum):
     ERROR_BOXPLOT = "error-boxplot"
 
 
-class Selections(SettingsGroupABC):
+class PlotTypeSettings(SettingsGroupABC):
     class Ids(StrEnum):
         PLOT_TYPE = "plot-type"
-        ENSEMBLES = "ensembles"
 
-    def __init__(self, ensembles: List[str]) -> None:
-        super().__init__("Selections")
-        self._ensembles = ensembles
+    def __init__(self) -> None:
+        super().__init__("Plot Type")
 
     def layout(self) -> List[Component]:
         return [
             wcc.RadioItems(
-                label="Plot Type",
                 id=self.register_component_unique_id(self.Ids.PLOT_TYPE),
                 options=[
                     {
@@ -36,13 +33,5 @@ class Selections(SettingsGroupABC):
                     },
                 ],
                 value=PlotType.CROSSPLOT,
-            ),
-            wcc.Dropdown(
-                label="Ensembles",
-                id=self.register_component_unique_id(self.Ids.ENSEMBLES),
-                options=[{"label": ens, "value": ens} for ens in self._ensembles],
-                value=[self._ensembles[0] if len(self._ensembles) > 0 else None],
-                clearable=False,
-                multi=True,
             ),
         ]

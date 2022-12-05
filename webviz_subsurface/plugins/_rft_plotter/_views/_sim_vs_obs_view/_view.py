@@ -9,13 +9,14 @@ from ..._reusable_settings import FilterLayout
 from ..._reusable_view_element import GeneralViewElement
 from ..._types import ColorAndSizeByType
 from ..._utils import RftPlotterDataModel, filter_frame
-from ._settings import PlotType, Selections, SizeColorSettings
+from ._settings import Ensembles, PlotType, PlotTypeSettings, SizeColorSettings
 from ._utils import update_crossplot, update_errorplot
 
 
 class SimVsObsView(ViewABC):
     class Ids(StrEnum):
-        SELECTIONS = "selections"
+        PLOT_TYPE = "plot-type"
+        ENSEMBLES = "ensembles"
         FILTERS = "filters"
         SIZE_COLOR_SETTINGS = "size-color-settings"
         VIEW_ELEMENT = "view-element"
@@ -26,7 +27,8 @@ class SimVsObsView(ViewABC):
 
         self.add_settings_groups(
             {
-                self.Ids.SELECTIONS: Selections(self._datamodel.ensembles),
+                self.Ids.PLOT_TYPE: PlotTypeSettings(),
+                self.Ids.ENSEMBLES: Ensembles(self._datamodel.ensembles),
                 self.Ids.FILTERS: FilterLayout(
                     wells=self._datamodel.well_names,
                     zones=self._datamodel.zone_names,
@@ -47,14 +49,14 @@ class SimVsObsView(ViewABC):
                 "children",
             ),
             Input(
-                self.settings_group(self.Ids.SELECTIONS)
-                .component_unique_id(Selections.Ids.PLOT_TYPE)
+                self.settings_group(self.Ids.PLOT_TYPE)
+                .component_unique_id(PlotTypeSettings.Ids.PLOT_TYPE)
                 .to_string(),
                 "value",
             ),
             Input(
-                self.settings_group(self.Ids.SELECTIONS)
-                .component_unique_id(Selections.Ids.ENSEMBLES)
+                self.settings_group(self.Ids.ENSEMBLES)
+                .component_unique_id(Ensembles.Ids.ENSEMBLES)
                 .to_string(),
                 "value",
             ),
