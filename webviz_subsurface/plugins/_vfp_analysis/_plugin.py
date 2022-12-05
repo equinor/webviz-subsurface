@@ -15,7 +15,7 @@ class VfpAnalysis(WebvizPluginABC):
     * **`vfp_file_pattern`:** File pattern for where to search for vfp arrow files. The path
     should be relative to the runpath if ensemble and realization is given as input, if not
     the path needs to be absolute.
-    * **`ensemble`:** Which ensemble in `shared_settings` to use..
+    * **`ensemble`:** Which ensemble in `shared_settings` to use.
     * **`realization`:** Which realization to pick from the ensemble.
     ---
 
