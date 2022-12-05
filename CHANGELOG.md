@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#1162](https://github.com/equinor/webviz-subsurface/pull/1162) - `RelativePermeability` can now be initialized with only `pyscal` formatted input files instead of paths to ensembles using a new `scal_scenarios` input option.
 - [#1176](https://github.com/equinor/webviz-subsurface/pull/1176) - `MapViewerFMU` now has an option to download visualized surfaces.
+- [#1130](https://github.com/equinor/webviz-subsurface/pull/1130) - New plugin `VfpAnalysis` to vizualise and analyse VFP curves.
 
 ### Fixed
 - [#1171](https://github.com/equinor/webviz-subsurface/pull/1171) - Fixed bug in `WellAnalysis` that caused an error if the selected date did not not exist in some selected ensembles.
