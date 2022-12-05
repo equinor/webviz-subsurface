@@ -795,7 +795,10 @@ def create_df_from_summary_provider(
     """Aggregates summary data from all ensembles into a common dataframe."""
     dfs = []
     for ens_name, provider in provider_set.items():
-        matching_sumvecs = get_matching_vector_names(provider, column_keys)
+        if column_keys is None:
+            matching_sumvecs = provider.vector_names()
+        else:
+            matching_sumvecs = get_matching_vector_names(provider, column_keys)
         if not matching_sumvecs:
             raise ValueError(
                 f"No vectors matching the given column_keys: {column_keys} for ensemble: {ens_name}"
