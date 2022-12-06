@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Changed
+- [#1182](https://github.com/equinor/webviz-subsurface/pull/1182) - `ParameterResponseCorrelation` can now allow default None column_keys when using arrow file as input
 - [#1122](https://github.com/equinor/webviz-subsurface/pull/1122) - `opm` and `ecl2df` are now optional, making `windows-subsurface` possible to install and import on non-unix based systems. **NOTE:** a lot of the functionality in `webviz-subsurface` is built on `opm` and `ecl2df`, and issues are therefore expected on eg Windows and macOS. Use with care.
 - [#1146](https://github.com/equinor/webviz-subsurface/pull/1146) - Converted the `BhpQc` plugin to WLF (Webviz Layout Framework).
 
