@@ -141,7 +141,7 @@ class WellAnalysis(WebvizPluginABC):
                 "id": self.view(self.Ids.WELL_OVERVIEW)
                 .settings_group(WellOverviewView.Ids.LAYOUT_OPTIONS)
                 .get_unique_id(),
-                "content": "Formatting options.",
+                "content": "Chart layout options.",
             },
             {
                 "id": self.view(self.Ids.WELL_OVERVIEW)
