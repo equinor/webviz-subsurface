@@ -50,9 +50,7 @@ class WellOverviewView(ViewABC):
         # Make list of all wells
         wells: List[str] = []
         for ens_data_model in data_models.values():
-            wells.extend(
-                [well for well in ens_data_model.wells if well not in wells]
-            )
+            wells.extend([well for well in ens_data_model.wells if well not in wells])
 
         self.add_settings_groups(
             {
@@ -210,31 +208,40 @@ class WellOverviewView(ViewABC):
                 in ctx
             ):
                 fig_dict = format_well_overview_figure(
-                    go.Figure(current_fig_dict),
-                    charttype_selected,
-                    settings[charttype_selected],
-                    sumvec,
-                    prod_from_date,
+                    figure=go.Figure(current_fig_dict),
+                    charttype=charttype_selected,
+                    settings=settings[charttype_selected],
+                    sumvec=sumvec,
+                    prod_from_date=prod_from_date,
+                    prod_until_date=prod_until_date,
                 )
             else:
                 figure = WellOverviewFigure(
-                    ensembles,
-                    self._data_models,
-                    sumvec,
-                    datetime.datetime.strptime(prod_from_date, "%Y-%m-%d")
+                    ensembles=ensembles,
+                    data_models=self._data_models,
+                    sumvec=sumvec,
+                    prod_from_date=datetime.datetime.strptime(
+                        prod_from_date, "%Y-%m-%d"
+                    )
                     if prod_from_date is not None
                     else None,
-                    charttype_selected,
-                    wells_selected,
-                    self._theme,
+                    prod_until_date=datetime.datetime.strptime(
+                        prod_until_date, "%Y-%m-%d"
+                    )
+                    if prod_until_date is not None
+                    else None,
+                    charttype=charttype_selected,
+                    wells=wells_selected,
+                    theme=self._theme,
                 )
 
                 fig_dict = format_well_overview_figure(
-                    figure.figure,
-                    charttype_selected,
-                    settings[charttype_selected],
-                    sumvec,
-                    prod_from_date,
+                    figure=figure.figure,
+                    charttype=charttype_selected,
+                    settings=settings[charttype_selected],
+                    sumvec=sumvec,
+                    prod_from_date=prod_from_date,
+                    prod_until_date=prod_until_date
                 )
 
             return fig_dict

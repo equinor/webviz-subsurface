@@ -18,18 +18,20 @@ class WellOverviewFigure:
         ensembles: List[str],
         data_models: Dict[str, EnsembleWellAnalysisData],
         sumvec: str,
-        prod_after_date: Union[datetime.datetime, None],
+        prod_from_date: Union[datetime.datetime, None],
+        prod_until_date: Union[datetime.datetime, None],
         charttype: ChartType,
-        wells_selected: List[str],
+        wells: List[str],
         theme: WebvizConfigTheme,
     ) -> None:
-
+        # pylint: disable=too-many-arguments
         self._ensembles = ensembles
         self._data_models = data_models
         self._sumvec = sumvec
-        self._prod_after_date = prod_after_date
+        self._prod_from_date = prod_from_date
+        self._prod_until_date = prod_until_date
         self._charttype = charttype
-        self._wells_selected = wells_selected
+        self._wells = wells
         self._colors = theme.plotly_theme["layout"]["colorway"]
         self._rows, self._cols = self.get_subplot_dim()
         spec_type = "scatter" if self._charttype == ChartType.AREA else self._charttype
@@ -71,15 +73,15 @@ class WellOverviewFigure:
         """
         if self._charttype in [ChartType.BAR, ChartType.PIE]:
             df = self._data_models[ensemble].get_dataframe_melted(
-                self._sumvec, self._prod_after_date
+                self._sumvec, self._prod_from_date
             )
-            df = df[df["WELL"].isin(self._wells_selected)]
+            df = df[df["WELL"].isin(self._wells)]
             df_mean = df.groupby("WELL").mean().reset_index()
             return df_mean[df_mean[self._sumvec] > 0]
 
         # else chart type == area
         df = self._data_models[ensemble].get_summary_data(
-            self._sumvec, self._prod_after_date
+            self._sumvec, self._prod_from_date
         )
         return df.groupby("DATE").mean().reset_index()
 
@@ -125,7 +127,7 @@ class WellOverviewFigure:
                 color_iterator = itertools.cycle(self._colors)
 
                 for well in self._data_models[ensemble].wells:
-                    if well in self._wells_selected:
+                    if well in self._wells:
                         showlegend = False
                         if well not in wells_in_legend:
                             showlegend = True
@@ -154,7 +156,8 @@ def format_well_overview_figure(
     charttype: ChartType,
     settings: List[str],
     sumvec: str,
-    prod_after_date: Union[str, None],
+    prod_from_date: Union[str, None],
+    prod_until_date: Union[str, None],
 ) -> go.Figure:
     """This function formate the well overview figure. The reason for keeping this
     function outside the figure class is that we can update the figure formatting
@@ -188,8 +191,10 @@ def format_well_overview_figure(
     # Make title
     phase = {"WOPT": "Oil", "WGPT": "Gas", "WWPT": "Water"}[sumvec]
     title = f"Cumulative Well {phase} Production (Sm3)"
-    if prod_after_date is not None:
-        title += f" after {prod_after_date}"
+    if prod_from_date is not None:
+        title += f" from {prod_from_date}"
+    if prod_until_date is not None:
+        title += f" until {prod_until_date}"
 
     figure.update(
         layout_title_text=title,

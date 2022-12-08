@@ -43,9 +43,7 @@ class WellOverviewSelections(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Production From Date",
-                id=self.register_component_unique_id(
-                    self.Ids.PROD_FROM_DATE
-                ),
+                id=self.register_component_unique_id(self.Ids.PROD_FROM_DATE),
                 options=[
                     {
                         "label": dte.strftime("%Y-%m-%d"),
@@ -57,9 +55,7 @@ class WellOverviewSelections(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Production Until Date",
-                id=self.register_component_unique_id(
-                    self.Ids.PROD_UNTIL_DATE
-                ),
+                id=self.register_component_unique_id(self.Ids.PROD_UNTIL_DATE),
                 options=[
                     {
                         "label": dte.strftime("%Y-%m-%d"),

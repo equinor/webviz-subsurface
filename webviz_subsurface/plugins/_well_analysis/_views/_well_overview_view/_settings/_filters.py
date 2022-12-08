@@ -6,7 +6,6 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 
-
 class WellOverviewFilters(SettingsGroupABC):
     class Ids(StrEnum):
         SELECTED_WELLS = "selected-wells"
