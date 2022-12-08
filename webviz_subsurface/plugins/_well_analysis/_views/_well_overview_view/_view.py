@@ -241,7 +241,7 @@ class WellOverviewView(ViewABC):
                     settings=settings[charttype_selected],
                     sumvec=sumvec,
                     prod_from_date=prod_from_date,
-                    prod_until_date=prod_until_date
+                    prod_until_date=prod_until_date,
                 )
 
             return fig_dict

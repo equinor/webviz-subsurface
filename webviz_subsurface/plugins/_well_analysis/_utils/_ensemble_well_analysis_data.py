@@ -95,17 +95,21 @@ class EnsembleWellAnalysisData:
         return filtered_wells
 
     def get_summary_data(
-        self, well_sumvec: str, prod_after_date: Union[datetime.datetime, None]
+        self,
+        well_sumvec: str,
+        prod_from_date: Union[datetime.datetime, None],
+        prod_until_date: Union[datetime.datetime, None],
     ) -> pd.DataFrame:
-        """Returns all summary data matching the well_sumvec. If the prod_after_date
+        """Returns all summary data matching the well_sumvec. If the prod_from_date
         is not None it will return all dates after that date and subtract the cumulative
-        production at that date.
+        production at that date. If prod_until_dates is not None it will filter out all
+        dates after that date.
         """
         sumvecs = [f"{well_sumvec}:{well}" for well in self._wells]
         df = self._smry[["REAL", "DATE"] + sumvecs]
 
-        if prod_after_date is not None:
-            df = df[df["DATE"] >= prod_after_date]
+        if prod_from_date is not None:
+            df = df[df["DATE"] >= prod_from_date]
             df_date = df[df["DATE"] == df["DATE"].min()].copy()
             df_merged = df.merge(df_date, on=["REAL"], how="inner")
             for vec in sumvecs:
@@ -113,10 +117,17 @@ class EnsembleWellAnalysisData:
             df = df_merged[["REAL", "DATE_x"] + sumvecs].rename(
                 {"DATE_x": "DATE"}, axis=1
             )
+
+        if prod_until_date is not None:
+            df = df[df["DATE"] <= prod_until_date]
+
         return df
 
     def get_dataframe_melted(
-        self, well_sumvec: str, prod_after_date: Union[datetime.datetime, None]
+        self,
+        well_sumvec: str,
+        prod_from_date: Union[datetime.datetime, None],
+        prod_until_date: Union[datetime.datetime, None],
     ) -> pd.DataFrame:
         """Returns a dataframe on long form consisting of these columns:
         * WELL
@@ -128,17 +139,15 @@ class EnsembleWellAnalysisData:
         max_date = df["DATE"].max()
         df = df[df["DATE"] == max_date]
 
-        if prod_after_date is not None:
+        if prod_from_date is not None:
             # Since the prod_after_dates can be chosen from the union of the date
             # ranges from many ensembles, it can happen that the selecte date is
             # > than the max_date for this ensemble. In that case we set it equal
             # to the max date. The resulting sumvec value will then be zero for
             # all wells.
-            prod_after_date = (
-                max_date if prod_after_date > max_date else prod_after_date
-            )
+            prod_from_date = max_date if prod_from_date > max_date else prod_from_date
             df_date = self._smry[["REAL", "DATE"] + sumvecs]
-            df_date = df_date[df_date["DATE"] >= prod_after_date]
+            df_date = df_date[df_date["DATE"] >= prod_from_date]
             df_date = df_date[df_date["DATE"] == df_date["DATE"].min()]
             df_merged = df.merge(df_date, on=["REAL"], how="inner")
             for vec in sumvecs:

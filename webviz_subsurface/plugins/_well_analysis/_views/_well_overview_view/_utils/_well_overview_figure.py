@@ -73,7 +73,9 @@ class WellOverviewFigure:
         """
         if self._charttype in [ChartType.BAR, ChartType.PIE]:
             df = self._data_models[ensemble].get_dataframe_melted(
-                self._sumvec, self._prod_from_date
+                well_sumvec=self._sumvec,
+                prod_from_date=self._prod_from_date,
+                prod_until_date=self._prod_until_date,
             )
             df = df[df["WELL"].isin(self._wells)]
             df_mean = df.groupby("WELL").mean().reset_index()
@@ -81,7 +83,9 @@ class WellOverviewFigure:
 
         # else chart type == area
         df = self._data_models[ensemble].get_summary_data(
-            self._sumvec, self._prod_from_date
+            well_sumvec=self._sumvec,
+            prod_from_date=self._prod_from_date,
+            prod_until_date=self._prod_until_date,
         )
         return df.groupby("DATE").mean().reset_index()
 
