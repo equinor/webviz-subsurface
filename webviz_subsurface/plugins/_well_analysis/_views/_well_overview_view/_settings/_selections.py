@@ -1,29 +1,24 @@
 import datetime
-from typing import Dict, List, Set
+from typing import List
 
 import webviz_core_components as wcc
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ...._utils import EnsembleWellAnalysisData
-
 
 class WellOverviewSelections(SettingsGroupABC):
     class Ids(StrEnum):
         ENSEMBLES = "ensembles"
         RESPONSE = "response"
-        ONLY_PRODUCTION_AFTER_DATE = "only-production-after-date"
+        PROD_FROM_DATE = "prod-from-date"
+        PROD_UNTIL_DATE = "prod-until-date"
 
-    def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
+    def __init__(self, ensembles: List[str], dates: List[datetime.datetime]) -> None:
         super().__init__("Selections")
 
-        self._ensembles = list(data_models.keys())
-
-        dates: Set[datetime.datetime] = set()
-        for _, ens_data_model in data_models.items():
-            dates = dates.union(ens_data_model.dates)
-        self._sorted_dates: List[datetime.datetime] = sorted(list(dates))
+        self._ensembles = ensembles
+        self._dates = dates
 
     def layout(self) -> List[Component]:
         return [
@@ -47,16 +42,30 @@ class WellOverviewSelections(SettingsGroupABC):
                 clearable=False,
             ),
             wcc.Dropdown(
-                label="Only Production after date",
+                label="Production From Date",
                 id=self.register_component_unique_id(
-                    self.Ids.ONLY_PRODUCTION_AFTER_DATE
+                    self.Ids.PROD_FROM_DATE
                 ),
                 options=[
                     {
                         "label": dte.strftime("%Y-%m-%d"),
                         "value": dte.strftime("%Y-%m-%d"),
                     }
-                    for dte in self._sorted_dates
+                    for dte in self._dates
+                ],
+                multi=False,
+            ),
+            wcc.Dropdown(
+                label="Production Until Date",
+                id=self.register_component_unique_id(
+                    self.Ids.PROD_UNTIL_DATE
+                ),
+                options=[
+                    {
+                        "label": dte.strftime("%Y-%m-%d"),
+                        "value": dte.strftime("%Y-%m-%d"),
+                    }
+                    for dte in self._dates
                 ],
                 multi=False,
             ),

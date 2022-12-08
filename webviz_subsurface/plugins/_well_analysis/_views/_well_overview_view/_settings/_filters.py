@@ -1,24 +1,19 @@
-from typing import Dict, List
+from typing import List
 
 import webviz_core_components as wcc
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ...._utils import EnsembleWellAnalysisData
 
 
 class WellOverviewFilters(SettingsGroupABC):
     class Ids(StrEnum):
         SELECTED_WELLS = "selected-wells"
 
-    def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
+    def __init__(self, wells: List[str]) -> None:
         super().__init__("Filters")
-        self._wells: List[str] = []
-        for ens_data_model in data_models.values():
-            self._wells.extend(
-                [well for well in ens_data_model.wells if well not in self._wells]
-            )
+        self._wells = wells
 
     def layout(self) -> List[Component]:
         return [

@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import plotly.graph_objects as go
 from dash import ALL, Input, Output, State, callback, callback_context
@@ -39,12 +39,27 @@ class WellOverviewView(ViewABC):
         self._data_models = data_models
         self._theme = theme
 
+        ensembles = list(data_models.keys())
+
+        # Make sorted list of dates in all ensembles
+        dates: Set[datetime.datetime] = set()
+        for _, ens_data_model in data_models.items():
+            dates = dates.union(ens_data_model.dates)
+        sorted_dates: List[datetime.datetime] = sorted(list(dates))
+
+        # Make list of all wells
+        wells: List[str] = []
+        for ens_data_model in data_models.values():
+            wells.extend(
+                [well for well in ens_data_model.wells if well not in wells]
+            )
+
         self.add_settings_groups(
             {
                 self.Ids.CHART_TYPE: WellOverviewChartType(),
-                self.Ids.SELECTIONS: WellOverviewSelections(self._data_models),
+                self.Ids.SELECTIONS: WellOverviewSelections(ensembles, sorted_dates),
                 self.Ids.LAYOUT_OPTIONS: WellOverviewLayoutOptions(),
-                self.Ids.FILTERS: WellOverviewFilters(self._data_models),
+                self.Ids.FILTERS: WellOverviewFilters(wells),
             }
         )
 
@@ -124,7 +139,14 @@ class WellOverviewView(ViewABC):
             Input(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS,
-                    WellOverviewSelections.Ids.ONLY_PRODUCTION_AFTER_DATE,
+                    WellOverviewSelections.Ids.PROD_FROM_DATE,
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS,
+                    WellOverviewSelections.Ids.PROD_UNTIL_DATE,
                 ),
                 "value",
             ),
@@ -162,12 +184,14 @@ class WellOverviewView(ViewABC):
             ensembles: List[str],
             checklist_values: List[List[str]],
             sumvec: str,
-            prod_after_date: Union[str, None],
+            prod_from_date: Union[str, None],
+            prod_until_date: Union[str, None],
             charttype_selected: ChartType,
             wells_selected: List[str],
             checklist_ids: List[Dict[str, str]],
             current_fig_dict: Optional[Dict[str, Any]],
         ) -> Component:
+            # pylint: disable=too-many-arguments
             """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
@@ -190,15 +214,15 @@ class WellOverviewView(ViewABC):
                     charttype_selected,
                     settings[charttype_selected],
                     sumvec,
-                    prod_after_date,
+                    prod_from_date,
                 )
             else:
                 figure = WellOverviewFigure(
                     ensembles,
                     self._data_models,
                     sumvec,
-                    datetime.datetime.strptime(prod_after_date, "%Y-%m-%d")
-                    if prod_after_date is not None
+                    datetime.datetime.strptime(prod_from_date, "%Y-%m-%d")
+                    if prod_from_date is not None
                     else None,
                     charttype_selected,
                     wells_selected,
@@ -210,7 +234,7 @@ class WellOverviewView(ViewABC):
                     charttype_selected,
                     settings[charttype_selected],
                     sumvec,
-                    prod_after_date,
+                    prod_from_date,
                 )
 
             return fig_dict
