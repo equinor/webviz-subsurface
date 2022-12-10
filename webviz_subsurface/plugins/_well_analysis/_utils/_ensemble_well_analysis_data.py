@@ -107,16 +107,22 @@ class EnsembleWellAnalysisData:
         """
         sumvecs = [f"{well_sumvec}:{well}" for well in self._wells]
         df = self._smry[["REAL", "DATE"] + sumvecs]
+        max_date = df["DATE"].max()
+        min_date = df["DATE"].min()
 
         if prod_from_date is not None:
             df = df[df["DATE"] >= prod_from_date]
-            df_date = df[df["DATE"] == df["DATE"].min()].copy()
-            df_merged = df.merge(df_date, on=["REAL"], how="inner")
-            for vec in sumvecs:
-                df_merged[vec] = df_merged[f"{vec}_x"] - df_merged[f"{vec}_y"]
-            df = df_merged[["REAL", "DATE_x"] + sumvecs].rename(
-                {"DATE_x": "DATE"}, axis=1
-            )
+
+            # If the prod_from_date exists in the ensemble, subtract the
+            # production at that date from all dates.
+            if min_date <= prod_from_date <= max_date:
+                df_date = df[df["DATE"] == prod_from_date].copy()
+                df_merged = df.merge(df_date, on=["REAL"], how="inner")
+                for vec in sumvecs:
+                    df_merged[vec] = df_merged[f"{vec}_x"] - df_merged[f"{vec}_y"]
+                df = df_merged[["REAL", "DATE_x"] + sumvecs].rename(
+                    {"DATE_x": "DATE"}, axis=1
+                )
 
         if prod_until_date is not None:
             df = df[df["DATE"] <= prod_until_date]
@@ -142,15 +148,17 @@ class EnsembleWellAnalysisData:
         if prod_until_date is None:
             prod_until_date = max_date
         else:
+            # Set prod_until_date to min_date or max_date if it is outside the
+            # ensemble date range
             prod_until_date = max(min(prod_until_date, max_date), min_date)
 
         df = df[df["DATE"] == prod_until_date]
 
-        # If prod_from_date is None or < min_date, do nothing, else
-        # subtract production at the prod_from_date
-        if prod_from_date is not None and prod_from_date >= min_date:
-            # If the prod_from_date > max_date, set it to the max date
-            prod_from_date = min(prod_from_date, max_date)
+        # If prod_from_date is None, do nothing
+        if prod_from_date is not None:
+            # Set prod_from_date to min_date or max_date if it is outside the
+            # ensemble date range
+            prod_from_date = max(min(prod_from_date, max_date), min_date)
 
             # Subtract the production at the prod_from_date
             df_date = self._smry[["REAL", "DATE"] + sumvecs]
