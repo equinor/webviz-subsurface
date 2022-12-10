@@ -130,12 +130,13 @@ def parameter_response_controller(
         scatter_fig.update_color(color, options["opacity"])
 
         # Make timeseries graph
-        df_value_norm = parametermodel.get_real_and_value_df(
-            ensemble, parameter=parameter, normalize=True
+        param_df = parametermodel.get_parameter_df_for_ensemble(
+            ensemble, reals=realizations
         )
+
         timeseries_fig = TimeSeriesFigure(
             dframe=merge_dataframes_on_realization(
-                vector_df[["DATE", "REAL", vector]], df_value_norm
+                vector_df[["DATE", "REAL", vector]], param_df[["REAL", parameter]]
             ),
             visualization=visualization,
             vector=vector,

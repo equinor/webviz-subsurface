@@ -83,7 +83,6 @@ def tornado_controllers(
                         )
                         figure, table_data, columns = tornado_figure_and_table(
                             tornado_data=tornado_data,
-                            response=response,
                             selections=selections,
                             theme=theme,
                             sensitivity_colors=sens_colors(),
@@ -250,7 +249,6 @@ def tornado_controllers(
 
 def tornado_figure_and_table(
     tornado_data: TornadoData,
-    response: str,
     selections: dict,
     theme: WebvizConfigTheme,
     sensitivity_colors: dict,
@@ -273,10 +271,10 @@ def tornado_figure_and_table(
     ).figure
 
     figure.update_xaxes(side="bottom", title=None).update_layout(
-        title_text=f"Tornadoplot for {response} <br>"
+        title_text=f"Tornadoplot for {tornado_data.response_name} <br>"
         + f"Fluid zone: {(' + ').join(selections['filters']['FLUID_ZONE'])}"
         if group is None
-        else f"{response} {group}",
+        else f"{tornado_data.response_name} {group}",
         title_font_size=font_size,
         margin={"t": 70},
     )
@@ -337,16 +335,10 @@ def create_tornado_table(
     )
     table_data = tornado_table.as_plotly_table
     for data in table_data:
-        data["Reference"] = tornado_data.reference_average
         if group is not None:
             data[subplots] = group
 
     columns = create_table_columns(columns=[subplots]) if subplots is not None else []
     columns.extend(tornado_table.columns)
-    columns.extend(
-        create_table_columns(
-            columns=["Reference"],
-            use_si_format=["Reference"] if use_si_format else [],
-        )
-    )
+
     return table_data, columns

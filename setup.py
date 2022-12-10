@@ -60,6 +60,7 @@ setup(
             "RelativePermeability = webviz_subsurface.plugins:RelativePermeability",
             "ReservoirSimulationTimeSeries = webviz_subsurface.plugins:ReservoirSimulationTimeSeries",
             "ReservoirSimulationTimeSeriesOneByOne = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesOneByOne",
+            "SimulationTimeSeriesOneByOne = webviz_subsurface.plugins:SimulationTimeSeriesOneByOne",
             "ReservoirSimulationTimeSeriesRegional = webviz_subsurface.plugins:ReservoirSimulationTimeSeriesRegional",
             "RftPlotter = webviz_subsurface.plugins:RftPlotter",
             "RunningTimeAnalysisFMU = webviz_subsurface.plugins:RunningTimeAnalysisFMU",

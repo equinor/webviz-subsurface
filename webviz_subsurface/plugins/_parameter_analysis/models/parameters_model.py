@@ -187,22 +187,6 @@ class ParametersModel:
             & (self.statframe["ENSEMBLE"] == ensemble)
         ].iloc[0][stat_column]
 
-    def get_real_and_value_df(
-        self, ensemble: str, parameter: str, normalize: bool = False
-    ) -> pd.DataFrame:
-        """
-        Return dataframe with ralization and values for selected parameter for an ensemble.
-        A column with normalized parameter values can be added.
-        """
-        df = self.dataframe_melted.copy()
-        df = df[["VALUE", "REAL"]].loc[
-            (df["ENSEMBLE"] == ensemble) & (df["PARAMETER"] == parameter)
-        ]
-        if normalize:
-            df["VALUE_NORM"] = (df["VALUE"] - df["VALUE"].min()) / (
-                df["VALUE"].max() - df["VALUE"].min()
-            )
-        return df.reset_index(drop=True)
 
     def get_parameter_df_for_ensemble(self, ensemble: str, reals: list):
         return self._dataframe[

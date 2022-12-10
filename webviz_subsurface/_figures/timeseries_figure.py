@@ -5,7 +5,13 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 
-from webviz_subsurface._utils.colors import find_intermediate_color, rgba_to_str
+from webviz_subsurface._utils.colors import (
+    find_intermediate_color,
+    rgba_to_str,
+    rgb_to_str,
+    scale_rgb_lightness,
+    hex_to_rgb,
+)
 from webviz_subsurface._utils.simulation_timeseries import (
     get_simulation_line_shape,
     set_simulation_line_shape_fallback,
@@ -31,20 +37,31 @@ class TimeSeriesFigure:
         line_shape_fallback: str,
         historical_vector_df: Optional[pd.DataFrame] = None,
         dateline: Optional[datetime.datetime] = None,
-    ):
+        discrete_color_map: dict = None,
+        groupby: str = "REAL",
+    ) -> None:
         self.dframe = dframe
+        self.color_col = color_col
+        self.groupby = groupby
+        if color_col is not None and discrete_color_map is None:
+            self.dframe = self.normalize_parameter_value(self.dframe)
+            self.dframe = self.dframe.rename(columns={color_col: "VALUE"})
         self.vector = vector
         self.ensemble = ensemble
-        self.color_col = color_col
         self.visualization = visualization
         self.historical_vector_df = historical_vector_df
         self.date = dateline
         self.line_shape = self.get_line_shape(line_shape_fallback)
+        self.continous_color = self.color_col is not None and discrete_color_map is None
+        self.colormap = discrete_color_map if discrete_color_map is not None else {}
 
         self.create_traces()
 
     @property
     def figure(self) -> dict:
+        title = self.vector
+        if self.color_col is not None:
+            title += f" colored by {self.color_col}"
         return {
             "data": self.traces,
             "layout": {
@@ -56,7 +73,7 @@ class TimeSeriesFigure:
                 "plot_bgcolor": "white",
                 "showlegend": False,
                 "uirevision": self.vector,
-                "title": {"text": f"{self.vector} colored by {self.color_col}"},
+                "title": {"text": title},
                 "shapes": self.shapes,
                 "annotations": self.annotations,
             },
@@ -65,11 +82,17 @@ class TimeSeriesFigure:
     def create_traces(self) -> None:
         self.traces: List[dict] = []
 
-        if self.visualization != "statistics":
-            self._add_realization_traces()
+        if self.groupby == "SENSNAME_CASE":
+            if self.visualization == "realizations":
+                self._add_sensitivity_traces_real()
+            else:
+                self._add_sensitivity_traces_stat()
 
-        if self.visualization != "realizations":
-            self._add_statistic_traces()
+        else:
+            if self.visualization == "realizations":
+                self._add_realization_traces()
+            if self.visualization == "statistics":
+                self._add_statistic_traces()
 
         self._add_history_trace()
 
@@ -116,7 +139,8 @@ class TimeSeriesFigure:
 
     def _add_realization_traces(self) -> None:
         """Renders line trace for each realization"""
-        mean = self.dframe["VALUE_NORM"].mean()
+
+        mean = self.dframe["VALUE_NORM"].mean() if self.continous_color else None
         self.traces.extend(
             [
                 {
@@ -125,18 +149,90 @@ class TimeSeriesFigure:
                         "color": self.set_real_color(
                             real_df["VALUE_NORM"].iloc[0], mean
                         )
-                        if self.visualization == "realizations"
-                        else "gainsboro",
+                        if self.visualization == "realizations" and self.continous_color
+                        else self.colormap.get(real_df[self.color_col].iloc[0], "grey"),
                     },
                     "mode": "lines",
                     "x": real_df["DATE"],
                     "y": real_df[self.vector],
                     "name": self.ensemble,
                     "legendgroup": self.ensemble,
-                    "hovertext": self.create_hovertext(real_df["VALUE"].iloc[0], real),
+                    "hovertext": self.create_hovertext(real_df["VALUE"].iloc[0], real)
+                    if self.continous_color
+                    else f"Real: {real} {real_df[self.color_col].iloc[0]}",
                     "showlegend": real_idx == 0,
                 }
                 for real_idx, (real, real_df) in enumerate(self.dframe.groupby("REAL"))
+            ]
+        )
+
+    def _add_sensitivity_traces_stat(self) -> None:
+        """Renders line trace for each realization"""
+
+        self.dframe["dash"] = np.where(
+            self.dframe["t"] == 1, "dashdot", "solid"
+        )  # dot, dashdot
+
+        self.traces.extend(
+            [
+                {
+                    "line": {
+                        "dash": "dash" if real_df["t"].iloc[0] == 1 else "solid",
+                        "shape": self.line_shape,
+                        "color": self.colormap.get(
+                            real_df[self.color_col].iloc[0], "grey"
+                        ),
+                        "width": 3 if real_df["t"].iloc[0] == 1 else 2,
+                    },
+                    "mode": "lines",
+                    "x": real_df["DATE"],
+                    "y": real_df[self.vector],
+                    "name": sens,
+                    "legendgroup": sens,
+                    "hovertext": f"Sens: {sens}",
+                }
+                for real_idx, (sens, real_df) in enumerate(
+                    self.dframe.groupby("SENSNAME_CASE")
+                )
+            ]
+        )
+
+    def _add_sensitivity_traces_real(self) -> None:
+        """Renders line trace for each realization"""
+
+        self.dframe["dash"] = np.where(
+            self.dframe["t"] == 1, "longdash", "solid"
+        )  # dot, dashdot
+
+        self.traces.extend(
+            [
+                {
+                    "line": {
+                        "dash": "dash" if real_df["t"].iloc[0] == 1 else "solid",
+                        "shape": self.line_shape,
+                        "color": rgb_to_str(
+                            scale_rgb_lightness(
+                                hex_to_rgb(
+                                    self.colormap.get(
+                                        real_df[self.color_col].iloc[0], "grey"
+                                    )
+                                ),
+                                130 if real_df["t"].iloc[0] == 1 else 90,
+                            )
+                        ),
+                        "width": 3 if real_df["t"].iloc[0] == 1 else 2,
+                    },
+                    "mode": "lines",
+                    "x": real_df["DATE"],
+                    "y": real_df[self.vector],
+                    "name": sens,
+                    "legendgroup": sens,
+                    "hovertext": f"Real: {real}, Sens: {sens}",
+                    "showlegend": real_idx == 0,
+                }
+                for real_idx, ((sens, real), real_df) in enumerate(
+                    self.dframe.groupby(["SENSNAME_CASE", "REAL"])
+                )
             ]
         )
 
@@ -226,3 +322,10 @@ class TimeSeriesFigure:
             return find_intermediate_color(Colors.MID, Colors.GREEN, intermed)
 
         return Colors.MID
+
+    def normalize_parameter_value(self, df: pd.DataFrame) -> pd.DataFrame:
+
+        df["VALUE_NORM"] = (df[self.color_col] - df[self.color_col].min()) / (
+            df[self.color_col].max() - df[self.color_col].min()
+        )
+        return df

@@ -43,9 +43,6 @@ from ._property_statistics import PropertyStatistics
 from ._pvt_plot import PvtPlot
 from ._relative_permeability import RelativePermeability
 from ._reservoir_simulation_timeseries import ReservoirSimulationTimeSeries
-from ._reservoir_simulation_timeseries_onebyone import (
-    ReservoirSimulationTimeSeriesOneByOne,
-)
 from ._reservoir_simulation_timeseries_regional import (
     ReservoirSimulationTimeSeriesRegional,
 )
@@ -54,6 +51,10 @@ from ._running_time_analysis_fmu import RunningTimeAnalysisFMU
 from ._segy_viewer import SegyViewer
 from ._seismic_misfit import SeismicMisfit
 from ._simulation_time_series import SimulationTimeSeries
+from ._simulation_timeseries_onebyone import SimulationTimeSeriesOneByOne
+from ._reservoir_simulation_timeseries_onebyone import (
+    ReservoirSimulationTimeSeriesOneByOne,
+)
 from ._structural_uncertainty import StructuralUncertainty
 from ._subsurface_map import SubsurfaceMap
 from ._surface_viewer_fmu import SurfaceViewerFMU
