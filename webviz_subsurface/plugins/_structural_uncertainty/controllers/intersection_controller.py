@@ -24,6 +24,7 @@ def update_intersection(
     app: Dash,
     get_uuid: Callable,
     surface_set_models: Dict[str, SurfaceSetModel],
+    all_realizations: List[int],
     well_set_model: WellSetModel,
     color_picker: ColorPicker,
     zonelog: Optional[str] = None,
@@ -134,7 +135,9 @@ def update_intersection(
                                 legendname=f"{surfacename}({ensemble})",
                                 name=surfacename,
                                 attribute=surfaceattribute,
-                                realizations=realizations,
+                                realizations=realizations
+                                if set(realizations) != set(all_realizations)
+                                else None,
                                 showlegend=showlegend,
                                 color=color,
                             )
@@ -147,7 +150,9 @@ def update_intersection(
                             legendname=f"{surfacename}({ensemble})",
                             name=surfacename,
                             attribute=surfaceattribute,
-                            realizations=realizations,
+                            realizations=realizations
+                            if set(realizations) != set(all_realizations)
+                            else None,
                             showlegend=showlegend,
                             color=color,
                         )
@@ -172,7 +177,6 @@ def update_intersection(
             traces.append(get_plotly_trace_well_trajectory(well))
             if well.zonelogname is not None:
                 traces.extend(get_plotly_zonelog_trace(well, zonelog))
-
         return traces
 
     @app.callback(

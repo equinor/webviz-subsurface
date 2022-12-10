@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -14,13 +13,6 @@ from ...._utils.fanchart_plotting import (
     MinMaxData,
     get_fanchart_traces,
 )
-
-
-class FanChartStatistics(str, Enum):
-    MINIMUM = "Min"
-    MAXIMUM = "Max"
-    P10 = "P10"
-    P90 = "P90"
 
 
 # pylint: disable=too-many-arguments
@@ -79,7 +71,7 @@ def get_plotly_traces_uncertainty_envelope(
     for a surface"""
     values_for_fanchart: Dict[str, np.ma.MaskedArray] = {}
     fan_chart_traces: List = []
-    for calculation in FanChartStatistics:
+    for calculation in ["P10", "P90", "Min", "Max"]:
         values = surfaceset.calculate_statistical_surface(
             name=name,
             attribute=attribute,
@@ -89,9 +81,9 @@ def get_plotly_traces_uncertainty_envelope(
         # Convert to masked array
         values = np.ma.masked_array(values, mask=np.isnan(values))
 
-        if calculation == FanChartStatistics.MINIMUM:
+        if calculation == "Min":
             values_for_fanchart["x"] = values[:, 0]
-        values_for_fanchart[FanChartStatistics(calculation)] = values[:, 1]
+        values_for_fanchart[calculation] = values[:, 1]
 
     # Fanchart plotting requires continuous data series.
     # 1. Create a slice for each non-masked section of y(depth) values.
@@ -99,20 +91,18 @@ def get_plotly_traces_uncertainty_envelope(
     #    the minimum surface is randomly used.
     # 2. Make a set of fanchart traces for each slice.
 
-    for unmasked_slice in np.ma.clump_unmasked(
-        values_for_fanchart[FanChartStatistics.MINIMUM]
-    ):
+    for unmasked_slice in np.ma.clump_unmasked(values_for_fanchart["Min"]):
         fan_chart_data = FanchartData(
             samples=values_for_fanchart["x"][unmasked_slice],
             low_high=LowHighData(
-                low_data=values_for_fanchart[FanChartStatistics.P10][unmasked_slice],
-                low_name=FanChartStatistics.P10,
-                high_data=values_for_fanchart[FanChartStatistics.P90][unmasked_slice],
-                high_name=FanChartStatistics.P90,
+                low_data=values_for_fanchart["P10"][unmasked_slice],
+                low_name="P10",
+                high_data=values_for_fanchart["P90"][unmasked_slice],
+                high_name="P90",
             ),
             minimum_maximum=MinMaxData(
-                minimum=values_for_fanchart[FanChartStatistics.MINIMUM][unmasked_slice],
-                maximum=values_for_fanchart[FanChartStatistics.MAXIMUM][unmasked_slice],
+                minimum=values_for_fanchart["Min"][unmasked_slice],
+                maximum=values_for_fanchart["Max"][unmasked_slice],
             ),
         )
         fan_chart_traces.extend(
