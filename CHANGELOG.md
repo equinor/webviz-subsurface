@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [#1171](https://github.com/equinor/webviz-subsurface/pull/1171) - Fixed bug in `WellAnalysis` that caused an error if the selected date did not not exist in some selected ensembles.
 - [#1158](https://github.com/equinor/webviz-subsurface/pull/1158) - `CO2Leakage` - Remove deckgl bounds and use only relevant ensembles.
-
+- [#1143](https://github.com/equinor/webviz-subsurface/pull/1143) - Give Linux group owner write permission to cached files.
 
 ## [0.2.16] - 2022-11-09
 
