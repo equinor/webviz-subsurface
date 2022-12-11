@@ -127,10 +127,21 @@ class WellAnalysis(WebvizPluginABC):
             },
             {
                 "id": self.view(self.Ids.WELL_OVERVIEW)
-                .settings_group(WellOverviewView.Ids.SETTINGS)
+                .settings_group(WellOverviewView.Ids.CHART_TYPE)
                 .get_unique_id(),
-                "content": "Choose chart type, ensemble, type of production and other options. "
-                "You also change the layout of the chart.",
+                "content": "Choose chart type: bar, pie or area chart. ",
+            },
+            {
+                "id": self.view(self.Ids.WELL_OVERVIEW)
+                .settings_group(WellOverviewView.Ids.SELECTIONS)
+                .get_unique_id(),
+                "content": "Choose ensembles, type of production and other options.",
+            },
+            {
+                "id": self.view(self.Ids.WELL_OVERVIEW)
+                .settings_group(WellOverviewView.Ids.LAYOUT_OPTIONS)
+                .get_unique_id(),
+                "content": "Chart layout options.",
             },
             {
                 "id": self.view(self.Ids.WELL_OVERVIEW)

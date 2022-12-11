@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1182](https://github.com/equinor/webviz-subsurface/pull/1182) - `ParameterResponseCorrelation` can now allow default None column_keys when using arrow file as input
 - [#1122](https://github.com/equinor/webviz-subsurface/pull/1122) - `opm` and `ecl2df` are now optional, making `windows-subsurface` possible to install and import on non-unix based systems. **NOTE:** a lot of the functionality in `webviz-subsurface` is built on `opm` and `ecl2df`, and issues are therefore expected on eg Windows and macOS. Use with care.
 - [#1146](https://github.com/equinor/webviz-subsurface/pull/1146) - Converted the `BhpQc` plugin to WLF (Webviz Layout Framework).
+- [#1184](https://github.com/equinor/webviz-subsurface/pull/1184) - `WellAnalysis`: changes to the settings layout in the `WellOverview` view
 
 ### Added
 - [#1162](https://github.com/equinor/webviz-subsurface/pull/1162) - `RelativePermeability` can now be initialized with only `pyscal` formatted input files instead of paths to ensembles using a new `scal_scenarios` input option.
 - [#1176](https://github.com/equinor/webviz-subsurface/pull/1176) - `MapViewerFMU` now has an option to download visualized surfaces.
 - [#1130](https://github.com/equinor/webviz-subsurface/pull/1130) - New plugin `VfpAnalysis` to vizualise and analyse VFP curves.
+- [#1184](https://github.com/equinor/webviz-subsurface/pull/1184) - New option `Prod Until Date` in  `WellAnalysis`.
 
 ### Fixed
 - [#1171](https://github.com/equinor/webviz-subsurface/pull/1171) - Fixed bug in `WellAnalysis` that caused an error if the selected date did not not exist in some selected ensembles.
