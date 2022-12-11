@@ -6,7 +6,7 @@ from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
 
-from webviz_subsurface._providers import FaultPolygonsServer, SurfaceServer
+from webviz_subsurface._providers import FaultPolygonsServer, SurfaceImageServer
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     SurfaceData,
     create_map_layers,
@@ -92,7 +92,7 @@ class CO2Leakage(WebvizPluginABC):
                 ]
                 for ensemble_name in ensembles
             }
-            self._surface_server = SurfaceServer.instance(app)
+            self._surface_server = SurfaceImageServer.instance(app)
             self._polygons_server = FaultPolygonsServer.instance(app)
 
             self._map_attribute_names = init_map_attribute_names(map_attribute_names)

@@ -1,3 +1,4 @@
+from ._types import QualifiedDiffSurfaceAddress, QualifiedSurfaceAddress
 from .ensemble_surface_provider import (
     EnsembleSurfaceProvider,
     ObservedSurfaceAddress,
@@ -6,9 +7,5 @@ from .ensemble_surface_provider import (
     SurfaceAddress,
 )
 from .ensemble_surface_provider_factory import EnsembleSurfaceProviderFactory
-from .surface_server import (
-    QualifiedDiffSurfaceAddress,
-    QualifiedSurfaceAddress,
-    SurfaceMeta,
-    SurfaceServer,
-)
+from .surface_array_server import SurfaceArrayMeta, SurfaceArrayServer
+from .surface_image_server import SurfaceImageMeta, SurfaceImageServer

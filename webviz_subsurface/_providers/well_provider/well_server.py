@@ -26,7 +26,7 @@ class WellServer:
         # pylint: disable=global-statement
         global _WELL_SERVER_INSTANCE
         if not _WELL_SERVER_INSTANCE:
-            LOGGER.debug("Initializing SurfaceServer instance")
+            LOGGER.debug("Initializing WellServer instance")
             _WELL_SERVER_INSTANCE = WellServer(app)
 
         return _WELL_SERVER_INSTANCE

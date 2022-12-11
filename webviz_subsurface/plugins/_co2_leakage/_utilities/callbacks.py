@@ -9,8 +9,8 @@ from webviz_subsurface._providers import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-    SurfaceMeta,
-    SurfaceServer,
+    SurfaceImageMeta,
+    SurfaceImageServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
@@ -45,12 +45,12 @@ class SurfaceData:
     color_map_range: Tuple[Optional[float], Optional[float]]
     color_map_name: str
     value_range: Tuple[float, float]
-    meta_data: SurfaceMeta
+    meta_data: SurfaceImageMeta
     img_url: str
 
     @staticmethod
     def from_server(
-        server: SurfaceServer,
+        server: SurfaceImageServer,
         provider: EnsembleSurfaceProvider,
         address: Union[SurfaceAddress, TruncatedSurfaceAddress],
         color_map_range: Tuple[Optional[float], Optional[float]],
