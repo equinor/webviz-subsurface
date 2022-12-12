@@ -26,6 +26,7 @@ class MapViewElement(ViewElementABC):
         DATE_WRAPPER = "date-wrapper"
         BAR_PLOT = "bar-plot"
         TIME_PLOT = "time-plot"
+        TIME_PLOT_ONE_REAL = "time-plot-one-realization"
 
     def __init__(self, color_scales: List[Dict[str, Any]]) -> None:
         super().__init__()
@@ -82,10 +83,11 @@ class MapViewElement(ViewElementABC):
                         "flexDirection": "row",
                         "justifyContent": "space-evenly",
                     },
-                    children=SummaryGraphLayout(
+                    children=_summary_graph_layout(
                         self.register_component_unique_id(self.Ids.BAR_PLOT),
                         self.register_component_unique_id(self.Ids.TIME_PLOT),
-                    ).children,
+                        self.register_component_unique_id(self.Ids.TIME_PLOT_ONE_REAL),
+                    ),
                 ),
             ],
             style={
@@ -96,24 +98,31 @@ class MapViewElement(ViewElementABC):
         )
 
 
-class SummaryGraphLayout(html.Div):
-    def __init__(self, bar_plot_id: str, time_plot_id: str, **kwargs: Dict) -> None:
-        super().__init__(
-            children=[
-                wcc.Graph(
-                    id=bar_plot_id,
-                    figure=go.Figure(),
-                    config={
-                        "displayModeBar": False,
-                    },
-                ),
-                wcc.Graph(
-                    id=time_plot_id,
-                    figure=go.Figure(),
-                    config={
-                        "displayModeBar": False,
-                    },
-                ),
-            ],
-            **kwargs,
-        )
+def _summary_graph_layout(
+    bar_plot_id: str,
+    time_plot_id: str,
+    time_plot_one_realization_id: str,
+) -> List:
+    return [
+        wcc.Graph(
+            id=bar_plot_id,
+            figure=go.Figure(),
+            config={
+                "displayModeBar": False,
+            },
+        ),
+        wcc.Graph(
+            id=time_plot_id,
+            figure=go.Figure(),
+            config={
+                "displayModeBar": False,
+            },
+        ),
+        wcc.Graph(
+            id=time_plot_one_realization_id,
+            figure=go.Figure(),
+            config={
+                "displayModeBar": False,
+            },
+        ),
+    ]
