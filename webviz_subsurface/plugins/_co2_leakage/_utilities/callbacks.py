@@ -1,11 +1,14 @@
+import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geojson
 import numpy as np
+import plotly.graph_objects as go
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProvider,
+    EnsembleTableProvider,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
@@ -17,7 +20,18 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
+from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
+    generate_co2_mobile_phase_figure,
+    generate_co2_time_containment_figure,
+    generate_co2_volume_figure,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+    Co2Scale,
+    MapAttribute,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.summary_graphs import (
+    generate_summary_figure,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import (
     TruncatedSurfaceAddress,
     publish_and_get_surface_metadata,
@@ -203,10 +217,12 @@ def create_map_layers(
     if license_boundary_file is not None:
         layers.append(
             {
-                "@@type": "FaultPolygonsLayer",
-                "name": "Containment Boundary",
+                "@@type": "GeoJsonLayer",
+                "name": "Containment Polygon",
                 "id": "license-boundary-layer",
                 "data": _parse_polygon_file(license_boundary_file),
+                "stroked": False,
+                "getFillColor": [0, 0, 150, 120],
             }
         )
     if well_pick_provider is not None:
@@ -236,8 +252,56 @@ def create_map_layers(
     return layers
 
 
+def generate_containment_figures(
+    table_provider: EnsembleTableProvider,
+    co2_scale: Co2Scale,
+) -> Tuple[go.Figure, go.Figure, go.Figure]:
+    fig_args = (
+        table_provider,
+        table_provider.realizations(),
+        co2_scale,
+    )
+    try:
+        fig0 = generate_co2_volume_figure(*fig_args)
+        fig1 = generate_co2_time_containment_figure(*fig_args)
+        fig2 = generate_co2_mobile_phase_figure(*fig_args)
+    except KeyError as exc:
+        warnings.warn(f"Could not generate CO2 figures: {exc}")
+        raise exc
+    return fig0, fig1, fig2
+
+
+def generate_unsmry_figures(
+    table_provider: EnsembleTableProvider,
+    co2_scale: Co2Scale,
+) -> Tuple[go.Figure]:
+    return (
+        generate_summary_figure(
+            table_provider,
+            table_provider.realizations(),
+            co2_scale,
+        ),
+    )
+
+
 def _parse_polygon_file(filename: str) -> Dict[str, Any]:
-    xyz = read_csv(filename)[["x", "y"]].values
+    df = read_csv(filename)
+    if "x" in df.columns:
+        xyz = df[["x", "y"]].values
+    elif "X_UTME" in df.columns:
+        if "POLY_ID" in df.columns:
+            xyz = [gf[["X_UTME", "Y_UTMN"]].values for _, gf in df.groupby("POLY_ID")]
+        else:
+            xyz = df[["X_UTME", "Y_UTMN"]].values
+    else:
+        # Attempt to use the first two columns as the x and y coordinates
+        xyz = df.values[:, :2]
+    if isinstance(xyz, list):
+        poly_type = "MultiPolygon"
+        coords = [[arr.tolist()] for arr in xyz]
+    else:
+        poly_type = "Polygon"
+        coords = [xyz.tolist()]
     as_geojson = {
         "type": "FeatureCollection",
         "features": [
@@ -245,8 +309,8 @@ def _parse_polygon_file(filename: str) -> Dict[str, Any]:
                 "type": "Feature",
                 "properties": {},
                 "geometry": {
-                    "type": "LineString",
-                    "coordinates": xyz.tolist(),
+                    "type": poly_type,
+                    "coordinates": coords,
                 },
             }
         ],
