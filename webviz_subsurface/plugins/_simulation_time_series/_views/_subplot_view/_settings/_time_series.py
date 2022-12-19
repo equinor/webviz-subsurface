@@ -110,17 +110,17 @@ class TimeSeriesSettings(SettingsGroupABC):
                     "margin-bottom": "5px",
                 },
             ),
-            wcc.Dialog(
+            wcc.WebvizDialog(
                 title="Vector Calculator",
                 id=self.register_component_unique_id(
                     TimeSeriesSettings.Ids.VECTOR_CALCULATOR_DIALOG
                 ),
-                draggable=True,
                 open=False,
-                max_width="lg",
+                maxWidth=1400,
+                minWidth=900,
                 children=[
                     html.Div(
-                        style={"height": "60vh"},
+                        style={"height": 600},
                         children=[
                             wsc.VectorCalculator(
                                 id=self.register_component_unique_id(
