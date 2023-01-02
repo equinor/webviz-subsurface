@@ -88,7 +88,7 @@ class PickResult:
     cell_j: int
     cell_k: int
     intersection_point: List[float]
-    cell_property_value: Optional[float]
+    cell_property_value: Optional[np.ndarray]
 
 
 # =============================================================================
@@ -482,7 +482,7 @@ class GridVizService:
         k_ref = reference(0)
         grid.ComputeCellStructuredCoords(cell_id, i_ref, j_ref, k_ref, True)
 
-        cell_property_val: Optional[float] = None
+        cell_property_val: Optional[np.ndarray] = None
         if property_spec:
             raw_cell_vals = _load_property_values(provider, realization, property_spec)
             if raw_cell_vals is not None:
