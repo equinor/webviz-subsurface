@@ -486,7 +486,7 @@ class GridVizService:
         if property_spec:
             raw_cell_vals = _load_property_values(provider, realization, property_spec)
             if raw_cell_vals is not None:
-                cell_property_val = raw_cell_vals[original_cell_id]
+                cell_property_val = raw_cell_vals[original_cell_id]  # type: ignore
         et_props_s = timer.lap_s()
 
         LOGGER.debug(
