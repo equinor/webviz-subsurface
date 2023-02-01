@@ -11,6 +11,7 @@ from dash import ALL, MATCH, Input, Output, State, callback, callback_context, n
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile
 from webviz_config.utils._dash_component_utils import calculate_slider_step
+import webviz_subsurface_components as wsc
 
 from webviz_subsurface._providers import (
     EnsembleFaultPolygonsProvider,
@@ -306,6 +307,7 @@ def plugin_callbacks(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
         # Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
+        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "children"),
         Input(
             {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": MATCH}, "data"
         ),
@@ -417,29 +419,52 @@ def plugin_callbacks(
                         )
                     },
                 )
+        viewports = []
+        view_annotations = []
+        for idx, data in enumerate(surface_elements):
+            view_annotations.append(
+                wsc.ViewAnnotation(
+                    id=f"{idx}_view",
+                    children=[
+                        wsc.WebVizColorLegend(
+                            min=data["color_range"][0],
+                            max=data["color_range"][1],
+                            colorName=data["colormap"],
+                            cssLegendStyles={"top": "0", "right": "0"},
+                            openColorSelector=False,
+                            legendScaleSize=0.1,
+                            legendFontSize=30,
+                        ),
+                        wsc.ViewFooter(
+                            children=make_viewport_label(
+                                surface_elements[idx], tab_name, multi
+                            )
+                        ),
+                    ],
+                )
+            )
+            viewports.append(
+                {
+                    "id": f"{idx}_view",
+                    "show3D": False,
+                    "isSync": True,
+                    "layerIds": [
+                        f"{LayoutElements.MAP3D_LAYER}-{idx}",
+                        f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
+                        f"{LayoutElements.WELLS_LAYER}-{idx}",
+                    ],
+                    "name": make_viewport_label(surface_elements[idx], tab_name, multi),
+                }
+            )
+        views = {
+            "layout": view_layout(len(surface_elements), view_columns),
+            "showLabel": True,
+            "viewports": viewports,
+        }
         return (
             layer_model.layers,
-            # viewport_bounds if surface_elements else no_update,
-            {
-                "layout": view_layout(len(surface_elements), view_columns),
-                "showLabel": True,
-                "viewports": [
-                    {
-                        "id": f"{view}_view",
-                        "show3D": False,
-                        "isSync": True,
-                        "layerIds": [
-                            f"{LayoutElements.MAP3D_LAYER}-{view}",
-                            f"{LayoutElements.FAULTPOLYGONS_LAYER}-{view}",
-                            f"{LayoutElements.WELLS_LAYER}-{view}",
-                        ],
-                        "name": make_viewport_label(
-                            surface_elements[view], tab_name, multi
-                        ),
-                    }
-                    for view in range(len(surface_elements))
-                ],
-            },
+            views,
+            view_annotations,
         )
 
     @callback(

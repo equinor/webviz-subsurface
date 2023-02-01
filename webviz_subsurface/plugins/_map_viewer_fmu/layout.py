@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Union
 
 import webviz_core_components as wcc
 from dash import dcc, html
-from webviz_subsurface_components import DeckGLMap  # type: ignore
+from webviz_subsurface_components import DashSubsurfaceViewer  # type: ignore
 
 from ._types import LayerNames, LayerTypes, SurfaceMode
 
@@ -256,7 +256,7 @@ class MapViewLayout(FullScreen):
     def __init__(self, tab: Tabs, get_uuid: Callable, color_tables: List[Dict]) -> None:
         super().__init__(
             children=html.Div(
-                DeckGLMap(
+                DashSubsurfaceViewer(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
                     layers=update_map_layers(1),
                     colorTables=color_tables,

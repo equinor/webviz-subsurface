@@ -6,7 +6,7 @@ import numpy as np
 from dash import Input, Output, State, callback, html, no_update
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
-
+import webviz_subsurface_components as wsc
 from webviz_subsurface._providers.ensemble_grid_provider import (
     CellFilter,
     EnsembleGridProvider,
@@ -191,9 +191,9 @@ class View3D(ViewABC):
             else:
                 value_range = None
 
-            layers[1]["pointsUrl"] = f"/grid/points/{geometry_token}"
-            layers[1]["polysUrl"] = f"/grid/polys/{geometry_token}"
-            layers[1]["propertiesUrl"] = f"/grid/scalar/{geometry_and_property_token}"
+            layers[1]["pointsData"] = f"/grid/points/{geometry_token}"
+            layers[1]["polysData"] = f"/grid/polys/{geometry_token}"
+            layers[1]["propertiesData"] = f"/grid/scalar/{geometry_and_property_token}"
             layers[1]["colorMapRange"] = value_range
             layers[1]["colorMapName"] = colormap
             return layers, bounds
@@ -219,6 +219,10 @@ class View3D(ViewABC):
 
         @callback(
             Output(self._view_id(VTKView3D.Ids.INFOBOX), "children"),
+            Output(
+                self._view_id(VTKView3D.Ids.VIEW),
+                "children",
+            ),
             Input(
                 self._data_settings_id(DataSettings.Ids.PROPERTIES),
                 "value",
@@ -236,6 +240,10 @@ class View3D(ViewABC):
                 "layers",
             ),
             Input(self.get_store_unique_id(ElementIds.IJK_CROP_STORE), "data"),
+            Input(
+                self._color_scale_id(ColorScale.Ids.COLORMAP),
+                "value",
+            ),
             State(
                 self._data_settings_id(DataSettings.Ids.STATIC_DYNAMIC),
                 "value",
@@ -247,6 +255,7 @@ class View3D(ViewABC):
             realizations: List[int],
             layers: List[dict],
             grid_range: List[List[int]],
+            colormap: str,
             proptype: str,
         ) -> list:
             """Updates the information box with information on the visualized data."""
@@ -284,7 +293,22 @@ class View3D(ViewABC):
             color_range = layers[1].get("colorMapRange")
             if color_range is None:
                 color_range = actual_value_range
-
+            children = [
+                wsc.ViewAnnotation(
+                    id=f"view_1",
+                    children=[
+                        wsc.WebVizColorLegend(
+                            min=color_range[0],
+                            max=color_range[1],
+                            colorName=colormap,
+                            cssLegendStyles={"top": "0", "right": "0"},
+                            openColorSelector=False,
+                            legendScaleSize=0.1,
+                            legendFontSize=30,
+                        ),
+                    ],
+                )
+            ]
             return [
                 html.Div([html.B("Property: "), html.Label(properties[0])]),
                 html.Div(
@@ -305,4 +329,4 @@ class View3D(ViewABC):
                         ),
                     ]
                 ),
-            ]
+            ], children

@@ -2,7 +2,7 @@ from dash import dcc, html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
-from webviz_subsurface_components import DeckGLMap
+from webviz_subsurface_components import DashSubsurfaceViewer
 
 
 class VTKView3D(ViewElementABC):
@@ -45,7 +45,7 @@ class VTKView3D(ViewElementABC):
                 html.Div(
                     style={"position": "absolute", "width": "100%", "height": "90%"},
                     children=[
-                        DeckGLMap(
+                        DashSubsurfaceViewer(
                             id=self.register_component_unique_id(VTKView3D.Ids.VIEW),
                             layers=[
                                 {
@@ -64,11 +64,7 @@ class VTKView3D(ViewElementABC):
                                     "@@type": "Grid3DLayer",
                                     "id": "Grid3DLayer",
                                     "material": True,
-                                    "colorMapName": "Physics reverse",
                                     "scaleZ": 1,
-                                    "pointsUrl": "/grid/points/test",
-                                    "polysUrl": "/grid/polys/test",
-                                    "propertiesUrl": "/grid/scalar/test",
                                 },
                             ],
                             views={
