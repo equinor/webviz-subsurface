@@ -130,7 +130,6 @@ folder, to avoid risk of not extracting the right data.
         sampling: str = "monthly",
         line_shape_fallback: str = "linear",
     ) -> None:
-
         super().__init__()
 
         self.time_index = sampling

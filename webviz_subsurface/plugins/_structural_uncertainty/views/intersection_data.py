@@ -289,7 +289,6 @@ def options_layout(
     extension: int,
     initial_layout: Dict,
 ) -> html.Div:
-
     return html.Div(
         children=[
             html.Div(

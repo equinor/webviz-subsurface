@@ -80,7 +80,6 @@ class EXPERIMENTALGridViewerFMU(WebvizPluginABC):
         eclipse_restart_parameters: List[str] = None,
         initial_ijk_filter: Dict[str, int] = None,
     ):
-
         super().__init__(stretch=True)
 
         self.ensemble = webviz_settings.shared_settings["scratch_ensembles"][ensemble]

@@ -28,6 +28,7 @@ REL_SIM_DIR = "sim"
 REL_OBS_DIR = "obs"
 REL_STAT_CACHE_DIR = "stat_cache"
 
+
 # pylint: disable=too-few-public-methods
 class Col:
     TYPE = "type"
@@ -172,7 +173,6 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         storage_dir: Path,
         storage_key: str,
     ) -> Optional["ProviderImplFile"]:
-
         provider_dir = storage_dir / storage_key
         parquet_file_name = provider_dir / "surface_inventory.parquet"
 
@@ -235,7 +235,6 @@ class ProviderImplFile(EnsembleSurfaceProvider):
     def _get_or_create_statistical_surface(
         self, address: StatisticalSurfaceAddress
     ) -> Optional[xtgeo.RegularSurface]:
-
         timer = PerfTimer()
 
         surf = self._stat_surf_cache.fetch(address)

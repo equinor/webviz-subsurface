@@ -61,7 +61,6 @@ def load_parameters(
 def load_csv(
     ensemble_paths: dict, csv_file: str, ensemble_set_name: str = "EnsembleSet"
 ) -> pd.DataFrame:
-
     return load_ensemble_set(ensemble_paths, ensemble_set_name).load_csv(csv_file)
 
 
@@ -73,7 +72,6 @@ def load_smry(
     time_index: Optional[Union[list, str]] = None,
     column_keys: Optional[list] = None,
 ) -> pd.DataFrame:
-
     return load_ensemble_set(ensemble_paths, ensemble_set_name).get_smry(
         time_index=time_index, column_keys=column_keys
     )

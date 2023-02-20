@@ -42,7 +42,6 @@ class XSectionFigure:
         zunit: str = "",
         show_marginal: bool = False,
     ) -> None:
-
         self._data: List[Any] = []
         self._figure = make_subplots(
             rows=2 if show_marginal else 1,
@@ -255,7 +254,6 @@ class XSectionFigure:
         faciesvalues = df[facieslogname].values
 
         for fcc in frecord:
-
             zvals_copy = ma.masked_where(faciesvalues != fcc, zvals)
             hvals_copy = ma.masked_where(faciesvalues != fcc, hvals)
 
@@ -428,7 +426,6 @@ class XSectionFigure:
         surfaces: List[xtgeo.RegularSurface] = None,
         surfacenames: Optional[List[str]] = None,
     ) -> None:
-
         """Input a surface list (ordered from top to base) , and plot them."""
 
         # ax, bba = self._currentax(axisname=axisname)
@@ -438,7 +435,6 @@ class XSectionFigure:
 
         if surfaces and surfacenames and len(surfaces) == len(surfacenames):
             for i, surface in enumerate(surfaces):
-
                 hfence1 = surface.get_randomline(self.fence).copy()
                 self._figure.add_trace(
                     {

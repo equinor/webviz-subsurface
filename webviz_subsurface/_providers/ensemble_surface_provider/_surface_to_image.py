@@ -84,7 +84,6 @@ def surface_to_png_bytes(surface: xtgeo.RegularSurface) -> bytes:
 
 # pylint: disable=too-many-locals
 def surface_to_png_bytes_optimized(surface: xtgeo.RegularSurface) -> bytes:
-
     timer = PerfTimer()
     # Note that returned values array is a 2d masked array
     surf_values_ma: np.ma.MaskedArray = surface.values

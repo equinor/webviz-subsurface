@@ -31,7 +31,6 @@ class ProviderImplFile(WellProvider):
         well_file_names: List[str],
         md_logname: Optional[str],
     ) -> None:
-
         timer = PerfTimer()
 
         # All data for this provider will be stored inside a sub-directory
@@ -87,7 +86,6 @@ class ProviderImplFile(WellProvider):
         storage_dir: Path,
         storage_key: str,
     ) -> Optional["ProviderImplFile"]:
-
         provider_dir = storage_dir / storage_key
         json_fn = provider_dir / "inventory.json"
 

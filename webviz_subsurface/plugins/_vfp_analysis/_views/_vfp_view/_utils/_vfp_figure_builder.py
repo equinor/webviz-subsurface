@@ -15,7 +15,6 @@ class VfpFigureBuilder:
     """Class to build the VFP graph object"""
 
     def __init__(self, vfp_name: str) -> None:
-
         self._traces: List[Dict[str, Any]] = []
         self._layout = {
             "legend": {"orientation": "h"},

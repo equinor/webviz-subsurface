@@ -400,6 +400,7 @@ class ProdMisfit(WebvizPluginABC):
 # support functions below here
 # ------------------------------------------------------------------------
 
+
 # ---------------------------
 def _get_wells_vectors_phases(
     vector_names: List[str],

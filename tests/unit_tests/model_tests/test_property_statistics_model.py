@@ -9,7 +9,6 @@ from webviz_subsurface.plugins._property_statistics.models.property_statistics_m
 
 
 def get_data_df(testdata_folder: Path) -> pd.DataFrame:
-
     return pd.read_csv(
         testdata_folder
         / "reek_test_data"

@@ -226,7 +226,6 @@ class ProdCoverageView(ViewABC):
             boxmode: str,
             boxplot_points: str,
         ) -> Union[str, List[Component]]:
-
             if not ensemble_names:
                 return "No ensembles selected"
 

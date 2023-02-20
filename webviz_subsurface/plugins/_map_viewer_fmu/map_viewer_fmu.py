@@ -93,7 +93,6 @@ color-tables.json for color_tables format.
         color_tables: Path = None,
         hillshading_enabled: bool = None,
     ):
-
         super().__init__()
         self._hillshading = hillshading_enabled
         surface_provider_factory = EnsembleSurfaceProviderFactory.instance()
@@ -174,7 +173,6 @@ color-tables.json for color_tables format.
         )
 
     def set_callbacks(self) -> None:
-
         plugin_callbacks(
             get_uuid=self.uuid,
             ensemble_surface_providers=self._ensemble_surface_providers,

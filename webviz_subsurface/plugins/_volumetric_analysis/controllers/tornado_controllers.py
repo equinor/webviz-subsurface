@@ -35,7 +35,6 @@ def tornado_controllers(
     def _update_tornado_pages(
         selections: dict, page_selected: str, id_list: list
     ) -> go.Figure:
-
         if page_selected not in ["torn_multi", "torn_bulk_inplace"]:
             raise PreventUpdate
 
@@ -258,7 +257,6 @@ def tornado_figure_and_table(
     use_si_format: bool,
     group: Optional[str] = None,
 ) -> Tuple[go.Figure, List[dict], List[dict]]:
-
     figure = TornadoBarChart(
         tornado_data=tornado_data,
         plotly_theme=theme.plotly_theme,
@@ -329,7 +327,6 @@ def create_tornado_table(
     group: Optional[str],
     use_si_format: bool,
 ) -> Tuple[List[dict], List[dict]]:
-
     tornado_table = TornadoTable(
         tornado_data=tornado_data,
         use_si_format=use_si_format,

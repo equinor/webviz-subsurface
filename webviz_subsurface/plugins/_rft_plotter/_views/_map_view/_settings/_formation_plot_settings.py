@@ -121,7 +121,6 @@ class FormationPlotSettings(SettingsGroupABC):
                     and "CONMD" in self._datamodel.simdf
                     and len(df["CONMD"].unique()) == len(df["DEPTH"].unique())
                 ):
-
                     return [
                         {
                             "label": "Realization lines",

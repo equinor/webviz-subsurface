@@ -3,7 +3,6 @@ from webviz_config.plugins import LinePlotterFMU
 
 
 def test_line_plotter_fmu(dash_duo, app, testdata_folder, shared_settings) -> None:
-
     plugin = LinePlotterFMU(
         app,
         shared_settings["HM_SETTINGS"],

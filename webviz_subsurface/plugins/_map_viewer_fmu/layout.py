@@ -128,7 +128,6 @@ class ColorSelector(str, Enum):
 
 # pylint: disable=too-few-public-methods
 class DefaultSettings:
-
     NUMBER_OF_VIEWS = {Tabs.STATS: 4, Tabs.DIFF: 2, Tabs.SPLIT: 1}
     LINKED_SELECTORS = {
         Tabs.STATS: [
@@ -296,7 +295,6 @@ class DialogLayout(wcc.Dialog):
         realizations: List[int],
         hillshading_enabled: bool = True,
     ) -> None:
-
         checklist_options = [LayoutLabels.SHOW_HILLSHADING]
         checklist_values = (
             [LayoutLabels.SHOW_HILLSHADING] if hillshading_enabled else []
@@ -648,7 +646,6 @@ def update_map_layers(
 ) -> List[dict]:
     layers: List[Dict] = []
     for idx in range(views):
-
         if include_faultpolygon_layer:
             layers.append(
                 {

@@ -35,7 +35,6 @@ class MockGruptreeModel(GruptreeModel):
 
 @pytest.mark.usefixtures("app")
 def test_gruptree_model_init(testdata_folder, gruptree_model: GruptreeModel):
-
     # Check that there is only one REAL (means that the gruptree is
     # the same for all realizations)
     assert gruptree_model.dataframe["REAL"].nunique() == 1
@@ -52,7 +51,6 @@ def test_gruptree_model_init(testdata_folder, gruptree_model: GruptreeModel):
 
 @pytest.mark.usefixtures("app")
 def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
-
     # Test the get_filtered_dataframe function with terminal node different than FIELD
     filtered_df = gruptree_model.get_filtered_dataframe(terminal_node="OP")
     filtered_df = filtered_df[
@@ -80,7 +78,6 @@ def test_get_filtered_dataframe(gruptree_model: GruptreeModel):
 
 
 def test_tree_type_filtering():
-
     mock_model = MockGruptreeModel(tree_type=TreeType.GRUPTREE)
     assert "BRANPROP" not in mock_model.dataframe["KEYWORD"].unique()
 

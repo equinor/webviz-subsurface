@@ -40,7 +40,6 @@ observations/observations.yml).
         ensembles: List[str],
         observation_file: Path,
     ):
-
         super().__init__()
 
         self.observation_file = observation_file

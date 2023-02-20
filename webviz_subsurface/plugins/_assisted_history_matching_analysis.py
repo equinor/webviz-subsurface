@@ -50,7 +50,6 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
         input_dir: Path,
         ks_filter: float = 0.0,
     ):
-
         super().__init__()
 
         self.input_dir = input_dir

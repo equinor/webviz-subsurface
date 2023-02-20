@@ -17,7 +17,6 @@ def main_view(
     initial_data: Dict,
     initial_layout: Dict,
 ) -> html.Div:
-
     return wcc.FlexBox(
         children=[
             wcc.Frame(

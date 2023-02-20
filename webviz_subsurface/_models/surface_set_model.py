@@ -156,7 +156,6 @@ class SurfaceSetModel:
         stored_functions_args = []
         for _attr, attr_df in df.groupby("attribute"):
             for _name, name_df in attr_df.groupby("name"):
-
                 if name_df["date"].isnull().values.all():
                     stored_functions_args.append(
                         {

@@ -20,6 +20,7 @@ class Colors(str, Enum):
 
 class TimeSeriesFigure:
     STAT_OPTIONS = ["Mean", "P10", "P90"]
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,

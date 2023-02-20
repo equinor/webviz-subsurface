@@ -4,7 +4,6 @@ from webviz_subsurface._components.parameter_filter import ParameterFilter
 
 
 def test_dataframe(testdata_folder) -> None:
-
     dframe = pd.read_csv(
         testdata_folder / "reek_test_data" / "aggregated_data" / "parameters.csv"
     )

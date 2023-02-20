@@ -7,7 +7,6 @@ from dash import html
 def line_traces_view(
     get_uuid: Callable,
 ) -> html.Div:
-
     return wcc.Selectors(
         label="Plot data",
         children=[
@@ -42,7 +41,6 @@ def line_traces_view(
 def highlight_realizations_view(
     get_uuid: Callable, realizations: List[int]
 ) -> html.Div:
-
     return wcc.Selectors(
         label="Highlight realizations",
         children=[

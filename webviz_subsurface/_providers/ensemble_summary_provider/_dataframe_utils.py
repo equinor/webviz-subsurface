@@ -7,7 +7,6 @@ import pandas as pd
 
 
 def make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
-
     # Make a copy since it is likely we will modify the dataframe, and
     # we don't know if it is a view on a larger DF or a copy
     df = df.copy()
@@ -43,7 +42,6 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
 def find_min_max_for_numeric_df_columns(
     df: pd.DataFrame,
 ) -> Dict[str, dict]:
-
     ret_dict = {}
     for col_name in df.columns:
         series = df[col_name]

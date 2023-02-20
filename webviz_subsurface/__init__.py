@@ -54,14 +54,12 @@ def subscribe_predefined_expressions(
     config_folder: pathlib.Path,
     portable: bool,
 ) -> Dict[str, pathlib.Path]:
-
     output: Dict[str, pathlib.Path] = {}
 
     if predefined_expressions is None:
         return output
 
     for key, path in predefined_expressions.items():
-
         if not pathlib.Path(path).is_absolute():
             output[key] = config_folder / path
 
@@ -89,14 +87,12 @@ def subscribe_user_defined_vector_definitions(
     config_folder: pathlib.Path,
     portable: bool,
 ) -> Dict[str, pathlib.Path]:
-
     output: Dict[str, pathlib.Path] = {}
 
     if user_defined_vector_definitions is None:
         return output
 
     for key, path in user_defined_vector_definitions.items():
-
         if not pathlib.Path(path).is_absolute():
             output[key] = config_folder / path
 

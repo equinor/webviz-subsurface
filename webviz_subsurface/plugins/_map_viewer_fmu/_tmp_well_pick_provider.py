@@ -54,7 +54,6 @@ class WellPickProvider:
         validate_geometry = True
         feature_arr = []
         for _, row in dframe.iterrows():
-
             coords = [
                 row[WellPickTableColumns.X_UTME],
                 row[WellPickTableColumns.Y_UTMN],

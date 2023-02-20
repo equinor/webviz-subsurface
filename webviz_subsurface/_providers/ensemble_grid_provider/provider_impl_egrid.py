@@ -77,9 +77,7 @@ class ProviderImplEgrid(EnsembleGridProvider):
 
         ecl_stored_cases = []
         for ecl_case in eclipse_case_paths:
-
             if do_copy_grid_data_into_store:
-
                 egrid_rel_path = (
                     f"{ecl_case.realization}-{Path(ecl_case.egrid_path).name}"
                 )
@@ -120,7 +118,6 @@ class ProviderImplEgrid(EnsembleGridProvider):
         init_properties: List[str],
         restart_properties: List[str],
     ) -> Optional["ProviderImplEgrid"]:
-
         provider_dir = storage_dir / storage_key
         parquet_file_name = provider_dir / "grid_inventory.parquet"
 
@@ -157,7 +154,6 @@ class ProviderImplEgrid(EnsembleGridProvider):
         return sorted([r for r in unique_reals if r >= 0])
 
     def get_3dgrid(self, realization: int) -> xtgeo.Grid:
-
         df = self._inventory_df.loc[self._inventory_df[Col.REAL] == realization]
         df = df[Col.EGRID]
         grid = xtgeo.grid_from_file(self._provider_dir / df.iloc[0], fformat="egrid")

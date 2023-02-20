@@ -94,7 +94,6 @@ attribute_settings:
         wellsuffix: str = ".w",
         map_height: int = 600,
     ):
-
         super().__init__()
         self.ens_paths = {
             ens: webviz_settings.shared_settings["scratch_ensembles"][ens]

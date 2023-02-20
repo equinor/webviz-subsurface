@@ -17,7 +17,6 @@ class ProviderTimeSeriesDataModel:
     """Class to process and and visualize ensemble timeseries"""
 
     def __init__(self, provider_set: dict, column_keys: Optional[list] = None) -> None:
-
         self._provider_set = provider_set
         self.line_shape_fallback = set_simulation_line_shape_fallback("linear")
         all_vector_names = self._create_union_of_vector_names_from_providers(

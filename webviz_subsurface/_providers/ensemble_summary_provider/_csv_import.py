@@ -24,7 +24,6 @@ LOGGER = logging.getLogger(__name__)
 def load_per_real_csv_file_using_fmu(
     ens_path: str, csv_file_rel_path: str
 ) -> pd.DataFrame:
-
     LOGGER.debug(f"load_per_real_csv_file_using_fmu() starting - {csv_file_rel_path}")
     timer = PerfTimer()
 
@@ -41,7 +40,6 @@ def load_per_real_csv_file_using_fmu(
 def load_ensemble_summary_csv_file(
     csv_file: Path, ensemble_filter: Optional[str]
 ) -> pd.DataFrame:
-
     LOGGER.debug(f"load_ensemble_summary_csv_file() starting - {csv_file}")
     timer = PerfTimer()
 

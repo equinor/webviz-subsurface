@@ -51,7 +51,6 @@ class SwatinitQcDataModel:
         realization: Optional[int] = None,
         faultlines: Optional[Path] = None,
     ):
-
         self._theme = webviz_settings.theme
         self._faultlines = faultlines
         self.faultlines_df = read_csv(faultlines) if faultlines else None
@@ -153,7 +152,6 @@ class SwatinitQcDataModel:
         filters: Optional[dict] = None,
         range_filters: Optional[dict] = None,
     ) -> pd.DataFrame:
-
         df = self.dframe.copy()
         filters = filters if filters is not None else {}
         range_filters = range_filters if range_filters is not None else {}

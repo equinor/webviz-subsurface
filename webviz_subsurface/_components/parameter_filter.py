@@ -432,7 +432,6 @@ class ParameterFilter:
             slider_id: List[dict],
             select_id: List[dict],
         ) -> Tuple[dict, list]:
-
             min_max = self._return_min_max_ranges(ensembles)
             df = self._dframe[self._dframe["ENSEMBLE"].isin(ensembles)]
             values = self._get_values(sliders, selects, slider_id, select_id)
@@ -477,7 +476,6 @@ class ParameterFilter:
             values_stored: Dict[str, list],
             style: dict,
         ) -> dict:
-
             ctx = callback_context.triggered[0]["prop_id"]
             values = self._get_values(sliders, selects, slider_id, select_id)
             modified_values = any(

@@ -142,7 +142,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         calculate_percentiles: bool = False,
         initial_settings: Dict = None,
     ):
-
         super().__init__()
         self._initial_settings = initial_settings if initial_settings else {}
 
@@ -204,7 +203,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
         self.ensembles = list(surface_table["ENSEMBLE"].unique())
         for _, attr_df in surface_table.groupby("attribute"):
-
             if set(attr_df["name"].unique()) != set(self._surfacenames):
                 raise ValueError(
                     "Surface attributes has different surfaces. This is not supported!"
@@ -423,7 +421,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         if self._calculate_percentiles:
             calculations.extend(["P10", "P90"])
         for ens in self.ensembles:
-
             for calculation in calculations:
                 store_functions.append(
                     self._surface_ensemble_set_model[

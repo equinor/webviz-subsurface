@@ -9,7 +9,6 @@ from webviz_subsurface._models.ensemble_model import EnsembleModel
 
 @pytest.mark.usefixtures("app")
 def test_ensemble_set_init(testdata_folder):
-
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
@@ -34,7 +33,6 @@ def test_bad_ensemble_path():
 
 @pytest.mark.usefixtures("app")
 def test_smry_load(testdata_folder):
-
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)
@@ -49,7 +47,6 @@ def test_smry_load(testdata_folder):
 
 @pytest.mark.usefixtures("app")
 def test_smry_load_filter_and_dtypes(testdata_folder):
-
     emodel = EnsembleModel(
         ensemble_name="iter-0",
         ensemble_path=Path(testdata_folder)

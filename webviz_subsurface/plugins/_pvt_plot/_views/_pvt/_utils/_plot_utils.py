@@ -25,7 +25,6 @@ class LayoutAttributes(TypedDict):
 def filter_data_frame(
     data_frame: pd.DataFrame, ensembles: List[str], pvtnums: List[int]
 ) -> pd.DataFrame:
-
     data_frame = data_frame.copy()
     data_frame = data_frame.loc[data_frame["ENSEMBLE"].isin(ensembles)]
     data_frame = data_frame.loc[data_frame["PVTNUM"].isin(pvtnums)]
@@ -101,7 +100,7 @@ def create_traces(
         else data_frame["ENSEMBLE"].iloc[0]
     )
 
-    for (group, grouped_data_frame) in data_frame.groupby(color_by):
+    for group, grouped_data_frame in data_frame.groupby(color_by):
         for set_no, set_value in enumerate(
             grouped_data_frame[dim_column_name].unique()
         ):

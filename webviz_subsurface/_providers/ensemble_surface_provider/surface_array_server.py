@@ -109,7 +109,6 @@ class SurfaceArrayServer:
         self,
         qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
     ) -> Optional[SurfaceArrayMeta]:
-
         if isinstance(qualified_address, QualifiedSurfaceAddress):
             base_cache_key = _address_to_str(
                 qualified_address.provider_id, qualified_address.address
@@ -137,7 +136,6 @@ class SurfaceArrayServer:
     def encode_partial_url(
         qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
     ) -> str:
-
         if isinstance(qualified_address, QualifiedSurfaceAddress):
             address_str = _address_to_str(
                 qualified_address.provider_id, qualified_address.address
@@ -186,7 +184,6 @@ class SurfaceArrayServer:
         base_cache_key: str,
         surface: xtgeo.RegularSurface,
     ) -> None:
-
         timer = PerfTimer()
         LOGGER.debug("Converting surface to float32 array...")
         array_bytes: io.BytesIO = surface_to_float32_array(surface)

@@ -279,7 +279,6 @@ def selections_controllers(
         filter_multi: list,
         filter_ids: list,
     ) -> tuple:
-
         page_selections = {
             id_value["selector"]: values
             for id_value, values in zip(selector_ids, selectors)

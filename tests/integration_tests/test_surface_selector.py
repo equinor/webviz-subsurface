@@ -33,7 +33,6 @@ return_value = {
 
 
 def test_surface_selector(dash_duo: dash.testing.composite.DashComposite) -> None:
-
     app = dash.Dash(__name__)
     app.config.suppress_callback_exceptions = True
     realizations = pd.read_csv("tests/data/realizations.csv")

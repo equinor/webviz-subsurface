@@ -29,7 +29,6 @@ def create_figure(plot_type: str, **kwargs: Any) -> go.Figure:
 
 
 def set_default_args(**plotargs: Any) -> dict:
-
     plotargs["histnorm"] = plotargs.get("histnorm", "percent")
     plotargs["barmode"] = plotargs.get("barmode", "group")
     plotargs["opacity"] = plotargs.get("opacity", 0.7)
@@ -51,7 +50,6 @@ def set_default_args(**plotargs: Any) -> dict:
 
 
 def make_initial_figure(plot_type: str, **plotargs: Any) -> Callable:
-
     if plot_type == "distribution":
         plot_type = "violin"
 
@@ -214,7 +212,6 @@ def create_hover_boxes_for_violin_plots(
     facet_col: Optional[str],
     color_col: Optional[str],
 ) -> list:
-
     # Create invisible boxes used for hoverinfo on the violin plots
     # Necessary due to https://github.com/plotly/plotly.js/issues/2145
     hovertraces = []

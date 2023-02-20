@@ -127,7 +127,6 @@ def build_figure(
                 mode=mode,
             )
         if show_obs and observationmodel is not None:
-
             observations = observationmodel.get_observations_for_attribute(
                 attribute=y_column_name, value=x_column_name
             )
@@ -245,6 +244,7 @@ def calc_series_statistics(
     """Calculate statistics for given vectors over the ensembles
     refaxis is used if another column than DATE should be used to groupby.
     """
+
     # Invert p10 and p90 due to oil industry convention.
     def p10(x: List[float]) -> np.floating:
         return np.nanpercentile(x, q=90)
@@ -279,7 +279,6 @@ def get_table_data(
     table_column_names: List,
     realization_filter: Dict[str, List],
 ) -> pd.DataFrame:
-
     dfs = []
     for ens_name in ensemble_names:
         if not realization_filter.get(ens_name):

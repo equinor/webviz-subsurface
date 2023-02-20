@@ -108,7 +108,6 @@ class PropertyStatisticsModel:
         return list(self.dataframe["ENSEMBLE"].unique())
 
     def aggregate_ensemble_data(self) -> pd.DataFrame:
-
         return (
             self.dataframe.drop(columns=["ID", "REAL"], errors="ignore")
             .groupby(["ENSEMBLE", "label", "PROPERTY", "SOURCE"] + self.selectors)[
@@ -149,7 +148,6 @@ class PropertyStatisticsModel:
     def filter_dataframe(
         dframe: pd.DataFrame, columns: list, column_values: list
     ) -> pd.DataFrame:
-
         if not isinstance(columns, list):
             columns = [columns]
         for filt, col in zip(column_values, columns):
@@ -196,7 +194,6 @@ class PropertyStatisticsModel:
         statistic: str = "Avg",
         aggregation: str = "Avg",
     ) -> pd.DataFrame:
-
         df = self.statframe.copy()
 
         if selector_values is not None:

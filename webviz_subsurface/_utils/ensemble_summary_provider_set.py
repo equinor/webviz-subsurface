@@ -62,7 +62,6 @@ class EnsembleSummaryProviderSet:
                     vector_metadata,
                 ) in vector_provider_metadata_dict.items():
                     if vector_metadata != metadata_validator:
-
                         raise ValueError(
                             f'Inconsistent vector metadata for vector "{vector_name}"'
                             f' between provider "{validator_provider}" and provider '

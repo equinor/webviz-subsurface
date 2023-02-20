@@ -73,7 +73,6 @@ class GruptreeModel:
         df = self._dataframe
 
         if terminal_node is not None:
-
             if terminal_node not in self._dataframe["CHILD"].unique():
                 raise ValueError(
                     f"Terminal node '{terminal_node}' not found in 'CHILD' column "

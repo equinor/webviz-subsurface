@@ -17,7 +17,6 @@ def make_undefined_surface() -> xtgeo.RegularSurface:
 def surface_from_zone_prop(
     surface_table: pd.DataFrame, zone: str, prop: str, ensemble: str, stype: str
 ) -> xtgeo.RegularSurface:
-
     df = surface_table[
         (surface_table["zone"] == zone)
         & (surface_table["prop"] == prop)

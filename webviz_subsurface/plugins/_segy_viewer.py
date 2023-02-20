@@ -45,7 +45,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         zunit: str = "depth (m)",
         colors: list = None,
     ):
-
         super().__init__()
 
         self.zunit = zunit

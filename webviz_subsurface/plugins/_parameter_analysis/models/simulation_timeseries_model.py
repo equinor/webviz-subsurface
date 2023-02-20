@@ -22,7 +22,6 @@ class SimulationTimeSeriesModel:
         dataframe: pd.DataFrame,
         line_shape_fallback: str = "linear",
     ) -> None:
-
         for column in self.REQUIRED_COLUMNS:
             if column not in dataframe.columns:
                 raise KeyError(f"{column} column is missing from UNSMRY data")

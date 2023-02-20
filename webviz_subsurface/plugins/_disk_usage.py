@@ -38,7 +38,6 @@ class DiskUsage(WebvizPluginABC):
         scratch_dir: Path,
         date: Optional["str"] = None,
     ):
-
         super().__init__()
 
         self.scratch_dir = scratch_dir

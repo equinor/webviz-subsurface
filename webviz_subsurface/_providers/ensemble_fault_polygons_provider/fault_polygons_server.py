@@ -29,7 +29,6 @@ class QualifiedAddress:
 
 class FaultPolygonsServer:
     def __init__(self, app: Dash) -> None:
-
         self._setup_url_rule(app)
         self._id_to_provider_dict: Dict[str, EnsembleFaultPolygonsProvider] = {}
 
@@ -44,7 +43,6 @@ class FaultPolygonsServer:
         return _FAULT_POLYGONS_SERVER_INSTANCE
 
     def add_provider(self, provider: EnsembleFaultPolygonsProvider) -> None:
-
         provider_id = provider.provider_id()
         LOGGER.debug(f"Adding provider with id={provider_id}")
 

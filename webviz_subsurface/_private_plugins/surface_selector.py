@@ -40,7 +40,6 @@ class SurfaceSelector:
     def __init__(
         self, app: Dash, config: Union[str, dict], ensembles: pd.DataFrame
     ) -> None:
-
         self._configuration = self.read_config(config)
         self._ensembles = ensembles
         self._storage_id = f"{str(uuid4())}-surface-selector"

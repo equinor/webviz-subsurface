@@ -45,7 +45,6 @@ class ParameterResponseView(ViewABC):
         second_column.add_view_element(GeneralViewElement(), self.Ids.FORMATION_PLOT)
 
     def set_callbacks(self) -> None:
-
         corr_barchart_figure_id = self.view_element(
             self.Ids.CORR_BARCHART
         ).register_component_unique_id(self.Ids.CORR_BARCHART_FIGURE)

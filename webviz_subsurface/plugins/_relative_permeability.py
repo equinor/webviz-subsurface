@@ -97,6 +97,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         "PCOW": "#555555",  # Reserving #000000 for reference envelope (scal rec)
         "PCOG": "#555555",
     }
+
     # pylint: disable=too-many-branches,too-many-statements
     def __init__(
         self,
@@ -108,7 +109,6 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
         sheet_name: Optional[Union[str, int, list]] = None,
         scal_scenarios: Optional[dict] = None,
     ):
-
         super().__init__()
 
         WEBVIZ_ASSETS.add(
@@ -961,6 +961,7 @@ def add_scal_traces(
 # pylint: disable=too-many-locals
 def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
     """Calculate statistics and call fanchart rendering"""
+
     # Switched P10 and P90 due to convetion in petroleum industry
     def p10(x):
         return np.nanpercentile(x, q=90)

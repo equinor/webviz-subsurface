@@ -26,6 +26,7 @@ HEATMAP_COLOR = [
     # [1, "cyan"],
 ]
 
+
 # -------------------------------
 # pylint: disable = too-many-locals
 def prod_misfit_plot(
@@ -49,7 +50,6 @@ def prod_misfit_plot(
     figures, max_misfit, min_misfit = [], 0, 0
 
     for ens_name, ensdf in df_diff.groupby("ENSEMBLE"):
-
         df_misfit, plot_phases, color_phases = _calculate_misfits(
             phases,
             ensdf,
@@ -103,7 +103,6 @@ def coverage_diffplot(
     ensdf.DATE = ensdf.DATE.str[:10]
 
     for phase in phases:
-
         fig_phase = _create_fig_diffplot(
             ensdf, colorby, vector_type, phase, boxmode, boxplot_points
         )
@@ -160,7 +159,6 @@ def coverage_crossplot(
     ensdf = makedf.get_df_hist_avg(ensdf)
 
     for phase in phases:
-
         fig_phase = _create_fig_crossplot(
             ensdf,
             colorby,
@@ -213,7 +211,6 @@ def heatmap_plot(
         )
 
         for ens_name, df_diff_stat_phase in df_diff_stat_phase.groupby("ENSEMBLE"):
-
             fig_phase = _create_fig_heatmap(
                 ens_name, phase, df_diff_stat_phase, filter_largest, zmax
             )

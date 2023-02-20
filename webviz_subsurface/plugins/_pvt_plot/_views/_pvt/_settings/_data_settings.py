@@ -11,7 +11,6 @@ from .._utils._plot_utils import ColorBy
 
 
 class DataSettings(SettingsGroupABC):
-
     PHASES = ["OIL", "GAS", "WATER"]
     phases_additional_info: List[str] = []
 

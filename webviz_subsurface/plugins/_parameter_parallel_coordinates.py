@@ -147,7 +147,6 @@ folder, to avoid risk of not extracting the right data.
         aggregation: str = "sum",
         no_responses=False,
     ):
-
         super().__init__()
 
         self.parameter_csv = parameter_csv if parameter_csv else None

@@ -64,7 +64,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         zunit="depth (m)",
         colors: list = None,
     ):
-
         super().__init__()
         self.zunit = zunit
         self.segyfiles = [str(segyfile) for segyfile in segyfiles]
@@ -296,7 +295,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         def _render_surface(
             surfacepath, surface_type, cubepath, color_values, hillshade
         ):
-
             surface = xtgeo.surface_from_file(get_path(surfacepath))
             min_val = None
             max_val = None
@@ -361,7 +359,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             [State(self.ids("cube"), "value")],
         )
         def _update_color_slider(_clicks, cubepath):
-
             cube = load_cube_data(get_path(cubepath))
             minv = float(f"{cube.values.min():2f}")
             maxv = float(f"{cube.values.max():2f}")
@@ -396,7 +393,6 @@ def make_heatmap(
     yaxis_title=None,
     xaxis_title=None,
 ):
-
     x_inc = (xmax - xmin) / arr.shape[1]
     y_inc = (ymax - ymin) / arr.shape[0]
     colors = (

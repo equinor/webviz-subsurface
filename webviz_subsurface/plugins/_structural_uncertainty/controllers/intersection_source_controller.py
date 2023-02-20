@@ -44,7 +44,6 @@ def update_intersection_source(
         ),
     )
     def _store_xline(x_value: Union[float, int]) -> List:
-
         return [
             [x_value, surface_geometry["ymin"]],
             [x_value, surface_geometry["ymax"]],
@@ -65,7 +64,6 @@ def update_intersection_source(
         ),
     )
     def _store_yline(y_value: Union[float, int]) -> List:
-
         return [
             [surface_geometry["xmin"], y_value],
             [surface_geometry["xmax"], y_value],

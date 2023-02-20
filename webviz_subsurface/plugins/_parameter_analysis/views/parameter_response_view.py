@@ -49,7 +49,6 @@ def selector_view(
     parametermodel: ParametersModel,
     theme: WebvizConfigTheme,
 ) -> wcc.Frame:
-
     theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
     return wcc.Frame(
         style={

@@ -7,7 +7,6 @@ from ...._types import ColorAndSizeByType
 
 class MapFigure:
     def __init__(self, ertdf: pd.DataFrame, ensemble: str, zones: List[str]) -> None:
-
         self._ertdf = (
             ertdf.loc[(ertdf["ENSEMBLE"] == ensemble) & (ertdf["ZONE"].isin(zones))]
             .groupby(["WELL", "DATE", "ENSEMBLE"])

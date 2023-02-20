@@ -474,7 +474,6 @@ def check_if_update_needed(
     compute_diff: List,
     color_range_settings: Dict,
 ) -> Dict[str, Any]:
-
     update_controls = {}
     for map_id, current_map in zip(["map1", "map2"], current_maps):
         map_controllers_clicked = f'"map_id":"{map_id}"' in ctx["prop_id"]
@@ -532,7 +531,6 @@ def create_or_return_base_layer(
     color_range_settings: Dict,
     map_id: str,
 ) -> List[Dict]:
-
     surface_layers = []
     if update_controls[map_id]["use_base_layer"]:
         for layer in current_map:

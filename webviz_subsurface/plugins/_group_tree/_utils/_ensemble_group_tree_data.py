@@ -24,7 +24,6 @@ class EnsembleGroupTreeData:
         excl_well_startswith: Optional[List[str]] = None,
         excl_well_endswith: Optional[List[str]] = None,
     ):
-
         self._provider = provider
         self._gruptree_model = gruptree_model
         self._terminal_node = terminal_node

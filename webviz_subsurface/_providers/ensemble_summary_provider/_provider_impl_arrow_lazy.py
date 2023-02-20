@@ -203,7 +203,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
     def from_backing_store(
         storage_dir: Path, storage_key: str
     ) -> Optional["ProviderImplArrowLazy"]:
-
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         if arrow_file_name.is_file():
             return ProviderImplArrowLazy(arrow_file_name)
@@ -237,7 +236,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         exclude_all_values_zero: bool = False,
         exclude_constant_values: bool = False,
     ) -> List[str]:
-
         timer = PerfTimer()
 
         schema = self._get_or_read_schema()
@@ -286,7 +284,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
-
         timer = PerfTimer()
 
         table = self._get_or_read_table(["DATE", "REAL"])
@@ -324,7 +321,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
-
         if not vector_names:
             raise ValueError("List of requested vector names is empty")
 
@@ -366,7 +362,6 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
         vector_names: Sequence[str],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
-
         if not vector_names:
             raise ValueError("List of requested vector names is empty")
 

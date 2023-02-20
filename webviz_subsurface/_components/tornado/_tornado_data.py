@@ -128,7 +128,6 @@ class TornadoData:
                     )
             # If `SENSTYPE` is monte carlo get p10, p90
             elif (sens_name_df["SENSTYPE"] == "mc").all():
-
                 # Calculate p90(low) and p10(high)
                 p90 = sens_name_df["VALUE"].quantile(0.10)
                 p10 = sens_name_df["VALUE"].quantile(0.90)

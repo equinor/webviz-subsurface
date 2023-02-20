@@ -46,7 +46,6 @@ and the parameter columns.
         csvfile: Path = None,
         ensembles: list = None,
     ):
-
         super().__init__()
 
         self.csvfile = csvfile if csvfile else None
@@ -178,7 +177,6 @@ and the parameter columns.
         def _set_parameter_from_btn(
             _prev_click: int, _next_click: int, column: str
         ) -> str:
-
             ctx = callback_context.triggered
             if ctx is None:
                 raise PreventUpdate

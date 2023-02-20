@@ -32,7 +32,6 @@ class WellServer:
         return _WELL_SERVER_INSTANCE
 
     def add_provider(self, provider: WellProvider) -> None:
-
         provider_id = provider.provider_id()
         LOGGER.debug(f"Adding provider with id={provider_id}")
 
@@ -55,7 +54,6 @@ class WellServer:
         provider_id: str,
         well_names: List[str],
     ) -> str:
-
         if not provider_id in self._id_to_provider_dict:
             raise ValueError("Could not find provider")
 

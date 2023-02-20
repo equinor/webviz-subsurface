@@ -409,7 +409,6 @@ def update_intersection(
         color_list: List[str],
         previous_settings: Dict,
     ) -> Tuple[Dict, Dict]:
-
         ctx = callback_context.triggered[0]
 
         new_settings = {

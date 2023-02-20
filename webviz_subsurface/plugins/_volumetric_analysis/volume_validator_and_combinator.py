@@ -40,7 +40,6 @@ class VolumeValidatorAndCombinator:
     FLUID_TYPES = ["TOTAL", "GAS", "OIL"]
 
     def __init__(self, volumes_table: pd.DataFrame, fipfile: Path = None):
-
         self.volume_sources: Dict[str, List[str]] = {
             "static": [],
             "dynamic": [],

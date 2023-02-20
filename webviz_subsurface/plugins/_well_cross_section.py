@@ -80,7 +80,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         nextend: int = 2,
         sampling: int = 40,
     ):
-
         super().__init__()
 
         self.zunit = zunit

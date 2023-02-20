@@ -192,7 +192,6 @@ folder, to avoid risk of not extracting the right data.
         predefined_expressions: str = None,
         line_shape_fallback: str = "linear",
     ):
-
         super().__init__()
 
         WEBVIZ_ASSETS.add(
@@ -1046,7 +1045,6 @@ folder, to avoid risk of not extracting the right data.
             cum_interval: str,
             expressions: List[ExpressionInfo],
         ) -> Union[EncodedFile, str]:
-
             """Callback to download data based on selections"""
             if data_requested is None:
                 raise PreventUpdate
@@ -1509,7 +1507,6 @@ def _get_fanchart_traces(
     """Add fanchart traces for selected vector"""
     traces = []
     for ensemble, ens_df in stat_df.groupby(("", "ENSEMBLE")):
-
         data = FanchartData(
             samples=ens_df[("", "DATE")].tolist(),
             low_high=LowHighData(

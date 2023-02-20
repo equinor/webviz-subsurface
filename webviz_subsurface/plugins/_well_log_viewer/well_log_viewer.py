@@ -95,7 +95,6 @@ Format of the `initial_settings` argument:
         well_downsample_interval: int = None,
         initial_settings: Dict = None,
     ):
-
         super().__init__()
         self._wellfolder = wellfolder
         self._wellsuffix = wellsuffix

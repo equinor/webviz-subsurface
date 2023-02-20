@@ -27,7 +27,6 @@ aggregated_data/morris.csv).
 """
 
     def __init__(self, app: Dash, csv_file: Path):
-
         super().__init__()
 
         self.graph_id = f"graph-{uuid4()}"
