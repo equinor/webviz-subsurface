@@ -295,7 +295,7 @@ class RftPlotterDataModel:
         return functions
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: str) -> pd.DataFrame:
     return pd.read_csv(csv_file)
@@ -310,7 +310,7 @@ def interpolate_depth(df: pd.DataFrame) -> pd.DataFrame:
     return df.to_frame().rename(columns={0: "PRESSURE"}).reset_index()
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def filter_frame(
     dframe: pd.DataFrame, column_values: Dict[str, Union[List[str], str]]
 ) -> pd.DataFrame:

@@ -357,7 +357,7 @@ class ParameterPlot(ViewABC):
             )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def render_matrix(ensemble_path: str, theme: dict, drop_constants: bool = True) -> dict:
     corrdf = get_corr_data(ensemble_path, drop_constants)
     corrdf = corrdf.mask(np.tril(np.ones(corrdf.shape)).astype(np.bool_))
@@ -393,7 +393,7 @@ def render_matrix(ensemble_path: str, theme: dict, drop_constants: bool = True) 
     return {"data": [data], "layout": layout}
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def render_scatter(
     ens1: str,
     x_col: str,
@@ -503,7 +503,7 @@ def theme_layout(theme: dict, specific_layout: dict) -> dict:
     return layout
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFrame:
     """
     if drop_constants:
@@ -531,7 +531,7 @@ def get_corr_data(ensemble_path: str, drop_constants: bool = True) -> pd.DataFra
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def get_parameters(ensemble_path: Path) -> pd.DataFrame:
     return (

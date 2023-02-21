@@ -1282,7 +1282,7 @@ folder, to avoid risk of not extracting the right data.
 
 
 # pylint: disable = too-many-arguments
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def calculate_vector_dataframes(
     smry: pd.DataFrame,
     smry_meta: Union[pd.DataFrame, None],
@@ -1312,7 +1312,7 @@ def calculate_vector_dataframes(
 
 
 # pylint: disable = too-many-arguments
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def calculate_vector_dataframe(
     smry: pd.DataFrame,
     smry_meta: Union[pd.DataFrame, None],
@@ -1408,7 +1408,7 @@ def calculate_delta(df: pd.DataFrame, base_ens: str, delta_ens: str) -> pd.DataF
     return dframe.dropna(axis=0, how="any")
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def add_histogram_traces(
     dframe: pd.DataFrame,
     vector: str,
@@ -1439,7 +1439,7 @@ def add_histogram_traces(
     ]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def add_observation_trace(obs: dict) -> List[dict]:
     return [
         {
@@ -1459,7 +1459,7 @@ def add_observation_trace(obs: dict) -> List[dict]:
     ]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def add_realization_traces(
     dframe: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
 ) -> List[dict]:
@@ -1500,7 +1500,7 @@ def add_history_trace(dframe: pd.DataFrame, vector: str, line_shape: str) -> dic
     }
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def _get_fanchart_traces(
     stat_df: pd.DataFrame, vector: str, colors: dict, line_shape: str, interval: str
 ) -> list:
@@ -1558,7 +1558,7 @@ def _add_statistics_traces(
     return traces
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)

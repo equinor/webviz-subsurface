@@ -714,7 +714,7 @@ def calculate_table(df: pd.DataFrame, response: str) -> Tuple[List[dict], List[d
     return table, columns
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def filter_dataframe(
     dframe: pd.DataFrame,
     columns: Union[str, List[str]],
@@ -735,7 +735,7 @@ def filter_dataframe(
     return df
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)

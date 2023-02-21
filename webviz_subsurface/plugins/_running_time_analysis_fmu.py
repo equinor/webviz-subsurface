@@ -394,7 +394,7 @@ blob/master/reek_history_match/realization-0/iter-0/status.json).
         ]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def render_matrix(status_df: pd.DataFrame, rel: str, theme: dict) -> dict:
     """Render matrix
     Returns figure object as heatmap for the chosen ensemble and scaling method.
@@ -465,7 +465,7 @@ def render_matrix(status_df: pd.DataFrame, rel: str, theme: dict) -> dict:
     return {"data": [data], "layout": layout}
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def render_parcoord(
     plot_df: pd.DataFrame,
     params: List[str],
@@ -527,7 +527,7 @@ def render_parcoord(
     return {"data": [data], "layout": layout}
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
@@ -688,7 +688,7 @@ def make_status_df(
     return pd.concat([job_status_df, real_status_df], keys=["job", "real"], sort=False)
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def make_colormap(color_array: list, discrete: int = None) -> list:
     """
     Returns a colormap:

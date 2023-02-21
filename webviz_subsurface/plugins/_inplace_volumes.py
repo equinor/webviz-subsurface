@@ -506,7 +506,7 @@ but the following responses are given more descriptive names automatically:
                 return False, selectors[0], 1
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def plot_data(
     plot_type: str, dframe: pd.DataFrame, response: str, name: str
 ) -> Union[dict, None]:
@@ -527,7 +527,7 @@ def plot_data(
     return output
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def plot_table(dframe: pd.DataFrame, response: str, name: str) -> Union[dict, None]:
     values = dframe[response]
 
@@ -548,7 +548,7 @@ def plot_table(dframe: pd.DataFrame, response: str, name: str) -> Union[dict, No
     return output
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def plot_layout(plot_type: str, response: str, theme: dict) -> dict:
     layout = {}
     layout.update(theme["layout"])
@@ -588,7 +588,7 @@ def plot_layout(plot_type: str, response: str, theme: dict) -> dict:
     return layout
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def filter_dataframe(
     dframe: pd.DataFrame,
     columns: Union[str, List[str]],
@@ -605,7 +605,7 @@ def filter_dataframe(
     return df
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: Path) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=None)

@@ -503,6 +503,6 @@ def get_path(path) -> Path:
     return Path(path)
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def read_csv(path: Path, index_col: Optional[int] = None) -> pd.DataFrame:
     return pd.read_csv(path, index_col=index_col)

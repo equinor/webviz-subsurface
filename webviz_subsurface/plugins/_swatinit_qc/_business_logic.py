@@ -322,7 +322,7 @@ class SwatinitQcDataModel:
         return table_data, [{"name": i, "id": i} for i in column_order]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file: str) -> pd.DataFrame:
     return pd.read_csv(csv_file)

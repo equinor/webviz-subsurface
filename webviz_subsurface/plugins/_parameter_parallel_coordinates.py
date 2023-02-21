@@ -591,7 +591,7 @@ def render_parcoord(plot_df, theme, colormap, color_col, ens, mode, params, resp
     return {"data": data, "layout": theme.create_themed_layout(layout)}
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)

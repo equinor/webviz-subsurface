@@ -836,7 +836,7 @@ folder, to avoid risk of not extracting the right data.
             return title
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def make_title(smry_meta: pd.DataFrame, ref_vector: str, vector: str, mode: str) -> str:
     return (
         f"{simulation_vector_description(vector).split(')')[0]})"
@@ -1061,7 +1061,7 @@ def render_table(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def filter_and_aggregate_vectors(
     smry: pd.DataFrame,
     ensembles: list,
@@ -1125,7 +1125,7 @@ def filter_and_aggregate_vectors(
     )
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_nodes(groupby: str, fipdesc: pd.DataFrame, fip: str, filters: dict) -> dict:
     df = fipdesc[fipdesc["FIP"] == fip]
     nodes: dict = {}
@@ -1168,7 +1168,7 @@ def calc_real_recovery(df: pd.DataFrame, agg_vectors: List[str]):  # type: ignor
 
 
 # pylint: disable=too-many-arguments, too-many-locals, unused-argument
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def per_real_calculations(
     df: pd.DataFrame,
     ensembles: list,
@@ -1397,7 +1397,7 @@ def get_fipdesc(fipfile: Path, column_keys: list) -> pd.DataFrame:
     return pd.concat(dfs).sort_index()
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 def get_unit(smry_meta: pd.DataFrame, vec: str) -> Union[str, None]:
     return (
         None

@@ -44,7 +44,7 @@ class EnsembleModel:
             self.ensemble_name: self.ensemble_path.split("realization", maxsplit=1)[0]
         }
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def load_ensemble(self) -> ScratchEnsemble:
         ensemble = (
             ScratchEnsemble(self.ensemble_name, self.ensemble_path)
@@ -129,7 +129,7 @@ class EnsembleModel:
         )
         return self._load_csv(csv_file=csv_file)
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     @webvizstore
     def _load_parameters(self) -> pd.DataFrame:
         return self.load_ensemble().parameters
@@ -140,7 +140,7 @@ class EnsembleModel:
     # On the other hand, if we remove it we will save the memory, but during build of
     # a portable app we will end up loading the ensemble's smry data twice. Once during
     # normal init of the plugins and once when saving to the webviz store.
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     @webvizstore
     def _load_smry(
         self,
@@ -151,7 +151,7 @@ class EnsembleModel:
             time_index=time_index, column_keys=column_keys
         )
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     @webvizstore
     def _load_smry_meta(
         self,
@@ -162,7 +162,7 @@ class EnsembleModel:
             self.load_ensemble().get_smry_meta(column_keys=column_keys)
         ).T
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     @webvizstore
     def _load_csv(self, csv_file: pathlib.Path) -> pd.DataFrame:
         return self.load_ensemble().load_csv(str(csv_file))

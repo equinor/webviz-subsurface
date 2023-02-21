@@ -75,7 +75,7 @@ class WellSetModel:
         """Returns list of well names"""
         return list(self._wells.keys())
 
-    @CACHE.memoize(timeout=CACHE.TIMEOUT)
+    @CACHE.memoize()
     def get_fence(
         self,
         well_name: str,

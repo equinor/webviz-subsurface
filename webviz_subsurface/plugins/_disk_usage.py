@@ -122,7 +122,7 @@ class DiskUsage(WebvizPluginABC):
         ]
 
 
-@CACHE.memoize(timeout=CACHE.TIMEOUT)
+@CACHE.memoize()
 @webvizstore
 def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
     if date is None:
