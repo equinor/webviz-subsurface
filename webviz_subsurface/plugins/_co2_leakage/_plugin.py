@@ -9,8 +9,8 @@ from webviz_config.utils import StrEnum
 from webviz_subsurface._providers import FaultPolygonsServer, SurfaceImageServer
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     SurfaceData,
-    create_map_layers,
     create_map_annotations,
+    create_map_layers,
     create_map_viewports,
     derive_surface_address,
     get_plume_polygon,

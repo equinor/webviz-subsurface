@@ -3,10 +3,11 @@ from typing import Dict, List, Optional, Tuple
 
 import jwt
 import numpy as np
+import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html, no_update
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
-import webviz_subsurface_components as wsc
+
 from webviz_subsurface._providers.ensemble_grid_provider import (
     CellFilter,
     EnsembleGridProvider,
