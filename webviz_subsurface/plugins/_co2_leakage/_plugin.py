@@ -10,6 +10,8 @@ from webviz_subsurface._providers import FaultPolygonsServer, SurfaceImageServer
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     SurfaceData,
     create_map_layers,
+    create_map_annotations,
+    create_map_viewports,
     derive_surface_address,
     get_plume_polygon,
     property_origin,
@@ -124,18 +126,18 @@ class CO2Leakage(WebvizPluginABC):
             self._error_message = f"Plugin initialization failed: {err}"
             raise
 
-        color_tables = co2leakage_color_tables()
+        self._color_tables = co2leakage_color_tables()
         self.add_shared_settings_group(
             ViewSettings(
                 self._ensemble_paths,
                 self._ensemble_surface_providers,
                 initial_surface,
                 self._map_attribute_names,
-                [c["name"] for c in color_tables],  # type: ignore
+                [c["name"] for c in self._color_tables],  # type: ignore
             ),
             self.Ids.MAIN_SETTINGS,
         )
-        self.add_view(MainView(color_tables), self.Ids.MAIN_VIEW)
+        self.add_view(MainView(self._color_tables), self.Ids.MAIN_VIEW)
 
     @property
     def layout(self) -> html.Div:
@@ -213,6 +215,8 @@ class CO2Leakage(WebvizPluginABC):
         # pylint: disable=too-many-arguments,too-many-locals
         @callback(
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
+            Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "children"),
+            Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "views"),
             Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
             Input(self._view_component(MapViewElement.Ids.DATE_SLIDER), "value"),
             Input(self._settings_component(ViewSettings.Ids.FORMATION), "value"),
@@ -302,5 +306,10 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_provider=self._well_pick_provider,
                 plume_extent_data=plume_polygon,
             )
-
-            return layers
+            annotations = create_map_annotations(
+                formation=formation,
+                surface_data=surf_data,
+                colortables=self._color_tables,
+            )
+            viewports = create_map_viewports()
+            return (layers, annotations, viewports)

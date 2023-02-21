@@ -149,7 +149,7 @@ class SurfaceImageServer:
 
     def _setup_url_rule(self, app: Dash) -> None:
         @app.server.route(_ROOT_URL_PATH + "/<full_surf_address_str>")
-        def _handle_surface_request(full_surf_address_str: str) -> flask.Response:
+        def _handle_surface_image_request(full_surf_address_str: str) -> flask.Response:
             LOGGER.debug(
                 f"Handling surface_request: "
                 f"full_surf_address_str={full_surf_address_str} "
