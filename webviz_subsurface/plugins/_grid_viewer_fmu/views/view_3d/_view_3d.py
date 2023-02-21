@@ -258,7 +258,7 @@ class View3D(ViewABC):
             grid_range: List[List[int]],
             colormap: str,
             proptype: str,
-        ) -> list:
+        ) -> Tuple[List, List]:
             """Updates the information box with information on the visualized data."""
             if PROPERTYTYPE(proptype) == PROPERTYTYPE.STATIC:
                 property_spec = PropertySpec(prop_name=properties[0], prop_date=None)

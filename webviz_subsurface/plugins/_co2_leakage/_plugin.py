@@ -245,7 +245,7 @@ class CO2Leakage(WebvizPluginABC):
             plume_threshold: Optional[float],
             plume_smoothing: Optional[float],
             ensemble: str,
-        ) -> List[Dict[str, Any]]:
+        ) -> Tuple[List[Dict[Any, Any]], List[Any], Dict[Any, Any]]:
             attribute = MapAttribute(attribute)
             if len(realization) == 0:
                 raise PreventUpdate
