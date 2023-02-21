@@ -295,7 +295,7 @@ class View3D(ViewABC):
                 color_range = actual_value_range
             children = [
                 wsc.ViewAnnotation(
-                    id=f"view_1",
+                    id="view_1",
                     children=[
                         wsc.WebVizColorLegend(
                             min=color_range[0],
