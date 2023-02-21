@@ -75,7 +75,7 @@ jobs:
       - name: 🕵️ Check code style & linting
         run: |
           black --check webviz_subsurface tests setup.py
-          # pylint webviz_subsurface tests setup.py
+          pylint webviz_subsurface tests setup.py
           bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
           isort --check-only webviz_subsurface tests setup.py
           mypy --package webviz_subsurface
@@ -92,7 +92,7 @@ jobs:
           git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
           # Copy any clientside script to the test folder before running tests
           mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
-          # pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
+          pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
           rm -rf ./tests/assets
           webviz docs --portable ./docs_build --skip-open
 
