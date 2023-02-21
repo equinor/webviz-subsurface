@@ -60,7 +60,6 @@ def _create_provider_obj_with_data(
     input_data: list,
     storage_dir: Path,
 ) -> EnsembleSummaryProvider:
-
     # Turn rows into columns
     columns_with_header = list(zip(*input_data))
 

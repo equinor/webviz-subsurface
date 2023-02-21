@@ -155,7 +155,6 @@ class RealInterpolationInfo:
 def _extract_real_interpolation_info(
     table: pa.Table, start_row_idx: int, row_count: int, freq: Frequency
 ) -> RealInterpolationInfo:
-
     real_dates = table["DATE"].slice(start_row_idx, row_count).to_numpy()
 
     min_raw_date = np.min(real_dates)

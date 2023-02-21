@@ -102,7 +102,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         sampling: int = 40,
         colors: list = None,
     ):
-
         super().__init__()
 
         if wellfiles is not None == wellfolder is not None:
@@ -646,7 +645,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 def calculate_surface_statistics(
     realdf_dict: list, ensemble: str, surfacefile: str, surfacefolder: Path
 ) -> io.BytesIO:
-
     realdf = pd.DataFrame(realdf_dict)
 
     fns = [

@@ -4,7 +4,6 @@ import xtgeo
 
 
 def xtgeo_well_logs_to_json_format(well: xtgeo.Well) -> Dict:
-
     header = generate_header(well_name=well.name)
     curves = []
 

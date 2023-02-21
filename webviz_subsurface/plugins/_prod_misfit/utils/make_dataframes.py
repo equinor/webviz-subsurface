@@ -28,7 +28,6 @@ def get_df_smry(
     dfs = []
 
     for ens_name in ensemble_names:
-
         df_smry = _get_filtered_df(
             input_provider_set,
             ens_name,
@@ -104,7 +103,6 @@ def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
 
     for ens_name, dframe in df_diff.groupby("ENSEMBLE"):
         for _date, ensdf in dframe.groupby("DATE"):
-
             for col in ensdf.columns:
                 if ":" in col:
                     vector = col.split(":")[0]
@@ -143,6 +141,7 @@ def get_df_diff_stat(df_diff: pd.DataFrame) -> pd.DataFrame:
 
 
 # -- help functions -------------
+
 
 # --------------------------------
 def get_df_hist_avg(df_long: pd.DataFrame) -> pd.DataFrame:

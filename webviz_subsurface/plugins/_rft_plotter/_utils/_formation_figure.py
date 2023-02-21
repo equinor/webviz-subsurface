@@ -144,7 +144,7 @@ class FormationFigure:
         df = filter_frame(df, {"WELL": self._well})
         df = df[df["TOP_MD"] != df["BASE_MD"]]
 
-        for (_index, row) in df.iterrows():
+        for _index, row in df.iterrows():
             if pd.isnull(row[base_col]):
                 raise KeyError(f"{base_col} has missing information")
 

@@ -136,7 +136,6 @@ Responses are extracted automatically from the `.arrow` files in the individual 
         aggregation: str = "sum",
         corr_method: str = "pearson",
     ):
-
         super().__init__()
 
         self.parameter_csv = parameter_csv if parameter_csv else None

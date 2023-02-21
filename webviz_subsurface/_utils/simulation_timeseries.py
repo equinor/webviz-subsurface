@@ -53,6 +53,7 @@ def calc_series_statistics(
     """Calculate statistics for given vectors over the ensembles
     refaxis is used if another column than DATE should be used to groupby.
     """
+
     # Invert p10 and p90 due to oil industry convention.
     def p10(x: List[float]) -> np.floating:
         return np.nanpercentile(x, q=90)

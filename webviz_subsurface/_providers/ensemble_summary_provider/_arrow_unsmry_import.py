@@ -20,7 +20,6 @@ class FileEntry:
 
 
 def _discover_arrow_unsmry_files(globpattern: str) -> List[FileEntry]:
-
     realidxregexp = re.compile(r"realization-(\d+)")
 
     globbedpaths = glob.glob(globpattern)

@@ -105,7 +105,6 @@ class SurfaceImageServer:
         self,
         qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
     ) -> Optional[SurfaceImageMeta]:
-
         if isinstance(qualified_address, QualifiedSurfaceAddress):
             base_cache_key = _address_to_str(
                 qualified_address.provider_id, qualified_address.address
@@ -133,7 +132,6 @@ class SurfaceImageServer:
     def encode_partial_url(
         qualified_address: Union[QualifiedSurfaceAddress, QualifiedDiffSurfaceAddress],
     ) -> str:
-
         if isinstance(qualified_address, QualifiedSurfaceAddress):
             address_str = _address_to_str(
                 qualified_address.provider_id, qualified_address.address
@@ -182,7 +180,6 @@ class SurfaceImageServer:
         base_cache_key: str,
         surface: xtgeo.RegularSurface,
     ) -> None:
-
         timer = PerfTimer()
         LOGGER.debug("Converting surface to PNG image...")
         png_bytes: bytes = surface_to_png_bytes_optimized(surface)

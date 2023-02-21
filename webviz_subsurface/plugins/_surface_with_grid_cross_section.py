@@ -68,7 +68,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         zunit="depth (m)",
         colors: list = None,
     ):
-
         super().__init__()
         self.zunit = zunit
         self.gridfile = str(gridfile)
@@ -308,7 +307,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             color_values,
             hillshade,
         ):
-
             surface = xtgeo.surface_from_file(get_path(surfacepath))
             min_val = None
             max_val = None
@@ -433,7 +431,6 @@ def make_heatmap(
     yaxis_title=None,
     xaxis_title=None,
 ):
-
     x_inc = (xmax - xmin) / arr.shape[1]
     y_inc = (ymax - ymin) / arr.shape[0]
     colors = (

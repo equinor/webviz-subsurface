@@ -21,7 +21,6 @@ def layout_controllers(get_uuid: Callable) -> None:
         button_ids: list,
         previous_page: dict,
     ) -> tuple:
-
         ctx = callback_context.triggered[0]
         initial_pages = {"voldist": "custom", "tornado": "torn_multi"}
 
@@ -58,7 +57,6 @@ def layout_controllers(get_uuid: Callable) -> None:
     def _update_button_style(
         page_selected: str, tab_selected: str, button_ids: list
     ) -> list:
-
         if tab_selected not in ["voldist", "tornado"]:
             raise PreventUpdate
 
@@ -89,7 +87,6 @@ def layout_controllers(get_uuid: Callable) -> None:
         main_layout_ids: list,
         tab_selected: str,
     ) -> list:
-
         if tab_selected != "voldist":
             raise PreventUpdate
 
@@ -112,7 +109,6 @@ def layout_controllers(get_uuid: Callable) -> None:
         main_layout_ids: list,
         tab_selected: str,
     ) -> list:
-
         if tab_selected != "tornado":
             raise PreventUpdate
 

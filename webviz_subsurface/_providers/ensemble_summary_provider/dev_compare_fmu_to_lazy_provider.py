@@ -33,7 +33,6 @@ REL_TOLERANCE = 1e-5
 
 
 def _make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
-
     sampled_date_value = df["DATE"].values[0]
 
     # Infer datatype based on the first element:
@@ -70,7 +69,6 @@ def _make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
 def _load_smry_dataframe_using_fmu(
     ens_path: str, frequency: Optional[Frequency]
 ) -> pd.DataFrame:
-
     time_index: str = "raw"
     if frequency:
         time_index = frequency.value
@@ -97,7 +95,6 @@ def _load_smry_dataframe_using_fmu(
 def _load_smry_dataframe_using_ecl2df(
     ens_path: str, frequency: Optional[Frequency]
 ) -> pd.DataFrame:
-
     time_index: str = "raw"
     if frequency:
         time_index = frequency.value
@@ -152,7 +149,6 @@ def _compare_reference_df_to_provider_get_vectors_df(
     provider: EnsembleSummaryProvider,
     frequency: Optional[Frequency],
 ) -> None:
-
     reference_df = reference_df.reset_index(drop=True)
     # print(ref_df)
 
@@ -188,7 +184,6 @@ def _compare_reference_df_to_provider_get_vectors_df(
 def _compare_reference_df_to_provider_get_vectors_for_date(
     reference_df: pd.DataFrame, provider: EnsembleSummaryProvider
 ) -> None:
-
     all_dates = reference_df["DATE"].unique()
     num_dates = len(all_dates)
     # print(all_dates)

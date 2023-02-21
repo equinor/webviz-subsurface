@@ -11,7 +11,6 @@ from .parameter_model import ParametersModel
 
 
 class InplaceVolumesModel:
-
     POSSIBLE_SELECTORS = [
         "FLUID_ZONE",
         "SOURCE",

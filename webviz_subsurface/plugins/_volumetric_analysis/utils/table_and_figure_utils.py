@@ -12,7 +12,6 @@ def create_table_columns(
     use_si_format: Optional[list] = None,
     use_percentage: Optional[list] = None,
 ) -> List[dict]:
-
     text_columns = text_columns if text_columns is not None else []
     use_si_format = use_si_format if use_si_format is not None else []
     use_percentage = use_percentage if use_percentage is not None else []
@@ -42,7 +41,6 @@ def create_data_table(
     style_cell_conditional: Optional[list] = None,
     style_data_conditional: Optional[list] = None,
 ) -> Union[list, wcc.WebvizPluginPlaceholder]:
-
     if not data:
         return []
 

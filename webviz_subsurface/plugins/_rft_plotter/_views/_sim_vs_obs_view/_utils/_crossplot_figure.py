@@ -10,14 +10,12 @@ from ...._types import ColorAndSizeByType
 def update_crossplot(
     df: pd.DataFrame, sizeby: ColorAndSizeByType, colorby: ColorAndSizeByType
 ) -> List[wcc.Graph]:
-
     sim_range = find_sim_range(df)
     sizeref, cmin, cmax = size_color_settings(df, sizeby, colorby)
 
     figures = []
 
     for _ens, ensdf in df.groupby("ENSEMBLE"):
-
         dframe = (
             ensdf.groupby(["WELL", "DATE", "ZONE", "TVD"]).mean().reset_index().copy()
         )
@@ -96,7 +94,6 @@ def update_crossplot(
 def size_color_settings(
     df: pd.DataFrame, sizeby: ColorAndSizeByType, colorby: ColorAndSizeByType
 ) -> Tuple[np.float64, np.float64, np.float64]:
-
     df = df.groupby(["WELL", "DATE", "ZONE", "TVD", "ENSEMBLE"]).mean().reset_index()
 
     sizeref = df[sizeby.value].quantile(0.9)
@@ -107,7 +104,6 @@ def size_color_settings(
 
 
 def find_sim_range(df: pd.DataFrame) -> List[np.float64]:
-
     df = df.groupby(["WELL", "DATE", "ZONE", "TVD", "ENSEMBLE"]).mean().reset_index()
 
     max_sim = (

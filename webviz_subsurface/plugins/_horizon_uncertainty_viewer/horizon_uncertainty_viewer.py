@@ -49,7 +49,6 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         basedir: Path,
         planned_wells_dir: Path = None,
     ):
-
         super().__init__()
         self.plotly_theme = webviz_settings.theme.plotly_theme
         self.uid = uuid4()

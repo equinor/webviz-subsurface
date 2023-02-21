@@ -8,11 +8,9 @@ import webviz_core_components as wcc
 def update_misfit_per_real_plot(
     df: pd.DataFrame, enscolors: Dict[str, Any]
 ) -> List[wcc.Graph]:
-
     max_diff = find_max_diff(df)
     figures = []
     for ens, ensdf in df.groupby("ENSEMBLE"):
-
         realdf = ensdf.groupby("REAL").sum().reset_index()
 
         mean_diff = realdf["ABSDIFF"].mean()

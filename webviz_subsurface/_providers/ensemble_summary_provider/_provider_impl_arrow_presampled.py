@@ -255,7 +255,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
     def from_backing_store(
         storage_dir: Path, storage_key: str
     ) -> Optional["ProviderImplArrowPresampled"]:
-
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         if arrow_file_name.is_file():
             return ProviderImplArrowPresampled(arrow_file_name)
@@ -289,7 +288,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         exclude_all_values_zero: bool = False,
         exclude_constant_values: bool = False,
     ) -> List[str]:
-
         timer = PerfTimer()
 
         schema = self._get_or_read_schema()
@@ -353,7 +351,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> List[datetime.datetime]:
-
         if resampling_frequency is not None:
             raise ValueError("Resampling is not supported by this provider")
 
@@ -385,7 +382,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         resampling_frequency: Optional[Frequency],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
-
         if resampling_frequency is not None:
             raise ValueError("Resampling is not supported by this provider")
 
@@ -424,7 +420,6 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
         vector_names: Sequence[str],
         realizations: Optional[Sequence[int]] = None,
     ) -> pd.DataFrame:
-
         timer = PerfTimer()
 
         columns_to_get = ["DATE", "REAL"]

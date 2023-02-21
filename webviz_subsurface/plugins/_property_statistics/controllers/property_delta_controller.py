@@ -95,7 +95,6 @@ def make_surfaces(
     get_uuid: Callable,
     statistic: str = "mean",
 ) -> html.Div:
-
     try:
         ens_surface = surface_from_zone_prop(
             surface_table,

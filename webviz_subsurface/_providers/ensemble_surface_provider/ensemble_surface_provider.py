@@ -50,6 +50,7 @@ SurfaceAddress = Union[
     StatisticalSurfaceAddress, SimulatedSurfaceAddress, ObservedSurfaceAddress
 ]
 
+
 # Class provides data for ensemble surfaces
 class EnsembleSurfaceProvider(abc.ABC):
     @abc.abstractmethod

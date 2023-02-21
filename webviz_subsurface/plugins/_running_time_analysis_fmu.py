@@ -550,6 +550,7 @@ def make_status_df(
         ensemble_set_name="EnsembleSet",
         filter_file=None,
     )
+
     # sub-method to process ensemble data when all realizations in ensemble have been processed
     def ensemble_post_processing() -> list:
         # add missing realizations to get whitespace in heatmap matrix

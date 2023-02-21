@@ -53,7 +53,6 @@ class ProviderImplFile(EnsembleFaultPolygonsProvider):
         storage_key: str,
         sim_fault_polygons: List[FaultPolygonsFileInfo],
     ) -> None:
-
         timer = PerfTimer()
 
         # All data for this provider will be stored inside a sub-directory
@@ -117,7 +116,6 @@ class ProviderImplFile(EnsembleFaultPolygonsProvider):
         storage_dir: Path,
         storage_key: str,
     ) -> Optional["ProviderImplFile"]:
-
         provider_dir = storage_dir / storage_key
         parquet_file_name = provider_dir / "fault_polygons_inventory.parquet"
 
@@ -156,7 +154,6 @@ class ProviderImplFile(EnsembleFaultPolygonsProvider):
         self,
         address: FaultPolygonsAddress,
     ) -> Optional[xtgeo.Polygons]:
-
         if isinstance(address, SimulatedFaultPolygonsAddress):
             return self._get_simulated_fault_polygons(address)
 

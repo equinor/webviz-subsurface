@@ -170,7 +170,6 @@ class GridVizService:
         property_spec: Optional[PropertySpec],
         cell_filter: Optional[CellFilter],
     ) -> Tuple[SurfacePolys, Optional[PropertyScalars]]:
-
         LOGGER.debug(
             f"Getting grid surface... "
             f"(provider_id={provider_id}, real={realization}, "
@@ -238,7 +237,6 @@ class GridVizService:
         property_spec: PropertySpec,
         cell_filter: Optional[CellFilter],
     ) -> Optional[PropertyScalars]:
-
         LOGGER.debug(
             f"Getting property values... "
             f"(provider_id={provider_id}, real={realization}, "
@@ -304,7 +302,6 @@ class GridVizService:
         polyline_xy: List[float],
         property_spec: Optional[PropertySpec],
     ) -> Tuple[SurfacePolys, Optional[PropertyScalars]]:
-
         LOGGER.debug(
             f"Cutting along polyline... "
             f"(provider_id={provider_id}, real={realization})"
@@ -440,7 +437,6 @@ class GridVizService:
         property_spec: Optional[PropertySpec],
         cell_filter: Optional[CellFilter],
     ) -> Optional[PickResult]:
-
         LOGGER.debug(
             f"Doing ray pick: "
             f"ray.origin={ray.origin}, ray.end={ray.end}, "
@@ -510,7 +506,6 @@ class GridVizService:
     def _get_or_create_grid_worker(
         self, provider_id: str, realization: int
     ) -> Optional[GridWorker]:
-
         timer = PerfTimer()
 
         worker_key = f"P{provider_id}__R{realization}"
@@ -686,7 +681,6 @@ def _calc_polyline_bounds(polyline_xy: List[float]) -> Optional[List[float]]:
 def _extract_intersected_ugrid(
     ugrid: vtkUnstructuredGrid, polyline_xy_in: List[float], max_point_dist: float
 ) -> vtkUnstructuredGrid:
-
     timer = PerfTimer()
 
     polyline_xy = _resample_polyline(polyline_xy_in, max_point_dist)

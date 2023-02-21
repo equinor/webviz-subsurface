@@ -22,7 +22,6 @@ def export_data_controllers(get_uuid: Callable) -> None:
         button_ids: list,
         table_ids: list,
     ) -> Callable:
-
         ctx = callback_context.triggered[0]
         export_clicks = {
             id_value["table_id"]: n_clicks

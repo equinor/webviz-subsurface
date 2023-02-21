@@ -121,7 +121,6 @@ class WellCompletionView(ViewABC):
         def _render_well_completions(
             ensemble_name: str, data_mode: DataMode, real: int
         ) -> Tuple:
-
             data = self._data_models[ensemble_name].create_ensemble_dataset(
                 realization=real if data_mode == DataMode.SINGLE_REAL else None
             )

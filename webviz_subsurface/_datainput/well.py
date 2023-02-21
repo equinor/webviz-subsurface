@@ -193,7 +193,6 @@ def create_leaflet_well_marker_layer(
 ) -> Dict:
     data = []
     for well in wells:
-
         with np.errstate(invalid="ignore"):
             surface_picks = well.get_surface_picks(surface)
         if surface_picks is None:

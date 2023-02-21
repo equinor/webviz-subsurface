@@ -141,7 +141,6 @@ folder, to avoid risk of not extracting the right data.
         sampling: str = "monthly",
         line_shape_fallback: str = "linear",
     ):
-
         super().__init__()
 
         self.column_keys = column_keys

@@ -13,7 +13,6 @@ def _get_n_vectors_one_by_one_all_realizations(
     resampling_frequency: Optional[Frequency],
     num_vectors: int,
 ) -> None:
-
     all_vectors = provider.vector_names()
     num_vectors = min(num_vectors, len(all_vectors))
     vectors_to_get = all_vectors[0:num_vectors]
@@ -55,7 +54,6 @@ def _get_n_vectors_in_batch_all_realizations(
     resampling_frequency: Optional[Frequency],
     num_vectors: int,
 ) -> None:
-
     all_vectors = provider.vector_names()
     num_vectors = min(num_vectors, len(all_vectors))
     vectors_to_get = all_vectors[0:num_vectors]
@@ -87,7 +85,6 @@ def _get_n_vectors_in_batch_all_realizations(
 def _get_n_vectors_for_date_all_realizations(
     provider: EnsembleSummaryProvider, num_vectors: int, date: datetime.datetime
 ) -> None:
-
     all_vectors = provider.vector_names()
     num_vectors = min(num_vectors, len(all_vectors))
     vectors_to_get = all_vectors[0:num_vectors]
@@ -113,7 +110,6 @@ def _get_n_vectors_for_date_all_realizations(
 
 
 def _get_vector_names_filtered_by_value(provider: EnsembleSummaryProvider) -> None:
-
     print("## ------------------")
     print("## entering _get_vector_names_filtered_by_value() ...")
 
@@ -136,7 +132,6 @@ def _get_vector_names_filtered_by_value(provider: EnsembleSummaryProvider) -> No
 def _get_meta_for_n_vectors_one_by_one(
     provider: EnsembleSummaryProvider, num_vectors: int
 ) -> None:
-
     all_vectors = provider.vector_names()
     num_vectors = min(num_vectors, len(all_vectors))
     vectors_to_get = all_vectors[0:num_vectors]
@@ -163,7 +158,6 @@ def _get_meta_for_n_vectors_one_by_one(
 def _run_perf_tests(
     provider: EnsembleSummaryProvider, resampling_frequency: Optional[Frequency]
 ) -> None:
-
     all_vector_names = provider.vector_names()
     all_realizations = provider.realizations()
     all_dates = provider.dates(resampling_frequency)

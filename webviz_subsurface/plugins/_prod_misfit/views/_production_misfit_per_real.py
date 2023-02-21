@@ -266,7 +266,6 @@ class MisfitPerRealView(ViewABC):
             obs_error_weight: float,
             misfit_exponent: float,
         ) -> Union[str, List[Component]]:
-
             if not ensemble_names:
                 return "No ensembles selected"
 

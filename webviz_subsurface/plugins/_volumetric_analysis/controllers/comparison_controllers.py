@@ -249,7 +249,6 @@ def create_comparison_df(
     abssort_on: str = "diff (%)",
     rename_diff_col: bool = False,
 ) -> pd.DataFrame:
-
     resp = selections["Response"]
     adiitional_groups = [
         x for x in ["SOURCE", "ENSEMBLE", "SENSNAME_CASE"] if x in volumemodel.selectors
@@ -336,7 +335,6 @@ def create_comaprison_table(
     use_si_format: Optional[bool] = None,
     volumemodel: Optional[InplaceVolumesModel] = None,
 ) -> dash_table.DataTable:
-
     diff_mode_percent = selections["Diff mode"] == "diff (%)"
 
     if selections["Remove non-highlighted"]:
@@ -401,7 +399,6 @@ def create_scatterfig(
     groupby: list,
     diff_mode: Optional[str] = None,
 ) -> go.Figure:
-
     highlight_colors = {"yes": "#FF1243", "no": "#80B7BC"}
     colorby = (
         selections["Color by"]

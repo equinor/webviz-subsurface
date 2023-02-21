@@ -12,7 +12,6 @@ from webviz_subsurface._providers.ensemble_summary_provider._resampling import (
 def _create_table(
     num_reals: int, start_date: np.datetime64, end_date: np.datetime64, num_columns: int
 ) -> pa.Table:
-
     date_arr_np = np.empty(0, np.datetime64)
     real_arr_np = np.empty(0, np.int32)
 

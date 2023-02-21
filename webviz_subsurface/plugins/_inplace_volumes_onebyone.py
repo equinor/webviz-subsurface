@@ -122,7 +122,6 @@ aggregated_data/parameters.csv)
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
     ):
-
         super().__init__()
 
         self.csvfile_vol = csvfile_vol if csvfile_vol else None

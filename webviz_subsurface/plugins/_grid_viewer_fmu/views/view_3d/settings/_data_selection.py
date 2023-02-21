@@ -43,7 +43,6 @@ class DataSettings(SettingsGroupABC):
                 self.static_dynamic_value = PROPERTYTYPE.DYNAMIC
 
     def layout(self) -> List[Component]:
-
         return [
             wcc.SelectWithLabel(
                 label="Realizations",

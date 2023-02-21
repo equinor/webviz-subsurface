@@ -53,7 +53,6 @@ INPUT_DATA_STR = [
     ],
 )
 def fixture_provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProvider:
-
     input_py = request.param
     storage_dir = tmp_path
 
@@ -73,7 +72,6 @@ def fixture_provider(request: SubRequest, tmp_path: Path) -> EnsembleSummaryProv
 
 
 def test_get_vector_names(provider: EnsembleSummaryProvider) -> None:
-
     all_vecnames = provider.vector_names()
     assert len(all_vecnames) == 3
     assert all_vecnames == ["A", "C", "Z"]
@@ -92,13 +90,11 @@ def test_get_vector_names(provider: EnsembleSummaryProvider) -> None:
 
 
 def test_get_realizations(provider: EnsembleSummaryProvider) -> None:
-
     all_realizations = provider.realizations()
     assert len(all_realizations) == 2
 
 
 def test_get_dates(provider: EnsembleSummaryProvider) -> None:
-
     intersection_of_dates = provider.dates(resampling_frequency=None)
     assert len(intersection_of_dates) == 1
     assert isinstance(intersection_of_dates[0], datetime)
@@ -110,7 +106,6 @@ def test_get_dates(provider: EnsembleSummaryProvider) -> None:
 
 
 def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
-
     all_vecnames = provider.vector_names()
     assert len(all_vecnames) == 3
 
@@ -133,7 +128,6 @@ def test_get_vectors(provider: EnsembleSummaryProvider) -> None:
 
 
 def test_get_vectors_for_date(provider: EnsembleSummaryProvider) -> None:
-
     intersection_of_dates = provider.dates(resampling_frequency=None)
     assert len(intersection_of_dates) == 1
 

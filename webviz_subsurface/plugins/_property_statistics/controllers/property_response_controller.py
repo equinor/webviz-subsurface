@@ -134,7 +134,6 @@ def property_response_controller(
         figure: dict,
         label: str,
     ) -> Tuple[dict, dict, dict]:
-
         if (
             callback_context.triggered is None
             or callback_context.triggered[0]["prop_id"] == "."

@@ -40,7 +40,6 @@ class ColorScale(SettingsGroupABC):
         ]
 
     def layout(self) -> List[Component]:
-
         return [
             html.Div(
                 children=[

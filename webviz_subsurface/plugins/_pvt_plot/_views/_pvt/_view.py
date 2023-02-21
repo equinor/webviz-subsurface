@@ -162,7 +162,6 @@ class PvtView(ViewABC):
             plots_visibility_ids: List[dict],
             plots_visibility: List[str],
         ) -> List[Component]:
-
             if isinstance(selected_ensembles, str):
                 ensembles = [selected_ensembles]
             else:

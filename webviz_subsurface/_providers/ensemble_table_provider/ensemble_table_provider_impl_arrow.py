@@ -144,7 +144,6 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
     def write_backing_store_from_ensemble_dataframe(
         storage_dir: Path, storage_key: str, ensemble_df: pd.DataFrame
     ) -> None:
-
         table = pa.Table.from_pandas(ensemble_df, preserve_index=False)
 
         # The input DF may contain an ENSEMBLE column (which we'll drop before writing),
@@ -164,7 +163,6 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
     def from_backing_store(
         storage_dir: Path, storage_key: str
     ) -> Optional["EnsembleTableProviderImplArrow"]:
-
         arrow_file_name = storage_dir / (storage_key + ".arrow")
         if arrow_file_name.is_file():
             return EnsembleTableProviderImplArrow(arrow_file_name)
@@ -187,7 +185,6 @@ class EnsembleTableProviderImplArrow(EnsembleTableProvider):
     def get_column_data(
         self, column_names: Sequence[str], realizations: Optional[Sequence[int]] = None
     ) -> pd.DataFrame:
-
         timer = PerfTimer()
 
         # For now guard against requesting the same column multiple times since that

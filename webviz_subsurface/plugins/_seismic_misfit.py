@@ -1604,7 +1604,6 @@ class SeismicMisfit(WebvizPluginABC):
 
     @property
     def layout(self) -> wcc.Tabs:
-
         tabs_styles = {"height": "60px", "width": "100%"}
 
         tab_style = {
@@ -1659,7 +1658,6 @@ class SeismicMisfit(WebvizPluginABC):
 
     # pylint: disable=too-many-statements
     def set_callbacks(self, app: Dash) -> None:
-
         # --- Seismic obs data ---
         @app.callback(
             Output(self.uuid("obsdata-graph-raw"), "figure"),
@@ -1694,7 +1692,6 @@ class SeismicMisfit(WebvizPluginABC):
             obsmap_marker_size: int,
             obsmap_polygon: str,
         ) -> Tuple[px.scatter, px.scatter, dict, str, float, float]:
-
             if not regions:
                 raise PreventUpdate
 
@@ -1786,7 +1783,6 @@ class SeismicMisfit(WebvizPluginABC):
             misfit_exponent: float,
             misfit_normalization: bool,
         ) -> List[wcc.Graph]:
-
             if not regions:
                 raise PreventUpdate
             if not realizations:
@@ -1848,7 +1844,6 @@ class SeismicMisfit(WebvizPluginABC):
             figcols: int,
             figheight: int,
         ) -> Optional[List[wcc.Graph]]:
-
             if not regions:
                 raise PreventUpdate
             if not realizations:
@@ -1916,7 +1911,6 @@ class SeismicMisfit(WebvizPluginABC):
             figcols: int,
             figheight: int,
         ) -> Tuple[Optional[List[wcc.Graph]], Dict[str, str], Dict[str, str]]:
-
             if not regions:
                 raise PreventUpdate
             if not realizations:
@@ -1996,7 +1990,6 @@ class SeismicMisfit(WebvizPluginABC):
             map_plot_polygon: str,
             slice_type: str,
         ) -> Tuple[Optional[Any], Optional[Any]]:
-
             if not regions:
                 raise PreventUpdate
 
@@ -3011,7 +3004,6 @@ def update_errorbarplot_superimpose(
 
         # -----------------------
         if first:
-
             fig = px.scatter()
 
             obserrory = None
@@ -3224,7 +3216,6 @@ def makedf_seis_addsim(
     sim_df_list = [df]
     for real in sorted(real_path.keys()):
         if fromreal <= real <= toreal:
-
             simfile = (
                 Path(real_path[real]) / Path(attribute_sim_path) / Path(attribute_name)
             )

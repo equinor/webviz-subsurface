@@ -8,7 +8,6 @@ import webviz_subsurface._datainput.from_timeseries_cumulatives as from_cum
 
 
 def get_data_df(testdata_folder: Path) -> pd.DataFrame:
-
     data_df = pd.read_csv(
         testdata_folder / "reek_test_data" / "aggregated_data" / "unsmry--monthly.csv"
     )

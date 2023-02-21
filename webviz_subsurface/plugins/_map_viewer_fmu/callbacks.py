@@ -557,7 +557,6 @@ def plugin_callbacks(
         be used as the new value"""
         view_data = []
         for idx, data in enumerate(selector_values):
-
             if not ("ensemble" in linked_selectors and idx > 0):
                 ensembles = list(ensemble_surface_providers.keys())
                 ensemble = data.get("ensemble", [])
@@ -818,7 +817,8 @@ def plugin_callbacks(
 
     def update_selections_with_multi(values: List[dict], multi: str) -> List[dict]:
         """If a selector has been set as multi, the values selected in that component needs
-        to be divided between the views so that there is only one unique value in each"""
+        to be divided between the views so that there is only one unique value in each
+        """
         multi_values = values[0][multi]
         new_values = []
         for val in multi_values:

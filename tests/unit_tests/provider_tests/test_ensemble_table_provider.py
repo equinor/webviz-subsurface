@@ -96,7 +96,6 @@ def test_create_from_aggregated_csv_file_smry_csv(
 def test_create_from_per_realization_csv_file(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-
     factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_per_realization_csv_file(
         str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
@@ -125,7 +124,6 @@ def test_create_from_per_realization_csv_file(
 def test_create_from_per_realization_arrow_file(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-
     factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_per_realization_arrow_file(
         str(testdata_folder / "01_drogon_ahm/realization-*/iter-0"),
@@ -146,7 +144,6 @@ def test_create_from_per_realization_arrow_file(
 def test_create_from_per_realization_parameter_file(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-
     factory = EnsembleTableProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_per_realization_parameter_file(
         str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")

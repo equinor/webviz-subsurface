@@ -199,7 +199,9 @@ class VfpDataModel:
 
     @property
     def webviz_store(self) -> List[Tuple[Callable, List[Dict]]]:
-        return [(_discover_files, [{"file_pattern": self._vfp_file_pattern}]),] + [
+        return [
+            (_discover_files, [{"file_pattern": self._vfp_file_pattern}]),
+        ] + [
             (_read_vfp_arrow, [{"filename": filename}])
             for filename in self._vfp_files.values()
         ]

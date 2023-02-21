@@ -25,7 +25,6 @@ def main_view(
     theme: WebvizConfigTheme,
     disjoint_set_df: Optional[pd.DataFrame] = None,
 ) -> dcc.Tabs:
-
     tabs = []
     tabs.append(
         wcc.Tab(

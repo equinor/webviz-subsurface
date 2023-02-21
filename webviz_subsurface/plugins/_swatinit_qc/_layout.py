@@ -61,7 +61,6 @@ class Tabs:
 
 
 def plugin_main_layout(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> wcc.Tabs:
-
     return wcc.Tabs(
         id=get_uuid(LayoutElements.SELECTED_TAB),
         value=Tabs.OVERVIEW,

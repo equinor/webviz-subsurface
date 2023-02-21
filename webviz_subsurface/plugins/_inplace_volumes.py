@@ -93,7 +93,6 @@ but the following responses are given more descriptive names automatically:
         volfolder: str = "share/results/volumes",
         response: str = "STOIIP_OIL",
     ):
-
         super().__init__()
 
         self.csvfile = csvfile if csvfile else None

@@ -4,7 +4,6 @@ from webviz_config.testing import WebvizComposite
 
 
 def test_parameter_correlation(_webviz_duo: WebvizComposite, shared_settings) -> None:
-
     parameter_correlation = ParameterCorrelation(
         shared_settings["HM_SETTINGS"],
         ensembles=shared_settings["HM_ENSEMBLES"],

@@ -62,7 +62,6 @@ def _dump_smry_to_csv_using_fmu(
 
 
 def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) -> None:
-
     ensemble_path = str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
 
     # Used to generate test results
@@ -110,7 +109,6 @@ def test_create_from_arrow_unsmry_lazy(testdata_folder: Path, tmp_path: Path) ->
 def test_arrow_unsmry_lazy_vector_metadata(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-
     ensemble_path = str(testdata_folder / "01_drogon_ahm/realization-*/iter-0")
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
     provider = factory.create_from_arrow_unsmry_lazy(
@@ -151,7 +149,6 @@ def test_arrow_unsmry_lazy_vector_metadata(
 def test_create_from_arrow_unsmry_presampled_monthly(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-
     ensemble_path = testdata_folder / "01_drogon_ahm/realization-*/iter-0"
 
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
@@ -191,7 +188,6 @@ def test_create_from_arrow_unsmry_presampled_monthly(
 def test_create_from_per_realization_csv_file(
     testdata_folder: Path, tmp_path: Path
 ) -> None:
-
     _split_aggr_csv_into_per_real(
         str(testdata_folder / "reek_test_data/aggregated_data/smry.csv"),
         str(tmp_path / "fake_data"),
@@ -225,7 +221,6 @@ def test_create_from_per_realization_csv_file(
 
 
 def test_create_from_ensemble_csv(testdata_folder: Path, tmp_path: Path) -> None:
-
     factory = EnsembleSummaryProviderFactory(tmp_path, allow_storage_writes=True)
 
     csv_filename = (

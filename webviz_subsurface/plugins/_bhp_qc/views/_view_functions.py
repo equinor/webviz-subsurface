@@ -27,6 +27,7 @@ def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate statistics for given vectors over the ensembles
     refaxis is used if another column than DATE should be used to groupby.
     """
+
     # Invert p10 and p90 due to oil industry convention.
     def p10(x: np.ndarray) -> float:
         return np.nanpercentile(x, q=90)

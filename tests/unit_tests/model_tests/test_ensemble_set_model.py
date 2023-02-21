@@ -8,7 +8,6 @@ from webviz_subsurface._models.ensemble_set_model import EnsembleSetModel
 
 @pytest.mark.usefixtures("app")
 def test_single_ensemble(testdata_folder):
-
     emodel = EnsembleSetModel(
         ensemble_paths={
             "iter-0": str(
@@ -36,7 +35,6 @@ def test_single_ensemble(testdata_folder):
 
 @pytest.mark.usefixtures("app")
 def test_smry_load_multiple_ensembles(testdata_folder):
-
     emodel = EnsembleSetModel(
         ensemble_paths={
             "iter-0": str(

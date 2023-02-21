@@ -27,7 +27,6 @@ LOGGER = logging.getLogger(__name__)
 def xtgeo_grid_to_vtk_explicit_structured_grid(
     xtg_grid: xtgeo.Grid,
 ) -> vtkExplicitStructuredGrid:
-
     timer = PerfTimer()
 
     # Create geometry data suitable for use with VTK's explicit structured grid
@@ -65,7 +64,6 @@ def xtgeo_grid_to_vtk_explicit_structured_grid(
 def _create_vtk_esgrid_from_verts_and_conn(
     point_dims: np.ndarray, vertex_arr_np: np.ndarray, conn_arr_np: np.ndarray
 ) -> vtkExplicitStructuredGrid:
-
     vertex_arr_np = vertex_arr_np.reshape(-1, 3)
     points_vtkarr = numpy_to_vtk(vertex_arr_np, deep=1)
     vtk_points = vtkPoints()

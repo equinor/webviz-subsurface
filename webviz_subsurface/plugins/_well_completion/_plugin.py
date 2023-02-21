@@ -144,7 +144,6 @@ class WellCompletion(WebvizPluginABC):
         stratigraphy_file: str = "rms/output/zone/stratigraphy.json",
         well_attributes_file: str = "rms/output/wells/well_attributes.json",
     ):
-
         super().__init__(stretch=True)
         factory = EnsembleTableProviderFactory.instance()
 

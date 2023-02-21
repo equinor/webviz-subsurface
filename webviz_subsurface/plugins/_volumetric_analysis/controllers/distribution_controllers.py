@@ -37,7 +37,6 @@ def distribution_controllers(
         State(get_uuid("page-selected"), "data"),
     )
     def _update_page_custom(selections: dict, page_selected: str) -> tuple:
-
         if page_selected != "custom":
             raise PreventUpdate
 
@@ -148,7 +147,6 @@ def distribution_controllers(
         selections: dict,
         page_selected: str,
     ) -> list:
-
         if page_selected != "table":
             raise PreventUpdate
 
@@ -355,7 +353,6 @@ def make_tables(
     page_selected: str,
     groups: Optional[list] = None,
 ) -> html.Div:
-
     groups = groups if groups is not None else []
 
     if table_type == "Statistics table":

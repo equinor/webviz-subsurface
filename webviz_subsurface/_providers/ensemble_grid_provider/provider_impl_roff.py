@@ -159,7 +159,6 @@ class ProviderImplRoff(EnsembleGridProvider):
         storage_dir: Path,
         storage_key: str,
     ) -> Optional["ProviderImplRoff"]:
-
         provider_dir = storage_dir / storage_key
         parquet_file_name = provider_dir / "grid_inventory.parquet"
 

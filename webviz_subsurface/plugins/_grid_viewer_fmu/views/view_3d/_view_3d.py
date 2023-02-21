@@ -127,7 +127,6 @@ class View3D(ViewABC):
             layers: List[Dict],
             bounds: Optional[List[float]],
         ) -> Tuple[List[Dict], Optional[List]]:
-
             if PROPERTYTYPE(proptype) == PROPERTYTYPE.STATIC:
                 property_spec = PropertySpec(prop_name=prop[0], prop_date=None)
             else:
@@ -214,7 +213,6 @@ class View3D(ViewABC):
             ),
         )
         def _toggle_manual_color(enabled: List[str]) -> Tuple[bool, bool]:
-
             if enabled:
                 return False, False
             return True, True

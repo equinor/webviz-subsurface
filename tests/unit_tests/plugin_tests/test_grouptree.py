@@ -128,7 +128,6 @@ ADD_NODETYPE_CASES = [
 def fixture_provider(
     request: SubRequest, tmp_path: Path
 ) -> Tuple[pd.DataFrame, EnsembleSummaryProvider, pd.DataFrame]:
-
     input_py = request.param
     storage_dir = tmp_path
     gruptree_df = input_py[0]

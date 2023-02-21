@@ -62,7 +62,6 @@ class BarView(ViewABC):
             wells: Union[str, List[str]],
             stat_bars: Union[str, List[str]],
         ) -> dict:
-
             wells = wells if isinstance(wells, list) else [wells]
             stat_bars = stat_bars if isinstance(stat_bars, list) else [stat_bars]
             df = filter_df(df=self.bhp_df, ensemble=ensemble, wells=wells)

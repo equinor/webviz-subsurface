@@ -180,7 +180,6 @@ def get_map_data(
 def get_uncompressed_data(
     ensemble_path: str, map_value: str, flow_value: str, time_step: int
 ) -> pd.DataFrame:
-
     ens = scratch_ensemble("", ensemble_path)
 
     properties = [map_value, f"{flow_value}I+", f"{flow_value}J+"]
@@ -199,7 +198,7 @@ def get_uncompressed_data(
     grid["FLOWJ+"] = grid[f"{flow_value}J+"]
 
     # Webviz map component uses different corner point terminology than libecl
-    for (new, old) in [
+    for new, old in [
         ("x0", "x1"),
         ("x1", "x2"),
         ("x2", "x4"),

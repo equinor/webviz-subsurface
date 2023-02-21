@@ -5,7 +5,6 @@ from webviz_config.plugins import ParameterAnalysis
 
 
 def test_parameter_analysis(dash_duo, app, shared_settings) -> None:
-
     plugin = ParameterAnalysis(
         app,
         shared_settings["HM_SETTINGS"],

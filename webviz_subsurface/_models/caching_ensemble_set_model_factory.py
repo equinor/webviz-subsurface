@@ -15,7 +15,6 @@ def get_or_create_model(
     time_index: Optional[Union[list, str]] = None,
     column_keys: Optional[list] = None,
 ) -> EnsembleSetModel:
-
     modelkey = json.dumps(
         {
             "ensemble_paths": ensemble_paths,

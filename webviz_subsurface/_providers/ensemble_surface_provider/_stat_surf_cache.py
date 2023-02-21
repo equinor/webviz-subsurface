@@ -37,7 +37,6 @@ class StatSurfCache:
     def fetch(
         self, address: StatisticalSurfaceAddress
     ) -> Optional[xtgeo.RegularSurface]:
-
         full_surf_path = self.cache_dir / _compose_stat_surf_file_name(
             address, FILE_EXTENSION
         )
@@ -52,7 +51,6 @@ class StatSurfCache:
     def store(
         self, address: StatisticalSurfaceAddress, surface: xtgeo.RegularSurface
     ) -> None:
-
         surf_fn = _compose_stat_surf_file_name(address, FILE_EXTENSION)
         full_surf_path = self.cache_dir / surf_fn
 
@@ -75,7 +73,6 @@ class StatSurfCache:
 def _compose_stat_surf_file_name(
     address: StatisticalSurfaceAddress, extension: str
 ) -> str:
-
     # Should probably sort the realization list
     # Also, what about duplicates
     # And further, handling of missing realizations...

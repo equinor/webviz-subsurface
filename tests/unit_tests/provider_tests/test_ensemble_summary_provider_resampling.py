@@ -27,7 +27,6 @@ def _create_table_from_row_data(
 
 
 def test_generate_sample_dates_daily() -> None:
-
     dates = generate_normalized_sample_dates(
         np.datetime64("2020-12-30"), np.datetime64("2021-01-05"), Frequency.DAILY
     )
@@ -46,7 +45,6 @@ def test_generate_sample_dates_daily() -> None:
 
 
 def test_generate_sample_dates_weekly() -> None:
-
     # Mondays
     #   2020-12-21
     #   2020-12-28
@@ -71,7 +69,6 @@ def test_generate_sample_dates_weekly() -> None:
 
 
 def test_generate_sample_dates_monthly() -> None:
-
     dates = generate_normalized_sample_dates(
         np.datetime64("2020-12-01"), np.datetime64("2021-01-01"), Frequency.MONTHLY
     )
@@ -90,7 +87,6 @@ def test_generate_sample_dates_monthly() -> None:
 
 
 def test_generate_sample_dates_yearly() -> None:
-
     dates = generate_normalized_sample_dates(
         np.datetime64("2020-01-01"), np.datetime64("2020-01-02"), Frequency.YEARLY
     )
@@ -116,7 +112,6 @@ def test_generate_sample_dates_yearly() -> None:
 
 
 def test_interpolate_backfill() -> None:
-
     raw_x = np.array([0, 2, 4, 6])
     raw_y = np.array([0, 20, 40, 60])
 

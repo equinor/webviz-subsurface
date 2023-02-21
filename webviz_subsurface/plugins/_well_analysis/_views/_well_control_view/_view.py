@@ -65,7 +65,6 @@ class WellControlPressurePlotOptions(SettingsGroupABC):
         DISPLAY_CTRL_MODE_BAR = "display-ctrl-mode-bar"
 
     def __init__(self, data_models: Dict[str, EnsembleWellAnalysisData]) -> None:
-
         super().__init__("Pressure Plot Options")
         self.data_models = data_models
         self.ensembles = list(data_models.keys())

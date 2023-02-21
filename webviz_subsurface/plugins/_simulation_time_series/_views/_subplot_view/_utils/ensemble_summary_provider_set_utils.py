@@ -42,7 +42,6 @@ def create_vector_plot_titles_from_provider_set(
 
     all_vector_names = provider_set.all_vector_names()
     for vector_name in vector_names:
-
         # Provider vector
         if vector_name in all_vector_names:
             metadata = provider_set.vector_metadata(vector_name)

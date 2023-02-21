@@ -36,7 +36,6 @@ def plugin_callbacks(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> None
         dicrete_filters_ids: List[Dict[str, str]],
         continous_filters_ids: List[Dict[str, str]],
     ) -> list:
-
         if tab_selected != Tabs.QC_PLOTS or max_points is None:
             raise PreventUpdate
 
