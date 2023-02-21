@@ -6,7 +6,7 @@ from dash import html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
-from webviz_subsurface_components import DeckGLMap
+from webviz_subsurface_components import DashSubsurfaceViewer
 
 
 class MainView(ViewABC):
@@ -41,14 +41,13 @@ class MapViewElement(ViewElementABC):
                     children=[
                         html.Div(
                             [
-                                DeckGLMap(
+                                DashSubsurfaceViewer(
                                     id=self.register_component_unique_id(
                                         self.Ids.DECKGL_MAP
                                     ),
                                     layers=[],
                                     coords={"visible": True},
                                     scale={"visible": True},
-                                    toolbar={"visible": True},
                                     coordinateUnit="m",
                                     colorTables=self._color_scales,
                                 ),

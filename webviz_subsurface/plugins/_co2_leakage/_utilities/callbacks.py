@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geojson
 import numpy as np
+import webviz_subsurface_components as wsc
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProvider,
@@ -164,6 +165,54 @@ def get_plume_polygon(
         smoothing=smoothing,
         simplify_factor=0.12 * smoothing,  # Experimental
     )
+
+
+def create_map_annotations(
+    formation: str,
+    surface_data: Optional[SurfaceData],
+    colortables: List[Dict[str, Any]],
+) -> List[wsc.ViewAnnotation]:
+    annotations = []
+    if surface_data is not None:
+        annotations.append(
+            wsc.ViewAnnotation(
+                id="1_view",
+                children=[
+                    wsc.WebVizColorLegend(
+                        min=surface_data.color_map_range[0],
+                        max=surface_data.color_map_range[1],
+                        colorName=surface_data.color_map_name,
+                        cssLegendStyles={"top": "0", "right": "0"},
+                        openColorSelector=False,
+                        legendScaleSize=0.1,
+                        legendFontSize=30,
+                        colorTables=colortables,
+                    ),
+                    wsc.ViewFooter(children=formation),
+                ],
+            )
+        )
+    return annotations
+
+
+def create_map_viewports() -> Dict:
+    return {
+        "layout": [1, 1],
+        "viewports": [
+            {
+                "id": "1_view",
+                "show3D": False,
+                "isSync": True,
+                "layerIds": [
+                    "colormap-layer",
+                    "fault-polygons-layer",
+                    "license-boundary-layer",
+                    "well-picks-layer",
+                    "plume-polygon-layer",
+                ],
+            }
+        ],
+    }
 
 
 def create_map_layers(
