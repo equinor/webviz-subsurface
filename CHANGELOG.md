@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Changed
+- [#1196](https://github.com/equinor/webviz-subsurface/pull/1196) - `SwatinitQC` faultlines argument can now use fault polygons csv file with *X, Y, ID* header (fmu-dataio default)
 - [#1183](https://github.com/equinor/webviz-subsurface/pull/1183) - Reduced loading time by lazy loading only requested plugins when application starts.
 - [#1182](https://github.com/equinor/webviz-subsurface/pull/1182) - `ParameterResponseCorrelation` can now allow default None column_keys when using arrow file as input
 - [#1122](https://github.com/equinor/webviz-subsurface/pull/1122) - `opm` and `ecl2df` are now optional, making `windows-subsurface` possible to install and import on non-unix based systems. **NOTE:** a lot of the functionality in `webviz-subsurface` is built on `opm` and `ecl2df`, and issues are therefore expected on eg Windows and macOS. Use with care.

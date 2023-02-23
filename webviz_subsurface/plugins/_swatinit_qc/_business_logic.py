@@ -263,7 +263,7 @@ class SwatinitQcDataModel:
 
         groupby = ["SATNUM"] if not groupby_eqlnum else ["EQLNUM", "SATNUM"]
         df_group = dframe.groupby(groupby)
-        df = df_group.max()[["PCOW_MAX", "PPCW", "PC_SCALING"]].round(6)
+        df = df_group[["PCOW_MAX", "PPCW", "PC_SCALING"]].max().round(6)
         df[self.COLNAME_THRESHOLD] = df_group.apply(
             lambda x: get_percent_of_match(x, condition)
         )
