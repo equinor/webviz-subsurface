@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Changed
+- [#1195](https://github.com/equinor/webviz-subsurface/pull/1195) - `RftPlotter` faultlines argument can now use fault polygons csv file with *X, Y, ID* header (fmu-dataio default)
 - [#1196](https://github.com/equinor/webviz-subsurface/pull/1196) - `SwatinitQC` faultlines argument can now use fault polygons csv file with *X, Y, ID* header (fmu-dataio default)
 - [#1183](https://github.com/equinor/webviz-subsurface/pull/1183) - Reduced loading time by lazy loading only requested plugins when application starts.
 - [#1182](https://github.com/equinor/webviz-subsurface/pull/1182) - `ParameterResponseCorrelation` can now allow default None column_keys when using arrow file as input
