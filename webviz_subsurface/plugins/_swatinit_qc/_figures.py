@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 
 import numpy as np
@@ -325,11 +326,30 @@ class MapFigure:
         )
 
     def add_fault_lines(self, faultlinedf: pd.DataFrame) -> None:
-        for _fault, faultdf in faultlinedf.groupby("POLY_ID"):
+        cols = faultlinedf.columns
+        if ("ID" in cols) and ("X" in cols) and ("Y" in cols):
+            df_polygon = faultlinedf[["X", "Y", "ID"]]
+        elif ("POLY_ID" in cols) and ("X_UTME" in cols) and ("Y_UTMN" in cols):
+            df_polygon = faultlinedf[["X_UTME", "Y_UTMN", "POLY_ID"]].rename(
+                columns={"X_UTME": "X", "Y_UTMN": "Y", "POLY_ID": "ID"}
+            )
+            logging.warning(
+                "For the future, consider using X,Y,Z,ID as header names in "
+                "the polygon files, as this is regarded as the FMU standard."
+                "The current file uses X_UTME,Y_UTMN,POLY_ID."
+            )
+        else:
+            logging.warning(
+                "The polygon file does not have an expected format and will therefore "
+                "fail to be loaded. The file must either contain the columns "
+                "'POLY_ID', 'X_UTME' and 'Y_UTMN' or the columns 'ID', 'X' and 'Y'."
+            )
+
+        for _fault, faultdf in df_polygon.groupby("ID"):
             self._figure.add_trace(
                 {
-                    "x": faultdf["X_UTME"],
-                    "y": faultdf["Y_UTMN"],
+                    "x": faultdf["X"],
+                    "y": faultdf["Y"],
                     "mode": "lines",
                     "type": "scatter",
                     "hoverinfo": "none",
