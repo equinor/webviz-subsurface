@@ -78,8 +78,7 @@ class WellOverviewFigure:
                 prod_until_date=self._prod_until_date,
             )
             df = df[df["WELL"].isin(self._wells)]
-            df_mean = df.groupby("WELL").mean().reset_index()
-            return df_mean[df_mean[self._sumvec] > 0]
+            return df
 
         # else chart type == area
         df = self._data_models[ensemble].get_summary_data(
@@ -87,7 +86,7 @@ class WellOverviewFigure:
             prod_from_date=self._prod_from_date,
             prod_until_date=self._prod_until_date,
         )
-        return df.groupby("DATE").mean().reset_index()
+        return df  # df.groupby("DATE").mean(numeric_only=True).reset_index()
 
     def _add_traces(self) -> None:
         """Add all traces for the currently selected chart type."""
@@ -97,10 +96,12 @@ class WellOverviewFigure:
             df = self._get_ensemble_charttype_data(ensemble)
 
             if self._charttype == ChartType.PIE:
+                df_mean = df.groupby("WELL").mean(numeric_only=True).reset_index()
+                df_mean = df_mean[df_mean[self._sumvec] > 0]
                 self._figure.add_trace(
                     go.Pie(
-                        values=df[self._sumvec],
-                        labels=df["WELL"],
+                        values=df_mean[self._sumvec],
+                        labels=df_mean["WELL"],
                         marker_colors=self._colors,
                         textposition="inside",
                         texttemplate="%{label}",
@@ -110,9 +111,28 @@ class WellOverviewFigure:
                 )
 
             elif self._charttype == ChartType.BAR:
+                df_mean = df.groupby("WELL").mean(numeric_only=True).reset_index()
+                df_mean = df_mean[df_mean[self._sumvec] > 0]
+                wells = df_mean["WELL"].unique()
+                df_p10 = (
+                    df.groupby("WELL").quantile(0.9, numeric_only=True).reset_index()
+                )
+                df_p10 = df_p10[df_p10["WELL"].isin(wells)]
+                df_p90 = (
+                    df.groupby("WELL").quantile(0.1, numeric_only=True).reset_index()
+                )
+                df_p90 = df_p90[df_p90["WELL"].isin(wells)]
+
                 trace = {
-                    "x": df["WELL"],
-                    "y": df[self._sumvec],
+                    "x": df_mean["WELL"],
+                    "y": df_mean[self._sumvec],
+                    "error_y": {
+                        "type": "data",
+                        "symmetric": False,
+                        "array": df_p10[self._sumvec] - df_mean[self._sumvec],
+                        "arrayminus": df_mean[self._sumvec] - df_p90[self._sumvec],
+                        "visible": False,
+                    },
                     "orientation": "v",
                     "type": "bar",
                     "name": ensemble,
@@ -128,6 +148,7 @@ class WellOverviewFigure:
                     col=1,
                 )
             elif self._charttype == ChartType.AREA:
+                df_mean = df.groupby("DATE").mean(numeric_only=True).reset_index()
                 color_iterator = itertools.cycle(self._colors)
 
                 for well in self._data_models[ensemble].wells:
@@ -139,14 +160,14 @@ class WellOverviewFigure:
 
                         self._figure.add_trace(
                             go.Scatter(
-                                x=df["DATE"],
-                                y=df[f"{self._sumvec}:{well}"],
+                                x=df_mean["DATE"],
+                                y=df_mean[f"{self._sumvec}:{well}"],
                                 hoverinfo="text+x+y",
                                 hoveron="fills",
                                 mode="lines",
                                 stackgroup="one",
                                 name=well,
-                                line=dict(width=0.1, color=next(color_iterator)),
+                                line={"width": 0.1, "color": next(color_iterator)},
                                 legendgroup="Wells",
                                 showlegend=showlegend,
                             ),
@@ -186,6 +207,7 @@ def format_well_overview_figure(
         figure.update_traces(
             textposition=("auto" if "show_prod_text" in settings else "none")
         )
+        figure.update_traces(error_y={"visible": "errorbars" in settings})
 
     # These are valid for all chart types
     figure.update_layout(
