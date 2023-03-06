@@ -215,8 +215,14 @@ def format_well_overview_figure(
     )
 
     # Make title
-    phase = {"WOPT": "Oil", "WGPT": "Gas", "WWPT": "Water"}[sumvec]
-    title = f"Cumulative Well {phase} Production (Sm3)"
+    phase = {
+        "WOPT": "Oil Production",
+        "WGPT": "Gas Prodcution",
+        "WWPT": "Water Production",
+        "WWIT": "Water Injection",
+        "WGIT": "Gas Injection",
+    }[sumvec]
+    title = f"Cumulative Well {phase} (Sm3)"
     if prod_from_date is not None:
         title += f" from {prod_from_date}"
     if prod_until_date is not None:

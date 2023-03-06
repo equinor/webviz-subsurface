@@ -36,6 +36,8 @@ class WellOverviewSelections(SettingsGroupABC):
                     {"label": "Oil production", "value": "WOPT"},
                     {"label": "Gas production", "value": "WGPT"},
                     {"label": "Water production", "value": "WWPT"},
+                    {"label": "Water injection", "value": "WWIT"},
+                    {"label": "Gas injection", "value": "WGIT"},
                 ],
                 value="WOPT",
                 multi=False,
