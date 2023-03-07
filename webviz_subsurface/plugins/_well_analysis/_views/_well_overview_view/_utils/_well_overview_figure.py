@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
-from ...._types import ChartType
+from ...._types import ChartType, StatType
 from ...._utils import EnsembleWellAnalysisData
 
 
@@ -21,6 +21,7 @@ class WellOverviewFigure:
         prod_from_date: Union[datetime.datetime, None],
         prod_until_date: Union[datetime.datetime, None],
         charttype: ChartType,
+        stattype: StatType,
         wells: List[str],
         theme: WebvizConfigTheme,
     ) -> None:
@@ -31,6 +32,7 @@ class WellOverviewFigure:
         self._prod_from_date = prod_from_date
         self._prod_until_date = prod_until_date
         self._charttype = charttype
+        self._stattype = stattype
         self._wells = wells
         self._colors = theme.plotly_theme["layout"]["colorway"]
         self._rows, self._cols = self.get_subplot_dim()
@@ -86,7 +88,36 @@ class WellOverviewFigure:
             prod_from_date=self._prod_from_date,
             prod_until_date=self._prod_until_date,
         )
-        return df  # df.groupby("DATE").mean(numeric_only=True).reset_index()
+        return df
+
+    def _calc_statistics(
+        self, df: pd.DataFrame, groupby: str, stattype: StatType
+    ) -> pd.DataFrame:
+        """Calculates statistics from input dataframe"""
+        # pylint: disable=too-many-return-statements
+        df_grouped = df.groupby(groupby)
+
+        if stattype == StatType.MEAN:
+            df_out = df_grouped.mean(numeric_only=True).reset_index()
+        if stattype == StatType.P50:
+            df_out = df_grouped.quantile(0.5, numeric_only=True).reset_index()
+        if stattype == StatType.P10:
+            df_out = df_grouped.quantile(0.9, numeric_only=True).reset_index()
+        if stattype == StatType.P90:
+            df_out = df_grouped.quantile(0.1, numeric_only=True).reset_index()
+        if stattype == StatType.MAX:
+            df_out = df_grouped.max(0.1).reset_index()
+        if stattype == StatType.MIN:
+            df_out = df_grouped.min(0.1).reset_index()
+        if stattype == StatType.P10_MINUS_P90:
+            df_p10 = self._calc_statistics(df, groupby, StatType.P10)
+            df_p90 = self._calc_statistics(df, groupby, StatType.P90)
+            df_merged = df_p10.merge(df_p90, on=groupby)
+            df_merged[self._sumvec] = (
+                df_merged[f"{self._sumvec}_x"] - df_merged[f"{self._sumvec}_y"]
+            )
+            df_out = df_merged
+        return df_out
 
     def _add_traces(self) -> None:
         """Add all traces for the currently selected chart type."""
@@ -96,12 +127,12 @@ class WellOverviewFigure:
             df = self._get_ensemble_charttype_data(ensemble)
 
             if self._charttype == ChartType.PIE:
-                df_mean = df.groupby("WELL").mean(numeric_only=True).reset_index()
-                df_mean = df_mean[df_mean[self._sumvec] > 0]
+                df_stat = self._calc_statistics(df, "WELL", self._stattype)
+                df_stat = df_stat[df_stat[self._sumvec] > 0]
                 self._figure.add_trace(
                     go.Pie(
-                        values=df_mean[self._sumvec],
-                        labels=df_mean["WELL"],
+                        values=df_stat[self._sumvec],
+                        labels=df_stat["WELL"],
                         marker_colors=self._colors,
                         textposition="inside",
                         texttemplate="%{label}",
@@ -111,28 +142,12 @@ class WellOverviewFigure:
                 )
 
             elif self._charttype == ChartType.BAR:
-                df_mean = df.groupby("WELL").mean(numeric_only=True).reset_index()
-                df_mean = df_mean[df_mean[self._sumvec] > 0]
-                wells = df_mean["WELL"].unique()
-                df_p10 = (
-                    df.groupby("WELL").quantile(0.9, numeric_only=True).reset_index()
-                )
-                df_p10 = df_p10[df_p10["WELL"].isin(wells)]
-                df_p90 = (
-                    df.groupby("WELL").quantile(0.1, numeric_only=True).reset_index()
-                )
-                df_p90 = df_p90[df_p90["WELL"].isin(wells)]
+                df_stat = self._calc_statistics(df, "WELL", self._stattype)
+                df_stat = df_stat[df_stat[self._sumvec] > 0]
 
                 trace = {
-                    "x": df_mean["WELL"],
-                    "y": df_mean[self._sumvec],
-                    "error_y": {
-                        "type": "data",
-                        "symmetric": False,
-                        "array": df_p10[self._sumvec] - df_mean[self._sumvec],
-                        "arrayminus": df_mean[self._sumvec] - df_p90[self._sumvec],
-                        "visible": False,
-                    },
+                    "x": df_stat["WELL"],
+                    "y": df_stat[self._sumvec],
                     "orientation": "v",
                     "type": "bar",
                     "name": ensemble,
@@ -142,13 +157,29 @@ class WellOverviewFigure:
                     "texttemplate": "%{text:.2s}",
                 }
 
+                if self._stattype is not StatType.P10_MINUS_P90:
+                    # Add error bars
+                    wells = df_stat["WELL"].unique()
+                    df_p10 = self._calc_statistics(df, "WELL", StatType.P10)
+                    df_p10 = df_p10[df_p10["WELL"].isin(wells)]
+                    df_p90 = self._calc_statistics(df, "WELL", StatType.P90)
+                    df_p90 = df_p90[df_p90["WELL"].isin(wells)]
+                    trace["error_y"] = {
+                        "type": "data",
+                        "symmetric": False,
+                        "array": df_p10[self._sumvec] - df_stat[self._sumvec],
+                        "arrayminus": df_stat[self._sumvec] - df_p90[self._sumvec],
+                        "visible": False,
+                    }
+
                 self._figure.add_trace(
                     trace,
                     row=1,
                     col=1,
                 )
+
             elif self._charttype == ChartType.AREA:
-                df_mean = df.groupby("DATE").mean(numeric_only=True).reset_index()
+                df_stat = self._calc_statistics(df, "DATE", self._stattype)
                 color_iterator = itertools.cycle(self._colors)
 
                 for well in self._data_models[ensemble].wells:
@@ -160,8 +191,8 @@ class WellOverviewFigure:
 
                         self._figure.add_trace(
                             go.Scatter(
-                                x=df_mean["DATE"],
-                                y=df_mean[f"{self._sumvec}:{well}"],
+                                x=df_stat["DATE"],
+                                y=df_stat[f"{self._sumvec}:{well}"],
                                 hoverinfo="text+x+y",
                                 hoveron="fills",
                                 mode="lines",

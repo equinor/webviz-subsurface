@@ -8,13 +8,14 @@ from webviz_config import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ..._types import ChartType
+from ..._types import ChartType, StatType
 from ..._utils import EnsembleWellAnalysisData
 from ._settings import (
     WellOverviewChartType,
     WellOverviewFilters,
     WellOverviewLayoutOptions,
     WellOverviewSelections,
+    WellOverviewStatisticalOptions,
 )
 from ._utils import WellOverviewFigure, format_well_overview_figure
 from ._view_element import WellOverviewViewElement
@@ -24,6 +25,7 @@ class WellOverviewView(ViewABC):
     class Ids(StrEnum):
         CHART_TYPE = "chart-type"
         SELECTIONS = "selections"
+        STATISTICS = "statistics"
         LAYOUT_OPTIONS = "layout-options"
         FILTERS = "filters"
         CURRENT_FIGURE = "current-figure"
@@ -56,6 +58,7 @@ class WellOverviewView(ViewABC):
             {
                 self.Ids.CHART_TYPE: WellOverviewChartType(),
                 self.Ids.SELECTIONS: WellOverviewSelections(ensembles, sorted_dates),
+                self.Ids.STATISTICS: WellOverviewStatisticalOptions(),
                 self.Ids.LAYOUT_OPTIONS: WellOverviewLayoutOptions(),
                 self.Ids.FILTERS: WellOverviewFilters(wells),
             }
@@ -160,6 +163,12 @@ class WellOverviewView(ViewABC):
                 ),
                 "value",
             ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.STATISTICS, WellOverviewStatisticalOptions.Ids.STATISTICS
+                ),
+                "value",
+            ),
             State(
                 {
                     "id": self.settings_group_unique_id(
@@ -186,6 +195,7 @@ class WellOverviewView(ViewABC):
             prod_until_date: Union[str, None],
             charttype_selected: ChartType,
             wells_selected: List[str],
+            stattype_selected: StatType,
             checklist_ids: List[Dict[str, str]],
             current_fig_dict: Optional[Dict[str, Any]],
         ) -> Component:
@@ -231,6 +241,7 @@ class WellOverviewView(ViewABC):
                     if prod_until_date is not None
                     else None,
                     charttype=charttype_selected,
+                    stattype=stattype_selected,
                     wells=wells_selected,
                     theme=self._theme,
                 )
