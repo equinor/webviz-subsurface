@@ -94,7 +94,6 @@ class WellOverviewFigure:
         self, df: pd.DataFrame, groupby: str, stattype: StatType
     ) -> pd.DataFrame:
         """Calculates statistics from input dataframe"""
-        # pylint: disable=too-many-return-statements
         df_grouped = df.groupby(groupby)
 
         if stattype == StatType.MEAN:
@@ -113,9 +112,10 @@ class WellOverviewFigure:
             df_p10 = self._calc_statistics(df, groupby, StatType.P10)
             df_p90 = self._calc_statistics(df, groupby, StatType.P90)
             df_merged = df_p10.merge(df_p90, on=groupby)
-            df_merged[self._sumvec] = (
-                df_merged[f"{self._sumvec}_x"] - df_merged[f"{self._sumvec}_y"]
-            )
+            for col in df_p10.columns:
+                if col in ["DATE", "REAL", groupby]:
+                    continue
+                df_merged[col] = df_merged[f"{col}_x"] - df_merged[f"{col}_y"]
             df_out = df_merged
         return df_out
 
@@ -152,7 +152,7 @@ class WellOverviewFigure:
                     "type": "bar",
                     "name": ensemble,
                     "marker": {"color": self._colors[i]},
-                    "text": df[self._sumvec],
+                    "text": df_stat[self._sumvec],
                     "textposition": "none",
                     "texttemplate": "%{text:.2s}",
                 }
@@ -210,6 +210,7 @@ class WellOverviewFigure:
 def format_well_overview_figure(
     figure: go.Figure,
     charttype: ChartType,
+    stattype: StatType,
     settings: List[str],
     sumvec: str,
     prod_from_date: Union[str, None],
@@ -238,7 +239,11 @@ def format_well_overview_figure(
         figure.update_traces(
             textposition=("auto" if "show_prod_text" in settings else "none")
         )
-        figure.update_traces(error_y={"visible": "errorbars" in settings})
+        if stattype == StatType.P10_MINUS_P90:
+            # Error bars doesn't make sens for the P10 - P90 option.
+            figure.update_traces(error_y={"visible": False})
+        else:
+            figure.update_traces(error_y={"visible": "errorbars" in settings})
 
     # These are valid for all chart types
     figure.update_layout(
@@ -248,7 +253,7 @@ def format_well_overview_figure(
     # Make title
     phase = {
         "WOPT": "Oil Production",
-        "WGPT": "Gas Prodcution",
+        "WGPT": "Gas Production",
         "WWPT": "Water Production",
         "WWIT": "Water Injection",
         "WGIT": "Gas Injection",
@@ -258,6 +263,16 @@ def format_well_overview_figure(
         title += f" from {prod_from_date}"
     if prod_until_date is not None:
         title += f" until {prod_until_date}"
+    stattype_text = {
+        StatType.MEAN: "Mean",
+        StatType.P10: "P10",
+        StatType.P50: "P50",
+        StatType.P90: "P90",
+        StatType.MAX: "Maximum",
+        StatType.MIN: "Minimum",
+        StatType.P10_MINUS_P90: "P10-P90",
+    }
+    title += f"  -  {stattype_text[stattype]} of all realizations"
 
     figure.update(
         layout_title_text=title,

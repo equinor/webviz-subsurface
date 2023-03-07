@@ -220,6 +220,7 @@ class WellOverviewView(ViewABC):
                 fig_dict = format_well_overview_figure(
                     figure=go.Figure(current_fig_dict),
                     charttype=charttype_selected,
+                    stattype=stattype_selected,
                     settings=settings[charttype_selected],
                     sumvec=sumvec,
                     prod_from_date=prod_from_date,
@@ -249,6 +250,7 @@ class WellOverviewView(ViewABC):
                 fig_dict = format_well_overview_figure(
                     figure=figure.figure,
                     charttype=charttype_selected,
+                    stattype=stattype_selected,
                     settings=settings[charttype_selected],
                     sumvec=sumvec,
                     prod_from_date=prod_from_date,
