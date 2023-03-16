@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import plotly.graph_objects as go
 from dash import ALL, Input, Output, State, callback, callback_context
@@ -115,6 +115,16 @@ class WellOverviewView(ViewABC):
                 .to_string(),
                 "figure",
             ),
+            Output(
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.LAYOUT_OPTIONS,
+                        WellOverviewLayoutOptions.Ids.CHARTTYPE_CHECKLIST,
+                    ),
+                    "charttype": ChartType.BAR,
+                },
+                "options",
+            ),
             Input(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, WellOverviewSelections.Ids.ENSEMBLES
@@ -185,6 +195,16 @@ class WellOverviewView(ViewABC):
                 .to_string(),
                 "figure",
             ),
+            State(
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.LAYOUT_OPTIONS,
+                        WellOverviewLayoutOptions.Ids.CHARTTYPE_CHECKLIST,
+                    ),
+                    "charttype": ChartType.BAR,
+                },
+                "options",
+            ),
         )
         @callback_typecheck
         def _update_graph(
@@ -198,8 +218,9 @@ class WellOverviewView(ViewABC):
             stattype_selected: StatType,
             checklist_ids: List[Dict[str, str]],
             current_fig_dict: Optional[Dict[str, Any]],
-        ) -> Component:
-            # pylint: disable=too-many-arguments
+            barchart_layout_options: List[Dict[str, Any]],
+        ) -> Tuple[Component, List[Dict[str, Any]]]:
+            # pylint: disable=too-many-arguments, too-many-locals
             """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
@@ -257,4 +278,9 @@ class WellOverviewView(ViewABC):
                     prod_until_date=prod_until_date,
                 )
 
-            return fig_dict
+            # Disable error bars option if stat type is P10 minus P90.
+            for elem in barchart_layout_options:
+                if elem["value"] == "errorbars":
+                    elem["disabled"] = stattype_selected == StatType.P10_MINUS_P90
+
+            return fig_dict, barchart_layout_options
