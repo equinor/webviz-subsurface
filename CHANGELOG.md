@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1195](https://github.com/equinor/webviz-subsurface/pull/1195) - `RftPlotter` faultlines argument can now use fault polygons csv file with *X, Y, ID* header (fmu-dataio default)
 - [#1196](https://github.com/equinor/webviz-subsurface/pull/1196) - `SwatinitQC` faultlines argument can now use fault polygons csv file with *X, Y, ID* header (fmu-dataio default)
 
+### Added
+- [#1199](https://github.com/equinor/webviz-subsurface/pull/1199) - Added more statistical options to the WellOverview tab in `WellAnalysis`, and the possibility to see injection rates.
+
 ## [0.2.17] - 2023-01-18
 
 ### Changed

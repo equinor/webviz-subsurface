@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from webviz_config import WebvizConfigTheme
 
-from ...._types import ChartType
+from ...._types import ChartType, StatType
 from ...._utils import EnsembleWellAnalysisData
 
 
@@ -21,6 +21,7 @@ class WellOverviewFigure:
         prod_from_date: Union[datetime.datetime, None],
         prod_until_date: Union[datetime.datetime, None],
         charttype: ChartType,
+        stattype: StatType,
         wells: List[str],
         theme: WebvizConfigTheme,
     ) -> None:
@@ -31,6 +32,7 @@ class WellOverviewFigure:
         self._prod_from_date = prod_from_date
         self._prod_until_date = prod_until_date
         self._charttype = charttype
+        self._stattype = stattype
         self._wells = wells
         self._colors = theme.plotly_theme["layout"]["colorway"]
         self._rows, self._cols = self.get_subplot_dim()
@@ -78,8 +80,7 @@ class WellOverviewFigure:
                 prod_until_date=self._prod_until_date,
             )
             df = df[df["WELL"].isin(self._wells)]
-            df_mean = df.groupby("WELL").mean().reset_index()
-            return df_mean[df_mean[self._sumvec] > 0]
+            return df
 
         # else chart type == area
         df = self._data_models[ensemble].get_summary_data(
@@ -87,7 +88,36 @@ class WellOverviewFigure:
             prod_from_date=self._prod_from_date,
             prod_until_date=self._prod_until_date,
         )
-        return df.groupby("DATE").mean().reset_index()
+        return df
+
+    def _calc_statistics(
+        self, df: pd.DataFrame, groupby: str, stattype: StatType
+    ) -> pd.DataFrame:
+        """Calculates statistics from input dataframe"""
+        df_grouped = df.groupby(groupby)
+
+        if stattype == StatType.MEAN:
+            df_out = df_grouped.mean(numeric_only=True).reset_index()
+        if stattype == StatType.P50:
+            df_out = df_grouped.quantile(0.5, numeric_only=True).reset_index()
+        if stattype == StatType.P10:
+            df_out = df_grouped.quantile(0.9, numeric_only=True).reset_index()
+        if stattype == StatType.P90:
+            df_out = df_grouped.quantile(0.1, numeric_only=True).reset_index()
+        if stattype == StatType.MAX:
+            df_out = df_grouped.max(0.1).reset_index()
+        if stattype == StatType.MIN:
+            df_out = df_grouped.min(0.1).reset_index()
+        if stattype == StatType.P10_MINUS_P90:
+            df_p10 = self._calc_statistics(df, groupby, StatType.P10)
+            df_p90 = self._calc_statistics(df, groupby, StatType.P90)
+            df_merged = df_p10.merge(df_p90, on=groupby)
+            for col in df_p10.columns:
+                if col in ["DATE", "REAL", groupby]:
+                    continue
+                df_merged[col] = df_merged[f"{col}_x"] - df_merged[f"{col}_y"]
+            df_out = df_merged
+        return df_out
 
     def _add_traces(self) -> None:
         """Add all traces for the currently selected chart type."""
@@ -97,10 +127,12 @@ class WellOverviewFigure:
             df = self._get_ensemble_charttype_data(ensemble)
 
             if self._charttype == ChartType.PIE:
+                df_stat = self._calc_statistics(df, "WELL", self._stattype)
+                df_stat = df_stat[df_stat[self._sumvec] > 0]
                 self._figure.add_trace(
                     go.Pie(
-                        values=df[self._sumvec],
-                        labels=df["WELL"],
+                        values=df_stat[self._sumvec],
+                        labels=df_stat["WELL"],
                         marker_colors=self._colors,
                         textposition="inside",
                         texttemplate="%{label}",
@@ -110,24 +142,44 @@ class WellOverviewFigure:
                 )
 
             elif self._charttype == ChartType.BAR:
+                df_stat = self._calc_statistics(df, "WELL", self._stattype)
+                df_stat = df_stat[df_stat[self._sumvec] > 0]
+
                 trace = {
-                    "x": df["WELL"],
-                    "y": df[self._sumvec],
+                    "x": df_stat["WELL"],
+                    "y": df_stat[self._sumvec],
                     "orientation": "v",
                     "type": "bar",
                     "name": ensemble,
                     "marker": {"color": self._colors[i]},
-                    "text": df[self._sumvec],
+                    "text": df_stat[self._sumvec],
                     "textposition": "none",
                     "texttemplate": "%{text:.2s}",
                 }
+
+                if self._stattype is not StatType.P10_MINUS_P90:
+                    # Add error bars
+                    wells = df_stat["WELL"].unique()
+                    df_p10 = self._calc_statistics(df, "WELL", StatType.P10)
+                    df_p10 = df_p10[df_p10["WELL"].isin(wells)]
+                    df_p90 = self._calc_statistics(df, "WELL", StatType.P90)
+                    df_p90 = df_p90[df_p90["WELL"].isin(wells)]
+                    trace["error_y"] = {
+                        "type": "data",
+                        "symmetric": False,
+                        "array": df_p10[self._sumvec] - df_stat[self._sumvec],
+                        "arrayminus": df_stat[self._sumvec] - df_p90[self._sumvec],
+                        "visible": False,
+                    }
 
                 self._figure.add_trace(
                     trace,
                     row=1,
                     col=1,
                 )
+
             elif self._charttype == ChartType.AREA:
+                df_stat = self._calc_statistics(df, "DATE", self._stattype)
                 color_iterator = itertools.cycle(self._colors)
 
                 for well in self._data_models[ensemble].wells:
@@ -139,14 +191,14 @@ class WellOverviewFigure:
 
                         self._figure.add_trace(
                             go.Scatter(
-                                x=df["DATE"],
-                                y=df[f"{self._sumvec}:{well}"],
+                                x=df_stat["DATE"],
+                                y=df_stat[f"{self._sumvec}:{well}"],
                                 hoverinfo="text+x+y",
                                 hoveron="fills",
                                 mode="lines",
                                 stackgroup="one",
                                 name=well,
-                                line=dict(width=0.1, color=next(color_iterator)),
+                                line={"width": 0.1, "color": next(color_iterator)},
                                 legendgroup="Wells",
                                 showlegend=showlegend,
                             ),
@@ -158,6 +210,7 @@ class WellOverviewFigure:
 def format_well_overview_figure(
     figure: go.Figure,
     charttype: ChartType,
+    stattype: StatType,
     settings: List[str],
     sumvec: str,
     prod_from_date: Union[str, None],
@@ -186,6 +239,11 @@ def format_well_overview_figure(
         figure.update_traces(
             textposition=("auto" if "show_prod_text" in settings else "none")
         )
+        if stattype == StatType.P10_MINUS_P90:
+            # Error bars doesn't make sens for the P10 - P90 option.
+            figure.update_traces(error_y={"visible": False})
+        else:
+            figure.update_traces(error_y={"visible": "errorbars" in settings})
 
     # These are valid for all chart types
     figure.update_layout(
@@ -193,12 +251,28 @@ def format_well_overview_figure(
     )
 
     # Make title
-    phase = {"WOPT": "Oil", "WGPT": "Gas", "WWPT": "Water"}[sumvec]
-    title = f"Cumulative Well {phase} Production (Sm3)"
+    phase = {
+        "WOPT": "Oil Production",
+        "WGPT": "Gas Production",
+        "WWPT": "Water Production",
+        "WWIT": "Water Injection",
+        "WGIT": "Gas Injection",
+    }[sumvec]
+    title = f"Cumulative Well {phase} (Sm3)"
     if prod_from_date is not None:
         title += f" from {prod_from_date}"
     if prod_until_date is not None:
         title += f" until {prod_until_date}"
+    stattype_text = {
+        StatType.MEAN: "Mean",
+        StatType.P10: "P10",
+        StatType.P50: "P50",
+        StatType.P90: "P90",
+        StatType.MAX: "Maximum",
+        StatType.MIN: "Minimum",
+        StatType.P10_MINUS_P90: "P10-P90",
+    }
+    title += f"  -  {stattype_text[stattype]} of all realizations"
 
     figure.update(
         layout_title_text=title,

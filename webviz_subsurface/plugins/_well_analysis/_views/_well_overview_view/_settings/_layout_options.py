@@ -38,6 +38,11 @@ class WellOverviewLayoutOptions(SettingsGroupABC):
                                     "label": "White background",
                                     "value": "white_background",
                                 },
+                                {
+                                    "label": "Error bars (P10/P90)",
+                                    "value": "errorbars",
+                                    "disabled": False,
+                                },
                             ],
                             value=["legend"],
                         ),

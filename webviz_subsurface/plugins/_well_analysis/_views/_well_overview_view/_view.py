@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import plotly.graph_objects as go
 from dash import ALL, Input, Output, State, callback, callback_context
@@ -8,13 +8,14 @@ from webviz_config import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ..._types import ChartType
+from ..._types import ChartType, StatType
 from ..._utils import EnsembleWellAnalysisData
 from ._settings import (
     WellOverviewChartType,
     WellOverviewFilters,
     WellOverviewLayoutOptions,
     WellOverviewSelections,
+    WellOverviewStatisticalOptions,
 )
 from ._utils import WellOverviewFigure, format_well_overview_figure
 from ._view_element import WellOverviewViewElement
@@ -24,6 +25,7 @@ class WellOverviewView(ViewABC):
     class Ids(StrEnum):
         CHART_TYPE = "chart-type"
         SELECTIONS = "selections"
+        STATISTICS = "statistics"
         LAYOUT_OPTIONS = "layout-options"
         FILTERS = "filters"
         CURRENT_FIGURE = "current-figure"
@@ -56,6 +58,7 @@ class WellOverviewView(ViewABC):
             {
                 self.Ids.CHART_TYPE: WellOverviewChartType(),
                 self.Ids.SELECTIONS: WellOverviewSelections(ensembles, sorted_dates),
+                self.Ids.STATISTICS: WellOverviewStatisticalOptions(),
                 self.Ids.LAYOUT_OPTIONS: WellOverviewLayoutOptions(),
                 self.Ids.FILTERS: WellOverviewFilters(wells),
             }
@@ -112,6 +115,16 @@ class WellOverviewView(ViewABC):
                 .to_string(),
                 "figure",
             ),
+            Output(
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.LAYOUT_OPTIONS,
+                        WellOverviewLayoutOptions.Ids.CHARTTYPE_CHECKLIST,
+                    ),
+                    "charttype": ChartType.BAR,
+                },
+                "options",
+            ),
             Input(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, WellOverviewSelections.Ids.ENSEMBLES
@@ -160,6 +173,12 @@ class WellOverviewView(ViewABC):
                 ),
                 "value",
             ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.STATISTICS, WellOverviewStatisticalOptions.Ids.STATISTICS
+                ),
+                "value",
+            ),
             State(
                 {
                     "id": self.settings_group_unique_id(
@@ -176,6 +195,16 @@ class WellOverviewView(ViewABC):
                 .to_string(),
                 "figure",
             ),
+            State(
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.LAYOUT_OPTIONS,
+                        WellOverviewLayoutOptions.Ids.CHARTTYPE_CHECKLIST,
+                    ),
+                    "charttype": ChartType.BAR,
+                },
+                "options",
+            ),
         )
         @callback_typecheck
         def _update_graph(
@@ -186,10 +215,12 @@ class WellOverviewView(ViewABC):
             prod_until_date: Union[str, None],
             charttype_selected: ChartType,
             wells_selected: List[str],
+            stattype_selected: StatType,
             checklist_ids: List[Dict[str, str]],
             current_fig_dict: Optional[Dict[str, Any]],
-        ) -> Component:
-            # pylint: disable=too-many-arguments
+            barchart_layout_options: List[Dict[str, Any]],
+        ) -> Tuple[Component, List[Dict[str, Any]]]:
+            # pylint: disable=too-many-arguments, too-many-locals
             """Updates the well overview graph with selected input (f.ex chart type)"""
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
 
@@ -210,6 +241,7 @@ class WellOverviewView(ViewABC):
                 fig_dict = format_well_overview_figure(
                     figure=go.Figure(current_fig_dict),
                     charttype=charttype_selected,
+                    stattype=stattype_selected,
                     settings=settings[charttype_selected],
                     sumvec=sumvec,
                     prod_from_date=prod_from_date,
@@ -231,6 +263,7 @@ class WellOverviewView(ViewABC):
                     if prod_until_date is not None
                     else None,
                     charttype=charttype_selected,
+                    stattype=stattype_selected,
                     wells=wells_selected,
                     theme=self._theme,
                 )
@@ -238,10 +271,16 @@ class WellOverviewView(ViewABC):
                 fig_dict = format_well_overview_figure(
                     figure=figure.figure,
                     charttype=charttype_selected,
+                    stattype=stattype_selected,
                     settings=settings[charttype_selected],
                     sumvec=sumvec,
                     prod_from_date=prod_from_date,
                     prod_until_date=prod_until_date,
                 )
 
-            return fig_dict
+            # Disable error bars option if stat type is P10 minus P90.
+            for elem in barchart_layout_options:
+                if elem["value"] == "errorbars":
+                    elem["disabled"] = stattype_selected == StatType.P10_MINUS_P90
+
+            return fig_dict, barchart_layout_options
