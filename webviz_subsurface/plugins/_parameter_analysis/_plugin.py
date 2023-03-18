@@ -2,9 +2,11 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import pandas as pd
+from ._views._parameter_distributions_view import ParameterDistributionView
 from dash import dcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
+from webviz_config.utils import StrEnum
 from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO, WebvizRunMode
 
 from webviz_subsurface._models import (
@@ -25,7 +27,6 @@ from .models import (
     ProviderTimeSeriesDataModel,
     SimulationTimeSeriesModel,
 )
-from .views import main_view
 
 
 def check_deprecation_argument(
@@ -77,11 +78,14 @@ realizations if you have defined `ensembles`.
 
 """
 
+    class Ids(StrEnum):
+        PARAM_DIST_VIEW = "param-dist-view"
+        PARAM_RESP_VIEW = "param-resp-view"
+
     # pylint: disable=too-many-arguments, too-many-locals
     @deprecated_plugin_arguments(check_deprecation_argument)
     def __init__(
         self,
-        app,
         webviz_settings: WebvizSettings,
         ensembles: Optional[list] = None,
         time_index: str = "monthly",
@@ -197,26 +201,31 @@ realizations if you have defined `ensembles`.
             drop_constants=drop_constants,
         )
 
-        self.set_callbacks(app)
-
-    @property
-    def layout(self) -> dcc.Tabs:
-        return main_view(
-            get_uuid=self.uuid,
-            vectormodel=self.vmodel,
-            parametermodel=self.pmodel,
-            theme=self.theme,
+        self.add_view(
+            ParameterDistributionView(self.pmodel),
+            self.Ids.PARAM_DIST_VIEW,
         )
 
-    def set_callbacks(self, app) -> None:
-        parameter_qc_controller(app=app, get_uuid=self.uuid, parametermodel=self.pmodel)
-        if self.vmodel is not None:
-            parameter_response_controller(
-                app=app,
-                get_uuid=self.uuid,
-                parametermodel=self.pmodel,
-                vectormodel=self.vmodel,
-            )
+        # self.set_callbacks(app)
+
+    # @property
+    # def layout(self) -> dcc.Tabs:
+    #     return main_view(
+    #         get_uuid=self.uuid,
+    #         vectormodel=self.vmodel,
+    #         parametermodel=self.pmodel,
+    #         theme=self.theme,
+    #     )
+
+    # def set_callbacks(self, app) -> None:
+    #     parameter_qc_controller(app=app, get_uuid=self.uuid, parametermodel=self.pmodel)
+    #     if self.vmodel is not None:
+    #         parameter_response_controller(
+    #             app=app,
+    #             get_uuid=self.uuid,
+    #             parametermodel=self.pmodel,
+    #             vectormodel=self.vmodel,
+    #         )
 
 
 def create_df_from_table_provider(
