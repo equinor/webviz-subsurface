@@ -34,7 +34,9 @@ class ParameterDistributionView(ViewABC):
             {
                 self.Ids.VISUALIZATION_TYPE: ParamDistVisualizationType(),
                 self.Ids.ENSEMBLES: ParamDistEnsembles(self._parametermodel.ensembles),
-                self.Ids.PARAMETERS: ParamDistParameters(self._parametermodel.parameters),
+                self.Ids.PARAMETERS: ParamDistParameters(
+                    self._parametermodel.parameters
+                ),
             }
         )
 
@@ -44,9 +46,9 @@ class ParameterDistributionView(ViewABC):
     def set_callbacks(self) -> None:
         @callback(
             Output(
-                self.view_element(self.Ids.VIEW_ELEMENT).component_unique_id(
-                    ParamDistViewElement.Ids.CHART
-                ).to_string(),
+                self.view_element(self.Ids.VIEW_ELEMENT)
+                .component_unique_id(ParamDistViewElement.Ids.CHART)
+                .to_string(),
                 "children",
             ),
             Input(

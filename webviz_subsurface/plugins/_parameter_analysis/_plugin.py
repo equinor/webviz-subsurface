@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import pandas as pd
-from ._views._parameter_distributions_view import ParameterDistributionView
 from dash import dcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
@@ -20,6 +19,8 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
+from ._views._parameter_distributions_view import ParameterDistributionView
+from ._views._parameter_response_view import ParameterResponseView
 from .controllers import parameter_qc_controller, parameter_response_controller
 from .data_loaders import read_csv
 from .models import (
@@ -204,6 +205,12 @@ realizations if you have defined `ensembles`.
         self.add_view(
             ParameterDistributionView(self.pmodel),
             self.Ids.PARAM_DIST_VIEW,
+        )
+        self.add_view(
+            ParameterResponseView(
+                parametermodel=self.pmodel, vectormodel=self.vmodel, theme=self.theme
+            ),
+            self.Ids.PARAM_RESP_VIEW,
         )
 
         # self.set_callbacks(app)
