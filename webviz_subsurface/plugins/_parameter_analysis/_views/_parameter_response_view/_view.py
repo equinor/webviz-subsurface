@@ -1,13 +1,20 @@
-import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
+import pandas as pd
 import plotly.graph_objects as go
-from dash import ALL, Input, Output, State, callback, callback_context
-from dash.development.base_component import Component
+from dash import Input, Output, State, callback, callback_context, no_update
+from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
+from ....._figures import BarChart, ScatterPlot, TimeSeriesFigure
+from ....._utils.colors import hex_to_rgba_str, rgba_to_hex
+from ....._utils.dataframe_utils import (
+    correlate_response_with_dataframe,
+    merge_dataframes_on_realization,
+)
+from ..._utils import datetime_utils
 from ...models import ParametersModel, SimulationTimeSeriesModel
 from ._settings import (
     ParamRespOptions,
@@ -15,6 +22,7 @@ from ._settings import (
     ParamRespSelections,
     ParamRespVizualisation,
 )
+from ._view_element import ParamRespViewElement
 
 
 class ParameterResponseView(ViewABC):
@@ -23,6 +31,10 @@ class ParameterResponseView(ViewABC):
         VIZUALISATION = "vizualisation"
         OPTIONS = "options"
         PARAMETER_FILTER = "parameter-filter"
+        TIME_SERIES_CHART = "time-series-chart"
+        VECTOR_VS_PARAM_SCATTER = "vector-vs-param-scatter"
+        VECTOR_CORR_GRAPH = "vector-corr-graph"
+        PARAM_CORR_GRAPH = "param-corr-graph"
 
     def __init__(
         self,
@@ -48,3 +60,563 @@ class ParameterResponseView(ViewABC):
                 ),
             }
         )
+
+        first_column = self.add_column()
+        first_column.add_view_element(
+            ParamRespViewElement(), self.Ids.TIME_SERIES_CHART
+        )
+        first_column.add_view_element(
+            ParamRespViewElement(), self.Ids.VECTOR_VS_PARAM_SCATTER
+        )
+        second_column = self.add_column()
+        second_column.add_view_element(
+            ParamRespViewElement(), self.Ids.VECTOR_CORR_GRAPH
+        )
+        second_column.add_view_element(
+            ParamRespViewElement(), self.Ids.PARAM_CORR_GRAPH
+        )
+
+    def set_callbacks(self) -> None:
+        # pylint: disable=too-many-statements
+        @callback(
+            Output(
+                self.view_element(self.Ids.TIME_SERIES_CHART)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Output(
+                self.view_element(self.Ids.VECTOR_VS_PARAM_SCATTER)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Output(
+                self.view_element(self.Ids.VECTOR_CORR_GRAPH)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Output(
+                self.view_element(self.Ids.PARAM_CORR_GRAPH)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.ENSEMBLE
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.VECTOR_SELECTOR
+                ),
+                "selectedNodes",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.PARAMETER_SELECT
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SELECTED
+                ),
+                "data",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.VECTOR_FILTER_STORE
+                ),
+                "data",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION, ParamRespVizualisation.Ids.LINE_OPTION
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION,
+                    ParamRespVizualisation.Ids.CHECKBOX_OPTIONS_STORE,
+                ),
+                "data",
+            ),
+            Input(
+                {
+                    "id": self.settings_group(self.Ids.PARAMETER_FILTER)
+                    .component_unique_id(ParamRespParameterFilter.Ids.PARAM_FILTER)
+                    .to_string(),
+                    "type": "data-store",
+                },
+                "data",
+            ),
+            State(
+                self.view_element(self.Ids.PARAM_CORR_GRAPH)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+            State(
+                self.view_element(self.Ids.VECTOR_CORR_GRAPH)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "figure",
+            ),
+        )
+        @callback_typecheck
+        # pylint: disable=too-many-locals, too-many-arguments
+        def _update_graphs(
+            ensemble: str,
+            vector: List[str],
+            parameter: Union[None, dict],
+            date: str,
+            column_keys: Union[None, str],
+            visualization: str,
+            options: Union[None, Dict[str, Any]],
+            real_filter: Dict[str, List[int]],
+            corr_p_fig: Union[None, dict],
+            corr_v_fig: Union[None, dict],
+        ) -> Tuple[dict, dict, dict, dict]:
+            """
+            Main callback to update plots. Initially all plots are generated,
+            while only relevant plots are updated in subsequent callbacks
+            """
+            ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
+            if not ctx or not vector:
+                raise PreventUpdate
+            vector = vector[0]
+
+            date = datetime_utils.from_str(date)
+            realizations = real_filter[ensemble]
+
+            color = options["color"] if options["color"] is not None else "#007079"
+
+            if len(realizations) <= 1:
+                return [empty_figure()] * 4
+
+            filtered_vectors = (
+                self._vectormodel.filter_vectors(column_keys)
+                if column_keys is not None
+                else []
+            )
+            filtered_vectors.append(vector)
+            vectors = list(set(filtered_vectors))
+
+            # Get dataframe with vectors and dataframe with parameters and merge
+            vector_df = self._vectormodel.get_vector_df(
+                ensemble=ensemble, realizations=realizations, vectors=vectors
+            )
+            if date not in vector_df["DATE"].values:
+                return [empty_figure("Selected date does not exist for ensemble")] * 4
+            if vector not in vector_df:
+                return [empty_figure("Selected vector does not exist for ensemble")] * 4
+
+            param_df = self._parametermodel.get_parameter_df_for_ensemble(
+                ensemble, realizations
+            )
+            merged_df = merge_dataframes_on_realization(
+                dframe1=vector_df[vector_df["DATE"] == date], dframe2=param_df
+            )
+            # Make correlation figure for vector
+            if options["autocompute_corr"]:
+                corr_v_fig = make_correlation_figure(
+                    merged_df, response=vector, corrwith=self._parametermodel.parameters
+                ).figure
+
+            # Get clicked parameter correlation bar or largest bar initially
+            parameter = (
+                parameter if parameter is not None else corr_v_fig["data"][0]["y"][-1]
+            )
+            corr_v_fig = color_corr_bars(
+                corr_v_fig, parameter, color, options["opacity"]
+            )
+
+            if not filtered_vectors:
+                text = (
+                    "Select vectors for parameter correlation to correlate"
+                    if not bool(column_keys)
+                    else "No vectors match selected filter"
+                )
+                corr_p_fig = empty_figure(text)
+            else:
+                # Make correlation figure for parameter
+                if options["autocompute_corr"]:
+                    corr_p_fig = make_correlation_figure(
+                        merged_df, response=parameter, corrwith=vectors
+                    ).figure
+
+                corr_p_fig = color_corr_bars(
+                    corr_p_fig, vector, color, options["opacity"]
+                )
+
+            # Create scatter plot of vector vs parameter
+            scatter_fig = ScatterPlot(
+                merged_df,
+                response=vector,
+                param=parameter,
+                color=color,
+                title=f"{vector} vs {parameter}",
+                plot_trendline=True,
+            )
+            scatter_fig.update_color(color, options["opacity"])
+
+            # Make timeseries graph
+            df_value_norm = self._parametermodel.get_real_and_value_df(
+                ensemble, parameter=parameter, normalize=True
+            )
+            timeseries_fig = TimeSeriesFigure(
+                dframe=merge_dataframes_on_realization(
+                    vector_df[["DATE", "REAL", vector]], df_value_norm
+                ),
+                visualization=visualization,
+                vector=vector,
+                ensemble=ensemble,
+                dateline=date if options["show_dateline"] else None,
+                historical_vector_df=self._vectormodel.get_historical_vector_df(
+                    vector, ensemble
+                ),
+                color_col=parameter,
+                line_shape_fallback=self._vectormodel.line_shape_fallback,
+            ).figure
+
+            return timeseries_fig, scatter_fig.figure, corr_v_fig, corr_p_fig
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "value",
+            ),
+            Input(
+                self.view_element(self.Ids.TIME_SERIES_CHART)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "clickData",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SELECTED
+                ),
+                "data",
+            ),
+        )
+        @callback_typecheck
+        def _update_date_from_clickdata(
+            timeseries_clickdata: Union[None, dict], date: str
+        ):
+            """Update date-slider from clickdata"""
+            date = (
+                timeseries_clickdata.get("points", [{}])[0]["x"]
+                if timeseries_clickdata is not None
+                else date
+            )
+            return self._vectormodel.dates.index(datetime_utils.from_str(date))
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.VECTOR_FILTER_STORE
+                ),
+                "data",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.SUBMIT_VECTOR_FILTER
+                ),
+                "style",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.SUBMIT_VECTOR_FILTER
+                ),
+                "n_clicks",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.VECTOR_FILTER
+                ),
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.VECTOR_FILTER_STORE
+                ),
+                "data",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.SUBMIT_VECTOR_FILTER
+                ),
+                "style",
+            ),
+        )
+        @callback_typecheck
+        def _update_vector_filter_store_and_button_style(
+            _n_click: Union[None, int],
+            vector_filter: Union[None, str],
+            stored: Union[None, str],
+            style: dict,
+        ):
+            """Update vector-filter-store if submit button is clicked and
+            style of submit button"""
+            ctx = callback_context.triggered[0]["prop_id"]
+            button_click = "submit" in ctx
+            insync = stored == vector_filter
+            style["background-color"] = (
+                "#E8E8E8" if insync or button_click else "#7393B3"
+            )
+            style["color"] = "#555" if insync or button_click else "#fff"
+            return vector_filter if button_click else no_update, style
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SELECTED
+                ),
+                "data",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "value",
+            ),
+        )
+        @callback_typecheck
+        def _update_date(dateidx: int):
+            """Update selected date from date-slider"""
+            return datetime_utils.to_str(self._vectormodel.dates[dateidx])
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SELECTED_TEXT
+                ),
+                "children",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "drag_value",
+            ),
+            prevent_initial_call=True,
+        )
+        @callback_typecheck
+        def _update_date(dateidx: int):
+            """Update selected date text on date-slider drag"""
+            return datetime_utils.to_str(self._vectormodel.dates[dateidx])
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION,
+                    ParamRespVizualisation.Ids.CHECKBOX_OPTIONS_STORE,
+                ),
+                "data",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION, ParamRespVizualisation.Ids.CHECKBOX_OPTIONS
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION, ParamRespVizualisation.Ids.COLOR_SELECTOR
+                ),
+                "clickData",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION, ParamRespVizualisation.Ids.OPACITY_SELECTOR
+                ),
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.VIZUALISATION,
+                    ParamRespVizualisation.Ids.CHECKBOX_OPTIONS_STORE,
+                ),
+                "data",
+            ),
+        )
+        @callback_typecheck
+        def _update_plot_options(
+            checkbox_options: list,
+            color_clickdata: Union[None, str],
+            opacity: float,
+            plot_options: Union[None, Dict[str, Any]],
+        ) -> Union[None, Dict[str, Any]]:
+            """Combine plot options in one dictionary"""
+            ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
+            if plot_options is not None and not ctx:
+                raise PreventUpdate
+            if color_clickdata is not None:
+                color = color_clickdata["points"][0]["marker.color"]
+                if "rgb" in color:
+                    color = rgba_to_hex(color)
+
+            return {
+                "show_dateline": "DateLine" in checkbox_options,
+                "autocompute_corr": "AutoCompute" in checkbox_options,
+                "color": None if color_clickdata is None else color,
+                "opacity": opacity,
+                "ctx": ctx,
+            }
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.VECTOR_SELECTOR
+                ),
+                "selectedTags",
+            ),
+            Input(
+                self.view_element(self.Ids.PARAM_CORR_GRAPH)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "clickData",
+            ),
+        )
+        @callback_typecheck
+        def _update_vectorlist(corr_param_clickdata: Union[None, dict]):
+            """Update the selected vector value from clickdata"""
+            if corr_param_clickdata is None:
+                raise PreventUpdate
+            vector_selected = corr_param_clickdata.get("points", [{}])[0].get("y")
+            return [vector_selected]
+
+        @callback(
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.PARAMETER_SELECT
+                ),
+                "options",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.PARAMETER_SELECT
+                ),
+                "value",
+            ),
+            Input(
+                self.view_element(self.Ids.VECTOR_CORR_GRAPH)
+                .component_unique_id(ParamRespViewElement.Ids.GRAPH)
+                .to_string(),
+                "clickData",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.ENSEMBLE
+                ),
+                "value",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.PARAMETER_SELECT
+                ),
+                "value",
+            ),
+        )
+        @callback_typecheck
+        def _update_parameter_selected(
+            corr_vector_clickdata: Union[None, dict],
+            ensemble: str,
+            selected_parameter: Union[None, str],
+        ) -> tuple:
+            """Update the selected parameter from clickdata, or when ensemble is changed"""
+            ctx = callback_context.triggered[0]["prop_id"]
+            if ctx == "." or corr_vector_clickdata is None:
+                raise PreventUpdate
+            parameters = self._parametermodel.pmodel.parameters_per_ensemble[ensemble]
+            options = [{"label": i, "value": i} for i in parameters]
+            if "vector-corr-graph" in ctx:
+                return options, corr_vector_clickdata.get("points", [{}])[0].get("y")
+            return (
+                options,
+                selected_parameter if selected_parameter in parameters else None,
+            )
+
+        @callback(
+            Output(
+                {
+                    "id": ParamRespParameterFilter.Ids.PARAM_FILTER,
+                    "type": "ensemble-update",
+                },
+                "data",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.ENSEMBLE
+                ),
+                "value",
+            ),
+        )
+        @callback_typecheck
+        def _update_parameter_filter_selection(ensemble: str):
+            """Update ensemble in parameter filter"""
+            return [ensemble]
+
+
+def make_correlation_figure(df: pd.DataFrame, response: str, corrwith: list):
+    """Create a bar plot with correlations for chosen response"""
+    corrseries = correlate_response_with_dataframe(df, response, corrwith)
+    return BarChart(
+        corrseries, n_rows=15, title=f"Correlations with {response}", orientation="h"
+    )
+
+
+def color_corr_bars(
+    figure: dict,
+    selected_bar: str,
+    color: str,
+    opacity: float,
+    color_selected="#FF1243",
+):
+    """
+    Set colors to the correlation plot bar,
+    with separate color for the selected bar
+    """
+    if "data" in figure:
+        figure["data"][0]["marker"] = {
+            "color": [
+                hex_to_rgba_str(color, opacity)
+                if _bar != selected_bar
+                else hex_to_rgba_str(color_selected, 0.8)
+                for _bar in figure["data"][0]["y"]
+            ],
+            "line": {
+                "color": [
+                    color if _bar != selected_bar else color_selected
+                    for _bar in figure["data"][0]["y"]
+                ],
+                "width": 1.2,
+            },
+        }
+    return figure
+
+
+def empty_figure(text="No data available for figure") -> go.Figure:
+    return go.Figure(
+        layout={
+            "xaxis": {"visible": False},
+            "yaxis": {"visible": False},
+            "plot_bgcolor": "white",
+            "annotations": [
+                {
+                    "text": text,
+                    "xref": "paper",
+                    "yref": "paper",
+                    "showarrow": False,
+                    "font": {"size": 16},
+                }
+            ],
+        }
+    )

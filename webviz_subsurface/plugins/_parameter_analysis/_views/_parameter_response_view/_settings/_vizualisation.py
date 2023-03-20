@@ -1,7 +1,6 @@
 from typing import List
 
 import webviz_core_components as wcc
-import webviz_subsurface_components as wsc
 from dash import dcc, html
 from dash.development.base_component import Component
 from webviz_config import WebvizConfigTheme
@@ -10,7 +9,6 @@ from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ...._types import LinePlotOptions
 from ....figures.color_figure import color_figure
-from ....models import ParametersModel, SimulationTimeSeriesModel
 
 
 class ParamRespVizualisation(SettingsGroupABC):

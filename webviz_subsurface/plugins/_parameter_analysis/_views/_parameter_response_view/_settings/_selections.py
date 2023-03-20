@@ -14,11 +14,11 @@ from ....models import ParametersModel, SimulationTimeSeriesModel
 class ParamRespSelections(SettingsGroupABC):
     class Ids(StrEnum):
         ENSEMBLE = "ensemble"
-        SUMVEC = "sumvec"
+        VECTOR_SELECTOR = "vector-selector"
         DATE_SELECTED_TEXT = "date-selected-text"
         DATE_SELECTED = "date-selected"
         DATE_SLIDER = "date-slider"
-        PARAMETERS = "parameters"
+        PARAMETER_SELECT = "parameter-select"
 
     def __init__(
         self, parametermodel: ParametersModel, vectormodel: SimulationTimeSeriesModel
@@ -41,7 +41,7 @@ class ParamRespSelections(SettingsGroupABC):
             ),
             wsc.VectorSelector(
                 label="Time Series",
-                id=self.register_component_unique_id(self.Ids.SUMVEC),
+                id=self.register_component_unique_id(self.Ids.VECTOR_SELECTOR),
                 maxNumSelectedNodes=1,
                 data=self._vectormodel.vector_selector_data,
                 persistence=True,
@@ -94,7 +94,7 @@ class ParamRespSelections(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Parameter",
-                id=self.register_component_unique_id(self.Ids.PARAMETERS),
+                id=self.register_component_unique_id(self.Ids.PARAMETER_SELECT),
                 options=[
                     {"label": i, "value": i} for i in self._parametermodel.parameters
                 ],

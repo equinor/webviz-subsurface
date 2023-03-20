@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import pandas as pd
-from dash import dcc
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 from webviz_config.utils import StrEnum
@@ -21,7 +20,6 @@ from webviz_subsurface._providers import (
 
 from ._views._parameter_distributions_view import ParameterDistributionView
 from ._views._parameter_response_view import ParameterResponseView
-from .controllers import parameter_qc_controller, parameter_response_controller
 from .data_loaders import read_csv
 from .models import (
     ParametersModel,
