@@ -27,24 +27,28 @@ def color_figure(
                 y=[str(idx)] * len(clist),
                 x=[1] * len(clist),
                 customdata=list(range(len(clist))),
-                marker=dict(color=clist),
+                marker={"color": clist},
                 hovertemplate="%{marker.color}<extra></extra>",
             )
             for idx, clist in enumerate(reversed(color_lists))
         ],
-        layout=dict(
-            title=None,
-            barmode="stack",
-            barnorm="fraction",
-            bargap=bargap if bargap is not None else 0.5,
-            showlegend=False,
-            xaxis=dict(range=[-0.02, 1.02], showticklabels=False, showgrid=False),
-            yaxis_showticklabels=False,
-            height=height if height is not None else 20 * len(color_lists),
-            margin=dict(l=0, r=0, t=0, b=0),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-        ),
+        layout={
+            "title": None,
+            "barmode": "stack",
+            "barnorm": "fraction",
+            "bargap": bargap if bargap is not None else 0.5,
+            "showlegend": False,
+            "xaxis": {
+                "range": [-0.02, 1.02],
+                "showticklabels": False,
+                "showgrid": False,
+            },
+            "yaxis_showticklabels": False,
+            "height": height if height is not None else 20 * len(color_lists),
+            "margin": {"l": 0, "r": 0, "t": 0, "b": 0},
+            "paper_bgcolor": "rgba(0,0,0,0)",
+            "plot_bgcolor": "rgba(0,0,0,0)",
+        },
     )
 
 
