@@ -8,7 +8,7 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ...._utils import datetime_utils
-from ....models import ParametersModel, SimulationTimeSeriesModel
+from ....models import ParametersModel, ProviderTimeSeriesDataModel
 
 
 class ParamRespSelections(SettingsGroupABC):
@@ -21,7 +21,7 @@ class ParamRespSelections(SettingsGroupABC):
         PARAMETER_SELECT = "parameter-select"
 
     def __init__(
-        self, parametermodel: ParametersModel, vectormodel: SimulationTimeSeriesModel
+        self, parametermodel: ParametersModel, vectormodel: ProviderTimeSeriesDataModel
     ) -> None:
         super().__init__("Selections")
         self._parametermodel = parametermodel
@@ -29,7 +29,7 @@ class ParamRespSelections(SettingsGroupABC):
 
     def layout(self) -> List[Component]:
         dates = self._vectormodel.dates
-        ensembles = self._parametermodel.mc_ensembles
+        ensembles = self._parametermodel.ensembles
         return [
             wcc.Dropdown(
                 label="Ensemble",

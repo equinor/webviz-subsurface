@@ -15,7 +15,7 @@ from ....._utils.dataframe_utils import (
     merge_dataframes_on_realization,
 )
 from ..._utils import datetime_utils
-from ...models import ParametersModel, SimulationTimeSeriesModel
+from ...models import ParametersModel, ProviderTimeSeriesDataModel
 from ._settings import (
     ParamRespOptions,
     ParamRespParameterFilter,
@@ -39,7 +39,7 @@ class ParameterResponseView(ViewABC):
     def __init__(
         self,
         parametermodel: ParametersModel,
-        vectormodel: SimulationTimeSeriesModel,
+        vectormodel: ProviderTimeSeriesDataModel,
         theme: WebvizConfigTheme,
     ) -> None:
         super().__init__("Parameter Response Analysis")
@@ -173,7 +173,7 @@ class ParameterResponseView(ViewABC):
         def _update_graphs(
             ensemble: str,
             vector: List[str],
-            parameter: Union[None, dict],
+            parameter: Union[None, str],
             date: str,
             column_keys: Union[None, str],
             visualization: str,
@@ -200,7 +200,7 @@ class ParameterResponseView(ViewABC):
                 return [empty_figure()] * 4
 
             filtered_vectors = (
-                self._vectormodel.filter_vectors(column_keys)
+                self._vectormodel.filter_vectors(column_keys, ensemble=ensemble)
                 if column_keys is not None
                 else []
             )

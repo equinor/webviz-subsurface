@@ -1,7 +1,7 @@
 import datetime
 import fnmatch
 import re
-from typing import List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 import pandas as pd
 
@@ -16,7 +16,11 @@ from webviz_subsurface._utils.vector_selector import add_vector_to_vector_select
 class ProviderTimeSeriesDataModel:
     """Class to process and and visualize ensemble timeseries"""
 
-    def __init__(self, provider_set: dict, column_keys: Optional[list] = None) -> None:
+    def __init__(
+        self,
+        provider_set: Dict[str, EnsembleSummaryProvider],
+        column_keys: Optional[list] = None,
+    ) -> None:
         self._provider_set = provider_set
         self.line_shape_fallback = set_simulation_line_shape_fallback("linear")
         all_vector_names = self._create_union_of_vector_names_from_providers(
@@ -76,10 +80,16 @@ class ProviderTimeSeriesDataModel:
         vector_names = list(sorted(set(vector_names)))
         return vector_names
 
-    def filter_vectors(self, column_keys: str) -> list:
+    def filter_vectors(self, column_keys: str, ensemble: Optional[str] = None) -> list:
         """Filter vector list used for correlation"""
         column_key_list = "".join(column_keys.split()).split(",")
-        return self.filter_vectorlist_on_column_keys(column_key_list, self.vectors)
+
+        return self.filter_vectorlist_on_column_keys(
+            column_key_list,
+            self.vectors
+            if ensemble is None
+            else self._provider_set[ensemble].vector_names(),
+        )
 
     @staticmethod
     def filter_vectorlist_on_column_keys(
@@ -99,8 +109,8 @@ class ProviderTimeSeriesDataModel:
         self, vector: str, ensemble: str
     ) -> Optional[pd.DataFrame]:
         hist_vecname = historical_vector(vector, smry_meta=None)
-
-        if hist_vecname and hist_vecname in self.vectors:
+        ensemble_vectors = self._provider_set[ensemble].vector_names()
+        if hist_vecname and hist_vecname in ensemble_vectors:
             provider = self._provider_set[ensemble]
             return provider.get_vectors_df(
                 [hist_vecname], None, realizations=provider.realizations()[:1]

@@ -1,16 +1,9 @@
-from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional
 
 import pandas as pd
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.deprecation_decorators import deprecated_plugin_arguments
 from webviz_config.utils import StrEnum
-from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO, WebvizRunMode
 
-from webviz_subsurface._models import (
-    EnsembleSetModel,
-    caching_ensemble_set_model_factory,
-)
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
     EnsembleTableProvider,
@@ -20,25 +13,7 @@ from webviz_subsurface._providers import (
 
 from ._views._parameter_distributions_view import ParameterDistributionView
 from ._views._parameter_response_view import ParameterResponseView
-from .data_loaders import read_csv
-from .models import (
-    ParametersModel,
-    ProviderTimeSeriesDataModel,
-    SimulationTimeSeriesModel,
-)
-
-
-def check_deprecation_argument(
-    csvfile_parameters: Optional[Path], csvfile_smry: Optional[Path]
-) -> Optional[Tuple[str, str]]:
-    if any(elm is not None for elm in [csvfile_parameters, csvfile_smry]):
-        return (
-            "The usage of aggregated csvfiles as user input options are deprecated. "
-            "Please provide feedback if you see a need for a continuation "
-            "of this functionality ",
-            "",
-        )
-    return None
+from .models import ParametersModel, ProviderTimeSeriesDataModel
 
 
 class ParameterAnalysis(WebvizPluginABC):
@@ -81,118 +56,50 @@ realizations if you have defined `ensembles`.
         PARAM_DIST_VIEW = "param-dist-view"
         PARAM_RESP_VIEW = "param-resp-view"
 
-    # pylint: disable=too-many-arguments, too-many-locals
-    @deprecated_plugin_arguments(check_deprecation_argument)
     def __init__(
         self,
         webviz_settings: WebvizSettings,
-        ensembles: Optional[list] = None,
+        ensembles: List[str] = None,
         time_index: str = "monthly",
         column_keys: Optional[list] = None,
         drop_constants: bool = True,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
-        csvfile_parameters: Path = None,
-        csvfile_smry: Path = None,
     ):
         super().__init__()
 
         self.theme = webviz_settings.theme
         self.ensembles = ensembles
-        self.vmodel: Optional[
-            Union[SimulationTimeSeriesModel, ProviderTimeSeriesDataModel]
-        ] = None
-
-        run_mode_portable = WEBVIZ_INSTANCE_INFO.run_mode == WebvizRunMode.PORTABLE
+        self.vmodel: ProviderTimeSeriesDataModel = None
         table_provider_factory = EnsembleTableProviderFactory.instance()
 
-        if ensembles is not None:
-            ensemble_paths = {
-                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
-                    ensemble_name
-                ]
-                for ensemble_name in ensembles
+        ensemble_paths = {
+            ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                ensemble_name
+            ]
+            for ensemble_name in ensembles
+        }
+
+        resampling_frequency = Frequency(time_index)
+        provider_factory = EnsembleSummaryProviderFactory.instance()
+
+        provider_set = {
+            ens: provider_factory.create_from_arrow_unsmry_presampled(
+                str(ens_path), rel_file_pattern, resampling_frequency
+            )
+            for ens, ens_path in ensemble_paths.items()
+        }
+        self.vmodel = ProviderTimeSeriesDataModel(
+            provider_set=provider_set, column_keys=column_keys
+        )
+
+        parameter_df = create_df_from_table_provider(
+            provider_set={
+                ens_name: table_provider_factory.create_from_per_realization_parameter_file(
+                    ens_path
+                )
+                for ens_name, ens_path in ensemble_paths.items()
             }
-
-            resampling_frequency = Frequency(time_index)
-            provider_factory = EnsembleSummaryProviderFactory.instance()
-
-            try:
-                provider_set = {
-                    ens: provider_factory.create_from_arrow_unsmry_presampled(
-                        str(ens_path), rel_file_pattern, resampling_frequency
-                    )
-                    for ens, ens_path in ensemble_paths.items()
-                }
-                self.vmodel = ProviderTimeSeriesDataModel(
-                    provider_set=provider_set, column_keys=column_keys
-                )
-
-                parameter_df = create_df_from_table_provider(
-                    provider_set={
-                        ens_name: table_provider_factory.create_from_per_realization_parameter_file(
-                            ens_path
-                        )
-                        for ens_name, ens_path in ensemble_paths.items()
-                    }
-                )
-
-            except ValueError as error:
-                message = (
-                    f"Some/all ensembles are missing arrow files at {rel_file_pattern}.\n"
-                    "If no arrow files have been generated with `ERT` using `ECL2CSV`, "
-                    "the commandline tool `smry2arrow_batch` can be used to generate arrow "
-                    "files for an ensemble"
-                )
-                if not run_mode_portable:
-                    raise ValueError(message) from error
-
-                # NOTE: this part below is to ensure backwards compatibility for portable app's
-                # created before the arrow support. It should be removed in the future.
-                emodel: EnsembleSetModel = (
-                    caching_ensemble_set_model_factory.get_or_create_model(
-                        ensemble_paths=ensemble_paths,
-                        time_index=time_index,
-                        column_keys=column_keys,
-                    )
-                )
-                self.vmodel = SimulationTimeSeriesModel(
-                    dataframe=emodel.get_or_load_smry_cached()
-                )
-                parameter_df = emodel.load_parameters()
-
-        elif csvfile_parameters is None:
-            raise ValueError("Either ensembles or csvfile_parameters must be specified")
-        else:
-            # NOTE: the try/except is for backwards compatibility with existing portable app's.
-            # It should be removed in the future together with the support of aggregated csv-files
-            try:
-                parameter_df = create_df_from_table_provider(
-                    provider_set=(
-                        table_provider_factory.create_provider_set_from_aggregated_csv_file(
-                            csvfile_parameters
-                        )
-                    )
-                )
-            except FileNotFoundError:
-                if not run_mode_portable:
-                    raise
-                parameter_df = read_csv(csvfile_parameters)
-
-            if csvfile_smry is not None:
-                try:
-                    smry_df = create_df_from_table_provider(
-                        provider_set=(
-                            table_provider_factory.create_provider_set_from_aggregated_csv_file(
-                                csvfile_smry
-                            )
-                        )
-                    )
-                except FileNotFoundError:
-                    if not run_mode_portable:
-                        raise
-                    smry_df = read_csv(csvfile_smry)
-
-                self.vmodel = SimulationTimeSeriesModel(dataframe=smry_df)
+        )
 
         self.pmodel = ParametersModel(
             dataframe=parameter_df,
@@ -210,27 +117,6 @@ realizations if you have defined `ensembles`.
             ),
             self.Ids.PARAM_RESP_VIEW,
         )
-
-        # self.set_callbacks(app)
-
-    # @property
-    # def layout(self) -> dcc.Tabs:
-    #     return main_view(
-    #         get_uuid=self.uuid,
-    #         vectormodel=self.vmodel,
-    #         parametermodel=self.pmodel,
-    #         theme=self.theme,
-    #     )
-
-    # def set_callbacks(self, app) -> None:
-    #     parameter_qc_controller(app=app, get_uuid=self.uuid, parametermodel=self.pmodel)
-    #     if self.vmodel is not None:
-    #         parameter_response_controller(
-    #             app=app,
-    #             get_uuid=self.uuid,
-    #             parametermodel=self.pmodel,
-    #             vectormodel=self.vmodel,
-    #         )
 
 
 def create_df_from_table_provider(

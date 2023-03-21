@@ -15,6 +15,6 @@ class ParamRespViewElement(ViewElementABC):
         return html.Div(
             children=wcc.Graph(
                 id=self.register_component_unique_id(self.Ids.GRAPH),
-                # style={"height": "87vh"},
+                style={"height": "43.5vh"},
             ),
         )
