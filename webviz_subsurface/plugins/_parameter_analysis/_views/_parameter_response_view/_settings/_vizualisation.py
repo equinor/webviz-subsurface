@@ -47,9 +47,8 @@ class ParamRespVizualisation(SettingsGroupABC):
                 id=self.register_component_unique_id(self.Ids.CHECKBOX_OPTIONS),
                 options=[
                     {"label": "Dateline visible", "value": "DateLine"},
-                    {"label": "Auto compute correlations", "value": "AutoCompute"},
                 ],
-                value=["DateLine", "AutoCompute"],
+                value=["DateLine"],
             ),
             dcc.Store(
                 id=self.register_component_unique_id(self.Ids.CHECKBOX_OPTIONS_STORE),

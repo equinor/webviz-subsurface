@@ -1,5 +1,6 @@
 from typing import List
 
+import webviz_core_components as wcc
 from dash import dcc, html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
@@ -11,6 +12,7 @@ class ParamRespOptions(SettingsGroupABC):
         VECTOR_FILTER = "vector-filter"
         SUBMIT_VECTOR_FILTER = "submit-vector-filter"
         VECTOR_FILTER_STORE = "vector-filter-store"
+        AUTO_COMPUTE_CORRELATIONS = "auto-compute-correlations"
 
     def __init__(
         self,
@@ -40,5 +42,14 @@ class ParamRespOptions(SettingsGroupABC):
             ),
             dcc.Store(
                 id=self.register_component_unique_id(self.Ids.VECTOR_FILTER_STORE)
+            ),
+            wcc.Checklist(
+                id=self.register_component_unique_id(
+                    self.Ids.AUTO_COMPUTE_CORRELATIONS
+                ),
+                options=[
+                    {"label": "Calculate correlations", "value": "AutoCompute"},
+                ],
+                value=["AutoCompute"],
             ),
         ]
