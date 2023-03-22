@@ -13,7 +13,7 @@ from webviz_subsurface._providers import (
 
 from ._views._parameter_distributions_view import ParameterDistributionView
 from ._views._parameter_response_view import ParameterResponseView
-from .models import ParametersModel, ProviderTimeSeriesDataModel
+from ._utils import ParametersModel, ProviderTimeSeriesDataModel
 
 
 class ParameterAnalysis(WebvizPluginABC):

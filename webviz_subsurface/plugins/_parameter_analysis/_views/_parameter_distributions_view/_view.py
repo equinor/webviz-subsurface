@@ -6,7 +6,7 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ..._types import VisualizationType
-from ...models import ParametersModel
+from ..._utils import ParametersModel
 from ._settings import (
     ParamDistEnsembles,
     ParamDistParameters,

@@ -13,8 +13,8 @@ from ....._utils.dataframe_utils import (
     correlate_response_with_dataframe,
     merge_dataframes_on_realization,
 )
-from ..._utils import datetime_utils
-from ...models import ParametersModel, ProviderTimeSeriesDataModel
+from ..._utils import _datetime_utils as datetime_utils
+from ..._utils import ParametersModel, ProviderTimeSeriesDataModel
 from ._settings import (
     ParamRespOptions,
     ParamRespParameterFilter,
@@ -203,8 +203,6 @@ class ParameterResponseView(ViewABC):
                 if column_keys is not None
                 else []
             )
-            # filtered_vectors.append(vector)
-            # vectors = list(set(filtered_vectors))
 
             # Get dataframe with vectors and dataframe with parameters and merge
             vector_df = self._vectormodel.get_vector_df(

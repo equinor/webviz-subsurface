@@ -8,7 +8,7 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ...._types import LinePlotOptions
-from ....figures.color_figure import color_figure
+from .._utils import color_figure
 
 
 class ParamRespVizualisation(SettingsGroupABC):
