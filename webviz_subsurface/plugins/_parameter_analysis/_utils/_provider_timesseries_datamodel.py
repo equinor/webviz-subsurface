@@ -127,5 +127,5 @@ class ProviderTimeSeriesDataModel:
         ens_vectors = [vec for vec in vectors if vec in provider.vector_names()]
         return provider.get_vectors_df(ens_vectors, None, realizations)
 
-    def get_last_date(self, ensemble: str) -> str:
+    def get_last_date(self, ensemble: str) -> datetime.datetime:
         return max(self._provider_set[ensemble].dates(None))

@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -194,7 +194,7 @@ class ParametersModel:
         ].iloc[0][stat_column]
 
     def get_real_and_value_df(
-        self, ensemble: str, parameter: str, normalize: bool = False
+        self, ensemble: str, parameter: Optional[str], normalize: bool = False
     ) -> pd.DataFrame:
         """
         Return dataframe with ralization and values for selected parameter for an ensemble.
