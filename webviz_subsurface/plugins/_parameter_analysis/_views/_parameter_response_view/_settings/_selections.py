@@ -7,8 +7,8 @@ from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ...._utils import _datetime_utils as datetime_utils
 from ...._utils import ParametersModel, ProviderTimeSeriesDataModel
+from ...._utils import _datetime_utils as datetime_utils
 
 
 class ParamRespSelections(SettingsGroupABC):

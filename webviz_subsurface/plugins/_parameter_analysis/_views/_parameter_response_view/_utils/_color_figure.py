@@ -1,3 +1,5 @@
+from typing import List
+
 import plotly.express as px
 import plotly.graph_objs as go
 
@@ -6,7 +8,7 @@ def color_figure(
     colors: list,
     bargap: float = None,
     height: float = None,
-):
+) -> go.Figure:
     """
     Create bar chart with colors, can e.g. be used as a color selector
     by retrieving clickdata.
@@ -52,7 +54,7 @@ def color_figure(
     )
 
 
-def get_px_colors(px_cscale: str):
+def get_px_colors(px_cscale: str) -> List[str]:
     for cmodule in [
         px.colors.diverging,
         px.colors.sequential,

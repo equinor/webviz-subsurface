@@ -11,9 +11,9 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
+from ._utils import ParametersModel, ProviderTimeSeriesDataModel
 from ._views._parameter_distributions_view import ParameterDistributionView
 from ._views._parameter_response_view import ParameterResponseView
-from ._utils import ParametersModel, ProviderTimeSeriesDataModel
 
 
 class ParameterAnalysis(WebvizPluginABC):
@@ -67,17 +67,20 @@ realizations if you have defined `ensembles`.
     ):
         super().__init__()
 
-        self.theme = webviz_settings.theme
-        self.ensembles = ensembles
-        self.vmodel: ProviderTimeSeriesDataModel = None
-        table_provider_factory = EnsembleTableProviderFactory.instance()
+        self._ensembles = ensembles
+        self._theme = webviz_settings.theme
 
-        ensemble_paths = {
+        if ensembles is None:
+            raise ValueError('Incorrect argument, must provide "ensembles"')
+
+        ensemble_paths: Dict[str, str] = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                 ensemble_name
             ]
             for ensemble_name in ensembles
         }
+
+        table_provider_factory = EnsembleTableProviderFactory.instance()
 
         resampling_frequency = Frequency(time_index)
         provider_factory = EnsembleSummaryProviderFactory.instance()
@@ -88,7 +91,7 @@ realizations if you have defined `ensembles`.
             )
             for ens, ens_path in ensemble_paths.items()
         }
-        self.vmodel = ProviderTimeSeriesDataModel(
+        self._vmodel = ProviderTimeSeriesDataModel(
             provider_set=provider_set, column_keys=column_keys
         )
 
@@ -101,19 +104,19 @@ realizations if you have defined `ensembles`.
             }
         )
 
-        self.pmodel = ParametersModel(
+        self._pmodel = ParametersModel(
             dataframe=parameter_df,
-            theme=self.theme,
+            theme=self._theme,
             drop_constants=drop_constants,
         )
 
         self.add_view(
-            ParameterDistributionView(self.pmodel),
+            ParameterDistributionView(self._pmodel),
             self.Ids.PARAM_DIST_VIEW,
         )
         self.add_view(
             ParameterResponseView(
-                parametermodel=self.pmodel, vectormodel=self.vmodel, theme=self.theme
+                parametermodel=self._pmodel, vectormodel=self._vmodel, theme=self._theme
             ),
             self.Ids.PARAM_RESP_VIEW,
         )

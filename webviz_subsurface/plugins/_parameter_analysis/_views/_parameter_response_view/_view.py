@@ -13,8 +13,8 @@ from ....._utils.dataframe_utils import (
     correlate_response_with_dataframe,
     merge_dataframes_on_realization,
 )
-from ..._utils import _datetime_utils as datetime_utils
 from ..._utils import ParametersModel, ProviderTimeSeriesDataModel
+from ..._utils import _datetime_utils as datetime_utils
 from ._settings import (
     ParamRespOptions,
     ParamRespParameterFilter,
@@ -173,14 +173,14 @@ class ParameterResponseView(ViewABC):
             ensemble: str,
             vector: List[str],
             param: Union[None, str],
-            date: str,
+            datestr: str,
             column_keys: Union[None, str],
             visualization: str,
             options: Union[None, Dict[str, Any]],
             real_filter: Dict[str, List[int]],
             corr_p_fig: Union[None, dict],
             corr_v_fig: Union[None, dict],
-        ) -> Tuple[dict, dict, dict, dict]:
+        ) -> List[Any]:
             """
             Main callback to update plots. Initially all plots are generated,
             while only relevant plots are updated in subsequent callbacks
@@ -188,12 +188,16 @@ class ParameterResponseView(ViewABC):
             ctx = callback_context.triggered[0]["prop_id"].split(".")[0]
             if not ctx or not vector:
                 raise PreventUpdate
-            vector = vector[0]
+            selected_vector = vector[0]
 
-            date = datetime_utils.from_str(date)
+            date = datetime_utils.from_str(datestr)
             realizations = real_filter[ensemble]
 
-            color = options["color"] if options["color"] is not None else "#007079"
+            color = (
+                options["color"]
+                if options is not None and options["color"] is not None
+                else "#007079"
+            )
 
             if len(realizations) <= 1:
                 return [empty_figure()] * 4
@@ -208,11 +212,11 @@ class ParameterResponseView(ViewABC):
             vector_df = self._vectormodel.get_vector_df(
                 ensemble=ensemble,
                 realizations=realizations,
-                vectors=vectors_for_param_corr + [vector],
+                vectors=vectors_for_param_corr + [selected_vector],
             )
             if date not in vector_df["DATE"].values:
                 return [empty_figure("Selected date does not exist for ensemble")] * 4
-            if vector not in vector_df:
+            if selected_vector not in vector_df:
                 return [empty_figure("Selected vector does not exist for ensemble")] * 4
 
             param_df = self._parametermodel.get_parameter_df_for_ensemble(
@@ -223,13 +227,13 @@ class ParameterResponseView(ViewABC):
             )
 
             # Make correlation figure for vector (upper right plot)
-            if not options["autocompute_corr"]:
+            if options is not None and not options["autocompute_corr"]:
                 corr_v_fig = empty_figure(
                     "'Calculate Correlations' option not selected"
                 )
             else:
                 corrseries = correlate_response_with_dataframe(
-                    merged_df, vector, self._parametermodel.parameters
+                    merged_df, selected_vector, self._parametermodel.parameters
                 )
                 if corrseries.isnull().values.any():
                     # If all response values are equal, correlations will be Nan
@@ -238,16 +242,19 @@ class ParameterResponseView(ViewABC):
                     corr_v_fig = BarChart(
                         corrseries,
                         n_rows=15,
-                        title=f"Correlations with {vector}",
+                        title=f"Correlations with {selected_vector}",
                         orientation="h",
                     ).figure
                     param = param if param is not None else corrseries.abs().idxmax()
                     corr_v_fig = color_corr_bars(
-                        corr_v_fig, param, color, options["opacity"]
+                        corr_v_fig,
+                        param,
+                        color,
+                        options["opacity"] if options is not None else 0.5,
                     )
 
             # Make correlation figure for parameter (lower right plot)
-            if not options["autocompute_corr"]:
+            if options is not None and not options["autocompute_corr"]:
                 corr_p_fig = empty_figure(
                     "'Calculate Correlations' option not selected"
                 )
@@ -260,13 +267,13 @@ class ParameterResponseView(ViewABC):
                 corr_p_fig = empty_figure(text)
             else:
                 # Make correlation figure for parameter
-                if options["autocompute_corr"]:
+                if options is not None and options["autocompute_corr"]:
                     if param is None:
                         # This can happen if vector correlations failed
                         corr_p_fig = empty_figure("Not able to calculate correlations")
                     else:
                         corrseries = correlate_response_with_dataframe(
-                            merged_df, param, vectors_for_param_corr + [vector]
+                            merged_df, param, vectors_for_param_corr + [selected_vector]
                         )
                         if corrseries.isnull().values.any():
                             corr_p_fig = empty_figure(
@@ -280,7 +287,7 @@ class ParameterResponseView(ViewABC):
                                 orientation="h",
                             ).figure
                             corr_p_fig = color_corr_bars(
-                                corr_p_fig, vector, color, options["opacity"]
+                                corr_p_fig, selected_vector, color, options["opacity"]
                             )
 
             # Make scatter plot (lower left plot)
@@ -290,13 +297,15 @@ class ParameterResponseView(ViewABC):
                 # Create scatter plot of vector vs parameter
                 scatterplot = ScatterPlot(
                     merged_df,
-                    response=vector,
+                    response=selected_vector,
                     param=param,
                     color=color,
-                    title=f"{vector} vs {param}",
+                    title=f"{selected_vector} vs {param}",
                     plot_trendline=True,
                 )
-                scatterplot.update_color(color, options["opacity"])
+                scatterplot.update_color(
+                    color, options["opacity"] if options is not None else 0.5
+                )
                 scatter_fig = scatterplot.figure
 
             # Make timeseries graph
@@ -305,20 +314,22 @@ class ParameterResponseView(ViewABC):
             )
             timeseries_fig = TimeSeriesFigure(
                 dframe=merge_dataframes_on_realization(
-                    vector_df[["DATE", "REAL", vector]], df_value_norm
+                    vector_df[["DATE", "REAL", selected_vector]], df_value_norm
                 ),
                 visualization=visualization,
-                vector=vector,
+                vector=selected_vector,
                 ensemble=ensemble,
-                dateline=date if options["show_dateline"] else None,
+                dateline=date
+                if options is not None and options["show_dateline"]
+                else None,
                 historical_vector_df=self._vectormodel.get_historical_vector_df(
-                    vector, ensemble
+                    selected_vector, ensemble
                 ),
                 color_col=param,
                 line_shape_fallback=self._vectormodel.line_shape_fallback,
             ).figure
 
-            return timeseries_fig, scatter_fig, corr_v_fig, corr_p_fig
+            return [timeseries_fig, scatter_fig, corr_v_fig, corr_p_fig]
 
         @callback(
             Output(
@@ -343,7 +354,7 @@ class ParameterResponseView(ViewABC):
         @callback_typecheck
         def _update_date_from_clickdata(
             timeseries_clickdata: Union[None, dict], date: str
-        ):
+        ) -> int:
             """Update date-slider from clickdata"""
             date = (
                 timeseries_clickdata.get("points", [{}])[0]["x"]
@@ -395,8 +406,8 @@ class ParameterResponseView(ViewABC):
             _n_click: Union[None, int],
             vector_filter: Union[None, str],
             stored: Union[None, str],
-            style: dict,
-        ):
+            style: Dict,
+        ) -> Tuple[str, Dict]:
             """Update vector-filter-store if submit button is clicked and
             style of submit button"""
             ctx = callback_context.triggered[0]["prop_id"]
@@ -423,7 +434,7 @@ class ParameterResponseView(ViewABC):
             ),
         )
         @callback_typecheck
-        def _update_date(dateidx: int):
+        def _update_date(dateidx: int) -> str:
             """Update selected date from date-slider"""
             return datetime_utils.to_str(self._vectormodel.dates[dateidx])
 
@@ -443,7 +454,7 @@ class ParameterResponseView(ViewABC):
             prevent_initial_call=True,
         )
         @callback_typecheck
-        def _update_date(dateidx: int):
+        def _update_date_drag_value(dateidx: int) -> str:
             """Update selected date text on date-slider drag"""
             return datetime_utils.to_str(self._vectormodel.dates[dateidx])
 
@@ -527,7 +538,7 @@ class ParameterResponseView(ViewABC):
             ),
         )
         @callback_typecheck
-        def _update_vectorlist(corr_param_clickdata: Union[None, dict]):
+        def _update_vectorlist(corr_param_clickdata: Union[None, dict]) -> List[str]:
             """Update the selected vector value from clickdata"""
             if corr_param_clickdata is None:
                 raise PreventUpdate
@@ -601,7 +612,7 @@ class ParameterResponseView(ViewABC):
             ),
         )
         @callback_typecheck
-        def _update_parameter_filter_selection(ensemble: str):
+        def _update_parameter_filter_selection(ensemble: str) -> List[str]:
             """Update ensemble in parameter filter"""
             return [ensemble]
 
@@ -611,8 +622,8 @@ def color_corr_bars(
     selected_bar: str,
     color: str,
     opacity: float,
-    color_selected="#FF1243",
-):
+    color_selected: str = "#FF1243",
+) -> Dict[str, Any]:
     """
     Set colors to the correlation plot bar,
     with separate color for the selected bar
@@ -636,7 +647,7 @@ def color_corr_bars(
     return figure
 
 
-def empty_figure(text="No data available for figure") -> go.Figure:
+def empty_figure(text: str = "No data available for figure") -> go.Figure:
     return go.Figure(
         layout={
             "xaxis": {"visible": False},
