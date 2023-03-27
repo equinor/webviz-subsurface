@@ -2,9 +2,12 @@ import warnings
 
 # pylint: disable=no-name-in-module
 from webviz_config.plugins import ParameterAnalysis
+from webviz_config.testing import WebvizComposite
 
 
-def test_parameter_analysis(dash_duo, app, shared_settings) -> None:
+def test_parameter_analysis(
+    _webviz_duo: WebvizComposite, shared_settings: dict
+) -> None:
     plugin = ParameterAnalysis(
         shared_settings["HM_SETTINGS"],
         ensembles=shared_settings["HM_ENSEMBLES"],
@@ -12,10 +15,10 @@ def test_parameter_analysis(dash_duo, app, shared_settings) -> None:
         time_index="monthly",
         drop_constants=True,
     )
-    app.layout = plugin.layout
-    dash_duo.start_server(app)
+    _webviz_duo.start_server(plugin)
+
     logs = []
-    for log in dash_duo.get_logs():
+    for log in _webviz_duo.get_logs():
         if "dash_renderer" in log.get("message"):
             warnings.warn(log.get("message"))
         else:
