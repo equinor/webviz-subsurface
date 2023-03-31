@@ -111,14 +111,14 @@ realizations if you have defined `ensembles`.
         )
 
         self.add_view(
-            ParameterDistributionView(self._pmodel),
-            self.Ids.PARAM_DIST_VIEW,
-        )
-        self.add_view(
             ParameterResponseView(
                 parametermodel=self._pmodel, vectormodel=self._vmodel, theme=self._theme
             ),
             self.Ids.PARAM_RESP_VIEW,
+        )
+        self.add_view(
+            ParameterDistributionView(self._pmodel),
+            self.Ids.PARAM_DIST_VIEW,
         )
 
 

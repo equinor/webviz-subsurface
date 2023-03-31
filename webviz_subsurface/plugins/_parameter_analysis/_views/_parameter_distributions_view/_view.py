@@ -114,7 +114,7 @@ class ParameterDistributionView(ViewABC):
             return wcc.Graph(
                 # id=get_uuid("property-qc-graph"),
                 config={"displayModeBar": False},
-                style={"height": "75vh"},
+                style={"height": "87vh"},
                 figure=self._parametermodel.make_grouped_plot(
                     ensembles=ensembles,
                     parameters=parameters,
