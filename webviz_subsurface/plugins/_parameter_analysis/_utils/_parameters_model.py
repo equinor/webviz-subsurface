@@ -1,8 +1,9 @@
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models.parameter_model import ParametersModel as Pmodel
@@ -14,7 +15,10 @@ class ParametersModel:
     REQUIRED_COLUMNS = ["ENSEMBLE", "REAL"]
 
     def __init__(
-        self, dataframe: pd.DataFrame, theme: dict, drop_constants: bool = True
+        self,
+        dataframe: pd.DataFrame,
+        theme: WebvizConfigTheme,
+        drop_constants: bool = True,
     ) -> None:
         self.pmodel = Pmodel(
             dataframe=dataframe, drop_constants=drop_constants, keep_numeric_only=True
@@ -51,7 +55,7 @@ class ParametersModel:
         return self._parameters
 
     @parameters.setter
-    def parameters(self, sortorder):
+    def parameters(self, sortorder: List[str]) -> None:
         self._parameters = sortorder
 
     @property
@@ -59,7 +63,7 @@ class ParametersModel:
         return list(self.dataframe["ENSEMBLE"].unique())
 
     @staticmethod
-    def _aggregate_ensemble_data(dframe) -> pd.DataFrame:
+    def _aggregate_ensemble_data(dframe: pd.DataFrame) -> pd.DataFrame:
         """Compute parameter statistics for the different ensembles"""
         return (
             dframe.drop(columns=["REAL"])
@@ -79,7 +83,7 @@ class ParametersModel:
             .reset_index()
         )
 
-    def _normalize_and_aggregate(self):
+    def _normalize_and_aggregate(self) -> pd.DataFrame:
         """
         Normalize parameter values to be able to compare distribution updates
         for different parameters
@@ -97,7 +101,7 @@ class ParametersModel:
         ensemble: str,
         delta_ensemble: str,
         sortby: str,
-    ):
+    ) -> List[str]:
         """Sort parameter list from selection"""
         # compute diff between ensembles
         df = self._statframe_normalized.copy()
@@ -129,7 +133,9 @@ class ParametersModel:
         ]
         return columns, df.to_dict("records")
 
-    def _sort_parameters_col(self, df, parameters):
+    def _sort_parameters_col(
+        self, df: pd.DataFrame, parameters: List[str]
+    ) -> pd.DataFrame:
         """Sort parameter column in dataframe"""
         sortorder = [x for x in self._parameters if x in parameters]
         return df.set_index("PARAMETER").loc[sortorder].reset_index()
@@ -178,7 +184,7 @@ class ParametersModel:
             )
         )
 
-    def get_stat_value(self, parameter: str, ensemble: str, stat_column: str):
+    def get_stat_value(self, parameter: str, ensemble: str, stat_column: str) -> float:
         """
         Retrive statistical value for a parameter in an ensamble.
         """
@@ -188,7 +194,7 @@ class ParametersModel:
         ].iloc[0][stat_column]
 
     def get_real_and_value_df(
-        self, ensemble: str, parameter: str, normalize: bool = False
+        self, ensemble: str, parameter: Optional[str], normalize: bool = False
     ) -> pd.DataFrame:
         """
         Return dataframe with ralization and values for selected parameter for an ensemble.
@@ -204,7 +210,7 @@ class ParametersModel:
             )
         return df.reset_index(drop=True)
 
-    def get_parameter_df_for_ensemble(self, ensemble: str, reals: list):
+    def get_parameter_df_for_ensemble(self, ensemble: str, reals: list) -> pd.DataFrame:
         return self._dataframe[
             (self._dataframe["ENSEMBLE"] == ensemble)
             & (self._dataframe["REAL"].isin(reals))

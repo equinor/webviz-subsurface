@@ -28,7 +28,7 @@ class TimeSeriesFigure:
         visualization: str,
         vector: str,
         ensemble: str,
-        color_col: str,
+        color_col: Optional[str],
         line_shape_fallback: str,
         historical_vector_df: Optional[pd.DataFrame] = None,
         dateline: Optional[datetime.datetime] = None,
@@ -46,6 +46,9 @@ class TimeSeriesFigure:
 
     @property
     def figure(self) -> dict:
+        title = self.vector
+        if self.color_col is not None:
+            title = f"{title} colored by {self.color_col}"
         return {
             "data": self.traces,
             "layout": {
@@ -57,7 +60,7 @@ class TimeSeriesFigure:
                 "plot_bgcolor": "white",
                 "showlegend": False,
                 "uirevision": self.vector,
-                "title": {"text": f"{self.vector} colored by {self.color_col}"},
+                "title": {"text": title},
                 "shapes": self.shapes,
                 "annotations": self.annotations,
             },

@@ -1,1 +1,1 @@
-from .parameter_analysis import ParameterAnalysis
+from ._plugin import ParameterAnalysis
