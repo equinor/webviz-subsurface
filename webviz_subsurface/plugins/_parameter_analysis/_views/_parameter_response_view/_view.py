@@ -599,7 +599,10 @@ class ParameterResponseView(ViewABC):
         @callback(
             Output(
                 {
-                    "id": ParamRespParameterFilter.Ids.PARAM_FILTER,
+                    "id": self.settings_group_unique_id(
+                        self.Ids.PARAMETER_FILTER,
+                        ParamRespParameterFilter.Ids.PARAM_FILTER,
+                    ),
                     "type": "ensemble-update",
                 },
                 "data",
