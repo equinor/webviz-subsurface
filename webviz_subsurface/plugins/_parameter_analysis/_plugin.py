@@ -35,6 +35,7 @@ on reservoir simulation time series data.
     Default is True.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors \
     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`obsfile`:** `.yaml` file with observations to be displayed in the time series plot \
 ---
 
 ?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward \
