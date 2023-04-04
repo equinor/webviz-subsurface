@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -11,6 +12,8 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
+from ..._utils.simulation_timeseries import check_and_format_observations
+from ..._utils.webvizstore_functions import get_path
 from ._utils import ParametersModel, ProviderTimeSeriesDataModel
 from ._views._parameter_distributions_view import ParameterDistributionView
 from ._views._parameter_response_view import ParameterResponseView
@@ -64,11 +67,17 @@ realizations if you have defined `ensembles`.
         column_keys: Optional[list] = None,
         drop_constants: bool = True,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
+        obsfile: Path = None,
     ):
         super().__init__()
 
         self._ensembles = ensembles
         self._theme = webviz_settings.theme
+        self._obsfile = obsfile
+
+        self._observations = {}
+        if self._obsfile:
+            self._observations = check_and_format_observations(get_path(self._obsfile))
 
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
@@ -112,7 +121,10 @@ realizations if you have defined `ensembles`.
 
         self.add_view(
             ParameterResponseView(
-                parametermodel=self._pmodel, vectormodel=self._vmodel, theme=self._theme
+                parametermodel=self._pmodel,
+                vectormodel=self._vmodel,
+                observations=self._observations,
+                theme=self._theme,
             ),
             self.Ids.PARAM_RESP_VIEW,
         )

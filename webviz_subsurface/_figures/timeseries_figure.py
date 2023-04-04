@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import numpy as np
 import pandas as pd
@@ -30,6 +30,7 @@ class TimeSeriesFigure:
         ensemble: str,
         color_col: Optional[str],
         line_shape_fallback: str,
+        observations: Dict,
         historical_vector_df: Optional[pd.DataFrame] = None,
         dateline: Optional[datetime.datetime] = None,
     ):
@@ -40,9 +41,13 @@ class TimeSeriesFigure:
         self.visualization = visualization
         self.historical_vector_df = historical_vector_df
         self.date = dateline
+        self.observations = observations
         self.line_shape = self.get_line_shape(line_shape_fallback)
 
         self.create_traces()
+
+        if self.observations:
+            self.create_vector_observation_traces()
 
     @property
     def figure(self) -> dict:
@@ -213,6 +218,36 @@ class TimeSeriesFigure:
             )
             .reset_index()
         )
+
+    def create_vector_observation_traces(self) -> None:
+        """Adds observations to the plot"""
+
+        legend_group = "Observation"
+        name = "Observation"
+        color = "black"
+        show_legend = False
+
+        for observation in self.observations.get("observations", []):
+            hovertext = observation.get("comment")
+            hovertemplate = (
+                "(%{x}, %{y})<br>" + hovertext if hovertext else "(%{x}, %{y})<br>"
+            )
+            self.traces.append(
+                {
+                    "name": name,
+                    "legendgroup": legend_group,
+                    "x": [observation.get("date"), []],
+                    "y": [observation.get("value"), []],
+                    "marker": {"color": color},
+                    "hovertemplate": hovertemplate,
+                    "showlegend": show_legend,
+                    "error_y": {
+                        "type": "data",
+                        "array": [observation.get("error"), []],
+                        "visible": True,
+                    },
+                }
+            )
 
     @staticmethod
     def set_real_color(norm_value: float, mean_param_value: float) -> str:

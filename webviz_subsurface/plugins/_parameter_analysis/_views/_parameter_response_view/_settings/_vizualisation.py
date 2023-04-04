@@ -46,9 +46,10 @@ class ParamRespVizualisation(SettingsGroupABC):
             wcc.Checklist(
                 id=self.register_component_unique_id(self.Ids.CHECKBOX_OPTIONS),
                 options=[
-                    {"label": "Dateline visible", "value": "DateLine"},
+                    {"label": "Dateline", "value": "DateLine"},
+                    {"label": "Observations", "value": "Observations"},
                 ],
-                value=["DateLine"],
+                value=["DateLine", "Observations"],
             ),
             dcc.Store(
                 id=self.register_component_unique_id(self.Ids.CHECKBOX_OPTIONS_STORE),

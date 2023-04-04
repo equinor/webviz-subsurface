@@ -39,12 +39,14 @@ class ParameterResponseView(ViewABC):
         self,
         parametermodel: ParametersModel,
         vectormodel: ProviderTimeSeriesDataModel,
+        observations: Dict,
         theme: WebvizConfigTheme,
     ) -> None:
         super().__init__("Parameter Response Analysis")
 
         self._parametermodel = parametermodel
         self._vectormodel = vectormodel
+        self._observations = observations
         self._theme = theme
 
         self.add_settings_groups(
@@ -325,6 +327,10 @@ class ParameterResponseView(ViewABC):
                 historical_vector_df=self._vectormodel.get_historical_vector_df(
                     selected_vector, ensemble
                 ),
+                observations=self._observations[selected_vector]
+                if options["show_observations"]
+                and selected_vector in self._observations
+                else {},
                 color_col=param,
                 line_shape_fallback=self._vectormodel.line_shape_fallback,
             ).figure
@@ -356,12 +362,18 @@ class ParameterResponseView(ViewABC):
             timeseries_clickdata: Union[None, dict], date: str
         ) -> int:
             """Update date-slider from clickdata"""
-            date = (
+            date_str = (
                 timeseries_clickdata.get("points", [{}])[0]["x"]
                 if timeseries_clickdata is not None
                 else date
             )
-            return self._vectormodel.dates.index(datetime_utils.from_str(date))
+            date_obj = datetime_utils.from_str(date_str)
+            if date_obj not in self._vectormodel.dates:
+                # This will happen if the click is on an observation that is on
+                # a date that is not in the sampled vector dates. It could be
+                # by somehow finding the nearest date.
+                raise PreventUpdate
+            return self._vectormodel.dates.index(date_obj)
 
         @callback(
             Output(
@@ -521,6 +533,7 @@ class ParameterResponseView(ViewABC):
                 "color": None if color_clickdata is None else color,
                 "opacity": opacity,
                 "ctx": ctx,
+                "show_observations": "Observations" in checkbox_options,
             }
 
         @callback(
