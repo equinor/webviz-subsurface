@@ -125,6 +125,7 @@ realizations if you have defined `ensembles`.
                 parametermodel=self._pmodel,
                 vectormodel=self._vmodel,
                 observations=self._observations,
+                selected_resampling_frequency=resampling_frequency,
                 theme=self._theme,
             ),
             self.Ids.PARAM_RESP_VIEW,

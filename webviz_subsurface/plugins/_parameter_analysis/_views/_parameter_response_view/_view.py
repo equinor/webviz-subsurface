@@ -8,6 +8,7 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ....._figures import BarChart, ScatterPlot, TimeSeriesFigure
+from ....._providers import Frequency
 from ....._utils.colors import hex_to_rgba_str, rgba_to_hex
 from ....._utils.dataframe_utils import (
     correlate_response_with_dataframe,
@@ -40,6 +41,7 @@ class ParameterResponseView(ViewABC):
         parametermodel: ParametersModel,
         vectormodel: ProviderTimeSeriesDataModel,
         observations: Dict,
+        selected_resampling_frequency: Frequency,
         theme: WebvizConfigTheme,
     ) -> None:
         super().__init__("Parameter Response Analysis")
@@ -52,7 +54,9 @@ class ParameterResponseView(ViewABC):
         self.add_settings_groups(
             {
                 self.Ids.SELECTIONS: ParamRespSelections(
-                    self._parametermodel, self._vectormodel
+                    parametermodel=self._parametermodel,
+                    vectormodel=self._vectormodel,
+                    selected_resampling_frequency=selected_resampling_frequency,
                 ),
                 self.Ids.OPTIONS: ParamRespOptions(),
                 self.Ids.VIZUALISATION: ParamRespVizualisation(self._theme),
@@ -328,7 +332,8 @@ class ParameterResponseView(ViewABC):
                     selected_vector, ensemble
                 ),
                 observations=self._observations[selected_vector]
-                if options["show_observations"]
+                if options
+                and options["show_observations"]
                 and selected_vector in self._observations
                 else {},
                 color_col=param,
