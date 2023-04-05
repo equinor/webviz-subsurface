@@ -27,11 +27,13 @@ class ParamRespSelections(SettingsGroupABC):
         parametermodel: ParametersModel,
         vectormodel: ProviderTimeSeriesDataModel,
         selected_resampling_frequency: Frequency,
+        disable_resampling_dropdown: bool,
     ) -> None:
         super().__init__("Selections")
         self._parametermodel = parametermodel
         self._vectormodel = vectormodel
         self._selected_resampling_frequency = selected_resampling_frequency
+        self._disable_resampling_dropdown = disable_resampling_dropdown
 
     def layout(self) -> List[Component]:
         dates = self._vectormodel.dates
@@ -113,10 +115,11 @@ class ParamRespSelections(SettingsGroupABC):
                     self.Ids.RESAMPLING_FREQUENCY_DROPDOWN
                 ),
                 clearable=False,
+                disabled=self._disable_resampling_dropdown,
                 options=[
                     {
-                        "label": frequency.value,
-                        "value": frequency.value,
+                        "label": frequency,
+                        "value": frequency,
                     }
                     for frequency in Frequency
                 ],

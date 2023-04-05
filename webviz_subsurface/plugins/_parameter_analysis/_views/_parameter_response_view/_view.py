@@ -42,6 +42,7 @@ class ParameterResponseView(ViewABC):
         vectormodel: ProviderTimeSeriesDataModel,
         observations: Dict,
         selected_resampling_frequency: Frequency,
+        disable_resampling_dropdown: bool,
         theme: WebvizConfigTheme,
     ) -> None:
         super().__init__("Parameter Response Analysis")
@@ -49,6 +50,7 @@ class ParameterResponseView(ViewABC):
         self._parametermodel = parametermodel
         self._vectormodel = vectormodel
         self._observations = observations
+        self._disable_resampling_dropdown = disable_resampling_dropdown
         self._theme = theme
 
         self.add_settings_groups(
@@ -57,6 +59,7 @@ class ParameterResponseView(ViewABC):
                     parametermodel=self._parametermodel,
                     vectormodel=self._vectormodel,
                     selected_resampling_frequency=selected_resampling_frequency,
+                    disable_resampling_dropdown=disable_resampling_dropdown,
                 ),
                 self.Ids.OPTIONS: ParamRespOptions(),
                 self.Ids.VIZUALISATION: ParamRespVizualisation(self._theme),
@@ -161,6 +164,13 @@ class ParameterResponseView(ViewABC):
                 "data",
             ),
             State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS,
+                    ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
+                ),
+                "value",
+            ),
+            State(
                 self.view_element(self.Ids.PARAM_CORR_GRAPH)
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
@@ -184,6 +194,7 @@ class ParameterResponseView(ViewABC):
             visualization: str,
             options: Union[None, Dict[str, Any]],
             real_filter: Dict[str, List[int]],
+            resampling_frequency: Frequency,
             corr_p_fig: Union[None, dict],
             corr_v_fig: Union[None, dict],
         ) -> List[Any]:
@@ -215,10 +226,15 @@ class ParameterResponseView(ViewABC):
             )
 
             # Get dataframe with vectors and dataframe with parameters and merge
+            # If the resampling dropdown is disable it means the data is presampled,
+            # in which case we pass None as resampling frequency
             vector_df = self._vectormodel.get_vector_df(
                 ensemble=ensemble,
                 realizations=realizations,
                 vectors=vectors_for_param_corr + [selected_vector],
+                resampling_frequency=resampling_frequency
+                if not self._disable_resampling_dropdown
+                else None,
             )
             if date not in vector_df["DATE"].values:
                 return [empty_figure("Selected date does not exist for ensemble")] * 4
@@ -355,6 +371,13 @@ class ParameterResponseView(ViewABC):
                 .to_string(),
                 "clickData",
             ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS,
+                    ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
+                ),
+                "value",
+            ),
             State(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SELECTED
@@ -363,22 +386,39 @@ class ParameterResponseView(ViewABC):
             ),
         )
         @callback_typecheck
-        def _update_date_from_clickdata(
-            timeseries_clickdata: Union[None, dict], date: str
+        def _update_date_from_clickdata_or_resampling_freq(
+            timeseries_clickdata: Union[None, dict],
+            resampling_frequency: Frequency,
+            datestr: str,
         ) -> int:
             """Update date-slider from clickdata"""
-            date_str = (
-                timeseries_clickdata.get("points", [{}])[0]["x"]
-                if timeseries_clickdata is not None
-                else date
-            )
-            date_obj = datetime_utils.from_str(date_str)
-            if date_obj not in self._vectormodel.dates:
-                # This will happen if the click is on an observation that is on
-                # a date that is not in the sampled vector dates. It could be
-                # by somehow finding the nearest date.
-                raise PreventUpdate
-            return self._vectormodel.dates.index(date_obj)
+            ctx = callback_context.triggered[0]["prop_id"]
+            if self.Ids.TIME_SERIES_CHART.value in ctx:
+                # The event is a click in the time series chart
+                date = datetime_utils.from_str(
+                    timeseries_clickdata.get("points", [{}])[0]["x"]
+                    if timeseries_clickdata is not None
+                    else datestr
+                )
+                if date not in self._vectormodel.dates:
+                    # This will happen if the click is on an observation that is on
+                    # a date that is not in the sampled vector dates. It could be
+                    # by somehow finding the nearest date.
+                    raise PreventUpdate
+                return self._vectormodel.dates.index(date)
+
+            if ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN.value in ctx:
+                # The event is a change of resampling frequency
+                dates = self._vectormodel.get_dates(
+                    resampling_frequency=resampling_frequency
+                )
+                self._vectormodel.set_dates(dates)
+                if date not in dates:
+                    print("Find closest")
+                    return self._vectormodel.dates.index(dates[-1])
+                return self._vectormodel.dates.index(datetime_utils.from_str(date))
+
+            raise PreventUpdate("Event not recognized.")
 
         @callback(
             Output(
