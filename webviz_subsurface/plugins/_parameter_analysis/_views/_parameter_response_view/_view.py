@@ -1,3 +1,4 @@
+import datetime
 from typing import Any, Dict, List, Tuple, Union
 
 import plotly.graph_objects as go
@@ -365,6 +366,18 @@ class ParameterResponseView(ViewABC):
                 ),
                 "value",
             ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "max",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "marks",
+            ),
             Input(
                 self.view_element(self.Ids.TIME_SERIES_CHART)
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
@@ -384,13 +397,27 @@ class ParameterResponseView(ViewABC):
                 ),
                 "data",
             ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "max",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "marks",
+            ),
         )
         @callback_typecheck
         def _update_date_from_clickdata_or_resampling_freq(
             timeseries_clickdata: Union[None, dict],
             resampling_frequency: Frequency,
             datestr: str,
-        ) -> int:
+            state_maxvalue: int,
+            state_marks: Dict,
+        ) -> Tuple[int, int, Dict]:
             """Update date-slider from clickdata"""
             ctx = callback_context.triggered[0]["prop_id"]
             if self.Ids.TIME_SERIES_CHART.value in ctx:
@@ -402,21 +429,30 @@ class ParameterResponseView(ViewABC):
                 )
                 if date not in self._vectormodel.dates:
                     # This will happen if the click is on an observation that is on
-                    # a date that is not in the sampled vector dates. It could be
+                    # a date that is not in the sampled vector dates. It could be fixed
                     # by somehow finding the nearest date.
                     raise PreventUpdate
-                return self._vectormodel.dates.index(date)
+                return self._vectormodel.dates.index(date), state_maxvalue, state_marks
 
             if ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN.value in ctx:
                 # The event is a change of resampling frequency
+                date = datetime_utils.from_str(datestr)
                 dates = self._vectormodel.get_dates(
                     resampling_frequency=resampling_frequency
                 )
                 self._vectormodel.set_dates(dates)
                 if date not in dates:
                     print("Find closest")
-                    return self._vectormodel.dates.index(dates[-1])
-                return self._vectormodel.dates.index(datetime_utils.from_str(date))
+                    return (
+                        self._vectormodel.dates.index(dates[-1]),
+                        len(dates) - 1,
+                        get_slider_marks(dates),
+                    )
+                return (
+                    self._vectormodel.dates.index(date),
+                    len(dates) - 1,
+                    get_slider_marks(dates),
+                )
 
             raise PreventUpdate("Event not recognized.")
 
@@ -725,3 +761,14 @@ def empty_figure(text: str = "No data available for figure") -> go.Figure:
             ],
         }
     )
+
+
+def get_slider_marks(dates: List[datetime.datetime]) -> Dict[int, Dict[str, Any]]:
+    """Formats the marks parameter to the date slider"""
+    return {
+        idx: {
+            "label": datetime_utils.to_str(dates[idx]),
+            "style": {"white-space": "nowrap"},
+        }
+        for idx in [0, len(dates) - 1]
+    }

@@ -64,7 +64,7 @@ class ProviderTimeSeriesDataModel:
         return list(sorted(dates_union))
 
     def set_dates(self, dates: List[datetime.datetime]) -> None:
-        #pylint: disable=attribute-defined-outside-init
+        # pylint: disable=attribute-defined-outside-init
         self._dates = dates
 
     @staticmethod
@@ -124,7 +124,7 @@ class ProviderTimeSeriesDataModel:
         ensemble: str,
         realizations: List[int],
         vectors: List[str],
-        resampling_frequency: Frequency,
+        resampling_frequency: Optional[Frequency],
     ) -> pd.DataFrame:
         provider = self._provider_set[ensemble]
         ens_vectors = [vec for vec in vectors if vec in provider.vector_names()]
