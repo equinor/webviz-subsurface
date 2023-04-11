@@ -428,10 +428,7 @@ class ParameterResponseView(ViewABC):
                     else datestr
                 )
                 if date not in self._vectormodel.dates:
-                    # This will happen if the click is on an observation that is on
-                    # a date that is not in the sampled vector dates. It could be fixed
-                    # by somehow finding the nearest date.
-                    raise PreventUpdate
+                    date = self._vectormodel.get_closest_date(date)
                 return self._vectormodel.dates.index(date), state_maxvalue, state_marks
 
             if ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN.value in ctx:
@@ -442,12 +439,7 @@ class ParameterResponseView(ViewABC):
                 )
                 self._vectormodel.set_dates(dates)
                 if date not in dates:
-                    print("Find closest")
-                    return (
-                        self._vectormodel.dates.index(dates[-1]),
-                        len(dates) - 1,
-                        get_slider_marks(dates),
-                    )
+                    date = self._vectormodel.get_closest_date(date)
                 return (
                     self._vectormodel.dates.index(date),
                     len(dates) - 1,

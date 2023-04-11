@@ -67,6 +67,10 @@ class ProviderTimeSeriesDataModel:
         # pylint: disable=attribute-defined-outside-init
         self._dates = dates
 
+    def get_closest_date(self, date: datetime.datetime) -> datetime.datetime:
+        # Returns the closest date to the input date in the dates list.
+        return min(self._dates, key=lambda dte: abs(dte - date))
+
     @staticmethod
     def _create_union_of_vector_names_from_providers(
         providers: List[EnsembleSummaryProvider],
