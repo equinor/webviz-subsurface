@@ -541,6 +541,10 @@ class ParameterResponseView(ViewABC):
         @callback_typecheck
         def _update_date_drag_value(dateidx: int) -> str:
             """Update selected date text on date-slider drag"""
+            if dateidx >= len(self._vectormodel.dates):
+                # This is not supposed to happen if callbacks are triggered
+                # in the right order
+                return datetime_utils.to_str(self._vectormodel.dates[-1])
             return datetime_utils.to_str(self._vectormodel.dates[dateidx])
 
         @callback(
