@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.18] - 2023-04-12
+
 ### Changed
 
 - [#1195](https://github.com/equinor/webviz-subsurface/pull/1195) - `RftPlotter` faultlines argument can now use fault polygons csv file with *X, Y, ID* header (fmu-dataio default)
