@@ -108,7 +108,7 @@ setup(
         "vtk>=9.2.2",
         "webviz-config",
         "webviz-core-components>=0.6",
-        "webviz-subsurface-components>=0.4.14",
+        "webviz-subsurface-components>=0.4.15",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
