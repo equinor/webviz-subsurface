@@ -65,8 +65,14 @@ class ParametersModel:
     @staticmethod
     def _aggregate_ensemble_data(dframe: pd.DataFrame) -> pd.DataFrame:
         """Compute parameter statistics for the different ensembles"""
+        drop_columns = [
+            col
+            for col in ["REAL", "SENSNAME", "SENSTYPE", "SENSNAME_CASE", "SENSCASE"]
+            if col in dframe.columns
+        ]
+
         return (
-            dframe.drop(columns=["REAL"])
+            dframe.drop(columns=drop_columns)
             .groupby(["ENSEMBLE"])
             .agg(
                 [

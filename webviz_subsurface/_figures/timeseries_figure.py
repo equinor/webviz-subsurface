@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
