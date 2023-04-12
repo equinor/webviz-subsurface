@@ -30,7 +30,7 @@ class TimeSeriesFigure:
         ensemble: str,
         color_col: Optional[str],
         line_shape_fallback: str,
-        observations: Dict,
+        observations: Optional[Dict],
         historical_vector_df: Optional[pd.DataFrame] = None,
         dateline: Optional[datetime.datetime] = None,
     ):
@@ -41,7 +41,7 @@ class TimeSeriesFigure:
         self.visualization = visualization
         self.historical_vector_df = historical_vector_df
         self.date = dateline
-        self.observations = observations
+        self.observations = observations if observations is not None else {}
         self.line_shape = self.get_line_shape(line_shape_fallback)
 
         self.create_traces()
