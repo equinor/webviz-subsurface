@@ -30,7 +30,7 @@ class TimeSeriesFigure:
         ensemble: str,
         color_col: Optional[str],
         line_shape_fallback: str,
-        observations: Optional[Dict],
+        observations: Optional[Dict] = None,
         historical_vector_df: Optional[pd.DataFrame] = None,
         dateline: Optional[datetime.datetime] = None,
     ):
