@@ -266,7 +266,7 @@ class RftPlotterDataModel:
         ens_params = [
             param
             for param in param_df.columns
-            if param not in self.param_model.POSSIBLE_SELECTORS
+            if param not in self.param_model.selectors
         ]
         ens_rfts = [rft for rft in pivot_df.columns if rft != "REAL"]
 
