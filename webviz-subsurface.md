@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.18rc0` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.18` of `webviz-subsurface`.
 
 
 
@@ -1036,8 +1036,6 @@ How to use in YAML config file:
 
 #### ParameterAnalysis
 
-> :warning: At least one argument has a deprecation warning.</summary>
-
 
 <!-- tabs:start -->
 
@@ -1064,14 +1062,6 @@ on reservoir simulation time series data.
 
 
 
->:warning: **`csvfile_parameters`:** Certain values for the argument have been deprecated and might soon not be accepted anymore. See function below for details.
-
-
->:warning: **`csvfile_smry`:** Certain values for the argument have been deprecated and might soon not be accepted anymore. See function below for details.
-
-
-
----
 
 
 
@@ -1083,34 +1073,15 @@ on reservoir simulation time series data.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
 
 
-Function checking for deprecations:
-```python
-def check_deprecation_argument(
-    csvfile_parameters: Optional[Path], csvfile_smry: Optional[Path]
-) -> Optional[Tuple[str, str]]:
-    if any(elm is not None for elm in [csvfile_parameters, csvfile_smry]):
-        return (
-            "The usage of aggregated csvfiles as user input options are deprecated. "
-            "Please provide feedback if you see a need for a continuation "
-            "of this functionality ",
-            "",
-        )
-    return None
-
-```
----
-
 ---
 How to use in YAML config file:
 ```yaml
     - ParameterAnalysis:
-        ensembles:  # Optional, type Union[list, NoneType].
+        ensembles:  # Optional, type List[str].
         time_index:  # Optional, type str.
         column_keys:  # Optional, type Union[list, NoneType].
         drop_constants:  # Optional, type bool.
         rel_file_pattern:  # Optional, type str.
-        csvfile_parameters:  # Deprecated, type str (corresponding to a path).
-        csvfile_smry:  # Deprecated, type str (corresponding to a path).
 ```
 
 
