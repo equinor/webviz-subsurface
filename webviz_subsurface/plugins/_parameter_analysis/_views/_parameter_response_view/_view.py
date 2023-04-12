@@ -226,17 +226,27 @@ class ParameterResponseView(ViewABC):
                 else []
             )
 
-            # Get dataframe with vectors and dataframe with parameters and merge
-            # If the resampling dropdown is disable it means the data is presampled,
-            # in which case we pass None as resampling frequency
-            vector_df = self._vectormodel.get_vector_df(
-                ensemble=ensemble,
-                realizations=realizations,
-                vectors=vectors_for_param_corr + [selected_vector],
-                resampling_frequency=resampling_frequency
-                if not self._disable_resampling_dropdown
-                else None,
-            )
+            try:
+                # Get dataframe with vectors and dataframe with parameters and merge
+                # If the resampling dropdown is disable it means the data is presampled,
+                # in which case we pass None as resampling frequency
+                vector_df = self._vectormodel.get_vector_df(
+                    ensemble=ensemble,
+                    realizations=realizations,
+                    vectors=vectors_for_param_corr + [selected_vector],
+                    resampling_frequency=resampling_frequency
+                    if not self._disable_resampling_dropdown
+                    else None,
+                )
+            except ValueError:
+                # It could be that the selected vector does not exist in the
+                # selected ensemble, f.ex if the ensembles have different well names
+                return [
+                    empty_figure(
+                        "Selected vector probably does not exist in selected ensemble"
+                    )
+                ] * 4
+
             if date not in vector_df["DATE"].values:
                 return [empty_figure("Selected date does not exist for ensemble")] * 4
             if selected_vector not in vector_df:
