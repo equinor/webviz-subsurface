@@ -24,7 +24,8 @@ class ParametersModel:
             "SENSNAME_CASE",
         ]
 
-        if include_sens_filter:
+        if include_sens_filter and "SENSNAME" in self._dataframe.columns:
+            # Remove SENSNAME from possible selectors
             self._possible_selectors = [
                 col for col in self._possible_selectors if col != "SENSNAME"
             ]
