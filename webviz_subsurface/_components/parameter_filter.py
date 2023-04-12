@@ -43,6 +43,7 @@ class ParameterFilter:
             drop_constants=True,
             keep_numeric_only=False,
             drop_parameters_with_nan=True,
+            include_sens_filter=True,
         )
         self._dframe = self._pmodel.dataframe
         self._range_parameters = self._get_range_parameters()
@@ -361,7 +362,15 @@ class ParameterFilter:
             ens_df = self._dframe[self._dframe["ENSEMBLE"].isin(ensembles)]
 
             children = []
-            for col in self._pmodel.get_parameters_for_ensembles(ensembles):
+            ens_parameters = self._pmodel.get_parameters_for_ensembles(ensembles)
+
+            # if SENSNAME is among the parameters we want to place it first
+            if "SENSNAME" in ens_parameters:
+                ens_parameters = ["SENSNAME"] + [
+                    p for p in ens_parameters if p != "SENSNAME"
+                ]
+
+            for col in ens_parameters:
                 if col in self._range_parameters:
                     children.append(
                         make_range_slider(
