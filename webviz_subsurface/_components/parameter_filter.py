@@ -30,6 +30,7 @@ class ParameterFilter:
         dframe: pd.DataFrame,
         reset_on_ensemble_update: bool = False,
         display_header: bool = True,
+        include_sens_filter: bool = False,
     ) -> None:
         """
         * **`uuid`:** Unique id (use the plugin id).
@@ -43,7 +44,7 @@ class ParameterFilter:
             drop_constants=True,
             keep_numeric_only=False,
             drop_parameters_with_nan=True,
-            include_sens_filter=True,
+            include_sens_filter=include_sens_filter,
         )
         self._dframe = self._pmodel.dataframe
         self._range_parameters = self._get_range_parameters()
