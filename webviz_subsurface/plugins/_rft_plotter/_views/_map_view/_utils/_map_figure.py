@@ -11,10 +11,9 @@ class MapFigure:
         self._ertdf = (
             ertdf.loc[(ertdf["ENSEMBLE"] == ensemble) & (ertdf["ZONE"].isin(zones))]
             .groupby(["WELL", "DATE", "ENSEMBLE"])
-            .aggregate("mean")
+            .mean(numeric_only=False)
             .reset_index()
         )
-
         self._traces: List[Dict[str, Any]] = []
 
     def add_misfit_plot(
