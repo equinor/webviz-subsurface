@@ -33,7 +33,7 @@ class ParameterResponseView(ViewABC):
         self.add_settings_group(
             ParameterFilterSettings(
                 parameter_df=self._datamodel.param_model.dataframe,
-                mc_ensembles=self._datamodel.param_model.mc_ensembles,
+                ensembles=self._datamodel.param_model.ensembles,
             ),
             self.Ids.PARAMETER_FILTER,
         )
@@ -220,6 +220,10 @@ class ParameterResponseView(ViewABC):
                 # This happens if there are multiple ensembles and one of the ensembles
                 # doesn't have non-constant parameters.
                 return ["The selected ensemble has no non-constant parameters."] * 3
+            if df.shape[0] <= 1:
+                # This happens if f.ex it is filtered on a sensitivity with only one
+                # realization.
+                return ["Too few realizations to calculate correlations"] * 3
 
             if corrtype == CorrType.SIM_VS_PARAM or param is None:
                 corrseries = correlate(df[ens_params + [current_key]], current_key)

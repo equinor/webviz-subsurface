@@ -12,17 +12,18 @@ class ParameterFilterSettings(SettingsGroupABC):
     class Ids(StrEnum):
         PARAM_FILTER = "param-filter"
 
-    def __init__(self, parameter_df: pd.DataFrame, mc_ensembles: List[str]) -> None:
+    def __init__(self, parameter_df: pd.DataFrame, ensembles: List[str]) -> None:
         super().__init__("Parameter Filter")
         self._parameter_df = parameter_df
-        self._mc_ensembles = mc_ensembles
+        self._ensembles = ensembles
 
     def layout(self) -> List[Component]:
         return ParameterFilter(
             uuid=self.register_component_unique_id(self.Ids.PARAM_FILTER),
             dframe=self._parameter_df[
-                self._parameter_df["ENSEMBLE"].isin(self._mc_ensembles)
+                self._parameter_df["ENSEMBLE"].isin(self._ensembles)
             ].copy(),
             reset_on_ensemble_update=True,
             display_header=False,
+            include_sens_filter=True,
         ).layout
