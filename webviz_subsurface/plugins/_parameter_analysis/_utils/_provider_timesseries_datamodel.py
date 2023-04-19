@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Set
 import pandas as pd
 
 from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
-from webviz_subsurface._providers import EnsembleSummaryProvider
+from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 from webviz_subsurface._utils.simulation_timeseries import (
     set_simulation_line_shape_fallback,
 )
@@ -34,8 +34,6 @@ class ProviderTimeSeriesDataModel:
         if not self._vector_names:
             raise ValueError("No vectors match the selected 'column_keys' criteria")
 
-        self._dates = self.all_dates()
-
         # add vectors to vector selector
         self.vector_selector_data: list = []
         for vector in self.get_non_historical_vector_names():
@@ -56,14 +54,22 @@ class ProviderTimeSeriesDataModel:
             if historical_vector(vector, None, False) not in self._vector_names
         ]
 
-    def all_dates(self) -> List[datetime.datetime]:
+    def get_dates(self, resampling_frequency: Frequency) -> List[datetime.datetime]:
         """List with the union of dates among providers"""
         # TODO: Adjust when providers are updated!
         dates_union: Set[datetime.datetime] = set()
         for provider in list(self._provider_set.values()):
-            _dates = set(provider.dates(None))
+            _dates = set(provider.dates(resampling_frequency=resampling_frequency))
             dates_union.update(_dates)
         return list(sorted(dates_union))
+
+    def set_dates(self, dates: List[datetime.datetime]) -> None:
+        # pylint: disable=attribute-defined-outside-init
+        self._dates = dates
+
+    def get_closest_date(self, date: datetime.datetime) -> datetime.datetime:
+        # Returns the closest date to the input date in the dates list.
+        return min(self._dates, key=lambda dte: abs(dte - date))
 
     @staticmethod
     def _create_union_of_vector_names_from_providers(
@@ -122,10 +128,15 @@ class ProviderTimeSeriesDataModel:
         ensemble: str,
         realizations: List[int],
         vectors: List[str],
+        resampling_frequency: Optional[Frequency],
     ) -> pd.DataFrame:
         provider = self._provider_set[ensemble]
         ens_vectors = [vec for vec in vectors if vec in provider.vector_names()]
-        return provider.get_vectors_df(ens_vectors, None, realizations)
+        return provider.get_vectors_df(
+            vector_names=ens_vectors,
+            resampling_frequency=resampling_frequency,
+            realizations=realizations,
+        )
 
     def get_last_date(self, ensemble: str) -> datetime.datetime:
         return max(self._provider_set[ensemble].dates(None))

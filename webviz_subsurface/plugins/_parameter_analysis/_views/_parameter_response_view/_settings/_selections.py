@@ -7,6 +7,7 @@ from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
+from ......_providers import Frequency
 from ...._utils import ParametersModel, ProviderTimeSeriesDataModel
 from ...._utils import _datetime_utils as datetime_utils
 
@@ -19,13 +20,20 @@ class ParamRespSelections(SettingsGroupABC):
         DATE_SELECTED = "date-selected"
         DATE_SLIDER = "date-slider"
         PARAMETER_SELECT = "parameter-select"
+        RESAMPLING_FREQUENCY_DROPDOWN = "resampling-frequency-dropdown"
 
     def __init__(
-        self, parametermodel: ParametersModel, vectormodel: ProviderTimeSeriesDataModel
+        self,
+        parametermodel: ParametersModel,
+        vectormodel: ProviderTimeSeriesDataModel,
+        selected_resampling_frequency: Frequency,
+        disable_resampling_dropdown: bool,
     ) -> None:
         super().__init__("Selections")
         self._parametermodel = parametermodel
         self._vectormodel = vectormodel
+        self._selected_resampling_frequency = selected_resampling_frequency
+        self._disable_resampling_dropdown = disable_resampling_dropdown
 
     def layout(self) -> List[Component]:
         dates = self._vectormodel.dates
@@ -100,5 +108,21 @@ class ParamRespSelections(SettingsGroupABC):
                 ],
                 placeholder="Select a parameter...",
                 clearable=False,
+            ),
+            wcc.Dropdown(
+                label="Resampling frequency",
+                id=self.register_component_unique_id(
+                    self.Ids.RESAMPLING_FREQUENCY_DROPDOWN
+                ),
+                clearable=False,
+                disabled=self._disable_resampling_dropdown,
+                options=[
+                    {
+                        "label": frequency,
+                        "value": frequency,
+                    }
+                    for frequency in Frequency
+                ],
+                value=self._selected_resampling_frequency,
             ),
         ]

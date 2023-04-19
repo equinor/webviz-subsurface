@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -11,6 +12,8 @@ from webviz_subsurface._providers import (
     Frequency,
 )
 
+from ..._utils.simulation_timeseries import check_and_format_observations
+from ..._utils.webvizstore_functions import get_path
 from ._utils import ParametersModel, ProviderTimeSeriesDataModel
 from ._views._parameter_distributions_view import ParameterDistributionView
 from ._views._parameter_response_view import ParameterResponseView
@@ -32,6 +35,9 @@ on reservoir simulation time series data.
     Default is True.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors \
     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`obsfile`:** `.yaml` file with observations to be displayed in the time series plot \
+* **`perform_presampled`:** Summary data will be presampled when loading the plugin, \
+    and the resampling dropdown will be disabled.
 ---
 
 ?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward \
@@ -56,19 +62,27 @@ realizations if you have defined `ensembles`.
         PARAM_DIST_VIEW = "param-dist-view"
         PARAM_RESP_VIEW = "param-resp-view"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         webviz_settings: WebvizSettings,
         ensembles: List[str] = None,
-        time_index: str = "monthly",
+        time_index: str = Frequency.MONTHLY.value,
         column_keys: Optional[list] = None,
         drop_constants: bool = True,
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
+        obsfile: Path = None,
+        perform_presampling: bool = False,
     ):
         super().__init__()
 
         self._ensembles = ensembles
         self._theme = webviz_settings.theme
+        self._obsfile = obsfile
+
+        self._observations = {}
+        if self._obsfile:
+            self._observations = check_and_format_observations(get_path(self._obsfile))
 
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
@@ -85,14 +99,26 @@ realizations if you have defined `ensembles`.
         resampling_frequency = Frequency(time_index)
         provider_factory = EnsembleSummaryProviderFactory.instance()
 
-        provider_set = {
-            ens: provider_factory.create_from_arrow_unsmry_presampled(
-                str(ens_path), rel_file_pattern, resampling_frequency
-            )
-            for ens, ens_path in ensemble_paths.items()
-        }
+        if perform_presampling:
+            self._input_provider_set = {
+                ens: provider_factory.create_from_arrow_unsmry_presampled(
+                    str(ens_path), rel_file_pattern, resampling_frequency
+                )
+                for ens, ens_path in ensemble_paths.items()
+            }
+        else:
+            self._input_provider_set = {
+                ens: provider_factory.create_from_arrow_unsmry_lazy(
+                    str(ens_path), rel_file_pattern
+                )
+                for ens, ens_path in ensemble_paths.items()
+            }
+
         self._vmodel = ProviderTimeSeriesDataModel(
-            provider_set=provider_set, column_keys=column_keys
+            provider_set=self._input_provider_set, column_keys=column_keys
+        )
+        self._vmodel.set_dates(
+            self._vmodel.get_dates(resampling_frequency=resampling_frequency)
         )
 
         parameter_df = create_df_from_table_provider(
@@ -112,7 +138,12 @@ realizations if you have defined `ensembles`.
 
         self.add_view(
             ParameterResponseView(
-                parametermodel=self._pmodel, vectormodel=self._vmodel, theme=self._theme
+                parametermodel=self._pmodel,
+                vectormodel=self._vmodel,
+                observations=self._observations,
+                selected_resampling_frequency=resampling_frequency,
+                disable_resampling_dropdown=perform_presampling,
+                theme=self._theme,
             ),
             self.Ids.PARAM_RESP_VIEW,
         )

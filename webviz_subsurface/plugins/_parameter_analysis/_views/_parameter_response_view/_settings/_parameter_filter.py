@@ -25,4 +25,5 @@ class ParamRespParameterFilter(SettingsGroupABC):
             ].copy(),
             reset_on_ensemble_update=True,
             display_header=False,
+            include_sens_filter=True,
         ).layout

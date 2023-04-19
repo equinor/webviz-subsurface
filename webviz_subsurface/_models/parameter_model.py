@@ -5,28 +5,37 @@ import pandas as pd
 class ParametersModel:
     """Class to process ensemble parameter data"""
 
-    POSSIBLE_SELECTORS = [
-        "ENSEMBLE",
-        "REAL",
-        "SENSNAME",
-        "SENSCASE",
-        "SENSTYPE",
-        "SENSNAME_CASE",
-    ]
-
     def __init__(
         self,
         dataframe: pd.DataFrame,
         drop_constants: bool = True,
         keep_numeric_only: bool = True,
         drop_parameters_with_nan: bool = False,
+        include_sens_filter: bool = False,
     ) -> None:
         self._dataframe = dataframe if dataframe is not None else pd.DataFrame()
+
+        self._possible_selectors = [
+            "ENSEMBLE",
+            "REAL",
+            "SENSNAME",
+            "SENSCASE",
+            "SENSTYPE",
+            "SENSNAME_CASE",
+        ]
+
+        if include_sens_filter and "SENSNAME" in self._dataframe.columns:
+            # Remove SENSNAME from possible selectors
+            self._possible_selectors = [
+                col for col in self._possible_selectors if col != "SENSNAME"
+            ]
+            self._dataframe["SENSNAME"].fillna("None")
+
         self._validate_dframe()
         self._sensrun = self._check_if_sensitivity_run()
         self._prepare_data(drop_constants, keep_numeric_only, drop_parameters_with_nan)
         self._parameters = [
-            x for x in self._dataframe if x not in self.POSSIBLE_SELECTORS
+            x for x in self._dataframe if x not in self._possible_selectors
         ]
         self._parameters_per_ensemble = self._split_parameters_by_ensemble()
 
@@ -44,7 +53,7 @@ class ParametersModel:
 
     @property
     def selectors(self) -> list:
-        return [col for col in self.POSSIBLE_SELECTORS if col in self.dataframe]
+        return [col for col in self._possible_selectors if col in self.dataframe]
 
     @property
     def sensitivities(self) -> list:
@@ -64,7 +73,7 @@ class ParametersModel:
 
     @property
     def sens_df(self) -> pd.DataFrame:
-        return self.dataframe[self.POSSIBLE_SELECTORS]
+        return self.dataframe[self._possible_selectors]
 
     @property
     def dataframe(self) -> pd.DataFrame:
@@ -96,7 +105,7 @@ class ParametersModel:
                 param
                 for param in self._dataframe
                 if self._dataframe[param].dropna().nunique() == 1
-                and param not in self.POSSIBLE_SELECTORS
+                and param not in self._possible_selectors
             ]
             self._dataframe = self._dataframe.drop(columns=constant_params)
 

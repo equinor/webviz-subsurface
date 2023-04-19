@@ -1,3 +1,4 @@
+import datetime
 from typing import Any, Dict, List, Tuple, Union
 
 import plotly.graph_objects as go
@@ -8,6 +9,7 @@ from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ....._figures import BarChart, ScatterPlot, TimeSeriesFigure
+from ....._providers import Frequency
 from ....._utils.colors import hex_to_rgba_str, rgba_to_hex
 from ....._utils.dataframe_utils import (
     correlate_response_with_dataframe,
@@ -39,18 +41,26 @@ class ParameterResponseView(ViewABC):
         self,
         parametermodel: ParametersModel,
         vectormodel: ProviderTimeSeriesDataModel,
+        observations: Dict,
+        selected_resampling_frequency: Frequency,
+        disable_resampling_dropdown: bool,
         theme: WebvizConfigTheme,
     ) -> None:
         super().__init__("Parameter Response Analysis")
 
         self._parametermodel = parametermodel
         self._vectormodel = vectormodel
+        self._observations = observations
+        self._disable_resampling_dropdown = disable_resampling_dropdown
         self._theme = theme
 
         self.add_settings_groups(
             {
                 self.Ids.SELECTIONS: ParamRespSelections(
-                    self._parametermodel, self._vectormodel
+                    parametermodel=self._parametermodel,
+                    vectormodel=self._vectormodel,
+                    selected_resampling_frequency=selected_resampling_frequency,
+                    disable_resampling_dropdown=disable_resampling_dropdown,
                 ),
                 self.Ids.OPTIONS: ParamRespOptions(),
                 self.Ids.VIZUALISATION: ParamRespVizualisation(self._theme),
@@ -155,6 +165,13 @@ class ParameterResponseView(ViewABC):
                 "data",
             ),
             State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS,
+                    ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
+                ),
+                "value",
+            ),
+            State(
                 self.view_element(self.Ids.PARAM_CORR_GRAPH)
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
@@ -178,6 +195,7 @@ class ParameterResponseView(ViewABC):
             visualization: str,
             options: Union[None, Dict[str, Any]],
             real_filter: Dict[str, List[int]],
+            resampling_frequency: Frequency,
             corr_p_fig: Union[None, dict],
             corr_v_fig: Union[None, dict],
         ) -> List[Any]:
@@ -208,12 +226,27 @@ class ParameterResponseView(ViewABC):
                 else []
             )
 
-            # Get dataframe with vectors and dataframe with parameters and merge
-            vector_df = self._vectormodel.get_vector_df(
-                ensemble=ensemble,
-                realizations=realizations,
-                vectors=vectors_for_param_corr + [selected_vector],
-            )
+            try:
+                # Get dataframe with vectors and dataframe with parameters and merge
+                # If the resampling dropdown is disable it means the data is presampled,
+                # in which case we pass None as resampling frequency
+                vector_df = self._vectormodel.get_vector_df(
+                    ensemble=ensemble,
+                    realizations=realizations,
+                    vectors=vectors_for_param_corr + [selected_vector],
+                    resampling_frequency=resampling_frequency
+                    if not self._disable_resampling_dropdown
+                    else None,
+                )
+            except ValueError:
+                # It could be that the selected vector does not exist in the
+                # selected ensemble, f.ex if the ensembles have different well names
+                return [
+                    empty_figure(
+                        "Selected vector probably does not exist in selected ensemble"
+                    )
+                ] * 4
+
             if date not in vector_df["DATE"].values:
                 return [empty_figure("Selected date does not exist for ensemble")] * 4
             if selected_vector not in vector_df:
@@ -325,6 +358,11 @@ class ParameterResponseView(ViewABC):
                 historical_vector_df=self._vectormodel.get_historical_vector_df(
                     selected_vector, ensemble
                 ),
+                observations=self._observations[selected_vector]
+                if options
+                and options["show_observations"]
+                and selected_vector in self._observations
+                else {},
                 color_col=param,
                 line_shape_fallback=self._vectormodel.line_shape_fallback,
             ).figure
@@ -338,11 +376,30 @@ class ParameterResponseView(ViewABC):
                 ),
                 "value",
             ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "max",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "marks",
+            ),
             Input(
                 self.view_element(self.Ids.TIME_SERIES_CHART)
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS,
+                    ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN,
+                ),
+                "value",
             ),
             State(
                 self.settings_group_unique_id(
@@ -350,18 +407,56 @@ class ParameterResponseView(ViewABC):
                 ),
                 "data",
             ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "max",
+            ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, ParamRespSelections.Ids.DATE_SLIDER
+                ),
+                "marks",
+            ),
         )
         @callback_typecheck
-        def _update_date_from_clickdata(
-            timeseries_clickdata: Union[None, dict], date: str
-        ) -> int:
+        def _update_date_from_clickdata_or_resampling_freq(
+            timeseries_clickdata: Union[None, dict],
+            resampling_frequency: Frequency,
+            datestr: str,
+            state_maxvalue: int,
+            state_marks: Dict,
+        ) -> Tuple[int, int, Dict]:
             """Update date-slider from clickdata"""
-            date = (
-                timeseries_clickdata.get("points", [{}])[0]["x"]
-                if timeseries_clickdata is not None
-                else date
-            )
-            return self._vectormodel.dates.index(datetime_utils.from_str(date))
+            ctx = callback_context.triggered[0]["prop_id"]
+            if self.Ids.TIME_SERIES_CHART.value in ctx:
+                # The event is a click in the time series chart
+                date = datetime_utils.from_str(
+                    timeseries_clickdata.get("points", [{}])[0]["x"]
+                    if timeseries_clickdata is not None
+                    else datestr
+                )
+                if date not in self._vectormodel.dates:
+                    date = self._vectormodel.get_closest_date(date)
+                return self._vectormodel.dates.index(date), state_maxvalue, state_marks
+
+            if ParamRespSelections.Ids.RESAMPLING_FREQUENCY_DROPDOWN.value in ctx:
+                # The event is a change of resampling frequency
+                date = datetime_utils.from_str(datestr)
+                dates = self._vectormodel.get_dates(
+                    resampling_frequency=resampling_frequency
+                )
+                self._vectormodel.set_dates(dates)
+                if date not in dates:
+                    date = self._vectormodel.get_closest_date(date)
+                return (
+                    self._vectormodel.dates.index(date),
+                    len(dates) - 1,
+                    get_slider_marks(dates),
+                )
+
+            raise PreventUpdate("Event not recognized.")
 
         @callback(
             Output(
@@ -456,6 +551,10 @@ class ParameterResponseView(ViewABC):
         @callback_typecheck
         def _update_date_drag_value(dateidx: int) -> str:
             """Update selected date text on date-slider drag"""
+            if dateidx >= len(self._vectormodel.dates):
+                # This is not supposed to happen if callbacks are triggered
+                # in the right order
+                return datetime_utils.to_str(self._vectormodel.dates[-1])
             return datetime_utils.to_str(self._vectormodel.dates[dateidx])
 
         @callback(
@@ -521,6 +620,7 @@ class ParameterResponseView(ViewABC):
                 "color": None if color_clickdata is None else color,
                 "opacity": opacity,
                 "ctx": ctx,
+                "show_observations": "Observations" in checkbox_options,
             }
 
         @callback(
@@ -667,3 +767,14 @@ def empty_figure(text: str = "No data available for figure") -> go.Figure:
             ],
         }
     )
+
+
+def get_slider_marks(dates: List[datetime.datetime]) -> Dict[int, Dict[str, Any]]:
+    """Formats the marks parameter to the date slider"""
+    return {
+        idx: {
+            "label": datetime_utils.to_str(dates[idx]),
+            "style": {"white-space": "nowrap"},
+        }
+        for idx in [0, len(dates) - 1]
+    }
