@@ -69,7 +69,7 @@ class Selections(SettingsGroupABC):
                 label="Parameter",
                 id=self.register_component_unique_id(self.Ids.PARAM),
                 options=[{"label": param, "value": param} for param in self._params],
-                clearable=False,
+                clearable=True,
                 value=None,
             ),
         ]

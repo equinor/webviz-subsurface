@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Changed
+
+- [#1211](https://github.com/equinor/webviz-subsurface/pull/1211) - `RftPlotter`: Parameter response view always displayed, also for sensitivity ensembles. Instead it is now possible to filter on SENSNAME.
+
+### Added
+- [#1207](https://github.com/equinor/webviz-subsurface/pull/1207) - New functionality in `ParameterAnalysis`: observations, resampling frequency and sensitivity filter.
+
 ## [0.2.18] - 2023-04-12
 
 ### Changed
@@ -17,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#1199](https://github.com/equinor/webviz-subsurface/pull/1199) - Added more statistical options to the WellOverview tab in `WellAnalysis`, and the possibility to see injection rates.
-- [#1207](https://github.com/equinor/webviz-subsurface/pull/1207) - New functionality in `ParameterAnalysis`: observations, resampling frequency and sensitivity filter.
 
 ## [0.2.17] - 2023-01-18
 

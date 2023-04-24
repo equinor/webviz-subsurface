@@ -122,10 +122,9 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         self.add_view(MapView(self._datamodel), self.Ids.MAP_VIEW)
         self.add_view(MisfitPerRealView(self._datamodel), self.Ids.MISFIT_PER_REAL_VIEW)
         self.add_view(SimVsObsView(self._datamodel), self.Ids.SIM_VS_OBS_VIEW)
-        if not self._datamodel.param_model.sensrun:
-            self.add_view(
-                ParameterResponseView(self._datamodel), self.Ids.PARAMETER_RESPONSE_VIEW
-            )
+        self.add_view(
+            ParameterResponseView(self._datamodel), self.Ids.PARAMETER_RESPONSE_VIEW
+        )
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return self._datamodel.webviz_store
