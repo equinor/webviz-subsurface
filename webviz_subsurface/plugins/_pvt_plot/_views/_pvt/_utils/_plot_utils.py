@@ -89,10 +89,10 @@ def create_traces(
         data_frame = data_frame.loc[data_frame["KEYWORD"] == "PVTW"]
         dim_column_name = "PRESSURE"
 
-    data_frame = data_frame.sort_values(
-        ["PRESSURE", "VOLUMEFACTOR", "VISCOSITY"],
-        ascending=[True, True, True],
-    )
+    # data_frame = data_frame.sort_values(
+    #     ["PRESSURE", "VOLUMEFACTOR", "VISCOSITY"],
+    #     ascending=[True, True, True],
+    # )
 
     constant_group = (
         data_frame["PVTNUM"].iloc[0]
@@ -101,6 +101,7 @@ def create_traces(
     )
 
     for group, grouped_data_frame in data_frame.groupby(color_by):
+
         for set_no, set_value in enumerate(
             grouped_data_frame[dim_column_name].unique()
         ):
@@ -180,7 +181,6 @@ def create_traces(
                             realization,
                             set_value,
                         )
-
                     traces.extend(
                         [
                             {
@@ -217,6 +217,7 @@ def create_traces(
                         "xaxis": "x",
                         "yaxis": "y",
                         "legendgroup": group,
+                        "name": group,
                         "line": {
                             "width": 1,
                             "color": colors.get(group, colors[list(colors.keys())[-1]]),
@@ -267,7 +268,7 @@ def create_graph(
             "ratio": {
                 "x_axis_title": rf"Pressure [{data_frame['PRESSURE_UNIT'].iloc[0]}]",
                 "y_axis_title": rf"[{data_frame['RATIO_UNIT'].iloc[0]}]",
-                "df_column": "DENSITY",
+                "df_column": "RATIO",
                 "show_scatter_values": False,
                 "show_border_values": True,
                 "show_border_markers": True,
