@@ -101,7 +101,6 @@ def create_traces(
     )
 
     for group, grouped_data_frame in data_frame.groupby(color_by):
-
         for set_no, set_value in enumerate(
             grouped_data_frame[dim_column_name].unique()
         ):

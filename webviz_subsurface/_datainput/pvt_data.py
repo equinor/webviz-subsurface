@@ -49,14 +49,12 @@ def filter_pvt_data_frame(
         }
     )
     data_frame = data_frame.fillna(0)
-    print(data_frame)
     if "GOR" in data_frame.columns and "OGR" in data_frame.columns:
         data_frame["RATIO"] = data_frame["GOR"] + data_frame["OGR"]
     elif "GOR" in data_frame.columns:
         data_frame["RATIO"] = data_frame["GOR"]
     elif "OGR" in data_frame.columns:
         data_frame["RATIO"] = data_frame["OGR"]
-    print(data_frame[["RATIO"]])
 
     columns = [
         "ENSEMBLE",
