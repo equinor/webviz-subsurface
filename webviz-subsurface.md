@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.18` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.19rc0` of `webviz-subsurface`.
 
 
 
@@ -1065,12 +1065,17 @@ on reservoir simulation time series data.
 
 
 
+
+
+
+
 **Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`rel_file_pattern`:** path to `.arrow` files with summary data.
 * **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
 * **`drop_constants`:** Bool used to determine if constant parameters should be dropped.     Default is True.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`obsfile`:** `.yaml` file with observations to be displayed in the time series plot * **`perform_presampled`:** Summary data will be presampled when loading the plugin,     and the resampling dropdown will be disabled.
 
 
 ---
@@ -1082,6 +1087,8 @@ How to use in YAML config file:
         column_keys:  # Optional, type Union[list, NoneType].
         drop_constants:  # Optional, type bool.
         rel_file_pattern:  # Optional, type str.
+        obsfile:  # Optional, type str (corresponding to a path).
+        perform_presampling:  # Optional, type bool.
 ```
 
 
