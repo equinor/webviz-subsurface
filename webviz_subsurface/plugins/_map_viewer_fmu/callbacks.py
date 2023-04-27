@@ -25,6 +25,7 @@ from webviz_subsurface._providers import (
     StatisticalSurfaceAddress,
     SurfaceAddress,
     SurfaceArrayServer,
+    SurfaceImageServer,
 )
 
 from ._layer_model import DeckGLMapLayersModel
@@ -44,7 +45,7 @@ from .layout import (
 def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
-    surface_server: SurfaceArrayServer,
+    surface_server: Union[SurfaceArrayServer, SurfaceImageServer],
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
     map_surface_names_to_fault_polygons: Dict[str, str],
@@ -305,7 +306,7 @@ def plugin_callbacks(
     # 5th callback
     @callback(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
-        # Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
+        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "children"),
         Input(
@@ -336,6 +337,7 @@ def plugin_callbacks(
             view_columns = 3 if view_columns is None else view_columns
 
         layers = update_map_layers(
+            render_surfaces_as_images=isinstance(surface_server, SurfaceImageServer),
             views=len(surface_elements),
             include_well_layer=well_picks_provider is not None,
             visible_well_layer=LayoutLabels.SHOW_WELLS in options,
@@ -345,11 +347,17 @@ def plugin_callbacks(
 
         for idx, data in enumerate(surface_elements):
             diff_surf = data.get("surf_type") == "diff"
-            surf_meta, mesh_url = (
+            surf_meta, surface_url = (
                 get_surface_metadata_and_image(data)
                 if not diff_surf
                 else get_surface_metadata_and_image_for_diff_surface(surface_elements)
             )
+            viewport_bounds = [
+                surf_meta.x_min,
+                surf_meta.y_min,
+                surf_meta.x_max,
+                surf_meta.y_max,
+            ]
             if (
                 data["color_range"][0] != surf_meta.val_min
                 or data["color_range"][1] != surf_meta.val_max
@@ -357,30 +365,43 @@ def plugin_callbacks(
                 color_range = data["color_range"]
             else:
                 color_range = None
-            layer_data = {
-                "meshUrl": mesh_url,
-                "frame": {
-                    "origin": [surf_meta.x_ori, surf_meta.y_ori],
-                    "count": [surf_meta.x_count, surf_meta.y_count],
-                    "increment": [surf_meta.x_inc, surf_meta.y_inc],
-                    "rotDeg": surf_meta.rot_deg,
-                },
-                "colorMapName": data["colormap"],
-                "colorMapRange": color_range,
-            }
-            layer_idx = None
-            for layer in layers:
-                if layer["id"] == f"{LayoutElements.MAP3D_LAYER}-{idx}":
-                    layer_idx = layers.index(layer)
-                    break
-            if layer_idx is not None:
-                layers[layer_idx].update(layer_data)
+            if isinstance(surface_server, SurfaceArrayServer):
+                layer_data = {
+                    "meshUrl": surface_url,
+                    "frame": {
+                        "origin": [surf_meta.x_ori, surf_meta.y_ori],
+                        "count": [surf_meta.x_count, surf_meta.y_count],
+                        "increment": [surf_meta.x_inc, surf_meta.y_inc],
+                        "rotDeg": surf_meta.rot_deg,
+                    },
+                    "colorMapName": data["colormap"],
+                    "colorMapRange": color_range,
+                }
+                layer_idx = None
+                for layer in layers:
+                    if layer["id"] == f"{LayoutElements.MAP3D_LAYER}-{idx}":
+                        layer_idx = layers.index(layer)
+                        break
+                if layer_idx is not None:
+                    layers[layer_idx].update(layer_data)
+                else:
+                    layer_data["id"] = f"{LayoutElements.MAP3D_LAYER}-{idx}"
+                    layer_data["@@type"] = LayerTypes.MAP3D
+                    layer_data["material"] = False
+                    layers.insert(0, layer_data)
             else:
-                layer_data["id"] = f"{LayoutElements.MAP3D_LAYER}-{idx}"
-                layer_data["@@type"] = LayerTypes.MAP3D
-                layer_data["material"] = False
-                layers.insert(0, layer_data)
-
+                layer_data = {
+                    "image": surface_url,
+                    "bounds": surf_meta.deckgl_bounds,
+                    "rotDeg": surf_meta.deckgl_rot_deg,
+                    "valueRange": [surf_meta.val_min, surf_meta.val_max],
+                    "colorMapName": data["colormap"],
+                    "colorMapRange": color_range,
+                }
+                layer_model.update_layer_by_id(
+                    layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                    layer_data=layer_data,
+                )
             if (
                 LayoutLabels.SHOW_FAULTPOLYGONS in options
                 and fault_polygon_attribute is not None
@@ -449,7 +470,9 @@ def plugin_callbacks(
                     "show3D": False,
                     "isSync": True,
                     "layerIds": [
-                        f"{LayoutElements.MAP3D_LAYER}-{idx}",
+                        f"{LayoutElements.MAP3D_LAYER}-{idx}"
+                        if isinstance(surface_server, SurfaceArrayServer)
+                        else f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                         f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
                         f"{LayoutElements.WELLS_LAYER}-{idx}",
                     ],
@@ -463,6 +486,9 @@ def plugin_callbacks(
         }
         return (
             layer_model.layers,
+            viewport_bounds
+            if surface_elements and isinstance(surface_server, SurfaceImageServer)
+            else no_update,
             views,
             view_annotations,
         )

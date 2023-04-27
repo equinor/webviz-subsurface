@@ -181,6 +181,7 @@ def main_layout(
     color_tables: List[Dict],
     show_fault_polygons: bool = True,
     hillshading_enabled: bool = True,
+    render_surfaces_as_images: bool = True,
 ) -> html.Div:
     return html.Div(
         children=[
@@ -221,7 +222,10 @@ def main_layout(
                                     color="white",
                                     highlight=False,
                                     children=MapViewLayout(
-                                        tab, get_uuid, color_tables=color_tables
+                                        tab,
+                                        get_uuid,
+                                        color_tables=color_tables,
+                                        render_surfaces_as_images=render_surfaces_as_images,
                                     ),
                                 ),
                             ]
@@ -253,12 +257,18 @@ class OpenDialogButton(html.Button):
 class MapViewLayout(FullScreen):
     """Layout for the main view containing the map"""
 
-    def __init__(self, tab: Tabs, get_uuid: Callable, color_tables: List[Dict]) -> None:
+    def __init__(
+        self,
+        tab: Tabs,
+        get_uuid: Callable,
+        color_tables: List[Dict],
+        render_surfaces_as_images: bool,
+    ) -> None:
         super().__init__(
             children=html.Div(
                 DashSubsurfaceViewer(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
-                    layers=update_map_layers(1),
+                    layers=update_map_layers(1, render_surfaces_as_images),
                     colorTables=color_tables,
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
@@ -639,6 +649,7 @@ def dropdown_vs_select(
 
 def update_map_layers(
     views: int,
+    render_surfaces_as_images: bool,
     include_well_layer: bool = True,
     include_faultpolygon_layer: bool = True,
     visible_well_layer: bool = True,
@@ -646,6 +657,13 @@ def update_map_layers(
 ) -> List[dict]:
     layers: List[Dict] = []
     for idx in range(views):
+        if render_surfaces_as_images:
+            layers.append(
+                {
+                    "@@type": LayerTypes.COLORMAP,
+                    "id": f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                }
+            )
         if include_faultpolygon_layer:
             layers.append(
                 {
