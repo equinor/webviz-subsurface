@@ -32,6 +32,7 @@ from webviz_subsurface._providers import (
 from ._layer_model import DeckGLMapLayersModel
 from ._tmp_well_pick_provider import WellPickProvider
 from ._types import LayerTypes, SurfaceMode
+from ._utils import round_to_significant
 from .layout import (
     DefaultSettings,
     LayoutElements,
@@ -40,8 +41,6 @@ from .layout import (
     Tabs,
     update_map_layers,
 )
-
-from ._utils import round_to_significant
 
 
 # pylint: disable=too-many-locals,too-many-statements, too-many-arguments

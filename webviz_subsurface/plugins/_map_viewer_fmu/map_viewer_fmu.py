@@ -18,7 +18,6 @@ from webviz_subsurface._providers.ensemble_surface_provider.surface_array_server
 from webviz_subsurface._providers.ensemble_surface_provider.surface_image_server import (
     SurfaceImageServer,
 )
-
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 
 from ._tmp_well_pick_provider import WellPickProvider
