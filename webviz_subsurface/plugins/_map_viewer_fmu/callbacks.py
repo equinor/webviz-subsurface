@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import base64
 import io
 import json
@@ -234,14 +235,14 @@ def plugin_callbacks(
             max_value = round_to_significant(float(max_value))
             color_range = [round_to_significant(float(val)) for val in color_range]
         except ValueError:
-            raise PreventUpdate
+            return no_update, no_update, no_update
 
         ctx = callback_context.triggered
         if "color-input-min" in ctx[0]["prop_id"]:
             return no_update, no_update, [min_value, color_range[1]]
-        elif "color-input-max" in ctx[0]["prop_id"]:
+        if "color-input-max" in ctx[0]["prop_id"]:
             return no_update, no_update, [color_range[0], max_value]
-        elif "color_range" in ctx[0]["prop_id"]:
+        if "color_range" in ctx[0]["prop_id"]:
             return color_range[0], color_range[1], color_range
         else:
             return no_update, no_update, no_update

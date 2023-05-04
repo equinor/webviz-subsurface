@@ -598,8 +598,7 @@ def color_range_selection_layout(
                     value=value,
                 ),
             ),
-            html.B("Color Range"),
-            html.Br(),
+            html.B("Min value"),
             html.Div(
                 children=[
                     dcc.Input(
@@ -610,8 +609,14 @@ def color_range_selection_layout(
                         },
                         value=round_to_significant(value[0]),
                         type="number",
-                        style={"width": "40%", "float": "left"},
+                        style={"width": "40%", "float": "left", "margin-right": "5px"},
                     ),
+                    f"({round_to_significant(value_range[0])})",
+                ]
+            ),
+            html.B("Max value"),
+            html.Div(
+                children=[
                     dcc.Input(
                         id={
                             "view": view_idx,
@@ -620,14 +625,11 @@ def color_range_selection_layout(
                         },
                         value=round_to_significant(value[1]),
                         type="number",
-                        style={"width": "40%", "float": "left"},
+                        style={"width": "40%", "float": "left", "margin-right": "5px"},
                     ),
+                    f"({round_to_significant(value_range[1])})",
                 ]
             ),
-            html.Br(),
-            html.B("Value Range"),
-            html.Br(),
-            f"{round_to_significant(value_range[0]):.4f} - {round_to_significant(value_range[1]):.4f}",
             wcc.Checklist(
                 id={
                     "view": view_idx,
