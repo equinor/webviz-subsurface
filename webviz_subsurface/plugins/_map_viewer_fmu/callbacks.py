@@ -244,8 +244,7 @@ def plugin_callbacks(
             return no_update, no_update, [color_range[0], max_value]
         if "color_range" in ctx[0]["prop_id"]:
             return color_range[0], color_range[1], color_range
-        else:
-            return no_update, no_update, no_update
+        return no_update, no_update, no_update
 
     # 3rd callback
     @callback(
