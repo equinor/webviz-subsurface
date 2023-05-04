@@ -6,6 +6,7 @@ from dash import dcc, html
 from webviz_subsurface_components import DashSubsurfaceViewer  # type: ignore
 
 from ._types import LayerNames, LayerTypes, SurfaceMode
+from ._utils import round_to_significant
 
 
 @unique
@@ -578,21 +579,55 @@ def color_range_selection_layout(
 ) -> html.Div:
     return html.Div(
         children=[
-            f"{LayoutLabels.COLORMAP_RANGE}",
-            wcc.RangeSlider(
-                id={
-                    "view": view_idx,
-                    "id": get_uuid(LayoutElements.COLORSELECTIONS),
-                    "selector": ColorSelector.COLOR_RANGE,
-                    "tab": tab,
-                },
-                tooltip={"placement": "bottomLeft"},
-                min=value_range[0],
-                max=value_range[1],
-                step=step,
-                marks={str(value): {"label": f"{value:.2f}"} for value in value_range},
-                value=value,
+            html.Div(
+                style={"display": "none"},
+                children=wcc.RangeSlider(
+                    id={
+                        "view": view_idx,
+                        "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                        "selector": ColorSelector.COLOR_RANGE,
+                        "tab": tab,
+                    },
+                    tooltip={"placement": "bottomLeft"},
+                    min=value_range[0],
+                    max=value_range[1],
+                    step=step,
+                    marks={
+                        str(value): {"label": f"{value:.2f}"} for value in value_range
+                    },
+                    value=value,
+                ),
             ),
+            html.B("Color Range"),
+            html.Br(),
+            html.Div(
+                children=[
+                    dcc.Input(
+                        id={
+                            "view": view_idx,
+                            "id": get_uuid("color-input-min"),
+                            "tab": tab,
+                        },
+                        value=round_to_significant(value[0]),
+                        type="number",
+                        style={"width": "40%", "float": "left"},
+                    ),
+                    dcc.Input(
+                        id={
+                            "view": view_idx,
+                            "id": get_uuid("color-input-max"),
+                            "tab": tab,
+                        },
+                        value=round_to_significant(value[1]),
+                        type="number",
+                        style={"width": "40%", "float": "left"},
+                    ),
+                ]
+            ),
+            html.Br(),
+            html.B("Value Range"),
+            html.Br(),
+            f"{round_to_significant(value_range[0]):.4f} - {round_to_significant(value_range[1]):.4f}",
             wcc.Checklist(
                 id={
                     "view": view_idx,

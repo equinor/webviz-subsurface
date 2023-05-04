@@ -40,6 +40,8 @@ from .layout import (
     update_map_layers,
 )
 
+from ._utils import round_to_significant
+
 
 # pylint: disable=too-many-locals,too-many-statements, too-many-arguments
 def plugin_callbacks(
@@ -169,6 +171,80 @@ def plugin_callbacks(
                 for id_val in wrapper_ids
             ],
         )
+
+    @callback(
+        Output(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-min"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Output(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-max"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Output(
+            {
+                "view": MATCH,
+                "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                "selector": "color_range",
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-min"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-max"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "view": MATCH,
+                "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                "selector": "color_range",
+                "tab": MATCH,
+            },
+            "value",
+        ),
+    )
+    def color_inputs_to_color_range(
+        min_value: float, max_value: float, color_range: List[float]
+    ) -> Tuple[float, float, List[float]]:
+        """Updates color_range with the values from the color inputs"""
+
+        try:
+            min_value = round_to_significant(float(min_value))
+            max_value = round_to_significant(float(max_value))
+            color_range = [round_to_significant(float(val)) for val in color_range]
+        except ValueError:
+            raise PreventUpdate
+
+        ctx = callback_context.triggered
+        if "color-input-min" in ctx[0]["prop_id"]:
+            return no_update, no_update, [min_value, color_range[1]]
+        elif "color-input-max" in ctx[0]["prop_id"]:
+            return no_update, no_update, [color_range[0], max_value]
+        elif "color_range" in ctx[0]["prop_id"]:
+            return color_range[0], color_range[1], color_range
+        else:
+            return no_update, no_update, no_update
 
     # 3rd callback
     @callback(
