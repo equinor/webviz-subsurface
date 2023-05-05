@@ -67,6 +67,7 @@ setup(
             "SegyViewer = webviz_subsurface.plugins._segy_viewer:SegyViewer",
             "SeismicMisfit = webviz_subsurface.plugins._seismic_misfit:SeismicMisfit",
             "SimulationTimeSeries = webviz_subsurface.plugins._simulation_time_series:SimulationTimeSeries",
+            "SimulationTimeSeriesOneByOne = webviz_subsurface.plugins._simulation_time_series_onebyone:SimulationTimeSeriesOneByOne",
             "StructuralUncertainty = webviz_subsurface.plugins._structural_uncertainty:StructuralUncertainty",
             "SubsurfaceMap = webviz_subsurface.plugins._subsurface_map:SubsurfaceMap",
             "SurfaceViewerFMU = webviz_subsurface.plugins._surface_viewer_fmu:SurfaceViewerFMU",
