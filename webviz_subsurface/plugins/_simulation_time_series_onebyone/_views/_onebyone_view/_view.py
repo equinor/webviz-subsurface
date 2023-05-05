@@ -15,7 +15,7 @@ from webviz_subsurface._utils.ensemble_summary_provider_set import (
 )
 
 from ..._utils import SimulationTimeSeriesOneByOneDataModel
-from ._settings import Selections, Visualization
+from ._settings import GeneralSettings, Selections, SensitivityFilter, Visualization
 
 
 class OneByOneView(ViewABC):
@@ -46,5 +46,11 @@ class OneByOneView(ViewABC):
                     initial_vector=self._data_model.initial_vector,
                 ),
                 self.Ids.VIZUALISATION: Visualization(),
+                self.Ids.SENSITIVITY_FILTER: SensitivityFilter(
+                    sensitivities=self._data_model.sensitivities
+                ),
+                self.Ids.SETTINGS: GeneralSettings(
+                    sensitivities=self._data_model.sensitivities
+                ),
             }
         )

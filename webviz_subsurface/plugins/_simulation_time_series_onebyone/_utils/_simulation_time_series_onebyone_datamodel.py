@@ -92,6 +92,10 @@ class SimulationTimeSeriesOneByOneDataModel:
     def sensname_colormap(self) -> dict:
         return self._senscolormap
 
+    @property
+    def sensitivities(self) -> List[str]:
+        return self._pmodel.sensitivities
+
     def create_vector_selector_data(self, vector_names: list) -> list:
         vector_selector_data: list = []
         for vector in self._get_non_historical_vector_names(vector_names):

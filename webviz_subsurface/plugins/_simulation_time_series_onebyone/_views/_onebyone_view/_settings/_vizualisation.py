@@ -1,16 +1,12 @@
-import datetime
 from typing import List
 
 import webviz_core_components as wcc
-import webviz_subsurface_components as wsc
-from dash import dcc, html
+from dash import html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from ......_providers import Frequency
 from ...._types import LineType
-from ...._utils import date_from_str, date_to_str
 
 
 class Visualization(SettingsGroupABC):
