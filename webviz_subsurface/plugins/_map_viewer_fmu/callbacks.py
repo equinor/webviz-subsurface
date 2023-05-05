@@ -530,6 +530,7 @@ def plugin_callbacks(
                             openColorSelector=False,
                             legendScaleSize=0.1,
                             legendFontSize=30,
+                            colorTables=color_tables,
                         ),
                         wsc.ViewFooter(
                             children=make_viewport_label(
