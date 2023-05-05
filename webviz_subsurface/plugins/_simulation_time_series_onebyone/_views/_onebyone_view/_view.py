@@ -15,7 +15,7 @@ from webviz_subsurface._utils.ensemble_summary_provider_set import (
 )
 
 from ..._utils import SimulationTimeSeriesOneByOneDataModel
-from ._settings import Selections
+from ._settings import Selections, Visualization
 
 
 class OneByOneView(ViewABC):
@@ -32,13 +32,19 @@ class OneByOneView(ViewABC):
     def __init__(self, data_model: SimulationTimeSeriesOneByOneDataModel) -> None:
         super().__init__("OneByOne View")
         self._data_model = data_model
+        for vec in self._data_model.vectors:
+            if vec == "undefined":
+                print(vec)
 
         self.add_settings_groups(
             {
                 self.Ids.SELECTIONS: Selections(
                     ensembles=self._data_model.ensembles,
-                    vectors=self._data_model._vectors,
+                    vectors=self._data_model.vectors,
+                    vector_selector_data=self._data_model.initial_vector_selector_data,
                     dates=self._data_model.dates,
-                )
+                    initial_vector=self._data_model.initial_vector,
+                ),
+                self.Ids.VIZUALISATION: Visualization(),
             }
         )

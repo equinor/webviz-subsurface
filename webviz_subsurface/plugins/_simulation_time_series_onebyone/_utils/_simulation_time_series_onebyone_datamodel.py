@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from webviz_config import WebvizSettings
 
+from webviz_subsurface._abbreviations.reservoir_simulation import historical_vector
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
@@ -14,6 +15,7 @@ from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 from webviz_subsurface._utils.ensemble_summary_provider_set import (
     EnsembleSummaryProviderSet,
 )
+from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
 
 from ._datetime_utils import date_from_str, date_to_str
 
@@ -38,7 +40,6 @@ class SimulationTimeSeriesOneByOneDataModel:
         self._provider_set = provider_set
         self._vectors = self._provider_set.all_vector_names()
         self._resampling_frequency = resampling_frequency
-
         self._parameter_df = parametermodel.sens_df.copy()
 
         def test(x: pd.Series) -> pd.Series:
@@ -52,10 +53,13 @@ class SimulationTimeSeriesOneByOneDataModel:
         self._senscolormap = {
             sens: color for sens, color in zip(self._pmodel.sensitivities, self.colors)
         }
-        self._initial_vector = (
+        self.initial_vector = (
             initial_vector
             if initial_vector and initial_vector in self._vectors
             else self._vectors[0]
+        )
+        self.initial_vector_selector_data = self.create_vector_selector_data(
+            self._vectors
         )
 
     def create_vectors_statistics_df(self, dframe: pd.DataFrame) -> pd.DataFrame:
@@ -71,6 +75,10 @@ class SimulationTimeSeriesOneByOneDataModel:
         return self._provider_set.all_realizations()
 
     @property
+    def vectors(self) -> List[str]:
+        return self._vectors
+
+    @property
     def ensembles(self) -> List[str]:
         return self._provider_set.provider_names()
 
@@ -83,6 +91,19 @@ class SimulationTimeSeriesOneByOneDataModel:
     @property
     def sensname_colormap(self) -> dict:
         return self._senscolormap
+
+    def create_vector_selector_data(self, vector_names: list) -> list:
+        vector_selector_data: list = []
+        for vector in self._get_non_historical_vector_names(vector_names):
+            add_vector_to_vector_selector_data(vector_selector_data, vector)
+        return vector_selector_data
+
+    def _get_non_historical_vector_names(self, vector_names: list) -> list:
+        return [
+            vector
+            for vector in vector_names
+            if historical_vector(vector, None, False) not in vector_names
+        ]
 
     def get_sensitivity_dataframe_for_ensemble(self, ensemble: str) -> pd.DataFrame:
         return self._parameter_df[self._parameter_df["ENSEMBLE"] == ensemble]

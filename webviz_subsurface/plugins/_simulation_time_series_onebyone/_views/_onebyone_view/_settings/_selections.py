@@ -9,7 +9,7 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ......_providers import Frequency
-from .._utils import date_from_str, date_to_str
+from ...._utils import date_from_str, date_to_str
 
 
 class Selections(SettingsGroupABC):
@@ -20,12 +20,19 @@ class Selections(SettingsGroupABC):
         DATE_SLIDER = "date-slider"
 
     def __init__(
-        self, ensembles: List[str], vectors: List[str], dates: List[datetime.datetime]
+        self,
+        ensembles: List[str],
+        vectors: List[str],
+        vector_selector_data: dict,
+        dates: List[datetime.datetime],
+        initial_vector: str,
     ) -> None:
         super().__init__("Selections")
         self._ensembles = ensembles
         self._vectors = vectors
+        self._vector_selector_data = vector_selector_data
         self._dates = dates
+        self._initial_vector = initial_vector
 
     def layout(self) -> List[Component]:
         return [
@@ -41,10 +48,10 @@ class Selections(SettingsGroupABC):
                 label="Time Series",
                 id=self.register_component_unique_id(self.Ids.VECTOR_SELECTOR),
                 maxNumSelectedNodes=1,
-                data=self._vectors,
+                data=self._vector_selector_data,
                 persistence=True,
                 persistence_type="session",
-                selectedTags=["FOPT"] if "FOPT" in self._vectors else None,
+                selectedTags=[self._initial_vector],
                 numSecondsUntilSuggestionsAreShown=0.5,
                 lineBreakAfterTag=True,
             ),
