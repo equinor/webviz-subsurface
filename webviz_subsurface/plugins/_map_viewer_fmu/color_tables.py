@@ -1,3 +1,4 @@
+# Default colorscales from https://www.fabiocrameri.ch/colourmaps/
 default_color_tables = [
     {
         "name": "acton (Seq)",
