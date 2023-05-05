@@ -1,5 +1,5 @@
-from typing import List
 import datetime
+from typing import List
 
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
@@ -12,7 +12,6 @@ from ......_providers import Frequency
 from .._utils import date_from_str, date_to_str
 
 
-
 class Selections(SettingsGroupABC):
     class Ids(StrEnum):
         ENSEMBLE = "ensemble"
@@ -21,16 +20,12 @@ class Selections(SettingsGroupABC):
         DATE_SLIDER = "date-slider"
 
     def __init__(
-        self,
-        ensembles: List[str],
-        vectors: List[str],
-        dates: List[datetime.datetime]
+        self, ensembles: List[str], vectors: List[str], dates: List[datetime.datetime]
     ) -> None:
         super().__init__("Selections")
         self._ensembles = ensembles
         self._vectors = vectors
         self._dates = dates
-
 
     def layout(self) -> List[Component]:
         return [
@@ -49,9 +44,7 @@ class Selections(SettingsGroupABC):
                 data=self._vectors,
                 persistence=True,
                 persistence_type="session",
-                selectedTags=["FOPT"]
-                if "FOPT" in self._vectors
-                else None,
+                selectedTags=["FOPT"] if "FOPT" in self._vectors else None,
                 numSecondsUntilSuggestionsAreShown=0.5,
                 lineBreakAfterTag=True,
             ),

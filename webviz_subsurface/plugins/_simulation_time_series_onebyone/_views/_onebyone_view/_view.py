@@ -10,10 +10,13 @@ from webviz_config._theme_class import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from webviz_subsurface._providers import EnsembleSummaryProvider
-from webviz_subsurface._models.parameter_model import ParametersModel
+from webviz_subsurface._utils.ensemble_summary_provider_set import (
+    EnsembleSummaryProviderSet,
+)
 
+from ..._utils import SimulationTimeSeriesOneByOneDataModel
 from ._settings import Selections
+
 
 class OneByOneView(ViewABC):
     class Ids(StrEnum):
@@ -26,21 +29,16 @@ class OneByOneView(ViewABC):
         SENSITIVITY_FILTER = "sensitivity-filter"
         SETTINGS = "settings"
 
-    def __init__(
-            self,
-            provider_set: Dict[str, EnsembleSummaryProvider],
-            parameter_model: ParametersModel,
-    ) -> None:
+    def __init__(self, data_model: SimulationTimeSeriesOneByOneDataModel) -> None:
         super().__init__("OneByOne View")
-        self._provider_set = provider_set
-        self._parameter_model = parameter_model
+        self._data_model = data_model
 
         self.add_settings_groups(
             {
-                self.Ids.SELECTIONS : Selections(
-                    ensembles=list(self._provider_set.keys()),
-                    vectors=[],
-                    dates=[],
+                self.Ids.SELECTIONS: Selections(
+                    ensembles=self._data_model.ensembles,
+                    vectors=self._data_model._vectors,
+                    dates=self._data_model.dates,
                 )
             }
         )

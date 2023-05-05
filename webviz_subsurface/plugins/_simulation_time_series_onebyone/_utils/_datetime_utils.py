@@ -1,5 +1,6 @@
 import datetime
 
+
 def date_from_str(date_str: str) -> datetime.datetime:
     return datetime.datetime.strptime(date_str, "%Y-%m-%d")
 

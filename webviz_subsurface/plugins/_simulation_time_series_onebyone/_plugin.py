@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict
 
 import pandas as pd
@@ -7,16 +8,17 @@ from webviz_config.utils import StrEnum
 from webviz_subsurface._models.parameter_model import ParametersModel
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
-    EnsembleTableProviderFactory,
     EnsembleTableProvider,
+    EnsembleTableProviderFactory,
     Frequency,
 )
+from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
+    create_lazy_ensemble_summary_provider_set_from_paths,
+    create_presampled_ensemble_summary_provider_set_from_paths,
+)
 
+from ._utils import SimulationTimeSeriesOneByOneDataModel
 from ._views._onebyone_view import OneByOneView
-# from ._business_logic import SimulationTimeSeriesOneByOneDataModel
-# from ._callbacks import plugin_callbacks
-# from ._layout import main_view
-# from .models import ProviderTimeSeriesDataModel
 
 
 class SimulationTimeSeriesOneByOne(WebvizPluginABC):
@@ -51,6 +53,7 @@ exist. If the `SENSCASE` of a realization is `p10_p90`, the sensitivity case is 
 rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and \
 cumulatives are used to decide the line shapes in the plot.
 """
+
     class Ids(StrEnum):
         ONEBYONE_VIEW = "onebyone-view"
 
@@ -60,44 +63,44 @@ cumulatives are used to decide the line shapes in the plot.
         ensembles: list,
         time_index: str = "monthly",
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
-        column_keys: list = None,
+        perform_presampling: bool = False,
         initial_vector: str = None,
         line_shape_fallback: str = "linear",
     ) -> None:
-
         super().__init__()
 
         # vectormodel: ProviderTimeSeriesDataModel
         table_provider = EnsembleTableProviderFactory.instance()
-        provider_factory = EnsembleSummaryProviderFactory.instance()
         resampling_frequency = Frequency(time_index)
 
-        ensemble_paths = {
-            ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
-                ensemble_name
-            ]
-            for ensemble_name in ensembles
-        }
-        try:
-            provider_set = {
-                ens: provider_factory.create_from_arrow_unsmry_presampled(
-                    str(ens_path), rel_file_pattern, resampling_frequency
-                )
-                for ens, ens_path in ensemble_paths.items()
+        if ensembles is not None:
+            ensemble_paths: Dict[str, Path] = {
+                ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
+                    ensemble_name
+                ]
+                for ensemble_name in ensembles
             }
-            # vectormodel = ProviderTimeSeriesDataModel(
-            #     provider_set=provider_set,
-            #     column_keys=column_keys,
-            #     line_shape_fallback=line_shape_fallback,
-            # )
-        except ValueError as error:
-            message = (
-                f"Some/all ensembles are missing arrow files at {rel_file_pattern}.\n"
-                "If no arrow files have been generated with `ERT` using `ECL2CSV`, "
-                "the commandline tool `smry2arrow_batch` can be used to generate arrow "
-                "files for an ensemble"
+            if perform_presampling:
+                self._presampled_frequency = resampling_frequency
+                summary_provider_set = (
+                    create_presampled_ensemble_summary_provider_set_from_paths(
+                        ensemble_paths, rel_file_pattern, self._presampled_frequency
+                    )
+                )
+            else:
+                summary_provider_set = (
+                    create_lazy_ensemble_summary_provider_set_from_paths(
+                        ensemble_paths, rel_file_pattern
+                    )
+                )
+        else:
+            raise ValueError('Incorrect argument, must provide "ensembles"')
+
+        if not summary_provider_set:
+            raise ValueError(
+                "Initial provider set is undefined, and ensemble summary providers"
+                " are not instantiated for plugin"
             )
-            raise ValueError(message) from error
 
         parameterproviderset = {
             ens_name: table_provider.create_from_per_realization_parameter_file(
@@ -106,19 +109,17 @@ cumulatives are used to decide the line shapes in the plot.
             for ens_name, ens_path in ensemble_paths.items()
         }
         parameter_df = create_df_from_table_provider(parameterproviderset)
-
         parametermodel = ParametersModel(dataframe=parameter_df, drop_constants=True)
-        # self.datamodel = SimulationTimeSeriesOneByOneDataModel(
-        #     vectormodel=vectormodel,
-        #     parametermodel=parametermodel,
-        #     webviz_settings=webviz_settings,
-        #     initial_vector=initial_vector,
-        # )
 
         self.add_view(
             OneByOneView(
-                provider_set=provider_set,
-                parameter_model=parametermodel
+                data_model=SimulationTimeSeriesOneByOneDataModel(
+                    provider_set=summary_provider_set,
+                    parametermodel=parametermodel,
+                    webviz_settings=webviz_settings,
+                    resampling_frequency=resampling_frequency,
+                    initial_vector=initial_vector,
+                ),
             ),
             self.Ids.ONEBYONE_VIEW,
         )
