@@ -393,6 +393,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.OPTIONS), "value"),
         State(get_uuid("tabs"), "value"),
         State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
+        State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
     )
     def _update_map(
         surface_elements: List[dict],
@@ -401,6 +402,7 @@ def plugin_callbacks(
         options: List[str],
         tab_name: str,
         multi: str,
+        current_bounds: Optional[List],
     ) -> tuple:
         """Updates the map component with the stored, validated selections"""
 
@@ -563,9 +565,7 @@ def plugin_callbacks(
         }
         return (
             layer_model.layers,
-            viewport_bounds
-            if surface_elements and isinstance(surface_server, SurfaceImageServer)
-            else no_update,
+            viewport_bounds if not current_bounds else no_update,
             views,
             view_annotations,
         )
