@@ -37,6 +37,7 @@ from .layout import (
     DefaultSettings,
     LayoutElements,
     LayoutLabels,
+    SideBySideColorSelectorFlex,
     SideBySideSelectorFlex,
     Tabs,
     update_map_layers,
@@ -329,7 +330,7 @@ def plugin_callbacks(
         return (
             selector_values,
             [
-                SideBySideSelectorFlex(
+                SideBySideColorSelectorFlex(
                     tab,
                     get_uuid,
                     selector=id_val["selector"],
@@ -337,7 +338,7 @@ def plugin_callbacks(
                         data[id_val["selector"]] for data in color_component_properties
                     ],
                     link=id_val["selector"] in links,
-                    dropdown=id_val["selector"] in ["colormap"],
+                    color_tables=color_tables,
                 )
                 for id_val in color_wrapper_ids
             ],

@@ -6,7 +6,7 @@ from dash import dcc, html
 from webviz_subsurface_components import DashSubsurfaceViewer  # type: ignore
 
 from ._types import LayerNames, LayerTypes, SurfaceMode
-from ._utils import round_to_significant
+from ._utils import create_colormap_image_string, round_to_significant
 
 
 @unique
@@ -378,9 +378,22 @@ class SideBySideSelectorFlex(wcc.FlexBox):
         link: bool = False,
         dropdown: bool = False,
     ) -> None:
-        super().__init__(
-            style={"flex-wrap": "nowrap"},
-            children=[
+        children = []
+        for idx, data in enumerate(view_data):
+            selection_children = dropdown_vs_select(
+                value=data["value"],
+                options=data["options"],
+                component_id={
+                    "view": idx,
+                    "id": get_uuid(LayoutElements.SELECTIONS),
+                    "tab": tab,
+                    "selector": selector,
+                },
+                multi=data.get("multi", False),
+                dropdown=dropdown,
+            )
+
+            children.append(
                 html.Div(
                     style={
                         "flex": 1,
@@ -388,34 +401,64 @@ class SideBySideSelectorFlex(wcc.FlexBox):
                         "display": "none" if link and idx != 0 else "block",
                         **(LayoutStyle.DISABLED if data.get("disabled", False) else {}),
                     },
-                    children=[
-                        dropdown_vs_select(
-                            value=data["value"],
-                            options=data["options"],
-                            component_id={
-                                "view": idx,
-                                "id": get_uuid(LayoutElements.COLORSELECTIONS)
-                                if selector in ["colormap", "color_range"]
-                                else get_uuid(LayoutElements.SELECTIONS),
-                                "tab": tab,
-                                "selector": selector,
-                            },
-                            multi=data.get("multi", False),
-                            dropdown=dropdown,
-                        )
-                        if selector != "color_range"
-                        else color_range_selection_layout(
-                            tab,
-                            get_uuid,
-                            value=data["value"],
-                            value_range=data["range"],
-                            step=data["step"],
-                            view_idx=idx,
-                        )
-                    ],
+                    children=selection_children,
                 )
-                for idx, data in enumerate(view_data)
-            ],
+            )
+        super().__init__(
+            style={"flex-wrap": "nowrap"},
+            children=children,
+        )
+
+
+class SideBySideColorSelectorFlex(wcc.FlexBox):
+    def __init__(
+        self,
+        tab: str,
+        get_uuid: Callable,
+        view_data: List[dict],
+        selector: str,
+        color_tables: List[Dict],
+        link: bool = False,
+    ) -> None:
+        children = []
+        for idx, data in enumerate(view_data):
+            if selector == "color_range":
+                selection_children = color_range_selection_layout(
+                    tab,
+                    get_uuid,
+                    value=data["value"],
+                    value_range=data["range"],
+                    step=data["step"],
+                    view_idx=idx,
+                )
+
+            elif selector == "colormap":
+                selection_children = colormap_dropdown(
+                    value=data["value"],
+                    options=data["options"],
+                    component_id={
+                        "view": idx,
+                        "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                        "tab": tab,
+                        "selector": selector,
+                    },
+                    color_tables=color_tables,
+                )
+
+            children.append(
+                html.Div(
+                    style={
+                        "flex": 1,
+                        "minWidth": "33%",
+                        "display": "none" if link and idx != 0 else "block",
+                        **(LayoutStyle.DISABLED if data.get("disabled", False) else {}),
+                    },
+                    children=selection_children,
+                )
+            )
+        super().__init__(
+            style={"flex-wrap": "nowrap"},
+            children=children,
         )
 
 
@@ -681,6 +724,36 @@ def dropdown_vs_select(
         size=5,
         value=value,
         multi=multi,
+    )
+
+
+def colormap_dropdown(
+    value: Union[List[str], str],
+    options: List,
+    component_id: dict,
+    color_tables: List[Dict],
+) -> Union[wcc.Dropdown, wcc.SelectWithLabel]:
+    options = []
+    for color_table in color_tables:
+        label = html.Div(
+            [
+                html.Img(
+                    src=create_colormap_image_string(color_table["colors"], width=50),
+                    style={
+                        "height": "20px",
+                        "width": "50px",
+                    },
+                ),
+                html.Label(color_table["name"], style={"marginLeft": "2px"}),
+            ]
+        )
+
+        options.append({"label": label, "value": color_table["name"]})
+    return wcc.Dropdown(
+        id=component_id,
+        options=options,
+        value=value[0] if isinstance(value, list) else value,
+        clearable=False,
     )
 
 
