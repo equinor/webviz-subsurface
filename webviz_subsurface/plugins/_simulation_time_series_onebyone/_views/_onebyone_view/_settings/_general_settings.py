@@ -1,11 +1,14 @@
+import datetime
 from typing import List
 
 import webviz_core_components as wcc
+from dash import dcc
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
 from ...._types import LabelOptions, ScaleType
+from ...._utils import date_to_str
 
 
 class GeneralSettings(SettingsGroupABC):
@@ -14,9 +17,16 @@ class GeneralSettings(SettingsGroupABC):
         CHECKBOX_SETTINGS = "checkbox-settings"
         LABEL_OPTIONS = "label-options"
         REFERENCE = "reference"
+        OPTIONS_STORE = "options-store"
+        REAL_STORE = "real-store"
+        DATE_STORE = "date-store"
+        VECTOR_STORE = "vector-store"
 
     def __init__(
-        self, sensitivities: List[str], reference_sensname: str = "rms_seed"
+        self,
+        sensitivities: List[str],
+        initial_date: datetime.datetime,
+        reference_sensname: str = "rms_seed",
     ) -> None:
         super().__init__("⚙️ Settings")
         self._sensitivities = sensitivities
@@ -25,6 +35,7 @@ class GeneralSettings(SettingsGroupABC):
             if reference_sensname in self._sensitivities
             else self._sensitivities[0]
         )
+        self._initial_date = initial_date
 
     def layout(self) -> List[Component]:
         return [
@@ -71,4 +82,11 @@ class GeneralSettings(SettingsGroupABC):
                 value=self._ref_sens,
                 clearable=False,
             ),
+            dcc.Store(self.register_component_unique_id(self.Ids.OPTIONS_STORE)),
+            dcc.Store(self.register_component_unique_id(self.Ids.REAL_STORE)),
+            dcc.Store(
+                self.register_component_unique_id(self.Ids.DATE_STORE),
+                data=date_to_str(self._initial_date),
+            ),
+            dcc.Store(self.register_component_unique_id(self.Ids.VECTOR_STORE)),
         ]
