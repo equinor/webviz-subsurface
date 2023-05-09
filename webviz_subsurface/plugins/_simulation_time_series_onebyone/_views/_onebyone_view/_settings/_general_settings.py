@@ -2,7 +2,7 @@ import datetime
 from typing import List
 
 import webviz_core_components as wcc
-from dash import dcc
+from dash import dcc, html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
@@ -13,10 +13,12 @@ from ...._utils import date_to_str
 
 class GeneralSettings(SettingsGroupABC):
     class Ids(StrEnum):
-        SCALE_TYPE = "scale-type"
-        CHECKBOX_SETTINGS = "checkbox-settings"
-        LABEL_OPTIONS = "label-options"
-        REFERENCE = "reference"
+        # SCALE_TYPE = "scale-type"
+        # CHECKBOX_SETTINGS = "checkbox-settings"
+        # LABEL_OPTIONS = "label-options"
+        # REFERENCE = "reference"
+
+        OPTIONS = "options"
         OPTIONS_STORE = "options-store"
         REAL_STORE = "real-store"
         DATE_STORE = "date-store"
@@ -38,10 +40,12 @@ class GeneralSettings(SettingsGroupABC):
         self._initial_date = initial_date
 
     def layout(self) -> List[Component]:
+        options_id = self.register_component_unique_id(self.Ids.OPTIONS)
         return [
             wcc.Dropdown(
                 label="Scale:",
-                id=self.register_component_unique_id(self.Ids.SCALE_TYPE),
+                id={"id": options_id, "selector": "Scale"},
+                # id=self.register_component_unique_id(self.Ids.SCALE_TYPE),
                 options=[
                     {"label": "Relative value (%)", "value": ScaleType.PERCENTAGE},
                     {"label": "Relative value", "value": ScaleType.ABSOLUTE},
@@ -50,23 +54,44 @@ class GeneralSettings(SettingsGroupABC):
                 value=ScaleType.PERCENTAGE,
                 clearable=False,
             ),
-            wcc.Checklist(
-                id=self.register_component_unique_id(self.Ids.CHECKBOX_SETTINGS),
-                style={"margin-top": "10px"},
-                options=[
-                    {"label": "Color by sensitivity", "value": "color-by-sens"},
-                    {"label": "Show realization points", "value": "real-scatter"},
-                    {"label": "Show reference on tornado", "value": "show-tornado-ref"},
-                    {
-                        "label": "Remove sensitivities with no impact",
-                        "value": "remove-no-impact",
-                    },
+            # wcc.Checklist(
+            #     id=self.register_component_unique_id(self.Ids.CHECKBOX_SETTINGS),
+            #     style={"margin-top": "10px"},
+            #     options=[
+            #         {"label": "Color by sensitivity", "value": "color-by-sens"},
+            #         {"label": "Show realization points", "value": "real-scatter"},
+            #         {"label": "Show reference on tornado", "value": "show-tornado-ref"},
+            #         {
+            #             "label": "Remove sensitivities with no impact",
+            #             "value": "remove-no-impact",
+            #         },
+            #     ],
+            #     value=["color-by-sens", "show-tornado-ref", "remove-no-impact"],
+            # ),
+            html.Div(
+                style={"margin-top": "10px", "margin-bottom": "10px"},
+                children=[
+                    wcc.Checklist(
+                        id={"id": options_id, "selector": selector},
+                        options=[{"label": label, "value": "selected"}],
+                        value=["selected"] if selected else [],
+                    )
+                    for label, selector, selected in [
+                        ("Color by sensitivity", "color_by_sens", True),
+                        ("Show realization points", "real_scatter", False),
+                        ("Show reference on tornado", "torn_ref", True),
+                        (
+                            "Remove sensitivities with no impact",
+                            "Remove no impact",
+                            True,
+                        ),
+                    ]
                 ],
-                value=["color-by-sens", "show-tornado-ref", "remove-no-impact"],
             ),
             wcc.RadioItems(
                 label="Label options:",
-                id=self.register_component_unique_id(self.Ids.LABEL_OPTIONS),
+                # id=self.register_component_unique_id(self.Ids.LABEL_OPTIONS),
+                id={"id": options_id, "selector": "labeloptions"},
                 options=[
                     {"label": "Detailed", "value": LabelOptions.DETAILED},
                     {"label": "Simple", "value": LabelOptions.SIMPLE},
@@ -77,7 +102,8 @@ class GeneralSettings(SettingsGroupABC):
             ),
             wcc.Dropdown(
                 label="Reference:",
-                id=self.register_component_unique_id(self.Ids.REFERENCE),
+                # id=self.register_component_unique_id(self.Ids.REFERENCE),
+                id={"id": options_id, "selector": "Reference"},
                 options=[{"label": elm, "value": elm} for elm in self._sensitivities],
                 value=self._ref_sens,
                 clearable=False,

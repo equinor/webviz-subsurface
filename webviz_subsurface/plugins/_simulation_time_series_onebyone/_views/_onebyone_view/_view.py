@@ -1,21 +1,20 @@
-import datetime
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
-import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, State, callback, ctx, html, no_update
+from dash import ALL, Input, Output, State, callback, ctx, html
 from dash.exceptions import PreventUpdate
-from webviz_config import EncodedFile, WebvizPluginABC
-from webviz_config._theme_class import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from webviz_subsurface._utils.ensemble_summary_provider_set import (
-    EnsembleSummaryProviderSet,
-)
+from webviz_subsurface._utils.dataframe_utils import merge_dataframes_on_realization
 
 from ..._types import LabelOptions, LineType
-from ..._utils import SimulationTimeSeriesOneByOneDataModel, date_from_str, date_to_str
+from ..._utils import (
+    SimulationTimeSeriesOneByOneDataModel,
+    create_vector_selector_data,
+    date_from_str,
+    date_to_str,
+)
 from ._settings import GeneralSettings, Selections, SensitivityFilter, Visualization
 from ._view_elements import BottomVisualizationViewElement, GeneralViewElement
 
@@ -41,7 +40,7 @@ class OneByOneView(ViewABC):
                     ensembles=self._data_model.ensembles,
                     vectors=self._data_model.vectors,
                     vector_selector_data=self._data_model.initial_vector_selector_data,
-                    dates=self._data_model.dates,
+                    dates=self._data_model.all_dates,
                     initial_vector=self._data_model.initial_vector,
                 ),
                 self.Ids.VIZUALISATION: Visualization(),
@@ -50,15 +49,16 @@ class OneByOneView(ViewABC):
                 ),
                 self.Ids.SETTINGS: GeneralSettings(
                     sensitivities=self._data_model.sensitivities,
-                    initial_date=self._data_model.dates[-1],
+                    initial_date=self._data_model.all_dates[-1],
                 ),
             }
         )
 
-        first_row = self.add_row()
+        main_column = self.add_column()
+        first_row = main_column.make_row()
         first_row.add_view_element(GeneralViewElement(), self.Ids.TIMESERIES_PLOT)
         first_row.add_view_element(GeneralViewElement(), self.Ids.TORNADO_PLOT)
-        second_row = self.add_row()
+        second_row = main_column.make_row()
         second_row.add_view_element(
             BottomVisualizationViewElement(), self.Ids.BOTTOM_VISUALIZATION
         )
@@ -72,21 +72,29 @@ class OneByOneView(ViewABC):
                 "data",
             ),
             Input(
-                self.settings_group_unique_id(
-                    self.Ids.SETTINGS, GeneralSettings.Ids.CHECKBOX_SETTINGS
-                ),
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.SETTINGS, GeneralSettings.Ids.OPTIONS
+                    ),
+                    "selector": ALL,
+                },
                 "value",
             ),
+            State(
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.SETTINGS, GeneralSettings.Ids.OPTIONS
+                    ),
+                    "selector": ALL,
+                },
+                "id",
+            ),
         )
-        def _update_options(selected_options: list) -> dict:
+        def _update_options(option_values: list, options_id: List[dict]) -> dict:
             """Update graph with line coloring, vertical line and title"""
-            all_options = [
-                "color-by-sens",
-                "real-scatter",
-                "show-tornado-ref",
-                "remove-no-impact",
-            ]
-            return {option: option in selected_options for option in all_options}
+            return {
+                opt["selector"]: value for opt, value in zip(options_id, option_values)
+            }
 
         @callback(
             Output(
@@ -129,9 +137,12 @@ class OneByOneView(ViewABC):
                 "clickData",
             ),
             State(
-                self.settings_group_unique_id(
-                    self.Ids.SETTINGS, GeneralSettings.Ids.REFERENCE
-                ),
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.SETTINGS, GeneralSettings.Ids.OPTIONS
+                    ),
+                    "selector": "Reference",
+                },
                 "value",
             ),
             prevent_initial_call=True,
@@ -153,15 +164,21 @@ class OneByOneView(ViewABC):
                 "options",
             ),
             Output(
-                self.settings_group_unique_id(
-                    self.Ids.SETTINGS, GeneralSettings.Ids.REFERENCE
-                ),
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.SETTINGS, GeneralSettings.Ids.OPTIONS
+                    ),
+                    "selector": "Reference",
+                },
                 "options",
             ),
             Output(
-                self.settings_group_unique_id(
-                    self.Ids.SETTINGS, GeneralSettings.Ids.REFERENCE
-                ),
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.SETTINGS, GeneralSettings.Ids.OPTIONS
+                    ),
+                    "selector": "Reference",
+                },
                 "value",
             ),
             Output(
@@ -189,9 +206,12 @@ class OneByOneView(ViewABC):
                 "selectedNodes",
             ),
             State(
-                self.settings_group_unique_id(
-                    self.Ids.SETTINGS, GeneralSettings.Ids.REFERENCE
-                ),
+                {
+                    "id": self.settings_group_unique_id(
+                        self.Ids.SETTINGS, GeneralSettings.Ids.OPTIONS
+                    ),
+                    "selector": "Reference",
+                },
                 "value",
             ),
         )
@@ -203,14 +223,12 @@ class OneByOneView(ViewABC):
             sensitivities = self._data_model.get_unique_sensitivities_for_ensemble(
                 ensemble
             )
-            available_vectors = self._data_model._vmodel._provider_set[
+            available_vectors = self._data_model.provider(
                 ensemble
-            ].vector_names_filtered_by_value(
+            ).vector_names_filtered_by_value(
                 exclude_all_values_zero=True, exclude_constant_values=True
             )
-            vector_selector_data = self._data_model.vmodel.create_vector_selector_data(
-                available_vectors
-            )
+            vector_selector_data = create_vector_selector_data(available_vectors)
 
             vector = (
                 vector if vector[0] in available_vectors else [available_vectors[0]]
@@ -251,7 +269,18 @@ class OneByOneView(ViewABC):
                 ),
                 "data",
             ),
-            Output(get_uuid("date_selector_wrapper"), "children"),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, Selections.Ids.SELECTED_DATE
+                ),
+                "children",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, Selections.Ids.DATE_SLIDER
+                ),
+                "value",
+            ),
             Input(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, Selections.Ids.ENSEMBLE
@@ -277,7 +306,7 @@ class OneByOneView(ViewABC):
                 "data",
             ),
         )
-        def _render_date_selector(
+        def _update_date(
             ensemble: str,
             timeseries_clickdata: Union[None, dict],
             dateidx: List[int],
@@ -286,61 +315,39 @@ class OneByOneView(ViewABC):
             """Store selected date and tornado input. Write statistics
             to table"""
 
-            dates = self._data_model.vmodel.dates_for_ensemble(ensemble)
-            dateslider_drag = get_uuid("date-slider") in str(ctx.triggered_id)
+            new_ensemble = self.settings_group_unique_id(
+                self.Ids.SELECTIONS, Selections.Ids.ENSEMBLE
+            ) in str(ctx.triggered_id)
+            dateslider_drag = self.settings_group_unique_id(
+                self.Ids.SELECTIONS, Selections.Ids.DATE_SLIDER
+            ) in str(ctx.triggered_id)
+            timeseriesgraph_click = (
+                timeseries_clickdata is not None
+                and self.view_element(self.Ids.TIMESERIES_PLOT)
+                .component_unique_id(GeneralViewElement.Ids.GRAPH)
+                .to_string()
+                in ctx.triggered_id
+            )
+            dates = self._data_model.ensemble_dates(ensemble)
 
-            if timeseries_clickdata is not None and ctx.triggered_id == get_uuid(
-                "graph"
-            ):
-                date = timeseries_clickdata.get("points", [{}])[0]["x"]
-            elif dateslider_drag:
+            if new_ensemble:
+                date = dates[-1]
+
+            if timeseriesgraph_click:
+                date = date_from_str(timeseries_clickdata.get("points", [{}])[0]["x"])
+
+            if dateslider_drag:
                 date = date_to_str(dates[dateidx[0]])
 
             date_selected = (
-                date_from_str(date)
-                if date_from_str(date) in dates
-                else self._data_model.vmodel.get_last_date(ensemble)
+                date_from_str(date) if date_from_str(date) in dates else dates[-1]
             )
 
             return (
                 date_to_str(date_selected),
-                date_selector(get_uuid, date_selected=date_selected, dates=dates)
-                if not dateslider_drag
-                else no_update,
+                date_to_str(date_selected),
+                dates.index(date_selected),
             )
-
-        @callback(
-            Output(
-                self.settings_group_unique_id(
-                    self.Ids.SELECTIONS, Selections.Ids.SELECTED_DATE
-                ),
-                "children",
-            ),
-            Input(
-                self.settings_group_unique_id(
-                    self.Ids.SELECTIONS, Selections.Ids.DATE_SLIDER
-                ),
-                "drag_value",
-            ),
-            Input(
-                self.settings_group_unique_id(
-                    self.Ids.SELECTIONS, Selections.Ids.ENSEMBLE
-                ),
-                "value",
-            ),
-            prevent_initial_call=True,
-        )
-        @callback_typecheck
-        def _update_date_text(dateidx: List[int], ensemble: str) -> List[str]:
-            """Update selected date text on date-slider drag"""
-            if ctx.triggered_id == self.settings_group_unique_id(
-                self.Ids.SELECTIONS, Selections.Ids.ENSEMBLE
-            ):
-                date = self._data_model.vmodel.get_last_date(ensemble)
-            else:
-                dates = self._data_model.vmodel.dates_for_ensemble(ensemble)
-                date = dates[dateidx[0]]
-            return [date_to_str(date)]
 
         @callback(
             Output(
@@ -389,8 +396,8 @@ class OneByOneView(ViewABC):
             ensemble: str,
         ) -> go.Figure:
             # Get dataframe with vectors and dataframe with parameters and merge
-            vector_df = self._data_model.vmodel.get_vector_df(
-                ensemble=ensemble, vectors=[vector], realizations=realizations
+            vector_df = self._data_model.get_vectors_df(
+                ensemble=ensemble, vector_names=[vector], realizations=realizations
             )
             data = merge_dataframes_on_realization(
                 dframe1=vector_df,
@@ -407,21 +414,21 @@ class OneByOneView(ViewABC):
 
         @callback(
             Output(
-                self.view_element(self.Ids.BOTTOM_VISUALIZATION).component_unique_id(
-                    BottomVisualizationViewElement.Ids.TABLE
-                ),
+                self.view_element(self.Ids.BOTTOM_VISUALIZATION)
+                .component_unique_id(BottomVisualizationViewElement.Ids.TABLE)
+                .to_string(),
                 "data",
             ),
             Output(
-                self.view_element(self.Ids.BOTTOM_VISUALIZATION).component_unique_id(
-                    BottomVisualizationViewElement.Ids.TABLE
-                ),
+                self.view_element(self.Ids.BOTTOM_VISUALIZATION)
+                .component_unique_id(BottomVisualizationViewElement.Ids.TABLE)
+                .to_string(),
                 "columns",
             ),
             Output(
-                self.view_element(self.Ids.TORNADO_PLOT).component_unique_id(
-                    GeneralViewElement.Ids.GRAPH
-                ),
+                self.view_element(self.Ids.TORNADO_PLOT)
+                .component_unique_id(GeneralViewElement.Ids.GRAPH)
+                .to_string(),
                 "figure",
             ),
             Input(
@@ -453,14 +460,17 @@ class OneByOneView(ViewABC):
         def _update_tornadoplot(
             date: str, selections: dict, vector: str, ensemble: str
         ) -> tuple:
+            print(selections)
             if selections is None or selections[
                 "Reference"
             ] not in self._data_model.get_unique_sensitivities_for_ensemble(ensemble):
                 raise PreventUpdate
 
             # Get dataframe with vectors and dataframe with parameters and merge
-            vector_df = self._data_model.vmodel.get_vector_df(
-                ensemble=ensemble, vectors=[vector], date=date_from_str(date)
+            vector_df = self._data_model.get_vectors_df(
+                ensemble=ensemble,
+                date=date_from_str(date),
+                vector_names=[vector],
             )
             data = merge_dataframes_on_realization(
                 dframe1=vector_df,
@@ -481,9 +491,9 @@ class OneByOneView(ViewABC):
 
         @callback(
             Output(
-                self.view_element(self.Ids.BOTTOM_VISUALIZATION).component_unique_id(
-                    BottomVisualizationViewElement.Ids.REAL_GRAPH
-                ),
+                self.view_element(self.Ids.BOTTOM_VISUALIZATION)
+                .component_unique_id(BottomVisualizationViewElement.Ids.REAL_GRAPH)
+                .to_string(),
                 "figure",
             ),
             Input(
@@ -529,8 +539,10 @@ class OneByOneView(ViewABC):
                 raise PreventUpdate
 
             # Get dataframe with vectors and dataframe with parameters and merge
-            vector_df = self._data_model.vmodel.get_vector_df(
-                ensemble=ensemble, vectors=[vector], date=date_from_str(date)
+            vector_df = self._data_model.get_vectors_df(
+                ensemble=ensemble,
+                date=date_from_str(date),
+                vector_names=[vector],
             )
             data = merge_dataframes_on_realization(
                 dframe1=vector_df,
@@ -540,21 +552,21 @@ class OneByOneView(ViewABC):
             )
             tornado_data = self._data_model.get_tornado_data(data, vector, selections)
 
-            return self.data_model.create_realplot(tornado_data)
+            return self._data_model.create_realplot(tornado_data)
 
         @callback(
             Output(
-                self.view_element(
-                    self.Ids.BOTTOM_VISUALIZATION,
-                    BottomVisualizationViewElement.Ids.REAL_GRAPH_WRAPPER,
-                ),
+                self.view_element(self.Ids.BOTTOM_VISUALIZATION)
+                .component_unique_id(
+                    BottomVisualizationViewElement.Ids.REAL_GRAPH_WRAPPER
+                )
+                .to_string(),
                 "style",
             ),
             Output(
-                self.view_element(
-                    self.Ids.BOTTOM_VISUALIZATION,
-                    BottomVisualizationViewElement.Ids.TABLE_WRAPPER,
-                ),
+                self.view_element(self.Ids.BOTTOM_VISUALIZATION)
+                .component_unique_id(BottomVisualizationViewElement.Ids.TABLE_WRAPPER)
+                .to_string(),
                 "style",
             ),
             Input(

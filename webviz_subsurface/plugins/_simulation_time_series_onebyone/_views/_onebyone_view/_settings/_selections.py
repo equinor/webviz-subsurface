@@ -59,7 +59,7 @@ class Selections(SettingsGroupABC):
                 children=[
                     wcc.Label("Date:"),
                     wcc.Label(
-                        date_to_str(self._dates[-1]),
+                        children=date_to_str(self._dates[-1]),
                         id=self.register_component_unique_id(self.Ids.SELECTED_DATE),
                         style={"margin-left": "10px"},
                     ),

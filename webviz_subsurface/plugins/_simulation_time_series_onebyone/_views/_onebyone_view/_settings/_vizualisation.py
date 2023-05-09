@@ -27,7 +27,7 @@ class Visualization(SettingsGroupABC):
                     {"label": "Individual realizations", "value": LineType.REALIZATION},
                     {"label": "Mean over Sensitivities", "value": LineType.MEAN},
                 ],
-                value="realizations",
+                value=LineType.REALIZATION,
             ),
             html.Div(
                 style={"margin-top": "10px"},

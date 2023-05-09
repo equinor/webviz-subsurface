@@ -119,6 +119,7 @@ cumulatives are used to decide the line shapes in the plot.
                     webviz_settings=webviz_settings,
                     resampling_frequency=resampling_frequency,
                     initial_vector=initial_vector,
+                    line_shape_fallback=line_shape_fallback,
                 ),
             ),
             self.Ids.ONEBYONE_VIEW,

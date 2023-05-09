@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -17,7 +17,7 @@ from webviz_subsurface._utils.ensemble_summary_provider_set import (
 )
 from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
 
-from ._datetime_utils import date_from_str, date_to_str
+from ._datetime_utils import date_from_str
 
 
 class SimulationTimeSeriesOneByOneDataModel:
@@ -33,6 +33,7 @@ class SimulationTimeSeriesOneByOneDataModel:
         parametermodel: ParametersModel,
         webviz_settings: WebvizSettings,
         resampling_frequency: Frequency,
+        line_shape_fallback: str,
         initial_vector: Optional[str],
     ) -> None:
         self._theme = webviz_settings.theme
@@ -40,6 +41,7 @@ class SimulationTimeSeriesOneByOneDataModel:
         self._provider_set = provider_set
         self._vectors = self._provider_set.all_vector_names()
         self._resampling_frequency = resampling_frequency
+        self._line_shape_fallback = line_shape_fallback
         self._parameter_df = parametermodel.sens_df.copy()
 
         def test(x: pd.Series) -> pd.Series:
@@ -58,9 +60,7 @@ class SimulationTimeSeriesOneByOneDataModel:
             if initial_vector and initial_vector in self._vectors
             else self._vectors[0]
         )
-        self.initial_vector_selector_data = self.create_vector_selector_data(
-            self._vectors
-        )
+        self.initial_vector_selector_data = create_vector_selector_data(self._vectors)
 
     def create_vectors_statistics_df(self, dframe: pd.DataFrame) -> pd.DataFrame:
         cols = [x for x in self._parameter_df.columns if x != "REAL"]
@@ -83,7 +83,7 @@ class SimulationTimeSeriesOneByOneDataModel:
         return self._provider_set.provider_names()
 
     @property
-    def dates(self) -> List[datetime.datetime]:
+    def all_dates(self) -> List[datetime.datetime]:
         return self._provider_set.all_dates(
             resampling_frequency=self._resampling_frequency
         )
@@ -96,18 +96,44 @@ class SimulationTimeSeriesOneByOneDataModel:
     def sensitivities(self) -> List[str]:
         return self._pmodel.sensitivities
 
-    def create_vector_selector_data(self, vector_names: list) -> list:
-        vector_selector_data: list = []
-        for vector in self._get_non_historical_vector_names(vector_names):
-            add_vector_to_vector_selector_data(vector_selector_data, vector)
-        return vector_selector_data
+    def ensemble_dates(self, ensemble: str) -> List[datetime.datetime]:
+        return self._provider_set.provider(ensemble).dates(
+            resampling_frequency=self._resampling_frequency
+        )
 
-    def _get_non_historical_vector_names(self, vector_names: list) -> list:
-        return [
-            vector
-            for vector in vector_names
-            if historical_vector(vector, None, False) not in vector_names
-        ]
+    def provider(self, ensemble: str) -> EnsembleSummaryProvider:
+        return self._provider_set.provider(ensemble)
+
+    def get_vectors_df(
+        self,
+        ensemble: str,
+        vector_names: List[str],
+        realizations: Optional[List[int]] = None,
+        date: Optional[datetime.datetime] = None,
+    ) -> pd.DataFrame:
+        provider = self._provider_set.provider(ensemble)
+        if date is None:
+            return provider.get_vectors_df(
+                vector_names=vector_names,
+                realizations=realizations,
+                resampling_frequency=self._resampling_frequency,
+            )
+        return provider.get_vectors_for_date_df(
+            date=date,
+            vector_names=vector_names,
+            realizations=realizations,
+        )
+
+    def get_historical_vector_df(
+        self, vector: str, ensemble: str
+    ) -> Optional[pd.DataFrame]:
+        hist_vecname = historical_vector(vector, smry_meta=None)
+        provider = self.provider(ensemble)
+        if hist_vecname and hist_vecname in provider.vector_names():
+            return provider.get_vectors_df(
+                [hist_vecname], None, realizations=provider.realizations()[:1]
+            ).rename(columns={hist_vecname: vector})
+        return None
 
     def get_sensitivity_dataframe_for_ensemble(self, ensemble: str) -> pd.DataFrame:
         return self._parameter_df[self._parameter_df["ENSEMBLE"] == ensemble]
@@ -219,12 +245,27 @@ class SimulationTimeSeriesOneByOneDataModel:
                 vector=vector,
                 ensemble=ensemble,
                 dateline=date_from_str(date),
-                historical_vector_df=self.vmodel.get_historical_vector_df(
-                    vector, ensemble
+                historical_vector_df=self.get_historical_vector_df(
+                    vector=vector, ensemble=ensemble
                 ),
                 color_col="SENSNAME",
-                line_shape_fallback=self.vmodel.line_shape_fallback,
+                line_shape_fallback=self._line_shape_fallback,
                 discrete_color_map=self.sensname_colormap,
                 groupby="SENSNAME_CASE",
             ).figure
         ).update_layout({"title": f"{vector}, Date: {date}"})
+
+
+def create_vector_selector_data(vector_names: list) -> list:
+    vector_selector_data: list = []
+    for vector in _get_non_historical_vector_names(vector_names):
+        add_vector_to_vector_selector_data(vector_selector_data, vector)
+    return vector_selector_data
+
+
+def _get_non_historical_vector_names(vector_names: list) -> list:
+    return [
+        vector
+        for vector in vector_names
+        if historical_vector(vector, None, False) not in vector_names
+    ]
