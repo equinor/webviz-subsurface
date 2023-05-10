@@ -6,6 +6,7 @@ from dash import dcc, html
 from webviz_subsurface_components import DashSubsurfaceViewer  # type: ignore
 
 from ._types import LayerNames, LayerTypes, SurfaceMode
+from ._utils import create_colormap_image_string, round_to_significant
 
 
 @unique
@@ -181,6 +182,7 @@ def main_layout(
     color_tables: List[Dict],
     show_fault_polygons: bool = True,
     hillshading_enabled: bool = True,
+    render_surfaces_as_images: bool = True,
 ) -> html.Div:
     return html.Div(
         children=[
@@ -221,7 +223,10 @@ def main_layout(
                                     color="white",
                                     highlight=False,
                                     children=MapViewLayout(
-                                        tab, get_uuid, color_tables=color_tables
+                                        tab,
+                                        get_uuid,
+                                        color_tables=color_tables,
+                                        render_surfaces_as_images=render_surfaces_as_images,
                                     ),
                                 ),
                             ]
@@ -253,12 +258,18 @@ class OpenDialogButton(html.Button):
 class MapViewLayout(FullScreen):
     """Layout for the main view containing the map"""
 
-    def __init__(self, tab: Tabs, get_uuid: Callable, color_tables: List[Dict]) -> None:
+    def __init__(
+        self,
+        tab: Tabs,
+        get_uuid: Callable,
+        color_tables: List[Dict],
+        render_surfaces_as_images: bool,
+    ) -> None:
         super().__init__(
             children=html.Div(
                 DashSubsurfaceViewer(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
-                    layers=update_map_layers(1),
+                    layers=update_map_layers(1, render_surfaces_as_images),
                     colorTables=color_tables,
                 ),
                 style={"height": LayoutStyle.MAPHEIGHT},
@@ -367,9 +378,22 @@ class SideBySideSelectorFlex(wcc.FlexBox):
         link: bool = False,
         dropdown: bool = False,
     ) -> None:
-        super().__init__(
-            style={"flex-wrap": "nowrap"},
-            children=[
+        children = []
+        for idx, data in enumerate(view_data):
+            selection_children = dropdown_vs_select(
+                value=data["value"],
+                options=data["options"],
+                component_id={
+                    "view": idx,
+                    "id": get_uuid(LayoutElements.SELECTIONS),
+                    "tab": tab,
+                    "selector": selector,
+                },
+                multi=data.get("multi", False),
+                dropdown=dropdown,
+            )
+
+            children.append(
                 html.Div(
                     style={
                         "flex": 1,
@@ -377,34 +401,64 @@ class SideBySideSelectorFlex(wcc.FlexBox):
                         "display": "none" if link and idx != 0 else "block",
                         **(LayoutStyle.DISABLED if data.get("disabled", False) else {}),
                     },
-                    children=[
-                        dropdown_vs_select(
-                            value=data["value"],
-                            options=data["options"],
-                            component_id={
-                                "view": idx,
-                                "id": get_uuid(LayoutElements.COLORSELECTIONS)
-                                if selector in ["colormap", "color_range"]
-                                else get_uuid(LayoutElements.SELECTIONS),
-                                "tab": tab,
-                                "selector": selector,
-                            },
-                            multi=data.get("multi", False),
-                            dropdown=dropdown,
-                        )
-                        if selector != "color_range"
-                        else color_range_selection_layout(
-                            tab,
-                            get_uuid,
-                            value=data["value"],
-                            value_range=data["range"],
-                            step=data["step"],
-                            view_idx=idx,
-                        )
-                    ],
+                    children=selection_children,
                 )
-                for idx, data in enumerate(view_data)
-            ],
+            )
+        super().__init__(
+            style={"flex-wrap": "nowrap"},
+            children=children,
+        )
+
+
+class SideBySideColorSelectorFlex(wcc.FlexBox):
+    def __init__(
+        self,
+        tab: str,
+        get_uuid: Callable,
+        view_data: List[dict],
+        selector: str,
+        color_tables: List[Dict],
+        link: bool = False,
+    ) -> None:
+        children = []
+        for idx, data in enumerate(view_data):
+            if selector == "color_range":
+                selection_children = color_range_selection_layout(
+                    tab,
+                    get_uuid,
+                    value=data["value"],
+                    value_range=data["range"],
+                    step=data["step"],
+                    view_idx=idx,
+                )
+
+            elif selector == "colormap":
+                selection_children = colormap_dropdown(
+                    value=data["value"],
+                    options=data["options"],
+                    component_id={
+                        "view": idx,
+                        "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                        "tab": tab,
+                        "selector": selector,
+                    },
+                    color_tables=color_tables,
+                )
+
+            children.append(
+                html.Div(
+                    style={
+                        "flex": 1,
+                        "minWidth": "33%",
+                        "display": "none" if link and idx != 0 else "block",
+                        **(LayoutStyle.DISABLED if data.get("disabled", False) else {}),
+                    },
+                    children=selection_children,
+                )
+            )
+        super().__init__(
+            style={"flex-wrap": "nowrap"},
+            children=children,
         )
 
 
@@ -568,20 +622,75 @@ def color_range_selection_layout(
 ) -> html.Div:
     return html.Div(
         children=[
-            f"{LayoutLabels.COLORMAP_RANGE}",
-            wcc.RangeSlider(
-                id={
-                    "view": view_idx,
-                    "id": get_uuid(LayoutElements.COLORSELECTIONS),
-                    "selector": ColorSelector.COLOR_RANGE,
-                    "tab": tab,
-                },
-                tooltip={"placement": "bottomLeft"},
-                min=value_range[0],
-                max=value_range[1],
-                step=step,
-                marks={str(value): {"label": f"{value:.2f}"} for value in value_range},
-                value=value,
+            html.Div(
+                style={"display": "none"},
+                children=wcc.RangeSlider(
+                    id={
+                        "view": view_idx,
+                        "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                        "selector": ColorSelector.COLOR_RANGE,
+                        "tab": tab,
+                    },
+                    tooltip={"placement": "bottomLeft"},
+                    min=value_range[0],
+                    max=value_range[1],
+                    step=step,
+                    marks={
+                        str(value): {"label": f"{value:.2f}"} for value in value_range
+                    },
+                    value=value,
+                ),
+            ),
+            html.Div(
+                style={"display": "block"},
+                children=[
+                    html.B("Min value"),
+                    html.Div(
+                        children=[
+                            dcc.Input(
+                                id={
+                                    "view": view_idx,
+                                    "id": get_uuid("color-input-min"),
+                                    "tab": tab,
+                                },
+                                value=round_to_significant(value[0]),
+                                type="number",
+                                style={
+                                    "width": "90%",
+                                    "float": "left",
+                                    "margin-right": "5px",
+                                },
+                            ),
+                        ]
+                    ),
+                    html.Div(
+                        style={"fontSize": "0.7em"},
+                        children=f"({round_to_significant(value_range[0])})",
+                    ),
+                    html.B("Max value"),
+                    html.Div(
+                        children=[
+                            dcc.Input(
+                                id={
+                                    "view": view_idx,
+                                    "id": get_uuid("color-input-max"),
+                                    "tab": tab,
+                                },
+                                value=round_to_significant(value[1]),
+                                type="number",
+                                style={
+                                    "width": "90%",
+                                    "float": "left",
+                                    "margin-right": "5px",
+                                },
+                            ),
+                        ]
+                    ),
+                    html.Div(
+                        style={"fontSize": "0.7em"},
+                        children=f"({round_to_significant(value_range[1])})",
+                    ),
+                ],
             ),
             wcc.Checklist(
                 id={
@@ -637,8 +746,39 @@ def dropdown_vs_select(
     )
 
 
+def colormap_dropdown(
+    value: Union[List[str], str],
+    options: List,
+    component_id: dict,
+    color_tables: List[Dict],
+) -> Union[wcc.Dropdown, wcc.SelectWithLabel]:
+    options = []
+    for color_table in color_tables:
+        label = html.Div(
+            [
+                html.Img(
+                    src=create_colormap_image_string(color_table["colors"], width=50),
+                    style={
+                        "height": "20px",
+                        "width": "50px",
+                    },
+                ),
+                html.Label(color_table["name"], style={"marginLeft": "2px"}),
+            ]
+        )
+
+        options.append({"label": label, "value": color_table["name"]})
+    return wcc.Dropdown(
+        id=component_id,
+        options=options,
+        value=value[0] if isinstance(value, list) else value,
+        clearable=False,
+    )
+
+
 def update_map_layers(
     views: int,
+    render_surfaces_as_images: bool,
     include_well_layer: bool = True,
     include_faultpolygon_layer: bool = True,
     visible_well_layer: bool = True,
@@ -646,6 +786,13 @@ def update_map_layers(
 ) -> List[dict]:
     layers: List[Dict] = []
     for idx in range(views):
+        if render_surfaces_as_images:
+            layers.append(
+                {
+                    "@@type": LayerTypes.COLORMAP,
+                    "id": f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                }
+            )
         if include_faultpolygon_layer:
             layers.append(
                 {

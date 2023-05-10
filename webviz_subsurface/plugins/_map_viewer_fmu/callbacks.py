@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import base64
 import io
 import json
@@ -25,15 +26,18 @@ from webviz_subsurface._providers import (
     StatisticalSurfaceAddress,
     SurfaceAddress,
     SurfaceArrayServer,
+    SurfaceImageServer,
 )
 
 from ._layer_model import DeckGLMapLayersModel
 from ._tmp_well_pick_provider import WellPickProvider
 from ._types import LayerTypes, SurfaceMode
+from ._utils import round_to_significant
 from .layout import (
     DefaultSettings,
     LayoutElements,
     LayoutLabels,
+    SideBySideColorSelectorFlex,
     SideBySideSelectorFlex,
     Tabs,
     update_map_layers,
@@ -44,7 +48,7 @@ from .layout import (
 def plugin_callbacks(
     get_uuid: Callable,
     ensemble_surface_providers: Dict[str, EnsembleSurfaceProvider],
-    surface_server: SurfaceArrayServer,
+    surface_server: Union[SurfaceArrayServer, SurfaceImageServer],
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
     map_surface_names_to_fault_polygons: Dict[str, str],
@@ -169,6 +173,79 @@ def plugin_callbacks(
             ],
         )
 
+    @callback(
+        Output(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-min"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Output(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-max"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Output(
+            {
+                "view": MATCH,
+                "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                "selector": "color_range",
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-min"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "view": MATCH,
+                "id": get_uuid("color-input-max"),
+                "tab": MATCH,
+            },
+            "value",
+        ),
+        Input(
+            {
+                "view": MATCH,
+                "id": get_uuid(LayoutElements.COLORSELECTIONS),
+                "selector": "color_range",
+                "tab": MATCH,
+            },
+            "value",
+        ),
+    )
+    def color_inputs_to_color_range(
+        min_value: float, max_value: float, color_range: List[float]
+    ) -> Tuple[float, float, List[float]]:
+        """Updates color_range with the values from the color inputs"""
+
+        try:
+            min_value = round_to_significant(float(min_value))
+            max_value = round_to_significant(float(max_value))
+            color_range = [round_to_significant(float(val)) for val in color_range]
+        except ValueError:
+            return no_update, no_update, no_update
+
+        ctx = callback_context.triggered
+        if "color-input-min" in ctx[0]["prop_id"]:
+            return no_update, no_update, [min_value, color_range[1]]
+        if "color-input-max" in ctx[0]["prop_id"]:
+            return no_update, no_update, [color_range[0], max_value]
+        if "color_range" in ctx[0]["prop_id"]:
+            return color_range[0], color_range[1], color_range
+        return no_update, no_update, no_update
+
     # 3rd callback
     @callback(
         Output(
@@ -253,7 +330,7 @@ def plugin_callbacks(
         return (
             selector_values,
             [
-                SideBySideSelectorFlex(
+                SideBySideColorSelectorFlex(
                     tab,
                     get_uuid,
                     selector=id_val["selector"],
@@ -261,7 +338,7 @@ def plugin_callbacks(
                         data[id_val["selector"]] for data in color_component_properties
                     ],
                     link=id_val["selector"] in links,
-                    dropdown=id_val["selector"] in ["colormap"],
+                    color_tables=color_tables,
                 )
                 for id_val in color_wrapper_ids
             ],
@@ -305,7 +382,7 @@ def plugin_callbacks(
     # 5th callback
     @callback(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
-        # Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
+        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "children"),
         Input(
@@ -316,6 +393,7 @@ def plugin_callbacks(
         Input(get_uuid(LayoutElements.OPTIONS), "value"),
         State(get_uuid("tabs"), "value"),
         State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
+        State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
     )
     def _update_map(
         surface_elements: List[dict],
@@ -324,6 +402,7 @@ def plugin_callbacks(
         options: List[str],
         tab_name: str,
         multi: str,
+        current_bounds: Optional[List],
     ) -> tuple:
         """Updates the map component with the stored, validated selections"""
 
@@ -336,6 +415,7 @@ def plugin_callbacks(
             view_columns = 3 if view_columns is None else view_columns
 
         layers = update_map_layers(
+            render_surfaces_as_images=isinstance(surface_server, SurfaceImageServer),
             views=len(surface_elements),
             include_well_layer=well_picks_provider is not None,
             visible_well_layer=LayoutLabels.SHOW_WELLS in options,
@@ -345,11 +425,17 @@ def plugin_callbacks(
 
         for idx, data in enumerate(surface_elements):
             diff_surf = data.get("surf_type") == "diff"
-            surf_meta, mesh_url = (
+            surf_meta, surface_url = (
                 get_surface_metadata_and_image(data)
                 if not diff_surf
                 else get_surface_metadata_and_image_for_diff_surface(surface_elements)
             )
+            viewport_bounds = [
+                surf_meta.x_min,
+                surf_meta.y_min,
+                surf_meta.x_max,
+                surf_meta.y_max,
+            ]
             if (
                 data["color_range"][0] != surf_meta.val_min
                 or data["color_range"][1] != surf_meta.val_max
@@ -357,30 +443,43 @@ def plugin_callbacks(
                 color_range = data["color_range"]
             else:
                 color_range = None
-            layer_data = {
-                "meshUrl": mesh_url,
-                "frame": {
-                    "origin": [surf_meta.x_ori, surf_meta.y_ori],
-                    "count": [surf_meta.x_count, surf_meta.y_count],
-                    "increment": [surf_meta.x_inc, surf_meta.y_inc],
-                    "rotDeg": surf_meta.rot_deg,
-                },
-                "colorMapName": data["colormap"],
-                "colorMapRange": color_range,
-            }
-            layer_idx = None
-            for layer in layers:
-                if layer["id"] == f"{LayoutElements.MAP3D_LAYER}-{idx}":
-                    layer_idx = layers.index(layer)
-                    break
-            if layer_idx is not None:
-                layers[layer_idx].update(layer_data)
+            if isinstance(surface_server, SurfaceArrayServer):
+                layer_data = {
+                    "meshUrl": surface_url,
+                    "frame": {
+                        "origin": [surf_meta.x_ori, surf_meta.y_ori],
+                        "count": [surf_meta.x_count, surf_meta.y_count],
+                        "increment": [surf_meta.x_inc, surf_meta.y_inc],
+                        "rotDeg": surf_meta.rot_deg,
+                    },
+                    "colorMapName": data["colormap"],
+                    "colorMapRange": color_range,
+                }
+                layer_idx = None
+                for layer in layers:
+                    if layer["id"] == f"{LayoutElements.MAP3D_LAYER}-{idx}":
+                        layer_idx = layers.index(layer)
+                        break
+                if layer_idx is not None:
+                    layers[layer_idx].update(layer_data)
+                else:
+                    layer_data["id"] = f"{LayoutElements.MAP3D_LAYER}-{idx}"
+                    layer_data["@@type"] = LayerTypes.MAP3D
+                    layer_data["material"] = False
+                    layers.insert(0, layer_data)
             else:
-                layer_data["id"] = f"{LayoutElements.MAP3D_LAYER}-{idx}"
-                layer_data["@@type"] = LayerTypes.MAP3D
-                layer_data["material"] = False
-                layers.insert(0, layer_data)
-
+                layer_data = {
+                    "image": surface_url,
+                    "bounds": surf_meta.deckgl_bounds,
+                    "rotDeg": surf_meta.deckgl_rot_deg,
+                    "valueRange": [surf_meta.val_min, surf_meta.val_max],
+                    "colorMapName": data["colormap"],
+                    "colorMapRange": color_range,
+                }
+                layer_model.update_layer_by_id(
+                    layer_id=f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                    layer_data=layer_data,
+                )
             if (
                 LayoutLabels.SHOW_FAULTPOLYGONS in options
                 and fault_polygon_attribute is not None
@@ -434,6 +533,7 @@ def plugin_callbacks(
                             openColorSelector=False,
                             legendScaleSize=0.1,
                             legendFontSize=30,
+                            colorTables=color_tables,
                         ),
                         wsc.ViewFooter(
                             children=make_viewport_label(
@@ -449,7 +549,9 @@ def plugin_callbacks(
                     "show3D": False,
                     "isSync": True,
                     "layerIds": [
-                        f"{LayoutElements.MAP3D_LAYER}-{idx}",
+                        f"{LayoutElements.MAP3D_LAYER}-{idx}"
+                        if isinstance(surface_server, SurfaceArrayServer)
+                        else f"{LayoutElements.COLORMAP_LAYER}-{idx}",
                         f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
                         f"{LayoutElements.WELLS_LAYER}-{idx}",
                     ],
@@ -463,6 +565,7 @@ def plugin_callbacks(
         }
         return (
             layer_model.layers,
+            viewport_bounds if not current_bounds else no_update,
             views,
             view_annotations,
         )
