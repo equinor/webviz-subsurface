@@ -641,37 +641,56 @@ def color_range_selection_layout(
                     value=value,
                 ),
             ),
-            html.B("Min value"),
             html.Div(
+                style={"display": "block"},
                 children=[
-                    dcc.Input(
-                        id={
-                            "view": view_idx,
-                            "id": get_uuid("color-input-min"),
-                            "tab": tab,
-                        },
-                        value=round_to_significant(value[0]),
-                        type="number",
-                        style={"width": "40%", "float": "left", "margin-right": "5px"},
+                    html.B("Min value"),
+                    html.Div(
+                        children=[
+                            dcc.Input(
+                                id={
+                                    "view": view_idx,
+                                    "id": get_uuid("color-input-min"),
+                                    "tab": tab,
+                                },
+                                value=round_to_significant(value[0]),
+                                type="number",
+                                style={
+                                    "width": "100%",
+                                    "float": "left",
+                                    "margin-right": "5px",
+                                },
+                            ),
+                        ]
                     ),
-                    f"({round_to_significant(value_range[0])})",
-                ]
-            ),
-            html.B("Max value"),
-            html.Div(
-                children=[
-                    dcc.Input(
-                        id={
-                            "view": view_idx,
-                            "id": get_uuid("color-input-max"),
-                            "tab": tab,
-                        },
-                        value=round_to_significant(value[1]),
-                        type="number",
-                        style={"width": "40%", "float": "left", "margin-right": "5px"},
+                    html.Div(
+                        style={"fontSize": "0.7em"},
+                        children=f"({round_to_significant(value_range[0])})",
                     ),
-                    f"({round_to_significant(value_range[1])})",
-                ]
+                    html.B("Max value"),
+                    html.Div(
+                        children=[
+                            dcc.Input(
+                                id={
+                                    "view": view_idx,
+                                    "id": get_uuid("color-input-max"),
+                                    "tab": tab,
+                                },
+                                value=round_to_significant(value[1]),
+                                type="number",
+                                style={
+                                    "width": "100%",
+                                    "float": "left",
+                                    "margin-right": "5px",
+                                },
+                            ),
+                        ]
+                    ),
+                    html.Div(
+                        style={"fontSize": "0.7em"},
+                        children=f"({round_to_significant(value_range[1])})",
+                    ),
+                ],
             ),
             wcc.Checklist(
                 id={
