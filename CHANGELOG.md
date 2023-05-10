@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+## [0.2.19] - 2023-05-05
+
 ### Changed
 
 - [#1211](https://github.com/equinor/webviz-subsurface/pull/1211) - `RftPlotter`: Parameter response view always displayed, also for sensitivity ensembles. Instead it is now possible to filter on SENSNAME.

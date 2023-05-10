@@ -233,7 +233,7 @@ class ParameterResponseView(ViewABC):
                 vector_df = self._vectormodel.get_vector_df(
                     ensemble=ensemble,
                     realizations=realizations,
-                    vectors=vectors_for_param_corr + [selected_vector],
+                    vectors=list(set(vectors_for_param_corr + [selected_vector])),
                     resampling_frequency=resampling_frequency
                     if not self._disable_resampling_dropdown
                     else None,
@@ -306,7 +306,9 @@ class ParameterResponseView(ViewABC):
                         corr_p_fig = empty_figure("Not able to calculate correlations")
                     else:
                         corrseries = correlate_response_with_dataframe(
-                            merged_df, param, vectors_for_param_corr + [selected_vector]
+                            merged_df,
+                            param,
+                            list(set(vectors_for_param_corr + [selected_vector])),
                         )
                         if corrseries.isnull().values.any():
                             corr_p_fig = empty_figure(
