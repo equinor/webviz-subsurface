@@ -656,7 +656,7 @@ def color_range_selection_layout(
                                 value=round_to_significant(value[0]),
                                 type="number",
                                 style={
-                                    "width": "100%",
+                                    "width": "90%",
                                     "float": "left",
                                     "margin-right": "5px",
                                 },
@@ -679,7 +679,7 @@ def color_range_selection_layout(
                                 value=round_to_significant(value[1]),
                                 type="number",
                                 style={
-                                    "width": "100%",
+                                    "width": "90%",
                                     "float": "left",
                                     "margin-right": "5px",
                                 },
