@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import Any, Dict, List
 
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
@@ -22,7 +22,7 @@ class Selections(SettingsGroupABC):
         self,
         ensembles: List[str],
         vectors: List[str],
-        vector_selector_data: dict,
+        vector_selector_data: List[Dict[str, Any]],
         dates: List[datetime.datetime],
         initial_vector: str,
     ) -> None:

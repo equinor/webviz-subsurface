@@ -7,7 +7,6 @@ from webviz_config.utils import StrEnum
 
 from webviz_subsurface._models.parameter_model import ParametersModel
 from webviz_subsurface._providers import (
-    EnsembleSummaryProviderFactory,
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
     Frequency,
@@ -104,7 +103,7 @@ cumulatives are used to decide the line shapes in the plot.
 
         parameterproviderset = {
             ens_name: table_provider.create_from_per_realization_parameter_file(
-                ens_path
+                str(ens_path)
             )
             for ens_name, ens_path in ensemble_paths.items()
         }

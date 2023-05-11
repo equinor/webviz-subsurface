@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import ALL, Input, Output, State, callback, ctx, html
+from dash import ALL, Input, Output, State, callback, ctx
 from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
@@ -302,19 +302,12 @@ class OneByOneView(ViewABC):
                 ),
                 "value",
             ),
-            State(
-                self.settings_group_unique_id(
-                    self.Ids.SETTINGS, GeneralSettings.Ids.DATE_STORE
-                ),
-                "data",
-            ),
         )
         def _update_date(
             ensemble: str,
             timeseries_clickdata: Union[None, dict],
             dateidx: int,
-            date: str,
-        ) -> Tuple[str, html.Div]:
+        ) -> Tuple[str, str, int]:
             """Store selected date and tornado input. Write statistics
             to table"""
 
@@ -334,18 +327,20 @@ class OneByOneView(ViewABC):
             dates = self._data_model.ensemble_dates(ensemble)
 
             if new_ensemble:
-                date = dates[-1]
-            elif timeseriesgraph_click:
-                date = date_from_str(timeseries_clickdata.get("points", [{}])[0]["x"])
+                date_selected = dates[-1]
+            elif timeseriesgraph_click and timeseries_clickdata is not None:
+                date_selected = date_from_str(
+                    timeseries_clickdata.get("points", [{}])[0]["x"]
+                )
             elif dateslider_drag:
-                date = dates[dateidx]
+                date_selected = dates[dateidx]
             else:
-                date = dates[-1]
+                date_selected = dates[-1]
 
             return (
-                date_to_str(date),
-                date_to_str(date),
-                dates.index(date),
+                date_to_str(date_selected),
+                date_to_str(date_selected),
+                dates.index(date_selected),
             )
 
         @callback(

@@ -53,9 +53,8 @@ class SimulationTimeSeriesOneByOneDataModel:
         ].transform(test)
 
         self._smry_meta = None
-        self._senscolormap = {
-            sens: color for sens, color in zip(self._pmodel.sensitivities, self.colors)
-        }
+        self._senscolormap = dict(zip(self._pmodel.sensitivities, self.colors))
+
         self.initial_vector = (
             initial_vector
             if initial_vector and initial_vector in self._vectors
