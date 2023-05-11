@@ -13,5 +13,10 @@ class GeneralViewElement(ViewElementABC):
 
     def inner_layout(self) -> html.Div:
         return html.Div(
-            children=[wcc.Graph(id=self.register_component_unique_id(self.Ids.GRAPH))]
+            children=[
+                wcc.Graph(
+                    id=self.register_component_unique_id(self.Ids.GRAPH),
+                    style={"height": "43.5vh"},
+                )
+            ]
         )

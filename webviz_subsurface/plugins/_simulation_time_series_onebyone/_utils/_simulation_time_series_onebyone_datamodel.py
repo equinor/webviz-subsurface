@@ -9,7 +9,7 @@ from webviz_subsurface._abbreviations.reservoir_simulation import historical_vec
 from webviz_subsurface._components.tornado._tornado_bar_chart import TornadoBarChart
 from webviz_subsurface._components.tornado._tornado_data import TornadoData
 from webviz_subsurface._components.tornado._tornado_table import TornadoTable
-from webviz_subsurface._figures import TimeSeriesFigure, create_figure
+from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models.parameter_model import ParametersModel
 from webviz_subsurface._providers import EnsembleSummaryProvider, Frequency
 from webviz_subsurface._utils.ensemble_summary_provider_set import (
@@ -18,6 +18,7 @@ from webviz_subsurface._utils.ensemble_summary_provider_set import (
 from webviz_subsurface._utils.vector_selector import add_vector_to_vector_selector_data
 
 from ._datetime_utils import date_from_str
+from ._onebyone_timeseries_figure import OneByOneTimeSeriesFigure
 
 
 class SimulationTimeSeriesOneByOneDataModel:
@@ -163,7 +164,11 @@ class SimulationTimeSeriesOneByOneDataModel:
         )
 
     def create_tornado_figure(
-        self, tornado_data: TornadoData, selections: dict, use_si_format: bool
+        self,
+        tornado_data: TornadoData,
+        selections: dict,
+        use_si_format: bool,
+        title: Optional[str],
     ) -> tuple:
         return (
             TornadoBarChart(
@@ -180,7 +185,9 @@ class SimulationTimeSeriesOneByOneDataModel:
             )
             .figure.update_xaxes(side="bottom", title=None)
             .update_layout(
-                title_text=f"Tornadoplot for {tornado_data.response_name} <br>",
+                title_text=title
+                if title is not None
+                else f"Tornadoplot for {tornado_data.response_name} <br>",
                 margin={"t": 70},
             )
         )
@@ -239,7 +246,7 @@ class SimulationTimeSeriesOneByOneDataModel:
         visualization: str,
     ) -> go.Figure:
         return go.Figure(
-            TimeSeriesFigure(
+            OneByOneTimeSeriesFigure(
                 dframe=dframe,
                 visualization=visualization,
                 vector=vector,
@@ -253,7 +260,7 @@ class SimulationTimeSeriesOneByOneDataModel:
                 discrete_color_map=self.sensname_colormap,
                 groupby="SENSNAME_CASE",
             ).figure
-        ).update_layout({"title": f"{vector}, Date: {date}"})
+        ).update_layout({"title": f"{vector}"})
 
 
 def create_vector_selector_data(vector_names: list) -> list:

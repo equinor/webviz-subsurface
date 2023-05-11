@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
 from dash import ALL, Input, Output, State, callback, ctx, html
@@ -8,7 +8,7 @@ from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from webviz_subsurface._utils.dataframe_utils import merge_dataframes_on_realization
 
-from ..._types import LabelOptions, LineType
+from ..._types import LineType
 from ..._utils import (
     SimulationTimeSeriesOneByOneDataModel,
     create_vector_selector_data,
@@ -149,9 +149,12 @@ class OneByOneView(ViewABC):
         )
         @callback_typecheck
         def _update_sensitivity_filter(
-            tornado_click_data: dict, reference: str
+            tornado_click_data: Optional[Dict], reference: str
         ) -> List[str]:
             """Update graph with line coloring, vertical line and title"""
+            if tornado_click_data is None:
+                raise PreventUpdate
+
             clicked_data = tornado_click_data["points"][0]
             return [clicked_data["y"], reference]
 
@@ -309,7 +312,7 @@ class OneByOneView(ViewABC):
         def _update_date(
             ensemble: str,
             timeseries_clickdata: Union[None, dict],
-            dateidx: List[int],
+            dateidx: int,
             date: str,
         ) -> Tuple[str, html.Div]:
             """Store selected date and tornado input. Write statistics
@@ -332,21 +335,17 @@ class OneByOneView(ViewABC):
 
             if new_ensemble:
                 date = dates[-1]
-
-            if timeseriesgraph_click:
+            elif timeseriesgraph_click:
                 date = date_from_str(timeseries_clickdata.get("points", [{}])[0]["x"])
-
-            if dateslider_drag:
-                date = date_to_str(dates[dateidx[0]])
-
-            date_selected = (
-                date_from_str(date) if date_from_str(date) in dates else dates[-1]
-            )
+            elif dateslider_drag:
+                date = dates[dateidx]
+            else:
+                date = dates[-1]
 
             return (
-                date_to_str(date_selected),
-                date_to_str(date_selected),
-                dates.index(date_selected),
+                date_to_str(date),
+                date_to_str(date),
+                dates.index(date),
             )
 
         @callback(
@@ -460,7 +459,6 @@ class OneByOneView(ViewABC):
         def _update_tornadoplot(
             date: str, selections: dict, vector: str, ensemble: str
         ) -> tuple:
-            print(selections)
             if selections is None or selections[
                 "Reference"
             ] not in self._data_model.get_unique_sensitivities_for_ensemble(ensemble):
@@ -482,7 +480,10 @@ class OneByOneView(ViewABC):
             tornado_data = self._data_model.get_tornado_data(data, vector, selections)
             use_si_format = tornado_data.reference_average > 1000
             tornadofig = self._data_model.create_tornado_figure(
-                tornado_data, selections, use_si_format
+                tornado_data=tornado_data,
+                selections=selections,
+                use_si_format=use_si_format,
+                title=f"Tornadoplot for {tornado_data.response_name} at {date} <br>",
             )
             table, columns = self._data_model.create_tornado_table(
                 tornado_data, use_si_format
@@ -530,7 +531,7 @@ class OneByOneView(ViewABC):
         @callback_typecheck
         def _update_realplot(
             date: str,
-            selections: dict,
+            selections: Optional[Dict],
             vector: str,
             ensemble: str,
             selected_vizualisation: str,
