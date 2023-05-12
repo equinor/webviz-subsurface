@@ -7,9 +7,9 @@ class LineType(StrEnum):
 
 
 class ScaleType(StrEnum):
-    PERCENTAGE = "percentage"
-    ABSOLUTE = "absolute"
-    TRUE_VALUE = "true-value"
+    PERCENTAGE = "Percentage"
+    ABSOLUTE = "Absolute"
+    TRUE_VALUE = "True"
 
 
 class LabelOptions(StrEnum):
