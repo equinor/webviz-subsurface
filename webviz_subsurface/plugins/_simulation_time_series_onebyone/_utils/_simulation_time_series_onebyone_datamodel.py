@@ -150,18 +150,6 @@ class SimulationTimeSeriesOneByOneDataModel:
             return "rms_seed"
         return sensitivities[0]
 
-    def get_tornado_data(
-        self, dframe: pd.DataFrame, response: str, selections: dict
-    ) -> TornadoData:
-        dframe.rename(columns={response: "VALUE"}, inplace=True)
-        return TornadoData(
-            dframe=dframe,
-            reference=selections["Reference"],
-            response_name=response,
-            scale=selections["Scale"],
-            cutbyref=bool(selections["Remove no impact"]),
-        )
-
     def create_tornado_figure(
         self,
         tornado_data: TornadoData,
@@ -224,18 +212,6 @@ class SimulationTimeSeriesOneByOneDataModel:
             )
         )
 
-    def create_tornado_table(
-        self,
-        tornado_data: TornadoData,
-        use_si_format: bool,
-    ) -> Tuple[List[dict], List[dict]]:
-        tornado_table = TornadoTable(
-            tornado_data=tornado_data,
-            use_si_format=use_si_format,
-            precision=4 if use_si_format else 3,
-        )
-        return tornado_table.as_plotly_table, tornado_table.columns
-
     def create_timeseries_figure(
         self,
         dframe: pd.DataFrame,
@@ -260,6 +236,31 @@ class SimulationTimeSeriesOneByOneDataModel:
                 groupby="SENSNAME_CASE",
             ).figure
         ).update_layout({"title": f"{vector}"})
+
+
+def get_tornado_data(
+    dframe: pd.DataFrame, response: str, selections: dict
+) -> TornadoData:
+    dframe.rename(columns={response: "VALUE"}, inplace=True)
+    return TornadoData(
+        dframe=dframe,
+        reference=selections["Reference"],
+        response_name=response,
+        scale=selections["Scale"],
+        cutbyref=bool(selections["Remove no impact"]),
+    )
+
+
+def create_tornado_table(
+    tornado_data: TornadoData,
+    use_si_format: bool,
+) -> Tuple[List[dict], List[dict]]:
+    tornado_table = TornadoTable(
+        tornado_data=tornado_data,
+        use_si_format=use_si_format,
+        precision=4 if use_si_format else 3,
+    )
+    return tornado_table.as_plotly_table, tornado_table.columns
 
 
 def create_vector_selector_data(vector_names: list) -> list:

@@ -12,9 +12,11 @@ from webviz_subsurface._utils.dataframe_utils import merge_dataframes_on_realiza
 from ..._types import LineType
 from ..._utils import (
     SimulationTimeSeriesOneByOneDataModel,
+    create_tornado_table,
     create_vector_selector_data,
     date_from_str,
     date_to_str,
+    get_tornado_data,
 )
 from ._settings import GeneralSettings, Selections, SensitivityFilter, Visualization
 from ._view_elements import BottomVisualizationViewElement, GeneralViewElement
@@ -496,7 +498,7 @@ class OneByOneView(ViewABC):
                 ),
             )
 
-            tornado_data = self._data_model.get_tornado_data(data, vector, selections)
+            tornado_data = get_tornado_data(data, vector, selections)
             use_si_format = tornado_data.reference_average > 1000
             tornadofig = self._data_model.create_tornado_figure(
                 tornado_data=tornado_data,
@@ -504,9 +506,7 @@ class OneByOneView(ViewABC):
                 use_si_format=use_si_format,
                 title=f"Tornadoplot for {tornado_data.response_name} at {date} <br>",
             )
-            table, columns = self._data_model.create_tornado_table(
-                tornado_data, use_si_format
-            )
+            table, columns = create_tornado_table(tornado_data, use_si_format)
             return table, columns, tornadofig
 
         @callback(
@@ -570,7 +570,7 @@ class OneByOneView(ViewABC):
                     ensemble
                 ),
             )
-            tornado_data = self._data_model.get_tornado_data(data, vector, selections)
+            tornado_data = get_tornado_data(data, vector, selections)
 
             return self._data_model.create_realplot(tornado_data)
 
