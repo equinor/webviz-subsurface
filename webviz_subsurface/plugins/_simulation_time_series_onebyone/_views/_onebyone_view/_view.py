@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional, Tuple, Union
+import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
 from dash import ALL, Input, Output, State, callback, ctx
@@ -284,6 +285,18 @@ class OneByOneView(ViewABC):
                 ),
                 "value",
             ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, Selections.Ids.DATE_SLIDER
+                ),
+                "max",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SELECTIONS, Selections.Ids.DATE_SLIDER
+                ),
+                "marks",
+            ),
             Input(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, Selections.Ids.ENSEMBLE
@@ -307,7 +320,7 @@ class OneByOneView(ViewABC):
             ensemble: str,
             timeseries_clickdata: Union[None, dict],
             dateidx: int,
-        ) -> Tuple[str, str, int]:
+        ) -> Tuple[str, str, int, int, Dict[int, Dict[str, Any]]]:
             """Store selected date and tornado input. Write statistics
             to table"""
 
@@ -332,6 +345,9 @@ class OneByOneView(ViewABC):
                 date_selected = date_from_str(
                     timeseries_clickdata.get("points", [{}])[0]["x"]
                 )
+                if date_selected not in dates:
+                    date_selected = get_closest_date(dates, date_selected)
+
             elif dateslider_drag:
                 date_selected = dates[dateidx]
             else:
@@ -341,6 +357,14 @@ class OneByOneView(ViewABC):
                 date_to_str(date_selected),
                 date_to_str(date_selected),
                 dates.index(date_selected),
+                len(dates) - 1,
+                {
+                    idx: {
+                        "label": date_to_str(dates[idx]),
+                        "style": {"white-space": "nowrap"},
+                    }
+                    for idx in [0, len(dates) - 1]
+                },
             )
 
         @callback(
@@ -399,7 +423,7 @@ class OneByOneView(ViewABC):
                     ensemble
                 ),
             )
-            if linetype == LineType.MEAN:
+            if linetype == LineType.STATISTICS:
                 data = self._data_model.create_vectors_statistics_df(data)
 
             return self._data_model.create_timeseries_figure(
@@ -577,3 +601,10 @@ class OneByOneView(ViewABC):
             return {
                 "display": "none" if selected_vizualisation == "table" else "block"
             }, {"display": "block" if selected_vizualisation == "table" else "none"}
+
+
+def get_closest_date(
+    dates: List[datetime.datetime], date: datetime.datetime
+) -> datetime.datetime:
+    # Returns the closest date to the input date in the dates list.
+    return min(dates, key=lambda dte: abs(dte - date))

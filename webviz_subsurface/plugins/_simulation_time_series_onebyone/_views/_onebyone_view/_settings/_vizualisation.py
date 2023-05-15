@@ -25,7 +25,7 @@ class Visualization(SettingsGroupABC):
                 id=self.register_component_unique_id(self.Ids.REALIZATION_OR_MEAN),
                 options=[
                     {"label": "Individual realizations", "value": LineType.REALIZATION},
-                    {"label": "Mean over Sensitivities", "value": LineType.MEAN},
+                    {"label": "Mean over Sensitivities", "value": LineType.STATISTICS},
                 ],
                 value=LineType.REALIZATION,
             ),
