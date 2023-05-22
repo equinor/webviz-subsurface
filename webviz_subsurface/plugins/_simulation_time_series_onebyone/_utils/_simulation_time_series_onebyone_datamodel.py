@@ -26,8 +26,6 @@ class SimulationTimeSeriesOneByOneDataModel:
     data providing methods.
     """
 
-    SELECTORS = ["QC_FLAG", "SATNUM", "EQLNUM", "FIPNUM"]
-
     def __init__(
         self,
         provider_set: EnsembleSummaryProviderSet,
@@ -45,12 +43,12 @@ class SimulationTimeSeriesOneByOneDataModel:
         self._line_shape_fallback = line_shape_fallback
         self._parameter_df = parametermodel.sens_df.copy()
 
-        def test(x: pd.Series) -> pd.Series:
+        def create_senscase_id(x: pd.Series) -> pd.Series:
             return x.apply(lambda v: list(x.unique()).index(v))
 
-        self._parameter_df["t"] = self._parameter_df.groupby("SENSNAME")[
+        self._parameter_df["SENSCASEID"] = self._parameter_df.groupby("SENSNAME")[
             "SENSCASE"
-        ].transform(test)
+        ].transform(create_senscase_id)
 
         self._smry_meta = None
         self._senscolormap = dict(zip(self._pmodel.sensitivities, self.colors))

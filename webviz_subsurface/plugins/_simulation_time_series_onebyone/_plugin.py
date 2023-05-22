@@ -27,13 +27,12 @@ A tornado plot can be calculated interactively for each date/vector by selecting
 After selecting a date individual sensitivities can be selected to highlight the realizations
 run with that sensitivity.
 ---
-**Using simulation time series data directly from `UNSMRY` files**
+**Input arguments**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`column_keys`:** List of vectors to extract. If not given, all vectors \
-    from the simulations will be extracted. Wild card asterisk `*` can be used.
+* **`rel_file_pattern`:** Path to `.arrow` files with summary data.
 * **`sampling`:** Time separation between extracted values. Can be e.g. `monthly` (default) or \
     `yearly`.
-**Common optional settings for both input options**
+* **`perform_presampling`:** Presample summary data instead of lazy sampling.
 * **`initial_vector`:** Initial vector to display
 * **`line_shape_fallback`:** Fallback interpolation method between points. Vectors identified as \
     rates or phase ratios are always backfilled, vectors identified as cumulative (totals) are \
@@ -42,15 +41,6 @@ run with that sensitivity.
     * `linear` (default)
     * `backfilled`
     * `hv`, `vh`, `hvh`, `vhv` and `spline` (regular Plotly options).
-**Using simulation time series data directly from `.UNSMRY` files**
-Time series data are extracted automatically from the `UNSMRY` files in the individual
-realizations, using the `fmu-ensemble` library. The `SENSNAME` and `SENSCASE` values are read
-directly from the `parameters.txt` files of the individual realizations, assuming that these
-exist. If the `SENSCASE` of a realization is `p10_p90`, the sensitivity case is regarded as a
-**Monte Carlo** style sensitivity, otherwise the case is evaluated as a **scalar** sensitivity.
-?> Using the `UNSMRY` method will also extract metadata like units, and whether the vector is a \
-rate, a cumulative, or historical. Units are e.g. added to the plot titles, while rates and \
-cumulatives are used to decide the line shapes in the plot.
 """
 
     class Ids(StrEnum):
@@ -60,8 +50,8 @@ cumulatives are used to decide the line shapes in the plot.
         self,
         webviz_settings: WebvizSettings,
         ensembles: list,
-        time_index: str = "monthly",
         rel_file_pattern: str = "share/results/unsmry/*.arrow",
+        sampling: str = Frequency.MONTHLY.value,
         perform_presampling: bool = False,
         initial_vector: str = None,
         line_shape_fallback: str = "linear",
@@ -70,7 +60,7 @@ cumulatives are used to decide the line shapes in the plot.
 
         # vectormodel: ProviderTimeSeriesDataModel
         table_provider = EnsembleTableProviderFactory.instance()
-        resampling_frequency = Frequency(time_index)
+        resampling_frequency = Frequency(sampling)
 
         if ensembles is not None:
             ensemble_paths: Dict[str, Path] = {

@@ -88,16 +88,10 @@ class OneByOneTimeSeriesFigure:
     def create_traces(self) -> None:
         self.traces: List[dict] = []
 
-        if self.groupby == "SENSNAME_CASE":
-            if self.visualization == "realizations":
-                self._add_sensitivity_traces_real()
-            else:
-                self._add_sensitivity_traces_stat()
+        if self.visualization == "realizations":
+            self._add_sensitivity_traces_real()
         else:
-            if self.visualization == "realizations":
-                self._add_realization_traces()
-            if self.visualization == "statistics":
-                self._add_statistic_traces()
+            self._add_sensitivity_traces_stat()
 
         self._add_history_trace()
 
@@ -118,61 +112,9 @@ class OneByOneTimeSeriesFigure:
             }
         )
 
-    def _add_statistic_traces(self) -> None:
-        """Renders the statistic lines"""
-        stat_df = self.create_vectors_statistics_df()
-        stat_df = pd.DataFrame(stat_df["DATE"]).join(stat_df[self.vector])
-        self.traces.extend(
-            [
-                {
-                    "line": {
-                        "width": 2,
-                        "shape": self.line_shape,
-                        "dash": False if stat == "Mean" else "dashdot",
-                        "color": Colors.RED,
-                    },
-                    "mode": "lines",
-                    "x": stat_df["DATE"],
-                    "y": stat_df[stat],
-                    "name": stat,
-                    "legendgroup": self.ensemble,
-                    "showlegend": False,
-                }
-                for stat in self.STAT_OPTIONS
-            ]
-        )
-
-    def _add_realization_traces(self) -> None:
-        """Renders line trace for each realization"""
-        mean = self.dframe["VALUE_NORM"].mean() if self.continous_color else None
-        self.traces.extend(
-            [
-                {
-                    "line": {
-                        "shape": self.line_shape,
-                        "color": self.set_real_color(
-                            real_df["VALUE_NORM"].iloc[0], mean
-                        )
-                        if self.visualization == "realizations" and self.continous_color
-                        else self.colormap.get(real_df[self.color_col].iloc[0], "grey"),
-                    },
-                    "mode": "lines",
-                    "x": real_df["DATE"],
-                    "y": real_df[self.vector],
-                    "name": self.ensemble,
-                    "legendgroup": self.ensemble,
-                    "hovertext": self.create_hovertext(real_df["VALUE"].iloc[0], real)
-                    if self.continous_color
-                    else f"Real: {real} {real_df[self.color_col].iloc[0]}",
-                    "showlegend": real_idx == 0,
-                }
-                for real_idx, (real, real_df) in enumerate(self.dframe.groupby("REAL"))
-            ]
-        )
-
     @property
     def daterange(self) -> list:
-        active_dates = self.dframe["DATE"][self.dframe[self.vector] != 0]
+        active_dates = self.dframe["DATE"][self.dframe[self.vector].round(4) != 0]
         if len(active_dates) == 0:
             return [self.dframe["DATE"].min(), self.dframe["DATE"].max()]
         if self.date is None:
@@ -274,19 +216,21 @@ class OneByOneTimeSeriesFigure:
         """Renders line trace for each realization"""
 
         self.dframe["dash"] = np.where(
-            self.dframe["t"] == 1, "dashdot", "solid"
+            self.dframe["SENSCASEID"] == 1, "dashdot", "solid"
         )  # dot, dashdot
 
         self.traces.extend(
             [
                 {
                     "line": {
-                        "dash": "dash" if real_df["t"].iloc[0] == 1 else "solid",
+                        "dash": "dash"
+                        if real_df["SENSCASEID"].iloc[0] == 1
+                        else "solid",
                         "shape": self.line_shape,
                         "color": self.colormap.get(
                             real_df[self.color_col].iloc[0], "grey"
                         ),
-                        "width": 3 if real_df["t"].iloc[0] == 1 else 2,
+                        "width": 3 if real_df["SENSCASEID"].iloc[0] == 1 else 2,
                     },
                     "mode": "lines",
                     "x": real_df["DATE"],
@@ -305,14 +249,16 @@ class OneByOneTimeSeriesFigure:
         """Renders line trace for each realization"""
 
         self.dframe["dash"] = np.where(
-            self.dframe["t"] == 1, "longdash", "solid"
+            self.dframe["SENSCASEID"] == 1, "longdash", "solid"
         )  # dot, dashdot
 
         self.traces.extend(
             [
                 {
                     "line": {
-                        "dash": "dash" if real_df["t"].iloc[0] == 1 else "solid",
+                        "dash": "dash"
+                        if real_df["SENSCASEID"].iloc[0] == 1
+                        else "solid",
                         "shape": self.line_shape,
                         "color": rgb_to_str(
                             scale_rgb_lightness(
@@ -321,10 +267,10 @@ class OneByOneTimeSeriesFigure:
                                         real_df[self.color_col].iloc[0], "grey"
                                     )
                                 ),
-                                130 if real_df["t"].iloc[0] == 1 else 90,
+                                130 if real_df["SENSCASEID"].iloc[0] == 1 else 90,
                             )
                         ),
-                        "width": 3 if real_df["t"].iloc[0] == 1 else 2,
+                        "width": 3 if real_df["SENSCASEID"].iloc[0] == 1 else 2,
                     },
                     "mode": "lines",
                     "x": real_df["DATE"],
