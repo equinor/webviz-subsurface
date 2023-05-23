@@ -191,7 +191,6 @@ class PvtView(ViewABC):
                 plot_id["plot"]: plot_id["plot"] in visibility
                 for plot_id, visibility in zip(plots_visibility_ids, plots_visibility)
             }
-
             graph_height = max(
                 40.0,
                 80.0
@@ -210,7 +209,6 @@ class PvtView(ViewABC):
             for plot in ViewSettings.plot_visibility_options(phase):
                 if not visible_plots[plot]:
                     continue
-
                 current_element = wcc.WebvizViewElement(
                     id=self.unique_id(plot),
                     children=create_graph(
@@ -219,7 +217,7 @@ class PvtView(ViewABC):
                         colors,
                         phase,
                         plot,
-                        ViewSettings.plot_visibility_options(self.phases[phase])[plot],
+                        ViewSettings.plot_visibility_options(phase)[plot],
                         self.plotly_theme,
                         graph_height,
                     ),

@@ -19,12 +19,12 @@ class ViewSettings(SettingsGroupABC):
             "fvf": "Formation Volume Factor",
             "viscosity": "Viscosity",
             "density": "Density",
-            "ratio": "Gas/Oil Ratio (Rs)",
+            "ratio": "Fluid Ratio",
         }
         if phase == "OIL":
-            options["ratio"] = "Gas/Oil Ratio (Rs)"
+            options["ratio"] = "Gas/Oil Ratio (Rs) at Psat"
         if phase == "GAS":
-            options["ratio"] = "Vaporized Oil Ratio (Rv)"
+            options["ratio"] = "Vaporized Oil Ratio (Rv) at Psat"
         if phase == "WATER":
             options.pop("ratio")
         return options
