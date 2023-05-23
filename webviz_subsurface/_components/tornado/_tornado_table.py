@@ -23,6 +23,7 @@ class TornadoTable:
             lambda x: str(len(x))
         )
         self._table["Response"] = tornado_data.response_name
+        self._table["Reference"] = tornado_data.reference_average
         self._table.rename(
             columns={
                 "sensname": "Sensitivity",
@@ -64,6 +65,7 @@ class TornadoTable:
                 "True high",
                 "Low #reals",
                 "High #reals",
+                "Reference",
             ]
         ]
 

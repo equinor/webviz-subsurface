@@ -157,7 +157,7 @@ class FormationFigure:
                     "name": row["ZONE"],
                     "y0": row[top_col],
                     "y1": row[base_col],
-                    "line": dict(color="#646567", width=1.0),
+                    "line": {"color": "#646567", "width": 1.0},
                     "fillcolor": formation_colors[
                         list(df["ZONE"].unique()).index(row["ZONE"])
                     ]

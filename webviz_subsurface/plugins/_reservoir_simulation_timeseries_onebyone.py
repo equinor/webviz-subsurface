@@ -11,6 +11,7 @@ from dash import Dash, Input, Output, State, callback_context, dash_table, dcc, 
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
+from webviz_config.deprecation_decorators import deprecated_plugin
 from webviz_config.webviz_store import webvizstore
 
 from webviz_subsurface._components import TornadoWidget
@@ -33,6 +34,9 @@ from .._utils.simulation_timeseries import (
 
 
 # pylint: disable=too-many-instance-attributes
+@deprecated_plugin(
+    "This plugin has been replaced by the plugin `SimulationTimeSeriesOneByOne`"
+)
 class ReservoirSimulationTimeSeriesOneByOne(WebvizPluginABC):
     """Visualizes reservoir simulation time series data for sensitivity studies based \
 on a design matrix.
