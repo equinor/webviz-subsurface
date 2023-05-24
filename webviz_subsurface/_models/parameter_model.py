@@ -93,8 +93,7 @@ class ParametersModel:
         """
         Different data preparations on the parameters, before storing them as an attribute.
         Option to drop parameters with constant values. Prefixes on parameters from GEN_KW
-        are removed, in addition parameters with LOG distribution will be kept while the
-        other is dropped.
+        are removed.
         """
 
         # Remove parameters with only NaN (can happen for filtered dataframes)
@@ -111,9 +110,7 @@ class ParametersModel:
 
         # Keep only LOG parameters
         log_params = [param for param in self._dataframe if param.startswith("LOG10_")]
-        self._dataframe = self._dataframe.drop(
-            columns=[param.replace("LOG10_", "") for param in log_params]
-        )
+
         self._dataframe = self._dataframe.rename(
             columns={col: f"{col} (log)" for col in log_params}
         )
