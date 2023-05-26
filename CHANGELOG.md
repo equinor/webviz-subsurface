@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#1217](https://github.com/equinor/webviz-subsurface/pull/1217) - New plugin `SimulationTimeSeriesOneByOne`, meant to replace the old `ReservoirSimulationTimeSeriesOneByOne`. Uses the `.arrow` summary provider and is implemented with WLF (Webviz Layout Framework).
 
+### Fixed
+- [#1222](https://github.com/equinor/webviz-subsurface/pull/1222) - Keep both non-logarithmic parameters.
 
 ## [0.2.19] - 2023-05-05
 
