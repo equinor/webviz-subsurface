@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#1217](https://github.com/equinor/webviz-subsurface/pull/1217) - New plugin `SimulationTimeSeriesOneByOne`, meant to replace the old `ReservoirSimulationTimeSeriesOneByOne`. Uses the `.arrow` summary provider and is implemented with WLF (Webviz Layout Framework).
 
+### Fixed
+- [#1223](https://github.com/equinor/webviz-subsurface/pull/1223) - Fixed bug in the statistics table in `VolumetricAnalysis` that caused the selected 'Group by' columns to be merged if there were more than one.
 
 ## [0.2.19] - 2023-05-05
 
