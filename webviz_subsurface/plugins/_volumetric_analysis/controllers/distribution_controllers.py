@@ -76,11 +76,17 @@ def distribution_controllers(
                 "No data left after filtering", style={"margin-top": "40px"}
             )
 
-        df_for_figure = (
-            dframe
-            if not (selections["Plot type"] == "bar" and not "REAL" in selected_data)
-            else dframe.groupby([x for x in groups if x != "REAL"]).mean().reset_index()
-        )
+        bar_groups = [x for x in groups if x != "REAL"]
+
+        if (
+            selections["Plot type"] == "bar"
+            and bar_groups
+            and not "REAL" in selected_data
+        ):
+            df_for_figure = dframe.groupby(bar_groups).mean().reset_index()
+        else:
+            df_for_figure = dframe
+
         figure = (
             create_figure(
                 plot_type=selections["Plot type"],
@@ -373,23 +379,27 @@ def make_tables(
                 continue
             for name, df in df_groups:
                 values = df[response]
-                data = {
-                    "Mean": values.mean(),
-                    "Stddev": values.std(),
-                    "P10": np.nanpercentile(values, 90),
-                    "P90": np.nanpercentile(values, 10),
-                    "Min": values.min(),
-                    "Max": values.max(),
-                }
+
+                data = (
+                    {
+                        "Mean": values.mean(),
+                        "Stddev": values.std(),
+                        "P10": np.nanpercentile(values, 90),
+                        "P90": np.nanpercentile(values, 10),
+                        "Min": values.min(),
+                        "Max": values.max(),
+                    }
+                    if not df[response].isnull().all()
+                    else {}
+                )
+
                 if "FLUID_ZONE" not in groups:
                     data.update(
                         FLUID_ZONE=(" + ").join(selections["filters"]["FLUID_ZONE"])
                     )
                 for idx, group in enumerate(groups):
                     data[group] = (
-                        name
-                        if name is not None or name is not isinstance(name, str)
-                        else list(name)[idx]
+                        name if not isinstance(name, tuple) else list(name)[idx]
                     )
                 if response in volumemodel.volume_columns:
                     data["Response"] = response
