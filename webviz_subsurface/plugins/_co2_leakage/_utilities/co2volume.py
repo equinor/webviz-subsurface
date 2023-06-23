@@ -1,4 +1,3 @@
-import itertools
 from enum import Enum
 from typing import Any, Dict, List, Union
 
@@ -35,26 +34,24 @@ def _read_dataframe(
     df = table_provider.get_column_data(table_provider.column_names(), [realization])
     if scale_factor == 1.0:
         return df
-    else:
-        for col in df.columns:
-            if col != "date":
-                df[col] /= scale_factor
-        return df
+    for col in df.columns:
+        if col != "date":
+            df[col] /= scale_factor
+    return df
 
 
 def _find_scale_factor(
     table_provider: EnsembleTableProvider,
     scale: Union[Co2MassScale, Co2VolumeScale],
 ) -> float:
-    if scale == Co2MassScale.KG or scale == Co2VolumeScale.CUBIC_METERS:
+    if scale in (Co2MassScale.KG, Co2VolumeScale.CUBIC_METERS):
         return 1.0
-    elif scale == Co2MassScale.MTONS or scale == Co2VolumeScale.BILLION_CUBIC_METERS:
+    if scale in (Co2MassScale.MTONS, Co2VolumeScale.BILLION_CUBIC_METERS):
         return 1e9
-    elif scale == Co2MassScale.NORMALIZE or scale == Co2VolumeScale.NORMALIZE:
+    if scale in (Co2MassScale.NORMALIZE, Co2VolumeScale.NORMALIZE):
         df = table_provider.get_column_data(table_provider.column_names())
         return df["total"].max()
-    else:
-        return 1.0
+    return 1.0
 
 
 def _read_terminal_co2_volumes(
@@ -161,7 +158,7 @@ def generate_co2_volume_figure(
     fig.layout.legend.title.text = ""
     fig.layout.legend.orientation = "h"
     fig.layout.legend.y = -0.3
-    fig.layout.legend.font = dict(size=8)
+    fig.layout.legend.font = {"size": 8}
     fig.layout.yaxis.title = "Realization"
     fig.layout.xaxis.exponentformat = "power"
     fig.layout.xaxis.title = scale.value
@@ -171,7 +168,6 @@ def generate_co2_volume_figure(
 
 def generate_co2_time_containment_one_realization_figure(
     table_provider: EnsembleTableProvider,
-    realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
     time_series_realization: int,
     y_limits: List[float],
@@ -194,9 +190,9 @@ def generate_co2_time_containment_one_realization_figure(
     df = df.rename(columns={"value": "mass", "variable": "type"})
     df.sort_values(by="date", inplace=True)
     _change_type_names(df)
-    if y_limits[0] == None and y_limits[1] != None:
+    if y_limits[0] is None and y_limits[1] is not None:
         y_limits[0] = 0.0
-    elif y_limits[1] == None and y_limits[0] != None:
+    elif y_limits[1] is None and y_limits[0] is not None:
         y_limits[1] = max(df.groupby("date")["mass"].sum()) * 1.05
     fig = px.area(
         df,
@@ -236,7 +232,7 @@ def generate_co2_time_containment_one_realization_figure(
     fig.layout.legend.orientation = "h"
     fig.layout.legend.title.text = ""
     fig.layout.legend.y = -0.3
-    fig.layout.legend.font = dict(size=8)
+    fig.layout.legend.font = {"size": 8}
     fig.layout.title = "CO<sub>2</sub> containment for realization: " + str(
         time_series_realization
     )
@@ -254,7 +250,6 @@ def generate_co2_time_containment_figure(
     df = _read_co2_volumes(table_provider, realizations, scale)
     df.sort_values(by="date", inplace=True)
     fig = go.Figure()
-    colors = px.colors.qualitative.Plotly
     cols_to_plot = {
         "Total": ("total", "solid", _COLOR_TOTAL),
         "Contained": ("total_contained", "solid", _COLOR_CONTAINED),
@@ -271,39 +266,45 @@ def generate_co2_time_containment_figure(
     }
     active_cols_at_startup = ["Total", "Outside", "Hazardous"]
     # Generate dummy scatters for legend entries
-    dummy_args = dict(mode="lines", hoverinfo="none")  # , marker_color="black"
+    dummy_args = {"mode": "lines", "hoverinfo": "none"}
     for col, value in cols_to_plot.items():
-        args = dict(
-            line_dash=value[1], marker_color=value[2], legendgroup=col, name=col
-        )
+        args = {
+            "line_dash": value[1],
+            "marker_color": value[2],
+            "legendgroup": col,
+            "name": col,
+        }
         if col not in active_cols_at_startup:
             args["visible"] = "legendonly"
         fig.add_scatter(y=[0.0], **dummy_args, **args)
-    for rlz, color in zip(realizations, itertools.cycle(colors)):
+    for rlz in realizations:
         sub_df = df[df["realization"] == rlz]
-        common_args = dict(
-            x=sub_df["date"],
-            hovertemplate="%{x}: %{y}<br>Realization: %{meta[0]}",
-            meta=[rlz],  # marker_color=color,
-            showlegend=False,
-        )
+        common_args = {
+            "x": sub_df["date"],
+            "hovertemplate": "%{x}: %{y}<br>Realization: %{meta[0]}",
+            "meta": [rlz],
+            "showlegend": False,
+        }
         for col, value in cols_to_plot.items():
-            args = dict(
-                line_dash=value[1], marker_color=value[2], legendgroup=col, name=col
-            )
+            args = {
+                "line_dash": value[1],
+                "marker_color": value[2],
+                "legendgroup": col,
+                "name": col,
+            }
             if col not in active_cols_at_startup:
                 args["visible"] = "legendonly"
             fig.add_scatter(y=sub_df[value[0]], **args, **common_args)
     fig.layout.legend.orientation = "h"
     fig.layout.legend.title.text = ""
     fig.layout.legend.y = -0.3
-    fig.layout.legend.font = dict(size=8)
+    fig.layout.legend.font = {"size": 8}
     fig.layout.legend.tracegroupgap = 0
     fig.layout.title = "CO<sub>2</sub> containment (all realizations)"
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
     fig.layout.yaxis.exponentformat = "none"
-    fig.layout.yaxis.range = (0, 1.05 * df["total"].max())  # Change this ?
+    fig.layout.yaxis.range = (0, 1.05 * df["total"].max())
     _adjust_figure(fig)
     # fig.update_layout(legend=dict(font=dict(size=8)), legend_tracegroupgap=0)
     return fig

@@ -10,6 +10,7 @@ from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import Co2MassScale
 
 
+# pylint: disable=too-many-locals
 def generate_summary_figure(
     table_provider_unsmry: EnsembleTableProvider,
     realizations_unsmry: List[int],
@@ -28,17 +29,21 @@ def generate_summary_figure(
     fig = go.Figure()
     showlegend = True
 
-    r = min(df_unsmry.REAL)
-    unsmry_last_total = df_unsmry[df_unsmry.REAL == r]["total"].iloc[-1]
-    unsmry_last_mobile = df_unsmry[df_unsmry.REAL == r][columns_unsmry.mobile].iloc[-1]
-    unsmry_last_dissolved = df_unsmry[df_unsmry.REAL == r][
+    r_min = min(df_unsmry.REAL)
+    unsmry_last_total = df_unsmry[df_unsmry.REAL == r_min]["total"].iloc[-1]
+    unsmry_last_mobile = df_unsmry[df_unsmry.REAL == r_min][columns_unsmry.mobile].iloc[
+        -1
+    ]
+    unsmry_last_dissolved = df_unsmry[df_unsmry.REAL == r_min][
         columns_unsmry.dissolved
     ].iloc[-1]
-    containment_last_total = df_containment[df_containment.REAL == r]["total"].iloc[-1]
-    containment_last_mobile = df_containment[df_containment.REAL == r][
+    containment_last_total = df_containment[df_containment.REAL == r_min]["total"].iloc[
+        -1
+    ]
+    containment_last_mobile = df_containment[df_containment.REAL == r_min][
         columns_containment.mobile
     ].iloc[-1]
-    containment_last_dissolved = df_containment[df_containment.REAL == r][
+    containment_last_dissolved = df_containment[df_containment.REAL == r_min][
         columns_containment.dissolved
     ].iloc[-1]
     last_total_err_percentage = (
@@ -63,7 +68,7 @@ def generate_summary_figure(
             y=sub_df["total"],
             name="UNSMRY",
             legendgroup="group_1",
-            legendgrouptitle_text="Total ({} %)".format(last_total_err_percentage),
+            legendgrouptitle_text=f"Total ({last_total_err_percentage} %)",
             showlegend=showlegend,
             marker_color=colors[3],
         )
@@ -72,7 +77,7 @@ def generate_summary_figure(
             y=sub_df[columns_unsmry.mobile],
             name=f"UNSMRY ({columns_unsmry.mobile})",
             legendgroup="group_2",
-            legendgrouptitle_text="Mobile ({} %)".format(last_mobile_err_percentage),
+            legendgrouptitle_text=f"Mobile ({last_mobile_err_percentage} %)",
             showlegend=showlegend,
             marker_color=colors[2],
         )
@@ -81,9 +86,7 @@ def generate_summary_figure(
             y=sub_df[columns_unsmry.dissolved],
             name=f"UNSMRY ({columns_unsmry.dissolved})",
             legendgroup="group_3",
-            legendgrouptitle_text="Dissolved ({} %)".format(
-                last_dissolved_err_percentage
-            ),
+            legendgrouptitle_text=f"Dissolved ({last_dissolved_err_percentage} %)",
             showlegend=showlegend,
             marker_color=colors[0],
         )

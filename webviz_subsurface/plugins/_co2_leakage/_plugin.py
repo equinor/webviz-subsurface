@@ -43,6 +43,8 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewS
 from . import _error
 from ._utilities.color_tables import co2leakage_color_tables
 
+TILE_PATH = "share/results/tables"
+
 
 class CO2Leakage(WebvizPluginABC):
     """
@@ -55,10 +57,12 @@ class CO2Leakage(WebvizPluginABC):
     * **`well_pick_file`:** Path to a file containing well picks
     * **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
         CO2 outside/inside a boundary), for co2 mass. Relative to each realization.
-    * **`co2_containment_volume_actual_relpath`:** Path to a table of co2 containment data (amount of
-        CO2 outside/inside a boundary), for co2 volume of type "actual". Relative to each realization.
-    * **`co2_containment_volume_actual_simple_relpath`:** Path to a table of co2 containment data (amount of
-        CO2 outside/inside a boundary), for co2 volume of type "actual_simple". Relative to each realization.
+    * **`co2_containment_volume_actual_relpath`:** Path to a table of co2 containment data (amount
+        of CO2 outside/inside a boundary), for co2 volume of type "actual". Relative to each
+        realization.
+    * **`co2_containment_volume_actual_simple_relpath`:** Path to a table of co2 containment data
+        (amount of CO2 outside/inside a boundary), for co2 volume of type "actual_simple".
+        Relative to each realization.
     * **`unsmry_relpath`:** Relative path to a csv version of a unified summary file
     * **`fault_polygon_attribute`:** Polygons with this attribute are used as fault
         polygons
@@ -78,6 +82,7 @@ class CO2Leakage(WebvizPluginABC):
         MAIN_SETTINGS = "main-settings"
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         app: Dash,
@@ -86,10 +91,12 @@ class CO2Leakage(WebvizPluginABC):
         file_containment_boundary: Optional[str] = None,
         file_hazardous_boundary: Optional[str] = None,
         well_pick_file: Optional[str] = None,
-        co2_containment_relpath: str = "share/results/tables/co2_volumes.csv",
-        co2_containment_volume_actual_relpath: str = "share/results/tables/plume_volume_actual.csv",
-        co2_containment_volume_actual_simple_relpath: str = "share/results/tables/plume_volume_actual_simple.csv",
-        unsmry_relpath: str = "share/results/tables/unsmry--raw.csv",
+        co2_containment_relpath: str = TILE_PATH + "/co2_volumes.csv",
+        co2_containment_volume_actual_relpath: str = TILE_PATH
+        + "/plume_volume_actual.csv",
+        co2_containment_volume_actual_simple_relpath: str = TILE_PATH
+        + "/plume_volume_actual_simple.csv",
+        unsmry_relpath: str = TILE_PATH + "/unsmry--raw.csv",
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         initial_surface: Optional[str] = None,
         map_attribute_names: Optional[Dict[str, str]] = None,
@@ -226,11 +233,11 @@ class CO2Leakage(WebvizPluginABC):
         ) -> Tuple[go.Figure, go.Figure, Dict, Dict]:
             styles = [{"display": "none"}] * 3
             figs = [no_update] * 3
-            if (
-                source == GraphSource.CONTAINMENT_MASS
-                or source == GraphSource.CONTAINMENT_VOLUME_ACTUAL
-                or source == GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE
-            ):
+            if source in [
+                GraphSource.CONTAINMENT_MASS,
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL,
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE,
+            ]:
                 y_limits = [None, None]
                 if len(y_min_auto) == 0:
                     y_limits[0] = y_min_val
@@ -314,16 +321,13 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
         )
         def make_unit_list(attribute: str):
-            if (
-                attribute == GraphSource.CONTAINMENT_MASS
-                or attribute == GraphSource.UNSMRY
-            ):
+            if attribute in [GraphSource.CONTAINMENT_MASS, GraphSource.UNSMRY]:
                 options = list(Co2MassScale)
                 value = Co2MassScale.MTONS
-            elif (
-                attribute == GraphSource.CONTAINMENT_VOLUME_ACTUAL
-                or attribute == GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE
-            ):
+            elif attribute in [
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL,
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE,
+            ]:
                 options = list(Co2VolumeScale)
                 value = Co2VolumeScale.BILLION_CUBIC_METERS
             return options, value

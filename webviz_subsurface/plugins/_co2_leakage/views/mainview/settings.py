@@ -175,7 +175,7 @@ class ViewSettings(SettingsGroupABC):
                 self.component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH).to_string(), "value"
             ),
         )
-        def set_color_range_data(
+        def set_y_min_max(
             min_auto: List[str], max_auto: List[str]
         ) -> Tuple[bool, bool]:
             return len(min_auto) == 1, len(max_auto) == 1
@@ -388,7 +388,7 @@ class EnsembleSelectorLayout(wcc.Selectors):
                 "Ensemble",
                 wcc.Dropdown(
                     id=ensemble_id,
-                    options=[dict(value=en, label=en) for en in ensembles],
+                    options=[{"value": en, "label": en} for en in ensembles],
                     value=ensembles[0],
                     clearable=False,
                 ),
