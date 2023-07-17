@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Added
+- [#1227](https://github.com/equinor/webviz-subsurface/pull/1227) - New functionality in `SimulationTimeSeriesOneByOne`: option to use the sensitivity filter on all visualisations, not only the timeseries.
+
+## [0.2.20] - 2023-06-26
+
+### Added
 - [#1217](https://github.com/equinor/webviz-subsurface/pull/1217) - New plugin `SimulationTimeSeriesOneByOne`, meant to replace the old `ReservoirSimulationTimeSeriesOneByOne`. Uses the `.arrow` summary provider and is implemented with WLF (Webviz Layout Framework).
 
 ### Fixed
