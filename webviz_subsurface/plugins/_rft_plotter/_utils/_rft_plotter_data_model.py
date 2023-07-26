@@ -121,6 +121,13 @@ class RftPlotterDataModel:
             lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
         )
         self.date_marks = self.set_date_marks()
+        self.ertdatadf_inactive = filter_frame(
+            self.ertdatadf,
+            {
+                "ACTIVE": 0,
+            },
+        )
+
         self.ertdatadf = filter_frame(
             self.ertdatadf,
             {
