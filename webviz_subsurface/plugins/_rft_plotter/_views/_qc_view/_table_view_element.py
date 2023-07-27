@@ -1,4 +1,3 @@
-import webviz_core_components as wcc
 from dash import dash_table, html
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
@@ -21,7 +20,12 @@ class TableViewElement(ViewElementABC):
                         sort_mode="multi",
                         filter_action="native",
                         style_as_list_view=True,
-                        style_table={"height": "84vh", "overflowY": "auto"},
+                        style_table={
+                            "height": "84vh",
+                            "overflowY": "auto",
+                            "width": "120vh",
+                            "overflowX": "auto",
+                        },
                     ),
                 ),
             ]

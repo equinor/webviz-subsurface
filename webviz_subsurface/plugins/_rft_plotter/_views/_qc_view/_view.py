@@ -1,15 +1,54 @@
-from typing import Any, Dict, List, Union
+from typing import List, Dict, Tuple
 
 import pandas as pd
-import webviz_core_components as wcc
-from dash import Input, Output, State, callback
-from dash.exceptions import PreventUpdate
+from dash import Input, Output, callback
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
 from ._table_view_element import TableViewElement
 from ..._utils import RftPlotterDataModel
 from ._settings import QCSettings
+
+DATA_TYPES = {
+    "REAL": "numeric",
+    "EAST": "numeric",
+    "NORTH": "numeric",
+    "MD": "numeric",
+    "TVD": "numeric",
+    "SIMULATED": "numeric",
+    "SWAT": "numeric",
+    "SGAS": "numeric",
+    "SOIL": "numeric",
+    "OBSERVED": "numeric",
+    "OBSERVED_ERR": "numeric",
+    "DIFF": "numeric",
+    "ABSDIFF": "numeric",
+    "YEAR": "numeric",
+    "STDDEV": "numeric",
+    "ZONE": "text",
+    "WELL": "text",
+    "VALID_ZONE": "text",
+    "ACTIVE": "text",
+    "DATE": "datetime",
+    "INACTIVE_INFO": "text",
+}
+FORMATS = {
+    "REAL": ".0f",
+    "EAST": ".2f",
+    "NORTH": ".2f",
+    "MD": ".2f",
+    "TVD": ".2f",
+    "SIMULATED": ".2f",
+    "SWAT": ".3f",
+    "SGAS": ".3f",
+    "SOIL": ".3f",
+    "OBSERVED": ".2f",
+    "OBSERVED_ERR": ".1f",
+    "DIFF": ".2f",
+    "ABSDIFF": ".2f",
+    "YEAR": ".0f",
+    "STDDEV": ".2f",
+}
 
 
 class QCView(ViewABC):
@@ -24,6 +63,7 @@ class QCView(ViewABC):
         self.add_settings_group(
             QCSettings(
                 ensembles=self._datamodel.ensembles,
+                columns=self._datamodel.ertdatadf.columns,
             ),
             self.Ids.QC_SETTINGS,
         )
@@ -51,30 +91,25 @@ class QCView(ViewABC):
                 .to_string(),
                 "value",
             ),
+            Input(
+                self.settings_group(self.Ids.QC_SETTINGS)
+                .component_unique_id(QCSettings.Ids.COLUMNS)
+                .to_string(),
+                "value",
+            ),
         )
         @callback_typecheck
         def _update_table(
-            ensemble: str,
-        ) -> tuple:
+            ensemble: str, selected_columns: List[str]
+        ) -> Tuple[List[Dict], List[Dict]]:
             columns = [
                 {
                     "name": col,
                     "id": col,
-                    #"type": "numeric",
-                    "format": {"specifier": ".1f"},
+                    "type": DATA_TYPES[col] if col in DATA_TYPES else None,
+                    "format": {"specifier": FORMATS[col] if col in FORMATS else None},
                 }
-                for col in [
-                    "REAL",
-                    "EAST",
-                    "NORTH",
-                    "TVD",
-                    "ZONE",
-                    "WELL",
-                    "DATE",
-                    "valid_zone",
-                    "ACTIVE",
-                    "inactive_info",
-                ]
+                for col in selected_columns
             ]
             df = pd.concat(
                 [self._datamodel.ertdatadf, self._datamodel.ertdatadf_inactive]
