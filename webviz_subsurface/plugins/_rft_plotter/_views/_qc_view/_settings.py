@@ -10,6 +10,7 @@ class QCSettings(SettingsGroupABC):
     class Ids(StrEnum):
         ENSEMBLE = "ensemble"
         COLUMNS = "columns"
+        ONLY_INACTIVE = "only-inactive"
 
     def __init__(self, ensembles: List[str], columns: List[str]) -> None:
         super().__init__("Settings")
@@ -49,5 +50,15 @@ class QCSettings(SettingsGroupABC):
                 options=[{"label": name, "value": name} for name in self._columns],
                 value=self._default_columns,
                 multi=True,
+            ),
+            wcc.Checklist(
+                id=self.register_component_unique_id(self.Ids.ONLY_INACTIVE),
+                options=[
+                    {
+                        "label": "View only inactive",
+                        "value": "only_inactive",
+                    }
+                ],
+                value=[],
             ),
         ]

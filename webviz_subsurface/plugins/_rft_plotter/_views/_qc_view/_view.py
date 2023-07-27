@@ -57,7 +57,7 @@ class QCView(ViewABC):
         QC_TABLE = "qc-table"
 
     def __init__(self, datamodel: RftPlotterDataModel) -> None:
-        super().__init__("QC")
+        super().__init__("QC Data")
         self._datamodel = datamodel
 
         self.add_settings_group(
@@ -97,10 +97,16 @@ class QCView(ViewABC):
                 .to_string(),
                 "value",
             ),
+            Input(
+                self.settings_group(self.Ids.QC_SETTINGS)
+                .component_unique_id(QCSettings.Ids.ONLY_INACTIVE)
+                .to_string(),
+                "value",
+            ),
         )
         @callback_typecheck
         def _update_table(
-            ensemble: str, selected_columns: List[str]
+            ensemble: str, selected_columns: List[str], only_inactive: List[str]
         ) -> Tuple[List[Dict], List[Dict]]:
             columns = [
                 {
@@ -111,9 +117,12 @@ class QCView(ViewABC):
                 }
                 for col in selected_columns
             ]
-            df = pd.concat(
-                [self._datamodel.ertdatadf, self._datamodel.ertdatadf_inactive]
-            )
+            if only_inactive:
+                df = self._datamodel.ertdatadf_inactive
+            else:
+                df = pd.concat(
+                    [self._datamodel.ertdatadf, self._datamodel.ertdatadf_inactive]
+                )
             df = df[df["ENSEMBLE"] == ensemble]
             return (
                 df.sort_values(by="REAL", ascending=True).to_dict("records"),
