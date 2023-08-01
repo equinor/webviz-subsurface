@@ -4,7 +4,7 @@ import json
 import logging
 import math
 from dataclasses import asdict, dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 from urllib.parse import quote
 from uuid import uuid4
 
@@ -118,7 +118,7 @@ class SurfaceImageServer:
             )
 
         meta_cache_key = "META:" + base_cache_key
-        meta: Optional[SurfaceImageMeta] = self._image_cache.get(meta_cache_key)
+        meta = self._image_cache.get(meta_cache_key)
         if not meta:
             return None
 
@@ -160,7 +160,7 @@ class SurfaceImageServer:
             img_cache_key = "IMG:" + full_surf_address_str
             LOGGER.debug(f"Looking for image in cache (key={img_cache_key}")
 
-            cached_img_bytes = self._image_cache.get(img_cache_key)
+            cached_img_bytes: Any = self._image_cache.get(img_cache_key)
             if not cached_img_bytes:
                 LOGGER.error(
                     f"Error getting image for address: {full_surf_address_str}"

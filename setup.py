@@ -13,6 +13,7 @@ TESTS_REQUIRE = [
     "pylint<=2.13.9",  # Locked due to https://github.com/equinor/webviz-subsurface/issues/1052
     "pytest-mock",
     "pytest-xdist",
+    "pytest-forked",
     "selenium>=3.141",
     "types-pkg-resources",
     "types-pyyaml",
