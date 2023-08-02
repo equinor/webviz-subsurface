@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geojson
 import numpy as np
-import webviz_subsurface_components as wsc
 import plotly.graph_objects as go
+import webviz_subsurface_components as wsc
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProvider,
