@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -114,6 +114,7 @@ color-tables.json for color_tables format.
             )
             for ens in ensembles
         }
+        self._surface_server: Union[SurfaceImageServer, SurfaceArrayServer]
         if self.render_surfaces_as_images:
             self._surface_server = SurfaceImageServer.instance(app)
         else:

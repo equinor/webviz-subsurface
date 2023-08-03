@@ -123,7 +123,7 @@ class SurfaceArrayServer:
             )
 
         meta_cache_key = "META:" + base_cache_key
-        meta: Optional[SurfaceArrayMeta] = self._array_cache.get(meta_cache_key)
+        meta = self._array_cache.get(meta_cache_key)
         if not meta:
             return None
 
