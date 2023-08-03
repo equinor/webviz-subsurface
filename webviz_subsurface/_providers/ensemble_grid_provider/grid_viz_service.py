@@ -121,7 +121,9 @@ class GridWorker:
         self, cell_filter: Optional[CellFilter], original_cell_indices: np.ndarray
     ) -> None:
         # Make copy of the cell filter
-        self._cached_cell_filter = dataclasses.replace(cell_filter)
+        self._cached_cell_filter = (
+            dataclasses.replace(cell_filter) if cell_filter is not None else None
+        )
         self._cached_original_cell_indices = original_cell_indices
 
 

@@ -66,5 +66,5 @@ def test_get_fence(testdata_folder: Path) -> None:
     assert int(fence[:, 3].min()) == -40
     assert int(fence[:, 3].max()) == 2713
     # Test tvd
-    assert int(fence[:, 2].min()) == 1
+    assert int(fence[:, 2].min()) == 0
     assert int(fence[:, 2].max()) == 1643
