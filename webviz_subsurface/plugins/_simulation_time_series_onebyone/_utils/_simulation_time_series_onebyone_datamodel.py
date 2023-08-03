@@ -148,6 +148,12 @@ class SimulationTimeSeriesOneByOneDataModel:
             return "rms_seed"
         return sensitivities[0]
 
+    @staticmethod
+    def get_realizations_for_sensitivies(
+        sens_df: pd.DataFrame, sensitivities: List[str]
+    ) -> List[int]:
+        return list(sens_df[sens_df["SENSNAME"].isin(sensitivities)]["REAL"].unique())
+
     def create_tornado_figure(
         self,
         tornado_data: TornadoData,

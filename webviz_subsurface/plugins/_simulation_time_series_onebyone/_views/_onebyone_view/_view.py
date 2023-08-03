@@ -123,7 +123,7 @@ class OneByOneView(ViewABC):
         def _update_realization_store(sensitivites: list, ensemble: str) -> List[int]:
             """Update graph with line coloring, vertical line and title"""
             df = self._data_model.get_sensitivity_dataframe_for_ensemble(ensemble)
-            return list(df[df["SENSNAME"].isin(sensitivites)]["REAL"].unique())
+            return self._data_model.get_realizations_for_sensitivies(df, sensitivites)
 
         @callback(
             Output(
@@ -469,6 +469,19 @@ class OneByOneView(ViewABC):
                 ),
                 "data",
             ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SETTINGS, GeneralSettings.Ids.REAL_STORE
+                ),
+                "data",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.SENSITIVITY_FILTER,
+                    SensitivityFilter.Ids.SENSITIVITY_FILTER_LINK,
+                ),
+                "value",
+            ),
             State(
                 self.settings_group_unique_id(
                     self.Ids.SELECTIONS, Selections.Ids.ENSEMBLE
@@ -478,18 +491,35 @@ class OneByOneView(ViewABC):
         )
         @callback_typecheck
         def _update_tornadoplot(
-            date: str, selections: dict, vector: str, ensemble: str
+            date: str,
+            selections: dict,
+            vector: str,
+            realizations: List[int],
+            sensfilter_only_timeseries: list,
+            ensemble: str,
         ) -> tuple:
             if selections is None or selections[
                 "Reference"
             ] not in self._data_model.get_unique_sensitivities_for_ensemble(ensemble):
                 raise PreventUpdate
 
+            sens_df = self._data_model.get_sensitivity_dataframe_for_ensemble(ensemble)
+
+            # make sure the tornado reference is included if sensitivity filter is used
+            if not sensfilter_only_timeseries:
+                reference_realizations = (
+                    self._data_model.get_realizations_for_sensitivies(
+                        sens_df, sensitivities=[selections["Reference"]]
+                    )
+                )
+                realizations = list(set(reference_realizations + realizations))
+
             # Get dataframe with vectors and dataframe with parameters and merge
             vector_df = self._data_model.get_vectors_df(
                 ensemble=ensemble,
                 date=date_from_str(date),
                 vector_names=[vector],
+                realizations=realizations if not sensfilter_only_timeseries else None,
             )
             data = merge_dataframes_on_realization(
                 dframe1=vector_df,
