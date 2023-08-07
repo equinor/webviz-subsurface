@@ -8,8 +8,8 @@ from ._utils._rft_plotter_data_model import RftPlotterDataModel
 from ._views._map_view import MapView
 from ._views._misfit_per_real_view import MisfitPerRealView
 from ._views._parameter_response_view import ParameterResponseView
-from ._views._sim_vs_obs_view import SimVsObsView
 from ._views._qc_view import QCView
+from ._views._sim_vs_obs_view import SimVsObsView
 
 
 class RftPlotter(WebvizPluginABC):

@@ -1,13 +1,13 @@
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 from dash import Input, Output, callback
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
-from ._table_view_element import TableViewElement
 from ..._utils import RftPlotterDataModel
 from ._settings import QCSettings
+from ._table_view_element import TableViewElement
 
 DATA_TYPES = {
     "REAL": "numeric",
