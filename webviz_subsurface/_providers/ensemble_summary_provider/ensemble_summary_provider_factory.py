@@ -10,11 +10,9 @@ from webviz_config.webviz_instance_info import WebvizRunMode
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
+from ..ensemble_table_provider._table_import import load_per_real_csv_file
 from ._arrow_unsmry_import import load_per_realization_arrow_unsmry_files
-from ._csv_import import (
-    load_ensemble_summary_csv_file,
-    load_per_real_csv_file_using_fmu,
-)
+from ._csv_import import load_ensemble_summary_csv_file
 from ._provider_impl_arrow_lazy import ProviderImplArrowLazy
 from ._provider_impl_arrow_presampled import ProviderImplArrowPresampled
 from ._resampling import Frequency, resample_single_real_table
@@ -155,7 +153,7 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         timer.lap_s()
 
-        ensemble_df = load_per_real_csv_file_using_fmu(ens_path, csv_file_rel_path)
+        ensemble_df = load_per_real_csv_file(ens_path, csv_file_rel_path)
         et_import_csv_s = timer.lap_s()
 
         ProviderImplArrowPresampled.write_backing_store_from_ensemble_dataframe(

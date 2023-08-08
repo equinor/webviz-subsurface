@@ -10,24 +10,12 @@ from webviz_config.webviz_factory import WebvizFactory
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_instance_info import WebvizRunMode
 
-# The fmu.ensemble dependency ecl is only available for Linux,
-# hence, ignore any import exception here to make
-# it still possible to use the PvtPlugin on
-# machines with other OSes.
-#
-# NOTE: Functions in this file cannot be used
-#       on non-Linux OSes.
-try:
-    from fmu.ensemble import ScratchEnsemble
-except ImportError:
-    pass
-
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ..ensemble_summary_provider._arrow_unsmry_import import (
     load_per_realization_arrow_unsmry_files,
 )
-from ..ensemble_summary_provider._csv_import import load_per_real_csv_file_using_fmu
+from ._table_import import load_per_real_csv_file, load_per_real_parameters_file
 from .ensemble_table_provider import EnsembleTableProvider
 from .ensemble_table_provider_impl_arrow import EnsembleTableProviderImplArrow
 
@@ -161,8 +149,8 @@ class EnsembleTableProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing/saving per real CSV data for: {ens_path}")
 
         timer.lap_s()
+        ensemble_df = load_per_real_csv_file(ens_path, csv_file_rel_path)
 
-        ensemble_df = load_per_real_csv_file_using_fmu(ens_path, csv_file_rel_path)
         et_import_csv_s = timer.lap_s()
 
         EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
@@ -280,10 +268,11 @@ class EnsembleTableProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing parameters for: {ens_path}")
 
         timer.lap_s()
+        ensemble_df = load_per_real_parameters_file(ens_path, filterfile="OK")
 
-        scratch_ensemble = ScratchEnsemble("ens_name_tmp", ens_path).filter("OK")
-        ensemble_df = scratch_ensemble.parameters
-        del scratch_ensemble
+        #  scratch_ensemble = ScratchEnsemble("ens_name_tmp", ens_path).filter("OK")
+        # ensemble_df = scratch_ensemble.parameters
+        # del scratch_ensemble
         elapsed_load_parameters_s = timer.lap_s()
 
         try:
