@@ -23,8 +23,12 @@ class TableViewElement(ViewElementABC):
                         style_table={
                             "height": "84vh",
                             "overflowY": "auto",
-                            "width": "120vh",
-                            "overflowX": "auto",
+                        },
+                        style_cell={
+                            "whiteSpace": "normal",
+                            "height": "auto",
+                            "textAlign": "left",
+                            "width": "auto",
                         },
                     ),
                 ),
