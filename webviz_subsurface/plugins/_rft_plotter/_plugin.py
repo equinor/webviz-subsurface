@@ -8,6 +8,7 @@ from ._utils._rft_plotter_data_model import RftPlotterDataModel
 from ._views._map_view import MapView
 from ._views._misfit_per_real_view import MisfitPerRealView
 from ._views._parameter_response_view import ParameterResponseView
+from ._views._qc_view import QCView
 from ._views._sim_vs_obs_view import SimVsObsView
 
 
@@ -96,6 +97,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         MISFIT_PER_REAL_VIEW = "misfit-per-real-view"
         SIM_VS_OBS_VIEW = "sim-vs-obs-view"
         PARAMETER_RESPONSE_VIEW = "parameter-response-view"
+        QC_VIEW = "qc-view"
 
     def __init__(
         self,
@@ -125,6 +127,7 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         self.add_view(
             ParameterResponseView(self._datamodel), self.Ids.PARAMETER_RESPONSE_VIEW
         )
+        self.add_view(QCView(self._datamodel), self.Ids.QC_VIEW)
 
     def add_webvizstore(self) -> List[Tuple[Callable, List[Dict]]]:
         return self._datamodel.webviz_store

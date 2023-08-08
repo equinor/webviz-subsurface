@@ -92,21 +92,19 @@ class RftPlotterDataModel:
                     "(share/results/tables/rft_ert.csv) not found!"
                 ) from exc
 
+        self.ertdatadf.columns = self.ertdatadf.columns.str.upper()
         self.ertdatadf = self.ertdatadf.rename(
             columns={
-                "time": "DATE",
-                "is_active": "ACTIVE",
-                "isactive": "ACTIVE",
-                "well": "WELL",
-                "zone": "ZONE",
-                "pressure": "SIMULATED",
-                "true_vertical_depth": "TVD",
-                "measured_depth": "MD",
-                "observed": "OBSERVED",
-                "obs": "OBSERVED",
-                "error": "OBSERVED_ERR",
-                "utm_x": "EAST",
-                "utm_y": "NORTH",
+                "TIME": "DATE",
+                "IS_ACTIVE": "ACTIVE",
+                "ISACTIVE": "ACTIVE",
+                "PRESSURE": "SIMULATED",
+                "TRUE_VERTICAL_DEPTH": "TVD",
+                "MEASURED_DEPTH": "MD",
+                "OBS": "OBSERVED",
+                "ERROR": "OBSERVED_ERR",
+                "UTM_X": "EAST",
+                "UTM_Y": "NORTH",
             }
         )
         self.ertdatadf["DIFF"] = (
@@ -121,6 +119,13 @@ class RftPlotterDataModel:
             lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
         )
         self.date_marks = self.set_date_marks()
+        self.ertdatadf_inactive = filter_frame(
+            self.ertdatadf,
+            {
+                "ACTIVE": 0,
+            },
+        )
+
         self.ertdatadf = filter_frame(
             self.ertdatadf,
             {
