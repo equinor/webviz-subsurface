@@ -1,5 +1,7 @@
+import logging
+import time
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
 from dash import html
@@ -9,12 +11,16 @@ from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface
-from webviz_subsurface._models import (
-    EnsembleSetModel,
-    InplaceVolumesModel,
-    caching_ensemble_set_model_factory,
+from webviz_subsurface._models import InplaceVolumesModel
+from webviz_subsurface._models.inplace_volumes_model import (
+    extract_volframe_from_tableprovider,
 )
-from webviz_subsurface._models.inplace_volumes_model import extract_volumes
+from webviz_subsurface._providers import EnsembleTableProviderFactory
+
+from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
+    create_parameter_providerset_from_paths,
+)
+from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from .controllers import (
     comparison_controllers,
@@ -27,6 +33,12 @@ from .controllers import (
 )
 from .views import clientside_stores, main_view
 from .volume_validator_and_combinator import VolumeValidatorAndCombinator
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-3s [%(name)s]: %(message)s",
+)
+logging.getLogger("webviz_subsurface").setLevel(level=logging.WARNING)
 
 
 class VolumetricAnalysis(WebvizPluginABC):
@@ -154,30 +166,35 @@ reek_test_data/aggregated_data/parameters.csv)
             / "css"
             / "inplace_volumes.css"
         )
+        timer = PerfTimer()
 
-        self.csvfile_vol = csvfile_vol
-        self.csvfile_parameters = csvfile_parameters
+        print("starting now")
         self.fipfile = fipfile
+        parameters: Optional[pd.DataFrame] = None
 
         if csvfile_vol:
-            volumes_table = read_csv(csvfile_vol)
-            parameters: Optional[pd.DataFrame] = (
-                read_csv(csvfile_parameters) if csvfile_parameters else None
-            )
+            table_provider = EnsembleTableProviderFactory.instance()
+            volumes_table = table_provider.create_from_ensemble_csv_file(csvfile_vol)
+            if csvfile_parameters:
+                parameters = table_provider.create_from_ensemble_csv_file(
+                    csvfile_parameters
+                )
 
         elif ensembles and volfiles:
             ensemble_paths = {
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            self.emodel: EnsembleSetModel = (
-                caching_ensemble_set_model_factory.get_or_create_model(
-                    ensemble_paths=ensemble_paths,
-                )
+            volumes_table = extract_volframe_from_tableprovider(
+                ensemble_paths, volfolder, volfiles
             )
-            parameters = self.emodel.load_parameters()
-            volumes_table = extract_volumes(self.emodel, volfolder, volfiles)
+            print("volframe", timer.lap_s())
+            parameter_provider_set = create_parameter_providerset_from_paths(
+                ensemble_paths
+            )
+            parameters = parameter_provider_set.create_aggreagated_dataframe()
 
+            print("param", timer.lap_s())
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
@@ -187,6 +204,7 @@ reek_test_data/aggregated_data/parameters.csv)
             volumes_table=volumes_table,
             fipfile=get_path(self.fipfile) if self.fipfile else None,
         )
+        print("comb", timer.lap_s())
         self.disjoint_set_df = vcomb.disjoint_set_df
         self.volmodel = InplaceVolumesModel(
             volumes_table=vcomb.dframe,
@@ -194,8 +212,10 @@ reek_test_data/aggregated_data/parameters.csv)
             non_net_facies=non_net_facies,
             volume_type=vcomb.volume_type,
         )
+        print("model", timer.lap_s())
         self.theme = webviz_settings.theme
         self.set_callbacks()
+        print("finish", timer.elapsed_s())
 
     @property
     def layout(self) -> html.Div:
@@ -223,22 +243,9 @@ reek_test_data/aggregated_data/parameters.csv)
         fipfile_qc_controller(get_uuid=self.uuid, disjoint_set_df=self.disjoint_set_df)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        store_functions = []
-        if self.csvfile_vol is not None:
-            store_functions.append((read_csv, [{"csv_file": self.csvfile_vol}]))
-        else:
-            store_functions.extend(self.emodel.webvizstore)
         if self.fipfile is not None:
-            store_functions.append((get_path, [{"path": self.fipfile}]))
-        if self.csvfile_parameters is not None:
-            store_functions.append((read_csv, [{"csv_file": self.csvfile_parameters}]))
-        return store_functions
-
-
-@CACHE.memoize()
-@webvizstore
-def read_csv(csv_file: Path) -> pd.DataFrame:
-    return pd.read_csv(csv_file)
+            return [(get_path, [{"path": self.fipfile}])]
+        return []
 
 
 @webvizstore
