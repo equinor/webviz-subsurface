@@ -120,7 +120,10 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
         return provider
 
     def create_from_per_realization_csv_file(
-        self, ens_path: str, csv_file_rel_path: str
+        self,
+        ens_path: str,
+        csv_file_rel_path: str,
+        drop_failed_realizations: bool = False,
     ) -> EnsembleSummaryProvider:
         """Create EnsembleSummaryProvider from per realization CSV files.
 
@@ -153,7 +156,9 @@ class EnsembleSummaryProviderFactory(WebvizFactory):
 
         timer.lap_s()
 
-        ensemble_df = load_per_real_csv_file(ens_path, csv_file_rel_path)
+        ensemble_df = load_per_real_csv_file(
+            ens_path, csv_file_rel_path, drop_failed_realizations
+        )
         et_import_csv_s = timer.lap_s()
 
         ProviderImplArrowPresampled.write_backing_store_from_ensemble_dataframe(

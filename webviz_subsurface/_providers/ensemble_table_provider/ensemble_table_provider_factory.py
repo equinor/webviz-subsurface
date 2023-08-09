@@ -120,7 +120,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
         self,
         ens_path: str,
         csv_file_rel_path: str,
-        drop_failed_realizations: bool = True,
+        drop_failed_realizations: bool = False,
     ) -> EnsembleTableProvider:
         """Create EnsembleTableProvider from per realization CSV files.
 
