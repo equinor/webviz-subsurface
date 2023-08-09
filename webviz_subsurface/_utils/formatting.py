@@ -29,33 +29,11 @@ def printable_int_list(integer_list: Optional[List[int]]) -> str:
     return string
 
 
-# function copied from fmu.ensemble to get identical result when
-# extracting ensemble parameters as a DataFrame
 def parse_number_from_string(value: str) -> Union[int, float, str]:
     """Try to parse the string first as an integer, then as float,
     if both fails, return the original string.
-
-    Caveats: Know your Python numbers:
-    https://stackoverflow.com/questions/379906/how-do-i-parse-a-string-to-a-float-or-int-in-python
-
-    Beware, this is a minefield.
-
-    Args:
-        value (str)
-
-    Returns:
-        int, float or string
     """
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        # int(afloat) fails on some, e.g. NaN
-        try:
-            if int(value) == value:
-                return int(value)
-            return value
-        except ValueError:
-            return value  # return float
+
     try:
         return int(value)
     except ValueError:

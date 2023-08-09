@@ -10,7 +10,6 @@ from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
     create_csvfile_providerset_from_paths,
 )
 
-from .ensemble_set_model import EnsembleSetModel
 from .parameter_model import ParametersModel
 
 
@@ -334,9 +333,13 @@ def filter_df(dframe: pd.DataFrame, filters: dict) -> pd.DataFrame:
 
 
 def extract_volframe_from_tableprovider(
-    ensemble_paths: dict, volfolder: str, volfiles: Dict[str, Any]
+    ensemble_paths: dict,
+    volfolder: str,
+    volfiles: Dict[str, Any],
+    drop_failed_realizations: bool = True,
 ) -> pd.DataFrame:
-    """Aggregates volumetric files from an FMU ensemble.
+    """
+    Aggregates volumetric files from an FMU ensemble
     Files must be stored on standardized csv format.
     """
 
@@ -351,11 +354,12 @@ def extract_volframe_from_tableprovider(
         volframes = []
         for volfile in files:
             table_provider_set = create_csvfile_providerset_from_paths(
-                ensemble_paths, str(Path(volfolder) / volfile)
+                ensemble_paths, str(Path(volfolder) / volfile), drop_failed_realizations
             )
-            ensembledf = table_provider_set.create_aggreagated_dataframe()
+            ensembledf = table_provider_set.get_combined_dataframe()
             volframes.append(ensembledf)
 
+        # merge csvfiles from same SOURCE if more than one
         df = merge_csv_files(volframes) if len(volframes) > 1 else volframes[0]
         df["SOURCE"] = volname
         dfs.append(df)

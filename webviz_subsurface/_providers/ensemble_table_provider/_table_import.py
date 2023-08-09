@@ -4,8 +4,7 @@ import os
 import re
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -35,13 +34,12 @@ def _discover_files(
             raise ValueError(f"Multiple matches found in folder: {this_folder}")
         visited_folders.add(this_folder)
 
-        real = get_realization_number_from_path(path)
+        real = _get_realization_number_from_path(path)
 
         if real is None:
             raise ValueError(f"Unable to determine realization number for file: {path}")
 
         if validated_reals is not None and real not in validated_reals:
-            LOGGER.warning(f"Skipping realization {real} no OK file found")
             continue
 
         file_list.append(FileEntry(real=real, filename=path))
@@ -51,7 +49,7 @@ def _discover_files(
     return file_list
 
 
-def get_realization_number_from_path(path: str) -> int:
+def _get_realization_number_from_path(path: str) -> int:
     realidxregexp = re.compile(r"realization-(\d+)")
 
     for path_comp in reversed(path.split(os.path.sep)):
@@ -62,12 +60,34 @@ def get_realization_number_from_path(path: str) -> int:
     raise ValueError(f"Unable to determine realization number for path: {path}")
 
 
-def validate_ralizations(ens_path: str, filterfile: str) -> List[int]:
-    if filterfile is not None:
-        ensemble_paths = glob.glob(os.path.join(ens_path, filterfile))
-    else:
-        ensemble_paths = glob.glob(ens_path)
-    return [get_realization_number_from_path(path) for path in ensemble_paths]
+def _validate_fmu_realizations(
+    ens_path: str, drop_failed_realizations: bool = True
+) -> List[int]:
+    success_file = "OK"
+    all_ensemble_paths = glob.glob(ens_path)
+    realizations = [
+        _get_realization_number_from_path(path) for path in all_ensemble_paths
+    ]
+    if drop_failed_realizations:
+        LOGGER.info(f"Filtering realizations on {success_file} file")
+        ensemble_paths = glob.glob(os.path.join(ens_path, success_file))
+        validated_realizations = list(
+            map(_get_realization_number_from_path, ensemble_paths)
+        )
+        filtered_realizations = [
+            x for x in realizations if x not in validated_realizations
+        ]
+        LOGGER.info(
+            f"Dropped failed realizations from ensemble {ens_path}: {sorted(filtered_realizations)}"
+        )
+
+        if not validated_realizations:
+            raise ValueError(
+                f"All realizations have failed in ensemble {ens_path}. (i.e. 'OK' file missing)"
+            )
+        return validated_realizations
+
+    return realizations
 
 
 def _load_table_from_csv_file(entry: FileEntry) -> pd.DataFrame:
@@ -78,15 +98,13 @@ def _load_table_from_csv_file(entry: FileEntry) -> pd.DataFrame:
 
 
 def load_per_real_csv_file(
-    ens_path: str, csv_file_rel_path: str, filterfile: str = "OK"
+    ens_path: str, csv_file_rel_path: str, drop_failed_realizations: bool = True
 ) -> pd.DataFrame:
-    LOGGER.debug(f"load_per_realization_arrow_unsmry_files() starting - {ens_path}")
-    LOGGER.debug(
-        f"looking for .arrow files using relative pattern: {csv_file_rel_path}"
-    )
+    LOGGER.debug(f"load_per_real_csv_file() starting - {ens_path}")
+    LOGGER.debug(f"looking for .csv files using relative pattern: {csv_file_rel_path}")
     timer = PerfTimer()
 
-    validated_reals = validate_ralizations(ens_path, filterfile)
+    validated_reals = _validate_fmu_realizations(ens_path, drop_failed_realizations)
 
     globpattern = os.path.join(ens_path, csv_file_rel_path)
     files_to_process = _discover_files(globpattern, validated_reals)
@@ -105,22 +123,22 @@ def load_per_real_csv_file(
 def _load_table_from_parameters_file(entry: FileEntry) -> dict:
     LOGGER.debug(f"loading table real={entry.real}: {entry.filename}")
     data: Dict[str, Any] = {"REAL": int(entry.real)}
-    with open(entry.filename, "r") as f:
-        for line in f:
+    with open(entry.filename, "r") as paramfile:
+        for line in paramfile:
             param, value = line.split()
             data[param] = parse_number_from_string(value)
     return data
 
 
 def load_per_real_parameters_file(
-    ens_path: str, filterfile: str = "OK"
+    ens_path: str, drop_failed_realizations: bool = True
 ) -> pd.DataFrame:
     parameter_file = "parameters.txt"
     LOGGER.debug(f"load_per_real_parameters_file() starting - {ens_path}")
     LOGGER.debug(f"looking for files using relative pattern: {parameter_file}")
     timer = PerfTimer()
 
-    validated_reals = validate_ralizations(ens_path, filterfile)
+    validated_reals = _validate_fmu_realizations(ens_path, drop_failed_realizations)
 
     globpattern = os.path.join(ens_path, parameter_file)
     files_to_process = _discover_files(globpattern, validated_reals)

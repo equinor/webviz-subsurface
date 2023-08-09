@@ -1,12 +1,10 @@
 import logging
-import time
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import pandas as pd
 from dash import html
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 
@@ -16,11 +14,9 @@ from webviz_subsurface._models.inplace_volumes_model import (
     extract_volframe_from_tableprovider,
 )
 from webviz_subsurface._providers import EnsembleTableProviderFactory
-
 from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
     create_parameter_providerset_from_paths,
 )
-from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from .controllers import (
     comparison_controllers,
@@ -34,11 +30,7 @@ from .controllers import (
 from .views import clientside_stores, main_view
 from .volume_validator_and_combinator import VolumeValidatorAndCombinator
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)-3s [%(name)s]: %(message)s",
-)
-logging.getLogger("webviz_subsurface").setLevel(level=logging.WARNING)
+LOGGER = logging.getLogger(__name__)
 
 
 class VolumetricAnalysis(WebvizPluginABC):
@@ -97,6 +89,8 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
 
 **Common settings**
+* **`drop_failed_realizations`:** Option to drop or include failed realizations.
+    The success criteria is based on the presence of an 'OK' file in the realization runpath.
 * **`non_net_facies`:** List of facies which are non-net.
 * **`fipfile`:** Path to a yaml-file that defines a match between FIPNUM regions
     and human readable regions, zones and etc to be used as filters.
@@ -147,7 +141,7 @@ reek_test_data/aggregated_data/parameters.csv)
 
 **Remaining columns are seen as volumetric responses.** """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
         webviz_settings: WebvizSettings,
@@ -158,6 +152,7 @@ reek_test_data/aggregated_data/parameters.csv)
         volfolder: str = "share/results/volumes",
         non_net_facies: Optional[List[str]] = None,
         fipfile: Path = None,
+        drop_failed_realizations: bool = True,
     ):
         super().__init__()
         WEBVIZ_ASSETS.add(
@@ -166,11 +161,14 @@ reek_test_data/aggregated_data/parameters.csv)
             / "css"
             / "inplace_volumes.css"
         )
-        timer = PerfTimer()
 
-        print("starting now")
         self.fipfile = fipfile
         parameters: Optional[pd.DataFrame] = None
+
+        LOGGER.warning(
+            f" Plugin argument drop_failed_realizations is set to {drop_failed_realizations}. "
+            "An 'OK' file in the realization runpath is used as success criteria"
+        )
 
         if csvfile_vol:
             table_provider = EnsembleTableProviderFactory.instance()
@@ -186,15 +184,12 @@ reek_test_data/aggregated_data/parameters.csv)
                 for ens in ensembles
             }
             volumes_table = extract_volframe_from_tableprovider(
-                ensemble_paths, volfolder, volfiles
+                ensemble_paths, volfolder, volfiles, drop_failed_realizations
             )
-            print("volframe", timer.lap_s())
             parameter_provider_set = create_parameter_providerset_from_paths(
-                ensemble_paths
+                ensemble_paths, drop_failed_realizations
             )
-            parameters = parameter_provider_set.create_aggreagated_dataframe()
-
-            print("param", timer.lap_s())
+            parameters = parameter_provider_set.get_combined_dataframe()
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
@@ -204,7 +199,6 @@ reek_test_data/aggregated_data/parameters.csv)
             volumes_table=volumes_table,
             fipfile=get_path(self.fipfile) if self.fipfile else None,
         )
-        print("comb", timer.lap_s())
         self.disjoint_set_df = vcomb.disjoint_set_df
         self.volmodel = InplaceVolumesModel(
             volumes_table=vcomb.dframe,
@@ -212,10 +206,8 @@ reek_test_data/aggregated_data/parameters.csv)
             non_net_facies=non_net_facies,
             volume_type=vcomb.volume_type,
         )
-        print("model", timer.lap_s())
         self.theme = webviz_settings.theme
         self.set_callbacks()
-        print("finish", timer.elapsed_s())
 
     @property
     def layout(self) -> html.Div:

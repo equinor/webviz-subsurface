@@ -117,7 +117,10 @@ class EnsembleTableProviderFactory(WebvizFactory):
         return provider
 
     def create_from_per_realization_csv_file(
-        self, ens_path: str, csv_file_rel_path: str
+        self,
+        ens_path: str,
+        csv_file_rel_path: str,
+        drop_failed_realizations: bool = True,
     ) -> EnsembleTableProvider:
         """Create EnsembleTableProvider from per realization CSV files.
 
@@ -149,7 +152,9 @@ class EnsembleTableProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing/saving per real CSV data for: {ens_path}")
 
         timer.lap_s()
-        ensemble_df = load_per_real_csv_file(ens_path, csv_file_rel_path)
+        ensemble_df = load_per_real_csv_file(
+            ens_path, csv_file_rel_path, drop_failed_realizations
+        )
 
         et_import_csv_s = timer.lap_s()
 
@@ -237,7 +242,7 @@ class EnsembleTableProviderFactory(WebvizFactory):
         return provider
 
     def create_from_per_realization_parameter_file(
-        self, ens_path: str
+        self, ens_path: str, drop_failed_realizations: bool = True
     ) -> EnsembleTableProvider:
         """Create EnsembleTableProvider from parameter files.
 
@@ -268,11 +273,8 @@ class EnsembleTableProviderFactory(WebvizFactory):
         LOGGER.info(f"Importing parameters for: {ens_path}")
 
         timer.lap_s()
-        ensemble_df = load_per_real_parameters_file(ens_path, filterfile="OK")
+        ensemble_df = load_per_real_parameters_file(ens_path, drop_failed_realizations)
 
-        #  scratch_ensemble = ScratchEnsemble("ens_name_tmp", ens_path).filter("OK")
-        # ensemble_df = scratch_ensemble.parameters
-        # del scratch_ensemble
         elapsed_load_parameters_s = timer.lap_s()
 
         try:

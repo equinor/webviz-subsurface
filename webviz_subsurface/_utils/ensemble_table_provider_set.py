@@ -1,5 +1,4 @@
-import datetime
-from typing import Dict, ItemsView, List, Optional, Sequence, Set
+from typing import Dict, ItemsView, List, Sequence, Set
 
 import pandas as pd
 
@@ -8,14 +7,7 @@ from webviz_subsurface._providers import EnsembleTableProvider
 
 class EnsembleTableProviderSet:
     """
-    Class to create a set of ensemble summary providers with unique names
-
-    Provides interface for read-only fetching of provider data
-
-    NOTE:
-        - Assuming same implementation of EnsembleTableProvider interface across
-        all providers in set. There is no guarantee of functionality if various
-        provider implementations are mixed in the same set.
+    Class to create a set of ensemble table providers with unique names
     """
 
     def __init__(self, provider_dict: Dict[str, EnsembleTableProvider]) -> None:
@@ -27,8 +19,9 @@ class EnsembleTableProviderSet:
         self._all_realizations = self._create_union_of_realizations_from_providers(
             list(self._provider_dict.values())
         )
+        self._combined_dataframe = pd.DataFrame()
 
-    def create_aggreagated_dataframe(self) -> pd.DataFrame:
+    def get_combined_dataframe(self) -> pd.DataFrame:
         dfs = []
         for ens, provider in self.items():
             df = provider.get_column_data(column_names=provider.column_names())
