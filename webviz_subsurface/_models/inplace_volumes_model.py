@@ -356,7 +356,7 @@ def extract_volframe_from_tableprovider(
             table_provider_set = create_csvfile_providerset_from_paths(
                 ensemble_paths, str(Path(volfolder) / volfile), drop_failed_realizations
             )
-            ensembledf = table_provider_set.get_combined_dataframe()
+            ensembledf = table_provider_set.get_aggregated_dataframe()
             volframes.append(ensembledf)
 
         # merge csvfiles from same SOURCE if more than one

@@ -170,7 +170,7 @@ Responses are extracted automatically from the `.arrow` files in the individual 
             parameter_provider_set = create_parameter_providerset_from_paths(
                 self.ens_paths
             )
-            parameterdf = parameter_provider_set.get_combined_dataframe()
+            parameterdf = parameter_provider_set.get_aggregated_dataframe()
 
             if self.response_file:
                 self.responsedf = load_csv(

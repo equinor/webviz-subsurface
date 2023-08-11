@@ -19,9 +19,8 @@ class EnsembleTableProviderSet:
         self._all_realizations = self._create_union_of_realizations_from_providers(
             list(self._provider_dict.values())
         )
-        self._combined_dataframe = pd.DataFrame()
 
-    def get_combined_dataframe(self) -> pd.DataFrame:
+    def get_aggregated_dataframe(self) -> pd.DataFrame:
         dfs = []
         for ens, provider in self.items():
             df = provider.get_column_data(column_names=provider.column_names())

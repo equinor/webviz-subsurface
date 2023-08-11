@@ -89,7 +89,7 @@ run with that sensitivity.
             )
 
         parameter_provider_set = create_parameter_providerset_from_paths(ensemble_paths)
-        parameter_df = parameter_provider_set.get_combined_dataframe()
+        parameter_df = parameter_provider_set.get_aggregated_dataframe()
         parametermodel = ParametersModel(dataframe=parameter_df, drop_constants=True)
 
         self.add_view(

@@ -189,7 +189,7 @@ reek_test_data/aggregated_data/parameters.csv)
             parameter_provider_set = create_parameter_providerset_from_paths(
                 ensemble_paths, drop_failed_realizations
             )
-            parameters = parameter_provider_set.get_combined_dataframe()
+            parameters = parameter_provider_set.get_aggregated_dataframe()
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
