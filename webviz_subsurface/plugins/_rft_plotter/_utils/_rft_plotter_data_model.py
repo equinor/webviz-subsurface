@@ -115,23 +115,11 @@ class RftPlotterDataModel:
         )
         self.ertdatadf["YEAR"] = pd.to_datetime(self.ertdatadf["DATE"]).dt.year
         self.ertdatadf = self.ertdatadf.sort_values(by="DATE")
-        self.ertdatadf["DATE_IDX"] = self.ertdatadf["DATE"].apply(
-            lambda x: list(self.ertdatadf["DATE"].unique()).index(x)
-        )
         self.date_marks = self.set_date_marks()
-        self.ertdatadf_inactive = filter_frame(
-            self.ertdatadf,
-            {
-                "ACTIVE": 0,
-            },
-        )
 
-        self.ertdatadf = filter_frame(
-            self.ertdatadf,
-            {
-                "ACTIVE": 1,
-            },
-        )
+        self.ertdatadf_inactive = filter_frame(self.ertdatadf, {"ACTIVE": 0})
+        self.ertdatadf = filter_frame(self.ertdatadf, {"ACTIVE": 1})
+
         self.ertdatadf["STDDEV"] = self.ertdatadf.groupby(
             ["WELL", "DATE", "ZONE", "ENSEMBLE", "TVD"]
         )["SIMULATED"].transform("std")
@@ -168,26 +156,27 @@ class RftPlotterDataModel:
     def parameters(self) -> List[str]:
         return self.param_model.parameters
 
-    def set_date_marks(self) -> Dict[str, Dict[str, Any]]:
+    def set_date_marks(self) -> Dict[int, Dict[str, Any]]:
         marks = {}
-        idx_steps = np.linspace(
-            start=0,
-            stop=self.ertdatadf["DATE_IDX"].max(),
-            num=min(4, len(self.ertdatadf["DATE_IDX"].unique())),
-            dtype=int,
-        )
-        date_steps = self.ertdatadf.loc[self.ertdatadf["DATE_IDX"].isin(idx_steps)][
-            "DATE"
-        ].unique()
 
-        for i, date_index in enumerate(idx_steps):
-            marks[str(date_index)] = {
-                "label": f"{date_steps[i]}",
-                "style": {
-                    "white-space": "nowrap",
-                    "font-weight": "bold",
-                },
-            }
+        # Set number of datemarks for the slider
+        num_samples = min(4, len(self.dates))
+
+        # Generate evenly spaced indices
+        indices = np.linspace(0, len(self.dates) - 1, num_samples).astype(int)
+
+        # Sample dates using the calculated indices
+        sampled_dates = [self.dates[i] for i in indices]
+
+        for i, date in enumerate(self.dates):
+            if date in sampled_dates:
+                marks[i] = {
+                    "label": date,
+                    "style": {
+                        "white-space": "nowrap",
+                        "font-weight": "bold",
+                    },
+                }
         return marks
 
     def get_param_real_and_value_df(
