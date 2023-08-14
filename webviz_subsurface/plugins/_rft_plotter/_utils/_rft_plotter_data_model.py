@@ -159,11 +159,16 @@ class RftPlotterDataModel:
     def set_date_marks(self) -> Dict[int, Dict[str, Any]]:
         marks = {}
 
-        # Set number of datemarks for the slider
-        num_samples = min(4, len(self.dates))
+        # Set number of datemarks for the slider based on number of unique dates
+        unique_dates = len(self.dates)
+        possible_to_split_in_three = (unique_dates - 3) % 2 == 0
+        if unique_dates < 10 and possible_to_split_in_three:
+            num_samples = 3
+        else:
+            num_samples = min(4, unique_dates)
 
         # Generate evenly spaced indices
-        indices = np.linspace(0, len(self.dates) - 1, num_samples).astype(int)
+        indices = np.linspace(0, unique_dates - 1, num_samples).astype(int)
 
         # Sample dates using the calculated indices
         sampled_dates = [self.dates[i] for i in indices]

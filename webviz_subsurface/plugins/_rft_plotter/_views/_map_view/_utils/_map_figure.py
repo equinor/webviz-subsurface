@@ -8,9 +8,14 @@ from ...._types import ColorAndSizeByType
 
 class MapFigure:
     def __init__(
-        self, ertdf: pd.DataFrame, ensemble: str, zones: List[str], dates: List[str]
+        self,
+        ertdf: pd.DataFrame,
+        ensemble: str,
+        zones: List[str],
+        min_date: str,
+        max_date: str,
     ) -> None:
-        self._min_date, self._max_date = dates
+        self._min_date, self._max_date = min_date, max_date
         self._ertdf = ertdf.loc[
             (ertdf["ENSEMBLE"] == ensemble)
             & (ertdf["ZONE"].isin(zones))

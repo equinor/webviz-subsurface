@@ -127,8 +127,11 @@ class MapView(ViewABC):
             dateidx: List[int],
             zones: List[str],
         ) -> Union[str, List[wcc.Graph]]:
-            dates = [self._datamodel.dates[idx] for idx in dateidx]
-            figure = MapFigure(self._datamodel.ertdatadf, ensemble, zones, dates)
+            min_date = self._datamodel.dates[dateidx[0]]
+            max_date = self._datamodel.dates[dateidx[1]]
+            figure = MapFigure(
+                self._datamodel.ertdatadf, ensemble, zones, min_date, max_date
+            )
             if self._datamodel.faultlinesdf is not None:
                 figure.add_fault_lines(self._datamodel.faultlinesdf)
             figure.add_misfit_plot(sizeby, colorby)
