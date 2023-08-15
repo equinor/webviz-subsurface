@@ -1,4 +1,4 @@
-from typing import Dict, ItemsView, List, Sequence, Set
+from typing import Dict, ItemsView, List, Optional, Sequence, Set
 
 import pandas as pd
 
@@ -20,10 +20,17 @@ class EnsembleTableProviderSet:
             list(self._provider_dict.values())
         )
 
-    def get_aggregated_dataframe(self) -> pd.DataFrame:
+    def get_aggregated_dataframe(
+        self, column_names: Optional[List[str]] = None
+    ) -> pd.DataFrame:
+        """Get aggregated dataframe from all providers"""
         dfs = []
         for ens, provider in self.items():
-            df = provider.get_column_data(column_names=provider.column_names())
+            df = provider.get_column_data(
+                column_names=column_names
+                if column_names is not None
+                else provider.column_names()
+            )
             df["ENSEMBLE"] = ens
             dfs.append(df)
         return pd.concat(dfs)

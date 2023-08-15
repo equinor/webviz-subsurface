@@ -109,8 +109,8 @@ def load_per_real_csv_file(
     globpattern = os.path.join(ens_path, csv_file_rel_path)
     files_to_process = _discover_files(globpattern, validated_reals)
     if len(files_to_process) == 0:
-        LOGGER.warning(f"No csv files were discovered in: {ens_path}")
-        LOGGER.warning(f"Glob pattern used: {globpattern}")
+        LOGGER.debug(f"No csv files were discovered in: {ens_path}")
+        LOGGER.debug(f"Glob pattern used: {globpattern}")
         return pd.DataFrame()
 
     with ProcessPoolExecutor() as executor:

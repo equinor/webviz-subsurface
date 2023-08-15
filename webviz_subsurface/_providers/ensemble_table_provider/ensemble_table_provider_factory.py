@@ -155,7 +155,11 @@ class EnsembleTableProviderFactory(WebvizFactory):
         ensemble_df = load_per_real_csv_file(
             ens_path, csv_file_rel_path, drop_failed_realizations
         )
-
+        if ensemble_df.empty:
+            raise ValueError(
+                f"Failed to load csv-files {csv_file_rel_path} for ensemble {ens_path}."
+                " Either the file does not exist or spelling is incorrect."
+            )
         et_import_csv_s = timer.lap_s()
 
         EnsembleTableProviderImplArrow.write_backing_store_from_ensemble_dataframe(
