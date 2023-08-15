@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#1227](https://github.com/equinor/webviz-subsurface/pull/1227) - New functionality in `SimulationTimeSeriesOneByOne`: option to use the sensitivity filter on all visualisations, not only the timeseries.
+- [#1229](https://github.com/equinor/webviz-subsurface/pull/1229) - New view for QC of data in `RftPlotter`.
 
 ### Fixed
 - [#1232](https://github.com/equinor/webviz-subsurface/pull/1232) - Removed slow function in `RftPlotter` to improve startup time of plugin.
