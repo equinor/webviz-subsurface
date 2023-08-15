@@ -7,26 +7,35 @@ from ...._types import ColorAndSizeByType
 
 
 class MapFigure:
-    def __init__(self, ertdf: pd.DataFrame, ensemble: str, zones: List[str]) -> None:
+    def __init__(
+        self,
+        ertdf: pd.DataFrame,
+        ensemble: str,
+        zones: List[str],
+        min_date: str,
+        max_date: str,
+    ) -> None:
+        self._min_date, self._max_date = min_date, max_date
+        self._ertdf = ertdf.loc[
+            (ertdf["ENSEMBLE"] == ensemble)
+            & (ertdf["ZONE"].isin(zones))
+            & (ertdf["DATE"] >= self._min_date)
+            & (ertdf["DATE"] <= self._max_date)
+        ]
         self._ertdf = (
-            ertdf.loc[(ertdf["ENSEMBLE"] == ensemble) & (ertdf["ZONE"].isin(zones))]
+            self._ertdf.drop(columns="ZONE")
             .groupby(["WELL", "DATE", "ENSEMBLE"])
             .mean(numeric_only=False)
             .reset_index()
         )
-
         self._traces: List[Dict[str, Any]] = []
 
     def add_misfit_plot(
         self,
         sizeby: ColorAndSizeByType,
         colorby: ColorAndSizeByType,
-        dates: List[float],
     ) -> None:
-        df = self._ertdf.loc[
-            (self._ertdf["DATE_IDX"] >= dates[0])
-            & (self._ertdf["DATE_IDX"] <= dates[1])
-        ]
+        df = self._ertdf
         self._traces.append(
             {
                 "x": df["EAST"],
@@ -36,11 +45,16 @@ class MapFigure:
                 "mode": "markers",
                 "hovertext": [
                     f"Well: {well}"
+                    f"<br>Date: {date}"
                     f"<br>Mean simulated pressure: {pressure:.2f}"
                     f"<br>Mean misfit: {misfit:.2f}"
                     f"<br>Stddev pressure: {stddev:.2f}"
-                    for well, stddev, misfit, pressure in zip(
-                        df["WELL"], df["STDDEV"], df["DIFF"], df["SIMULATED"]
+                    for well, date, stddev, misfit, pressure in zip(
+                        df["WELL"],
+                        df["DATE"],
+                        df["STDDEV"],
+                        df["DIFF"],
+                        df["SIMULATED"],
                     )
                 ],
                 "hoverinfo": "text",
@@ -106,6 +120,7 @@ class MapFigure:
             "margin": {"t": 50, "l": 50},
             "xaxis": {"constrain": "domain", "showgrid": False},
             "yaxis": {"scaleanchor": "x", "showgrid": False},
+            "title": f"Date filter: {self._min_date} - {self._max_date}",
         }
 
     @property

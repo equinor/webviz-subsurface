@@ -20,16 +20,14 @@ class MapSettings(SettingsGroupABC):
         self,
         ensembles: List[str],
         zones: List[str],
-        date_marks: Dict[str, Dict[str, Any]],
-        date_range_min: int,
-        date_range_max: int,
+        date_marks: Dict[int, Dict[str, Any]],
+        unique_dates_count: int,
     ) -> None:
         super().__init__("Map settings")
         self._ensembles = ensembles
         self._zone_names = zones
         self._date_marks = date_marks
-        self._date_range_min = date_range_min
-        self._date_range_max = date_range_max
+        self._unique_dates_count = unique_dates_count
 
     def layout(self) -> List[Component]:
         return [
@@ -79,12 +77,9 @@ class MapSettings(SettingsGroupABC):
             wcc.RangeSlider(
                 label="Filter date range",
                 id=self.register_component_unique_id(self.Ids.DATE_RANGE),
-                min=self._date_range_min,
-                max=self._date_range_max,
-                value=[
-                    self._date_range_min,
-                    self._date_range_max,
-                ],
+                min=0,
+                max=self._unique_dates_count - 1,
+                value=[0, self._unique_dates_count - 1],
                 marks=self._date_marks,
             ),
             wcc.Label(

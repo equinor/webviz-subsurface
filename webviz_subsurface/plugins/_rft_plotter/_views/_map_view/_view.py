@@ -30,8 +30,7 @@ class MapView(ViewABC):
                 ensembles=self._datamodel.ensembles,
                 zones=self._datamodel.zone_names,
                 date_marks=self._datamodel.date_marks,
-                date_range_min=self._datamodel.ertdatadf["DATE_IDX"].min(),
-                date_range_max=self._datamodel.ertdatadf["DATE_IDX"].max(),
+                unique_dates_count=len(self._datamodel.dates),
             ),
             self.Ids.MAP_SETTINGS,
         )
@@ -125,13 +124,17 @@ class MapView(ViewABC):
             ensemble: str,
             sizeby: ColorAndSizeByType,
             colorby: ColorAndSizeByType,
-            dates: List[float],
+            dateidx: List[int],
             zones: List[str],
         ) -> Union[str, List[wcc.Graph]]:
-            figure = MapFigure(self._datamodel.ertdatadf, ensemble, zones)
+            min_date = self._datamodel.dates[dateidx[0]]
+            max_date = self._datamodel.dates[dateidx[1]]
+            figure = MapFigure(
+                self._datamodel.ertdatadf, ensemble, zones, min_date, max_date
+            )
             if self._datamodel.faultlinesdf is not None:
                 figure.add_fault_lines(self._datamodel.faultlinesdf)
-            figure.add_misfit_plot(sizeby, colorby, dates)
+            figure.add_misfit_plot(sizeby, colorby)
 
             return [
                 wcc.Graph(
