@@ -1,20 +1,22 @@
+import logging
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 import pandas as pd
 from dash import html
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.common_cache import CACHE
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
 from webviz_config.webviz_store import webvizstore
 
 import webviz_subsurface
-from webviz_subsurface._models import (
-    EnsembleSetModel,
-    InplaceVolumesModel,
-    caching_ensemble_set_model_factory,
+from webviz_subsurface._models import InplaceVolumesModel
+from webviz_subsurface._models.inplace_volumes_model import (
+    extract_volframe_from_tableprovider,
 )
-from webviz_subsurface._models.inplace_volumes_model import extract_volumes
+from webviz_subsurface._providers import EnsembleTableProviderFactory
+from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
+    create_parameter_providerset_from_paths,
+)
 
 from .controllers import (
     comparison_controllers,
@@ -27,6 +29,8 @@ from .controllers import (
 )
 from .views import clientside_stores, main_view
 from .volume_validator_and_combinator import VolumeValidatorAndCombinator
+
+LOGGER = logging.getLogger(__name__)
 
 
 class VolumetricAnalysis(WebvizPluginABC):
@@ -85,6 +89,8 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
 
 **Common settings**
+* **`drop_failed_realizations`:** Option to drop or include failed realizations.
+    The success criteria is based on the presence of an 'OK' file in the realization runpath.
 * **`non_net_facies`:** List of facies which are non-net.
 * **`fipfile`:** Path to a yaml-file that defines a match between FIPNUM regions
     and human readable regions, zones and etc to be used as filters.
@@ -135,7 +141,7 @@ reek_test_data/aggregated_data/parameters.csv)
 
 **Remaining columns are seen as volumetric responses.** """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
         webviz_settings: WebvizSettings,
@@ -146,6 +152,7 @@ reek_test_data/aggregated_data/parameters.csv)
         volfolder: str = "share/results/volumes",
         non_net_facies: Optional[List[str]] = None,
         fipfile: Path = None,
+        drop_failed_realizations: bool = True,
     ):
         super().__init__()
         WEBVIZ_ASSETS.add(
@@ -155,29 +162,34 @@ reek_test_data/aggregated_data/parameters.csv)
             / "inplace_volumes.css"
         )
 
-        self.csvfile_vol = csvfile_vol
-        self.csvfile_parameters = csvfile_parameters
         self.fipfile = fipfile
+        parameters: Optional[pd.DataFrame] = None
+
+        LOGGER.warning(
+            f" Plugin argument drop_failed_realizations is set to {drop_failed_realizations}. "
+            "An 'OK' file in the realization runpath is used as success criteria"
+        )
 
         if csvfile_vol:
-            volumes_table = read_csv(csvfile_vol)
-            parameters: Optional[pd.DataFrame] = (
-                read_csv(csvfile_parameters) if csvfile_parameters else None
-            )
+            table_provider = EnsembleTableProviderFactory.instance()
+            volumes_table = table_provider.create_from_ensemble_csv_file(csvfile_vol)
+            if csvfile_parameters:
+                parameters = table_provider.create_from_ensemble_csv_file(
+                    csvfile_parameters
+                )
 
         elif ensembles and volfiles:
             ensemble_paths = {
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            self.emodel: EnsembleSetModel = (
-                caching_ensemble_set_model_factory.get_or_create_model(
-                    ensemble_paths=ensemble_paths,
-                )
+            volumes_table = extract_volframe_from_tableprovider(
+                ensemble_paths, volfolder, volfiles, drop_failed_realizations
             )
-            parameters = self.emodel.load_parameters()
-            volumes_table = extract_volumes(self.emodel, volfolder, volfiles)
-
+            parameter_provider_set = create_parameter_providerset_from_paths(
+                ensemble_paths, drop_failed_realizations
+            )
+            parameters = parameter_provider_set.get_aggregated_dataframe()
         else:
             raise ValueError(
                 'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
@@ -223,22 +235,9 @@ reek_test_data/aggregated_data/parameters.csv)
         fipfile_qc_controller(get_uuid=self.uuid, disjoint_set_df=self.disjoint_set_df)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
-        store_functions = []
-        if self.csvfile_vol is not None:
-            store_functions.append((read_csv, [{"csv_file": self.csvfile_vol}]))
-        else:
-            store_functions.extend(self.emodel.webvizstore)
         if self.fipfile is not None:
-            store_functions.append((get_path, [{"path": self.fipfile}]))
-        if self.csvfile_parameters is not None:
-            store_functions.append((read_csv, [{"csv_file": self.csvfile_parameters}]))
-        return store_functions
-
-
-@CACHE.memoize()
-@webvizstore
-def read_csv(csv_file: Path) -> pd.DataFrame:
-    return pd.read_csv(csv_file)
+            return [(get_path, [{"path": self.fipfile}])]
+        return []
 
 
 @webvizstore

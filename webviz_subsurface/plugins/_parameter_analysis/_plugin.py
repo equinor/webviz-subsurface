@@ -1,15 +1,12 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-import pandas as pd
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
 
-from webviz_subsurface._providers import (
-    EnsembleSummaryProviderFactory,
-    EnsembleTableProvider,
-    EnsembleTableProviderFactory,
-    Frequency,
+from webviz_subsurface._providers import EnsembleSummaryProviderFactory, Frequency
+from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
+    create_parameter_providerset_from_paths,
 )
 
 from ..._utils.simulation_timeseries import check_and_format_observations
@@ -87,14 +84,12 @@ realizations if you have defined `ensembles`.
         if ensembles is None:
             raise ValueError('Incorrect argument, must provide "ensembles"')
 
-        ensemble_paths: Dict[str, str] = {
+        ensemble_paths = {
             ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                 ensemble_name
             ]
             for ensemble_name in ensembles
         }
-
-        table_provider_factory = EnsembleTableProviderFactory.instance()
 
         resampling_frequency = Frequency(time_index)
         provider_factory = EnsembleSummaryProviderFactory.instance()
@@ -121,14 +116,8 @@ realizations if you have defined `ensembles`.
             self._vmodel.get_dates(resampling_frequency=resampling_frequency)
         )
 
-        parameter_df = create_df_from_table_provider(
-            provider_set={
-                ens_name: table_provider_factory.create_from_per_realization_parameter_file(
-                    ens_path
-                )
-                for ens_name, ens_path in ensemble_paths.items()
-            }
-        )
+        parameter_provider_set = create_parameter_providerset_from_paths(ensemble_paths)
+        parameter_df = parameter_provider_set.get_aggregated_dataframe()
 
         self._pmodel = ParametersModel(
             dataframe=parameter_df,
@@ -151,15 +140,3 @@ realizations if you have defined `ensembles`.
             ParameterDistributionView(self._pmodel),
             self.Ids.PARAM_DIST_VIEW,
         )
-
-
-def create_df_from_table_provider(
-    provider_set: Dict[str, EnsembleTableProvider]
-) -> pd.DataFrame:
-    """Aggregates parameters from all ensemble into a common dataframe."""
-    dfs = []
-    for ens_name, provider in provider_set.items():
-        df = provider.get_column_data(column_names=provider.column_names())
-        df["ENSEMBLE"] = ens_name
-        dfs.append(df)
-    return pd.concat(dfs)

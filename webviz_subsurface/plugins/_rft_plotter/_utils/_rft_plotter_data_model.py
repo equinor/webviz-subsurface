@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -7,12 +8,14 @@ from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
-from webviz_subsurface._models import (
-    EnsembleSetModel,
-    caching_ensemble_set_model_factory,
-)
 from webviz_subsurface._models.parameter_model import ParametersModel
+from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
+    create_csvfile_providerset_from_paths,
+    create_parameter_providerset_from_paths,
+)
 from webviz_subsurface._utils.unique_theming import unique_colors
+
+LOGGER = logging.getLogger(__name__)
 
 
 class RftPlotterDataModel:
@@ -45,20 +48,15 @@ class RftPlotterDataModel:
         self.formationdf = read_csv(self.formations) if self.formations else None
         self.faultlinesdf = read_csv(self.faultlines) if self.faultlines else None
         self.obsdatadf = read_csv(self.obsdata) if self.obsdata else None
-        self.ertdatadf = pd.DataFrame()
 
         if csvfile_rft_ert is not None:
             self.ertdatadf = read_csv(self.csvfile_rft_ert)
 
             # Must send a dummy dataframe to ParametersModel
             # The ensembles will be identified as sensitivity runs
-            self.param_model = ParametersModel(
-                pd.DataFrame(
-                    columns=["REAL", "ENSEMBLE", "SENSNAME", "SENSCASE"],
-                    data=[
-                        [0, "ensemble", "sensname", "low"],
-                    ],
-                )
+            parameterdf = pd.DataFrame(
+                columns=["REAL", "ENSEMBLE", "SENSNAME", "SENSCASE"],
+                data=[[0, "ensemble", "sensname", "low"]],
             )
 
         if ensembles is not None:
@@ -66,31 +64,29 @@ class RftPlotterDataModel:
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            self.emodel: EnsembleSetModel = (
-                caching_ensemble_set_model_factory.get_or_create_model(
-                    ensemble_paths=ens_paths,
-                )
-            )
+
+            self.ertdatadf = create_csvfile_providerset_from_paths(
+                ens_paths,
+                "share/results/tables/rft_ert.csv",
+            ).get_aggregated_dataframe()
+
             try:
-                self.simdf = self.emodel.load_csv(Path("share/results/tables/rft.csv"))
-            except (KeyError, OSError):
+                self.simdf = create_csvfile_providerset_from_paths(
+                    ens_paths, "share/results/tables/rft.csv"
+                ).get_aggregated_dataframe()
+
+            except ValueError as err:
+                LOGGER.warning(err)
                 self.simdf = None
 
-            self.param_model = ParametersModel(
-                dataframe=self.emodel.load_parameters(),
-                drop_constants=True,
-                keep_numeric_only=True,
-            )
+            parameter_provider_set = create_parameter_providerset_from_paths(ens_paths)
+            parameterdf = parameter_provider_set.get_aggregated_dataframe()
 
-            try:
-                self.ertdatadf = self.emodel.load_csv(
-                    Path("share/results/tables/rft_ert.csv")
-                )
-            except KeyError as exc:
-                raise KeyError(
-                    "CSV file for ERT RFT observations/simulations "
-                    "(share/results/tables/rft_ert.csv) not found!"
-                ) from exc
+        self.param_model = ParametersModel(
+            dataframe=parameterdf,
+            drop_constants=True,
+            keep_numeric_only=True,
+        )
 
         self.ertdatadf.columns = self.ertdatadf.columns.str.upper()
         self.ertdatadf = self.ertdatadf.rename(
@@ -289,8 +285,6 @@ class RftPlotterDataModel:
                 ],
             )
         ]
-        if self.csvfile_rft_ert is None:
-            functions.extend(self.emodel.webvizstore)
         return functions
 
 

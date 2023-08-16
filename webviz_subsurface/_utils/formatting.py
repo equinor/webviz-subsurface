@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 def printable_int_list(integer_list: Optional[List[int]]) -> str:
@@ -27,3 +27,17 @@ def printable_int_list(integer_list: Optional[List[int]]) -> str:
     if not string.endswith(f", {prev_number}") and string != str(prev_number):
         string += str(prev_number)
     return string
+
+
+def parse_number_from_string(value: str) -> Union[int, float, str]:
+    """Try to parse the string first as an integer, then as float,
+    if both fails, return the original string.
+    """
+
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            return value

@@ -17,10 +17,11 @@ from webviz_subsurface._models import ParametersModel
 from webviz_subsurface._providers import (
     EnsembleSummaryProvider,
     EnsembleSummaryProviderFactory,
-    EnsembleTableProvider,
-    EnsembleTableProviderFactory,
     Frequency,
     get_matching_vector_names,
+)
+from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
+    create_parameter_providerset_from_paths,
 )
 
 
@@ -165,16 +166,11 @@ Responses are extracted automatically from the `.arrow` files in the individual 
                 ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
                 for ens in ensembles
             }
-            table_provider_factory = EnsembleTableProviderFactory.instance()
 
-            parameterdf = create_df_from_table_provider(
-                provider_set={
-                    ens_name: table_provider_factory.create_from_per_realization_parameter_file(
-                        ens_path
-                    )
-                    for ens_name, ens_path in self.ens_paths.items()
-                }
+            parameter_provider_set = create_parameter_providerset_from_paths(
+                self.ens_paths
             )
+            parameterdf = parameter_provider_set.get_aggregated_dataframe()
 
             if self.response_file:
                 self.responsedf = load_csv(
@@ -774,18 +770,6 @@ def theme_layout(theme, specific_layout) -> Dict:
 @webvizstore
 def read_csv(csv_file) -> pd.DataFrame:
     return pd.read_csv(csv_file, index_col=False)
-
-
-def create_df_from_table_provider(
-    provider_set: Dict[str, EnsembleTableProvider]
-) -> pd.DataFrame:
-    """Aggregates parameters from all ensemble into a common dataframe."""
-    dfs = []
-    for ens_name, provider in provider_set.items():
-        df = provider.get_column_data(column_names=provider.column_names())
-        df["ENSEMBLE"] = ens_name
-        dfs.append(df)
-    return pd.concat(dfs)
 
 
 def create_df_from_summary_provider(

@@ -1,19 +1,17 @@
 from pathlib import Path
 from typing import Dict
 
-import pandas as pd
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum
 
 from webviz_subsurface._models.parameter_model import ParametersModel
-from webviz_subsurface._providers import (
-    EnsembleTableProvider,
-    EnsembleTableProviderFactory,
-    Frequency,
-)
+from webviz_subsurface._providers import Frequency
 from webviz_subsurface._utils.ensemble_summary_provider_set_factory import (
     create_lazy_ensemble_summary_provider_set_from_paths,
     create_presampled_ensemble_summary_provider_set_from_paths,
+)
+from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
+    create_parameter_providerset_from_paths,
 )
 
 from ._utils import SimulationTimeSeriesOneByOneDataModel
@@ -59,7 +57,6 @@ run with that sensitivity.
         super().__init__()
 
         # vectormodel: ProviderTimeSeriesDataModel
-        table_provider = EnsembleTableProviderFactory.instance()
         resampling_frequency = Frequency(sampling)
 
         if ensembles is not None:
@@ -91,13 +88,8 @@ run with that sensitivity.
                 " are not instantiated for plugin"
             )
 
-        parameterproviderset = {
-            ens_name: table_provider.create_from_per_realization_parameter_file(
-                str(ens_path)
-            )
-            for ens_name, ens_path in ensemble_paths.items()
-        }
-        parameter_df = create_df_from_table_provider(parameterproviderset)
+        parameter_provider_set = create_parameter_providerset_from_paths(ensemble_paths)
+        parameter_df = parameter_provider_set.get_aggregated_dataframe()
         parametermodel = ParametersModel(dataframe=parameter_df, drop_constants=True)
 
         self.add_view(
@@ -141,14 +133,3 @@ run with that sensitivity.
     #         {"id": self.uuid("vector"), "content": "Select time series"},
     #         {"id": self.uuid("ensemble"), "content": "Select ensemble"},
     #     ]
-
-
-def create_df_from_table_provider(
-    providerset: Dict[str, EnsembleTableProvider]
-) -> pd.DataFrame:
-    dfs = []
-    for ens, provider in providerset.items():
-        df = provider.get_column_data(column_names=provider.column_names())
-        df["ENSEMBLE"] = ens
-        dfs.append(df)
-    return pd.concat(dfs)
