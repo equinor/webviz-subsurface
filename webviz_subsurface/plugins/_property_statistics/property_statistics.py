@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
-import pandas as pd
 from dash import Dash, dcc
 from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin_arguments
@@ -13,9 +12,14 @@ from webviz_subsurface._models import (
 )
 from webviz_subsurface._providers import (
     EnsembleSummaryProviderFactory,
-    EnsembleTableProvider,
     EnsembleTableProviderFactory,
     Frequency,
+)
+from webviz_subsurface._utils.ensemble_table_provider_set import (
+    EnsembleTableProviderSet,
+)
+from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
+    create_csvfile_providerset_from_paths,
 )
 
 from .controllers.property_delta_controller import property_delta_controller
@@ -131,13 +135,10 @@ differ between individual realizations of an ensemble.
                 self._vmodel = ProviderTimeSeriesDataModel(
                     provider_set=provider_set, column_keys=column_keys
                 )
-                table_provider_set = {
-                    ens: table_provider_factory.create_from_per_realization_csv_file(
-                        ens_path, statistics_file
-                    )
-                    for ens, ens_path in ensemble_paths.items()
-                }
-                property_df = create_df_from_table_provider(table_provider_set)
+                table_provider_set = create_csvfile_providerset_from_paths(
+                    ensemble_paths, statistics_file
+                )
+                property_df = table_provider_set.get_aggregated_dataframe()
 
             except ValueError as error:
                 message = (
@@ -176,11 +177,14 @@ differ between individual realizations of an ensemble.
             # NOTE: the try/except is for backwards compatibility with existing portable app's.
             # It should be removed in the future together with the support of aggregated csv-files
             try:
-                property_df = create_df_from_table_provider(
-                    table_provider_factory.create_provider_set_from_aggregated_csv_file(
-                        csvfile_statistics
+                property_df = EnsembleTableProviderSet(
+                    (
+                        table_provider_factory.create_provider_set_from_aggregated_csv_file(
+                            csvfile_statistics
+                        )
                     )
-                )
+                ).get_aggregated_dataframe()
+
             except FileNotFoundError:
                 if not run_mode_portable:
                     raise
@@ -188,11 +192,12 @@ differ between individual realizations of an ensemble.
 
             if csvfile_smry is not None:
                 try:
-                    smry_df = create_df_from_table_provider(
+                    smry_df = EnsembleTableProviderSet(
                         table_provider_factory.create_provider_set_from_aggregated_csv_file(
                             csvfile_smry
                         )
-                    )
+                    ).get_aggregated_dataframe()
+
                 except FileNotFoundError:
                     if not run_mode_portable:
                         raise
@@ -258,15 +263,3 @@ differ between individual realizations of an ensemble.
             for path in self._surface_table["path"].unique():
                 store.append((get_path, [{"path": Path(path)}]))
         return store
-
-
-def create_df_from_table_provider(
-    provider_set: Dict[str, EnsembleTableProvider]
-) -> pd.DataFrame:
-    """Aggregates parameters from all ensemble into a common dataframe."""
-    dfs = []
-    for ens_name, provider in provider_set.items():
-        df = provider.get_column_data(column_names=provider.column_names())
-        df["ENSEMBLE"] = ens_name
-        dfs.append(df)
-    return pd.concat(dfs)
