@@ -318,7 +318,7 @@ def generate_containment_figures(
     table_provider: EnsembleTableProvider,
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realization: int,
-    y_limits: List[float],
+    y_limits: List[Optional[float]],
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
         fig0 = generate_co2_volume_figure(
@@ -342,7 +342,7 @@ def generate_containment_figures(
 
 def generate_unsmry_figures(
     table_provider_unsmry: EnsembleTableProvider,
-    co2_mass_scale: Co2MassScale,
+    co2_mass_scale: Union[Co2MassScale, Co2VolumeScale],
     table_provider_containment: EnsembleTableProvider,
 ) -> Tuple[go.Figure]:
     return (

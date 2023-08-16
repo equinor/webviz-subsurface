@@ -238,11 +238,15 @@ class CO2Leakage(WebvizPluginABC):
                 GraphSource.CONTAINMENT_VOLUME_ACTUAL,
                 GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE,
             ]:
-                y_limits = [None, None]
+                y_limits = []
                 if len(y_min_auto) == 0:
-                    y_limits[0] = y_min_val
+                    y_limits.append(y_min_val)
+                else:
+                    y_limits.append(None)
                 if len(y_max_auto) == 0:
-                    y_limits[1] = y_max_val
+                    y_limits.append(y_max_val)
+                else:
+                    y_limits.append(None)
                 styles = [{}] * 3
 
                 if (
@@ -320,17 +324,19 @@ class CO2Leakage(WebvizPluginABC):
             Output(self._settings_component(ViewSettings.Ids.CO2_SCALE), "value"),
             Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
         )
-        def make_unit_list(attribute: str):
-            if attribute in [GraphSource.CONTAINMENT_MASS, GraphSource.UNSMRY]:
-                options = list(Co2MassScale)
-                value = Co2MassScale.MTONS
-            elif attribute in [
+        def make_unit_list(
+            attribute: str,
+        ) -> Union[
+            Tuple[List[Co2MassScale], Co2MassScale],
+            Tuple[List[Co2VolumeScale], Co2VolumeScale],
+        ]:
+            if attribute in [
                 GraphSource.CONTAINMENT_VOLUME_ACTUAL,
                 GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE,
             ]:
-                options = list(Co2VolumeScale)
-                value = Co2VolumeScale.BILLION_CUBIC_METERS
-            return options, value
+                return list(Co2VolumeScale), Co2VolumeScale.BILLION_CUBIC_METERS
+
+            return list(Co2MassScale), Co2MassScale.MTONS
 
         # Cannot avoid many arguments and/or locals since all layers of the DeckGL map
         # needs to be updated simultaneously

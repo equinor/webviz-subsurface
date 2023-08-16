@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas
@@ -100,7 +100,9 @@ def _read_terminal_co2_volumes(
 
 
 def _read_co2_volumes(
-    table_provider: EnsembleTableProvider, realizations: List[int], scale: Co2MassScale
+    table_provider: EnsembleTableProvider,
+    realizations: List[int],
+    scale: Union[Co2MassScale, Co2VolumeScale],
 ) -> pandas.DataFrame:
     scale_factor = _find_scale_factor(table_provider, scale)
     return pandas.concat(
@@ -111,7 +113,7 @@ def _read_co2_volumes(
     )
 
 
-def _change_type_names(df: pandas.DataFrame):
+def _change_type_names(df: pandas.DataFrame) -> None:
     df["type"] = df["type"].replace("total", "Total")
     df["type"] = df["type"].replace("total_contained", "Contained")
     df["type"] = df["type"].replace("total_outside", "Outside")
@@ -170,7 +172,7 @@ def generate_co2_time_containment_one_realization_figure(
     table_provider: EnsembleTableProvider,
     scale: Union[Co2MassScale, Co2VolumeScale],
     time_series_realization: int,
-    y_limits: List[float],
+    y_limits: List[Optional[float]],
 ) -> go.Figure:
     df = _read_co2_volumes(table_provider, [time_series_realization], scale)
     df.sort_values(by="date", inplace=True)

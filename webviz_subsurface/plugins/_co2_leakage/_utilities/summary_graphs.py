@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Iterable, List
+from typing import Iterable, List, Union
 
 import numpy as np
 import pandas as pd
@@ -7,14 +7,17 @@ import plotly.colors
 import plotly.graph_objects as go
 
 from webviz_subsurface._providers import EnsembleTableProvider
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import Co2MassScale
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+    Co2MassScale,
+    Co2VolumeScale,
+)
 
 
 # pylint: disable=too-many-locals
 def generate_summary_figure(
     table_provider_unsmry: EnsembleTableProvider,
     realizations_unsmry: List[int],
-    scale: Co2MassScale,
+    scale: Union[Co2MassScale, Co2VolumeScale],
     table_provider_containment: EnsembleTableProvider,
     realizations_containment: List[int],
 ) -> go.Figure:
@@ -166,7 +169,7 @@ def _read_dataframe(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     columns: _ColumnNames,
-    co2_scale: Co2MassScale,
+    co2_scale: Union[Co2MassScale, Co2VolumeScale],
 ) -> pd.DataFrame:
     full = pd.concat(
         [
@@ -191,7 +194,7 @@ def _read_dataframe_containment(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     columns: _ColumnNamesContainment,
-    co2_scale: Co2MassScale,
+    co2_scale: Union[Co2MassScale, Co2VolumeScale],
 ) -> pd.DataFrame:
     full = pd.concat(
         [
