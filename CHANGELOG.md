@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [#1232](https://github.com/equinor/webviz-subsurface/pull/1232) - Removed slow function in `RftPlotter` to improve startup time of plugin.
+- [#1234](https://github.com/equinor/webviz-subsurface/pull/1234) - Fixed a bug that occured in `SimulationTimeSeriesOneByOne` when changing between ensembles with different sensitivity names.
+
 
 ### Changed
 - [#1231](https://github.com/equinor/webviz-subsurface/pull/1231) - Upgrades to the `EnsembleTableProvider` that improves performance: it no longer relies on `fmu-ensemble` for loading csv-files and parameters into dataframes. Additional: added new plugin argument `drop_failed_realizations` to `VolumetricAnalysis` to be able to load in volumetrics files, if they exist, even though the ensemble has crashed.
