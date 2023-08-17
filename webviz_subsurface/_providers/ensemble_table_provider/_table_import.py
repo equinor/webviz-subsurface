@@ -125,7 +125,8 @@ def _load_table_from_parameters_file(entry: FileEntry) -> dict:
     data: Dict[str, Any] = {"REAL": int(entry.real)}
     with open(entry.filename, "r") as paramfile:
         for line in paramfile:
-            param, value = line.split()
+            param, *valuelist = line.split()
+            value = " ".join(valuelist)
             data[param] = parse_number_from_string(value)
     return data
 
@@ -143,7 +144,7 @@ def load_per_real_parameters_file(
     globpattern = os.path.join(ens_path, parameter_file)
     files_to_process = _discover_files(globpattern, validated_reals)
     if len(files_to_process) == 0:
-        LOGGER.warning(f"No csv files were discovered in: {ens_path}")
+        LOGGER.warning(f"No 'parameter.txt' files were discovered in: {ens_path}")
         LOGGER.warning(f"Glob pattern used: {globpattern}")
         return pd.DataFrame()
 
