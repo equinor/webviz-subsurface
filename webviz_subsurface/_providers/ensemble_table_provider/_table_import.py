@@ -126,6 +126,10 @@ def _load_table_from_parameters_file(entry: FileEntry) -> dict:
     with open(entry.filename, "r") as paramfile:
         for line in paramfile:
             param, *valuelist = line.split()
+            # Remove leading and trailing qoutation marks.
+            # This can happen if a parameter value includes a space
+            if len(valuelist) > 1:
+                valuelist = [val.strip('"') for val in valuelist]
             value = " ".join(valuelist)
             data[param] = parse_number_from_string(value)
     return data
