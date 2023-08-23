@@ -29,7 +29,6 @@ class ParametersModel:
             self._possible_selectors = [
                 col for col in self._possible_selectors if col != "SENSNAME"
             ]
-            self._dataframe["SENSNAME"].fillna("None")
 
         self._validate_dframe()
         self._sensrun = self._check_if_sensitivity_run()
@@ -57,7 +56,7 @@ class ParametersModel:
 
     @property
     def sensitivities(self) -> list:
-        return list(self._dataframe["SENSNAME"].unique()) if self.sensrun else []
+        return list(self._dataframe["SENSNAME"].unique())
 
     @property
     def sensrun(self) -> bool:
@@ -147,7 +146,7 @@ class ParametersModel:
         self._sensitivity_ensembles = []
 
         if "SENSNAME" not in self._dataframe:
-            return False
+            self._dataframe["SENSNAME"] = np.nan
 
         # if mix of gen_kw and sensitivity ensembles add
         # dummy sensitivvity columns to gen_kw ensembles
