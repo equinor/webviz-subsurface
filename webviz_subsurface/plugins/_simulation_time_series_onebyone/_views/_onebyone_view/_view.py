@@ -122,6 +122,8 @@ class OneByOneView(ViewABC):
         )
         def _update_realization_store(sensitivites: list, ensemble: str) -> List[int]:
             """Update graph with line coloring, vertical line and title"""
+            if not sensitivites:
+                raise PreventUpdate
             df = self._data_model.get_sensitivity_dataframe_for_ensemble(ensemble)
             return self._data_model.get_realizations_for_sensitivies(df, sensitivites)
 
