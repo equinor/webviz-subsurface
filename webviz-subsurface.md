@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.21` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.22` of `webviz-subsurface`.
 
 
 
@@ -3569,6 +3569,8 @@ defined in `shared_settings` (with volumetric `csv` files stored per realization
 
 
 
+
+
 **Using aggregated data**
 * **`csvfile_vol`:** Aggregated csvfile with `REAL`, `ENSEMBLE` and `SOURCE` columns (absolute path or relative to config file).
 * **`csvfile_parameters`:** Aggregated csvfile with parameter data (absolute path or relative to config file).`REAL` and `ENSEMBLE` are mandatory columns.
@@ -3582,6 +3584,8 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 
 
 **Common settings**
+* **`drop_failed_realizations`:** Option to drop or include failed realizations.
+    The success criteria is based on the presence of an 'OK' file in the realization runpath.
 * **`non_net_facies`:** List of facies which are non-net.
 * **`fipfile`:** Path to a yaml-file that defines a match between FIPNUM regions
     and human readable regions, zones and etc to be used as filters.
@@ -3598,6 +3602,7 @@ How to use in YAML config file:
         volfolder:  # Optional, type str.
         non_net_facies:  # Optional, type Union[typing.List[str], NoneType].
         fipfile:  # Optional, type str (corresponding to a path).
+        drop_failed_realizations:  # Optional, type bool.
 ```
 
 
