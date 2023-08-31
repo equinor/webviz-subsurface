@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1229](https://github.com/equinor/webviz-subsurface/pull/1229) - New view for QC of data in `RftPlotter`.
 
 ### Fixed
+- [#1236](https://github.com/equinor/webviz-subsurface/pull/1236) - Fixed missing scale track and readout after change in `WellLogViewer` component
 - [#1232](https://github.com/equinor/webviz-subsurface/pull/1232) - Removed slow function in `RftPlotter` to improve startup time of plugin.
 - [#1234](https://github.com/equinor/webviz-subsurface/pull/1234) - Fixed a bug that occured in `SimulationTimeSeriesOneByOne` when changing between ensembles with different sensitivity names.
 
