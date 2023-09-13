@@ -159,15 +159,21 @@ Format of the `initial_settings` argument:
                 wcc.Frame(
                     style={"flex": 6, "height": "90vh"},
                     children=[
-                        WellLogViewerComponent(
-                            id=self.uuid("well-log-viewer"),
-                            template=self._log_templates.get(self.initial_log_template),
-                            welllog=xtgeo_well_logs_to_json_format(
-                                well=self._well_set_model.get_well(
-                                    self.initial_well_name
-                                )
+                        html.Div(
+                            style={"width": "95%", "height": "100%"},
+                            children=WellLogViewerComponent(
+                                id=self.uuid("well-log-viewer"),
+                                template=self._log_templates.get(
+                                    self.initial_log_template
+                                ),
+                                welllog=xtgeo_well_logs_to_json_format(
+                                    well=self._well_set_model.get_well(
+                                        self.initial_well_name
+                                    )
+                                ),
+                                colorTables=self.colortables,
+                                axisMnemos={"MD": ["MD"], "TVD": ["TVD"]},
                             ),
-                            colorTables=self.colortables,
                         )
                     ],
                 ),

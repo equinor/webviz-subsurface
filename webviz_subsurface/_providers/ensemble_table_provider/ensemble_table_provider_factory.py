@@ -279,6 +279,11 @@ class EnsembleTableProviderFactory(WebvizFactory):
         timer.lap_s()
         ensemble_df = load_per_real_parameters_file(ens_path, drop_failed_realizations)
 
+        if ensemble_df.empty:
+            raise ValueError(
+                f"Failed to load 'parameter.txt' files for ensemble {ens_path}."
+            )
+
         elapsed_load_parameters_s = timer.lap_s()
 
         try:

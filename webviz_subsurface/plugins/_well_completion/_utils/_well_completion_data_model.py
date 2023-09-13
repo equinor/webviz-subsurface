@@ -31,7 +31,7 @@ class WellCompletionDataModel:
         self._wellcompletion_df = wellcompletion_provider.get_column_data(
             column_names=wellcompletion_provider.column_names()
         )
-        self._zones = self._wellcompletion_df["ZONE"].unique()
+        self._zones = list(self._wellcompletion_df["ZONE"].unique())
         self._realizations = sorted(self._wellcompletion_df["REAL"].unique())
         self._datemap = {
             dte: i

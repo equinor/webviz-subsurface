@@ -122,6 +122,8 @@ class OneByOneView(ViewABC):
         )
         def _update_realization_store(sensitivites: list, ensemble: str) -> List[int]:
             """Update graph with line coloring, vertical line and title"""
+            if not sensitivites:
+                raise PreventUpdate
             df = self._data_model.get_sensitivity_dataframe_for_ensemble(ensemble)
             return self._data_model.get_realizations_for_sensitivies(df, sensitivites)
 
@@ -132,6 +134,7 @@ class OneByOneView(ViewABC):
                     SensitivityFilter.Ids.SENSITIVITY_FILTER,
                 ),
                 "value",
+                allow_duplicate=True,
             ),
             Input(
                 self.view_element(self.Ids.TORNADO_PLOT)
@@ -168,6 +171,14 @@ class OneByOneView(ViewABC):
                     SensitivityFilter.Ids.SENSITIVITY_FILTER,
                 ),
                 "options",
+            ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.SENSITIVITY_FILTER,
+                    SensitivityFilter.Ids.SENSITIVITY_FILTER,
+                ),
+                "value",
+                allow_duplicate=True,
             ),
             Output(
                 {
@@ -220,9 +231,10 @@ class OneByOneView(ViewABC):
                 },
                 "value",
             ),
+            prevent_initial_call="initial_duplicate",
         )
         @callback_typecheck
-        def _update_sensitivity_filter_and_reference(
+        def _update_sensitivity_filter_reference_and_vector_selector(
             ensemble: str, vector: list, reference: str
         ) -> tuple:
             """Update graph with line coloring, vertical line and title"""
@@ -241,6 +253,7 @@ class OneByOneView(ViewABC):
             )
             return (
                 [{"label": elm, "value": elm} for elm in sensitivities],
+                sensitivities,
                 [{"label": elm, "value": elm} for elm in sensitivities],
                 self._data_model.get_tornado_reference(sensitivities, reference),
                 vector_selector_data,
