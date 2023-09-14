@@ -79,7 +79,8 @@ def _reversed_color_tables(tables: ColorTables) -> ColorTables:
         _new_t = copy.deepcopy(_t)
         _new_t["name"] = _t["name"] + " (Reverse)"
         _new_t["colors"] = [
-            [c0[0]] + c1[1:] for c0, c1 in zip(_t["colors"], _t["colors"][::-1])
+            tuple([c0[0]] + list(c1[1:]))
+            for c0, c1 in zip(_t["colors"], _t["colors"][::-1])
         ]
         rev.append(_new_t)
     return rev

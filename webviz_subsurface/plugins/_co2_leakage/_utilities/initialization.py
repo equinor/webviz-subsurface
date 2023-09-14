@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, List, Optional
 
 from webviz_config import WebvizSettings
@@ -14,6 +15,8 @@ from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
 )
 
+LOGGER = logging.getLogger(__name__)
+
 
 def init_map_attribute_names(
     mapping: Optional[Dict[str, str]]
@@ -21,11 +24,11 @@ def init_map_attribute_names(
     if mapping is None:
         # Based on name convention of xtgeoapp_grd3dmaps:
         return {
-            MapAttribute.MIGRATION_TIME: "MigrationTime",
-            MapAttribute.MAX_SGAS: "max_SGAS",
-            MapAttribute.MAX_AMFG: "max_AMFG",
+            MapAttribute.MIGRATION_TIME: "migrationtime",
+            MapAttribute.MAX_SGAS: "max_sgas",
+            MapAttribute.MAX_AMFG: "max_amfg",
         }
-    return {MapAttribute(key): value for key, value in mapping.items()}
+    return {MapAttribute[key]: value for key, value in mapping.items()}
 
 
 def init_surface_providers(
@@ -55,15 +58,19 @@ def init_well_pick_provider(
         return None
 
 
-def init_co2_containment_table_providers(
+def init_table_provider(
     ensemble_roots: Dict[str, str],
     table_rel_path: str,
 ) -> Dict[str, EnsembleTableProvider]:
-    return {
-        ens: (
-            EnsembleTableProviderFactory.instance().create_from_per_realization_csv_file(
+    providers = {}
+    factory = EnsembleTableProviderFactory.instance()
+    for ens, ens_path in ensemble_roots.items():
+        try:
+            providers[ens] = factory.create_from_per_realization_csv_file(
                 ens_path, table_rel_path
             )
-        )
-        for ens, ens_path in ensemble_roots.items()
-    }
+        except (KeyError, ValueError) as exc:
+            LOGGER.warning(
+                f'Did not load "{table_rel_path}" for ensemble "{ens}" with error {exc}'
+            )
+    return providers

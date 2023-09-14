@@ -12,7 +12,11 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SurfaceStatistic,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+    Co2MassScale,
+    GraphSource,
+    MapAttribute,
+)
 
 
 class ViewSettings(SettingsGroupABC):
@@ -28,6 +32,13 @@ class ViewSettings(SettingsGroupABC):
         CM_MAX = "cm-max"
         CM_MIN_AUTO = "cm-min-auto"
         CM_MAX_AUTO = "cm-max-auto"
+
+        GRAPH_SOURCE = "graph-source"
+        CO2_SCALE = "co2-scale"
+        Y_MIN_GRAPH = "y-min-graph"
+        Y_MAX_GRAPH = "y-max-graph"
+        Y_MIN_AUTO_GRAPH = "y-min-auto-graph"
+        Y_MAX_AUTO_GRAPH = "y-max-auto-graph"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -64,6 +75,14 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.CM_MAX),
                 self.register_component_unique_id(self.Ids.CM_MIN_AUTO),
                 self.register_component_unique_id(self.Ids.CM_MAX_AUTO),
+            ),
+            GraphSelectorsLayout(
+                self.register_component_unique_id(self.Ids.GRAPH_SOURCE),
+                self.register_component_unique_id(self.Ids.CO2_SCALE),
+                self.register_component_unique_id(self.Ids.Y_MIN_GRAPH),
+                self.register_component_unique_id(self.Ids.Y_MAX_GRAPH),
+                self.register_component_unique_id(self.Ids.Y_MIN_AUTO_GRAPH),
+                self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
             ),
             ExperimentalFeaturesLayout(
                 self.register_component_unique_id(self.Ids.PLUME_THRESHOLD),
@@ -138,6 +157,25 @@ class ViewSettings(SettingsGroupABC):
             Input(self.component_unique_id(self.Ids.CM_MAX_AUTO).to_string(), "value"),
         )
         def set_color_range_data(
+            min_auto: List[str], max_auto: List[str]
+        ) -> Tuple[bool, bool]:
+            return len(min_auto) == 1, len(max_auto) == 1
+
+        @callback(
+            Output(
+                self.component_unique_id(self.Ids.Y_MIN_GRAPH).to_string(), "disabled"
+            ),
+            Output(
+                self.component_unique_id(self.Ids.Y_MAX_GRAPH).to_string(), "disabled"
+            ),
+            Input(
+                self.component_unique_id(self.Ids.Y_MIN_AUTO_GRAPH).to_string(), "value"
+            ),
+            Input(
+                self.component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH).to_string(), "value"
+            ),
+        )
+        def set_y_min_max(
             min_auto: List[str], max_auto: List[str]
         ) -> Tuple[bool, bool]:
             return len(min_auto) == 1, len(max_auto) == 1
@@ -239,6 +277,67 @@ class MapSelectorLayout(wcc.Selectors):
         )
 
 
+class GraphSelectorsLayout(wcc.Selectors):
+    _CM_RANGE = {
+        "display": "flex",
+        "flexDirection": "row",
+    }
+
+    def __init__(
+        self,
+        graph_source_id: str,
+        co2_scale_id: str,
+        y_min_id: str,
+        y_max_id: str,
+        y_min_auto_id: str,
+        y_max_auto_id: str,
+    ):
+        super().__init__(
+            label="Graph Settings",
+            open_details=False,
+            children=[
+                "Source",
+                wcc.Dropdown(
+                    id=graph_source_id,
+                    options=list(GraphSource),
+                    value=GraphSource.CONTAINMENT_MASS,
+                    clearable=False,
+                ),
+                "Unit",
+                wcc.Dropdown(
+                    id=co2_scale_id,
+                    options=list(Co2MassScale),
+                    value=Co2MassScale.MTONS,
+                    clearable=False,
+                ),
+                "Minimum",
+                html.Div(
+                    [
+                        dcc.Input(id=y_min_id, type="number"),
+                        dcc.Checklist(
+                            ["Auto"],
+                            ["Auto"],
+                            id=y_min_auto_id,
+                        ),
+                    ],
+                    style=self._CM_RANGE,
+                ),
+                "Maximum",
+                html.Div(
+                    [
+                        dcc.Input(id=y_max_id, type="number"),
+                        dcc.Checklist(
+                            ["Auto"],
+                            ["Auto"],
+                            id=y_max_auto_id,
+                        ),
+                    ],
+                    style=self._CM_RANGE,
+                ),
+            ],
+        )
+
+
 class ExperimentalFeaturesLayout(wcc.Selectors):
     def __init__(self, plume_threshold_id: str, plume_smoothing_id: str):
         super().__init__(
@@ -289,7 +388,7 @@ class EnsembleSelectorLayout(wcc.Selectors):
                 "Ensemble",
                 wcc.Dropdown(
                     id=ensemble_id,
-                    options=[dict(value=en, label=en) for en in ensembles],
+                    options=[{"value": en, "label": en} for en in ensembles],
                     value=ensembles[0],
                     clearable=False,
                 ),

@@ -1,10 +1,10 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import Dash, Input, Output, State, callback, html
+from dash import Dash, Input, Output, State, callback, html, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
-from webviz_config.utils import StrEnum
+from webviz_config.utils import StrEnum, callback_typecheck
 
 from webviz_subsurface._providers import FaultPolygonsServer, SurfaceImageServer
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
@@ -13,22 +13,25 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     create_map_layers,
     create_map_viewports,
     derive_surface_address,
+    generate_containment_figures,
+    generate_unsmry_figures,
     get_plume_polygon,
     property_origin,
     readable_name,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
-    generate_co2_time_containment_figure,
-    generate_co2_volume_figure,
-)
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
     FaultPolygonsHandler,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+    Co2MassScale,
+    Co2VolumeScale,
+    GraphSource,
+    MapAttribute,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
-    init_co2_containment_table_providers,
     init_map_attribute_names,
     init_surface_providers,
+    init_table_provider,
     init_well_pick_provider,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
@@ -40,6 +43,8 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewS
 from . import _error
 from ._utilities.color_tables import co2leakage_color_tables
 
+TILE_PATH = "share/results/tables"
+
 
 class CO2Leakage(WebvizPluginABC):
     """
@@ -47,10 +52,18 @@ class CO2Leakage(WebvizPluginABC):
     ensemble
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-    * **`boundary_file`:** Path to a polygon representing the containment area
+    * **`file_containment_boundary`:** Path to a polygon representing the containment area
+    * **`file_hazardous_boundary`:** Path to a polygon representing the hazardous area
     * **`well_pick_file`:** Path to a file containing well picks
     * **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
-        CO2 outside/inside a boundary). Relative to each realization.
+        CO2 outside/inside a boundary), for co2 mass. Relative to each realization.
+    * **`co2_containment_volume_actual_relpath`:** Path to a table of co2 containment data (amount
+        of CO2 outside/inside a boundary), for co2 volume of type "actual". Relative to each
+        realization.
+    * **`co2_containment_volume_actual_simple_relpath`:** Path to a table of co2 containment data
+        (amount of CO2 outside/inside a boundary), for co2 volume of type "actual_simple".
+        Relative to each realization.
+    * **`unsmry_relpath`:** Relative path to a csv version of a unified summary file
     * **`fault_polygon_attribute`:** Polygons with this attribute are used as fault
         polygons
     * **`map_attribute_names`:** Dictionary for overriding the default mapping between
@@ -69,14 +82,21 @@ class CO2Leakage(WebvizPluginABC):
         MAIN_SETTINGS = "main-settings"
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         app: Dash,
         webviz_settings: WebvizSettings,
         ensembles: List[str],
-        boundary_file: Optional[str] = None,
+        file_containment_boundary: Optional[str] = None,
+        file_hazardous_boundary: Optional[str] = None,
         well_pick_file: Optional[str] = None,
-        co2_containment_relpath: str = "share/results/tables/co2_volumes.csv",
+        co2_containment_relpath: str = TILE_PATH + "/co2_volumes.csv",
+        co2_containment_volume_actual_relpath: str = TILE_PATH
+        + "/plume_volume_actual.csv",
+        co2_containment_volume_actual_simple_relpath: str = TILE_PATH
+        + "/plume_volume_actual_simple.csv",
+        unsmry_relpath: str = TILE_PATH + "/unsmry--raw.csv",
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         initial_surface: Optional[str] = None,
         map_attribute_names: Optional[Dict[str, str]] = None,
@@ -86,7 +106,8 @@ class CO2Leakage(WebvizPluginABC):
         super().__init__()
         self._error_message = ""
 
-        self._boundary_file = boundary_file
+        self._file_containment_boundary = file_containment_boundary
+        self._file_hazardous_boundary = file_hazardous_boundary
         try:
             self._ensemble_paths = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -113,9 +134,21 @@ class CO2Leakage(WebvizPluginABC):
                 for ens in ensembles
             }
             # CO2 containment
-            self._co2_table_providers = init_co2_containment_table_providers(
+            self._co2_table_providers = init_table_provider(
                 self._ensemble_paths,
                 co2_containment_relpath,
+            )
+            self._co2_volume_actual_table_providers = init_table_provider(
+                self._ensemble_paths,
+                co2_containment_volume_actual_relpath,
+            )
+            self._co2_volume_actual_simple_table_providers = init_table_provider(
+                self._ensemble_paths,
+                co2_containment_volume_actual_simple_relpath,
+            )
+            self._unsmry_providers = init_table_provider(
+                self._ensemble_paths,
+                unsmry_relpath,
             )
             # Well picks
             self._well_pick_provider = init_well_pick_provider(
@@ -170,16 +203,92 @@ class CO2Leakage(WebvizPluginABC):
         @callback(
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
+            Output(
+                self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "figure"
+            ),
+            Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "style"),
+            Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "style"),
+            Output(
+                self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "style"
+            ),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
+            Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
+            Input(self._settings_component(ViewSettings.Ids.CO2_SCALE), "value"),
+            Input(self._settings_component(ViewSettings.Ids.REALIZATION), "value"),
+            Input(self._settings_component(ViewSettings.Ids.Y_MIN_AUTO_GRAPH), "value"),
+            Input(self._settings_component(ViewSettings.Ids.Y_MIN_GRAPH), "value"),
+            Input(self._settings_component(ViewSettings.Ids.Y_MAX_AUTO_GRAPH), "value"),
+            Input(self._settings_component(ViewSettings.Ids.Y_MAX_GRAPH), "value"),
         )
-        def update_graphs(ensemble: str) -> Tuple[go.Figure, go.Figure]:
-            fig_args = (
-                self._co2_table_providers[ensemble],
-                self._co2_table_providers[ensemble].realizations(),
-            )
-            fig0 = generate_co2_volume_figure(*fig_args)
-            fig1 = generate_co2_time_containment_figure(*fig_args)
-            return fig0, fig1
+        @callback_typecheck
+        def update_graphs(
+            ensemble: str,
+            source: GraphSource,
+            co2_scale: Union[Co2MassScale, Co2VolumeScale],
+            realizations: List[int],
+            y_min_auto: List[str],
+            y_min_val: Optional[float],
+            y_max_auto: List[str],
+            y_max_val: Optional[float],
+        ) -> Tuple[go.Figure, go.Figure, Dict, Dict]:
+            styles = [{"display": "none"}] * 3
+            figs = [no_update] * 3
+            if source in [
+                GraphSource.CONTAINMENT_MASS,
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL,
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE,
+            ]:
+                y_limits = []
+                if len(y_min_auto) == 0:
+                    y_limits.append(y_min_val)
+                else:
+                    y_limits.append(None)
+                if len(y_max_auto) == 0:
+                    y_limits.append(y_max_val)
+                else:
+                    y_limits.append(None)
+                styles = [{}] * 3
+
+                if (
+                    source == GraphSource.CONTAINMENT_MASS
+                    and ensemble in self._co2_table_providers
+                ):
+                    figs[: len(figs)] = generate_containment_figures(
+                        self._co2_table_providers[ensemble],
+                        co2_scale,
+                        realizations[0],
+                        y_limits,
+                    )
+                elif (
+                    source == GraphSource.CONTAINMENT_VOLUME_ACTUAL
+                    and ensemble in self._co2_volume_actual_table_providers
+                ):
+                    figs[: len(figs)] = generate_containment_figures(
+                        self._co2_volume_actual_table_providers[ensemble],
+                        co2_scale,
+                        realizations[0],
+                        y_limits,
+                    )
+                elif (
+                    source == GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE
+                    and ensemble in self._co2_volume_actual_simple_table_providers
+                ):
+                    figs[: len(figs)] = generate_containment_figures(
+                        self._co2_volume_actual_simple_table_providers[ensemble],
+                        co2_scale,
+                        realizations[0],
+                        y_limits,
+                    )
+            elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
+                u_figs = generate_unsmry_figures(
+                    self._unsmry_providers[ensemble],
+                    co2_scale,
+                    self._co2_table_providers[ensemble],
+                )
+                figs[: len(u_figs)] = u_figs
+                styles[: len(u_figs)] = [{}] * len(u_figs)
+
+            return *figs, *styles  # type: ignore
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "marks"),
@@ -209,6 +318,25 @@ class CO2Leakage(WebvizPluginABC):
             if MapAttribute(attribute) == MapAttribute.MIGRATION_TIME:
                 return {"display": "none"}
             return {}
+
+        @callback(
+            Output(self._settings_component(ViewSettings.Ids.CO2_SCALE), "options"),
+            Output(self._settings_component(ViewSettings.Ids.CO2_SCALE), "value"),
+            Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
+        )
+        def make_unit_list(
+            attribute: str,
+        ) -> Union[
+            Tuple[List[Co2MassScale], Co2MassScale],
+            Tuple[List[Co2VolumeScale], Co2VolumeScale],
+        ]:
+            if attribute in [
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL,
+                GraphSource.CONTAINMENT_VOLUME_ACTUAL_SIMPLE,
+            ]:
+                return list(Co2VolumeScale), Co2VolumeScale.BILLION_CUBIC_METERS
+
+            return list(Co2MassScale), Co2MassScale.MTONS
 
         # Cannot avoid many arguments and/or locals since all layers of the DeckGL map
         # needs to be updated simultaneously
@@ -302,7 +430,8 @@ class CO2Leakage(WebvizPluginABC):
                         realization,
                     )
                 ),
-                license_boundary_file=self._boundary_file,
+                file_containment_boundary=self._file_containment_boundary,
+                file_hazardous_boundary=self._file_hazardous_boundary,
                 well_pick_provider=self._well_pick_provider,
                 plume_extent_data=plume_polygon,
             )
