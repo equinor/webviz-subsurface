@@ -13,7 +13,7 @@ try:
     # using. Direct use is implemented (instead of pyplot.contour directly) to avoid the
     # overhead related to figure/axis creation in MPL.
     from matplotlib import __version__ as mpl_ver
-    from matplotlib import _contour
+    from matplotlib import _contour  # type: ignore[attr-defined]
 except ImportError:
     MISSING_DEPENDENCIES = True
 
