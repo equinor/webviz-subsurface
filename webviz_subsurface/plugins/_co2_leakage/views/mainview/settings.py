@@ -15,12 +15,18 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     GraphSource,
+    LayoutLabels,
+    LayoutStyle,
     MapAttribute,
 )
 
 
 class ViewSettings(SettingsGroupABC):
     class Ids(StrEnum):
+        OPTIONS_DIALOG_BUTTON = "options-dialog-button"
+        OPTIONS_DIALOG = "options-dialog"
+        OPTIONS_DIALOG_OPTIONS = "options-dialog-options"
+
         FORMATION = "formation"
         ENSEMBLE = "ensemble"
         REALIZATION = "realization"
@@ -60,6 +66,8 @@ class ViewSettings(SettingsGroupABC):
 
     def layout(self) -> List[Component]:
         return [
+            DialogLayout(),
+            OpenDialogButton(),
             EnsembleSelectorLayout(
                 self.register_component_unique_id(self.Ids.ENSEMBLE),
                 self.register_component_unique_id(self.Ids.REALIZATION),
@@ -179,6 +187,46 @@ class ViewSettings(SettingsGroupABC):
             min_auto: List[str], max_auto: List[str]
         ) -> Tuple[bool, bool]:
             return len(min_auto) == 1, len(max_auto) == 1
+
+
+class OpenDialogButton(html.Button):
+    def __init__(self) -> None:
+        super().__init__(
+            LayoutLabels.COMMON_SELECTIONS,
+            id=ViewSettings.Ids.OPTIONS_DIALOG_BUTTON,
+            style=LayoutStyle.OPTIONS_BUTTON,
+            n_clicks=0,
+        )
+
+
+class DialogLayout(wcc.Dialog):
+    """Layout for the options dialog"""
+
+    def __init__(
+        self,
+    ) -> None:
+        checklist_options = []
+        checklist_values = []
+        checklist_options.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+        checklist_values.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+        checklist_options.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
+        checklist_values.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
+        checklist_options.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
+        checklist_values.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
+
+        super().__init__(
+            title=LayoutLabels.COMMON_SELECTIONS,
+            id=ViewSettings.Ids.OPTIONS_DIALOG,
+            draggable=True,
+            open=False,
+            children=[
+                wcc.Checklist(
+                    id=ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS,
+                    options=[{"label": opt, "value": opt} for opt in checklist_options],
+                    value=checklist_values,
+                ),
+            ],
+        )
 
 
 class FilterSelectorLayout(wcc.Selectors):

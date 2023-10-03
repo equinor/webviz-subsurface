@@ -28,3 +28,25 @@ class GraphSource(StrEnum):
     CONTAINMENT_MASS = "Containment Data (mass)"
     CONTAINMENT_VOLUME_ACTUAL = "Containment Data (volume, actual)"
     CONTAINMENT_VOLUME_ACTUAL_SIMPLE = "Containment Data (volume, actual_simple)"
+
+
+class LayoutLabels(str, Enum):
+    """Text labels used in layout components"""
+
+    SHOW_FAULTPOLYGONS = "Show fault polygons"
+    SHOW_CONTAINMENT_POLYGON = "Show containment polygon"
+    SHOW_HAZARDOUS_POLYGON = "Show hazardous polygon"
+    COMMON_SELECTIONS = "Options and global filters"
+
+
+# pylint: disable=too-few-public-methods
+class LayoutStyle:
+    """CSS styling"""
+
+    OPTIONS_BUTTON = {
+        "marginBottom": "10px",
+        "width": "100%",
+        "height": "30px",
+        "line-height": "30px",
+        "background-color": "lightgrey",
+    }
