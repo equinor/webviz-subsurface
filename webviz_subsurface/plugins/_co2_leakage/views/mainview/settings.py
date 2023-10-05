@@ -138,7 +138,11 @@ class ViewSettings(SettingsGroupABC):
                 elif current_value in surfaces:
                     picked_formation = dash.no_update
                 else:
-                    picked_formation = formations[0]["value"]
+                    picked_formation = (
+                        "all"
+                        if any((x["value"] == "all" for x in formations))
+                        else formations[0]["value"]
+                    )
             return formations, picked_formation
 
         @callback(
@@ -261,6 +265,11 @@ class MapSelectorLayout(wcc.Selectors):
         cm_min_auto_id: str,
         cm_max_auto_id: str,
     ):
+        default_colormap = (
+            "turbo (Seq)"
+            if "turbo (Seq)" in color_scale_names
+            else color_scale_names[0]
+        )
         super().__init__(
             label="Map Settings",
             open_details=True,
@@ -292,7 +301,7 @@ class MapSelectorLayout(wcc.Selectors):
                         dcc.Dropdown(
                             id=colormap_id,
                             options=color_scale_names,
-                            value=color_scale_names[0],
+                            value=default_colormap,
                             clearable=False,
                         ),
                         "Minimum",
