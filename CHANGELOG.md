@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - [#1231](https://github.com/equinor/webviz-subsurface/pull/1231) - Upgrades to the `EnsembleTableProvider` that improves performance: it no longer relies on `fmu-ensemble` for loading csv-files and parameters into dataframes. Additional: added new plugin argument `drop_failed_realizations` to `VolumetricAnalysis` to be able to load in volumetrics files, if they exist, even though the ensemble has crashed.
+- [#1239](https://github.com/equinor/webviz-subsurface/pull/1239) - Added button for options and global filters to `CO2Leakage`, plus some minor visual changes.
+- [#1226](https://github.com/equinor/webviz-subsurface/pull/1226) - Various visual and performance upgrades to `CO2Leakage`: New UNSMRY plot, added option for hazardous polygon, changed some containment plots, added volume as alternative data source, and more.
 
 ## [0.2.20] - 2023-06-26
 
