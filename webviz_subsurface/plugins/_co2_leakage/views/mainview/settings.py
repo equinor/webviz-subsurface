@@ -26,6 +26,7 @@ class ViewSettings(SettingsGroupABC):
         OPTIONS_DIALOG_BUTTON = "options-dialog-button"
         OPTIONS_DIALOG = "options-dialog"
         OPTIONS_DIALOG_OPTIONS = "options-dialog-options"
+        OPTIONS_DIALOG_WELL_FILTER = "options-dialog-well-filter"
 
         FORMATION = "formation"
         ENSEMBLE = "ensemble"
@@ -56,6 +57,7 @@ class ViewSettings(SettingsGroupABC):
         initial_surface: Optional[str],
         map_attribute_names: Dict[MapAttribute, str],
         color_scale_names: List[str],
+        well_names: List[str],
     ):
         super().__init__("Settings")
         self._ensemble_paths = ensemble_paths
@@ -63,10 +65,11 @@ class ViewSettings(SettingsGroupABC):
         self._map_attribute_names = map_attribute_names
         self._color_scale_names = color_scale_names
         self._initial_surface = initial_surface
+        self._well_names = well_names
 
     def layout(self) -> List[Component]:
         return [
-            DialogLayout(),
+            DialogLayout(self._well_names),
             OpenDialogButton(),
             EnsembleSelectorLayout(
                 self.register_component_unique_id(self.Ids.ENSEMBLE),
@@ -208,6 +211,7 @@ class DialogLayout(wcc.Dialog):
 
     def __init__(
         self,
+        well_names: List[str],
     ) -> None:
         checklist_options = []
         checklist_values = []
@@ -217,6 +221,8 @@ class DialogLayout(wcc.Dialog):
         checklist_values.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
         checklist_options.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
         checklist_values.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
+        checklist_options.append(LayoutLabels.SHOW_WELLS)
+        checklist_values.append(LayoutLabels.SHOW_WELLS)
 
         super().__init__(
             title=LayoutLabels.COMMON_SELECTIONS,
@@ -229,7 +235,34 @@ class DialogLayout(wcc.Dialog):
                     options=[{"label": opt, "value": opt} for opt in checklist_options],
                     value=checklist_values,
                 ),
+                wcc.FlexBox(
+                    children=[
+                        html.Div(
+                            style={
+                                "flex": 3,
+                                "minWidth": "20px",
+                                "display": "block" if well_names else "none",
+                            },
+                            children=WellFilter(well_names),
+                        ),
+                    ],
+                    style={"width": "20vw"},
+                ),
             ],
+        )
+
+
+class WellFilter(html.Div):
+    def __init__(self, well_names: List[str]) -> None:
+        super().__init__(
+            style={"display": "block" if well_names else "none"},
+            children=wcc.SelectWithLabel(
+                label=LayoutLabels.WELL_FILTER,
+                id=ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER,
+                options=[{"label": i, "value": i} for i in well_names],
+                value=well_names,
+                size=min(20, len(well_names)),
+            ),
         )
 
 

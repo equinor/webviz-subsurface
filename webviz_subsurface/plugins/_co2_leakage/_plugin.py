@@ -167,6 +167,9 @@ class CO2Leakage(WebvizPluginABC):
                 initial_surface,
                 self._map_attribute_names,
                 [c["name"] for c in self._color_tables],  # type: ignore
+                self._well_pick_provider.well_names()
+                if self._well_pick_provider
+                else [],
             ),
             self.Ids.MAIN_SETTINGS,
         )
@@ -358,6 +361,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS, "value"),
+            Input(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
         def update_map_attribute(
@@ -374,6 +378,7 @@ class CO2Leakage(WebvizPluginABC):
             plume_threshold: Optional[float],
             plume_smoothing: Optional[float],
             options_dialog_options: List[int],
+            selected_wells: List[str],
             ensemble: str,
         ) -> Tuple[List[Dict[Any, Any]], List[Any], Dict[Any, Any]]:
             attribute = MapAttribute(attribute)
@@ -437,6 +442,7 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_provider=self._well_pick_provider,
                 plume_extent_data=plume_polygon,
                 options_dialog_options=options_dialog_options,
+                selected_wells=selected_wells,
             )
             annotations = create_map_annotations(
                 formation=formation,

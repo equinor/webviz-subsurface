@@ -232,6 +232,7 @@ def create_map_viewports() -> Dict:
     }
 
 
+# pylint: disable=too-many-arguments
 def create_map_layers(
     formation: str,
     surface_data: Optional[SurfaceData],
@@ -241,6 +242,7 @@ def create_map_layers(
     well_pick_provider: Optional[WellPickProvider],
     plume_extent_data: Optional[geojson.FeatureCollection],
     options_dialog_options: List[int],
+    selected_wells: List[str],
 ) -> List[Dict]:
     layers = []
     if surface_data is not None:
@@ -301,17 +303,28 @@ def create_map_layers(
                 "visible": True,
             }
         )
-    if well_pick_provider is not None:
+    if (
+        well_pick_provider is not None
+        and LayoutLabels.SHOW_WELLS in options_dialog_options
+    ):
+        well_data = dict(well_pick_provider.get_geojson(selected_wells, formation))
+        if "features" in well_data and len(well_data["features"]) == 0:
+            warnings.warn(f'Formation name "{formation}" not found in well picks file.')
         layers.append(
             {
                 "@@type": "GeoJsonLayer",
                 "name": "Well Picks",
                 "id": "well-picks-layer",
-                "data": dict(
-                    well_pick_provider.get_geojson(
-                        well_pick_provider.well_names(), formation
-                    )
-                ),
+                "data": well_data,
+                "visible": True,
+                "getText": "@@=properties.attribute",
+                "getTextSize": 12,
+                "getTextAnchor": "start",
+                "pointType": "circle+text",
+                "lineWidthMinPixels": 2,
+                "pointRadiusMinPixels": 2,
+                "pickable": True,
+                "parameters": {"depthTest": False},
             }
         )
     if plume_extent_data is not None:
