@@ -71,7 +71,7 @@ class SubplotView(ViewABC):
         self,
         custom_vector_definitions: dict,
         custom_vector_definitions_base: dict,
-        disable_resampling_dropdown: bool,
+        has_presampled_providers: bool,
         initial_selected_vectors: List[str],
         initial_vector_selector_data: list,
         initial_visualization: VisualizationOptions,
@@ -90,15 +90,20 @@ class SubplotView(ViewABC):
         column = self.add_column()
         column.add_view_element(SubplotGraph(), SubplotView.Ids.SUBPLOT)
 
+        # Do not request resampling frequency for pre-sampled providers
+        ensemble_dates = (
+            []
+            if has_presampled_providers
+            else input_provider_set.all_dates(selected_resampling_frequency)
+        )
+
         self.add_settings_groups(
             {
                 SubplotView.Ids.GROUP_BY_SETTINGS: GroupBySettings(),
                 SubplotView.Ids.RESAMPLING_FREQUENCY_SETTINGS: ResamplingFrequencySettings(
-                    disable_resampling_dropdown=disable_resampling_dropdown,
+                    disable_dropdowns=has_presampled_providers,
                     selected_resampling_frequency=selected_resampling_frequency,
-                    ensembles_dates=input_provider_set.all_dates(
-                        selected_resampling_frequency
-                    ),
+                    ensembles_dates=ensemble_dates,
                     input_provider_set=input_provider_set,
                 ),
                 SubplotView.Ids.ENSEMBLE_SETTINGS: EnsemblesSettings(
@@ -129,6 +134,7 @@ class SubplotView(ViewABC):
         self._line_shape_fallback = line_shape_fallback
         self._user_defined_vector_definitions = user_defined_vector_definitions
         self._observations = observations
+        self._has_presampled_providers = has_presampled_providers
 
     # pylint: disable=too-many-statements
     def set_callbacks(self) -> None:
@@ -305,7 +311,7 @@ class SubplotView(ViewABC):
 
             relative_date: Optional[datetime.datetime] = (
                 None
-                if relative_date_value is None
+                if relative_date_value is None or self._has_presampled_providers
                 else datetime_utils.from_str(relative_date_value)
             )
 
@@ -682,7 +688,7 @@ class SubplotView(ViewABC):
             )
             relative_date: Optional[datetime.datetime] = (
                 None
-                if relative_date_value is None
+                if relative_date_value is None or self._has_presampled_providers
                 else datetime_utils.from_str(relative_date_value)
             )
 
@@ -912,6 +918,10 @@ class SubplotView(ViewABC):
             If dates are not existing for a provider, the data accessor must handle invalid
             relative date selection!
             """
+            # Early return when providers are pre-sampled
+            if self._has_presampled_providers:
+                return ([], None, {"display": "block"})
+
             resampling_frequency = Frequency.from_string_value(
                 resampling_frequency_value
             )

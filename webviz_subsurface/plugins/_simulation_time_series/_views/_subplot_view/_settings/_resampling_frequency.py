@@ -21,25 +21,31 @@ class ResamplingFrequencySettings(SettingsGroupABC):
 
     def __init__(
         self,
-        disable_resampling_dropdown: bool,
+        disable_dropdowns: bool,
         selected_resampling_frequency: Frequency,
         ensembles_dates: List[datetime.datetime],
         input_provider_set: EnsembleSummaryProviderSet,
     ) -> None:
         super().__init__("Resampling frequency")
-        self._disable_resampling_dropdown = disable_resampling_dropdown
+        self._disable_dropdowns = disable_dropdowns
         self._selected_resampling_frequency = selected_resampling_frequency
         self._ensembles_dates = ensembles_dates
         self._input_provider_set = input_provider_set
 
     def layout(self) -> List[Component]:
         return [
+            wcc.Label(
+                "NB: Disabled for pre-sampled data",
+                style={"font-style": "italic", "font-weight": "bold"}
+                if self._disable_dropdowns
+                else {"display": "none"},
+            ),
             wcc.Dropdown(
                 id=self.register_component_unique_id(
                     ResamplingFrequencySettings.Ids.RESAMPLING_FREQUENCY_DROPDOWN
                 ),
                 clearable=False,
-                disabled=self._disable_resampling_dropdown,
+                disabled=self._disable_dropdowns,
                 options=[
                     {
                         "label": frequency.value,
@@ -59,11 +65,11 @@ class ResamplingFrequencySettings(SettingsGroupABC):
                 },
             ),
             wcc.Dropdown(
-                clearable=True,
-                disabled=self._disable_resampling_dropdown,
                 id=self.register_component_unique_id(
                     ResamplingFrequencySettings.Ids.RELATIVE_DATE_DROPDOWN
                 ),
+                clearable=True,
+                disabled=self._disable_dropdowns,
                 options=[
                     {
                         "label": datetime_utils.to_str(_date),
@@ -71,11 +77,5 @@ class ResamplingFrequencySettings(SettingsGroupABC):
                     }
                     for _date in sorted(self._ensembles_dates)
                 ],
-            ),
-            wcc.Label(
-                "NB: Disabled for pre-sampled data",
-                style={"font-style": "italic"}
-                if self._disable_resampling_dropdown
-                else {"display": "none"},
             ),
         ]

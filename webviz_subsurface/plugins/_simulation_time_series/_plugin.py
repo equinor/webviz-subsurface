@@ -122,7 +122,7 @@ class SimulationTimeSeries(WebvizPluginABC):
                 "is not supported by plugin yet!"
             )
         self._sampling = Frequency(sampling)
-        self._presampled_frequency = None
+        self._has_presampled_providers = False
 
         # TODO: Update functionality when allowing raw data and csv file input
         # NOTE: If csv is implemented-> handle/disable statistics, PER_INTVL_, PER_DAY_, delta
@@ -135,10 +135,11 @@ class SimulationTimeSeries(WebvizPluginABC):
                 for ensemble_name in ensembles
             }
             if perform_presampling:
-                self._presampled_frequency = self._sampling
+                presampled_frequency = self._sampling
+                self._has_presampled_providers = True
                 self._input_provider_set = (
                     create_presampled_ensemble_summary_provider_set_from_paths(
-                        ensemble_paths, rel_file_pattern, self._presampled_frequency
+                        ensemble_paths, rel_file_pattern, presampled_frequency
                     )
                 )
             else:
@@ -324,7 +325,7 @@ class SimulationTimeSeries(WebvizPluginABC):
             SubplotView(
                 custom_vector_definitions=self._custom_vector_definitions,
                 custom_vector_definitions_base=self._custom_vector_definitions_base,
-                disable_resampling_dropdown=self._presampled_frequency is not None,
+                has_presampled_providers=self._has_presampled_providers,
                 initial_selected_vectors=self._initial_vectors,
                 initial_vector_selector_data=self._initial_vector_selector_data,
                 initial_visualization=self._initial_visualization_selection,
