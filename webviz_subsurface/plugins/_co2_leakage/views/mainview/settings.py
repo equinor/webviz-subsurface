@@ -15,12 +15,19 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     GraphSource,
+    LayoutLabels,
+    LayoutStyle,
     MapAttribute,
 )
 
 
 class ViewSettings(SettingsGroupABC):
     class Ids(StrEnum):
+        OPTIONS_DIALOG_BUTTON = "options-dialog-button"
+        OPTIONS_DIALOG = "options-dialog"
+        OPTIONS_DIALOG_OPTIONS = "options-dialog-options"
+        OPTIONS_DIALOG_WELL_FILTER = "options-dialog-well-filter"
+
         FORMATION = "formation"
         ENSEMBLE = "ensemble"
         REALIZATION = "realization"
@@ -50,6 +57,7 @@ class ViewSettings(SettingsGroupABC):
         initial_surface: Optional[str],
         map_attribute_names: Dict[MapAttribute, str],
         color_scale_names: List[str],
+        well_names: List[str],
     ):
         super().__init__("Settings")
         self._ensemble_paths = ensemble_paths
@@ -57,9 +65,12 @@ class ViewSettings(SettingsGroupABC):
         self._map_attribute_names = map_attribute_names
         self._color_scale_names = color_scale_names
         self._initial_surface = initial_surface
+        self._well_names = well_names
 
     def layout(self) -> List[Component]:
         return [
+            DialogLayout(self._well_names),
+            OpenDialogButton(),
             EnsembleSelectorLayout(
                 self.register_component_unique_id(self.Ids.ENSEMBLE),
                 self.register_component_unique_id(self.Ids.REALIZATION),
@@ -130,7 +141,11 @@ class ViewSettings(SettingsGroupABC):
                 elif current_value in surfaces:
                     picked_formation = dash.no_update
                 else:
-                    picked_formation = formations[0]["value"]
+                    picked_formation = (
+                        "all"
+                        if any((x["value"] == "all" for x in formations))
+                        else formations[0]["value"]
+                    )
             return formations, picked_formation
 
         @callback(
@@ -181,6 +196,76 @@ class ViewSettings(SettingsGroupABC):
             return len(min_auto) == 1, len(max_auto) == 1
 
 
+class OpenDialogButton(html.Button):
+    def __init__(self) -> None:
+        super().__init__(
+            LayoutLabels.COMMON_SELECTIONS,
+            id=ViewSettings.Ids.OPTIONS_DIALOG_BUTTON,
+            style=LayoutStyle.OPTIONS_BUTTON,
+            n_clicks=0,
+        )
+
+
+class DialogLayout(wcc.Dialog):
+    """Layout for the options dialog"""
+
+    def __init__(
+        self,
+        well_names: List[str],
+    ) -> None:
+        checklist_options = []
+        checklist_values = []
+        checklist_options.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+        checklist_values.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+        checklist_options.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
+        checklist_values.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
+        checklist_options.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
+        checklist_values.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
+        checklist_options.append(LayoutLabels.SHOW_WELLS)
+        checklist_values.append(LayoutLabels.SHOW_WELLS)
+
+        super().__init__(
+            title=LayoutLabels.COMMON_SELECTIONS,
+            id=ViewSettings.Ids.OPTIONS_DIALOG,
+            draggable=True,
+            open=False,
+            children=[
+                wcc.Checklist(
+                    id=ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS,
+                    options=[{"label": opt, "value": opt} for opt in checklist_options],
+                    value=checklist_values,
+                ),
+                wcc.FlexBox(
+                    children=[
+                        html.Div(
+                            style={
+                                "flex": 3,
+                                "minWidth": "20px",
+                                "display": "block" if well_names else "none",
+                            },
+                            children=WellFilter(well_names),
+                        ),
+                    ],
+                    style={"width": "20vw"},
+                ),
+            ],
+        )
+
+
+class WellFilter(html.Div):
+    def __init__(self, well_names: List[str]) -> None:
+        super().__init__(
+            style={"display": "block" if well_names else "none"},
+            children=wcc.SelectWithLabel(
+                label=LayoutLabels.WELL_FILTER,
+                id=ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER,
+                options=[{"label": i, "value": i} for i in well_names],
+                value=well_names,
+                size=min(20, len(well_names)),
+            ),
+        )
+
+
 class FilterSelectorLayout(wcc.Selectors):
     def __init__(self, formation_id: str):
         super().__init__(
@@ -213,6 +298,11 @@ class MapSelectorLayout(wcc.Selectors):
         cm_min_auto_id: str,
         cm_max_auto_id: str,
     ):
+        default_colormap = (
+            "turbo (Seq)"
+            if "turbo (Seq)" in color_scale_names
+            else color_scale_names[0]
+        )
         super().__init__(
             label="Map Settings",
             open_details=True,
@@ -244,7 +334,7 @@ class MapSelectorLayout(wcc.Selectors):
                         dcc.Dropdown(
                             id=colormap_id,
                             options=color_scale_names,
-                            value=color_scale_names[0],
+                            value=default_colormap,
                             clearable=False,
                         ),
                         "Minimum",

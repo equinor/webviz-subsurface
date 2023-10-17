@@ -29,6 +29,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    LayoutLabels,
     MapAttribute,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.summary_graphs import (
@@ -222,6 +223,7 @@ def create_map_viewports() -> Dict:
                     "colormap-layer",
                     "fault-polygons-layer",
                     "license-boundary-layer",
+                    "hazardous-boundary-layer",
                     "well-picks-layer",
                     "plume-polygon-layer",
                 ],
@@ -230,6 +232,7 @@ def create_map_viewports() -> Dict:
     }
 
 
+# pylint: disable=too-many-arguments
 def create_map_layers(
     formation: str,
     surface_data: Optional[SurfaceData],
@@ -238,6 +241,8 @@ def create_map_layers(
     file_hazardous_boundary: Optional[str],
     well_pick_provider: Optional[WellPickProvider],
     plume_extent_data: Optional[geojson.FeatureCollection],
+    options_dialog_options: List[int],
+    selected_wells: List[str],
 ) -> List[Dict]:
     layers = []
     if surface_data is not None:
@@ -256,7 +261,10 @@ def create_map_layers(
             }
         )
 
-    if fault_polygon_url is not None:
+    if (
+        fault_polygon_url is not None
+        and LayoutLabels.SHOW_FAULTPOLYGONS in options_dialog_options
+    ):
         layers.append(
             {
                 "@@type": "FaultPolygonsLayer",
@@ -265,7 +273,10 @@ def create_map_layers(
                 "data": fault_polygon_url,
             }
         )
-    if file_containment_boundary is not None:
+    if (
+        file_containment_boundary is not None
+        and LayoutLabels.SHOW_CONTAINMENT_POLYGON in options_dialog_options
+    ):
         layers.append(
             {
                 "@@type": "GeoJsonLayer",
@@ -274,9 +285,13 @@ def create_map_layers(
                 "data": _parse_polygon_file(file_containment_boundary),
                 "stroked": False,
                 "getFillColor": [0, 172, 0, 120],
+                "visible": True,
             }
         )
-    if file_hazardous_boundary is not None:
+    if (
+        file_hazardous_boundary is not None
+        and LayoutLabels.SHOW_HAZARDOUS_POLYGON in options_dialog_options
+    ):
         layers.append(
             {
                 "@@type": "GeoJsonLayer",
@@ -285,19 +300,31 @@ def create_map_layers(
                 "data": _parse_polygon_file(file_hazardous_boundary),
                 "stroked": False,
                 "getFillColor": [200, 0, 0, 120],
+                "visible": True,
             }
         )
-    if well_pick_provider is not None:
+    if (
+        well_pick_provider is not None
+        and LayoutLabels.SHOW_WELLS in options_dialog_options
+    ):
+        well_data = dict(well_pick_provider.get_geojson(selected_wells, formation))
+        if "features" in well_data and len(well_data["features"]) == 0:
+            warnings.warn(f'Formation name "{formation}" not found in well picks file.')
         layers.append(
             {
                 "@@type": "GeoJsonLayer",
                 "name": "Well Picks",
                 "id": "well-picks-layer",
-                "data": dict(
-                    well_pick_provider.get_geojson(
-                        well_pick_provider.well_names(), formation
-                    )
-                ),
+                "data": well_data,
+                "visible": True,
+                "getText": "@@=properties.attribute",
+                "getTextSize": 12,
+                "getTextAnchor": "start",
+                "pointType": "circle+text",
+                "lineWidthMinPixels": 2,
+                "pointRadiusMinPixels": 2,
+                "pickable": True,
+                "parameters": {"depthTest": False},
             }
         )
     if plume_extent_data is not None:
