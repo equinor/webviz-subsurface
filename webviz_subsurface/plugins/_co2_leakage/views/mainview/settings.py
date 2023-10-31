@@ -518,4 +518,10 @@ def _compile_property_options() -> List[Dict[str, Any]]:
             "label": MapAttribute.AMFG_PLUME.value,
             "value": MapAttribute.AMFG_PLUME.value,
         },
+        {
+            "label": html.Span(["MASS:"], style={"text-decoration": "underline"}),
+            "value": "",
+            "disabled": True,
+        },
+        {"label": MapAttribute.MASS.value, "value": MapAttribute.MASS.value},
     ]
