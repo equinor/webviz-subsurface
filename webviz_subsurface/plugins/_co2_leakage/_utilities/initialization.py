@@ -1,5 +1,7 @@
 import logging
+import os
 from typing import Dict, List, Optional
+import warnings
 
 from webviz_config import WebvizSettings
 
@@ -75,3 +77,19 @@ def init_table_provider(
                 f'Did not load "{table_rel_path}" for ensemble "{ens}" with error {exc}'
             )
     return providers
+
+
+def _check_if_files_exist(
+    file_containment_boundary: Optional[str],
+    file_hazardous_boundary: Optional[str],
+    well_pick_file: Optional[str],
+) -> None:
+    if file_containment_boundary is not None:
+        if os.path.isfile(file_containment_boundary) == False:
+            warnings.warn(f"Cannot find specified file {file_containment_boundary}.")
+    if file_hazardous_boundary is not None:
+        if os.path.isfile(file_hazardous_boundary) == False:
+            warnings.warn(f"Cannot find specified file {file_hazardous_boundary}.")
+    if well_pick_file is not None:
+        if os.path.isfile(well_pick_file) == False:
+            warnings.warn(f"Cannot find specified file {well_pick_file}.")
