@@ -29,7 +29,8 @@ def init_map_attribute_names(
             MapAttribute.MIGRATION_TIME: "migrationtime",
             MapAttribute.MAX_SGAS: "max_sgas",
             MapAttribute.MAX_AMFG: "max_amfg",
-            MapAttribute.MASS: "mass_total",  # NBNB-AS: Or sum_mass_total
+            # MapAttribute.MASS: "mass_total",  # NBNB-AS: Or sum_mass_total
+            MapAttribute.MASS: "mass",
         }
     return {MapAttribute[key]: value for key, value in mapping.items()}
 
