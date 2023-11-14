@@ -454,6 +454,7 @@ class CO2Leakage(WebvizPluginABC):
                 formation=formation,
                 surface_data=surf_data,
                 colortables=self._color_tables,
+                attribute=attribute,
             )
             viewports = create_map_viewports()
             return (layers, annotations, viewports)
