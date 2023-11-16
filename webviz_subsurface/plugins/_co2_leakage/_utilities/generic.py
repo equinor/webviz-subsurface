@@ -27,7 +27,6 @@ class GraphSource(StrEnum):
     UNSMRY = "UNSMRY"
     CONTAINMENT_MASS = "Containment Data (mass)"
     CONTAINMENT_VOLUME_ACTUAL = "Containment Data (volume, actual)"
-    CONTAINMENT_VOLUME_ACTUAL_SIMPLE = "Containment Data (volume, actual_simple)"
 
 
 class LayoutLabels(str, Enum):
