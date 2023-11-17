@@ -396,6 +396,7 @@ def plugin_callbacks(
         State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
         State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
     )
+    # pylint: disable=too-many-branches
     def _update_map(
         surface_elements: List[dict],
         selected_wells: List[str],
