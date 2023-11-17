@@ -394,7 +394,9 @@ def plugin_callbacks(
         State(get_uuid("tabs"), "value"),
         State({"id": get_uuid(LayoutElements.MULTI), "tab": MATCH}, "value"),
         State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
+        State({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
     )
+    # pylint: disable=too-many-branches
     def _update_map(
         surface_elements: List[dict],
         selected_wells: List[str],
@@ -403,6 +405,7 @@ def plugin_callbacks(
         tab_name: str,
         multi: str,
         current_bounds: Optional[List],
+        current_views: Optional[dict],
     ) -> tuple:
         """Updates the map component with the stored, validated selections"""
 
@@ -558,15 +561,24 @@ def plugin_callbacks(
                     "name": make_viewport_label(surface_elements[idx], tab_name, multi),
                 }
             )
-        views = {
-            "layout": view_layout(len(surface_elements), view_columns),
-            "showLabel": True,
-            "viewports": viewports,
-        }
+        updated_view_layout = view_layout(len(surface_elements), view_columns)
+        if (
+            current_views
+            and updated_view_layout == current_views["layout"]
+            and len(current_views["viewports"]) == len(viewports)
+        ):
+            updated_views = no_update
+
+        else:
+            updated_views = {
+                "layout": updated_view_layout,
+                "showLabel": True,
+                "viewports": viewports,
+            }
         return (
             layer_model.layers,
             viewport_bounds if not current_bounds else no_update,
-            views,
+            updated_views,
             view_annotations,
         )
 
