@@ -26,7 +26,7 @@ class Co2VolumeScale(StrEnum):
 class GraphSource(StrEnum):
     UNSMRY = "UNSMRY"
     CONTAINMENT_MASS = "Containment Data (mass)"
-    CONTAINMENT_VOLUME_ACTUAL = "Containment Data (volume, actual)"
+    CONTAINMENT_ACTUAL_VOLUME = "Containment Data (volume, actual)"
 
 
 class LayoutLabels(str, Enum):

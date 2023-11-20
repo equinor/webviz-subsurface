@@ -57,7 +57,7 @@ class CO2Leakage(WebvizPluginABC):
     * **`well_pick_file`:** Path to a file containing well picks
     * **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
         CO2 outside/inside a boundary), for co2 mass. Relative to each realization.
-    * **`co2_containment_volume_actual_relpath`:** Path to a table of co2 containment data (amount
+    * **`co2_containment_actual_volume_relpath`:** Path to a table of co2 containment data (amount
         of CO2 outside/inside a boundary), for co2 volume of type "actual". Relative to each
         realization.
     * **`unsmry_relpath`:** Relative path to a csv version of a unified summary file
@@ -88,9 +88,9 @@ class CO2Leakage(WebvizPluginABC):
         file_containment_boundary: Optional[str] = None,
         file_hazardous_boundary: Optional[str] = None,
         well_pick_file: Optional[str] = None,
-        co2_containment_relpath: str = TILE_PATH + "/co2_volumes.csv",
-        co2_containment_volume_actual_relpath: str = TILE_PATH
-        + "/plume_volume_actual.csv",
+        co2_containment_relpath: str = TILE_PATH + "/co2_containment_mass.csv",
+        co2_containment_actual_volume_relpath: str = TILE_PATH
+        + "/co2_containment_actual_volume.csv",
         unsmry_relpath: str = TILE_PATH + "/unsmry--raw.csv",
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         initial_surface: Optional[str] = None,
@@ -133,9 +133,9 @@ class CO2Leakage(WebvizPluginABC):
                 self._ensemble_paths,
                 co2_containment_relpath,
             )
-            self._co2_volume_actual_table_providers = init_table_provider(
+            self._co2_actual_volume_table_providers = init_table_provider(
                 self._ensemble_paths,
-                co2_containment_volume_actual_relpath,
+                co2_containment_actual_volume_relpath,
             )
             self._unsmry_providers = init_table_provider(
                 self._ensemble_paths,
@@ -229,7 +229,7 @@ class CO2Leakage(WebvizPluginABC):
             figs = [no_update] * 3
             if source in [
                 GraphSource.CONTAINMENT_MASS,
-                GraphSource.CONTAINMENT_VOLUME_ACTUAL,
+                GraphSource.CONTAINMENT_ACTUAL_VOLUME,
             ]:
                 y_limits = []
                 if len(y_min_auto) == 0:
@@ -253,11 +253,11 @@ class CO2Leakage(WebvizPluginABC):
                         y_limits,
                     )
                 elif (
-                    source == GraphSource.CONTAINMENT_VOLUME_ACTUAL
-                    and ensemble in self._co2_volume_actual_table_providers
+                    source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
+                    and ensemble in self._co2_actual_volume_table_providers
                 ):
                     figs[: len(figs)] = generate_containment_figures(
-                        self._co2_volume_actual_table_providers[ensemble],
+                        self._co2_actual_volume_table_providers[ensemble],
                         co2_scale,
                         realizations[0],
                         y_limits,
@@ -313,7 +313,7 @@ class CO2Leakage(WebvizPluginABC):
             Tuple[List[Co2MassScale], Co2MassScale],
             Tuple[List[Co2VolumeScale], Co2VolumeScale],
         ]:
-            if attribute == GraphSource.CONTAINMENT_VOLUME_ACTUAL:
+            if attribute == GraphSource.CONTAINMENT_ACTUAL_VOLUME:
                 return list(Co2VolumeScale), Co2VolumeScale.BILLION_CUBIC_METERS
 
             return list(Co2MassScale), Co2MassScale.MTONS
