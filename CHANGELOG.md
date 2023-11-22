@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [UNRELEASED] - YYYY-MM-DD
+
+### Added
+- [#1244](https://github.com/equinor/webviz-subsurface/pull/1244) - New functionality in `VolumetricAnalysis` to compute facies fractions if `FACIES` is present in the volumetric table. Also added possibility to have labels on bar plots with user defined value format. 
+
+
+## [0.2.22] - 2023-08-31
 
 ### Added
 - [#1227](https://github.com/equinor/webviz-subsurface/pull/1227) - New functionality in `SimulationTimeSeriesOneByOne`: option to use the sensitivity filter on all visualisations, not only the timeseries.

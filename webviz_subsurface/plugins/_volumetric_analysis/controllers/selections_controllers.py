@@ -127,6 +127,10 @@ def selections_controllers(
             {"id": get_uuid("selections"), "tab": "voldist", "selector": "Color by"},
             "value",
         ),
+        Input(
+            {"id": get_uuid("selections"), "tab": "voldist", "selector": "X Response"},
+            "value",
+        ),
         State(
             {"id": get_uuid("selections"), "tab": "voldist", "selector": "bottom_viz"},
             "options",
@@ -143,6 +147,7 @@ def selections_controllers(
         plot_type: str,
         selected_page: str,
         selected_color_by: list,
+        selected_x_response: str,
         visualization_options: list,
         selector_values: list,
         selector_ids: list,
@@ -150,10 +155,12 @@ def selections_controllers(
         selected_tab: str,
     ) -> tuple:
         ctx = callback_context.triggered[0]
-        if (
-            selected_tab != "voldist"
-            or ("Color by" in ctx["prop_id"] and plot_type not in ["box", "bar"])
-            or previous_selection is None
+
+        if selected_tab != "voldist" or previous_selection is None:
+            raise PreventUpdate
+
+        if ("Color by" in ctx["prop_id"] and plot_type not in ["box", "bar"]) or (
+            "X Response" in ctx["prop_id"] and selected_x_response != "FACIES_FRACTION"
         ):
             raise PreventUpdate
 
@@ -183,6 +190,10 @@ def selections_controllers(
             value = None if disable else selections.get(selector)
 
             settings[selector] = {"disable": disable, "value": value}
+
+        # Need to ensure a plot type is selected if page is custopm
+        if settings["Plot type"]["value"] is None and selected_page == "custom":
+            settings["Plot type"]["value"] = "histogram"
 
         # update dropdown options based on plot type
         if settings["Plot type"]["value"] == "scatter":
@@ -217,6 +228,11 @@ def selections_controllers(
         settings["Color by"]["options"] = [
             {"label": elm, "value": elm} for elm in colorby_elm
         ]
+        if settings["X Response"]["value"] == "FACIES_FRACTION":
+            if selected_page == "per_zr":
+                settings["Color by"]["value"] = "FACIES"
+            elif selected_page == "conv":
+                settings["Subplots"]["value"] = "FACIES"
 
         # disable vizualisation radioitem for some pages
         for x in visualization_options:

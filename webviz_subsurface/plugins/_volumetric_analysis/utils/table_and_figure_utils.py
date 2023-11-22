@@ -5,6 +5,15 @@ import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dash_table
 
+from webviz_subsurface._models import InplaceVolumesModel
+from webviz_subsurface._utils.colors import StandardColors
+
+FLUID_COLORS = {
+    "oil": StandardColors.OIL_GREEN,
+    "gas": StandardColors.GAS_RED,
+    "water": StandardColors.WATER_BLUE,
+}
+
 
 def create_table_columns(
     columns: list,
@@ -85,11 +94,6 @@ def create_data_table(
 
 
 def fluid_table_style() -> list:
-    fluid_colors = {
-        "oil": "#007079",
-        "gas": "#FF1243",
-        "water": "#ADD8E6",
-    }
     return [
         {
             "if": {
@@ -99,7 +103,7 @@ def fluid_table_style() -> list:
             "color": color,
             "fontWeight": "bold",
         }
-        for fluid, color in fluid_colors.items()
+        for fluid, color in FLUID_COLORS.items()
     ]
 
 
@@ -153,3 +157,19 @@ def update_tornado_figures_xaxis(figures: List[go.Figure]) -> None:
     x_absmax = max([max(abs(trace.x)) for fig in figures for trace in fig.data])
     for fig in figures:
         fig.update_layout(xaxis_range=[-x_absmax, x_absmax])
+
+
+def get_text_format_bar_plot(
+    responses: list, selections: dict, volumemodel: InplaceVolumesModel
+) -> Union[bool, str]:
+    """Get number format for bar plot labels"""
+    if not selections["textformat"]:
+        return False
+
+    if selections["textformat"] == "default":
+        if any(x in responses for x in volumemodel.volume_columns):
+            return f".{selections['decimals']}s"
+        if any(x in responses for x in volumemodel.property_columns):
+            return f".{selections['decimals']}f"
+
+    return f".{selections['decimals']}{selections['textformat']}"

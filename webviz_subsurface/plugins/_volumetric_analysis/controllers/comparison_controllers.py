@@ -109,6 +109,9 @@ def comparison_callback(
     ):
         groupby.append("FLUID_ZONE")
 
+    if selections["Response"] == "FACIES_FRACTION" and "FACIES" not in groupby:
+        groupby.append("FACIES")
+
     if display_option == "multi-response table":
         # select max one hc_response for a cleaner table
         responses = [selections["Response"]] + [
@@ -287,7 +290,6 @@ def create_comparison_df(
         df[col, "diff (%)"] = ((df[col][value2] / df[col][value1]) - 1) * 100
         df.loc[df[col]["diff"] == 0, (col, "diff (%)")] = 0
     df = df[responses].replace([np.inf, -np.inf], np.nan).reset_index()
-
     # remove rows where the selected response is nan
     # can happen for properties where the volume columns are 0
     df = df.loc[~((df[resp][value1].isna()) & (df[resp][value2].isna()))]

@@ -6,6 +6,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pandas.api.types import is_numeric_dtype
 
+VALID_BOXMODES = ["group", "overlay"]
+
 
 def create_figure(plot_type: str, **kwargs: Any) -> go.Figure:
     """Create subplots for selected parameters"""
@@ -32,6 +34,9 @@ def set_default_args(**plotargs: Any) -> dict:
     plotargs["histnorm"] = plotargs.get("histnorm", "percent")
     plotargs["barmode"] = plotargs.get("barmode", "group")
     plotargs["opacity"] = plotargs.get("opacity", 0.7)
+
+    if "boxmode" in plotargs and plotargs["boxmode"] not in VALID_BOXMODES:
+        plotargs["boxmode"] = VALID_BOXMODES[0]
 
     if plotargs.get("facet_col") is not None:
         facet_cols = plotargs["data_frame"][plotargs["facet_col"]].nunique()
