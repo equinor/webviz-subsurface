@@ -318,8 +318,12 @@ def create_map_layers(
         and LayoutLabels.SHOW_WELLS in options_dialog_options
     ):
         well_data = dict(well_pick_provider.get_geojson(selected_wells, formation))
-        if "features" in well_data and len(well_data["features"]) == 0:
-            warnings.warn(f'Formation name "{formation}" not found in well picks file.')
+        if "features" in well_data:
+            if len(well_data["features"]) == 0:
+                warnings.warn(f'Formation name "{formation}" not found in well picks file.')
+            for i in range(len(well_data["features"])):
+                current_attribute = well_data["features"][i]["properties"]["attribute"]
+                well_data["features"][i]["properties"]["attribute"] = " " + current_attribute
         layers.append(
             {
                 "@@type": "GeoJsonLayer",
