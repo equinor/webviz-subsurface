@@ -55,9 +55,9 @@ class CO2Leakage(WebvizPluginABC):
     * **`file_containment_boundary`:** Path to a polygon representing the containment area
     * **`file_hazardous_boundary`:** Path to a polygon representing the hazardous area
     * **`well_pick_file`:** Path to a file containing well picks
-    * **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
+    * **`plume_mass_relpath`:** Path to a table of co2 containment data (amount of
         CO2 outside/inside a boundary), for co2 mass. Relative to each realization.
-    * **`co2_containment_actual_volume_relpath`:** Path to a table of co2 containment data (amount
+    * **`plume_actual_volume_relpath`:** Path to a table of co2 containment data (amount
         of CO2 outside/inside a boundary), for co2 volume of type "actual". Relative to each
         realization.
     * **`unsmry_relpath`:** Relative path to a csv version of a unified summary file
@@ -88,9 +88,9 @@ class CO2Leakage(WebvizPluginABC):
         file_containment_boundary: Optional[str] = None,
         file_hazardous_boundary: Optional[str] = None,
         well_pick_file: Optional[str] = None,
-        co2_containment_relpath: str = TILE_PATH + "/co2_containment_mass.csv",
-        co2_containment_actual_volume_relpath: str = TILE_PATH
-        + "/co2_containment_actual_volume.csv",
+        plume_mass_relpath: str = TILE_PATH + "/plume_mass.csv",
+        plume_actual_volume_relpath: str = TILE_PATH
+        + "/plume_actual_volume.csv",
         unsmry_relpath: str = TILE_PATH + "/unsmry--raw.csv",
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         initial_surface: Optional[str] = None,
@@ -131,11 +131,11 @@ class CO2Leakage(WebvizPluginABC):
             # CO2 containment
             self._co2_table_providers = init_table_provider(
                 self._ensemble_paths,
-                co2_containment_relpath,
+                plume_mass_relpath,
             )
             self._co2_actual_volume_table_providers = init_table_provider(
                 self._ensemble_paths,
-                co2_containment_actual_volume_relpath,
+                plume_actual_volume_relpath,
             )
             self._unsmry_providers = init_table_provider(
                 self._ensemble_paths,
