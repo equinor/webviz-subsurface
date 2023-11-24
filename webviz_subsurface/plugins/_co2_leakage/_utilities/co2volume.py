@@ -240,6 +240,7 @@ def generate_co2_time_containment_one_realization_figure(
     )
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
+    fig.layout.yaxis.exponentformat = "power"
     _adjust_figure(fig)
     return fig
 
@@ -268,7 +269,7 @@ def generate_co2_time_containment_figure(
     }
     active_cols_at_startup = ["Total", "Outside", "Hazardous"]
     # Generate dummy scatters for legend entries
-    dummy_args = {"mode": "lines", "hoverinfo": "none"}
+    dummy_args = {"x": df["date"], "mode": "lines", "hoverinfo": "none"}
     for col, value in cols_to_plot.items():
         args = {
             "line_dash": value[1],
@@ -305,8 +306,8 @@ def generate_co2_time_containment_figure(
     fig.layout.title = "CO<sub>2</sub> containment (all realizations)"
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
-    fig.layout.yaxis.exponentformat = "none"
-    fig.layout.yaxis.range = (0, 1.05 * df["total"].max())
+    fig.layout.yaxis.exponentformat = "power"
+    fig.layout.yaxis.range = (-0.1 * df["total"].max(), 1.1 * df["total"].max())
     _adjust_figure(fig)
     # fig.update_layout(legend=dict(font=dict(size=8)), legend_tracegroupgap=0)
     return fig
