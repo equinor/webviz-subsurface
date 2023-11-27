@@ -10,7 +10,7 @@ def dialog_layout(
     dialog_id: str,
     title: str,
     children: List,
-    size: str = "sm",
+    size: str = "lg",
 ) -> wcc.Dialog:
     return wcc.Dialog(
         # style={"marginTop": "20vh"},

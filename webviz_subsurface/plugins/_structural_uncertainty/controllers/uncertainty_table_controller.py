@@ -49,7 +49,7 @@ def update_uncertainty_table(
         for ensemble in ensembles:
             surfset = surface_set_models[ensemble]
             for surfacename in surface_names:
-                for calculation in ["Mean", "Min", "Max"]:
+                for calculation in ["Mean", "Min", "Max", "P10", "P90"]:
                     surface = surfset.calculate_statistical_surface(
                         name=surfacename,
                         attribute=surface_attribute,
