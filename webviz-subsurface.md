@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.22` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.23rc0` of `webviz-subsurface`.
 
 
 
@@ -131,10 +131,18 @@ Plugin for analyzing CO2 leakage potential across multiple realizations in an FM
 ensemble
 
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`boundary_file`:** Path to a polygon representing the containment area
+* **`file_containment_boundary`:** Path to a polygon representing the containment area
+* **`file_hazardous_boundary`:** Path to a polygon representing the hazardous area
 * **`well_pick_file`:** Path to a file containing well picks
 * **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
-    CO2 outside/inside a boundary). Relative to each realization.
+    CO2 outside/inside a boundary), for co2 mass. Relative to each realization.
+* **`co2_containment_volume_actual_relpath`:** Path to a table of co2 containment data (amount
+    of CO2 outside/inside a boundary), for co2 volume of type "actual". Relative to each
+    realization.
+* **`co2_containment_volume_actual_simple_relpath`:** Path to a table of co2 containment data
+    (amount of CO2 outside/inside a boundary), for co2 volume of type "actual_simple".
+    Relative to each realization.
+* **`unsmry_relpath`:** Relative path to a csv version of a unified summary file
 * **`fault_polygon_attribute`:** Polygons with this attribute are used as fault
     polygons
 * **`map_attribute_names`:** Dictionary for overriding the default mapping between
@@ -173,14 +181,26 @@ ensemble
 
 
 
+
+
+
+
+
+
+
+
 ---
 How to use in YAML config file:
 ```yaml
     - CO2Leakage:
         ensembles:  # Required, type List[str].
-        boundary_file:  # Optional, type Union[str, NoneType].
+        file_containment_boundary:  # Optional, type Union[str, NoneType].
+        file_hazardous_boundary:  # Optional, type Union[str, NoneType].
         well_pick_file:  # Optional, type Union[str, NoneType].
         co2_containment_relpath:  # Optional, type str.
+        co2_containment_volume_actual_relpath:  # Optional, type str.
+        co2_containment_volume_actual_simple_relpath:  # Optional, type str.
+        unsmry_relpath:  # Optional, type str.
         fault_polygon_attribute:  # Optional, type str.
         initial_surface:  # Optional, type Union[str, NoneType].
         map_attribute_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
