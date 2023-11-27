@@ -307,7 +307,7 @@ def generate_co2_time_containment_figure(
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
     fig.layout.yaxis.exponentformat = "power"
-    fig.layout.yaxis.range = (-0.1 * df["total"].max(), 1.1 * df["total"].max())
+    fig.layout.yaxis.autorange = True
     _adjust_figure(fig)
     # fig.update_layout(legend=dict(font=dict(size=8)), legend_tracegroupgap=0)
     return fig
