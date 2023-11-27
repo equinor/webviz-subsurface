@@ -183,10 +183,19 @@ def get_plume_polygon(
     )
 
 
+def _find_legend_title(attribute: MapAttribute):
+    if attribute == MapAttribute.MIGRATION_TIME:
+        return "years"
+    elif attribute == MapAttribute.MASS:
+        return "kg"
+    return ""
+
+
 def create_map_annotations(
     formation: str,
     surface_data: Optional[SurfaceData],
     colortables: List[Dict[str, Any]],
+    attribute: MapAttribute,
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if surface_data is not None:
@@ -195,6 +204,7 @@ def create_map_annotations(
                 id="1_view",
                 children=[
                     wsc.WebVizColorLegend(
+                        title=_find_legend_title(attribute),
                         min=surface_data.color_map_range[0],
                         max=surface_data.color_map_range[1],
                         colorName=surface_data.color_map_name,

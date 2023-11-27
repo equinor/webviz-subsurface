@@ -494,7 +494,11 @@ class EnsembleSelectorLayout(wcc.Selectors):
 
 def _compile_property_options() -> List[Dict[str, Any]]:
     return [
-        {"label": "SGAS", "value": "", "disabled": True},
+        {
+            "label": html.Span(["SGAS:"], style={"text-decoration": "underline"}),
+            "value": "",
+            "disabled": True,
+        },
         {
             "label": MapAttribute.MIGRATION_TIME.value,
             "value": MapAttribute.MIGRATION_TIME.value,
@@ -504,10 +508,20 @@ def _compile_property_options() -> List[Dict[str, Any]]:
             "label": MapAttribute.SGAS_PLUME.value,
             "value": MapAttribute.SGAS_PLUME.value,
         },
-        {"label": "AMFG", "value": "", "disabled": True},
+        {
+            "label": html.Span(["AMFG:"], style={"text-decoration": "underline"}),
+            "value": "",
+            "disabled": True,
+        },
         {"label": MapAttribute.MAX_AMFG.value, "value": MapAttribute.MAX_AMFG.value},
         {
             "label": MapAttribute.AMFG_PLUME.value,
             "value": MapAttribute.AMFG_PLUME.value,
         },
+        {
+            "label": html.Span(["MASS:"], style={"text-decoration": "underline"}),
+            "value": "",
+            "disabled": True,
+        },
+        {"label": MapAttribute.MASS.value, "value": MapAttribute.MASS.value},
     ]
