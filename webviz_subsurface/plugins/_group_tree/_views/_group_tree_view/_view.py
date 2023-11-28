@@ -299,7 +299,7 @@ class GroupTreeView(ViewABC):
             ensemble_name: str,
         ) -> list:
             """This callback updates the input dataset to the Grouptree component."""
-            data, edge_options, node_options = self._group_tree_data[
+            data, edge_metadata_list, node_metadata_list = self._group_tree_data[
                 ensemble_name
             ].create_grouptree_dataset(
                 tree_mode,
@@ -312,8 +312,8 @@ class GroupTreeView(ViewABC):
                 wsc.GroupTree(
                     id=self._group_tree_component_id,
                     data=data,
-                    edge_options=edge_options,
-                    node_options=node_options,
+                    edge_metadata_list=edge_metadata_list,
+                    node_metadata_list=node_metadata_list,
                 ),
             ]
 
