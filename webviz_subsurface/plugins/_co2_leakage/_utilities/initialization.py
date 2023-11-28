@@ -31,6 +31,8 @@ def init_map_attribute_names(
             MapAttribute.MAX_AMFG: "max_amfg",
             # MapAttribute.MASS: "mass_total",  # NBNB-AS: Or sum_mass_total
             MapAttribute.MASS: "mass",
+            MapAttribute.DISSOLVED: "dissolved_mass",
+            MapAttribute.FREE: "free_mass",
         }
     return {MapAttribute[key]: value for key, value in mapping.items()}
 

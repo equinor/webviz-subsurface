@@ -524,4 +524,6 @@ def _compile_property_options() -> List[Dict[str, Any]]:
             "disabled": True,
         },
         {"label": MapAttribute.MASS.value, "value": MapAttribute.MASS.value},
+        {"label": MapAttribute.DISSOLVED.value, "value": MapAttribute.DISSOLVED.value},
+        {"label": MapAttribute.FREE.value, "value": MapAttribute.FREE.value},
     ]

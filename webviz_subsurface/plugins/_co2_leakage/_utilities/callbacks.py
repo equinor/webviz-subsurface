@@ -188,6 +188,10 @@ def _find_legend_title(attribute: MapAttribute):
         return "years"
     elif attribute == MapAttribute.MASS:
         return "kg"
+    elif attribute == MapAttribute.DISSOLVED:
+        return "kg"
+    elif attribute == MapAttribute.FREE:
+        return "kg"
     return ""
 
 
