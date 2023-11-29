@@ -132,9 +132,9 @@ class EnsembleGroupTreeData:
         # Metadata for node: {key: str, label: str, unit: Optional[str]}
         # The "key" correspond to the key for node data in the tree data set.
         node_metadata_list = [
-                {"key": datatype, "label": get_label(datatype)}
-                for datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]
-            ]
+            {"key": datatype, "label": get_label(datatype)}
+            for datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]
+        ]
         return (
             create_dataset(smry, gruptree_filtered, self._sumvecs, self._terminal_node),
             self.create_edge_metadata_list(node_types),
@@ -219,11 +219,13 @@ class EnsembleGroupTreeData:
             )
 
     @CACHE.memoize()
-    def create_edge_metadata_list(self, node_types: List[NodeType]) -> List[Dict[str, str]]:
+    def create_edge_metadata_list(
+        self, node_types: List[NodeType]
+    ) -> List[Dict[str, str]]:
         """Creates a list with edge metadata for both dropdowns and tree data
         in the GroupTree component. The "key" correspond to the key for edge data
         in the tree data set.
-        
+
         The output list has the format:
         [
             {"key": DataType.OILRATE, "label": "Oil Rate", "unit": "m3/d"},
