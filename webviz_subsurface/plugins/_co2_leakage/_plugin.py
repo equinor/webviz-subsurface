@@ -276,7 +276,10 @@ class CO2Leakage(WebvizPluginABC):
                 )
                 figs[: len(u_figs)] = u_figs
                 styles[: len(u_figs)] = [{}] * len(u_figs)
-
+            for i in range(len(figs)):
+                figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}"
+                if i == len(figs) - 1:
+                    figs[i]["layout"]["uirevision"] += f"-{realizations}"
             return *figs, *styles  # type: ignore
 
         @callback(
@@ -346,6 +349,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS, "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
+            State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "views"),
         )
         def update_map_attribute(
             attribute: MapAttribute,
@@ -363,6 +367,7 @@ class CO2Leakage(WebvizPluginABC):
             options_dialog_options: List[int],
             selected_wells: List[str],
             ensemble: str,
+            current_views: List[Any],
         ) -> Tuple[List[Dict[Any, Any]], List[Any], Dict[Any, Any]]:
             attribute = MapAttribute(attribute)
             if len(realization) == 0:
@@ -433,7 +438,7 @@ class CO2Leakage(WebvizPluginABC):
                 colortables=self._color_tables,
                 attribute=attribute,
             )
-            viewports = create_map_viewports()
+            viewports = no_update if current_views else create_map_viewports()
             return (layers, annotations, viewports)
 
         @callback(

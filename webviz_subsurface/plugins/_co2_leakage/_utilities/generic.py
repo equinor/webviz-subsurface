@@ -10,6 +10,8 @@ class MapAttribute(Enum):
     SGAS_PLUME = "Plume (SGAS)"
     AMFG_PLUME = "Plume (AMFG)"
     MASS = "Mass (kg)"
+    DISSOLVED = "Dissolved mass (kg)"
+    FREE = "Free mass (kg)"
 
 
 class Co2MassScale(StrEnum):
