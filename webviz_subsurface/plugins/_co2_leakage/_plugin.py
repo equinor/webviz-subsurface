@@ -156,6 +156,7 @@ class CO2Leakage(WebvizPluginABC):
             self._error_message = f"Plugin initialization failed: {err}"
             raise
 
+        self._summed_co2 = dict()
         self._visualization_threshold = -1
         self._color_tables = co2leakage_color_tables()
         self.add_shared_settings_group(
@@ -398,8 +399,9 @@ class CO2Leakage(WebvizPluginABC):
                 self._visualization_threshold = visualization_threshold
             # Surface
             surf_data = None
+            summed_mass = None
             if formation is not None and len(realization) > 0:
-                surf_data = SurfaceData.from_server(
+                surf_data, summed_mass = SurfaceData.from_server(
                     server=self._surface_server,
                     provider=self._ensemble_surface_providers[ensemble],
                     address=derive_surface_address(
@@ -419,6 +421,17 @@ class CO2Leakage(WebvizPluginABC):
                     readable_name_=readable_name(attribute),
                     visualization_threshold=visualization_threshold,
                 )
+            summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}"
+            if len(realization) == 1:
+                if attribute in [
+                    MapAttribute.MASS,
+                    MapAttribute.DISSOLVED,
+                    MapAttribute.FREE,
+                ]:
+                    if summed_mass is not None and summed_co2_key not in self._summed_co2:
+                        self._summed_co2[summed_co2_key] = summed_mass
+                    if summed_co2_key in self._summed_co2:
+                        surf_data.readable_name += f" (Total: {round(self._summed_co2[summed_co2_key], 3)}): "
             # Plume polygon
             plume_polygon = None
             if contour_data is not None:

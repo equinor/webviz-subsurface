@@ -75,7 +75,7 @@ class SurfaceData:
         readable_name_: str,
         visualization_threshold: float,
     ) -> "SurfaceData":
-        surf_meta, img_url = publish_and_get_surface_metadata(
+        surf_meta, img_url, summed_mass = publish_and_get_surface_metadata(
             server,
             provider,
             address,
@@ -97,7 +97,7 @@ class SurfaceData:
             value_range,
             surf_meta,
             img_url,
-        )
+        ), summed_mass
 
 
 def derive_surface_address(
@@ -192,11 +192,7 @@ def get_plume_polygon(
 def _find_legend_title(attribute: MapAttribute):
     if attribute == MapAttribute.MIGRATION_TIME:
         return "years"
-    elif attribute == MapAttribute.MASS:
-        return "kg"
-    elif attribute == MapAttribute.DISSOLVED:
-        return "kg"
-    elif attribute == MapAttribute.FREE:
+    elif attribute in [MapAttribute.MASS, MapAttribute.DISSOLVED, MapAttribute.FREE]:
         return "kg"
     return ""
 
