@@ -270,6 +270,10 @@ class CO2Leakage(WebvizPluginABC):
                         realizations[0],
                         y_limits,
                     )
+                for i in range(len(figs)):
+                    figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}"
+                    if i == len(figs) - 1:
+                        figs[i]["layout"]["uirevision"] += f"-{realizations}"
             elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
                 u_figs = generate_unsmry_figures(
                     self._unsmry_providers[ensemble],
@@ -278,10 +282,6 @@ class CO2Leakage(WebvizPluginABC):
                 )
                 figs[: len(u_figs)] = u_figs
                 styles[: len(u_figs)] = [{}] * len(u_figs)
-            for i in range(len(figs)):
-                figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}"
-                if i == len(figs) - 1:
-                    figs[i]["layout"]["uirevision"] += f"-{realizations}"
             return *figs, *styles  # type: ignore
 
         @callback(
