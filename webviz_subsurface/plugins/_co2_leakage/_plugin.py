@@ -156,6 +156,7 @@ class CO2Leakage(WebvizPluginABC):
             self._error_message = f"Plugin initialization failed: {err}"
             raise
 
+        self._visualization_threshold = -1
         self._color_tables = co2leakage_color_tables()
         self.add_shared_settings_group(
             ViewSettings(
@@ -346,6 +347,8 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.CM_MAX), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
+            Input(self._settings_component(ViewSettings.Ids.VISUALIZATION_THRESHOLD), "value"),
+            Input(self._settings_component(ViewSettings.Ids.VISUALIZATION_SHOW_0), "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS, "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
@@ -364,6 +367,8 @@ class CO2Leakage(WebvizPluginABC):
             cm_max_val: Optional[float],
             plume_threshold: Optional[float],
             plume_smoothing: Optional[float],
+            visualization_threshold: Optional[float],
+            visualize_0: List[str],
             options_dialog_options: List[int],
             selected_wells: List[str],
             ensemble: str,
@@ -383,6 +388,14 @@ class CO2Leakage(WebvizPluginABC):
                     "threshold": plume_threshold,
                     "smoothing": plume_smoothing,
                 }
+            if len(visualize_0) != 0:
+                visualization_threshold = -1
+            elif visualization_threshold is None:
+                visualization_threshold = 1e-10
+            # Clear surface cache if the threshold for visualization is changed
+            if self._visualization_threshold != visualization_threshold:
+                self._surface_server._image_cache.clear()
+                self._visualization_threshold = visualization_threshold
             # Surface
             surf_data = None
             if formation is not None and len(realization) > 0:
@@ -404,6 +417,7 @@ class CO2Leakage(WebvizPluginABC):
                     ),
                     color_map_name=color_map_name,
                     readable_name_=readable_name(attribute),
+                    visualization_threshold=visualization_threshold,
                 )
             # Plume polygon
             plume_polygon = None

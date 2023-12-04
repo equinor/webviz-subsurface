@@ -73,8 +73,14 @@ class SurfaceData:
         color_map_range: Tuple[Optional[float], Optional[float]],
         color_map_name: str,
         readable_name_: str,
+        visualization_threshold: float,
     ) -> "SurfaceData":
-        surf_meta, img_url = publish_and_get_surface_metadata(server, provider, address)
+        surf_meta, img_url = publish_and_get_surface_metadata(
+            server,
+            provider,
+            address,
+            visualization_threshold,
+        )
         assert surf_meta is not None  # Should not occur
         value_range = (
             0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,

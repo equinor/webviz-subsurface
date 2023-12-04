@@ -38,6 +38,7 @@ def publish_and_get_surface_metadata(
     server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
+    visualization_threshold: float,
 ) -> Tuple[Optional[SurfaceImageMeta], str]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
@@ -49,6 +50,8 @@ def publish_and_get_surface_metadata(
         surface = provider.get_surface(address)
         if not surface:
             raise ValueError(f"Could not get surface for address: {address}")
+        if address.attribute != "MigrationTime" and visualization_threshold >= 0:
+            surface.operation("elile", visualization_threshold)
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)
     return surf_meta, server.encode_partial_url(qualified_address)

@@ -50,6 +50,9 @@ class ViewSettings(SettingsGroupABC):
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
 
+        VISUALIZATION_THRESHOLD = "visualization-threshold"
+        VISUALIZATION_SHOW_0 = "visualization-show-0"
+
     def __init__(
         self,
         ensemble_paths: Dict[str, str],
@@ -86,6 +89,8 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.CM_MAX),
                 self.register_component_unique_id(self.Ids.CM_MIN_AUTO),
                 self.register_component_unique_id(self.Ids.CM_MAX_AUTO),
+                self.register_component_unique_id(self.Ids.VISUALIZATION_THRESHOLD),
+                self.register_component_unique_id(self.Ids.VISUALIZATION_SHOW_0),
             ),
             GraphSelectorsLayout(
                 self.register_component_unique_id(self.Ids.GRAPH_SOURCE),
@@ -175,6 +180,16 @@ class ViewSettings(SettingsGroupABC):
             min_auto: List[str], max_auto: List[str]
         ) -> Tuple[bool, bool]:
             return len(min_auto) == 1, len(max_auto) == 1
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.VISUALIZATION_THRESHOLD).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.VISUALIZATION_SHOW_0).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
+        )
+        def set_visualization_threshold(
+            show_0: List[str], attribute: str
+        ) -> bool:
+            return len(show_0) == 1 or MapAttribute(attribute) == MapAttribute.MIGRATION_TIME
 
         @callback(
             Output(
@@ -297,6 +312,8 @@ class MapSelectorLayout(wcc.Selectors):
         cm_max_id: str,
         cm_min_auto_id: str,
         cm_max_auto_id: str,
+        visualization_threshold_id: str,
+        visualization_show_0_id: str,
     ):
         default_colormap = (
             "turbo (Seq)"
@@ -357,6 +374,18 @@ class MapSelectorLayout(wcc.Selectors):
                                     ["Auto"],
                                     ["Auto"],
                                     id=cm_max_auto_id,
+                                ),
+                            ],
+                            style=self._CM_RANGE,
+                        ),
+                        "Visualization threshold",
+                        html.Div(
+                            [
+                                dcc.Input(id=visualization_threshold_id,type="number"),
+                                dcc.Checklist(
+                                    ["Show 0"],
+                                    ["Show 0"],
+                                    id=visualization_show_0_id,
                                 ),
                             ],
                             style=self._CM_RANGE,
