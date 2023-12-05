@@ -30,14 +30,41 @@ def _read_dataframe(
     table_provider: EnsembleTableProvider,
     realization: int,
     scale_factor: float,
+    zone: Optional[str],
 ) -> pandas.DataFrame:
     df = table_provider.get_column_data(table_provider.column_names(), [realization])
+    if "zone" in list(df.columns):
+        df = _process_zone_information(df, zone if zone else "all")
     if scale_factor == 1.0:
         return df
     for col in df.columns:
         if col != "date":
             df[col] /= scale_factor
     return df
+
+
+def read_zone_options(
+    table_provider: EnsembleTableProvider,
+    realization: int,
+) -> List[str]:
+    df = table_provider.get_column_data(table_provider.column_names(), [realization])
+    zones = ["all"]
+    if "zone" in list(df.columns):
+        for zone in list(df["zone"]):
+            if zone not in zones:
+                zones.append(zone)
+    return zones
+
+
+def _process_zone_information(
+    df: pandas.DataFrame,
+    zone: str,
+) -> pandas.DataFrame:
+    if zone in list(df["zone"]):
+        return df[df["zone"] == zone].drop(columns="zone")
+    else:
+        print(f"Zone {zone} not found, using sum for each unique date.")
+        return df[df["zone"] != "all"].groupby("date").sum(numeric_only=True).reset_index()
 
 
 def _find_scale_factor(
@@ -58,6 +85,7 @@ def _read_terminal_co2_volumes(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
+    zone: Optional[str],
 ) -> pandas.DataFrame:
     records: Dict[str, List[Any]] = {
         "real": [],
@@ -69,7 +97,7 @@ def _read_terminal_co2_volumes(
     }
     scale_factor = _find_scale_factor(table_provider, scale)
     for real in realizations:
-        df = _read_dataframe(table_provider, real, scale_factor)
+        df = _read_dataframe(table_provider, real, scale_factor, zone)
         last = df.iloc[np.argmax(df["date"])]
         label = str(real)
         records["real"] += [label] * 6
@@ -103,11 +131,12 @@ def _read_co2_volumes(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
+    zone: Optional[str],
 ) -> pandas.DataFrame:
     scale_factor = _find_scale_factor(table_provider, scale)
     return pandas.concat(
         [
-            _read_dataframe(table_provider, real, scale_factor).assign(realization=real)
+            _read_dataframe(table_provider, real, scale_factor, zone).assign(realization=real)
             for real in realizations
         ]
     )
@@ -141,8 +170,9 @@ def generate_co2_volume_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
+    zone: Optional[str],
 ) -> go.Figure:
-    df = _read_terminal_co2_volumes(table_provider, realizations, scale)
+    df = _read_terminal_co2_volumes(table_provider, realizations, scale, zone)
     fig = px.bar(
         df,
         y="real",
@@ -173,8 +203,9 @@ def generate_co2_time_containment_one_realization_figure(
     scale: Union[Co2MassScale, Co2VolumeScale],
     time_series_realization: int,
     y_limits: List[Optional[float]],
+    zone: Optional[str],
 ) -> go.Figure:
-    df = _read_co2_volumes(table_provider, [time_series_realization], scale)
+    df = _read_co2_volumes(table_provider, [time_series_realization], scale, zone)
     df.sort_values(by="date", inplace=True)
     df = df.drop(
         columns=[
@@ -249,8 +280,9 @@ def generate_co2_time_containment_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
+    zone: Optional[str],
 ) -> go.Figure:
-    df = _read_co2_volumes(table_provider, realizations, scale)
+    df = _read_co2_volumes(table_provider, realizations, scale, zone)
     df.sort_values(by="date", inplace=True)
     fig = go.Figure()
     cols_to_plot = {

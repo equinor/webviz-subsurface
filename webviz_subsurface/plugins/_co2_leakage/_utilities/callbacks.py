@@ -366,20 +366,23 @@ def generate_containment_figures(
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realization: int,
     y_limits: List[Optional[float]],
+    zone: Optional[str],
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
         fig0 = generate_co2_volume_figure(
             table_provider,
             table_provider.realizations(),
             co2_scale,
+            zone,
         )
         fig1 = generate_co2_time_containment_figure(
             table_provider,
             table_provider.realizations(),
             co2_scale,
+            zone,
         )
         fig2 = generate_co2_time_containment_one_realization_figure(
-            table_provider, co2_scale, realization, y_limits
+            table_provider, co2_scale, realization, y_limits, zone
         )
     except KeyError as exc:
         warnings.warn(f"Could not generate CO2 figures: {exc}")

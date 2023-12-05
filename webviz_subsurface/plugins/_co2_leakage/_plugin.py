@@ -169,6 +169,8 @@ class CO2Leakage(WebvizPluginABC):
                 self._well_pick_provider.well_names()
                 if self._well_pick_provider
                 else [],
+                self._co2_table_providers,
+                self._co2_actual_volume_table_providers,
             ),
             self.Ids.MAIN_SETTINGS,
         )
@@ -221,6 +223,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.Y_MIN_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_AUTO_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_GRAPH), "value"),
+            Input(self._settings_component(ViewSettings.Ids.ZONE), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -232,6 +235,7 @@ class CO2Leakage(WebvizPluginABC):
             y_min_val: Optional[float],
             y_max_auto: List[str],
             y_max_val: Optional[float],
+            zone: Optional[str],
         ) -> Tuple[go.Figure, go.Figure, Dict, Dict]:
             styles = [{"display": "none"}] * 3
             figs = [no_update] * 3
@@ -259,6 +263,7 @@ class CO2Leakage(WebvizPluginABC):
                         co2_scale,
                         realizations[0],
                         y_limits,
+                        zone,
                     )
                 elif (
                     source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
@@ -269,9 +274,10 @@ class CO2Leakage(WebvizPluginABC):
                         co2_scale,
                         realizations[0],
                         y_limits,
+                        zone,
                     )
                 for i in range(len(figs)):
-                    figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}"
+                    figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}-{zone}"
                     if i == len(figs) - 1:
                         figs[i]["layout"]["uirevision"] += f"-{realizations}"
             elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
