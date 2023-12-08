@@ -50,6 +50,7 @@ class ViewSettings(SettingsGroupABC):
         Y_MIN_AUTO_GRAPH = "y-min-auto-graph"
         Y_MAX_AUTO_GRAPH = "y-max-auto-graph"
         ZONE = "zone"
+        ZONE_VIEW = "zone_view"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -108,6 +109,7 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.Y_MIN_AUTO_GRAPH),
                 self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
                 self.register_component_unique_id(self.Ids.ZONE),
+                self.register_component_unique_id(self.Ids.ZONE_VIEW),
             ),
             ExperimentalFeaturesLayout(
                 self.register_component_unique_id(self.Ids.PLUME_THRESHOLD),
@@ -256,9 +258,10 @@ class ViewSettings(SettingsGroupABC):
         @callback(
             Output(self.component_unique_id(self.Ids.ZONE).to_string(), "disabled"),
             Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.ZONE_VIEW).to_string(), "value"),
         )
-        def disable_zone(zone: str) -> bool:
-            return zone is None
+        def disable_zone(zone: str, zone_view: List[str]) -> bool:
+            return zone is None or len(zone_view) > 1
 
 
 class OpenDialogButton(html.Button):
@@ -461,6 +464,7 @@ class GraphSelectorsLayout(wcc.Selectors):
         y_min_auto_id: str,
         y_max_auto_id: str,
         zone_id: str,
+        zone_view_id: str,
     ):
         super().__init__(
             label="Graph Settings",
@@ -505,9 +509,19 @@ class GraphSelectorsLayout(wcc.Selectors):
                     style=self._CM_RANGE,
                 ),
                 "Zone",
-                wcc.Dropdown(
-                    id=zone_id,
-                    clearable=False,
+                html.Div(
+                    [
+                        wcc.Dropdown(
+                            id=zone_id,
+                            clearable=False,
+                        ),
+                        dcc.Checklist(
+                            ["Show containment per zone"],
+                            ["Zone_view"],
+                            id=zone_view_id,
+                        ),
+                    ],
+                    style={'display': 'flex', 'flex-direction': 'column'},
                 ),
             ],
         )

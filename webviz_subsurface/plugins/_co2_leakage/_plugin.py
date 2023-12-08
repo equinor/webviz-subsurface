@@ -205,6 +205,7 @@ class CO2Leakage(WebvizPluginABC):
 
     def _set_callbacks(self) -> None:
         @callback(
+            Output(self._settings_component(ViewSettings.Ids.ZONE_VIEW), "value"),
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Output(
@@ -224,6 +225,8 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_AUTO_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.ZONE), "value"),
+            State(self._settings_component(ViewSettings.Ids.ZONE), "options"),
+            Input(self._settings_component(ViewSettings.Ids.ZONE_VIEW), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -236,6 +239,8 @@ class CO2Leakage(WebvizPluginABC):
             y_max_auto: List[str],
             y_max_val: Optional[float],
             zone: Optional[str],
+            zones: Optional[List[str]],
+            zone_view: List[str],
         ) -> Tuple[go.Figure, go.Figure, Dict, Dict]:
             styles = [{"display": "none"}] * 3
             figs = [no_update] * 3
@@ -243,6 +248,12 @@ class CO2Leakage(WebvizPluginABC):
                 GraphSource.CONTAINMENT_MASS,
                 GraphSource.CONTAINMENT_ACTUAL_VOLUME,
             ]:
+                if zones:
+                    zones = [zn for zn in zones if zn != "all"]
+                else:
+                    zone_view = ["Zone_view"]
+                if len(zone_view) > 1:
+                    zone = "zone_per_real"
                 y_limits = []
                 if len(y_min_auto) == 0:
                     y_limits.append(y_min_val)
@@ -264,6 +275,7 @@ class CO2Leakage(WebvizPluginABC):
                         realizations[0],
                         y_limits,
                         zone,
+                        zones,
                     )
                 elif (
                     source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
@@ -275,6 +287,7 @@ class CO2Leakage(WebvizPluginABC):
                         realizations[0],
                         y_limits,
                         zone,
+                        zones,
                     )
                 for i in range(len(figs)):
                     figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}-{zone}"
@@ -288,7 +301,7 @@ class CO2Leakage(WebvizPluginABC):
                 )
                 figs[: len(u_figs)] = u_figs
                 styles[: len(u_figs)] = [{}] * len(u_figs)
-            return *figs, *styles  # type: ignore
+            return zone_view, *figs, *styles  # type: ignore
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "marks"),
@@ -401,6 +414,8 @@ class CO2Leakage(WebvizPluginABC):
                 visualization_threshold = 1e-10
             # Clear surface cache if the threshold for visualization is changed
             if self._visualization_threshold != visualization_threshold:
+                print("Clearing cache because the visualization threshold was changed")
+                print("Re-select realization(s) to update the current map")
                 self._surface_server._image_cache.clear()
                 self._visualization_threshold = visualization_threshold
             # Surface
