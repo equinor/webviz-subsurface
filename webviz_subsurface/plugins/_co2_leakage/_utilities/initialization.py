@@ -88,15 +88,16 @@ def append_if_relative(
     cont_bound: Optional[str],
     haz_bound: Optional[str],
     well_file: Optional[str],
-    ens_path: str
+    root: str
 ) -> List[str]:
-    if cont_bound is not None and not Path(cont_bound).is_absolute():
-        cont_bound = glob(f"{Path(ens_path).parents[1]}/**/{cont_bound}", recursive=True)[0]
-    if haz_bound is not None and not Path(haz_bound).is_absolute():
-        haz_bound = glob(f"{Path(ens_path).parents[1]}/**/{haz_bound}", recursive=True)[0]
-    if well_file is not None and not Path(well_file).is_absolute():
-        well_file = glob(f"{Path(ens_path).parents[1]}/**/{well_file}", recursive=True)[0]
-    return cont_bound, haz_bound, well_file
+    return [_find_file(source, root) for source in [cont_bound, haz_bound, well_file]]
+
+
+def _find_file(file: Optional[str], root: str) -> str:
+    if file is not None and not Path(file).is_absolute():
+        matches_found = glob(f"{Path(root).parents[1]}/**/{file}", recursive=True)
+        return file if len(matches_found) == 0 else matches_found[0]
+    return file
 
 
 def check_if_files_exist(
