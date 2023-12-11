@@ -462,7 +462,7 @@ class CO2Leakage(WebvizPluginABC):
                     if summed_mass is not None and summed_co2_key not in self._summed_co2:
                         self._summed_co2[summed_co2_key] = summed_mass
                     if summed_co2_key in self._summed_co2:
-                        surf_data.readable_name += f" (Total: {round(self._summed_co2[summed_co2_key], 3)}): "
+                        surf_data.readable_name += " (Total: {:.2e}): ".format(self._summed_co2[summed_co2_key])
             # Plume polygon
             plume_polygon = None
             if contour_data is not None:
