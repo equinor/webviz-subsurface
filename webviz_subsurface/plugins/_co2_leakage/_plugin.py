@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
+from math import floor, log
 
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, callback, html, no_update
@@ -33,7 +34,8 @@ from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
     init_surface_providers,
     init_table_provider,
     init_well_pick_provider,
-    _check_if_files_exist,
+    check_if_files_exist,
+    append_if_relative,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
     MainView,
@@ -105,17 +107,25 @@ class CO2Leakage(WebvizPluginABC):
         self._file_containment_boundary = file_containment_boundary
         self._file_hazardous_boundary = file_hazardous_boundary
         try:
-            _check_if_files_exist(
-                file_containment_boundary,
-                file_hazardous_boundary,
-                well_pick_file,
-            )
             self._ensemble_paths = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                     ensemble_name
                 ]
                 for ensemble_name in ensembles
             }
+            file_containment_boundary, file_hazardous_boundary, well_pick_file = append_if_relative(
+                file_containment_boundary,
+                file_hazardous_boundary,
+                well_pick_file,
+                list(self._ensemble_paths.values())[0],
+            )
+            self._file_containment_boundary = file_containment_boundary
+            self._file_hazardous_boundary = file_hazardous_boundary
+            check_if_files_exist(
+                file_containment_boundary,
+                file_hazardous_boundary,
+                well_pick_file,
+            )
             self._surface_server = SurfaceImageServer.instance(app)
             self._polygons_server = FaultPolygonsServer.instance(app)
 

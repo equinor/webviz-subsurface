@@ -1,5 +1,7 @@
 import logging
 import os
+from pathlib import Path
+from glob import glob
 from typing import Dict, List, Optional
 import warnings
 
@@ -82,17 +84,32 @@ def init_table_provider(
     return providers
 
 
-def _check_if_files_exist(
+def append_if_relative(
+    cont_bound: Optional[str],
+    haz_bound: Optional[str],
+    well_file: Optional[str],
+    ens_path: str
+) -> List[str]:
+    if cont_bound is not None and not Path(cont_bound).is_absolute():
+        cont_bound = glob(f"{Path(ens_path).parents[1]}/**/{cont_bound}", recursive=True)[0]
+    if haz_bound is not None and not Path(haz_bound).is_absolute():
+        haz_bound = glob(f"{Path(ens_path).parents[1]}/**/{haz_bound}", recursive=True)[0]
+    if well_file is not None and not Path(well_file).is_absolute():
+        well_file = glob(f"{Path(ens_path).parents[1]}/**/{well_file}", recursive=True)[0]
+    return cont_bound, haz_bound, well_file
+
+
+def check_if_files_exist(
     file_containment_boundary: Optional[str],
     file_hazardous_boundary: Optional[str],
     well_pick_file: Optional[str],
 ) -> None:
     if file_containment_boundary is not None:
-        if os.path.isfile(file_containment_boundary) == False:
+        if not os.path.isfile(file_containment_boundary):
             warnings.warn(f"Cannot find specified file {file_containment_boundary}.")
     if file_hazardous_boundary is not None:
-        if os.path.isfile(file_hazardous_boundary) == False:
+        if not os.path.isfile(file_hazardous_boundary):
             warnings.warn(f"Cannot find specified file {file_hazardous_boundary}.")
     if well_pick_file is not None:
-        if os.path.isfile(well_pick_file) == False:
+        if not os.path.isfile(well_pick_file):
             warnings.warn(f"Cannot find specified file {well_pick_file}.")
