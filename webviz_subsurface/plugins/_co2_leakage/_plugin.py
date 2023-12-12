@@ -1,5 +1,4 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
-from math import floor, log
 
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, callback, html, no_update
@@ -264,15 +263,10 @@ class CO2Leakage(WebvizPluginABC):
                     zone_view = ["Zone_view"]
                 if len(zone_view) > 1:
                     zone = "zone_per_real"
-                y_limits = []
-                if len(y_min_auto) == 0:
-                    y_limits.append(y_min_val)
-                else:
-                    y_limits.append(None)
-                if len(y_max_auto) == 0:
-                    y_limits.append(y_max_val)
-                else:
-                    y_limits.append(None)
+                y_limits = [
+                    y_min_val if len(y_min_auto) == 0 else None,
+                    y_max_val if len(y_max_auto) == 0 else None,
+                ]
                 styles = [{}] * 3
 
                 if (
@@ -301,8 +295,7 @@ class CO2Leakage(WebvizPluginABC):
                     )
                 for i in range(len(figs)):
                     figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}-{zone}"
-                    if i == len(figs) - 1:
-                        figs[i]["layout"]["uirevision"] += f"-{realizations}"
+                figs[-1]["layout"]["uirevision"] += f"-{realizations}"
             elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
                 u_figs = generate_unsmry_figures(
                     self._unsmry_providers[ensemble],
