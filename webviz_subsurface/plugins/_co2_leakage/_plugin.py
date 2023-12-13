@@ -33,8 +33,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
     init_surface_providers,
     init_table_provider,
     init_well_pick_provider,
-    check_if_files_exist,
-    append_if_relative,
+    process_files,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
     MainView,
@@ -102,9 +101,6 @@ class CO2Leakage(WebvizPluginABC):
     ):
         super().__init__()
         self._error_message = ""
-
-        self._file_containment_boundary = file_containment_boundary
-        self._file_hazardous_boundary = file_hazardous_boundary
         try:
             self._ensemble_paths = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -112,18 +108,12 @@ class CO2Leakage(WebvizPluginABC):
                 ]
                 for ensemble_name in ensembles
             }
-            file_containment_boundary, file_hazardous_boundary, well_pick_file = append_if_relative(
+            # TODO? add support for different polygons and wells for each ensemble
+            self._file_containment_boundary, self._file_hazardous_boundary, well_pick_file = process_files(
                 file_containment_boundary,
                 file_hazardous_boundary,
                 well_pick_file,
                 list(self._ensemble_paths.values())[0],
-            )
-            self._file_containment_boundary = file_containment_boundary
-            self._file_hazardous_boundary = file_hazardous_boundary
-            check_if_files_exist(
-                file_containment_boundary,
-                file_hazardous_boundary,
-                well_pick_file,
             )
             self._surface_server = SurfaceImageServer.instance(app)
             self._polygons_server = FaultPolygonsServer.instance(app)

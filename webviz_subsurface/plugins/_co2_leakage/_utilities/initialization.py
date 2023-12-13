@@ -84,33 +84,30 @@ def init_table_provider(
     return providers
 
 
-def append_if_relative(
+def process_files(
     cont_bound: Optional[str],
     haz_bound: Optional[str],
     well_file: Optional[str],
     root: str
 ) -> List[str]:
-    return [_find_file(source, root) for source in [cont_bound, haz_bound, well_file]]
+    """
+    Checks if the files exist (otherwise gives a warning and returns None)
+    Concatenates ensemble root dir and path to file if relative
+    """
+    return [_process_file(source, root) for source in [cont_bound, haz_bound, well_file]]
 
 
-def _find_file(file: Optional[str], root: str) -> str:
-    if file is not None and not Path(file).is_absolute():
-        matches_found = glob(f"{Path(root).parents[1]}/**/{file}", recursive=True)
-        return file if len(matches_found) == 0 else matches_found[0]
+def _process_file(file: Optional[str], root: str) -> str:
+    if file is not None:
+        file = _check_if_file_exists(
+            os.path.join(Path(root).parents[1], file)
+            if not Path(file).is_absolute() else file
+        )
     return file
 
 
-def check_if_files_exist(
-    file_containment_boundary: Optional[str],
-    file_hazardous_boundary: Optional[str],
-    well_pick_file: Optional[str],
-) -> None:
-    if file_containment_boundary is not None:
-        if not os.path.isfile(file_containment_boundary):
-            warnings.warn(f"Cannot find specified file {file_containment_boundary}.")
-    if file_hazardous_boundary is not None:
-        if not os.path.isfile(file_hazardous_boundary):
-            warnings.warn(f"Cannot find specified file {file_hazardous_boundary}.")
-    if well_pick_file is not None:
-        if not os.path.isfile(well_pick_file):
-            warnings.warn(f"Cannot find specified file {well_pick_file}.")
+def _check_if_file_exists(file: Optional[str]) -> str:
+    if not os.path.isfile(file):
+        warnings.warn(f"Cannot find specified file {file}.")
+        return None
+    return file
