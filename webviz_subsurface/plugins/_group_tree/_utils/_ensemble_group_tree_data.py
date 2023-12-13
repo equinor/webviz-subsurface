@@ -84,9 +84,11 @@ class EnsembleGroupTreeData:
         grouptree data, before the filtered data is sent to the function that is
         actually creating the dataset.
 
-        Returns the group tree data and two lists with metadata for edges and nodes in the tree data structure
+        Returns the group tree data and two lists with metadata for edges and nodes
+        in the tree data structure
 
         A sample data set can be found here:
+        # pylint: disable=line-too-long
         https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/demo/example-data/group-tree.json
         """  # noqa
 
