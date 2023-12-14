@@ -58,6 +58,9 @@ class ViewSettings(SettingsGroupABC):
         VISUALIZATION_THRESHOLD = "visualization-threshold"
         VISUALIZATION_SHOW_0 = "visualization-show-0"
 
+        FEEDBACK_BUTTON = "feedback-button"
+        FEEDBACK = "feedback"
+
     def __init__(
         self,
         ensemble_paths: Dict[str, str],
@@ -115,6 +118,8 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.PLUME_THRESHOLD),
                 self.register_component_unique_id(self.Ids.PLUME_SMOOTHING),
             ),
+            FeedbackLayout(),
+            FeedbackButton(),
         ]
 
     def set_callbacks(self) -> None:
@@ -626,3 +631,31 @@ def _compile_property_options() -> List[Dict[str, Any]]:
         {"label": MapAttribute.DISSOLVED.value, "value": MapAttribute.DISSOLVED.value},
         {"label": MapAttribute.FREE.value, "value": MapAttribute.FREE.value},
     ]
+
+
+class FeedbackLayout(wcc.Dialog):
+    """Layout for the options dialog"""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(
+            title=LayoutLabels.FEEDBACK,
+            id=ViewSettings.Ids.FEEDBACK,
+            draggable=True,
+            open=False,
+            children=[
+                dcc.Markdown('''If you have any feedback regarding the CO2-leakage application,  
+                please contact XXX@XX.X.''')
+            ],
+        )
+
+
+class FeedbackButton(html.Button):
+    def __init__(self) -> None:
+        super().__init__(
+            LayoutLabels.FEEDBACK,
+            id=ViewSettings.Ids.FEEDBACK_BUTTON,
+            style=LayoutStyle.OPTIONS_BUTTON,
+            n_clicks=0,
+        )

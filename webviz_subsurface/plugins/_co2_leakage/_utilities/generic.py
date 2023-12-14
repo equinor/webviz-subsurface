@@ -41,6 +41,7 @@ class LayoutLabels(str, Enum):
     SHOW_WELLS = "Show wells"
     WELL_FILTER = "Well filter"
     COMMON_SELECTIONS = "Options and global filters"
+    FEEDBACK = "User feedback"
 
 
 # pylint: disable=too-few-public-methods

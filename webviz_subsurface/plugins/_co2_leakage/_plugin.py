@@ -490,3 +490,12 @@ class CO2Leakage(WebvizPluginABC):
             if _n_clicks is not None:
                 return _n_clicks > 0
             raise PreventUpdate
+
+        @callback(
+            Output(ViewSettings.Ids.FEEDBACK, "open"),
+            Input(ViewSettings.Ids.FEEDBACK_BUTTON, "n_clicks"),
+        )
+        def open_close_feedback(_n_clicks: Optional[int]) -> bool:
+            if _n_clicks is not None:
+                return _n_clicks > 0
+            raise PreventUpdate
