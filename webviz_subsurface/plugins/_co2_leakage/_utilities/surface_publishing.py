@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
+import numpy as np
 
 import xtgeo
 
@@ -38,20 +39,25 @@ def publish_and_get_surface_metadata(
     server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
+    visualization_threshold: float,
 ) -> Tuple[Optional[SurfaceImageMeta], str]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
     provider_id: str = provider.provider_id()
     qualified_address = QualifiedSurfaceAddress(provider_id, address)
     surf_meta = server.get_surface_metadata(qualified_address)
+    summed_mass = None
     if not surf_meta:
         # This means we need to compute the surface
         surface = provider.get_surface(address)
         if not surface:
             raise ValueError(f"Could not get surface for address: {address}")
+        summed_mass = np.ma.sum(surface.values)
+        if address.attribute != "MigrationTime" and visualization_threshold >= 0:
+            surface.operation("elile", visualization_threshold)
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)
-    return surf_meta, server.encode_partial_url(qualified_address)
+    return surf_meta, server.encode_partial_url(qualified_address), summed_mass
 
 
 def _publish_and_get_truncated_surface_metadata(
@@ -74,13 +80,15 @@ def _publish_and_get_truncated_surface_metadata(
         ),
     )
     surf_meta = server.get_surface_metadata(qualified_address)
+    summed_mass = None
     if surf_meta is None:
         surface = _generate_surface(provider, address)
         if surface is None:
             raise ValueError(f"Could not generate surface for address: {address}")
+        summed_mass = np.ma.sum(surface.values)
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)
-    return surf_meta, server.encode_partial_url(qualified_address)
+    return surf_meta, server.encode_partial_url(qualified_address), summed_mass
 
 
 def _generate_surface(

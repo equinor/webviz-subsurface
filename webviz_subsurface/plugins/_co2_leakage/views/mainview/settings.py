@@ -7,6 +7,7 @@ from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
+from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     EnsembleSurfaceProvider,
     SurfaceStatistic,
@@ -18,6 +19,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     LayoutLabels,
     LayoutStyle,
     MapAttribute,
+    ZoneViews,
 )
 
 
@@ -46,9 +48,17 @@ class ViewSettings(SettingsGroupABC):
         Y_MAX_GRAPH = "y-max-graph"
         Y_MIN_AUTO_GRAPH = "y-min-auto-graph"
         Y_MAX_AUTO_GRAPH = "y-max-auto-graph"
+        ZONE = "zone"
+        ZONE_VIEW = "zone_view"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
+
+        VISUALIZATION_THRESHOLD = "visualization-threshold"
+        VISUALIZATION_SHOW_0 = "visualization-show-0"
+
+        FEEDBACK_BUTTON = "feedback-button"
+        FEEDBACK = "feedback"
 
     def __init__(
         self,
@@ -58,6 +68,7 @@ class ViewSettings(SettingsGroupABC):
         map_attribute_names: Dict[MapAttribute, str],
         color_scale_names: List[str],
         well_names: List[str],
+        zone_options: Dict[str, Dict[str, List[str]]],
     ):
         super().__init__("Settings")
         self._ensemble_paths = ensemble_paths
@@ -66,6 +77,8 @@ class ViewSettings(SettingsGroupABC):
         self._color_scale_names = color_scale_names
         self._initial_surface = initial_surface
         self._well_names = well_names
+        self._zone_options = zone_options
+        self._has_zones = max([len(zn) > 0 for ens, zd in zone_options.items() for zn in zd.values()])
 
     def layout(self) -> List[Component]:
         return [
@@ -86,6 +99,8 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.CM_MAX),
                 self.register_component_unique_id(self.Ids.CM_MIN_AUTO),
                 self.register_component_unique_id(self.Ids.CM_MAX_AUTO),
+                self.register_component_unique_id(self.Ids.VISUALIZATION_THRESHOLD),
+                self.register_component_unique_id(self.Ids.VISUALIZATION_SHOW_0),
             ),
             GraphSelectorsLayout(
                 self.register_component_unique_id(self.Ids.GRAPH_SOURCE),
@@ -94,11 +109,16 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.Y_MAX_GRAPH),
                 self.register_component_unique_id(self.Ids.Y_MIN_AUTO_GRAPH),
                 self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
+                self.register_component_unique_id(self.Ids.ZONE),
+                self.register_component_unique_id(self.Ids.ZONE_VIEW),
+                self._has_zones
             ),
             ExperimentalFeaturesLayout(
                 self.register_component_unique_id(self.Ids.PLUME_THRESHOLD),
                 self.register_component_unique_id(self.Ids.PLUME_SMOOTHING),
             ),
+            FeedbackLayout(),
+            FeedbackButton(),
         ]
 
     def set_callbacks(self) -> None:
@@ -177,6 +197,16 @@ class ViewSettings(SettingsGroupABC):
             return len(min_auto) == 1, len(max_auto) == 1
 
         @callback(
+            Output(self.component_unique_id(self.Ids.VISUALIZATION_THRESHOLD).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.VISUALIZATION_SHOW_0).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
+        )
+        def set_visualization_threshold(
+            show_0: List[str], attribute: str
+        ) -> bool:
+            return len(show_0) == 1 or MapAttribute(attribute) == MapAttribute.MIGRATION_TIME
+
+        @callback(
             Output(
                 self.component_unique_id(self.Ids.Y_MIN_GRAPH).to_string(), "disabled"
             ),
@@ -194,6 +224,32 @@ class ViewSettings(SettingsGroupABC):
             min_auto: List[str], max_auto: List[str]
         ) -> Tuple[bool, bool]:
             return len(min_auto) == 1, len(max_auto) == 1
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.ZONE).to_string(), "options"),
+            Output(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.GRAPH_SOURCE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
+            State(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
+        )
+        def set_zones(
+            source: GraphSource,
+            ensemble: str,
+            current_value: str,
+        ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+            if ensemble is not None:
+                zones = self._zone_options[ensemble][source]
+                if len(zones) > 0:
+                    return zones, dash.no_update if current_value in zones else "all"
+            return [], None
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.ZONE).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.ZONE_VIEW).to_string(), "value"),
+        )
+        def disable_zone(zone: str, zone_view: str) -> bool:
+            return zone is None or zone_view == ZoneViews.ZONESPLIT
 
 
 class OpenDialogButton(html.Button):
@@ -297,6 +353,8 @@ class MapSelectorLayout(wcc.Selectors):
         cm_max_id: str,
         cm_min_auto_id: str,
         cm_max_auto_id: str,
+        visualization_threshold_id: str,
+        visualization_show_0_id: str,
     ):
         default_colormap = (
             "turbo (Seq)"
@@ -361,6 +419,18 @@ class MapSelectorLayout(wcc.Selectors):
                             ],
                             style=self._CM_RANGE,
                         ),
+                        "Visualization threshold",
+                        html.Div(
+                            [
+                                dcc.Input(id=visualization_threshold_id,type="number"),
+                                dcc.Checklist(
+                                    ["Show 0"],
+                                    ["Show 0"],
+                                    id=visualization_show_0_id,
+                                ),
+                            ],
+                            style=self._CM_RANGE,
+                        ),
                     ],
                 )
             ],
@@ -381,17 +451,41 @@ class GraphSelectorsLayout(wcc.Selectors):
         y_max_id: str,
         y_min_auto_id: str,
         y_max_auto_id: str,
+        zone_id: str,
+        zone_view_id: str,
+        has_zones: bool,
     ):
+        disp = "flex" if has_zones else "none"
         super().__init__(
             label="Graph Settings",
             open_details=False,
             children=[
+                html.Div(
+                    [
+                        dcc.RadioItems(
+                            [ZoneViews.CONTAINMENTSPLIT, ZoneViews.ZONESPLIT],
+                            ZoneViews.CONTAINMENTSPLIT,
+                            id=zone_view_id,
+                        ),
+                    ],
+                    style={'display': disp, 'flex-direction': 'column'},
+                ),
                 "Source",
                 wcc.Dropdown(
                     id=graph_source_id,
                     options=list(GraphSource),
                     value=GraphSource.CONTAINMENT_MASS,
                     clearable=False,
+                ),
+                html.Div(
+                    [
+                        "Containment plot for specific zone",
+                        wcc.Dropdown(
+                            id=zone_id,
+                            clearable=False,
+                        ),
+                    ],
+                    style={'display': disp, 'flex-direction': 'column'},
                 ),
                 "Unit",
                 wcc.Dropdown(
@@ -527,3 +621,33 @@ def _compile_property_options() -> List[Dict[str, Any]]:
         {"label": MapAttribute.DISSOLVED.value, "value": MapAttribute.DISSOLVED.value},
         {"label": MapAttribute.FREE.value, "value": MapAttribute.FREE.value},
     ]
+
+
+class FeedbackLayout(wcc.Dialog):
+    """Layout for the options dialog"""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(
+            title=LayoutLabels.FEEDBACK,
+            id=ViewSettings.Ids.FEEDBACK,
+            draggable=True,
+            open=False,
+            children=[
+                dcc.Markdown('''If you have any feedback regarding the CO2-leakage application,  
+                please contact XXX@XX.X.''')
+            ],
+        )
+
+
+class FeedbackButton(html.Button):
+    def __init__(self) -> None:
+        style = LayoutStyle.OPTIONS_BUTTON
+        style["display"] = "none"
+        super().__init__(
+            LayoutLabels.FEEDBACK,
+            id=ViewSettings.Ids.FEEDBACK_BUTTON,
+            style=style,
+            n_clicks=0,
+        )

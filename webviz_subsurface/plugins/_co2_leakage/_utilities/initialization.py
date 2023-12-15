@@ -1,5 +1,7 @@
 import logging
 import os
+from pathlib import Path
+from glob import glob
 from typing import Dict, List, Optional
 import warnings
 
@@ -12,10 +14,11 @@ from webviz_subsurface._providers import (
     EnsembleTableProviderFactory,
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute, GraphSource
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
 )
+from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import read_zone_options
 
 LOGGER = logging.getLogger(__name__)
 
@@ -82,17 +85,52 @@ def init_table_provider(
     return providers
 
 
-def _check_if_files_exist(
-    file_containment_boundary: Optional[str],
-    file_hazardous_boundary: Optional[str],
-    well_pick_file: Optional[str],
-) -> None:
-    if file_containment_boundary is not None:
-        if os.path.isfile(file_containment_boundary) == False:
-            warnings.warn(f"Cannot find specified file {file_containment_boundary}.")
-    if file_hazardous_boundary is not None:
-        if os.path.isfile(file_hazardous_boundary) == False:
-            warnings.warn(f"Cannot find specified file {file_hazardous_boundary}.")
-    if well_pick_file is not None:
-        if os.path.isfile(well_pick_file) == False:
-            warnings.warn(f"Cannot find specified file {well_pick_file}.")
+def init_zone_options(
+    ensemble_roots: Dict[str, str],
+    mass_table: EnsembleTableProvider,
+    actual_volume_table: EnsembleTableProvider,
+    ensemble_provider: EnsembleSurfaceProvider,
+) -> Dict[str, Dict[str, List[str]]]:
+    options = {}
+    for ens, ens_path in ensemble_roots.items():
+        options[ens] = {}
+        real = ensemble_provider[ens].realizations()[0]
+        for source, tp in zip(
+                [GraphSource.CONTAINMENT_MASS, GraphSource.CONTAINMENT_ACTUAL_VOLUME],
+                [mass_table, actual_volume_table]
+        ):
+            try:
+                options[ens][source] = read_zone_options(tp[ens], real)
+            except KeyError:
+                options[ens][source] = []
+        options[ens][GraphSource.UNSMRY] = []
+    return options
+
+
+def process_files(
+    cont_bound: Optional[str],
+    haz_bound: Optional[str],
+    well_file: Optional[str],
+    root: str
+) -> List[str]:
+    """
+    Checks if the files exist (otherwise gives a warning and returns None)
+    Concatenates ensemble root dir and path to file if relative
+    """
+    return [_process_file(source, root) for source in [cont_bound, haz_bound, well_file]]
+
+
+def _process_file(file: Optional[str], root: str) -> str:
+    if file is not None:
+        file = _check_if_file_exists(
+            os.path.join(Path(root).parents[1], file)
+            if not Path(file).is_absolute() else file
+        )
+    return file
+
+
+def _check_if_file_exists(file: Optional[str]) -> str:
+    if not os.path.isfile(file):
+        warnings.warn(f"Cannot find specified file {file}.")
+        return None
+    return file

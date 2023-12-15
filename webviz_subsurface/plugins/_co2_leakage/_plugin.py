@@ -27,13 +27,15 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2VolumeScale,
     GraphSource,
     MapAttribute,
+    ZoneViews,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
     init_map_attribute_names,
     init_surface_providers,
     init_table_provider,
     init_well_pick_provider,
-    _check_if_files_exist,
+    init_zone_options,
+    process_files,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
     MainView,
@@ -101,21 +103,20 @@ class CO2Leakage(WebvizPluginABC):
     ):
         super().__init__()
         self._error_message = ""
-
-        self._file_containment_boundary = file_containment_boundary
-        self._file_hazardous_boundary = file_hazardous_boundary
         try:
-            _check_if_files_exist(
-                file_containment_boundary,
-                file_hazardous_boundary,
-                well_pick_file,
-            )
             self._ensemble_paths = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                     ensemble_name
                 ]
                 for ensemble_name in ensembles
             }
+            # TODO? add support for different polygons and wells for each ensemble
+            self._file_containment_boundary, self._file_hazardous_boundary, well_pick_file = process_files(
+                file_containment_boundary,
+                file_hazardous_boundary,
+                well_pick_file,
+                list(self._ensemble_paths.values())[0],
+            )
             self._surface_server = SurfaceImageServer.instance(app)
             self._polygons_server = FaultPolygonsServer.instance(app)
 
@@ -152,10 +153,19 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_file,
                 map_surface_names_to_well_pick_names,
             )
+            # Zone options
+            self._zone_options = init_zone_options(
+                self._ensemble_paths,
+                self._co2_table_providers,
+                self._co2_actual_volume_table_providers,
+                self._ensemble_surface_providers,
+            )
         except Exception as err:
             self._error_message = f"Plugin initialization failed: {err}"
             raise
 
+        self._summed_co2 = dict()
+        self._visualization_threshold = -1
         self._color_tables = co2leakage_color_tables()
         self.add_shared_settings_group(
             ViewSettings(
@@ -167,6 +177,7 @@ class CO2Leakage(WebvizPluginABC):
                 self._well_pick_provider.well_names()
                 if self._well_pick_provider
                 else [],
+                self._zone_options,
             ),
             self.Ids.MAIN_SETTINGS,
         )
@@ -201,6 +212,7 @@ class CO2Leakage(WebvizPluginABC):
 
     def _set_callbacks(self) -> None:
         @callback(
+            Output(self._settings_component(ViewSettings.Ids.ZONE_VIEW), "value"),
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Output(
@@ -219,6 +231,9 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.Y_MIN_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_AUTO_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_GRAPH), "value"),
+            Input(self._settings_component(ViewSettings.Ids.ZONE), "value"),
+            State(self._settings_component(ViewSettings.Ids.ZONE), "options"),
+            Input(self._settings_component(ViewSettings.Ids.ZONE_VIEW), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -230,6 +245,9 @@ class CO2Leakage(WebvizPluginABC):
             y_min_val: Optional[float],
             y_max_auto: List[str],
             y_max_val: Optional[float],
+            zone: Optional[str],
+            zones: Optional[List[str]],
+            zone_view: str,
         ) -> Tuple[go.Figure, go.Figure, Dict, Dict]:
             styles = [{"display": "none"}] * 3
             figs = [no_update] * 3
@@ -237,15 +255,16 @@ class CO2Leakage(WebvizPluginABC):
                 GraphSource.CONTAINMENT_MASS,
                 GraphSource.CONTAINMENT_ACTUAL_VOLUME,
             ]:
-                y_limits = []
-                if len(y_min_auto) == 0:
-                    y_limits.append(y_min_val)
+                if zones:
+                    zones = [zn for zn in zones if zn != "all"]
                 else:
-                    y_limits.append(None)
-                if len(y_max_auto) == 0:
-                    y_limits.append(y_max_val)
-                else:
-                    y_limits.append(None)
+                    zone_view = ZoneViews.CONTAINMENTSPLIT
+                if zone_view == ZoneViews.ZONESPLIT:
+                    zone = "zone_per_real"
+                y_limits = [
+                    y_min_val if len(y_min_auto) == 0 else None,
+                    y_max_val if len(y_max_auto) == 0 else None,
+                ]
                 styles = [{}] * 3
 
                 if (
@@ -257,6 +276,8 @@ class CO2Leakage(WebvizPluginABC):
                         co2_scale,
                         realizations[0],
                         y_limits,
+                        zone,
+                        zones,
                     )
                 elif (
                     source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
@@ -267,7 +288,12 @@ class CO2Leakage(WebvizPluginABC):
                         co2_scale,
                         realizations[0],
                         y_limits,
+                        zone,
+                        zones,
                     )
+                for i in range(len(figs)):
+                    figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}-{zone}"
+                figs[-1]["layout"]["uirevision"] += f"-{realizations}"
             elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
                 u_figs = generate_unsmry_figures(
                     self._unsmry_providers[ensemble],
@@ -276,11 +302,9 @@ class CO2Leakage(WebvizPluginABC):
                 )
                 figs[: len(u_figs)] = u_figs
                 styles[: len(u_figs)] = [{}] * len(u_figs)
-            for i in range(len(figs)):
-                figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}"
-                if i == len(figs) - 1:
-                    figs[i]["layout"]["uirevision"] += f"-{realizations}"
-            return *figs, *styles  # type: ignore
+            else:
+                zone_view = ZoneViews.CONTAINMENTSPLIT
+            return zone_view, *figs, *styles  # type: ignore
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "marks"),
@@ -346,6 +370,8 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.CM_MAX), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
+            Input(self._settings_component(ViewSettings.Ids.VISUALIZATION_THRESHOLD), "value"),
+            Input(self._settings_component(ViewSettings.Ids.VISUALIZATION_SHOW_0), "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS, "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"),
             State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
@@ -364,6 +390,8 @@ class CO2Leakage(WebvizPluginABC):
             cm_max_val: Optional[float],
             plume_threshold: Optional[float],
             plume_smoothing: Optional[float],
+            visualization_threshold: Optional[float],
+            visualize_0: List[str],
             options_dialog_options: List[int],
             selected_wells: List[str],
             ensemble: str,
@@ -383,10 +411,21 @@ class CO2Leakage(WebvizPluginABC):
                     "threshold": plume_threshold,
                     "smoothing": plume_smoothing,
                 }
+            if len(visualize_0) != 0:
+                visualization_threshold = -1
+            elif visualization_threshold is None:
+                visualization_threshold = 1e-10
+            # Clear surface cache if the threshold for visualization is changed
+            if self._visualization_threshold != visualization_threshold:
+                print("Clearing cache because the visualization threshold was changed")
+                print("Re-select realization(s) to update the current map")
+                self._surface_server._image_cache.clear()
+                self._visualization_threshold = visualization_threshold
             # Surface
             surf_data = None
+            summed_mass = None
             if formation is not None and len(realization) > 0:
-                surf_data = SurfaceData.from_server(
+                surf_data, summed_mass = SurfaceData.from_server(
                     server=self._surface_server,
                     provider=self._ensemble_surface_providers[ensemble],
                     address=derive_surface_address(
@@ -404,7 +443,19 @@ class CO2Leakage(WebvizPluginABC):
                     ),
                     color_map_name=color_map_name,
                     readable_name_=readable_name(attribute),
+                    visualization_threshold=visualization_threshold,
                 )
+            summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}"
+            if len(realization) == 1:
+                if attribute in [
+                    MapAttribute.MASS,
+                    MapAttribute.DISSOLVED,
+                    MapAttribute.FREE,
+                ]:
+                    if summed_mass is not None and summed_co2_key not in self._summed_co2:
+                        self._summed_co2[summed_co2_key] = summed_mass
+                    if summed_co2_key in self._summed_co2:
+                        surf_data.readable_name += " (Total: {:.2e}): ".format(self._summed_co2[summed_co2_key])
             # Plume polygon
             plume_polygon = None
             if contour_data is not None:
@@ -446,6 +497,15 @@ class CO2Leakage(WebvizPluginABC):
             Input(ViewSettings.Ids.OPTIONS_DIALOG_BUTTON, "n_clicks"),
         )
         def open_close_options_dialog(_n_clicks: Optional[int]) -> bool:
+            if _n_clicks is not None:
+                return _n_clicks > 0
+            raise PreventUpdate
+
+        @callback(
+            Output(ViewSettings.Ids.FEEDBACK, "open"),
+            Input(ViewSettings.Ids.FEEDBACK_BUTTON, "n_clicks"),
+        )
+        def open_close_feedback(_n_clicks: Optional[int]) -> bool:
             if _n_clicks is not None:
                 return _n_clicks > 0
             raise PreventUpdate
