@@ -89,20 +89,21 @@ def init_zone_options(
     ensemble_roots: Dict[str, str],
     mass_table: EnsembleTableProvider,
     actual_volume_table: EnsembleTableProvider,
-    unsmry_table: EnsembleTableProvider,
     ensemble_provider: EnsembleSurfaceProvider,
 ) -> Dict[str, Dict[str, List[str]]]:
     options = {}
     for ens, ens_path in ensemble_roots.items():
         options[ens] = {}
         real = ensemble_provider[ens].realizations()[0]
-        for source, tp in zip(GraphSource, [unsmry_table, mass_table, actual_volume_table]):
+        for source, tp in zip(
+                [GraphSource.CONTAINMENT_MASS, GraphSource.CONTAINMENT_ACTUAL_VOLUME],
+                [mass_table, actual_volume_table]
+        ):
             try:
                 options[ens][source] = read_zone_options(tp[ens], real)
             except KeyError:
                 options[ens][source] = []
-            if len(options[ens][source]) > 0:
-                print(f"Zone information found for {source}")
+        options[ens][GraphSource.UNSMRY] = []
     return options
 
 

@@ -158,7 +158,6 @@ class CO2Leakage(WebvizPluginABC):
                 self._ensemble_paths,
                 self._co2_table_providers,
                 self._co2_actual_volume_table_providers,
-                self._unsmry_providers,
                 self._ensemble_surface_providers,
             )
         except Exception as err:
@@ -303,6 +302,8 @@ class CO2Leakage(WebvizPluginABC):
                 )
                 figs[: len(u_figs)] = u_figs
                 styles[: len(u_figs)] = [{}] * len(u_figs)
+            else:
+                zone_view = ZoneViews.CONTAINMENTSPLIT
             return zone_view, *figs, *styles  # type: ignore
 
         @callback(

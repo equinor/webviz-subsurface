@@ -460,12 +460,32 @@ class GraphSelectorsLayout(wcc.Selectors):
             label="Graph Settings",
             open_details=False,
             children=[
+                html.Div(
+                    [
+                        dcc.RadioItems(
+                            [ZoneViews.CONTAINMENTSPLIT, ZoneViews.ZONESPLIT],
+                            ZoneViews.CONTAINMENTSPLIT,
+                            id=zone_view_id,
+                        ),
+                    ],
+                    style={'display': disp, 'flex-direction': 'column'},
+                ),
                 "Source",
                 wcc.Dropdown(
                     id=graph_source_id,
                     options=list(GraphSource),
                     value=GraphSource.CONTAINMENT_MASS,
                     clearable=False,
+                ),
+                html.Div(
+                    [
+                        "Containment plot for specific zone",
+                        wcc.Dropdown(
+                            id=zone_id,
+                            clearable=False,
+                        ),
+                    ],
+                    style={'display': disp, 'flex-direction': 'column'},
                 ),
                 "Unit",
                 wcc.Dropdown(
@@ -497,22 +517,6 @@ class GraphSelectorsLayout(wcc.Selectors):
                         ),
                     ],
                     style=self._CM_RANGE,
-                ),
-                html.Div(
-                    [
-                        "Zone",
-                        wcc.Dropdown(
-                            id=zone_id,
-                            clearable=False,
-                        ),
-                        "View settings",
-                        dcc.RadioItems(
-                            [ZoneViews.CONTAINMENTSPLIT, ZoneViews.ZONESPLIT],
-                            ZoneViews.CONTAINMENTSPLIT,
-                            id=zone_view_id,
-                        ),
-                    ],
-                    style={'display': disp, 'flex-direction': 'column'},
                 ),
             ],
         )
