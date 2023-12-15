@@ -22,7 +22,7 @@ def test_reservoir_simulation_timeseries(
     dash_duo.start_server(app)
 
     logs = []
-    for log in (dash_duo.get_logs() or []):
+    for log in dash_duo.get_logs() or []:
         if "dash_renderer" in log.get("message"):
             warnings.warn(log.get("message"))
         else:
