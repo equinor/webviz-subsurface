@@ -15,7 +15,7 @@ def test_simulation_timeseries_onebyone(
     )
     _webviz_duo.start_server(plugin)
     logs = []
-    for log in _webviz_duo.get_logs():
+    for log in _webviz_duo.get_logs() or []:
         if "dash_renderer" in log.get("message"):
             warnings.warn(log.get("message"))
         else:
