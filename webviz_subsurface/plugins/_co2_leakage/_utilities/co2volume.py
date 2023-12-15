@@ -84,7 +84,7 @@ def read_zone_options(
         for zone in list(df["zone"]):
             if zone not in zones:
                 zones.append(zone)
-    return zones
+    return zones if len(zones) > 1 else []
 
 
 def _process_zone_information(

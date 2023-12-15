@@ -27,12 +27,14 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2VolumeScale,
     GraphSource,
     MapAttribute,
+    ZoneViews,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
     init_map_attribute_names,
     init_surface_providers,
     init_table_provider,
     init_well_pick_provider,
+    init_zone_options,
     process_files,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
@@ -151,6 +153,14 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_file,
                 map_surface_names_to_well_pick_names,
             )
+            # Zone options
+            self._zone_options = init_zone_options(
+                self._ensemble_paths,
+                self._co2_table_providers,
+                self._co2_actual_volume_table_providers,
+                self._unsmry_providers,
+                self._ensemble_surface_providers,
+            )
         except Exception as err:
             self._error_message = f"Plugin initialization failed: {err}"
             raise
@@ -168,8 +178,7 @@ class CO2Leakage(WebvizPluginABC):
                 self._well_pick_provider.well_names()
                 if self._well_pick_provider
                 else [],
-                self._co2_table_providers,
-                self._co2_actual_volume_table_providers,
+                self._zone_options,
             ),
             self.Ids.MAIN_SETTINGS,
         )
@@ -239,7 +248,7 @@ class CO2Leakage(WebvizPluginABC):
             y_max_val: Optional[float],
             zone: Optional[str],
             zones: Optional[List[str]],
-            zone_view: List[str],
+            zone_view: str,
         ) -> Tuple[go.Figure, go.Figure, Dict, Dict]:
             styles = [{"display": "none"}] * 3
             figs = [no_update] * 3
@@ -250,8 +259,8 @@ class CO2Leakage(WebvizPluginABC):
                 if zones:
                     zones = [zn for zn in zones if zn != "all"]
                 else:
-                    zone_view = ["Zone_view"]
-                if len(zone_view) > 1:
+                    zone_view = ZoneViews.CONTAINMENTSPLIT
+                if zone_view == ZoneViews.ZONESPLIT:
                     zone = "zone_per_real"
                 y_limits = [
                     y_min_val if len(y_min_auto) == 0 else None,

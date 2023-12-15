@@ -55,3 +55,8 @@ class LayoutStyle:
         "line-height": "30px",
         "background-color": "lightgrey",
     }
+
+
+class ZoneViews(StrEnum):
+    CONTAINMENTSPLIT = "Split into containment polygons"
+    ZONESPLIT = "Split into zones"

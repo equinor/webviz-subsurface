@@ -19,9 +19,8 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     LayoutLabels,
     LayoutStyle,
     MapAttribute,
+    ZoneViews,
 )
-
-from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import read_zone_options
 
 
 class ViewSettings(SettingsGroupABC):
@@ -69,8 +68,7 @@ class ViewSettings(SettingsGroupABC):
         map_attribute_names: Dict[MapAttribute, str],
         color_scale_names: List[str],
         well_names: List[str],
-        co2_table_providers: Dict[str, EnsembleTableProvider],
-        co2_actual_volume_table_providers: Dict[str, EnsembleTableProvider],
+        zone_options: Dict[str, Dict[str, List[str]]],
     ):
         super().__init__("Settings")
         self._ensemble_paths = ensemble_paths
@@ -79,8 +77,8 @@ class ViewSettings(SettingsGroupABC):
         self._color_scale_names = color_scale_names
         self._initial_surface = initial_surface
         self._well_names = well_names
-        self._co2_table_providers = co2_table_providers
-        self._co2_actual_volume_table_providers = co2_actual_volume_table_providers
+        self._zone_options = zone_options
+        self._has_zones = max([len(zn) > 0 for ens, zd in zone_options.items() for zn in zd.values()])
 
     def layout(self) -> List[Component]:
         return [
@@ -113,6 +111,7 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
                 self.register_component_unique_id(self.Ids.ZONE),
                 self.register_component_unique_id(self.Ids.ZONE_VIEW),
+                self._has_zones
             ),
             ExperimentalFeaturesLayout(
                 self.register_component_unique_id(self.Ids.PLUME_THRESHOLD),
@@ -230,7 +229,7 @@ class ViewSettings(SettingsGroupABC):
             Output(self.component_unique_id(self.Ids.ZONE).to_string(), "options"),
             Output(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.GRAPH_SOURCE).to_string(), "value"),
-            State(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
             State(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
         )
         def set_zones(
@@ -238,35 +237,19 @@ class ViewSettings(SettingsGroupABC):
             ensemble: str,
             current_value: str,
         ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
-            if ensemble is None:
-                return [], None
-
-            if source == GraphSource.CONTAINMENT_MASS:
-                table_provider = self._co2_table_providers[ensemble]
-            elif source == GraphSource.CONTAINMENT_ACTUAL_VOLUME:
-                table_provider = self._co2_actual_volume_table_providers[ensemble]
-            else:
-                return [], None
-            # Get possible zone values from containment output
-            real = self._ensemble_surface_providers[ensemble].realizations()[0]
-            zones = read_zone_options(table_provider, real)
-
-            if len(zones) > 1:
-                if current_value in zones:
-                    picked_zone = dash.no_update
-                else:
-                    picked_zone = "all"
-                return zones, picked_zone
-            else:
-                return [], None
+            if ensemble is not None:
+                zones = self._zone_options[ensemble][source]
+                if len(zones) > 0:
+                    return zones, dash.no_update if current_value in zones else "all"
+            return [], None
 
         @callback(
             Output(self.component_unique_id(self.Ids.ZONE).to_string(), "disabled"),
             Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.ZONE_VIEW).to_string(), "value"),
         )
-        def disable_zone(zone: str, zone_view: List[str]) -> bool:
-            return zone is None or len(zone_view) > 1
+        def disable_zone(zone: str, zone_view: str) -> bool:
+            return zone is None or zone_view == ZoneViews.ZONESPLIT
 
 
 class OpenDialogButton(html.Button):
@@ -470,7 +453,9 @@ class GraphSelectorsLayout(wcc.Selectors):
         y_max_auto_id: str,
         zone_id: str,
         zone_view_id: str,
+        has_zones: bool,
     ):
+        disp = "flex" if has_zones else "none"
         super().__init__(
             label="Graph Settings",
             open_details=False,
@@ -513,20 +498,21 @@ class GraphSelectorsLayout(wcc.Selectors):
                     ],
                     style=self._CM_RANGE,
                 ),
-                "Zone",
                 html.Div(
                     [
+                        "Zone",
                         wcc.Dropdown(
                             id=zone_id,
                             clearable=False,
                         ),
-                        dcc.Checklist(
-                            ["Show containment per zone"],
-                            ["Zone_view"],
+                        "View settings",
+                        dcc.RadioItems(
+                            [ZoneViews.CONTAINMENTSPLIT, ZoneViews.ZONESPLIT],
+                            ZoneViews.CONTAINMENTSPLIT,
                             id=zone_view_id,
                         ),
                     ],
-                    style={'display': 'flex', 'flex-direction': 'column'},
+                    style={'display': disp, 'flex-direction': 'column'},
                 ),
             ],
         )

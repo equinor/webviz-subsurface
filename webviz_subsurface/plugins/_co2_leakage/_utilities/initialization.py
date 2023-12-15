@@ -14,10 +14,11 @@ from webviz_subsurface._providers import (
     EnsembleTableProviderFactory,
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute, GraphSource
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
 )
+from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import read_zone_options
 
 LOGGER = logging.getLogger(__name__)
 
@@ -82,6 +83,27 @@ def init_table_provider(
                 f'Did not load "{table_rel_path}" for ensemble "{ens}" with error {exc}'
             )
     return providers
+
+
+def init_zone_options(
+    ensemble_roots: Dict[str, str],
+    mass_table: EnsembleTableProvider,
+    actual_volume_table: EnsembleTableProvider,
+    unsmry_table: EnsembleTableProvider,
+    ensemble_provider: EnsembleSurfaceProvider,
+) -> Dict[str, Dict[str, List[str]]]:
+    options = {}
+    for ens, ens_path in ensemble_roots.items():
+        options[ens] = {}
+        real = ensemble_provider[ens].realizations()[0]
+        for source, tp in zip(GraphSource, [unsmry_table, mass_table, actual_volume_table]):
+            try:
+                options[ens][source] = read_zone_options(tp[ens], real)
+            except KeyError:
+                options[ens][source] = []
+            if len(options[ens][source]) > 0:
+                print(f"Zone information found for {source}")
+    return options
 
 
 def process_files(
