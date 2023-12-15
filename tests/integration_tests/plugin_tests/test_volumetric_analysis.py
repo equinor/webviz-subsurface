@@ -13,7 +13,7 @@ def test_volumetrics_no_sens(dash_duo, app, shared_settings) -> None:
     app.layout = plugin.layout
     dash_duo.start_server(app)
     logs = []
-    for log in dash_duo.get_logs():
+    for log in (dash_duo.get_logs() or []):
         if "dash_renderer" in log.get("message"):
             warnings.warn(log.get("message"))
         else:
@@ -30,7 +30,7 @@ def test_volumetrics_sens(dash_duo, app, shared_settings) -> None:
     app.layout = plugin.layout
     dash_duo.start_server(app)
     logs = []
-    for log in dash_duo.get_logs():
+    for log in (dash_duo.get_logs() or []):
         if "dash_renderer" in log.get("message"):
             warnings.warn(log.get("message"))
         else:
