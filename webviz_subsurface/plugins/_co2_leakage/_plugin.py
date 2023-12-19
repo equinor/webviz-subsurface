@@ -167,7 +167,7 @@ class CO2Leakage(WebvizPluginABC):
             self._error_message = f"Plugin initialization failed: {err}"
             raise
 
-        self._summed_co2 = dict()
+        self._summed_co2 = {}
         self._visualization_threshold = -1
         self._color_tables = co2leakage_color_tables()
         self.add_shared_settings_group(
@@ -294,8 +294,8 @@ class CO2Leakage(WebvizPluginABC):
                         zone,
                         zones,
                     )
-                for i in range(len(figs)):
-                    figs[i]["layout"]["uirevision"] = f"{source}-{co2_scale}-{zone}"
+                for fig in figs:
+                    fig["layout"]["uirevision"] = f"{source}-{co2_scale}-{zone}"
                 figs[-1]["layout"]["uirevision"] += f"-{realizations}"
             elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
                 u_figs = generate_unsmry_figures(
