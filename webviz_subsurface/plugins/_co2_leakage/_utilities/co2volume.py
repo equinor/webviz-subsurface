@@ -50,12 +50,12 @@ def _read_dataframe(
     if "zone" in list(df.columns):
         df = _process_zone_information(df, zone if zone else "all")
         if zone == "zone_per_real":
-            df["aqueous"] = (df["aqueous_contained"]
-                             + df["aqueous_outside"]
-                             + df["aqueous_hazardous"])
-            df["gas"] = (df["gas_contained"]
-                         + df["gas_outside"]
-                         + df["gas_hazardous"])
+            df["aqueous"] = (
+                df["aqueous_contained"]
+                + df["aqueous_outside"]
+                + df["aqueous_hazardous"]
+            )
+            df["gas"] = df["gas_contained"] + df["gas_outside"] + df["gas_hazardous"]
             df = df.drop(
                 columns=[
                     "aqueous_contained",
@@ -97,7 +97,12 @@ def _process_zone_information(
         return df[df["zone"] == zone].drop(columns="zone")
     else:
         print(f"Zone {zone} not found, using sum for each unique date.")
-        return df[df["zone"] != "all"].groupby("date").sum(numeric_only=True).reset_index(drop=True)
+        return (
+            df[df["zone"] != "all"]
+            .groupby("date")
+            .sum(numeric_only=True)
+            .reset_index(drop=True)
+        )
 
 
 def _zone_colors(n: int) -> List[str]:
@@ -197,7 +202,9 @@ def _read_co2_volumes(
     scale_factor = _find_scale_factor(table_provider, scale)
     return pandas.concat(
         [
-            _read_dataframe(table_provider, real, scale_factor, zone).assign(realization=real)
+            _read_dataframe(table_provider, real, scale_factor, zone).assign(
+                realization=real
+            )
             for real in realizations
         ]
     )
@@ -362,23 +369,27 @@ def generate_co2_time_containment_figure(
 ) -> go.Figure:
     df = _read_co2_volumes(table_provider, realizations, scale, zone)
     if zone == "zone_per_real":
-        df = df.drop(columns=[
-            "REAL",
-            "total_gas",
-            "total_aqueous",
-            "total_contained",
-            "total_outside",
-            "total_hazardous",
-        ])
+        df = df.drop(
+            columns=[
+                "REAL",
+                "total_gas",
+                "total_aqueous",
+                "total_contained",
+                "total_outside",
+                "total_hazardous",
+            ]
+        )
         df.sort_values(by=["date", "realization"], inplace=True)
         df_ = df[["date", "realization"]][df["zone"] == zones[0]].reset_index(drop=True)
         for i in range(len(zones)):
             part_df = df[["total", "gas", "aqueous"]][df["zone"] == zones[i]]
-            part_df = part_df.rename(columns={
-                "total": zones[i] + ", total",
-                "gas": zones[i] + ", gas",
-                "aqueous": zones[i] + ", aqueous",
-            }).reset_index(drop=True)
+            part_df = part_df.rename(
+                columns={
+                    "total": zones[i] + ", total",
+                    "gas": zones[i] + ", gas",
+                    "aqueous": zones[i] + ", aqueous",
+                }
+            ).reset_index(drop=True)
             df_ = pandas.concat([df_, part_df], axis=1)
         colors = _zone_colors(len(zones))
         cols_to_plot = {}

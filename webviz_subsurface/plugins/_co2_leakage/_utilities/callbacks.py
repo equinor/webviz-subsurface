@@ -90,14 +90,17 @@ class SurfaceData:
             value_range[0] if color_map_range[0] is None else color_map_range[0],
             value_range[1] if color_map_range[1] is None else color_map_range[1],
         )
-        return SurfaceData(
-            readable_name_,
-            color_map_range,
-            color_map_name,
-            value_range,
-            surf_meta,
-            img_url,
-        ), summed_mass
+        return (
+            SurfaceData(
+                readable_name_,
+                color_map_range,
+                color_map_name,
+                value_range,
+                surf_meta,
+                img_url,
+            ),
+            summed_mass,
+        )
 
 
 def derive_surface_address(
@@ -326,10 +329,14 @@ def create_map_layers(
         well_data = dict(well_pick_provider.get_geojson(selected_wells, formation))
         if "features" in well_data:
             if len(well_data["features"]) == 0:
-                warnings.warn(f'Formation name "{formation}" not found in well picks file.')
+                warnings.warn(
+                    f'Formation name "{formation}" not found in well picks file.'
+                )
             for i in range(len(well_data["features"])):
                 current_attribute = well_data["features"][i]["properties"]["attribute"]
-                well_data["features"][i]["properties"]["attribute"] = " " + current_attribute
+                well_data["features"][i]["properties"]["attribute"] = (
+                    " " + current_attribute
+                )
         layers.append(
             {
                 "@@type": "GeoJsonLayer",

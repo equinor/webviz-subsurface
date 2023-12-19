@@ -78,7 +78,9 @@ class ViewSettings(SettingsGroupABC):
         self._initial_surface = initial_surface
         self._well_names = well_names
         self._zone_options = zone_options
-        self._has_zones = max([len(zn) > 0 for ens, zd in zone_options.items() for zn in zd.values()])
+        self._has_zones = max(
+            [len(zn) > 0 for ens, zd in zone_options.items() for zn in zd.values()]
+        )
 
     def layout(self) -> List[Component]:
         return [
@@ -111,7 +113,7 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
                 self.register_component_unique_id(self.Ids.ZONE),
                 self.register_component_unique_id(self.Ids.ZONE_VIEW),
-                self._has_zones
+                self._has_zones,
             ),
             ExperimentalFeaturesLayout(
                 self.register_component_unique_id(self.Ids.PLUME_THRESHOLD),
@@ -197,14 +199,21 @@ class ViewSettings(SettingsGroupABC):
             return len(min_auto) == 1, len(max_auto) == 1
 
         @callback(
-            Output(self.component_unique_id(self.Ids.VISUALIZATION_THRESHOLD).to_string(), "disabled"),
-            Input(self.component_unique_id(self.Ids.VISUALIZATION_SHOW_0).to_string(), "value"),
+            Output(
+                self.component_unique_id(self.Ids.VISUALIZATION_THRESHOLD).to_string(),
+                "disabled",
+            ),
+            Input(
+                self.component_unique_id(self.Ids.VISUALIZATION_SHOW_0).to_string(),
+                "value",
+            ),
             Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
         )
-        def set_visualization_threshold(
-            show_0: List[str], attribute: str
-        ) -> bool:
-            return len(show_0) == 1 or MapAttribute(attribute) == MapAttribute.MIGRATION_TIME
+        def set_visualization_threshold(show_0: List[str], attribute: str) -> bool:
+            return (
+                len(show_0) == 1
+                or MapAttribute(attribute) == MapAttribute.MIGRATION_TIME
+            )
 
         @callback(
             Output(
@@ -422,7 +431,7 @@ class MapSelectorLayout(wcc.Selectors):
                         "Visualization threshold",
                         html.Div(
                             [
-                                dcc.Input(id=visualization_threshold_id,type="number"),
+                                dcc.Input(id=visualization_threshold_id, type="number"),
                                 dcc.Checklist(
                                     ["Show 0"],
                                     ["Show 0"],
@@ -468,7 +477,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             id=zone_view_id,
                         ),
                     ],
-                    style={'display': disp, 'flex-direction': 'column'},
+                    style={"display": disp, "flex-direction": "column"},
                 ),
                 "Source",
                 wcc.Dropdown(
@@ -485,7 +494,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             clearable=False,
                         ),
                     ],
-                    style={'display': disp, 'flex-direction': 'column'},
+                    style={"display": disp, "flex-direction": "column"},
                 ),
                 "Unit",
                 wcc.Dropdown(
@@ -635,8 +644,10 @@ class FeedbackLayout(wcc.Dialog):
             draggable=True,
             open=False,
             children=[
-                dcc.Markdown('''If you have any feedback regarding the CO2-leakage application,  
-                please contact XXX@XX.X.''')
+                dcc.Markdown(
+                    """If you have any feedback regarding the CO2-leakage application,  
+                please contact XXX@XX.X."""
+                )
             ],
         )
 
