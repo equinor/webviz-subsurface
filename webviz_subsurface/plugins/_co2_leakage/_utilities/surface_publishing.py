@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
-import numpy as np
+from typing import Any, List, Optional, Tuple, Union
 
+import numpy as np
 import xtgeo
 
 from webviz_subsurface._providers import (
@@ -40,7 +40,7 @@ def publish_and_get_surface_metadata(
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
     visualization_threshold: float,
-) -> Tuple[Optional[SurfaceImageMeta], str]:
+) -> Tuple[Optional[SurfaceImageMeta], str, Optional[Any]]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
     provider_id: str = provider.provider_id()
@@ -64,7 +64,7 @@ def _publish_and_get_truncated_surface_metadata(
     server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: TruncatedSurfaceAddress,
-) -> Tuple[Optional[SurfaceImageMeta], str]:
+) -> Tuple[Optional[SurfaceImageMeta], str, Optional[Any]]:
     qualified_address = QualifiedSurfaceAddress(
         provider.provider_id(),
         # TODO: Should probably use a dedicated address type for this. Statistical surface

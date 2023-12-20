@@ -6,6 +6,7 @@ import geojson
 import numpy as np
 import plotly.graph_objects as go
 import webviz_subsurface_components as wsc
+from flask_caching import Cache
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProvider,
@@ -29,8 +30,10 @@ from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    GraphSource,
     LayoutLabels,
     MapAttribute,
+    ZoneViews,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.summary_graphs import (
     generate_summary_figure,
@@ -74,7 +77,7 @@ class SurfaceData:
         color_map_name: str,
         readable_name_: str,
         visualization_threshold: float,
-    ) -> "SurfaceData":
+    ) -> Tuple[Any, Optional[Any]]:
         surf_meta, img_url, summed_mass = publish_and_get_surface_metadata(
             server,
             provider,
@@ -192,10 +195,10 @@ def get_plume_polygon(
     )
 
 
-def _find_legend_title(attribute: MapAttribute):
+def _find_legend_title(attribute: MapAttribute) -> str:
     if attribute == MapAttribute.MIGRATION_TIME:
         return "years"
-    elif attribute in [MapAttribute.MASS, MapAttribute.DISSOLVED, MapAttribute.FREE]:
+    if attribute in [MapAttribute.MASS, MapAttribute.DISSOLVED, MapAttribute.FREE]:
         return "kg"
     return ""
 
@@ -373,26 +376,23 @@ def generate_containment_figures(
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realization: int,
     y_limits: List[Optional[float]],
-    zone: Optional[str],
-    zones: Optional[List[str]],
+    zone_info: Dict[str, Any],
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
         fig0 = generate_co2_volume_figure(
             table_provider,
             table_provider.realizations(),
             co2_scale,
-            zone,
-            zones,
+            zone_info,
         )
         fig1 = generate_co2_time_containment_figure(
             table_provider,
             table_provider.realizations(),
             co2_scale,
-            zone,
-            zones,
+            zone_info,
         )
         fig2 = generate_co2_time_containment_one_realization_figure(
-            table_provider, co2_scale, realization, y_limits, zone, zones
+            table_provider, co2_scale, realization, y_limits, zone_info
         )
     except KeyError as exc:
         warnings.warn(f"Could not generate CO2 figures: {exc}")
@@ -448,3 +448,68 @@ def _parse_polygon_file(filename: str) -> Dict[str, Any]:
         ],
     }
     return as_geojson
+
+
+def process_visualization_info(
+    visualize_0: List[str],
+    visualization_threshold: Optional[float],
+    stored_threshold: float,
+    cache: Cache,
+) -> float:
+    if len(visualize_0) != 0:
+        visualization_threshold = -1.0
+    elif visualization_threshold is None:
+        visualization_threshold = 1e-10
+    # Clear surface cache if the threshold for visualization is changed
+    if stored_threshold != visualization_threshold:
+        print(
+            "Clearing cache because the visualization threshold was changed\n"
+            "Re-select realization(s) to update the current map"
+        )
+        cache.clear()
+    return visualization_threshold
+
+
+def process_zone_info(
+    zone: Optional[str],
+    zone_view: Optional[str],
+    zones: Optional[List[str]],
+    source: str,
+) -> Dict[str, Union[str, None, List[str]]]:
+    if source in [
+        GraphSource.CONTAINMENT_MASS,
+        GraphSource.CONTAINMENT_ACTUAL_VOLUME,
+    ]:
+        if zones is None or len(zones) == 0:
+            zone_view = ZoneViews.CONTAINMENTSPLIT
+        else:
+            zones = [zone_name for zone_name in zones if zone_name != "all"]
+        if zone_view == ZoneViews.ZONESPLIT:
+            zone = "zonesplit"
+        return {"zone": zone, "zone_view": zone_view, "zones": zones}
+    return {"zone": None, "zone_view": ZoneViews.CONTAINMENTSPLIT, "zones": []}
+
+
+def process_summed_mass(
+    formation: str,
+    realization: List[int],
+    datestr: str,
+    attribute: MapAttribute,
+    summed_mass: Optional[float],
+    surf_data: Optional[SurfaceData],
+    summed_co2: Dict[str, float],
+) -> Tuple[Optional[SurfaceData], Dict[str, float]]:
+    summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}"
+    if len(realization) == 1:
+        if attribute in [
+            MapAttribute.MASS,
+            MapAttribute.DISSOLVED,
+            MapAttribute.FREE,
+        ]:
+            if summed_mass is not None and summed_co2_key not in summed_co2:
+                summed_co2[summed_co2_key] = summed_mass
+            if summed_co2_key in summed_co2 and surf_data is not None:
+                surf_data.readable_name += (
+                    f" (Total: {summed_co2[summed_co2_key]:.2E}): "
+                )
+    return surf_data, summed_co2

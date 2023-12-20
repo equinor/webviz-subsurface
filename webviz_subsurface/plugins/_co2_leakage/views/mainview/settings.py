@@ -7,7 +7,6 @@ from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
-from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     EnsembleSurfaceProvider,
     SurfaceStatistic,
@@ -79,7 +78,11 @@ class ViewSettings(SettingsGroupABC):
         self._well_names = well_names
         self._zone_options = zone_options
         self._has_zones = max(
-            [len(zn) > 0 for ens, zd in zone_options.items() for zn in zd.values()]
+            [
+                len(zone_list) > 0
+                for zone_dict in zone_options.values()
+                for zone_list in zone_dict.values()
+            ]
         )
 
     def layout(self) -> List[Component]:
@@ -107,12 +110,18 @@ class ViewSettings(SettingsGroupABC):
             GraphSelectorsLayout(
                 self.register_component_unique_id(self.Ids.GRAPH_SOURCE),
                 self.register_component_unique_id(self.Ids.CO2_SCALE),
-                self.register_component_unique_id(self.Ids.Y_MIN_GRAPH),
-                self.register_component_unique_id(self.Ids.Y_MAX_GRAPH),
-                self.register_component_unique_id(self.Ids.Y_MIN_AUTO_GRAPH),
-                self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
-                self.register_component_unique_id(self.Ids.ZONE),
-                self.register_component_unique_id(self.Ids.ZONE_VIEW),
+                [
+                    self.register_component_unique_id(self.Ids.Y_MIN_GRAPH),
+                    self.register_component_unique_id(self.Ids.Y_MIN_AUTO_GRAPH),
+                ],
+                [
+                    self.register_component_unique_id(self.Ids.Y_MAX_GRAPH),
+                    self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
+                ],
+                [
+                    self.register_component_unique_id(self.Ids.ZONE),
+                    self.register_component_unique_id(self.Ids.ZONE_VIEW),
+                ],
                 self._has_zones,
             ),
             ExperimentalFeaturesLayout(
@@ -245,7 +254,7 @@ class ViewSettings(SettingsGroupABC):
             source: GraphSource,
             ensemble: str,
             current_value: str,
-        ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        ) -> Tuple[List[str], Optional[str]]:
             if ensemble is not None:
                 zones = self._zone_options[ensemble][source]
                 if len(zones) > 0:
@@ -456,12 +465,9 @@ class GraphSelectorsLayout(wcc.Selectors):
         self,
         graph_source_id: str,
         co2_scale_id: str,
-        y_min_id: str,
-        y_max_id: str,
-        y_min_auto_id: str,
-        y_max_auto_id: str,
-        zone_id: str,
-        zone_view_id: str,
+        y_min_ids: List[str],
+        y_max_ids: List[str],
+        zone_ids: List[str],
         has_zones: bool,
     ):
         disp = "flex" if has_zones else "none"
@@ -474,7 +480,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                         dcc.RadioItems(
                             [ZoneViews.CONTAINMENTSPLIT, ZoneViews.ZONESPLIT],
                             ZoneViews.CONTAINMENTSPLIT,
-                            id=zone_view_id,
+                            id=zone_ids[1],
                         ),
                     ],
                     style={"display": disp, "flex-direction": "column"},
@@ -490,7 +496,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                     [
                         "Containment plot for specific zone",
                         wcc.Dropdown(
-                            id=zone_id,
+                            id=zone_ids[0],
                             clearable=False,
                         ),
                     ],
@@ -506,11 +512,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                 "Minimum",
                 html.Div(
                     [
-                        dcc.Input(id=y_min_id, type="number"),
+                        dcc.Input(id=y_min_ids[0], type="number"),
                         dcc.Checklist(
                             ["Auto"],
                             ["Auto"],
-                            id=y_min_auto_id,
+                            id=y_min_ids[1],
                         ),
                     ],
                     style=self._CM_RANGE,
@@ -518,11 +524,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                 "Maximum",
                 html.Div(
                     [
-                        dcc.Input(id=y_max_id, type="number"),
+                        dcc.Input(id=y_max_ids[0], type="number"),
                         dcc.Checklist(
                             ["Auto"],
                             ["Auto"],
-                            id=y_max_auto_id,
+                            id=y_max_ids[1],
                         ),
                     ],
                     style=self._CM_RANGE,
@@ -645,7 +651,7 @@ class FeedbackLayout(wcc.Dialog):
             open=False,
             children=[
                 dcc.Markdown(
-                    """If you have any feedback regarding the CO2-leakage application,  
+                    """If you have any feedback regarding the CO2-leakage application,
                 please contact XXX@XX.X."""
                 )
             ],

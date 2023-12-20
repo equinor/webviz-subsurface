@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas
@@ -10,6 +10,7 @@ from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    ZoneViews,
 )
 
 
@@ -44,12 +45,12 @@ def _read_dataframe(
     table_provider: EnsembleTableProvider,
     realization: int,
     scale_factor: float,
-    zone: Optional[str],
+    zone_info: Dict[str, Any],
 ) -> pandas.DataFrame:
     df = table_provider.get_column_data(table_provider.column_names(), [realization])
     if "zone" in list(df.columns):
-        df = _process_zone_information(df, zone if zone else "all")
-        if zone == "zone_per_real":
+        df = _process_zone_information(df, zone_info)
+        if zone_info["zone_view"] == ZoneViews.ZONESPLIT:
             df["aqueous"] = (
                 df["aqueous_contained"]
                 + df["aqueous_outside"]
@@ -89,28 +90,30 @@ def read_zone_options(
 
 def _process_zone_information(
     df: pandas.DataFrame,
-    zone: str,
+    zone_info: Dict[str, Any],
 ) -> pandas.DataFrame:
-    if zone == "zone_per_real":
+    zone = zone_info["zone"]
+    if zone_info["zone_view"] == ZoneViews.ZONESPLIT:
         return df[df["zone"] != "all"].reset_index(drop=True)
+    if zone is None:
+        zone = "all"
     if zone in list(df["zone"]):
         return df[df["zone"] == zone].drop(columns="zone")
-    else:
-        print(f"Zone {zone} not found, using sum for each unique date.")
-        return (
-            df[df["zone"] != "all"]
-            .groupby("date")
-            .sum(numeric_only=True)
-            .reset_index(drop=True)
-        )
+    print(f"Zone {zone} not found, using sum for each unique date.")
+    return (
+        df[df["zone"] != "all"]
+        .groupby("date")
+        .sum(numeric_only=True)
+        .reset_index(drop=True)
+    )
 
 
-def _zone_colors(n: int) -> List[str]:
-    if len(_COLOR_ZONES) >= n:
-        return _COLOR_ZONES[:n]
-    num_lengths = int(np.ceil(n / len(_COLOR_ZONES)))
+def _zone_colors(num_cols: int) -> List[str]:
+    if len(_COLOR_ZONES) >= num_cols:
+        return _COLOR_ZONES[:num_cols]
+    num_lengths = int(np.ceil(num_cols / len(_COLOR_ZONES)))
     new_cols = _COLOR_ZONES * num_lengths
-    return new_cols[:n]
+    return new_cols[:num_cols]
 
 
 def _find_scale_factor(
@@ -131,7 +134,7 @@ def _read_terminal_co2_volumes(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    zone: Optional[str],
+    zone_info: Dict[str, Any],
 ) -> pandas.DataFrame:
     records: Dict[str, List[Any]] = {
         "real": [],
@@ -140,14 +143,14 @@ def _read_terminal_co2_volumes(
         "sort_key": [],
         "sort_key_secondary": [],
     }
-    if zone == "zone_per_real":
+    if zone_info["zone_view"] == ZoneViews.ZONESPLIT:
         records["zone"] = []
     else:
         records["containment"] = []
     scale_factor = _find_scale_factor(table_provider, scale)
     for real in realizations:
-        df = _read_dataframe(table_provider, real, scale_factor, zone)
-        if zone == "zone_per_real":
+        df = _read_dataframe(table_provider, real, scale_factor, zone_info)
+        if zone_info["zone_view"] == ZoneViews.ZONESPLIT:
             last_ = df[df["date"] == np.max(df["date"])]
             for i in range(last_.shape[0]):
                 last = last_.iloc[i]
@@ -197,12 +200,12 @@ def _read_co2_volumes(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    zone: Optional[str],
+    zone_info: Dict[str, Any],
 ) -> pandas.DataFrame:
     scale_factor = _find_scale_factor(table_provider, scale)
     return pandas.concat(
         [
-            _read_dataframe(table_provider, real, scale_factor, zone).assign(
+            _read_dataframe(table_provider, real, scale_factor, zone_info).assign(
                 realization=real
             )
             for real in realizations
@@ -238,14 +241,13 @@ def generate_co2_volume_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    zone: Optional[str],
-    zones: Optional[List[str]],
+    zone_info: Dict[str, Any],
 ) -> go.Figure:
-    df = _read_terminal_co2_volumes(table_provider, realizations, scale, zone)
-    if zone == "zone_per_real":
+    df = _read_terminal_co2_volumes(table_provider, realizations, scale, zone_info)
+    if zone_info["zone"] == "zonesplit":
         color = "zone"
-        cat_ord = {"zone": zones, "phase": ["gas", "aqueous"]}
-        colors = _zone_colors(len(zones))
+        cat_ord = {"zone": zone_info["zones"], "phase": ["gas", "aqueous"]}
+        colors = _zone_colors(len(zone_info["zones"]))
     else:
         color = "containment"
         cat_ord = {
@@ -280,10 +282,9 @@ def generate_co2_time_containment_one_realization_figure(
     scale: Union[Co2MassScale, Co2VolumeScale],
     time_series_realization: int,
     y_limits: List[Optional[float]],
-    zone: Optional[str],
-    zones: Optional[List[str]],
+    zone_info: Dict[str, Any],
 ) -> go.Figure:
-    df = _read_co2_volumes(table_provider, [time_series_realization], scale, zone)
+    df = _read_co2_volumes(table_provider, [time_series_realization], scale, zone_info)
     df.sort_values(by="date", inplace=True)
     df = df.drop(
         columns=[
@@ -297,15 +298,21 @@ def generate_co2_time_containment_one_realization_figure(
             "total_aqueous",
         ]
     )
-    if zone == "zone_per_real":
+    if zone_info["zone"] == "zonesplit":
         df = pandas.melt(df, id_vars=["date", "zone"])
         df["variable"] = df["zone"] + ", " + df["variable"]
         df = df.drop(columns=["zone"])
         cat_ord = {
-            "type": [zn + ", " + ph for zn in zones for ph in ["gas", "aqueous"]]
+            "type": [
+                zone_name + ", " + phase
+                for zone_name in zone_info["zones"]
+                for phase in ["gas", "aqueous"]
+            ]
         }
-        pattern = ["", "/"] * len(zones)
-        colors = [col for col in _zone_colors(len(zones)) for i in range(2)]
+        pattern = ["", "/"] * len(zone_info["zones"])
+        colors = [
+            col for col in _zone_colors(len(zone_info["zones"])) for i in range(2)
+        ]
     else:
         df = pandas.melt(df, id_vars=["date"])
         cat_ord = {
@@ -360,15 +367,12 @@ def generate_co2_time_containment_one_realization_figure(
     return fig
 
 
-def generate_co2_time_containment_figure(
-    table_provider: EnsembleTableProvider,
-    realizations: List[int],
-    scale: Union[Co2MassScale, Co2VolumeScale],
-    zone: Optional[str],
-    zones: Optional[List[str]],
-) -> go.Figure:
-    df = _read_co2_volumes(table_provider, realizations, scale, zone)
-    if zone == "zone_per_real":
+def _prepare_time_figure_options(
+    df: pandas.DataFrame,
+    zone_info: Dict[str, Any],
+) -> Tuple[pandas.DataFrame, Dict[str, Tuple[str, str, str]], List[str]]:
+    zones = zone_info["zones"]
+    if zone_info["zone_view"] == ZoneViews.ZONESPLIT:
         df = df.drop(
             columns=[
                 "REAL",
@@ -381,22 +385,28 @@ def generate_co2_time_containment_figure(
         )
         df.sort_values(by=["date", "realization"], inplace=True)
         df_ = df[["date", "realization"]][df["zone"] == zones[0]].reset_index(drop=True)
-        for i in range(len(zones)):
-            part_df = df[["total", "gas", "aqueous"]][df["zone"] == zones[i]]
+        for zone_name in zones:
+            part_df = df[["total", "gas", "aqueous"]][df["zone"] == zone_name]
             part_df = part_df.rename(
                 columns={
-                    "total": zones[i] + ", total",
-                    "gas": zones[i] + ", gas",
-                    "aqueous": zones[i] + ", aqueous",
+                    "total": zone_name + ", total",
+                    "gas": zone_name + ", gas",
+                    "aqueous": zone_name + ", aqueous",
                 }
             ).reset_index(drop=True)
             df_ = pandas.concat([df_, part_df], axis=1)
         colors = _zone_colors(len(zones))
         cols_to_plot = {}
-        for ph, lt in zip(["total", "gas", "aqueous"], ["solid", "dot", "dash"]):
-            for zn, col in zip(zones, colors):
-                cols_to_plot[zn + ", " + ph] = (zn + ", " + ph, lt, col)
-        active_cols_at_startup = [zn + ", total" for zn in zones]
+        for phase, line_type in zip(
+            ["total", "gas", "aqueous"], ["solid", "dot", "dash"]
+        ):
+            for zone_name, col in zip(zones, colors):
+                cols_to_plot[zone_name + ", " + phase] = (
+                    zone_name + ", " + phase,
+                    line_type,
+                    col,
+                )
+        active_cols_at_startup = [zone_name + ", total" for zone_name in zones]
         df = df_
     else:
         df.sort_values(by="date", inplace=True)
@@ -415,6 +425,19 @@ def generate_co2_time_containment_figure(
             "Hazardous aqueous": ("aqueous_hazardous", "dash", _COLOR_HAZARDOUS),
         }
         active_cols_at_startup = ["Total", "Outside", "Hazardous"]
+    return df, cols_to_plot, active_cols_at_startup
+
+
+def generate_co2_time_containment_figure(
+    table_provider: EnsembleTableProvider,
+    realizations: List[int],
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    zone_info: Dict[str, Any],
+) -> go.Figure:
+    df = _read_co2_volumes(table_provider, realizations, scale, zone_info)
+    df, cols_to_plot, active_cols_at_startup = _prepare_time_figure_options(
+        df, zone_info
+    )
     fig = go.Figure()
     # Generate dummy scatters for legend entries
     dummy_args = {"x": df["date"], "mode": "lines", "hoverinfo": "none"}

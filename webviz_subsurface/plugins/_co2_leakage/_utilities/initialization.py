@@ -1,9 +1,8 @@
 import logging
 import os
-from pathlib import Path
-from glob import glob
-from typing import Dict, List, Optional
 import warnings
+from pathlib import Path
+from typing import Dict, List, Optional
 
 from webviz_config import WebvizSettings
 
@@ -14,15 +13,15 @@ from webviz_subsurface._providers import (
     EnsembleTableProviderFactory,
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
+from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
+    read_zone_options,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
-    MapAttribute,
     GraphSource,
+    MapAttribute,
 )
 from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
     WellPickProvider,
-)
-from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
-    read_zone_options,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -92,20 +91,20 @@ def init_table_provider(
 
 def init_zone_options(
     ensemble_roots: Dict[str, str],
-    mass_table: EnsembleTableProvider,
-    actual_volume_table: EnsembleTableProvider,
-    ensemble_provider: EnsembleSurfaceProvider,
+    mass_table: Dict[str, EnsembleTableProvider],
+    actual_volume_table: Dict[str, EnsembleTableProvider],
+    ensemble_provider: Dict[str, EnsembleSurfaceProvider],
 ) -> Dict[str, Dict[str, List[str]]]:
-    options = {}
-    for ens, ens_path in ensemble_roots.items():
+    options: Dict[str, Dict[str, List[str]]] = {}
+    for ens in ensemble_roots.keys():
         options[ens] = {}
         real = ensemble_provider[ens].realizations()[0]
-        for source, tp in zip(
+        for source, table in zip(
             [GraphSource.CONTAINMENT_MASS, GraphSource.CONTAINMENT_ACTUAL_VOLUME],
             [mass_table, actual_volume_table],
         ):
             try:
-                options[ens][source] = read_zone_options(tp[ens], real)
+                options[ens][source] = read_zone_options(table[ens], real)
             except KeyError:
                 options[ens][source] = []
         options[ens][GraphSource.UNSMRY] = []
@@ -117,7 +116,7 @@ def process_files(
     haz_bound: Optional[str],
     well_file: Optional[str],
     root: str,
-) -> List[str]:
+) -> List[Optional[str]]:
     """
     Checks if the files exist (otherwise gives a warning and returns None)
     Concatenates ensemble root dir and path to file if relative
@@ -127,7 +126,7 @@ def process_files(
     ]
 
 
-def _process_file(file: Optional[str], root: str) -> str:
+def _process_file(file: Optional[str], root: str) -> Optional[str]:
     if file is not None:
         file = _check_if_file_exists(
             os.path.join(Path(root).parents[1], file)
@@ -137,7 +136,7 @@ def _process_file(file: Optional[str], root: str) -> str:
     return file
 
 
-def _check_if_file_exists(file: Optional[str]) -> str:
+def _check_if_file_exists(file: str) -> Optional[str]:
     if not os.path.isfile(file):
         warnings.warn(f"Cannot find specified file {file}.")
         return None
