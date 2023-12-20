@@ -22,7 +22,7 @@ from ..utils.utils import update_relevant_components
 from ..views.tornado_view import tornado_error_layout, tornado_plots_layout
 
 
-# pylint: disable=too-many-locals, too-many-statements
+# pylint: disable=too-many-locals, too-many-statements, too-many-branches
 def tornado_controllers(
     get_uuid: Callable, volumemodel: InplaceVolumesModel, theme: WebvizConfigTheme
 ) -> None:
@@ -48,6 +48,23 @@ def tornado_controllers(
             groups.append(selections["Subplots"])
 
         filters = selections["filters"].copy()
+
+        if selections["Response"] == "FACIES_FRACTION" and "FACIES" not in groups:
+            if len(filters.get("FACIES", [])) == 1:
+                groups.append("FACIES")
+            else:
+                return update_relevant_components(
+                    id_list=id_list,
+                    update_info=[
+                        {
+                            "new_value": tornado_error_layout(
+                                "To see tornado for FACIES_FRACTION. Either select "
+                                "'FACIES' as subplot value or filter to only one facies"
+                            ),
+                            "conditions": {"page": page_selected},
+                        }
+                    ],
+                )
 
         figures = []
         tables = []
@@ -340,10 +357,4 @@ def create_tornado_table(
 
     columns = create_table_columns(columns=[subplots]) if subplots is not None else []
     columns.extend(tornado_table.columns)
-    columns.extend(
-        create_table_columns(
-            columns=["Reference"],
-            use_si_format=["Reference"] if use_si_format else [],
-        )
-    )
     return table_data, columns

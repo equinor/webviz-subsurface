@@ -107,10 +107,10 @@ setup(
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "xtgeo>=2.20.0",
-        "vtk>=9.2.2",
+        "vtk>=9.2.2,<9.3",
         "webviz-config",
         "webviz-core-components>=0.6",
-        "webviz-subsurface-components==0.4.15",
+        "webviz-subsurface-components==1.0.1",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],

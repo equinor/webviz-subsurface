@@ -15,9 +15,11 @@ from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import InplaceVolumesModel
 
 from ..utils.table_and_figure_utils import (
+    FLUID_COLORS,
     create_data_table,
     create_table_columns,
     fluid_annotation,
+    get_text_format_bar_plot,
 )
 from ..utils.utils import move_to_end_of_list, to_ranges
 from ..views.distribution_main_layout import (
@@ -67,6 +69,12 @@ def distribution_controllers(
                 "oil" if "BO" in selected_data else "gas"
             ]
 
+        if "FACIES_FRACTION" in selected_data and "FACIES" not in groups:
+            return html.Div(
+                "To plot FACIES_FRACTIONS, select 'FACIES' as response, subplot or color",
+                style={"margin-top": "40px"},
+            )
+
         dframe = volumemodel.get_df(
             filters=selections["filters"], groups=groups, parameters=parameters
         )
@@ -98,8 +106,16 @@ def distribution_controllers(
                 color=selections["Color by"],
                 color_discrete_sequence=selections["Colorscale"],
                 color_continuous_scale=selections["Colorscale"],
+                color_discrete_map=FLUID_COLORS
+                if selections["Color by"] == "FLUID_ZONE"
+                else None,
                 barmode=selections["barmode"],
                 boxmode=selections["barmode"],
+                text_auto=get_text_format_bar_plot(
+                    selected_data, selections, volumemodel
+                )
+                if selections["Plot type"] == "bar"
+                else False,
                 layout=dict(
                     title=dict(
                         text=(
@@ -231,16 +247,16 @@ def distribution_controllers(
                 layout={"bargap": 0.05},
                 color_discrete_sequence=selections["Colorscale"],
                 color=selections["Color by"],
-                text=selections["X Response"],
                 xaxis=dict(type="category", tickangle=45, tickfont_size=17, title=None),
-            ).update_traces(
-                texttemplate=(
-                    "%{text:.3s}"
-                    if selections["X Response"] in volumemodel.volume_columns
-                    else "%{text:.3g}"
+                text_auto=get_text_format_bar_plot(
+                    responses=[selections["X Response"]],
+                    selections=selections,
+                    volumemodel=volumemodel,
                 ),
-                textposition="auto",
-            )
+                color_discrete_map=FLUID_COLORS
+                if selections["Color by"] == "FLUID_ZONE"
+                else None,
+            ).update_layout(margin_t=35)
 
             if selections["X Response"] not in volumemodel.hc_responses:
                 barfig.add_annotation(fluid_annotation(selections))
