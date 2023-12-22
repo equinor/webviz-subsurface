@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1244](https://github.com/equinor/webviz-subsurface/pull/1244) - New functionality in `VolumetricAnalysis` to compute facies fractions if `FACIES` is present in the volumetric table. Also added possibility to have labels on bar plots with user defined value format. 
 - [#1247](https://github.com/equinor/webviz-subsurface/pull/1247) - Added P10/P90 to the Uncertainty table in `StructuralUncertainty`.
 
+### Changed
+- [#1252](https://github.com/equinor/webviz-subsurface/pull/1252) - Added CO2 mass visualization to `CO2Leakage`, plus various other improvements: fix zooming issue, option to plot containment split into zones, remove code for simple volume.
 
 ## [0.2.22] - 2023-08-31
 
