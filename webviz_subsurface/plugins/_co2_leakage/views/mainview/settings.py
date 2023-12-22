@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, List, Optional, Tuple
 
 import dash
@@ -54,7 +55,7 @@ class ViewSettings(SettingsGroupABC):
         PLUME_SMOOTHING = "plume-smoothing"
 
         VISUALIZATION_THRESHOLD = "visualization-threshold"
-        VISUALIZATION_SHOW_0 = "visualization-show-0"
+        VISUALIZATION_UPDATE = "visualization-update"
 
         FEEDBACK_BUTTON = "feedback-button"
         FEEDBACK = "feedback"
@@ -105,7 +106,7 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.CM_MIN_AUTO),
                 self.register_component_unique_id(self.Ids.CM_MAX_AUTO),
                 self.register_component_unique_id(self.Ids.VISUALIZATION_THRESHOLD),
-                self.register_component_unique_id(self.Ids.VISUALIZATION_SHOW_0),
+                self.register_component_unique_id(self.Ids.VISUALIZATION_UPDATE),
             ),
             GraphSelectorsLayout(
                 self.register_component_unique_id(self.Ids.GRAPH_SOURCE),
@@ -163,6 +164,11 @@ class ViewSettings(SettingsGroupABC):
             # Map
             prop_name = property_origin(MapAttribute(prop), self._map_attribute_names)
             surfaces = surface_provider.surface_names_for_attribute(prop_name)
+            if len(surfaces) == 0:
+                warnings.warn(
+                    f"Surface not found for property: {prop}.\n"
+                    f"Expected name: <formation>--{prop_name}--<date>.gri"
+                )
             # Formation names
             formations = [{"label": v.title(), "value": v} for v in surfaces]
             picked_formation = None
@@ -212,17 +218,10 @@ class ViewSettings(SettingsGroupABC):
                 self.component_unique_id(self.Ids.VISUALIZATION_THRESHOLD).to_string(),
                 "disabled",
             ),
-            Input(
-                self.component_unique_id(self.Ids.VISUALIZATION_SHOW_0).to_string(),
-                "value",
-            ),
             Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
         )
-        def set_visualization_threshold(show_0: List[str], attribute: str) -> bool:
-            return (
-                len(show_0) == 1
-                or MapAttribute(attribute) == MapAttribute.MIGRATION_TIME
-            )
+        def set_visualization_threshold(attribute: str) -> bool:
+            return MapAttribute(attribute) == MapAttribute.MIGRATION_TIME
 
         @callback(
             Output(
@@ -372,7 +371,7 @@ class MapSelectorLayout(wcc.Selectors):
         cm_min_auto_id: str,
         cm_max_auto_id: str,
         visualization_threshold_id: str,
-        visualization_show_0_id: str,
+        visualization_update_id: str,
     ):
         default_colormap = (
             "turbo (Seq)"
@@ -440,14 +439,21 @@ class MapSelectorLayout(wcc.Selectors):
                         "Visualization threshold",
                         html.Div(
                             [
-                                dcc.Input(id=visualization_threshold_id, type="number"),
-                                dcc.Checklist(
-                                    ["Show 0"],
-                                    ["Show 0"],
-                                    id=visualization_show_0_id,
+                                dcc.Input(
+                                    id=visualization_threshold_id,
+                                    type="number",
+                                    value=-1,
+                                    style={"width": "70%"},
+                                ),
+                                html.Div(style={"width": "5%"}),
+                                html.Button(
+                                    "Update",
+                                    id=visualization_update_id,
+                                    style=LayoutStyle.VISUALIZATION_BUTTON,
+                                    n_clicks=0,
                                 ),
                             ],
-                            style=self._CM_RANGE,
+                            style={"display": "flex"},
                         ),
                     ],
                 )
@@ -660,7 +666,7 @@ class FeedbackLayout(wcc.Dialog):
 
 class FeedbackButton(html.Button):
     def __init__(self) -> None:
-        style = LayoutStyle.OPTIONS_BUTTON
+        style = LayoutStyle.FEEDBACK_BUTTON
         style["display"] = "none"
         super().__init__(
             LayoutLabels.FEEDBACK,

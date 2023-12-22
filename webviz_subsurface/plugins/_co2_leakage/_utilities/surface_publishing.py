@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import xtgeo
@@ -16,6 +16,7 @@ from webviz_subsurface._providers import (
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
 )
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.plume_extent import (
     truncate_surfaces,
 )
@@ -40,6 +41,7 @@ def publish_and_get_surface_metadata(
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
     visualization_threshold: float,
+    map_attribute_names: Dict[MapAttribute, str],
 ) -> Tuple[Optional[SurfaceImageMeta], str, Optional[Any]]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
@@ -53,7 +55,10 @@ def publish_and_get_surface_metadata(
         if not surface:
             raise ValueError(f"Could not get surface for address: {address}")
         summed_mass = np.ma.sum(surface.values)
-        if address.attribute != "MigrationTime" and visualization_threshold >= 0:
+        if (
+            address.attribute != map_attribute_names[MapAttribute.MIGRATION_TIME]
+            and visualization_threshold >= 0
+        ):
             surface.operation("elile", visualization_threshold)
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)

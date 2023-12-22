@@ -77,12 +77,14 @@ class SurfaceData:
         color_map_name: str,
         readable_name_: str,
         visualization_threshold: float,
+        map_attribute_names: Dict[MapAttribute, str],
     ) -> Tuple[Any, Optional[Any]]:
         surf_meta, img_url, summed_mass = publish_and_get_surface_metadata(
             server,
             provider,
             address,
             visualization_threshold,
+            map_attribute_names,
         )
         assert surf_meta is not None  # Should not occur
         value_range = (
@@ -327,6 +329,7 @@ def create_map_layers(
         )
     if (
         well_pick_provider is not None
+        and formation is not None
         and LayoutLabels.SHOW_WELLS in options_dialog_options
     ):
         well_data = dict(well_pick_provider.get_geojson(selected_wells, formation))
@@ -451,23 +454,23 @@ def _parse_polygon_file(filename: str) -> Dict[str, Any]:
 
 
 def process_visualization_info(
-    visualize_0: List[str],
-    visualization_threshold: Optional[float],
+    n_clicks: int,
+    threshold: Optional[float],
     stored_threshold: float,
     cache: Cache,
 ) -> float:
-    if len(visualize_0) != 0:
-        visualization_threshold = -1.0
-    elif visualization_threshold is None:
-        visualization_threshold = 1e-10
-    # Clear surface cache if the threshold for visualization is changed
-    if stored_threshold != visualization_threshold:
+    if threshold is None:
+        print("Visualization threshold must be a number.")
+        return stored_threshold
+    if n_clicks > 0 and threshold != stored_threshold:
+        # Clear surface cache if the threshold for visualization is changed
         print(
             "Clearing cache because the visualization threshold was changed\n"
             "Re-select realization(s) to update the current map"
         )
         cache.clear()
-    return visualization_threshold
+        return threshold
+    return stored_threshold
 
 
 def process_zone_info(

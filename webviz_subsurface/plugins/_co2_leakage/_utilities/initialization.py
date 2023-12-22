@@ -36,10 +36,9 @@ def init_map_attribute_names(
             MapAttribute.MIGRATION_TIME: "migrationtime",
             MapAttribute.MAX_SGAS: "max_sgas",
             MapAttribute.MAX_AMFG: "max_amfg",
-            # MapAttribute.MASS: "mass_total",  # NBNB-AS: Or sum_mass_total
-            MapAttribute.MASS: "mass",
-            MapAttribute.DISSOLVED: "dissolved_mass",
-            MapAttribute.FREE: "free_mass",
+            MapAttribute.MASS: "co2-mass-total",
+            MapAttribute.DISSOLVED: "co2-mass-aqu-phase",
+            MapAttribute.FREE: "co2-mass-gas-phase",
         }
     return {MapAttribute[key]: value for key, value in mapping.items()}
 
