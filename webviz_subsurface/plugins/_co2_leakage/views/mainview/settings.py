@@ -442,7 +442,7 @@ class MapSelectorLayout(wcc.Selectors):
                                 dcc.Input(
                                     id=visualization_threshold_id,
                                     type="number",
-                                    value=-1,
+                                    value=-1.0,
                                     style={"width": "70%"},
                                 ),
                                 html.Div(style={"width": "5%"}),

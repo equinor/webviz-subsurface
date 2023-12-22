@@ -171,7 +171,7 @@ class CO2Leakage(WebvizPluginABC):
             raise
 
         self._summed_co2: Dict[str, Any] = {}
-        self._visualization_threshold = -1.0
+        self._visualization_info = {"threshold": -1.0, "n_clicks": 0}
         self._color_tables = co2leakage_color_tables()
         self.add_shared_settings_group(
             ViewSettings(
@@ -357,10 +357,6 @@ class CO2Leakage(WebvizPluginABC):
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "children"),
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "views"),
-            Output(
-                self._settings_component(ViewSettings.Ids.VISUALIZATION_UPDATE),
-                "n_clicks",
-            ),
             Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
             Input(self._view_component(MapViewElement.Ids.DATE_SLIDER), "value"),
             Input(self._settings_component(ViewSettings.Ids.FORMATION), "value"),
@@ -405,7 +401,7 @@ class CO2Leakage(WebvizPluginABC):
             selected_wells: List[str],
             ensemble: str,
             current_views: List[Any],
-        ) -> Tuple[List[Dict[Any, Any]], List[Any], Dict[Any, Any], int]:
+        ) -> Tuple[List[Dict[Any, Any]], List[Any], Dict[Any, Any]]:
             attribute = MapAttribute(attribute)
             if len(realization) == 0 or ensemble is None:
                 raise PreventUpdate
@@ -420,10 +416,10 @@ class CO2Leakage(WebvizPluginABC):
                 }
             # Unable to clear cache (when needed) without the protected member
             # pylint: disable=protected-access
-            self._visualization_threshold = process_visualization_info(
+            self._visualization_info = process_visualization_info(
                 visualization_update,
                 visualization_threshold,
-                self._visualization_threshold,
+                self._visualization_info,
                 self._surface_server._image_cache,
             )
             # Surface
@@ -447,7 +443,7 @@ class CO2Leakage(WebvizPluginABC):
                     ),
                     color_map_name=color_map_name,
                     readable_name_=readable_name(attribute),
-                    visualization_threshold=self._visualization_threshold,
+                    visualization_threshold=self._visualization_info["threshold"],
                     map_attribute_names=self._map_attribute_names,
                 )
             surf_data, self._summed_co2 = process_summed_mass(
@@ -493,7 +489,7 @@ class CO2Leakage(WebvizPluginABC):
                 attribute=attribute,
             )
             viewports = no_update if current_views else create_map_viewports()
-            return layers, annotations, viewports, 0
+            return layers, annotations, viewports
 
         @callback(
             Output(ViewSettings.Ids.OPTIONS_DIALOG, "open"),
