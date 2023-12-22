@@ -456,21 +456,21 @@ def _parse_polygon_file(filename: str) -> Dict[str, Any]:
 def process_visualization_info(
     n_clicks: int,
     threshold: Optional[float],
-    stored_threshold: float,
+    stored_info: Dict[str, Union[float, int]],
     cache: Cache,
-) -> float:
+) -> Dict[str, Union[float, int]]:
     if threshold is None:
         print("Visualization threshold must be a number.")
-        return stored_threshold
-    if n_clicks > 0 and threshold != stored_threshold:
+        return stored_info
+    if n_clicks != stored_info["n_clicks"] and threshold != stored_info["threshold"]:
         # Clear surface cache if the threshold for visualization is changed
         print(
             "Clearing cache because the visualization threshold was changed\n"
             "Re-select realization(s) to update the current map"
         )
         cache.clear()
-        return threshold
-    return stored_threshold
+        return {"threshold": threshold, "n_clicks": n_clicks}
+    return stored_info
 
 
 def process_zone_info(
