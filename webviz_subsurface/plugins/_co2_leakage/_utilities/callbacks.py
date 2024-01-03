@@ -76,14 +76,14 @@ class SurfaceData:
         color_map_range: Tuple[Optional[float], Optional[float]],
         color_map_name: str,
         readable_name_: str,
-        visualization_threshold: float,
+        visualization_info: Dict[str, Any],
         map_attribute_names: Dict[MapAttribute, str],
     ) -> Tuple[Any, Optional[Any]]:
         surf_meta, img_url, summed_mass = publish_and_get_surface_metadata(
             server,
             provider,
             address,
-            visualization_threshold,
+            visualization_info,
             map_attribute_names,
         )
         assert surf_meta is not None  # Should not occur
@@ -197,11 +197,11 @@ def get_plume_polygon(
     )
 
 
-def _find_legend_title(attribute: MapAttribute) -> str:
+def _find_legend_title(attribute: MapAttribute, unit: str) -> str:
     if attribute == MapAttribute.MIGRATION_TIME:
         return "years"
     if attribute in [MapAttribute.MASS, MapAttribute.DISSOLVED, MapAttribute.FREE]:
-        return "kg"
+        return unit
     return ""
 
 
@@ -210,6 +210,7 @@ def create_map_annotations(
     surface_data: Optional[SurfaceData],
     colortables: List[Dict[str, Any]],
     attribute: MapAttribute,
+    unit: str,
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if surface_data is not None:
@@ -218,14 +219,14 @@ def create_map_annotations(
                 id="1_view",
                 children=[
                     wsc.WebVizColorLegend(
-                        title=_find_legend_title(attribute),
+                        title=_find_legend_title(attribute, unit),
                         min=surface_data.color_map_range[0],
                         max=surface_data.color_map_range[1],
                         colorName=surface_data.color_map_name,
                         cssLegendStyles={"top": "0", "right": "0"},
                         openColorSelector=False,
                         legendScaleSize=0.1,
-                        legendFontSize=30,
+                        legendFontSize=20,
                         colorTables=colortables,
                     ),
                     wsc.ViewFooter(children=formation),
@@ -456,20 +457,27 @@ def _parse_polygon_file(filename: str) -> Dict[str, Any]:
 def process_visualization_info(
     n_clicks: int,
     threshold: Optional[float],
-    stored_info: Dict[str, Union[float, int]],
+    unit: str,
+    stored_info: Dict[str, Any],
     cache: Cache,
-) -> Dict[str, Union[float, int]]:
+) -> Dict[str, Any]:
+    # Clear surface cache if the threshold for visualization or mass unit is changed
+    message = ""
+    stored_info["change"] = False
     if threshold is None:
         print("Visualization threshold must be a number.")
-        return stored_info
-    if n_clicks != stored_info["n_clicks"] and threshold != stored_info["threshold"]:
-        # Clear surface cache if the threshold for visualization is changed
+    elif n_clicks != stored_info["n_clicks"] and threshold != stored_info["threshold"]:
+        message += "Visualization threshold was changed\n"
+        stored_info["threshold"] = threshold
+    if unit != stored_info["unit"]:
+        message += "Mass unit was changed\n"
+        stored_info["unit"] = unit
+    if len(message) > 0:
+        stored_info["change"] = True
         print(
-            "Clearing cache because the visualization threshold was changed\n"
-            "Re-select realization(s) to update the current map"
+            message + "Clearing cache. Press 'Update' again to update the current map"
         )
         cache.clear()
-        return {"threshold": threshold, "n_clicks": n_clicks}
     return stored_info
 
 
@@ -501,8 +509,9 @@ def process_summed_mass(
     summed_mass: Optional[float],
     surf_data: Optional[SurfaceData],
     summed_co2: Dict[str, float],
+    unit: str,
 ) -> Tuple[Optional[SurfaceData], Dict[str, float]]:
-    summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}"
+    summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}-{unit}"
     if len(realization) == 1:
         if attribute in [
             MapAttribute.MASS,
@@ -513,6 +522,6 @@ def process_summed_mass(
                 summed_co2[summed_co2_key] = summed_mass
             if summed_co2_key in summed_co2 and surf_data is not None:
                 surf_data.readable_name += (
-                    f" (Total: {summed_co2[summed_co2_key]:.2E}): "
+                    f" ({unit}) (Total: {summed_co2[summed_co2_key]:.2E}): "
                 )
     return surf_data, summed_co2

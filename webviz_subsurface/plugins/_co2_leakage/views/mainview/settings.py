@@ -56,6 +56,7 @@ class ViewSettings(SettingsGroupABC):
 
         VISUALIZATION_THRESHOLD = "visualization-threshold"
         VISUALIZATION_UPDATE = "visualization-update"
+        MASS_UNIT = "mass-unit"
 
         FEEDBACK_BUTTON = "feedback-button"
         FEEDBACK = "feedback"
@@ -107,6 +108,7 @@ class ViewSettings(SettingsGroupABC):
                 self.register_component_unique_id(self.Ids.CM_MAX_AUTO),
                 self.register_component_unique_id(self.Ids.VISUALIZATION_THRESHOLD),
                 self.register_component_unique_id(self.Ids.VISUALIZATION_UPDATE),
+                self.register_component_unique_id(self.Ids.MASS_UNIT),
             ),
             GraphSelectorsLayout(
                 self.register_component_unique_id(self.Ids.GRAPH_SOURCE),
@@ -268,6 +270,21 @@ class ViewSettings(SettingsGroupABC):
         def disable_zone(zone: str, zone_view: str) -> bool:
             return zone is None or zone_view == ZoneViews.ZONESPLIT
 
+        @callback(
+            Output(
+                self.component_unique_id(self.Ids.MASS_UNIT).to_string(), "disabled"
+            ),
+            Input(self.component_unique_id(self.Ids.PROPERTY).to_string(), "value"),
+        )
+        def toggle_unit(attribute: str) -> bool:
+            if MapAttribute(attribute) not in (
+                MapAttribute.MASS,
+                MapAttribute.FREE,
+                MapAttribute.DISSOLVED,
+            ):
+                return True
+            return False
+
 
 class OpenDialogButton(html.Button):
     def __init__(self) -> None:
@@ -372,6 +389,7 @@ class MapSelectorLayout(wcc.Selectors):
         cm_max_auto_id: str,
         visualization_threshold_id: str,
         visualization_update_id: str,
+        mass_unit_id: str,
     ):
         default_colormap = (
             "turbo (Seq)"
@@ -454,6 +472,13 @@ class MapSelectorLayout(wcc.Selectors):
                                 ),
                             ],
                             style={"display": "flex"},
+                        ),
+                        "Unit",
+                        wcc.Dropdown(
+                            id=mass_unit_id,
+                            options=["kg", "tons", "M tons"],
+                            value="kg",
+                            clearable=False,
                         ),
                     ],
                 )
