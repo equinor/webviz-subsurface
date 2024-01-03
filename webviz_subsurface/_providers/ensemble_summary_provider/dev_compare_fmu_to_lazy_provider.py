@@ -8,9 +8,9 @@ from typing import Optional
 
 import datacompy  # pylint: disable=import-error, useless-suppression
 import dateutil.parser  # type: ignore
-import res2df
 import numpy as np
 import pandas as pd
+import res2df
 from fmu.ensemble import ScratchEnsemble
 
 from .ensemble_summary_provider import Frequency
