@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 
-# opm and ecl2df are only available for Linux,
+# opm and res2df are only available for Linux,
 # hence, ignore any import exception here to make
 # it still possible to use the PvtPlugin on
 # machines with other OSes.
@@ -19,7 +19,7 @@ import pandas as pd
 # NOTE: Functions in this file cannot be used
 #       on non-Linux OSes.
 try:
-    import ecl2df
+    import res2df
     from opm.io.ecl import EclFile
 except ImportError:
     pass
@@ -202,10 +202,10 @@ def load_pvt_dataframe(
 ) -> pd.DataFrame:
     # pylint: disable=too-many-statements
 
-    def check_if_ecl2df_is_installed() -> None:
-        # If ecl2df is not loaded, this machine is probably not
+    def check_if_res2df_is_installed() -> None:
+        # If res2df is not loaded, this machine is probably not
         # running Linux and the modules are not available.
-        if "ecl2df" not in sys.modules:
+        if "res2df" not in sys.modules:
             raise ModuleNotFoundError(
                 "Your operating system does not support opening and reading"
                 " Eclipse files. An empty data frame will be returned and your"
@@ -214,14 +214,14 @@ def load_pvt_dataframe(
                 " to display PVT data anyways."
             )
 
-    def ecl2df_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
-        check_if_ecl2df_is_installed()
-        return ecl2df.pvt.df(kwargs["realization"].get_eclfiles())
+    def res2df_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
+        check_if_res2df_is_installed()
+        return res2df.pvt.df(kwargs["realization"].get_eclfiles())
 
     def init_to_pvt_data_frame(kwargs: Any) -> pd.DataFrame:
         # pylint: disable-msg=too-many-locals
         # pylint: disable=too-many-branches
-        check_if_ecl2df_is_installed()
+        check_if_res2df_is_installed()
         ecl_init_file = EclFile(
             kwargs["realization"].get_eclfiles().get_initfile().get_filename()
         )
@@ -400,7 +400,7 @@ def load_pvt_dataframe(
 
     return filter_pvt_data_frame(
         load_ensemble_set(ensemble_paths, ensemble_set_name).apply(
-            init_to_pvt_data_frame if use_init_file else ecl2df_pvt_data_frame
+            init_to_pvt_data_frame if use_init_file else res2df_pvt_data_frame
         ),
         drop_ensemble_duplicates,
     )

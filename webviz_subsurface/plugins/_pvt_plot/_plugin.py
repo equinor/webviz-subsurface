@@ -36,9 +36,9 @@ class PvtPlot(WebvizPluginABC):
     The minimum requirement is to define `ensembles`.
 
     If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
-    from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2df`.
+    from the simulation decks of individual realizations using `fmu_ensemble` and `res2df`.
     If the `read_from_init_file` flag is set to True, the extraction procedure in
-    `ecl2df` will be replaced by an individual extracting procedure that reads the
+    `res2df` will be replaced by an individual extracting procedure that reads the
     normalized Eclipse INIT file.
     Note that the latter two extraction methods can be very slow for larger data and are therefore
     not recommended unless you have a very simple model/data deck.
@@ -56,7 +56,7 @@ class PvtPlot(WebvizPluginABC):
     * One column named `VISCOSITY` as the second covariate.
 
     The file can e.g. be dumped to disc per realization by a forward model in ERT using
-    `ecl2df`.
+    `res2df`.
     """
 
     class Ids(StrEnum):
@@ -110,7 +110,7 @@ class PvtPlot(WebvizPluginABC):
             raise ValueError(
                 (
                     "There has to be a KEYWORD or TYPE column with corresponding Eclipse keyword."
-                    "When not providing a csv file, make sure ecl2df is installed."
+                    "When not providing a csv file, make sure res2df is installed."
                 )
             )
 

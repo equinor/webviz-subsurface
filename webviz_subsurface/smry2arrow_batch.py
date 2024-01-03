@@ -10,7 +10,7 @@ import warnings
 from pathlib import Path
 from typing import List
 
-import ecl2df
+import res2df
 
 logger = logging.getLogger(__name__)
 
@@ -47,21 +47,21 @@ def _get_parser() -> argparse.ArgumentParser:
 
 def _convert_single_smry_file(smry_filename: str, arrow_filename: str) -> None:
     """Read summary data for single realization from disk and write it out to .arrow
-    file using ecl2df.
+    file using res2df.
     """
 
     eclbase = (
         smry_filename.replace(".DATA", "").replace(".UNSMRY", "").replace(".SMSPEC", "")
     )
 
-    eclfiles = ecl2df.EclFiles(eclbase)
-    sum_df = ecl2df.summary.df(eclfiles)
+    eclfiles = res2df.resdatafiles.ResdataFiles(eclbase)
+    sum_df = res2df.summary.df(eclfiles)
 
-    # Slight hack here, using ecl2df protected function to gain access to conversion routine
+    # Slight hack here, using res2df protected function to gain access to conversion routine
     # pylint: disable=protected-access
-    sum_table = ecl2df.summary._df2pyarrow(sum_df)
+    sum_table = res2df.summary._df2pyarrow(sum_df)
 
-    ecl2df.summary.write_dframe_stdout_file(sum_table, arrow_filename)
+    res2df.summary.write_dframe_stdout_file(sum_table, arrow_filename)
 
 
 def _batch_convert_smry2arrow(

@@ -92,7 +92,7 @@ setup(
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
-        "ecl2df>=0.15.0; sys_platform=='linux'",
+        "res2df>=1.0; sys_platform=='linux'",
         "flask-caching",
         "fmu-ensemble>=1.2.3",
         "fmu-tools>=1.8",
