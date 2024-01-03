@@ -157,7 +157,7 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
     datafile = get_ecl_datafile(ensemble_path)
     if datafile is None:
         return None
-    ecl_deck = ResdataFiles(datafile).get_ecldeck()
+    ecl_deck = ResdataFiles(datafile).get_deck()
     for keyword in ecl_deck:
         if keyword.name in ["METRIC", "FIELD", "LAB", "PVT-M"]:
             return keyword.name
