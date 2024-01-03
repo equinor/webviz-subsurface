@@ -84,10 +84,11 @@ class EnsembleGroupTreeData:
         grouptree data, before the filtered data is sent to the function that is
         actually creating the dataset.
 
-        Returns the group tree data and two lists with dropdown options for what
-        to display on the edges and nodes.
+        Returns the group tree data and two lists with metadata for edges and nodes
+        in the tree data structure
 
         A sample data set can be found here:
+        # pylint: disable=line-too-long
         https://github.com/equinor/webviz-subsurface-components/blob/master/react/src/demo/example-data/group-tree.json
         """  # noqa
 
@@ -130,13 +131,16 @@ class EnsembleGroupTreeData:
             dfs.append(gruptree_filtered[gruptree_filtered[f"IS_{tpe.value}".upper()]])
         gruptree_filtered = pd.concat(dfs).drop_duplicates()
 
+        # Metadata for node: {key: str, label: str, unit: Optional[str]}
+        # The "key" correspond to the key for node data in the tree data set.
+        node_metadata_list = [
+            {"key": datatype, "label": get_label(datatype)}
+            for datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]
+        ]
         return (
             create_dataset(smry, gruptree_filtered, self._sumvecs, self._terminal_node),
-            self.get_edge_options(node_types),
-            [
-                {"name": datatype, "label": get_label(datatype)}
-                for datatype in [DataType.PRESSURE, DataType.BHP, DataType.WMCTL]
-            ],
+            self.create_edge_metadata_list(node_types),
+            node_metadata_list,
         )
 
     @CACHE.memoize()
@@ -217,32 +221,37 @@ class EnsembleGroupTreeData:
             )
 
     @CACHE.memoize()
-    def get_edge_options(self, node_types: List[NodeType]) -> List[Dict[str, str]]:
-        """Returns a list with edge node options for the dropdown
-        menu in the GroupTree component. The output list has the format:
+    def create_edge_metadata_list(
+        self, node_types: List[NodeType]
+    ) -> List[Dict[str, str]]:
+        """Creates a list with edge metadata for both dropdowns and tree data
+        in the GroupTree component. The "key" correspond to the key for edge data
+        in the tree data set.
+
+        The output list has the format:
         [
-            {"name": DataType.OILRATE, "label": "Oil Rate"},
-            {"name": DataType.GasRATE, "label": "Gas Rate"},
+            {"key": DataType.OILRATE, "label": "Oil Rate", "unit": "m3/d"},
+            {"key": DataType.GasRATE, "label": "Gas Rate", "unit": "m3/d"},
         ]
         """
         options = []
         if NodeType.PROD in node_types:
             for rate in [DataType.OILRATE, DataType.GASRATE, DataType.WATERRATE]:
-                options.append({"name": rate, "label": get_label(rate)})
+                options.append({"key": rate, "label": get_label(rate)})
         if NodeType.INJ in node_types and self._has_waterinj:
             options.append(
                 {
-                    "name": DataType.WATERINJRATE,
+                    "key": DataType.WATERINJRATE,
                     "label": get_label(DataType.WATERINJRATE),
                 }
             )
         if NodeType.INJ in node_types and self._has_gasinj:
             options.append(
-                {"name": DataType.GASINJRATE, "label": get_label(DataType.GASINJRATE)}
+                {"key": DataType.GASINJRATE, "label": get_label(DataType.GASINJRATE)}
             )
         if options:
             return options
-        return [{"name": DataType.OILRATE, "label": get_label(DataType.OILRATE)}]
+        return [{"key": DataType.OILRATE, "label": get_label(DataType.OILRATE)}]
 
 
 def get_edge_label(row: pd.Series) -> str:
