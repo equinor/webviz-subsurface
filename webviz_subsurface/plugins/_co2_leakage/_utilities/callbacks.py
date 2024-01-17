@@ -33,7 +33,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     GraphSource,
     LayoutLabels,
     MapAttribute,
-    ZoneViews,
+    ContainmentViews,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.summary_graphs import (
     generate_summary_figure,
@@ -380,23 +380,23 @@ def generate_containment_figures(
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realization: int,
     y_limits: List[Optional[float]],
-    zone_info: Dict[str, Any],
+    containment_info: Dict[str, Union[str, None, List[str]]],
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
         fig0 = generate_co2_volume_figure(
             table_provider,
             table_provider.realizations(),
             co2_scale,
-            zone_info,
+            containment_info,
         )
         fig1 = generate_co2_time_containment_figure(
             table_provider,
             table_provider.realizations(),
             co2_scale,
-            zone_info,
+            containment_info,
         )
         fig2 = generate_co2_time_containment_one_realization_figure(
-            table_provider, co2_scale, realization, y_limits, zone_info
+            table_provider, co2_scale, realization, y_limits, containment_info
         )
     except KeyError as exc:
         warnings.warn(f"Could not generate CO2 figures: {exc}")
@@ -485,24 +485,39 @@ def process_visualization_info(
     return stored_info
 
 
-def process_zone_info(
+def process_containment_info(
     zone: Optional[str],
-    zone_view: Optional[str],
-    zones: Optional[List[str]],
+    region: Optional[str],
+    view: Optional[str],
+    zone_and_region_options: Dict[str, List[str]],
     source: str,
 ) -> Dict[str, Union[str, None, List[str]]]:
+    zones = zone_and_region_options["zones"]
+    regions = zone_and_region_options["regions"]
     if source in [
         GraphSource.CONTAINMENT_MASS,
         GraphSource.CONTAINMENT_ACTUAL_VOLUME,
     ]:
-        if zones is None or len(zones) == 0:
-            zone_view = ZoneViews.CONTAINMENTSPLIT
-        else:
+        if view == ContainmentViews.CONTAINMENTSPLIT:
+            return {"zone": zone, "region": region, "containment_view": view}
+        elif view == ContainmentViews.ZONESPLIT and len(zones) > 0:
             zones = [zone_name for zone_name in zones if zone_name != "all"]
-        if zone_view == ZoneViews.ZONESPLIT:
-            zone = "zonesplit"
-        return {"zone": zone, "zone_view": zone_view, "zones": zones}
-    return {"zone": None, "zone_view": ZoneViews.CONTAINMENTSPLIT, "zones": []}
+        elif view == ContainmentViews.REGIONSPLIT and len(regions) > 0:
+            regions = [reg_name for reg_name in regions if reg_name != "all"]
+        else:
+            return {
+                "zone": zone,
+                "region": region,
+                "containment_view": ContainmentViews.CONTAINMENTSPLIT,
+            }
+        return {
+            "zone": zone,
+            "region": region,
+            "containment_view": view,
+            "zones": zones,
+            "regions": regions,
+        }
+    return {"containment_view": ContainmentViews.CONTAINMENTSPLIT}
 
 
 def process_summed_mass(

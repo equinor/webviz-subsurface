@@ -19,7 +19,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     LayoutLabels,
     LayoutStyle,
     MapAttribute,
-    ZoneViews,
+    ContainmentViews,
 )
 
 
@@ -49,7 +49,8 @@ class ViewSettings(SettingsGroupABC):
         Y_MIN_AUTO_GRAPH = "y-min-auto-graph"
         Y_MAX_AUTO_GRAPH = "y-max-auto-graph"
         ZONE = "zone"
-        ZONE_VIEW = "zone_view"
+        REGION = "region"
+        CONTAINMENT_VIEW = "containment_view"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -69,7 +70,7 @@ class ViewSettings(SettingsGroupABC):
         map_attribute_names: Dict[MapAttribute, str],
         color_scale_names: List[str],
         well_names: List[str],
-        zone_options: Dict[str, Dict[str, List[str]]],
+        zone_and_region_options: Dict[str, Dict[str, Dict[str, List[str]]]],
     ):
         super().__init__("Settings")
         self._ensemble_paths = ensemble_paths
@@ -78,12 +79,19 @@ class ViewSettings(SettingsGroupABC):
         self._color_scale_names = color_scale_names
         self._initial_surface = initial_surface
         self._well_names = well_names
-        self._zone_options = zone_options
+        self._zone_and_region_options = zone_and_region_options
         self._has_zones = max(
             [
-                len(zone_list) > 0
-                for zone_dict in zone_options.values()
-                for zone_list in zone_dict.values()
+                len(inner_dict["zones"]) > 0
+                for outer_dict in zone_and_region_options.values()
+                for inner_dict in outer_dict.values()
+            ]
+        )
+        self._has_regions = max(
+            [
+                len(inner_dict["regions"]) > 0
+                for outer_dict in zone_and_region_options.values()
+                for inner_dict in outer_dict.values()
             ]
         )
 
@@ -123,9 +131,11 @@ class ViewSettings(SettingsGroupABC):
                 ],
                 [
                     self.register_component_unique_id(self.Ids.ZONE),
-                    self.register_component_unique_id(self.Ids.ZONE_VIEW),
+                    self.register_component_unique_id(self.Ids.REGION),
+                    self.register_component_unique_id(self.Ids.CONTAINMENT_VIEW),
                 ],
                 self._has_zones,
+                self._has_regions,
             ),
             ExperimentalFeaturesLayout(
                 self.register_component_unique_id(self.Ids.PLUME_THRESHOLD),
@@ -257,18 +267,56 @@ class ViewSettings(SettingsGroupABC):
             current_value: str,
         ) -> Tuple[List[str], Optional[str]]:
             if ensemble is not None:
-                zones = self._zone_options[ensemble][source]
+                zones = self._zone_and_region_options[ensemble][source]["zones"]
                 if len(zones) > 0:
-                    return zones, dash.no_update if current_value in zones else "all"
+                    options = [{"label": zone.title(), "value": zone} for zone in zones]
+                    return options, dash.no_update if current_value in zones else "all"
             return [], None
 
         @callback(
             Output(self.component_unique_id(self.Ids.ZONE).to_string(), "disabled"),
             Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
-            Input(self.component_unique_id(self.Ids.ZONE_VIEW).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"),
         )
-        def disable_zone(zone: str, zone_view: str) -> bool:
-            return zone is None or zone_view == ZoneViews.ZONESPLIT
+        def disable_zone(zone: str, region: str, containment_view: str) -> bool:
+            return (
+                    zone is None
+                    or containment_view != ContainmentViews.CONTAINMENTSPLIT
+                    or (region is not None and region != "all")
+            )
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.REGION).to_string(), "options"),
+            Output(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.GRAPH_SOURCE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.ENSEMBLE).to_string(), "value"),
+            State(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
+        )
+        def set_regions(
+            source: GraphSource,
+            ensemble: str,
+            current_value: str,
+        ) -> Tuple[List[str], Optional[str]]:
+            if ensemble is not None:
+                regions = self._zone_and_region_options[ensemble][source]["regions"]
+                if len(regions) > 0:
+                    options = [{"label": region.title(), "value": region} for region in regions]
+                    return options, dash.no_update if current_value in regions else "all"
+            return [], None
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.REGION).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"),
+        )
+        def disable_region(region: str, zone: str, containment_view: str) -> bool:
+            return (
+                    region is None
+                    or containment_view != ContainmentViews.CONTAINMENTSPLIT
+                    or (zone is not None and zone != "all")
+            )
 
         @callback(
             Output(
@@ -284,6 +332,27 @@ class ViewSettings(SettingsGroupABC):
             ):
                 return True
             return False
+
+        @callback(
+            Output("zone_col", "style"),
+            Output("region_col", "style"),
+            Output("both_col", "style"),
+            Output("text", "style"),
+            Input(self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"),
+        )
+        def hide_dropdowns(view: str) -> Dict:
+            # If we want the dropdown menus to disappear instead of go gray
+            if view == ContainmentViews.ZONESPLIT:
+                return [{"display": "none"}]*4
+            disp_zone = "flex" if self._has_zones else "none"
+            disp_region = "flex" if self._has_regions else "none"
+            disp_either = "flex" if self._has_zones or self._has_regions else "none"
+            return (
+                    {"width": "50%" if self._has_regions else "100%", "display": disp_zone, "flex-direction": "column"},
+                    {"width": "50%" if self._has_zones else "100%", "display": disp_region, "flex-direction": "column"},
+                    {"display": disp_either},
+                    {"display": disp_either}
+                )
 
 
 class OpenDialogButton(html.Button):
@@ -498,10 +567,25 @@ class GraphSelectorsLayout(wcc.Selectors):
         co2_scale_id: str,
         y_min_ids: List[str],
         y_max_ids: List[str],
-        zone_ids: List[str],
+        containment_ids: List[str],
         has_zones: bool,
+        has_regions: bool,
     ):
-        disp = "flex" if has_zones else "none"
+        disp = "flex" if has_zones or has_regions else "none"
+        disp_zone = "flex" if has_zones else "none"
+        disp_region = "flex" if has_regions else "none"
+        only_zone = has_zones and not has_regions
+        only_region = has_regions and not has_zones
+        header = "Containment for specific"
+        if only_zone:
+            header += " zone"
+        elif only_region:
+            header += " region"
+        options = [ContainmentViews.CONTAINMENTSPLIT]
+        if has_zones:
+            options.append(ContainmentViews.ZONESPLIT)
+        if has_regions:
+            options.append(ContainmentViews.REGIONSPLIT)
         super().__init__(
             label="Graph Settings",
             open_details=False,
@@ -509,9 +593,9 @@ class GraphSelectorsLayout(wcc.Selectors):
                 html.Div(
                     [
                         dcc.RadioItems(
-                            [ZoneViews.CONTAINMENTSPLIT, ZoneViews.ZONESPLIT],
-                            ZoneViews.CONTAINMENTSPLIT,
-                            id=zone_ids[1],
+                            options,
+                            ContainmentViews.CONTAINMENTSPLIT,
+                            id=containment_ids[2],
                         ),
                     ],
                     style={"display": disp, "flex-direction": "column"},
@@ -524,14 +608,43 @@ class GraphSelectorsLayout(wcc.Selectors):
                     clearable=False,
                 ),
                 html.Div(
+                    header,
+                    id="text",
+                    style={"display": disp},
+                ),
+                html.Div(
                     [
-                        "Containment plot for specific zone",
-                        wcc.Dropdown(
-                            id=zone_ids[0],
-                            clearable=False,
+                        html.Div(
+                            ([] if only_zone else ["zone"])
+                            + [
+                                wcc.Dropdown(
+                                    id=containment_ids[0],
+                                    clearable=False,
+                                ),
+                            ],
+                            id="zone_col",
+                            style={
+                                "width": "50%" if has_regions else "100%",
+                                "display": disp_zone
+                            },
+                        ),
+                        html.Div(
+                            ([] if only_region else ["region"])
+                            + [
+                                wcc.Dropdown(
+                                    id=containment_ids[1],
+                                    clearable=False,
+                                ),
+                            ],
+                            id="region_col",
+                            style={
+                                "width": "50%" if has_zones else "100%",
+                                "display": disp_region
+                            },
                         ),
                     ],
-                    style={"display": disp, "flex-direction": "column"},
+                    id="both_col",
+                    style={"display": disp},
                 ),
                 "Unit",
                 wcc.Dropdown(

@@ -73,6 +73,7 @@ class LayoutStyle:
     }
 
 
-class ZoneViews(StrEnum):
+class ContainmentViews(StrEnum):
     CONTAINMENTSPLIT = "Split into containment polygons"
     ZONESPLIT = "Split into zones"
+    REGIONSPLIT = "Split into regions"
