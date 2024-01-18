@@ -78,7 +78,7 @@ def _read_dataframe(
 def read_zone_and_region_options(
     table_provider: EnsembleTableProvider,
     realization: int,
-) -> List[str]:
+) -> Dict[str, List[str]]:
     df = table_provider.get_column_data(table_provider.column_names(), [realization])
     zones = ["all"]
     if "zone" in list(df.columns):
@@ -92,7 +92,7 @@ def read_zone_and_region_options(
                 regions.append(region)
     return {
         "zones": zones if len(zones) > 1 else [],
-        "regions": regions if len(regions) > 1 else []
+        "regions": regions if len(regions) > 1 else [],
     }
 
 
@@ -107,7 +107,7 @@ def _process_containment_information(
             .drop(columns="region", errors="ignore")
             .reset_index(drop=True)
         )
-    elif view == ContainmentViews.REGIONSPLIT:
+    if view == ContainmentViews.REGIONSPLIT:
         return (
             df[df["region"] != "all"]
             .drop(columns="zone", errors="ignore")
@@ -117,35 +117,29 @@ def _process_containment_information(
     region = containment_info["region"]
     if zone not in ["all", None]:
         if zone in list(df["zone"]):
-            return (
-                df[df["zone"] == zone]
-                .drop(columns=["zone", "region"], errors="ignore")
+            return df[df["zone"] == zone].drop(
+                columns=["zone", "region"], errors="ignore"
             )
         print(f"Zone {zone} not found, using sum for each unique date.")
     elif region not in ["all", None]:
         if region in list(df["region"]):
-            return (
-                df[df["region"] == region]
-                .drop(columns=["zone", "region"], errors="ignore")
+            return df[df["region"] == region].drop(
+                columns=["zone", "region"], errors="ignore"
             )
         print(f"Region {region} not found, using sum for each unique date.")
     if "zone" in list(df.columns):
         if "region" in list(df.columns):
-            return (
-                df[[a and b for a, b in zip(df["zone"] == "all", df["region"] == "all")]]
-                .drop(columns=["zone", "region"])
-            )
-        else:
-            return df[df["zone"] == "all"].drop(columns=["zone"])
-    if "region" in list(df.columns):
-        return df[df["region"] == "all"].drop(columns=["region"])
+            return df[
+                [a and b for a, b in zip(df["zone"] == "all", df["region"] == "all")]
+            ].drop(columns=["zone", "region"])
+        df = df[df["zone"] == "all"].drop(columns=["zone"])
+    elif "region" in list(df.columns):
+        df = df[df["region"] == "all"].drop(columns=["region"])
     return df
 
 
-
-
 def _split_colors(num_cols: int, split: str = "zone") -> List[str]:
-    options = [col for col in _COLOR_ZONES]
+    options = list(_COLOR_ZONES)
     if split == "region":
         options.reverse()
     if len(options) >= num_cols:
@@ -248,9 +242,9 @@ def _read_co2_volumes(
     scale_factor = _find_scale_factor(table_provider, scale)
     return pandas.concat(
         [
-            _read_dataframe(table_provider, real, scale_factor, containment_info).assign(
-                realization=real
-            )
+            _read_dataframe(
+                table_provider, real, scale_factor, containment_info
+            ).assign(realization=real)
             for real in realizations
         ]
     )
@@ -286,7 +280,9 @@ def generate_co2_volume_figure(
     scale: Union[Co2MassScale, Co2VolumeScale],
     containment_info: Dict[str, Any],
 ) -> go.Figure:
-    df = _read_terminal_co2_volumes(table_provider, realizations, scale, containment_info)
+    df = _read_terminal_co2_volumes(
+        table_provider, realizations, scale, containment_info
+    )
     if containment_info["containment_view"] == ContainmentViews.ZONESPLIT:
         color = "zone"
         cat_ord = {"zone": containment_info["zones"], "phase": ["gas", "aqueous"]}
@@ -331,7 +327,9 @@ def generate_co2_time_containment_one_realization_figure(
     y_limits: List[Optional[float]],
     containment_info: Dict[str, Any],
 ) -> go.Figure:
-    df = _read_co2_volumes(table_provider, [time_series_realization], scale, containment_info)
+    df = _read_co2_volumes(
+        table_provider, [time_series_realization], scale, containment_info
+    )
     df.sort_values(by="date", inplace=True)
     df = df.drop(
         columns=[
@@ -358,7 +356,9 @@ def generate_co2_time_containment_one_realization_figure(
         }
         pattern = ["", "/"] * len(containment_info["zones"])
         colors = [
-            col for col in _split_colors(len(containment_info["zones"])) for i in range(2)
+            col
+            for col in _split_colors(len(containment_info["zones"]))
+            for i in range(2)
         ]
     elif containment_info["containment_view"] == ContainmentViews.REGIONSPLIT:
         df = pandas.melt(df, id_vars=["date", "region"])
@@ -456,7 +456,9 @@ def _prepare_time_figure_options(
             errors="ignore",
         )
         df.sort_values(by=["date", "realization"], inplace=True)
-        df_ = df[["date", "realization"]][df[split] == options[0]].reset_index(drop=True)
+        df_ = df[["date", "realization"]][df[split] == options[0]].reset_index(
+            drop=True
+        )
         for name in options:
             part_df = df[["total", "gas", "aqueous"]][df[split] == name]
             part_df = part_df.rename(

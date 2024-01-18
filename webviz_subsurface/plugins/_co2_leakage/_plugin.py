@@ -16,9 +16,9 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     generate_containment_figures,
     generate_unsmry_figures,
     get_plume_polygon,
+    process_containment_info,
     process_summed_mass,
     process_visualization_info,
-    process_containment_info,
     property_origin,
     readable_name,
 )
@@ -226,7 +226,9 @@ class CO2Leakage(WebvizPluginABC):
         # to determine what to plot
         # pylint: disable=too-many-arguments
         @callback(
-            Output(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
+            Output(
+                self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"
+            ),
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Output(
@@ -262,9 +264,9 @@ class CO2Leakage(WebvizPluginABC):
             zone: Optional[str],
             region: Optional[str],
             containment_view: str,
-        ) -> Tuple[go.Figure, go.Figure, Dict, Dict]:
+        ) -> Tuple[Dict, go.Figure, go.Figure]:
             out = {"figs": [no_update] * 3, "styles": [{"display": "none"}] * 3}
-            containment_info = process_containment_info(
+            cont_info = process_containment_info(
                 zone,
                 region,
                 containment_view,
@@ -289,7 +291,7 @@ class CO2Leakage(WebvizPluginABC):
                         co2_scale,
                         realizations[0],
                         y_limits,
-                        containment_info,
+                        cont_info,
                     )
                 elif (
                     source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
@@ -300,12 +302,12 @@ class CO2Leakage(WebvizPluginABC):
                         co2_scale,
                         realizations[0],
                         y_limits,
-                        containment_info,
+                        cont_info,
                     )
                 for fig in out["figs"]:
                     fig["layout"][
                         "uirevision"
-                    ] = f"{source}-{co2_scale}-{containment_info['zone']}-{containment_info['region']}"
+                    ] = f"{source}-{co2_scale}-{cont_info['zone']}-{cont_info['region']}"
                 out["figs"][-1]["layout"]["uirevision"] += f"-{realizations}"
             elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
                 u_figs = generate_unsmry_figures(
@@ -315,7 +317,7 @@ class CO2Leakage(WebvizPluginABC):
                 )
                 out["figs"][: len(u_figs)] = u_figs
                 out["styles"][: len(u_figs)] = [{}] * len(u_figs)
-            return containment_info["containment_view"], *out["figs"], *out["styles"]  # type: ignore
+            return cont_info["containment_view"], *out["figs"], *out["styles"]  # type: ignore
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "marks"),

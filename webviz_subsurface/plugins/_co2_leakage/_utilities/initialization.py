@@ -94,7 +94,7 @@ def init_zone_and_region_options(
     actual_volume_table: Dict[str, EnsembleTableProvider],
     ensemble_provider: Dict[str, EnsembleSurfaceProvider],
 ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
-    options: Dict[str, Dict[str, List[str]]] = {}
+    options: Dict[str, Dict[str, Dict[str, List[str]]]] = {}
     for ens in ensemble_roots.keys():
         options[ens] = {}
         real = ensemble_provider[ens].realizations()[0]

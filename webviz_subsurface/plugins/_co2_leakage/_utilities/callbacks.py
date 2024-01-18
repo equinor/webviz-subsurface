@@ -30,10 +30,10 @@ from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    ContainmentViews,
     GraphSource,
     LayoutLabels,
     MapAttribute,
-    ContainmentViews,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.summary_graphs import (
     generate_summary_figure,
@@ -471,8 +471,9 @@ def process_visualization_info(
         stored_info["unit"] = unit
     if threshold is None:
         print("Visualization threshold must be a number.")
-    elif ((n_clicks != stored_info["n_clicks"] or len(message) > 0)
-          and threshold != stored_info["threshold"]):
+    elif (
+        n_clicks != stored_info["n_clicks"] or len(message) > 0
+    ) and threshold != stored_info["threshold"]:
         message += "Visualization threshold was changed\n"
         stored_info["threshold"] = threshold
     if len(message) > 0:
@@ -500,7 +501,7 @@ def process_containment_info(
     ]:
         if view == ContainmentViews.CONTAINMENTSPLIT:
             return {"zone": zone, "region": region, "containment_view": view}
-        elif view == ContainmentViews.ZONESPLIT and len(zones) > 0:
+        if view == ContainmentViews.ZONESPLIT and len(zones) > 0:
             zones = [zone_name for zone_name in zones if zone_name != "all"]
         elif view == ContainmentViews.REGIONSPLIT and len(regions) > 0:
             regions = [reg_name for reg_name in regions if reg_name != "all"]
