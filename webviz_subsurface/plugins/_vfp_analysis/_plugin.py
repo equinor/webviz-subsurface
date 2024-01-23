@@ -20,7 +20,7 @@ class VfpAnalysis(WebvizPluginABC):
     ---
 
     The plugin uses an `.arrow` representation of the VFP curves, which can be exported to disk by
-    using the `ECL2CSV` forward model in ERT with subcommand `vfp`.
+    using the `RES2CSV` forward model in ERT with subcommand `vfp`.
 
     So far, the plugin only vizualizes VFPPROD curves, but the plan is to extend it also to
     VFPINJ curves soon.

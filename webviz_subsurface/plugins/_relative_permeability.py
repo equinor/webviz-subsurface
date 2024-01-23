@@ -59,10 +59,10 @@ recommended unless you have a very simple model/data deck.
 * One column **per** capillary pressure curve (e.g. `PCOW`).
 
 The `relpermfile` file can e.g. be dumped to disk per realization by a forward model in ERT that
-wraps the command `ecl2csv satfunc input_file -o output_file` (requires that you have `res2df`
+wraps the command `res2csv satfunc input_file -o output_file` (requires that you have `res2df`
 installed). A typical example could be:
-`ecl2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
-[Link to ecl2csv satfunc documentation.](https://equinor.github.io/res2df/scripts.html#satfunc)
+`res2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
+[Link to res2csv satfunc documentation.](https://equinor.github.io/res2df/scripts.html#satfunc)
 
 
 `scalfile` is a path to __a single file of SCAL recommendations__ (for all

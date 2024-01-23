@@ -5,7 +5,7 @@ from typing import Optional
 
 import pandas as pd
 
-# The fmu.ensemble dependency ecl is only available for Linux,
+# The fmu.ensemble dependency resdata is only available for Linux,
 # hence, ignore any import exception here to make
 # it still possible to use the PvtPlugin on
 # machines with other OSes.
