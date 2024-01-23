@@ -241,6 +241,17 @@ def histogram_options(uuid: str, tab: str) -> html.Div:
                 labelStyle={"display": "inline-flex", "margin-right": "5px"},
                 value="overlay",
             ),
+            wcc.RadioItems(
+                label="Histogram p90/mean/p10 lines:",
+                id={"id": uuid, "tab": tab, "selector": "statlines"},
+                options=[
+                    {"label": "none", "value": None},
+                    {"label": "mean", "value": "mean"},
+                    {"label": "all", "value": "all"},
+                ],
+                labelStyle={"display": "inline-flex", "margin-right": "5px"},
+                value="all",
+            ),
             wcc.Slider(
                 label="Histogram bins:",
                 id={"id": uuid, "tab": tab, "selector": "hist_bins"},
