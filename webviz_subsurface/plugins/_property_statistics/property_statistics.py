@@ -72,7 +72,7 @@ FMU format.
 
 ---
 
-?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward \
+?> `Arrow` format for simulation time series data can be generated using the `RES2CSV` forward \
 model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to \
 generate arrow files.
 
@@ -143,7 +143,7 @@ differ between individual realizations of an ensemble.
             except ValueError as error:
                 message = (
                     f"Some/all ensembles are missing arrow files at {rel_file_pattern}.\n"
-                    "If no arrow files have been generated with `ERT` using `ECL2CSV`, "
+                    "If no arrow files have been generated with `ERT` using `RES2CSV`, "
                     "the commandline tool `smry2arrow_batch` can be used to generate arrow "
                     "files for an ensemble"
                 )

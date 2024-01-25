@@ -164,7 +164,7 @@ WellCompletionsDataModel {self.ensemble_name} {self.ensemble_path} {self.compdat
 def merge_compdat_and_connstatus(
     df_compdat: pd.DataFrame, df_connstatus: pd.DataFrame
 ) -> pd.DataFrame:
-    """This function merges the compdat data (exported with ecl2df) with the well connection
+    """This function merges the compdat data (exported with res2df) with the well connection
     status data (extracted from the CPI summary data). The connection status data will
     be used for wells where it exists. The KH will be merged from the compdat. For wells
     that are not in the connection status data, the compdat data will be used as it is.

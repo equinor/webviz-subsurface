@@ -44,7 +44,7 @@ defined in ERT \
 01_drogon_ahm/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
 * **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files \
-using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) \
+using [res2df](https://equinor.github.io/res2df/res2df.html#module-res2df.rft) \
 [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/\
 01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). \
 Simulated RFT data can be visualized along MD if a "CONMD" column is present in \

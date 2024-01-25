@@ -37,7 +37,7 @@ on reservoir simulation time series data.
     and the resampling dropdown will be disabled.
 ---
 
-?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward \
+?> `Arrow` format for simulation time series data can be generated using the `RES2CSV` forward \
 model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to \
 generate arrow files.
 

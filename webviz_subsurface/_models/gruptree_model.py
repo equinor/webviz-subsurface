@@ -150,7 +150,7 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
         self, df_files: Optional[pd.DataFrame] = None
     ) -> pd.DataFrame:
         """Reads the gruptree files for an ensemble from the scratch disk. These
-        files can be exported in the FMU workflow using the ECL2CSV
+        files can be exported in the FMU workflow using the RES2CSV
         forward model with subcommand gruptree.
 
         If tree_type == BRANPROP then GRUPTREE rows are filtered out
