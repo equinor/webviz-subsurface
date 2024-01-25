@@ -16,6 +16,7 @@ from webviz_subsurface._models import InplaceVolumesModel
 
 from ..utils.table_and_figure_utils import (
     FLUID_COLORS,
+    add_histogram_lines,
     create_data_table,
     create_table_columns,
     fluid_annotation,
@@ -143,6 +144,10 @@ def distribution_controllers(
                 else {}
             )
         )
+
+        # add lines to the histogram if no subplots
+        if selections["Plot type"] == "histogram" and selections["Subplots"] is None:
+            add_histogram_lines(figure, selections["statlines"])
 
         return custom_plotting_layout(
             figure=figure,
