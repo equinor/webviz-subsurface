@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.23` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.24` of `webviz-subsurface`.
 
 
 
@@ -453,10 +453,10 @@ The following data will be displayed if available:
 **GRUPTREE input**
 
 `gruptree_file` is a path to a file stored per realization (e.g. in     `share/results/tables/gruptree.csv"`).
-The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
-model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
+The `gruptree_file` file can be dumped to disk per realization by the `RES2CSV` forward
+model with subcommand `gruptree`. The forward model uses `res2df` to export a table
 representation of the Eclipse network:
-[Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+[Link to res2csv gruptree documentation.](https://equinor.github.io/res2df/usage/gruptree.html).
 
 **time_index**
 
@@ -1120,7 +1120,7 @@ How to use in YAML config file:
 <!-- tab:Data input -->
 
 
-?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
+?> `Arrow` format for simulation time series data can be generated using the `RES2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
 
 !> For smry data it is **strongly recommended** to keep the data frequency to a regular frequency (like `monthly` or `yearly`). This is because the statistics are calculated per DATE over all realizations in an ensemble, and the available dates should therefore not differ between individual realizations of an ensemble.
 
@@ -1618,7 +1618,7 @@ How to use in YAML config file:
 This plugin needs the following summary vectors to be stored with arrow format:
 * WOPT+WOPTH and/or WWPT+WWPTH and/or WGPT+WGPTH
 
-Summary files can be converted to arrow format with the `ECL2CSV` forward model.
+Summary files can be converted to arrow format with the `RES2CSV` forward model.
 
 
 `well_attributes_file`: Optional json file with well attributes.
@@ -1750,7 +1750,7 @@ How to use in YAML config file:
 <!-- tab:Data input -->
 
 
-?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
+?> `Arrow` format for simulation time series data can be generated using the `RES2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
 
 ?> Folders with statistical surfaces are assumed located at `<ensemble_path>/share/results/maps/<ensemble>/<statistic>` where `statistic` are subfolders with statistical calculation: `mean`, `stddev`, `p10`, `p90`, `min`, `max`.
 
@@ -1816,9 +1816,9 @@ How to use in YAML config file:
 The minimum requirement is to define `ensembles`.
 
 If no `pvt_relative_file_path` is given, the PVT data will be extracted automatically
-from the simulation decks of individual realizations using `fmu_ensemble` and `ecl2df`.
+from the simulation decks of individual realizations using `fmu_ensemble` and `res2df`.
 If the `read_from_init_file` flag is set to True, the extraction procedure in
-`ecl2df` will be replaced by an individual extracting procedure that reads the
+`res2df` will be replaced by an individual extracting procedure that reads the
 normalized Eclipse INIT file.
 Note that the latter two extraction methods can be very slow for larger data and are therefore
 not recommended unless you have a very simple model/data deck.
@@ -1835,7 +1835,7 @@ duplicate data of other ensembles will be dropped.
 * One column named `VISCOSITY` as the second covariate.
 
 The file can e.g. be dumped to disc per realization by a forward model in ERT using
-`ecl2df`.
+`res2df`.
 
 
 
@@ -1900,7 +1900,7 @@ How to use in YAML config file:
 The minimum requirement is to define `ensembles`.
 
 If no `relpermfile` is defined, the relative permeability data will be extracted automatically
-from the simulation decks of individual realizations using `fmu-ensemble`and `ecl2df` behind the
+from the simulation decks of individual realizations using `fmu-ensemble`and `res2df` behind the
 scenes. Note that this method can be very slow for larger data decks, and is therefore not
 recommended unless you have a very simple model/data deck.
 
@@ -1912,10 +1912,10 @@ recommended unless you have a very simple model/data deck.
 * One column **per** capillary pressure curve (e.g. `PCOW`).
 
 The `relpermfile` file can e.g. be dumped to disk per realization by a forward model in ERT that
-wraps the command `ecl2csv satfunc input_file -o output_file` (requires that you have `ecl2df`
+wraps the command `res2csv satfunc input_file -o output_file` (requires that you have `res2df`
 installed). A typical example could be:
-`ecl2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
-[Link to ecl2csv satfunc documentation.](https://equinor.github.io/ecl2df/scripts.html#satfunc)
+`res2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
+[Link to res2csv satfunc documentation.](https://equinor.github.io/res2df/scripts.html#satfunc)
 
 
 `scalfile` is a path to __a single file of SCAL recommendations__ (for all
@@ -2342,7 +2342,7 @@ In addition, you need to have rft-files in your realizations stored at the local
 
 * **`rft_ert.csv`**: A csv file containing simulated and observed RFT data for RFT observations defined in ERT [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/rft_ert.csv).
 
-* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [ecl2df](https://equinor.github.io/ecl2df/ecl2df.html#module-ecl2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). Simulated RFT data can be visualized along MD if a "CONMD" column is present in the dataframe and only for wells where each RFT datapoint has a unique MD.
+* **`rft.csv`**: A csv file containing simulated RFT data extracted from ECLIPSE RFT output files using [res2df](https://equinor.github.io/res2df/res2df.html#module-res2df.rft) [(example file)](https://github.com/equinor/webviz-subsurface-testdata/blob/master/01_drogon_ahm/realization-0/iter-0/share/results/tables/rft.csv). Simulated RFT data can be visualized along MD if a "CONMD" column is present in the dataframe and only for wells where each RFT datapoint has a unique MD.
 
 * **`parameters.txt`**: File with parameters and values
 
@@ -3509,7 +3509,7 @@ How to use in YAML config file:
 
 
 The plugin uses an `.arrow` representation of the VFP curves, which can be exported to disk by
-using the `ECL2CSV` forward model in ERT with subcommand `vfp`.
+using the `RES2CSV` forward model in ERT with subcommand `vfp`.
 
 So far, the plugin only vizualizes VFPPROD curves, but the plan is to extend it also to
 VFPINJ curves soon.
@@ -3745,10 +3745,10 @@ This plugin needs the following summary vectors to be exported:
 
 `gruptree_file` is a path to a file stored per realization (e.g. in     `share/results/tables/gruptree.csv"`).
 
-The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
-model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
+The `gruptree_file` file can be dumped to disk per realization by the `RES2CSV` forward
+model with subcommand `gruptree`. The forward model uses `res2df` to export a table
 representation of the Eclipse network:
-[Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+[Link to res2csv gruptree documentation.](https://equinor.github.io/res2df/usage/gruptree.html).
 
 **time_index**
 
@@ -3824,7 +3824,7 @@ The minimum requirement is to define `ensembles`.
 **Well Completion data**
 
 `wellcompletiondata_file` is a path to an `.arrow` file stored per realization (e.g in     `share/results/tables/wellcompletiondata.arrow`). This file can be exported to disk by using the
-`ECL2CSV` forward model in ERT with subcommand `wellcompletiondata`. This forward model will
+`RES2CSV` forward model in ERT with subcommand `wellcompletiondata`. This forward model will
 read the eclipse `COMPDAT`, but then aggregate from layer to zone according to a given zone ➔
 layer mapping `.lyr` file. If the `use_wellconnstatus` option is used, then the `OP/SH` status
 of each well connection is deduced from `CPI` summary data which in som cases is more accurate
@@ -3930,7 +3930,7 @@ If defaulted, the plugin will look for the unit system of the Eclipse deck in th
 <details>
   <summary markdown="span"> :warning: Plugin 'WellCompletions' has been deprecated.</summary>
 
-  This plugin has been replaced by the `WellCompletion` plugin (without the `s`) which is based on the `wellcompletionsdata` export from `ecl2df`. The new plugin is faster and has more functionality. 
+  This plugin has been replaced by the `WellCompletion` plugin (without the `s`) which is based on the `wellcompletionsdata` export from `res2df`. The new plugin is faster and has more functionality. 
 </details>
 
 
@@ -4000,18 +4000,18 @@ The minimum requirement is to define `ensembles`.
 **COMPDAT input**
 
 `compdat_file` is a path to a file stored per realization (e.g. in     `share/results/tables/compdat.csv`). This file can be exported to disk per realization by using
-the `ECL2CSV` forward model in ERT with subcommand `compdat`. [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
+the `RES2CSV` forward model in ERT with subcommand `compdat`. [Link to res2csv compdat documentation.](https://equinor.github.io/res2df/usage/compdat.html)
 
-The connection status history of each cell is not necessarily complete in the `ecl2df` export,
+The connection status history of each cell is not necessarily complete in the `res2df` export,
 because status changes resulting from ACTIONs can't be extracted from the Eclipse input
-files. If the `ecl2df` export is good, it is recommended to use that. This will often be the
+files. If the `res2df` export is good, it is recommended to use that. This will often be the
 case for history runs. But if not, an alternative way of extracting the data is described in
 the next section.
 
 **Well Connection status input**
 
 The `well_connection_status_file` is a path to a file stored per realization (e.g. in     `share/results/tables/wellconnstatus.csv`. This file can be exported to disk per realization
-by using the `ECL2CSV` forward model in ERT with subcommand `wellconnstatus`.  [Link to ecl2csv wellconnstatus documentation.](https://equinor.github.io/ecl2df/usage/wellconnstatus.html)
+by using the `RES2CSV` forward model in ERT with subcommand `wellconnstatus`.  [Link to res2csv wellconnstatus documentation.](https://equinor.github.io/res2df/usage/wellconnstatus.html)
 
 This approach uses the CPI summary data to create a well connection status history: for
 each well connection cell there is one line for each time the connection is opened or closed.

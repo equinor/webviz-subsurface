@@ -1,7 +1,7 @@
 
 ### webviz-subsurface package
 
-?> :bookmark: This documentation is valid for version `0.2.23` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.24` of `webviz-subsurface`.
 
 
 
@@ -100,7 +100,7 @@ How to use in YAML config file:
 <!-- tab:Data input -->
 
 
-?> `Arrow` format for simulation time series data can be generated using the `ECL2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
+?> `Arrow` format for simulation time series data can be generated using the `RES2CSV` forward model in ERT. On existing ensembles the command line tool `smry2arrow_batch` can be used to generate arrow files.
 
 ?> Folders with statistical surfaces are assumed located at `<ensemble_path>/share/results/maps/<ensemble>/<statistic>` where `statistic` are subfolders with statistical calculation: `mean`, `stddev`, `p10`, `p90`, `min`, `max`.
 
