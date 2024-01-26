@@ -45,6 +45,9 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 import numpy as np
 from scipy import interpolate
 
+from ..eclipse_unit import ConvertUnits, EclUnitEnum, EclUnits
+from ..units import Unit
+
 # opm is only available for Linux,
 # hence, ignore any import exception here to make
 # it still possible to use the PvtPlugin on
@@ -54,9 +57,6 @@ from scipy import interpolate
 #       on non-Linux OSes.
 if sys.platform == "linux":
     from opm.io.ecl import EclFile
-
-from ..eclipse_unit import ConvertUnits, EclUnitEnum, EclUnits
-from ..units import Unit
 
 
 class EclPropertyTableRawData:  # pylint: disable=too-few-public-methods

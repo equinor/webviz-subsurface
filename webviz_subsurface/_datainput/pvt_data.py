@@ -10,6 +10,13 @@ from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
+from webviz_config.common_cache import CACHE
+from webviz_config.webviz_store import webvizstore
+
+from .eclipse_init_io.pvt_gas import Gas
+from .eclipse_init_io.pvt_oil import Oil
+from .eclipse_init_io.pvt_water import Water
+from .fmu_input import load_csv, load_ensemble_set
 
 # opm and res2df are only available for Linux,
 # hence, ignore any import exception here to make
@@ -21,14 +28,6 @@ import pandas as pd
 if sys.platform == "linux":
     import res2df
     from opm.io.ecl import EclFile
-
-from webviz_config.common_cache import CACHE
-from webviz_config.webviz_store import webvizstore
-
-from .eclipse_init_io.pvt_gas import Gas
-from .eclipse_init_io.pvt_oil import Oil
-from .eclipse_init_io.pvt_water import Water
-from .fmu_input import load_csv, load_ensemble_set
 
 
 @CACHE.memoize()
