@@ -36,6 +36,7 @@
 #
 ########################################
 
+import sys
 from typing import Any, Callable, Optional, Tuple, Union
 
 import numpy as np
@@ -47,10 +48,8 @@ import numpy as np
 #
 # NOTE: Functions in this file cannot be used
 #       on non-Linux OSes.
-try:
+if sys.platform == "linux":
     from opm.io.ecl import EclFile
-except ImportError:
-    pass
 
 from ..eclipse_unit import ConvertUnits, CreateUnitConverter, EclUnitEnum, EclUnits
 from .pvt_common import (

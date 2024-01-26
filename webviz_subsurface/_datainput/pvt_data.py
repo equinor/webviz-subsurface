@@ -18,11 +18,9 @@ import pandas as pd
 #
 # NOTE: Functions in this file cannot be used
 #       on non-Linux OSes.
-try:
+if sys.platform == "linux":
     import res2df
     from opm.io.ecl import EclFile
-except ImportError:
-    pass
 
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
