@@ -69,6 +69,7 @@ jobs:
         run: pip freeze
 
       - name: 🕵️ Check code style & linting
+        if: matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'
         run: |
           black --check webviz_subsurface tests setup.py
           pylint webviz_subsurface tests setup.py
