@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 import warnings
@@ -25,6 +26,7 @@ from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
 )
 
 LOGGER = logging.getLogger(__name__)
+WARNING_THRESHOLD_CSV_FILE_SIZE_MB = 100.0
 
 
 def init_map_attribute_names(
@@ -77,6 +79,16 @@ def init_table_provider(
     providers = {}
     factory = EnsembleTableProviderFactory.instance()
     for ens, ens_path in ensemble_roots.items():
+        max_size_mb = _find_max_file_size_mb(ens_path, table_rel_path)
+        if max_size_mb > WARNING_THRESHOLD_CSV_FILE_SIZE_MB:
+            text = (
+                "Some CSV-files are very large and might create problems when loading."
+            )
+            text += f"\n  ensembles: {ens}"
+            text += f"\n  CSV-files: {table_rel_path}"
+            text += f"\n  Max size : {max_size_mb:.2f} MB"
+            LOGGER.warning(text)
+
         try:
             providers[ens] = factory.create_from_per_realization_csv_file(
                 ens_path, table_rel_path
@@ -86,6 +98,18 @@ def init_table_provider(
                 f'Did not load "{table_rel_path}" for ensemble "{ens}" with error {exc}'
             )
     return providers
+
+
+def _find_max_file_size_mb(ens_path: str, table_rel_path: str) -> float:
+    glob_pattern = os.path.join(ens_path, table_rel_path)
+    paths = glob.glob(glob_pattern)
+    max_size = 0.0
+    for file in paths:
+        if os.path.exists(file):
+            file_stats = os.stat(file)
+            size_in_mb = file_stats.st_size / (1024 * 1024)
+            max_size = max(max_size, size_in_mb)
+    return max_size
 
 
 def init_zone_options(

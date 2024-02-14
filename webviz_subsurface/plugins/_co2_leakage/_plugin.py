@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
@@ -48,7 +49,8 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewS
 from . import _error
 from ._utilities.color_tables import co2leakage_color_tables
 
-TILE_PATH = "share/results/tables"
+LOGGER = logging.getLogger(__name__)
+TABLES_PATH = "share/results/tables"
 
 
 class CO2Leakage(WebvizPluginABC):
@@ -93,9 +95,9 @@ class CO2Leakage(WebvizPluginABC):
         file_containment_boundary: Optional[str] = None,
         file_hazardous_boundary: Optional[str] = None,
         well_pick_file: Optional[str] = None,
-        plume_mass_relpath: str = TILE_PATH + "/plume_mass.csv",
-        plume_actual_volume_relpath: str = TILE_PATH + "/plume_actual_volume.csv",
-        unsmry_relpath: str = TILE_PATH + "/unsmry--raw.csv",
+        plume_mass_relpath: str = TABLES_PATH + "/plume_mass.csv",
+        plume_actual_volume_relpath: str = TABLES_PATH + "/plume_actual_volume.csv",
+        unsmry_relpath: Optional[str] = None,
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         initial_surface: Optional[str] = None,
         map_attribute_names: Optional[Dict[str, str]] = None,
@@ -150,9 +152,13 @@ class CO2Leakage(WebvizPluginABC):
                 ensemble_paths,
                 plume_actual_volume_relpath,
             )
-            self._unsmry_providers = init_table_provider(
-                ensemble_paths,
-                unsmry_relpath,
+            self._unsmry_providers = (
+                init_table_provider(
+                    ensemble_paths,
+                    unsmry_relpath,
+                )
+                if unsmry_relpath is not None
+                else None
             )
             # Well picks
             self._well_pick_provider = init_well_pick_provider(
@@ -180,9 +186,11 @@ class CO2Leakage(WebvizPluginABC):
                 initial_surface,
                 self._map_attribute_names,
                 [c["name"] for c in self._color_tables],  # type: ignore
-                self._well_pick_provider.well_names()
-                if self._well_pick_provider
-                else [],
+                (
+                    self._well_pick_provider.well_names()
+                    if self._well_pick_provider
+                    else []
+                ),
                 self._zone_options,
             ),
             self.Ids.MAIN_SETTINGS,
@@ -296,14 +304,21 @@ class CO2Leakage(WebvizPluginABC):
                         "uirevision"
                     ] = f"{source}-{co2_scale}-{zone_info['zone']}"
                 out["figs"][-1]["layout"]["uirevision"] += f"-{realizations}"
-            elif source == GraphSource.UNSMRY and ensemble in self._unsmry_providers:
-                u_figs = generate_unsmry_figures(
-                    self._unsmry_providers[ensemble],
-                    co2_scale,
-                    self._co2_table_providers[ensemble],
-                )
-                out["figs"][: len(u_figs)] = u_figs
-                out["styles"][: len(u_figs)] = [{}] * len(u_figs)
+            elif source == GraphSource.UNSMRY:
+                if self._unsmry_providers is not None:
+                    if ensemble in self._unsmry_providers:
+                        u_figs = generate_unsmry_figures(
+                            self._unsmry_providers[ensemble],
+                            co2_scale,
+                            self._co2_table_providers[ensemble],
+                        )
+                        out["figs"][: len(u_figs)] = u_figs
+                        out["styles"][: len(u_figs)] = [{}] * len(u_figs)
+                else:
+                    LOGGER.warning(
+                        """UNSMRY file has not been specified as input.
+                         Please use unsmry_relpath in the configuration."""
+                    )
             return zone_info["zone_view"], *out["figs"], *out["styles"]  # type: ignore
 
         @callback(
