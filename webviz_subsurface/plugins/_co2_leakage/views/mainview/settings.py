@@ -550,7 +550,7 @@ class MapSelectorLayout(wcc.Selectors):
                             ],
                             style={"display": "flex"},
                         ),
-                        "Unit",
+                        "Mass unit (for mass maps)",
                         wcc.Dropdown(
                             id=mass_unit_id,
                             options=["kg", "tons", "M tons"],
