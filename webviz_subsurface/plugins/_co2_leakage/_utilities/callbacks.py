@@ -464,8 +464,8 @@ def process_visualization_info(
     """
     Clear surface cache if the threshold for visualization or mass unit is changed
     """
-    message = ""
     stored_info["change"] = False
+    stored_info["n_clicks"] = n_clicks
     if unit != stored_info["unit"]:
         stored_info["unit"] = unit
         stored_info["change"] = True
