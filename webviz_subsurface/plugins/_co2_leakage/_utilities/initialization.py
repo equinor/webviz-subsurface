@@ -15,7 +15,7 @@ from webviz_subsurface._providers import (
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
-    read_zone_options,
+    read_zone_and_region_options,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     GraphSource,
@@ -112,13 +112,13 @@ def _find_max_file_size_mb(ens_path: str, table_rel_path: str) -> float:
     return max_size
 
 
-def init_zone_options(
+def init_zone_and_region_options(
     ensemble_roots: Dict[str, str],
     mass_table: Dict[str, EnsembleTableProvider],
     actual_volume_table: Dict[str, EnsembleTableProvider],
     ensemble_provider: Dict[str, EnsembleSurfaceProvider],
-) -> Dict[str, Dict[str, List[str]]]:
-    options: Dict[str, Dict[str, List[str]]] = {}
+) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
+    options: Dict[str, Dict[str, Dict[str, List[str]]]] = {}
     for ens in ensemble_roots.keys():
         options[ens] = {}
         real = ensemble_provider[ens].realizations()[0]
@@ -127,10 +127,10 @@ def init_zone_options(
             [mass_table, actual_volume_table],
         ):
             try:
-                options[ens][source] = read_zone_options(table[ens], real)
+                options[ens][source] = read_zone_and_region_options(table[ens], real)
             except KeyError:
-                options[ens][source] = []
-        options[ens][GraphSource.UNSMRY] = []
+                options[ens][source] = {"zones": [], "regions": []}
+        options[ens][GraphSource.UNSMRY] = {"zones": [], "regions": []}
     return options
 
 
