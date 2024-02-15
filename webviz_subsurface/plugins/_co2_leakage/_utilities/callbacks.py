@@ -464,25 +464,17 @@ def process_visualization_info(
     """
     Clear surface cache if the threshold for visualization or mass unit is changed
     """
-    message = ""
     stored_info["change"] = False
-    if unit != stored_info["unit"]:
-        message += "Mass unit was changed\n"
-        stored_info["unit"] = unit
-    if threshold is None:
-        print("Visualization threshold must be a number.")
-    elif (
-        n_clicks != stored_info["n_clicks"] or len(message) > 0
-    ) and threshold != stored_info["threshold"]:
-        message += "Visualization threshold was changed\n"
-        stored_info["threshold"] = threshold
-    if len(message) > 0:
-        stored_info["change"] = True
-        print(
-            message + "Clearing cache. Press 'Update' again to update the current map"
-        )
-        cache.clear()
     stored_info["n_clicks"] = n_clicks
+    if unit != stored_info["unit"]:
+        stored_info["unit"] = unit
+        stored_info["change"] = True
+    if threshold is not None and threshold != stored_info["threshold"]:
+        stored_info["threshold"] = threshold
+        stored_info["change"] = True
+    if stored_info["change"]:
+        cache.clear()
+    # stored_info["n_clicks"] = n_clicks
     return stored_info
 
 

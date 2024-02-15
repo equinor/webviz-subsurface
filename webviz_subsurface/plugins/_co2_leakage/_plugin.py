@@ -196,7 +196,7 @@ class CO2Leakage(WebvizPluginABC):
                     if self._well_pick_provider
                     else []
                 ),
-                self._zone_options,
+                self._zone_and_region_options,
             ),
             self.Ids.MAIN_SETTINGS,
         )
@@ -397,7 +397,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.CM_MAX), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD), "value"),
             Input(self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING), "value"),
-            State(
+            Input(
                 self._settings_component(ViewSettings.Ids.VISUALIZATION_THRESHOLD),
                 "value",
             ),
