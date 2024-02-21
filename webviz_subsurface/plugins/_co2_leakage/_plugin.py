@@ -53,6 +53,7 @@ LOGGER = logging.getLogger(__name__)
 TABLES_PATH = "share/results/tables"
 
 
+# pylint: disable=too-many-instance-attributes
 class CO2Leakage(WebvizPluginABC):
     """
     Plugin for analyzing CO2 leakage potential across multiple realizations in an FMU
@@ -113,18 +114,17 @@ class CO2Leakage(WebvizPluginABC):
                 ]
                 for ensemble_name in ensembles
             }
-            # TODO? add support for different polygons and wells for each ensemble
             (
-                file_containment_boundary,
-                file_hazardous_boundary,
-                well_pick_file,
+                containment_poly_dict,
+                hazardous_poly_dict,
+                well_pick_dict,
             ) = process_files(
                 file_containment_boundary,
                 file_hazardous_boundary,
                 well_pick_file,
-                list(ensemble_paths.values())[0],
+                ensemble_paths,
             )
-            self._polygon_files = [file_containment_boundary, file_hazardous_boundary]
+            self._polygon_files = [containment_poly_dict, hazardous_poly_dict]
             self._surface_server = SurfaceImageServer.instance(app)
             self._polygons_server = FaultPolygonsServer.instance(app)
 
@@ -162,7 +162,7 @@ class CO2Leakage(WebvizPluginABC):
             )
             # Well picks
             self._well_pick_provider = init_well_pick_provider(
-                well_pick_file,
+                well_pick_dict,
                 map_surface_names_to_well_pick_names,
             )
             # Zone and region options
@@ -184,6 +184,10 @@ class CO2Leakage(WebvizPluginABC):
             "unit": "kg",
         }
         self._color_tables = co2leakage_color_tables()
+        self._well_pick_names = {
+            ens: prov.well_names() if prov is not None else []
+            for ens, prov in self._well_pick_provider.items()
+        }
         self.add_shared_settings_group(
             ViewSettings(
                 ensemble_paths,
@@ -191,11 +195,7 @@ class CO2Leakage(WebvizPluginABC):
                 initial_surface,
                 self._map_attribute_names,
                 [c["name"] for c in self._color_tables],  # type: ignore
-                (
-                    self._well_pick_provider.well_names()
-                    if self._well_pick_provider
-                    else []
-                ),
+                self._well_pick_names,
                 self._zone_and_region_options,
             ),
             self.Ids.MAIN_SETTINGS,
@@ -378,6 +378,28 @@ class CO2Leakage(WebvizPluginABC):
                 return list(Co2VolumeScale), Co2VolumeScale.BILLION_CUBIC_METERS
             return list(Co2MassScale), Co2MassScale.MTONS
 
+        @callback(
+            Output(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "options"),
+            Output(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"),
+            Output(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "style"),
+            Output(ViewSettings.Ids.WELL_FILTER_HEADER, "style"),
+            Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
+        )
+        def set_well_options(ensemble: str):
+            return (
+                [{"label": i, "value": i} for i in self._well_pick_names[ensemble]],
+                self._well_pick_names[ensemble],
+                {
+                    "display": "block" if self._well_pick_names[ensemble] else "none",
+                    "height": f"{len(self._well_pick_names[ensemble]) * 22}px",
+                },
+                {
+                    "flex": 3,
+                    "minWidth": "20px",
+                    "display": "block" if self._well_pick_names[ensemble] else "none",
+                },
+            )
+
         # Cannot avoid many arguments and/or locals since all layers of the DeckGL map
         # needs to be updated simultaneously
         # pylint: disable=too-many-arguments,too-many-locals
@@ -408,7 +430,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.MASS_UNIT), "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS, "value"),
             Input(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"),
-            State(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
+            Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
             State(self._view_component(MapViewElement.Ids.DECKGL_MAP), "views"),
         )
         def update_map_attribute(
@@ -510,9 +532,9 @@ class CO2Leakage(WebvizPluginABC):
                         realization,
                     )
                 ),
-                file_containment_boundary=self._polygon_files[0],
-                file_hazardous_boundary=self._polygon_files[1],
-                well_pick_provider=self._well_pick_provider,
+                file_containment_boundary=self._polygon_files[0][ensemble],
+                file_hazardous_boundary=self._polygon_files[1][ensemble],
+                well_pick_provider=self._well_pick_provider[ensemble],
                 plume_extent_data=plume_polygon,
                 options_dialog_options=options_dialog_options,
                 selected_wells=selected_wells,

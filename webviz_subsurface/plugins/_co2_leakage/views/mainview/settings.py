@@ -28,6 +28,7 @@ class ViewSettings(SettingsGroupABC):
         OPTIONS_DIALOG = "options-dialog"
         OPTIONS_DIALOG_OPTIONS = "options-dialog-options"
         OPTIONS_DIALOG_WELL_FILTER = "options-dialog-well-filter"
+        WELL_FILTER_HEADER = "well-filter-header"
 
         FORMATION = "formation"
         ENSEMBLE = "ensemble"
@@ -68,7 +69,7 @@ class ViewSettings(SettingsGroupABC):
         initial_surface: Optional[str],
         map_attribute_names: Dict[MapAttribute, str],
         color_scale_names: List[str],
-        well_names: List[str],
+        well_names_dict: Dict[str, List[str]],
         zone_and_region_options: Dict[str, Dict[str, Dict[str, List[str]]]],
     ):
         super().__init__("Settings")
@@ -77,7 +78,7 @@ class ViewSettings(SettingsGroupABC):
         self._map_attribute_names = map_attribute_names
         self._color_scale_names = color_scale_names
         self._initial_surface = initial_surface
-        self._well_names = well_names
+        self._well_names_dict = well_names_dict
         self._zone_and_region_options = zone_and_region_options
         self._has_zones = max(
             len(inner_dict["zones"]) > 0
@@ -92,7 +93,7 @@ class ViewSettings(SettingsGroupABC):
 
     def layout(self) -> List[Component]:
         return [
-            DialogLayout(self._well_names),
+            DialogLayout(self._well_names_dict, list(self._ensemble_paths.keys())),
             OpenDialogButton(),
             EnsembleSelectorLayout(
                 self.register_component_unique_id(self.Ids.ENSEMBLE),
@@ -378,7 +379,8 @@ class DialogLayout(wcc.Dialog):
 
     def __init__(
         self,
-        well_names: List[str],
+        well_names_dict: Dict[str, List[str]],
+        ensembles: List[str],
     ) -> None:
         checklist_options = []
         checklist_values = []
@@ -405,12 +407,15 @@ class DialogLayout(wcc.Dialog):
                 wcc.FlexBox(
                     children=[
                         html.Div(
+                            id=ViewSettings.Ids.WELL_FILTER_HEADER,
                             style={
                                 "flex": 3,
                                 "minWidth": "20px",
-                                "display": "block" if well_names else "none",
+                                "display": (
+                                    "block" if well_names_dict[ensembles[0]] else "none"
+                                ),
                             },
-                            children=WellFilter(well_names),
+                            children=WellFilter(well_names_dict, ensembles),
                         ),
                     ],
                     style={"width": "20vw"},
@@ -420,15 +425,19 @@ class DialogLayout(wcc.Dialog):
 
 
 class WellFilter(html.Div):
-    def __init__(self, well_names: List[str]) -> None:
+    def __init__(
+        self, well_names_dict: Dict[str, List[str]], ensembles: List[str]
+    ) -> None:
         super().__init__(
-            style={"display": "block" if well_names else "none"},
             children=wcc.SelectWithLabel(
+                style={"display": "block" if well_names_dict[ensembles[0]] else "none"},
                 label=LayoutLabels.WELL_FILTER,
                 id=ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER,
-                options=[{"label": i, "value": i} for i in well_names],
-                value=well_names,
-                size=min(20, len(well_names)),
+                options=[
+                    {"label": i, "value": i} for i in well_names_dict[ensembles[0]]
+                ],
+                value=well_names_dict[ensembles[0]],
+                size=min(20, len(well_names_dict[ensembles[0]])),
             ),
         )
 
