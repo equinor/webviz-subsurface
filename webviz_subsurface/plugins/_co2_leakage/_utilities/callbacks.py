@@ -336,8 +336,12 @@ def create_map_layers(
         well_data = dict(well_pick_provider.get_geojson(selected_wells, formation))
         if "features" in well_data:
             if len(well_data["features"]) == 0:
+                wellstring = "well " if len(selected_wells) == 1 else "wells "
+                for well in selected_wells:
+                    wellstring += f"'{well}', "
                 warnings.warn(
-                    f'Formation name "{formation}" not found in well picks file.'
+                    f"Combination of formation '{formation}' and "
+                    f"{wellstring[:-2]} not found in well picks file."
                 )
             for i in range(len(well_data["features"])):
                 current_attribute = well_data["features"][i]["properties"]["attribute"]
