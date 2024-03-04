@@ -30,7 +30,7 @@ class WellCompletion(WebvizPluginABC):
 
     `wellcompletiondata_file` is a path to an `.arrow` file stored per realization (e.g in \
     `share/results/tables/wellcompletiondata.arrow`). This file can be exported to disk by using the
-    `ECL2CSV` forward model in ERT with subcommand `wellcompletiondata`. This forward model will
+    `RES2CSV` forward model in ERT with subcommand `wellcompletiondata`. This forward model will
     read the eclipse `COMPDAT`, but then aggregate from layer to zone according to a given zone ➔
     layer mapping `.lyr` file. If the `use_wellconnstatus` option is used, then the `OP/SH` status
     of each well connection is deduced from `CPI` summary data which in som cases is more accurate

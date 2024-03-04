@@ -45,10 +45,10 @@ class GroupTree(WebvizPluginABC):
 
     `gruptree_file` is a path to a file stored per realization (e.g. in \
     `share/results/tables/gruptree.csv"`).
-    The `gruptree_file` file can be dumped to disk per realization by the `ECL2CSV` forward
-    model with subcommand `gruptree`. The forward model uses `ecl2df` to export a table
+    The `gruptree_file` file can be dumped to disk per realization by the `RES2CSV` forward
+    model with subcommand `gruptree`. The forward model uses `res2df` to export a table
     representation of the Eclipse network:
-    [Link to ecl2csv gruptree documentation.](https://equinor.github.io/ecl2df/usage/gruptree.html).
+    [Link to res2csv gruptree documentation.](https://equinor.github.io/res2df/usage/gruptree.html).
 
     **time_index**
 

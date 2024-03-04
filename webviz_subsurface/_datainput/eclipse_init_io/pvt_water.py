@@ -36,21 +36,10 @@
 #
 ########################################
 
+import sys
 from typing import Any, Callable, List, Optional, Union
 
 import numpy as np
-
-# opm is only available for Linux,
-# hence, ignore any import exception here to make
-# it still possible to use the PvtPlugin on
-# machines with other OSes.
-#
-# NOTE: Functions in this file cannot be used
-#       on non-Linux OSes.
-try:
-    from opm.io.ecl import EclFile
-except ImportError:
-    pass
 
 from ..eclipse_unit import ConvertUnits, CreateUnitConverter, EclUnitEnum, EclUnits
 from .pvt_common import (
@@ -61,6 +50,16 @@ from .pvt_common import (
     PvxOBase,
     surface_mass_density,
 )
+
+# opm is only available for Linux,
+# hence, ignore any import exception here to make
+# it still possible to use the PvtPlugin on
+# machines with other OSes.
+#
+# NOTE: Functions in this file cannot be used
+#       on non-Linux OSes.
+if sys.platform == "linux":
+    from opm.io.ecl import EclFile
 
 
 class WaterImpl(PvxOBase):

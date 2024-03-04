@@ -8,9 +8,9 @@ from typing import Optional
 
 import datacompy  # pylint: disable=import-error, useless-suppression
 import dateutil.parser  # type: ignore
-import ecl2df
 import numpy as np
 import pandas as pd
+import res2df
 from fmu.ensemble import ScratchEnsemble
 
 from .ensemble_summary_provider import Frequency
@@ -92,14 +92,14 @@ def _load_smry_dataframe_using_fmu(
     return df
 
 
-def _load_smry_dataframe_using_ecl2df(
+def _load_smry_dataframe_using_res2df(
     ens_path: str, frequency: Optional[Frequency]
 ) -> pd.DataFrame:
     time_index: str = "raw"
     if frequency:
         time_index = frequency.value
 
-    print(f"## Loading data into DataFrame using ECL2DF  time_index={time_index}...")
+    print(f"## Loading data into DataFrame using res2df  time_index={time_index}...")
 
     realidxregexp = re.compile(r"realization-(\d+)")
     globpattern = os.path.join(ens_path, "eclipse/model/*.UNSMRY")
@@ -122,8 +122,8 @@ def _load_smry_dataframe_using_ecl2df(
 
         print(f"R={real}:  {smry_file}")
 
-        eclfiles = ecl2df.EclFiles(smry_file.replace(".UNSMRY", ""))
-        real_df = ecl2df.summary.df(eclfiles, time_index=time_index)
+        eclfiles = res2df.resdatafiles.ResdataFiles(smry_file.replace(".UNSMRY", ""))
+        real_df = res2df.summary.df(eclfiles, time_index=time_index)
         real_df.insert(0, "REAL", real)
         real_df.index.name = "DATE"
         per_real_df_arr.append(real_df)
@@ -277,7 +277,7 @@ def main() -> None:
     print("## Loading data into reference DataFrame...")
     # Note that for version 2.13.0 and earlier of ecl, loading via FMU will not give the
     # correct results. This was remedied in https://github.com/equinor/ecl/pull/837
-    # reference_df = _load_smry_dataframe_using_ecl2df(ensemble_path, frequency)
+    # reference_df = _load_smry_dataframe_using_res2df(ensemble_path, frequency)
     reference_df = _load_smry_dataframe_using_fmu(ensemble_path, frequency)
 
     print("## Comparing get_vectors()...")

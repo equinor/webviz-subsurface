@@ -47,14 +47,14 @@ def create_vector_metadata_from_field_meta(
     """Create VectorMetadata from keywords stored in the field's metadata"""
 
     # Note that when we query the values in the field.metadata we always get byte strings
-    # back from pyarrow. Further, ecl2df writes all the values as strings, so we must
+    # back from pyarrow. Further, res2df writes all the values as strings, so we must
     # convert these to the correct types before creating the VectorMetadata instance.
-    # See also ecl2df code:
-    # https://github.com/equinor/ecl2df/blob/0e30fb8046bf17fd338bb468584985c5d816e2f6/ecl2df/summary.py#L441
+    # See also res2df code:
+    # https://github.com/equinor/res2df/blob/0e30fb8046bf17fd338bb468584985c5d816e2f6/ecl2df/summary.py#L441
 
-    # Currently, based on the ecl2df code, we assume that all keys except for 'get_num'
+    # Currently, based on the res2df code, we assume that all keys except for 'get_num'
     # and 'wgname' must be present in order to return a valid metadata object
-    # https://github.com/equinor/ecl2df/blob/0e30fb8046bf17fd338bb468584985c5d816e2f6/ecl2df/summary.py#L541-L552
+    # https://github.com/equinor/res2df/blob/0e30fb8046bf17fd338bb468584985c5d816e2f6/ecl2df/summary.py#L541-L552
 
     meta_dict = field.metadata
     if not meta_dict:

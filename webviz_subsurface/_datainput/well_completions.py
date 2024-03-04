@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-# opm and ecl2df are only available for Linux,
+# opm and res2df are only available for Linux,
 # hence, ignore any import exception here to make
 # it still possible to use the PvtPlugin on
 # machines with other OSes.
@@ -15,7 +15,7 @@ import pandas as pd
 # NOTE: Functions in this file cannot be used
 #       on non-Linux OSes.
 try:
-    from ecl2df import EclFiles, common
+    from res2df.resdatafiles import ResdataFiles, common
 except ImportError:
     pass
 
@@ -44,7 +44,7 @@ def read_zone_layer_mapping(
 ) -> pd.DataFrame:
     """Searches for all zone->layer mapping files for an ensemble. \
     The files should be on lyr format and can be parsed using functionality \
-    from ecl2df.
+    from res2df.
 
     The results are returned as a dataframe with the following columns:
     * REAL
@@ -157,7 +157,7 @@ def get_ecl_unit_system(ensemble_path: str) -> Optional[str]:
     datafile = get_ecl_datafile(ensemble_path)
     if datafile is None:
         return None
-    ecl_deck = EclFiles(datafile).get_ecldeck()
+    ecl_deck = ResdataFiles(datafile).get_deck()
     for keyword in ecl_deck:
         if keyword.name in ["METRIC", "FIELD", "LAB", "PVT-M"]:
             return keyword.name

@@ -7,8 +7,8 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pyarrow as pa
-from ecl2df.vfp import pyarrow2basic_data
-from ecl2df.vfp._vfpdefs import (
+from res2df.vfp import pyarrow2basic_data
+from res2df.vfp._vfpdefs import (
     ALQ,
     GFR,
     THPTYPE,
@@ -233,7 +233,7 @@ def _read_vfp_arrow(filename: str) -> io.BytesIO:
     """Function to read the vfp arrow files and return them as
     a io.BytesIO object in order to be stored as portable.
 
-    Uses the pyarrow2basic_data function from ecl2df in order
+    Uses the pyarrow2basic_data function from res2df in order
     to convert the pyarrow table into a dictionary. But then
     the columns have to be converted to strings, or lists in order
     to be encoded.

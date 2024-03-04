@@ -46,7 +46,7 @@ class RelativePermeability(WebvizPluginABC):
 The minimum requirement is to define `ensembles`.
 
 If no `relpermfile` is defined, the relative permeability data will be extracted automatically
-from the simulation decks of individual realizations using `fmu-ensemble`and `ecl2df` behind the
+from the simulation decks of individual realizations using `fmu-ensemble`and `res2df` behind the
 scenes. Note that this method can be very slow for larger data decks, and is therefore not
 recommended unless you have a very simple model/data deck.
 
@@ -59,10 +59,10 @@ recommended unless you have a very simple model/data deck.
 * One column **per** capillary pressure curve (e.g. `PCOW`).
 
 The `relpermfile` file can e.g. be dumped to disk per realization by a forward model in ERT that
-wraps the command `ecl2csv satfunc input_file -o output_file` (requires that you have `ecl2df`
+wraps the command `res2csv satfunc input_file -o output_file` (requires that you have `res2df`
 installed). A typical example could be:
-`ecl2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
-[Link to ecl2csv satfunc documentation.](https://equinor.github.io/ecl2df/scripts.html#satfunc)
+`res2csv satfunc eclipse/include/props/relperm.inc -o share/results/tables/relperm.csv`.
+[Link to res2csv satfunc documentation.](https://equinor.github.io/res2df/scripts.html#satfunc)
 
 
 `scalfile` is a path to __a single file of SCAL recommendations__ (for all
@@ -257,7 +257,7 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
             ):
                 raise ValueError(
                     "Unrecognized saturation table keyword in data. This should not occur unless "
-                    "there has been changes to ecl2df. Update of this plugin might be required."
+                    "there has been changes to res2df. Update of this plugin might be required."
                 )
             else:
                 self.family = 2

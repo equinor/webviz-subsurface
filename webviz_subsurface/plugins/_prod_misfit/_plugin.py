@@ -55,7 +55,7 @@ class ProdMisfit(WebvizPluginABC):
     This plugin needs the following summary vectors to be stored with arrow format:
     * WOPT+WOPTH and/or WWPT+WWPTH and/or WGPT+WGPTH
 
-    Summary files can be converted to arrow format with the `ECL2CSV` forward model.
+    Summary files can be converted to arrow format with the `RES2CSV` forward model.
 
 
     `well_attributes_file`: Optional json file with well attributes.

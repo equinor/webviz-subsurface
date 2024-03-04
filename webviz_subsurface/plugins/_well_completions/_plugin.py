@@ -11,7 +11,7 @@ from ._layout import layout_tour_steps, main_layout
 
 @deprecated_plugin(
     "This plugin has been replaced by the `WellCompletion` plugin (without "
-    "the `s`) which is based on the `wellcompletionsdata` export from `ecl2df`. "
+    "the `s`) which is based on the `wellcompletionsdata` export from `res2df`. "
     "The new plugin is faster and has more functionality. "
 )
 class WellCompletions(WebvizPluginABC):
@@ -37,11 +37,11 @@ class WellCompletions(WebvizPluginABC):
 
     `compdat_file` is a path to a file stored per realization (e.g. in \
     `share/results/tables/compdat.csv`). This file can be exported to disk per realization by using
-    the `ECL2CSV` forward model in ERT with subcommand `compdat`. [Link to ecl2csv compdat documentation.](https://equinor.github.io/ecl2df/usage/compdat.html)
+    the `RES2CSV` forward model in ERT with subcommand `compdat`. [Link to res2csv compdat documentation.](https://equinor.github.io/res2df/usage/compdat.html)
 
-    The connection status history of each cell is not necessarily complete in the `ecl2df` export,
+    The connection status history of each cell is not necessarily complete in the `res2df` export,
     because status changes resulting from ACTIONs can't be extracted from the Eclipse input
-    files. If the `ecl2df` export is good, it is recommended to use that. This will often be the
+    files. If the `res2df` export is good, it is recommended to use that. This will often be the
     case for history runs. But if not, an alternative way of extracting the data is described in
     the next section.
 
@@ -49,7 +49,7 @@ class WellCompletions(WebvizPluginABC):
 
     The `well_connection_status_file` is a path to a file stored per realization (e.g. in \
     `share/results/tables/wellconnstatus.csv`. This file can be exported to disk per realization
-    by using the `ECL2CSV` forward model in ERT with subcommand `wellconnstatus`.  [Link to ecl2csv wellconnstatus documentation.](https://equinor.github.io/ecl2df/usage/wellconnstatus.html)
+    by using the `RES2CSV` forward model in ERT with subcommand `wellconnstatus`.  [Link to res2csv wellconnstatus documentation.](https://equinor.github.io/res2df/usage/wellconnstatus.html)
 
     This approach uses the CPI summary data to create a well connection status history: for
     each well connection cell there is one line for each time the connection is opened or closed.

@@ -7,7 +7,7 @@ from webviz_config.webviz_store import webvizstore
 from .fmu_input import load_ensemble_set
 
 try:
-    import ecl2df
+    import res2df
 except ImportError:
     pass
 
@@ -22,10 +22,10 @@ def load_satfunc(
     ensemble_paths: dict,
     ensemble_set_name: str = "EnsembleSet",
 ) -> pd.DataFrame:
-    def ecl2df_satfunc(kwargs: Any) -> pd.DataFrame:
-        return ecl2df.satfunc.df(kwargs["realization"].get_eclfiles())
+    def res2df_satfunc(kwargs: Any) -> pd.DataFrame:
+        return res2df.satfunc.df(kwargs["realization"].get_eclfiles())
 
-    return load_ensemble_set(ensemble_paths, ensemble_set_name).apply(ecl2df_satfunc)
+    return load_ensemble_set(ensemble_paths, ensemble_set_name).apply(res2df_satfunc)
 
 
 @webvizstore

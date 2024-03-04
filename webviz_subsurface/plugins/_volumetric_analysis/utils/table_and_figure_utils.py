@@ -1,6 +1,7 @@
 import math
 from typing import List, Optional, Union
 
+import numpy as np
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dash_table
@@ -173,3 +174,38 @@ def get_text_format_bar_plot(
             return f".{selections['decimals']}f"
 
     return f".{selections['decimals']}{selections['textformat']}"
+
+
+def add_histogram_lines(figure: go.Figure, statline_option: Optional[str]) -> None:
+    """Update a histogram figure with vertical lines representing mean/p10/p90"""
+
+    def add_line(
+        figure: go.Figure, x: float, text: str, color: str, dash: bool = False
+    ) -> None:
+        figure.add_vline(
+            x=x,
+            label={
+                "textposition": "end",
+                "textangle": 35,
+                "font": {"size": 14, "color": color},
+                "yanchor": "bottom",
+                "xanchor": "right",
+                "texttemplate": f"<b>{text}</b>",
+            },
+            line_width=3,
+            line_dash="dash" if dash else None,
+            line_color=color,
+        )
+
+    if statline_option is not None:
+        for trace in figure.data:
+            color = trace.marker.line.color
+            add_line(figure, x=trace.x.mean(), text="Mean", color=color)
+            if statline_option == "all":
+                p10 = np.nanpercentile(trace.x, 90)
+                p90 = np.nanpercentile(trace.x, 10)
+                add_line(figure, x=p10, text="P10", color=color, dash=True)
+                add_line(figure, x=p90, text="P90", color=color, dash=True)
+
+        # update margin to make room for the labels
+        figure.update_layout({"margin_t": 100})

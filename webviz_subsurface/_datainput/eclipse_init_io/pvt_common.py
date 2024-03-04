@@ -37,12 +37,16 @@
 ########################################
 
 import abc
+import sys
 import warnings
 from enum import Enum
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 import numpy as np
 from scipy import interpolate
+
+from ..eclipse_unit import ConvertUnits, EclUnitEnum, EclUnits
+from ..units import Unit
 
 # opm is only available for Linux,
 # hence, ignore any import exception here to make
@@ -51,13 +55,8 @@ from scipy import interpolate
 #
 # NOTE: Functions in this file cannot be used
 #       on non-Linux OSes.
-try:
+if sys.platform == "linux":
     from opm.io.ecl import EclFile
-except ImportError:
-    pass
-
-from ..eclipse_unit import ConvertUnits, EclUnitEnum, EclUnits
-from ..units import Unit
 
 
 class EclPropertyTableRawData:  # pylint: disable=too-few-public-methods

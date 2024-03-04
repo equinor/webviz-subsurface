@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 TESTS_REQUIRE = [
     "bandit",
-    "black>=22.1",
+    "black>=22.1,<24",
     "dash[testing]",
     "flaky",
     "isort",
@@ -92,7 +92,7 @@ setup(
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
-        "ecl2df>=0.15.0; sys_platform=='linux'",
+        "res2df>=1.0; sys_platform=='linux'",
         "flask-caching",
         "fmu-ensemble>=1.2.3",
         "fmu-tools>=1.8",
@@ -110,7 +110,7 @@ setup(
         "vtk>=9.2.2,<9.3",
         "webviz-config",
         "webviz-core-components>=0.6",
-        "webviz-subsurface-components==1.0.1",
+        "webviz-subsurface-components==1.0.2",
     ],
     extras_require={"tests": TESTS_REQUIRE},
     setup_requires=["setuptools_scm~=3.2"],
