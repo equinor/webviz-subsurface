@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1247](https://github.com/equinor/webviz-subsurface/pull/1247) - Added P10/P90 to the Uncertainty table in `StructuralUncertainty`.
 
 ### Changed
-- [#1252](https://github.com/equinor/webviz-subsurface/pull/1252) - Added CO2 mass visualization to `CO2Leakage`, plus various other improvements: fix zooming issue, option to plot containment split into zones, remove code for simple volume.
+- [#1252](https://github.com/equinor/webviz-subsurface/pull/1252) - Added CO2 mass visualization to `CO2Leakage`, plus various other improvements: support for regions, option to plot containment split into zones, remove code for simple volume.
+
+### Fixed
+- [#1252](https://github.com/equinor/webviz-subsurface/pull/1252) - Fixed zoom resetting issue in `CO2Leakage`. Also some fixes to avoid crash for large UNSMRY CSV-files.
 
 ## [0.2.22] - 2023-08-31
 
