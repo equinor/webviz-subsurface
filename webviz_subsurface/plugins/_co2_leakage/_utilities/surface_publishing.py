@@ -21,6 +21,8 @@ from webviz_subsurface.plugins._co2_leakage._utilities.plume_extent import (
     truncate_surfaces,
 )
 
+SCALE_DICT = {"kg": 1, "tons": 1000, "M tons": 1000000}
+
 
 @dataclass
 class TruncatedSurfaceAddress:
@@ -40,7 +42,7 @@ def publish_and_get_surface_metadata(
     server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
-    visualization_threshold: float,
+    visualization_info: Dict[str, Any],
     map_attribute_names: Dict[MapAttribute, str],
 ) -> Tuple[Optional[SurfaceImageMeta], str, Optional[Any]]:
     if isinstance(address, TruncatedSurfaceAddress):
@@ -54,12 +56,18 @@ def publish_and_get_surface_metadata(
         surface = provider.get_surface(address)
         if not surface:
             raise ValueError(f"Could not get surface for address: {address}")
+        if address.attribute in [
+            map_attribute_names[MapAttribute.MASS],
+            map_attribute_names[MapAttribute.FREE],
+            map_attribute_names[MapAttribute.DISSOLVED],
+        ]:
+            surface.values = surface.values / SCALE_DICT[visualization_info["unit"]]
         summed_mass = np.ma.sum(surface.values)
         if (
             address.attribute != map_attribute_names[MapAttribute.MIGRATION_TIME]
-            and visualization_threshold >= 0
+            and visualization_info["threshold"] >= 0
         ):
-            surface.operation("elile", visualization_threshold)
+            surface.operation("elile", visualization_info["threshold"])
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)
     return surf_meta, server.encode_partial_url(qualified_address), summed_mass

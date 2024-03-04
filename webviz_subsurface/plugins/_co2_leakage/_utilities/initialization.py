@@ -15,7 +15,7 @@ from webviz_subsurface._providers import (
 )
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
-    read_zone_options,
+    read_zone_and_region_options,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     GraphSource,
@@ -59,17 +59,23 @@ def init_surface_providers(
 
 
 def init_well_pick_provider(
-    well_pick_path: Optional[str],
+    well_pick_dict: Dict[str, Optional[str]],
     map_surface_names_to_well_pick_names: Optional[Dict[str, str]],
-) -> Optional[WellPickProvider]:
-    if well_pick_path is None:
-        return None
-    try:
-        return WellPickProvider(
-            read_csv(well_pick_path), map_surface_names_to_well_pick_names
-        )
-    except OSError:
-        return None
+) -> Dict[str, Optional[WellPickProvider]]:
+    well_pick_provider: Dict[str, Optional[WellPickProvider]] = {}
+    ensembles = list(well_pick_dict.keys())
+    for ens in ensembles:
+        well_pick_path = well_pick_dict[ens]
+        if well_pick_path is None:
+            well_pick_provider[ens] = None
+        else:
+            try:
+                well_pick_provider[ens] = WellPickProvider(
+                    read_csv(well_pick_path), map_surface_names_to_well_pick_names
+                )
+            except OSError:
+                well_pick_provider[ens] = None
+    return well_pick_provider
 
 
 def init_table_provider(
@@ -112,13 +118,13 @@ def _find_max_file_size_mb(ens_path: str, table_rel_path: str) -> float:
     return max_size
 
 
-def init_zone_options(
+def init_zone_and_region_options(
     ensemble_roots: Dict[str, str],
     mass_table: Dict[str, EnsembleTableProvider],
     actual_volume_table: Dict[str, EnsembleTableProvider],
     ensemble_provider: Dict[str, EnsembleSurfaceProvider],
-) -> Dict[str, Dict[str, List[str]]]:
-    options: Dict[str, Dict[str, List[str]]] = {}
+) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
+    options: Dict[str, Dict[str, Dict[str, List[str]]]] = {}
     for ens in ensemble_roots.keys():
         options[ens] = {}
         real = ensemble_provider[ens].realizations()[0]
@@ -127,10 +133,10 @@ def init_zone_options(
             [mass_table, actual_volume_table],
         ):
             try:
-                options[ens][source] = read_zone_options(table[ens], real)
+                options[ens][source] = read_zone_and_region_options(table[ens], real)
             except KeyError:
-                options[ens][source] = []
-        options[ens][GraphSource.UNSMRY] = []
+                options[ens][source] = {"zones": [], "regions": []}
+        options[ens][GraphSource.UNSMRY] = {"zones": [], "regions": []}
     return options
 
 
@@ -138,29 +144,32 @@ def process_files(
     cont_bound: Optional[str],
     haz_bound: Optional[str],
     well_file: Optional[str],
-    root: str,
-) -> List[Optional[str]]:
+    ensemble_paths: Dict[str, str],
+) -> List[Dict[str, Optional[str]]]:
     """
     Checks if the files exist (otherwise gives a warning and returns None)
     Concatenates ensemble root dir and path to file if relative
     """
+    ensembles = list(ensemble_paths.keys())
     return [
-        _process_file(source, root) for source in [cont_bound, haz_bound, well_file]
+        {ens: _process_file(source, ensemble_paths[ens]) for ens in ensembles}
+        for source in [cont_bound, haz_bound, well_file]
     ]
 
 
-def _process_file(file: Optional[str], root: str) -> Optional[str]:
+def _process_file(file: Optional[str], ensemble_path: str) -> Optional[str]:
     if file is not None:
-        file = _check_if_file_exists(
-            os.path.join(Path(root).parents[1], file)
-            if not Path(file).is_absolute()
-            else file
-        )
-    return file
-
-
-def _check_if_file_exists(file: str) -> Optional[str]:
-    if not os.path.isfile(file):
-        warnings.warn(f"Cannot find specified file {file}.")
-        return None
+        if Path(file).is_absolute():
+            if os.path.isfile(Path(file)):
+                return file
+            warnings.warn(f"Cannot find specified file {file}.")
+            return None
+        file = os.path.join(Path(ensemble_path).parents[1], file)
+        if not os.path.isfile(file):
+            warnings.warn(
+                f"Cannot find specified file {file}.\n"
+                "Note that relative paths are accepted from ensemble root "
+                "(directory with the realizations)."
+            )
+            return None
     return file
