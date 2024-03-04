@@ -386,7 +386,9 @@ class CO2Leakage(WebvizPluginABC):
             Output(ViewSettings.Ids.WELL_FILTER_HEADER, "style"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
-        def set_well_options(ensemble: str):
+        def set_well_options(
+            ensemble: str,
+        ) -> Tuple[List[Any], List[str], Dict[Any, Any], Dict[Any, Any]]:
             return (
                 [{"label": i, "value": i} for i in self._well_pick_names[ensemble]],
                 self._well_pick_names[ensemble],
