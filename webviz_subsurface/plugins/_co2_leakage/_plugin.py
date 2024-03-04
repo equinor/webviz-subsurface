@@ -233,6 +233,7 @@ class CO2Leakage(WebvizPluginABC):
         # Cannot avoid many arguments since all the parameters are needed
         # to determine what to plot
         # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         @callback(
             Output(
                 self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"
