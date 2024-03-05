@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
@@ -12,7 +12,7 @@ def comparison_main_layout(uuid: str) -> html.Div:
         html.Div(
             style={"margin-bottom": "20px"},
             children=wcc.RadioItems(
-                vertical=False,
+                inline=True,
                 id={"id": uuid, "element": "display-option"},
                 options=[
                     {
@@ -26,6 +26,10 @@ def comparison_main_layout(uuid: str) -> html.Div:
                     {
                         "label": "Difference table for multiple responses",
                         "value": "multi-response table",
+                    },
+                    {
+                        "label": "Volume change analysis plot (waterfall)",
+                        "value": "waterfall plot",
                     },
                 ],
                 value="plots",
@@ -99,22 +103,61 @@ def comparison_table_layout(
         header = f"Table showing differences in {diff_mode} for multiple responses"
 
     return html.Div(
+        children=[wcc.Header(header), filter_info_text(selections, filter_info), table]
+    )
+
+
+def waterfall_plot_layout(
+    selections: dict, filter_info: str, figures: List[go.Figure]
+) -> html.Div:
+    return html.Div(
         children=[
-            wcc.Header(header),
-            html.Div(
-                style={"margin-bottom": "30px", "font-weight": "bold"},
+            wcc.Header("Waterfall plots showing contributions to volume change"),
+            wcc.FlexBox(
                 children=[
-                    html.Div(
-                        f"From {selections['value1'].replace('|', ':  ')} "
-                        f"to {selections['value2'].replace('|', ':  ')}"
-                    ),
-                    html.Div(
-                        f"{filter_info.capitalize()} {selections['filters'][filter_info][0]}"
+                    wcc.FlexColumn(filter_info_text(selections, filter_info)),
+                    wcc.FlexColumn(
+                        children=[
+                            html.Div(
+                                "Note: If multiple plots, the plots are order by "
+                                "the largest absolute difference in percent."
+                            ),
+                            html.Div(
+                                "A maximum of 10 plots will be displayed, "
+                                "use the filters to swap the selection."
+                            ),
+                        ],
+                        style={"font-size": "15px"},
                     ),
                 ],
             ),
-            table,
+            html.Div(
+                style={"height": "74vh", "overflow-y": "auto"},
+                children=[
+                    wcc.Graph(
+                        config={"displayModeBar": False},
+                        style={"height": "37vh"},
+                        figure=fig,
+                    )
+                    for fig in figures
+                ],
+            ),
         ]
+    )
+
+
+def filter_info_text(selections: dict, filter_info: str) -> html.Div:
+    return html.Div(
+        style={"margin-bottom": "30px", "font-weight": "bold"},
+        children=[
+            html.Div(
+                f"From {selections['value1'].replace('|', ':  ')} "
+                f"to {selections['value2'].replace('|', ':  ')}"
+            ),
+            html.Div(
+                f"{filter_info.capitalize()} {selections['filters'][filter_info][0]}"
+            ),
+        ],
     )
 
 
@@ -230,7 +273,7 @@ def diff_mode_selector(uuid: str, tab: str) -> html.Div:
                 {"label": "Percent", "value": "diff (%)"},
                 {"label": "True value", "value": "diff"},
             ],
-            labelStyle={"display": "inline-flex", "margin-right": "5px"},
+            inline=True,
             value="diff (%)",
         ),
     )

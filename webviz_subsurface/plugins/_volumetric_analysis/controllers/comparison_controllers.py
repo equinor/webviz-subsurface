@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models import InplaceVolumesModel
 
 from ..utils.table_and_figure_utils import (
+    VolumeWaterfallPlot,
     add_correlation_line,
     create_data_table,
     create_table_columns,
@@ -19,6 +20,7 @@ from ..utils.utils import move_to_end_of_list
 from ..views.comparison_layout import (
     comparison_qc_plots_layout,
     comparison_table_layout,
+    waterfall_plot_layout,
 )
 
 
@@ -86,6 +88,7 @@ def comparison_controllers(
         )
 
 
+# pylint: disable=too-many-return-statements
 def comparison_callback(
     compare_on: str,
     volumemodel: InplaceVolumesModel,
@@ -112,7 +115,7 @@ def comparison_callback(
     if selections["Response"] == "FACIES_FRACTION" and "FACIES" not in groupby:
         groupby.append("FACIES")
 
-    if display_option == "multi-response table":
+    if display_option in ["multi-response table", "waterfall plot"]:
         # select max one hc_response for a cleaner table
         responses = [selections["Response"]] + [
             col
@@ -130,18 +133,34 @@ def comparison_callback(
         if df.empty:
             return html.Div("No data left after filtering")
 
-        return comparison_table_layout(
-            table=create_comaprison_table(
-                tabletype=display_option,
-                df=df,
-                groupby=groupby,
+        if display_option == "multi-response table":
+            return comparison_table_layout(
+                table=create_comaprison_table(
+                    tabletype=display_option,
+                    df=df,
+                    groupby=groupby,
+                    selections=selections,
+                    compare_on=compare_on,
+                    volumemodel=volumemodel,
+                ),
+                table_type=display_option,
                 selections=selections,
-                compare_on=compare_on,
-                volumemodel=volumemodel,
-            ),
-            table_type=display_option,
+                filter_info="SOURCE" if compare_on != "SOURCE" else "ENSEMBLE",
+            )
+
+        # Waterfall plot
+        require_response = selections["Response"] in ("STOIIP", "GIIP")
+        required_columns = ["BULK", "PORO", "SW"]
+        required_columns.append("BO" if selections["Response"] == "STOIIP" else "BG")
+        if not require_response or all(col in df for col in required_columns):
+            return html.Div(
+                "Waterfall plot is only available for analyzing STOIIP/GIIP changes from static"
+                f"sources containing all {required_columns=}."
+            )
+        return waterfall_plot_layout(
             selections=selections,
             filter_info="SOURCE" if compare_on != "SOURCE" else "ENSEMBLE",
+            figures=create_waterfall_figures(df, selections, groupby, max_figures=10),
         )
 
     if compare_on == "SOURCE" or "REAL" in groupby:
@@ -190,13 +209,7 @@ def comparison_callback(
         )
 
     if display_option == "plots":
-        if "|" in selections["value1"]:
-            ens1, sens1 = selections["value1"].split("|")
-            ens2, sens2 = selections["value2"].split("|")
-            value1, value2 = (sens1, sens2) if ens1 == ens2 else (ens1, ens2)
-        else:
-            value1, value2 = selections["value1"], selections["value2"]
-
+        value1, value2 = get_selected_values(selections)
         resp1 = f"{selections['Response']} {value1}"
         resp2 = f"{selections['Response']} {value2}"
 
@@ -280,10 +293,10 @@ def create_comparison_df(
     if df.empty or any(x not in df[compare_on].values for x in [value1, value2]):
         return pd.DataFrame()
 
-    df = df.loc[:, groups + responses].pivot_table(
-        columns=compare_on,
-        index=[x for x in groups if x not in [compare_on, "SENSNAME_CASE"]],
-    )
+    index = [x for x in groups if x not in [compare_on, "SENSNAME_CASE"]]
+    column_filter = [compare_on] + index + responses
+    df = df.loc[:, column_filter].pivot_table(columns=compare_on, index=index)
+
     responses = [x for x in responses if x in df]
     for col in responses:
         df[col, "diff"] = df[col][value2] - df[col][value1]
@@ -479,3 +492,88 @@ def add_fluid_zone_column(dframe: pd.DataFrame, filters: dict) -> pd.DataFrame:
     if "FLUID_ZONE" not in dframe and "FLUID_ZONE" in filters:
         dframe["FLUID_ZONE"] = (" + ").join(filters["FLUID_ZONE"])
     return dframe
+
+
+def get_selected_values(selections: dict) -> Tuple[str, str]:
+    if not "|" in selections["value1"]:
+        return selections["value1"], selections["value2"]
+    ens1, sens1 = selections["value1"].split("|")
+    ens2, sens2 = selections["value2"].split("|")
+    return (sens1, sens2) if ens1 == ens2 else (ens1, ens2)
+
+
+def create_waterfall_figures(
+    df: pd.DataFrame, selections: dict, groups: List[str], max_figures: int
+) -> List[go.Figure]:
+    """
+    Create watefall plots showing volume change contributions, using
+    the comparison table as input. A maximum number of plots has been set
+    to reduce computation time if e.g. REAL is used in the groups.
+    The hydrocarbons initially in-place (HCIIP) formula is:
+    HCIIP = (GRV*NTG*PORO*(1-SW)) / FVF
+    where HCIIP is STOIIP or GIIP and FVF is Bo or Bg dependent on fluid phase.
+    For properties that are numerators in this formula their difference in %
+    can be used to determine volume impact. Bo/Bg is handled slightly
+    different as it is the denominator.
+    """
+
+    response = selections["Response"]
+    val1, val2 = get_selected_values(selections)
+
+    if response == "STOIIP":
+        sat_col = "SO"
+        fvf_col = "BO"
+    elif response == "GIIP":
+        sat_col = "SG"
+        fvf_col = "BG"
+    else:
+        raise NotImplementedError(
+            "Only GIIP/STOOIP reponses are implemented for waterfall charts"
+        )
+    # split into NTG and PORO_NET if present
+    # the order of these properties will be the order of the bars
+    if any(col.startswith("NTG") for col in df):
+        props = ["BULK", "NTG", "PORO_NET", sat_col, fvf_col]
+    else:
+        props = ["BULK", "PORO", sat_col, fvf_col]
+
+    # create hc saturation and title columns
+    df[f"{sat_col} diff (%)"] = (
+        (1 - df[f"SW {val2}"]) / (1 - df[f"SW {val1}"]) - 1
+    ) * 100
+    df["title"] = (
+        df[groups].astype(str).agg(", ".join, axis=1)
+        + f"  - {response} change contributions from {val1} to {val2}"
+    )
+
+    figures: List[go.Figure] = []
+    for _, row in df.iterrows():
+        if len(figures) >= max_figures:
+            break
+        vol_start = row[f"{response} {val1}"]
+        vol_end = row[f"{response} {val2}"]
+
+        volume_impact_properties: List[float] = []
+        for col in props:
+            # handle Bo/Bg different as it is a denominator in the volume formula.
+            if col != fvf_col:
+                vol_multitplier = row[f"{col} diff (%)"] / 100
+            else:
+                vol_multitplier = -1 * (
+                    1 - (row[f"{fvf_col} {val1}"] / row[f"{fvf_col} {val2}"])
+                )
+            # Need to compute the impact from last cumulative volume, hence the sum
+            volume_impact_properties.append(
+                (vol_start + sum(volume_impact_properties)) * vol_multitplier
+            )
+
+        figures.append(
+            VolumeWaterfallPlot(
+                bar_names=[f"{val1}", *props, f"{val2}"],
+                initial_volume=vol_start,
+                final_volume=vol_end,
+                volume_impact_properties=volume_impact_properties,
+                title=row["title"],
+            ).figure
+        )
+    return figures
