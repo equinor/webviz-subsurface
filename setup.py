@@ -87,7 +87,7 @@ setup(
         "console_scripts": ["smry2arrow_batch=webviz_subsurface.smry2arrow_batch:main"],
     },
     install_requires=[
-        "dash>=2.0.0",
+        "dash>=2.0.0,<2.16.0",
         "dash_bootstrap_components>=0.10.3",
         "dash-daq>=0.5.0",
         "defusedxml>=0.6.0",
