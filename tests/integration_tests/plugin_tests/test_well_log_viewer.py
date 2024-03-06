@@ -13,4 +13,4 @@ def test_well_log_viewer(dash_duo, app, testdata_folder) -> None:
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    assert dash_duo.get_logs() is None
+    assert not dash_duo.get_logs()

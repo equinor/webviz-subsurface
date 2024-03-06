@@ -18,4 +18,4 @@ def test_surface_viewer_fmu(dash_duo, app, shared_settings, testdata_folder) -> 
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    assert dash_duo.get_logs() is None
+    assert not dash_duo.get_logs()

@@ -22,4 +22,4 @@ def test_parameter_correlation(_webviz_duo: WebvizComposite, shared_settings) ->
         "paracorr", "settings", "shared-ensemble"
     )
     _webviz_duo.wait_for_contains_text(my_component_id, "iter-0")
-    assert _webviz_duo.get_logs() is None
+    assert not _webviz_duo.get_logs()

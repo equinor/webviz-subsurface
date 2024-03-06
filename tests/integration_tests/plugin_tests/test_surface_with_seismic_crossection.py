@@ -32,4 +32,4 @@ def test_surface_with_seismic_crosssection(
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    assert dash_duo.get_logs() is None
+    assert not dash_duo.get_logs()

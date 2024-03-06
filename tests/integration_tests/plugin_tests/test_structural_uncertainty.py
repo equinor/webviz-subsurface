@@ -116,7 +116,7 @@ def test_default_configuration(dash_duo, app, testdata_folder) -> None:
     real_selector = dash_duo.wait_for_element_by_id(real_uuid)
     assert real_selector.text.splitlines() == ["0", "1"]
 
-    assert dash_duo.get_logs() is None, "browser console should contain no error"
+    assert not dash_duo.get_logs(), "browser console should contain no error"
 
 
 def test_full_configuration(dash_duo, app, testdata_folder) -> None:
