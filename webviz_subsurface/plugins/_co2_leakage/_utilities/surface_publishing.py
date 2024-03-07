@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import xtgeo
 
 from webviz_subsurface._providers import (
@@ -15,9 +16,12 @@ from webviz_subsurface._providers import (
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
 )
+from webviz_subsurface.plugins._co2_leakage._utilities.generic import MapAttribute
 from webviz_subsurface.plugins._co2_leakage._utilities.plume_extent import (
     truncate_surfaces,
 )
+
+SCALE_DICT = {"kg": 1, "tons": 1000, "M tons": 1000000}
 
 
 @dataclass
@@ -38,27 +42,42 @@ def publish_and_get_surface_metadata(
     server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
-) -> Tuple[Optional[SurfaceImageMeta], str]:
+    visualization_info: Dict[str, Any],
+    map_attribute_names: Dict[MapAttribute, str],
+) -> Tuple[Optional[SurfaceImageMeta], str, Optional[Any]]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
     provider_id: str = provider.provider_id()
     qualified_address = QualifiedSurfaceAddress(provider_id, address)
     surf_meta = server.get_surface_metadata(qualified_address)
+    summed_mass = None
     if not surf_meta:
         # This means we need to compute the surface
         surface = provider.get_surface(address)
         if not surface:
             raise ValueError(f"Could not get surface for address: {address}")
+        if address.attribute in [
+            map_attribute_names[MapAttribute.MASS],
+            map_attribute_names[MapAttribute.FREE],
+            map_attribute_names[MapAttribute.DISSOLVED],
+        ]:
+            surface.values = surface.values / SCALE_DICT[visualization_info["unit"]]
+        summed_mass = np.ma.sum(surface.values)
+        if (
+            address.attribute != map_attribute_names[MapAttribute.MIGRATION_TIME]
+            and visualization_info["threshold"] >= 0
+        ):
+            surface.operation("elile", visualization_info["threshold"])
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)
-    return surf_meta, server.encode_partial_url(qualified_address)
+    return surf_meta, server.encode_partial_url(qualified_address), summed_mass
 
 
 def _publish_and_get_truncated_surface_metadata(
     server: SurfaceImageServer,
     provider: EnsembleSurfaceProvider,
     address: TruncatedSurfaceAddress,
-) -> Tuple[Optional[SurfaceImageMeta], str]:
+) -> Tuple[Optional[SurfaceImageMeta], str, Optional[Any]]:
     qualified_address = QualifiedSurfaceAddress(
         provider.provider_id(),
         # TODO: Should probably use a dedicated address type for this. Statistical surface
@@ -74,13 +93,15 @@ def _publish_and_get_truncated_surface_metadata(
         ),
     )
     surf_meta = server.get_surface_metadata(qualified_address)
+    summed_mass = None
     if surf_meta is None:
         surface = _generate_surface(provider, address)
         if surface is None:
             raise ValueError(f"Could not generate surface for address: {address}")
+        summed_mass = np.ma.sum(surface.values)
         server.publish_surface(qualified_address, surface)
         surf_meta = server.get_surface_metadata(qualified_address)
-    return surf_meta, server.encode_partial_url(qualified_address)
+    return surf_meta, server.encode_partial_url(qualified_address), summed_mass
 
 
 def _generate_surface(

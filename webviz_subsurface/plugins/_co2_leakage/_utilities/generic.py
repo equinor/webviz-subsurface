@@ -9,6 +9,9 @@ class MapAttribute(Enum):
     MAX_AMFG = "Maximum AMFG"
     SGAS_PLUME = "Plume (SGAS)"
     AMFG_PLUME = "Plume (AMFG)"
+    MASS = "Mass"
+    DISSOLVED = "Dissolved mass"
+    FREE = "Free mass"
 
 
 class Co2MassScale(StrEnum):
@@ -26,8 +29,7 @@ class Co2VolumeScale(StrEnum):
 class GraphSource(StrEnum):
     UNSMRY = "UNSMRY"
     CONTAINMENT_MASS = "Containment Data (mass)"
-    CONTAINMENT_VOLUME_ACTUAL = "Containment Data (volume, actual)"
-    CONTAINMENT_VOLUME_ACTUAL_SIMPLE = "Containment Data (volume, actual_simple)"
+    CONTAINMENT_ACTUAL_VOLUME = "Containment Data (volume, actual)"
 
 
 class LayoutLabels(str, Enum):
@@ -39,6 +41,8 @@ class LayoutLabels(str, Enum):
     SHOW_WELLS = "Show wells"
     WELL_FILTER = "Well filter"
     COMMON_SELECTIONS = "Options and global filters"
+    FEEDBACK = "User feedback"
+    VISUALIZATION_UPDATE = "Update threshold"
 
 
 # pylint: disable=too-few-public-methods
@@ -52,3 +56,24 @@ class LayoutStyle:
         "line-height": "30px",
         "background-color": "lightgrey",
     }
+
+    FEEDBACK_BUTTON = {
+        "marginBottom": "10px",
+        "width": "100%",
+        "height": "30px",
+        "line-height": "30px",
+        "background-color": "lightgrey",
+    }
+
+    VISUALIZATION_BUTTON = {
+        "marginLeft": "10px",
+        "height": "30px",
+        "line-height": "30px",
+        "background-color": "lightgrey",
+    }
+
+
+class ContainmentViews(StrEnum):
+    CONTAINMENTSPLIT = "Split into containment polygons"
+    ZONESPLIT = "Split into zones"
+    REGIONSPLIT = "Split into regions"
