@@ -11,4 +11,4 @@ def test_relative_permeability(dash_duo, app, shared_settings) -> None:
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    assert dash_duo.get_logs() is None
+    assert not dash_duo.get_logs()

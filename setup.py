@@ -7,7 +7,6 @@ TESTS_REQUIRE = [
     "bandit",
     "black>=22.1,<24",
     "dash[testing]",
-    "flaky",
     "isort",
     "mypy",
     "pylint<=2.13.9",  # Locked due to https://github.com/equinor/webviz-subsurface/issues/1052

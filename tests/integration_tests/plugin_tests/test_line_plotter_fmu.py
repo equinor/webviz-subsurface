@@ -26,4 +26,4 @@ def test_line_plotter_fmu(dash_duo, app, testdata_folder, shared_settings) -> No
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    assert dash_duo.get_logs() is None
+    assert not dash_duo.get_logs()

@@ -13,4 +13,4 @@ def test_reservoir_simulation_timeseries_onebyone(
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    assert dash_duo.get_logs() is None
+    assert not dash_duo.get_logs()
