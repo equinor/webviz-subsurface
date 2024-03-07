@@ -12,4 +12,4 @@ def test_pvt_plot(_webviz_duo: WebvizComposite, shared_settings: dict) -> None:
 
     _webviz_duo.start_server(plugin)
 
-    assert _webviz_duo.get_logs() is None
+    assert not _webviz_duo.get_logs()

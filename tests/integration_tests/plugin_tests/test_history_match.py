@@ -15,4 +15,4 @@ def test_history_match(dash_duo, app, testdata_folder, shared_settings) -> None:
     )
     app.layout = plugin.layout
     dash_duo.start_server(app)
-    assert dash_duo.get_logs() is None
+    assert not dash_duo.get_logs()
