@@ -233,7 +233,6 @@ class CO2Leakage(WebvizPluginABC):
         # Cannot avoid many arguments since all the parameters are needed
         # to determine what to plot
         # pylint: disable=too-many-arguments
-        # pylint: disable=too-many-locals
         @callback(
             Output(
                 self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"
@@ -259,6 +258,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.ZONE), "value"),
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
+            Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -273,12 +273,14 @@ class CO2Leakage(WebvizPluginABC):
             zone: Optional[str],
             region: Optional[str],
             containment_view: str,
+            phase: str,
         ) -> Tuple[Dict, go.Figure, go.Figure]:
             out = {"figs": [no_update] * 3, "styles": [{"display": "none"}] * 3}
             cont_info = process_containment_info(
                 zone,
                 region,
                 containment_view,
+                phase,
                 self._zone_and_region_options[ensemble][source],
                 source,
             )
@@ -386,9 +388,7 @@ class CO2Leakage(WebvizPluginABC):
             Output(ViewSettings.Ids.WELL_FILTER_HEADER, "style"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
-        def set_well_options(
-            ensemble: str,
-        ) -> Tuple[List[Any], List[str], Dict[Any, Any], Dict[Any, Any]]:
+        def set_well_options(ensemble: str) -> Any:
             return (
                 [{"label": i, "value": i} for i in self._well_pick_names[ensemble]],
                 self._well_pick_names[ensemble],

@@ -19,6 +19,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     LayoutLabels,
     LayoutStyle,
     MapAttribute,
+    PhaseOptions,
 )
 
 
@@ -51,6 +52,8 @@ class ViewSettings(SettingsGroupABC):
         ZONE = "zone"
         REGION = "region"
         CONTAINMENT_VIEW = "containment_view"
+        PHASE = "phase"
+        PHASEDROPDOWN = "phase_drop_down"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -129,6 +132,8 @@ class ViewSettings(SettingsGroupABC):
                     self.register_component_unique_id(self.Ids.ZONE),
                     self.register_component_unique_id(self.Ids.REGION),
                     self.register_component_unique_id(self.Ids.CONTAINMENT_VIEW),
+                    self.register_component_unique_id(self.Ids.PHASE),
+                    self.register_component_unique_id(self.Ids.PHASEDROPDOWN),
                 ],
                 self._has_zones,
                 self._has_regions,
@@ -338,13 +343,14 @@ class ViewSettings(SettingsGroupABC):
             Output("region_col", "style"),
             Output("both_col", "style"),
             Output("zone_region_header", "style"),
+            Output(self.component_unique_id(self.Ids.PHASEDROPDOWN).to_string(), "style"),
             Input(
                 self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
             ),
         )
         def hide_dropdowns(view: str) -> List[Dict[str, str]]:
             if view != ContainmentViews.CONTAINMENTSPLIT:
-                return [{"display": "none"}] * 4
+                return [{"display": "none"}] * 4 + [{}]
             disp_zone = "flex" if self._has_zones else "none"
             disp_region = "flex" if self._has_regions else "none"
             disp_either = "flex" if self._has_zones or self._has_regions else "none"
@@ -361,6 +367,7 @@ class ViewSettings(SettingsGroupABC):
                 },
                 {"display": disp_either},
                 {"display": disp_either},
+                {"display": "none"},
             ]
 
 
@@ -662,6 +669,19 @@ class GraphSelectorsLayout(wcc.Selectors):
                     ],
                     id="both_col",
                     style={"display": disp},
+                ),
+                html.Div(
+                    [
+                        "Containment for specific phase",
+                        wcc.Dropdown(
+                            options=list(PhaseOptions),
+                            value=PhaseOptions.TOTAL,
+                            clearable=False,
+                            id=containment_ids[3],
+                        ),
+                    ],
+                    id=containment_ids[4],
+                    style={"display": "none"},
                 ),
                 "Unit",
                 wcc.Dropdown(

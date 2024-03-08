@@ -32,6 +32,12 @@ class GraphSource(StrEnum):
     CONTAINMENT_ACTUAL_VOLUME = "Containment Data (volume, actual)"
 
 
+class PhaseOptions(StrEnum):
+    TOTAL = "Total"
+    AQUEOUS = "Aqueous"
+    GAS = "Gas"
+
+
 class LayoutLabels(str, Enum):
     """Text labels used in layout components"""
 
