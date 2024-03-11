@@ -29,6 +29,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    ContainmentViews,
     GraphSource,
     MapAttribute,
 )
@@ -259,6 +260,8 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
             Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
+            Input(self._view_component(MapViewElement.Ids.BAR_PLOT_ORDER), "value"),
+            Input(self._view_component(MapViewElement.Ids.CONTAINMENT_COLORS), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -274,6 +277,8 @@ class CO2Leakage(WebvizPluginABC):
             region: Optional[str],
             containment_view: str,
             phase: str,
+            order: str,
+            colors: str,
         ) -> Tuple[Dict, go.Figure, go.Figure]:
             out = {"figs": [no_update] * 3, "styles": [{"display": "none"}] * 3}
             cont_info = process_containment_info(
@@ -281,6 +286,8 @@ class CO2Leakage(WebvizPluginABC):
                 region,
                 containment_view,
                 phase,
+                len(order),
+                len(colors),
                 self._zone_and_region_options[ensemble][source],
                 source,
             )
@@ -354,8 +361,7 @@ class CO2Leakage(WebvizPluginABC):
                 }
                 for i, d in enumerate(date_list)
             }
-            initial_date = max(dates.keys())
-            return dates, initial_date
+            return dates, max(dates.keys())
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_WRAPPER), "style"),
@@ -569,3 +575,17 @@ class CO2Leakage(WebvizPluginABC):
             if _n_clicks is not None:
                 return _n_clicks > 0
             raise PreventUpdate
+
+        @callback(
+            Output(
+                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "style"
+            ),
+            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
+        )
+        def hide_bar_plot_checkboxes(view: str) -> Dict:
+            if view == ContainmentViews.CONTAINMENTSPLIT:
+                return {"display": "none"}
+            return {
+                "display": "flex",
+                "flexDirection": "row",
+            }

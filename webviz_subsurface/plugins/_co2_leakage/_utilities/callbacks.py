@@ -383,7 +383,7 @@ def generate_containment_figures(
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realization: int,
     y_limits: List[Optional[float]],
-    containment_info: Dict[str, Union[str, None, List[str]]],
+    containment_info: Dict[str, Union[str, None, List[str], int]],
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
         fig0 = generate_co2_volume_figure(
@@ -486,9 +486,11 @@ def process_containment_info(
     region: Optional[str],
     view: Optional[str],
     phase: str,
+    order: int,
+    colors: int,
     zone_and_region_options: Dict[str, List[str]],
     source: str,
-) -> Dict[str, Union[str, None, List[str]]]:
+) -> Dict[str, Union[str, None, List[str], int]]:
     zones = zone_and_region_options["zones"]
     regions = zone_and_region_options["regions"]
     if source in [
@@ -507,6 +509,8 @@ def process_containment_info(
                 "region": region,
                 "containment_view": ContainmentViews.CONTAINMENTSPLIT,
                 "phase": phase,
+                "order": order,
+                "colors": colors,
             }
         return {
             "zone": zone,
@@ -515,6 +519,8 @@ def process_containment_info(
             "zones": zones,
             "regions": regions,
             "phase": phase,
+            "order": order,
+            "colors": colors,
         }
     return {"containment_view": ContainmentViews.CONTAINMENTSPLIT}
 

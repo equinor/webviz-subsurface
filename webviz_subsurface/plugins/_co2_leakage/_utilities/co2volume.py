@@ -279,22 +279,65 @@ def generate_co2_volume_figure(
     df = _read_terminal_co2_volumes(
         table_provider, realizations, scale, containment_info
     )
-    if containment_info["containment_view"] == ContainmentViews.ZONESPLIT:
-        color = "zone"
-        cat_ord = {
-            "zone": containment_info["zones"],
-            "containment": ["contained", "outside", "hazardous"],
-        }
-        colors = _split_colors(len(containment_info["zones"]))
-        pattern_shape = "containment"
-    elif containment_info["containment_view"] == ContainmentViews.REGIONSPLIT:
-        color = "region"
-        cat_ord = {
-            "region": containment_info["regions"],
-            "containment": ["contained", "outside", "hazardous"],
-        }
-        colors = _split_colors(len(containment_info["regions"]), "region")
-        pattern_shape = "containment"
+    if containment_info["containment_view"] != ContainmentViews.CONTAINMENTSPLIT:
+        if containment_info["containment_view"] == ContainmentViews.ZONESPLIT:
+            split = "zone"
+            options = "zones"
+        else:
+            split = "region"
+            options = "regions"
+        color = "type"
+        pattern_shape = "type"  # ['', '/', '\\', 'x', '-', '|', '+', '.'],
+        if containment_info["order"] > 2:
+            cat_ord = {
+                "type": [
+                    ", ".join((zn, cn))
+                    for zn in containment_info[options]
+                    for cn in ["contained", "outside", "hazardous"]
+                ],
+            }
+            colors = [
+                c
+                for c in _split_colors(len(containment_info[options]), split)
+                for _ in range(3)
+            ]
+            pattern = ["", "/", "x"] * len(containment_info[options])
+        else:
+            cat_ord = {
+                "type": [
+                    ", ".join((zn, cn))
+                    for cn in ["contained", "outside", "hazardous"]
+                    for zn in containment_info[options]
+                ],
+            }
+            colors = [
+                c
+                for _ in range(3)
+                for c in _split_colors(len(containment_info[options]), split)
+            ]
+            pattern = [""] * len(containment_info[options])
+            pattern += ["/"] * len(containment_info[options])
+            pattern += ["x"] * len(containment_info[options])
+        if containment_info["colors"] < 3:
+            cat_ord = {
+                "type": [
+                    ", ".join((zn, cn))
+                    for cn in ["hazardous", "outside", "contained"]
+                    for zn in containment_info[options]
+                ],
+            }
+            colors = [
+                c
+                for c in [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
+                for _ in range(len(containment_info[options]))
+            ]
+            pattern = ["", "/", "x", "-", "\\", "+", "|", "."][
+                : len(containment_info[options])
+            ] * 3
+
+        df["type"] = [
+            ", ".join((zn, cn)) for zn, cn in zip(df[split], df["containment"])
+        ]
     else:
         color = "containment"
         cat_ord = {
@@ -303,12 +346,14 @@ def generate_co2_volume_figure(
         }
         colors = [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
         pattern_shape = "phase"
+        pattern = ["", "/"]
     fig = px.bar(
         df,
         y="real",
         x="amount",
         color=color,
         pattern_shape=pattern_shape,
+        pattern_shape_sequence=pattern,
         title="End-state CO<sub>2</sub> containment (all realizations)",
         orientation="h",
         category_orders=cat_ord,
@@ -377,7 +422,7 @@ def generate_co2_time_containment_one_realization_figure(
                 for containment in ["contained", "outside", "hazardous"]
             ]
         }
-        pattern = ["", "/", "\\"] * len(containment_info[options])
+        pattern = ["", "/", "x"] * len(containment_info[options])
         colors = [
             col
             for col in _split_colors(len(containment_info[options]), split)

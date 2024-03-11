@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import html
+from dash import dcc, html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
@@ -27,6 +27,9 @@ class MapViewElement(ViewElementABC):
         BAR_PLOT = "bar-plot"
         TIME_PLOT = "time-plot"
         TIME_PLOT_ONE_REAL = "time-plot-one-realization"
+        BAR_PLOT_ORDER = "bar-plot-order"
+        CONTAINMENT_COLORS = "containment-order"
+        CONTAINMENT_CHECKBOXES = "containment-checkboxes"
 
     def __init__(self, color_scales: List[Dict[str, Any]]) -> None:
         super().__init__()
@@ -87,6 +90,27 @@ class MapViewElement(ViewElementABC):
                         self.register_component_unique_id(self.Ids.BAR_PLOT),
                         self.register_component_unique_id(self.Ids.TIME_PLOT),
                         self.register_component_unique_id(self.Ids.TIME_PLOT_ONE_REAL),
+                    ),
+                ),
+                html.Div(
+                    [
+                        dcc.Checklist(
+                            ["Sorting order"],
+                            ["Sorting order"],
+                            id=self.register_component_unique_id(
+                                self.Ids.BAR_PLOT_ORDER
+                            ),
+                        ),
+                        dcc.Checklist(
+                            ["Containment colors (uncheck)"],
+                            ["Containment colors (uncheck)"],
+                            id=self.register_component_unique_id(
+                                self.Ids.CONTAINMENT_COLORS
+                            ),
+                        ),
+                    ],
+                    id=self.register_component_unique_id(
+                        self.Ids.CONTAINMENT_CHECKBOXES
                     ),
                 ),
             ],

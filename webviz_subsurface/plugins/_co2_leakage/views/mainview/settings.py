@@ -343,7 +343,9 @@ class ViewSettings(SettingsGroupABC):
             Output("region_col", "style"),
             Output("both_col", "style"),
             Output("zone_region_header", "style"),
-            Output(self.component_unique_id(self.Ids.PHASEDROPDOWN).to_string(), "style"),
+            Output(
+                self.component_unique_id(self.Ids.PHASEDROPDOWN).to_string(), "style"
+            ),
             Input(
                 self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
             ),
