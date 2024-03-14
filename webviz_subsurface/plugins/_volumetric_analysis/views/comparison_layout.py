@@ -8,35 +8,7 @@ from webviz_subsurface._models import InplaceVolumesModel
 
 
 def comparison_main_layout(uuid: str) -> html.Div:
-    return [
-        html.Div(
-            style={"margin-bottom": "20px"},
-            children=wcc.RadioItems(
-                inline=True,
-                id={"id": uuid, "element": "display-option"},
-                options=[
-                    {
-                        "label": "QC plots",
-                        "value": "plots",
-                    },
-                    {
-                        "label": "Difference table for selected response",
-                        "value": "single-response table",
-                    },
-                    {
-                        "label": "Difference table for multiple responses",
-                        "value": "multi-response table",
-                    },
-                    {
-                        "label": "Volume change analysis plot (waterfall)",
-                        "value": "waterfall plot",
-                    },
-                ],
-                value="plots",
-            ),
-        ),
-        html.Div(id={"id": uuid, "wrapper": "table"}),
-    ]
+    return html.Div(id={"id": uuid, "wrapper": "table"})
 
 
 def comparison_qc_plots_layout(
@@ -119,7 +91,7 @@ def waterfall_plot_layout(
                     wcc.FlexColumn(
                         children=[
                             html.Div(
-                                "Note: If multiple plots, the plots are order by "
+                                "Note: If multiple plots, the plots are ordered by "
                                 "the largest absolute difference in percent."
                             ),
                             html.Div(
@@ -182,8 +154,37 @@ def comparison_selections(
     uuid: str, volumemodel: InplaceVolumesModel, tab: str, compare_on: str
 ) -> html.Div:
     options = comparison_options(compare_on, volumemodel)
+
     return html.Div(
         children=[
+            wcc.Selectors(
+                label="VISUALIZATION",
+                open_details=True,
+                children=[
+                    wcc.RadioItems(
+                        id={"id": uuid, "tab": tab, "selector": "display_option"},
+                        options=[
+                            {
+                                "label": "QC plots",
+                                "value": "plots",
+                            },
+                            {
+                                "label": "Difference table for selected response",
+                                "value": "single-response table",
+                            },
+                            {
+                                "label": "Difference table for multiple responses",
+                                "value": "multi-response table",
+                            },
+                            {
+                                "label": "Volume change analysis plot (waterfall)",
+                                "value": "waterfall plot",
+                            },
+                        ],
+                        value="plots",
+                    ),
+                ],
+            ),
             wcc.Selectors(
                 label="CONTROLS",
                 open_details=True,

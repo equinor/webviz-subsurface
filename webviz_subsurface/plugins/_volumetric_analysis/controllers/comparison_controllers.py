@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import Input, Output, State, callback, callback_context, dash_table, html
+from dash import Input, Output, State, callback, dash_table, html
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._figures import create_figure
@@ -32,51 +32,34 @@ def comparison_controllers(
     @callback(
         Output({"id": get_uuid("main-src-comp"), "wrapper": "table"}, "children"),
         Input(get_uuid("selections"), "data"),
-        Input({"id": get_uuid("main-src-comp"), "element": "display-option"}, "value"),
         State(get_uuid("page-selected"), "data"),
     )
-    def _update_page_src_comp(
-        selections: dict,
-        display_option: str,
-        page_selected: str,
-    ) -> html.Div:
-        ctx = callback_context.triggered[0]
-
+    def _update_page_src_comp(selections: dict, page_selected: str) -> html.Div:
         if page_selected != "src-comp":
             raise PreventUpdate
 
         selections = selections[page_selected]
-        if not "display-option" in ctx["prop_id"]:
-            if not selections["update"]:
-                raise PreventUpdate
+        if not selections["update"]:
+            raise PreventUpdate
 
         return comparison_callback(
             compare_on="SOURCE",
             volumemodel=volumemodel,
             selections=selections,
-            display_option=display_option,
         )
 
     @callback(
         Output({"id": get_uuid("main-ens-comp"), "wrapper": "table"}, "children"),
         Input(get_uuid("selections"), "data"),
-        Input({"id": get_uuid("main-ens-comp"), "element": "display-option"}, "value"),
         State(get_uuid("page-selected"), "data"),
     )
-    def _update_page_ens_comp(
-        selections: dict,
-        display_option: str,
-        page_selected: str,
-    ) -> html.Div:
-        ctx = callback_context.triggered[0]
-
+    def _update_page_ens_comp(selections: dict, page_selected: str) -> html.Div:
         if page_selected != "ens-comp":
             raise PreventUpdate
 
         selections = selections[page_selected]
-        if not "display-option" in ctx["prop_id"]:
-            if not selections["update"]:
-                raise PreventUpdate
+        if not selections["update"]:
+            raise PreventUpdate
 
         return comparison_callback(
             compare_on="SENSNAME_CASE"
@@ -84,7 +67,6 @@ def comparison_controllers(
             else "ENSEMBLE",
             volumemodel=volumemodel,
             selections=selections,
-            display_option=display_option,
         )
 
 
@@ -93,10 +75,11 @@ def comparison_callback(
     compare_on: str,
     volumemodel: InplaceVolumesModel,
     selections: dict,
-    display_option: str,
 ) -> html.Div:
     if selections["value1"] == selections["value2"]:
         return html.Div("Comparison between equal data")
+
+    display_option = selections["display_option"]
 
     # Handle None in highlight criteria input
     for key in ["Accept value", "Ignore <"]:
