@@ -1,11 +1,12 @@
 import math
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dash_table
 
+from webviz_subsurface._abbreviations.number_formatting import si_prefixed
 from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._utils.colors import StandardColors
 
@@ -209,3 +210,146 @@ def add_histogram_lines(figure: go.Figure, statline_option: Optional[str]) -> No
 
         # update margin to make room for the labels
         figure.update_layout({"margin_t": 100})
+
+
+class VolumeWaterfallPlot:
+    def __init__(
+        self,
+        bar_names: List[str],
+        initial_volume: float,
+        final_volume: float,
+        volume_impact_properties: List[float],
+        title: str,
+    ) -> None:
+        self.bar_names = bar_names
+        self.title = title
+        self.y = [initial_volume, *volume_impact_properties, final_volume]
+        self.cumulative_volumes = self.compute_cumulative_volumes()
+
+    @staticmethod
+    def format_number(num: float) -> str:
+        """Get a formatted number, use SI prefixes if value is larger than 1000"""
+        if abs(num) < 1000:
+            return si_prefixed(num, number_format=".1f", locked_si_prefix="")
+        return si_prefixed(num, number_format=".3g")
+
+    def compute_cumulative_volumes(self) -> List[float]:
+        """
+        Compute the cumulative volumes moving from one bar to another.
+        First and last bar have volumes in absolute values, the middle
+        bars have relative volumes.
+        """
+        cumulative_volumes = [sum(self.y[:idx]) for idx in range(1, len(self.y))]
+        cumulative_volumes.append(self.y[-1])
+        return cumulative_volumes
+
+    def calculate_volume_change_for_bar(self, idx: int) -> Tuple[float, float]:
+        """
+        Calculate change in percent for a given bar index by
+        comparing volumes to the previous bar.
+        Return the change in actual value and in percent
+        """
+        prev_bar_volume = self.cumulative_volumes[idx - 1]
+        vol_change = self.cumulative_volumes[idx] - prev_bar_volume
+        vol_change_percent = (
+            (100 * vol_change / prev_bar_volume) if prev_bar_volume != 0 else 0
+        )
+        return vol_change, vol_change_percent
+
+    @property
+    def number_of_bars(self) -> int:
+        """Number of bars"""
+        return len(self.bar_names)
+
+    @property
+    def textfont_size(self) -> int:
+        """Text font size for the plot"""
+        return 15
+
+    @property
+    def measures(self) -> List[str]:
+        """
+        List of measures. First and last bar have volumes in absolute
+        values, the middle bars have relative volumes.
+        """
+        return ["absolute", *["relative"] * (self.number_of_bars - 2), "absolute"]
+
+    @property
+    def y_range(self) -> List[float]:
+        """y axis range for the plot"""
+        cum_vol_min = min(self.cumulative_volumes)
+        cum_vol_max = max(self.cumulative_volumes)
+        range_extension = (cum_vol_max - cum_vol_min) / 2
+        return [cum_vol_min - range_extension, cum_vol_max + range_extension]
+
+    @property
+    def bartext(self) -> List[str]:
+        """
+        Create bartext for each bar with volume changes relative
+        to previous bar. First and last bar show only absolute values.
+        """
+        texttemplate = [self.format_number(self.y[0])]
+        for idx in range(self.number_of_bars):
+            if idx not in [0, self.number_of_bars - 1]:
+                delta, perc = self.calculate_volume_change_for_bar(idx)
+                sign = "+" if perc > 0 else ""
+                texttemplate.append(
+                    f"{sign}{self.format_number(delta)}  {sign}{perc:.1f}%"
+                )
+        texttemplate.append(self.format_number(self.y[-1]))
+        return texttemplate
+
+    @property
+    def axis_defaults(self) -> dict:
+        """x and y axis defaults"""
+        return {
+            "showline": True,
+            "linewidth": 2,
+            "linecolor": "black",
+            "mirror": True,
+            "gridwidth": 1,
+            "gridcolor": "lightgrey",
+            "showgrid": False,
+        }
+
+    @property
+    def colors(self) -> dict:
+        """Color settings for the different bar types"""
+        return {
+            "decreasing_marker_color": "GoldenRod",
+            "increasing_marker_color": "steelblue",
+            "totals_marker_color": "darkgrey",
+        }
+
+    @property
+    def figure(self) -> go.Figure:
+        return (
+            go.Figure(
+                go.Waterfall(
+                    orientation="v",
+                    measure=self.measures,
+                    x=self.bar_names,
+                    textposition="outside",
+                    text=self.bartext,
+                    y=self.y,
+                    connector={"mode": "spanning"},
+                    textfont_size=self.textfont_size,
+                    **self.colors,
+                )
+            )
+            .update_yaxes(
+                range=self.y_range,
+                tickfont_size=self.textfont_size,
+                **self.axis_defaults,
+            )
+            .update_xaxes(
+                type="category",
+                tickfont_size=self.textfont_size,
+                **self.axis_defaults,
+            )
+            .update_layout(
+                plot_bgcolor="white",
+                title=self.title,
+                margin={"t": 40, "b": 50, "l": 50, "r": 50},
+            )
+        )
