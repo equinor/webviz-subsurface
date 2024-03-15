@@ -486,8 +486,7 @@ def process_containment_info(
     region: Optional[str],
     view: Optional[str],
     phase: str,
-    order: int,
-    colors: int,
+    ordering: int,
     zone_and_region_options: Dict[str, List[str]],
     source: str,
 ) -> Dict[str, Union[str, None, List[str], int]]:
@@ -509,8 +508,7 @@ def process_containment_info(
                 "region": region,
                 "containment_view": ContainmentViews.CONTAINMENTSPLIT,
                 "phase": phase,
-                "order": order,
-                "colors": colors,
+                "ordering": ordering,
             }
         return {
             "zone": zone,
@@ -519,8 +517,7 @@ def process_containment_info(
             "zones": zones,
             "regions": regions,
             "phase": phase,
-            "order": order,
-            "colors": colors,
+            "ordering": ordering,
         }
     return {"containment_view": ContainmentViews.CONTAINMENTSPLIT}
 

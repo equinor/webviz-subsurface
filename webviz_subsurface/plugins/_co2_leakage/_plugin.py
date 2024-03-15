@@ -260,8 +260,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
             Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
-            Input(self._view_component(MapViewElement.Ids.BAR_PLOT_ORDER), "value"),
-            Input(self._view_component(MapViewElement.Ids.CONTAINMENT_COLORS), "value"),
+            Input(self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -277,8 +276,7 @@ class CO2Leakage(WebvizPluginABC):
             region: Optional[str],
             containment_view: str,
             phase: str,
-            order: str,
-            colors: str,
+            ordering: int,
         ) -> Tuple[Dict, go.Figure, go.Figure]:
             out = {"figs": [no_update] * 3, "styles": [{"display": "none"}] * 3}
             cont_info = process_containment_info(
@@ -286,8 +284,7 @@ class CO2Leakage(WebvizPluginABC):
                 region,
                 containment_view,
                 phase,
-                len(order),
-                len(colors),
+                ordering,
                 self._zone_and_region_options[ensemble][source],
                 source,
             )
@@ -578,14 +575,26 @@ class CO2Leakage(WebvizPluginABC):
 
         @callback(
             Output(
+                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "options"
+            ),
+            Output(
                 self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "style"
             ),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
         )
-        def hide_bar_plot_checkboxes(view: str) -> Dict:
+        def hide_bar_plot_checkboxes(
+                view: str
+        ) -> Tuple[List[Dict], Dict]:
             if view == ContainmentViews.CONTAINMENTSPLIT:
-                return {"display": "none"}
-            return {
+                return {}, {"display": "none"}
+            style = {
                 "display": "flex",
                 "flexDirection": "row",
             }
+            split = "zones" if view == ContainmentViews.ZONESPLIT else "regions"
+            options = [
+                {"label": f"Sort by {split}", "value": 0},
+                {"label": "Sort by containment status", "value": 1},
+                {"label": "Color by containment", "value": 2},
+            ]
+            return options, style

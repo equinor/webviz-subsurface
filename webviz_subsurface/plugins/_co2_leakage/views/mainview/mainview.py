@@ -92,23 +92,14 @@ class MapViewElement(ViewElementABC):
                         self.register_component_unique_id(self.Ids.TIME_PLOT_ONE_REAL),
                     ),
                 ),
-                html.Div(
-                    [
-                        dcc.Checklist(
-                            ["Sorting order"],
-                            ["Sorting order"],
-                            id=self.register_component_unique_id(
-                                self.Ids.BAR_PLOT_ORDER
-                            ),
-                        ),
-                        dcc.Checklist(
-                            ["Containment colors (uncheck)"],
-                            ["Containment colors (uncheck)"],
-                            id=self.register_component_unique_id(
-                                self.Ids.CONTAINMENT_COLORS
-                            ),
-                        ),
+                dcc.RadioItems(
+                    options=[
+                        {"label": "Sort by zones", "value": 0},
+                        {"label": "Sort by containment status", "value": 1},
+                        {"label": "Color by containment", "value": 2},
                     ],
+                    value=0,
+                    inline=True,
                     id=self.register_component_unique_id(
                         self.Ids.CONTAINMENT_CHECKBOXES
                     ),

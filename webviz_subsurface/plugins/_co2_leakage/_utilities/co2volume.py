@@ -1,3 +1,4 @@
+import warnings
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -140,10 +141,72 @@ def _split_colors(num_cols: int, split: str = "zone") -> List[str]:
     return new_cols[:num_cols]
 
 
+def _prepare_pattern_and_color_options(
+    containment_info: Dict,
+    split: str,
+) -> Tuple[Dict, List, List]:
+    options = containment_info[f"{split}s"]
+    num_options = len(options)
+    if containment_info["ordering"] == 0:
+        cat_ord = {
+            "type": [
+                ", ".join((zn, cn))
+                for zn in options
+                for cn in ["contained", "outside", "hazardous"]
+            ],
+        }
+        colors = [
+            c
+            for c in _split_colors(num_options, split)
+            for _ in range(3)
+        ]
+        pattern = ["", "/", "x"] * num_options
+    elif containment_info["ordering"] == 1:
+        cat_ord = {
+            "type": [
+                ", ".join((zn, cn))
+                for cn in ["contained", "outside", "hazardous"]
+                for zn in options
+            ],
+        }
+        colors = [
+            c
+            for _ in range(3)
+            for c in _split_colors(num_options, split)
+        ]
+        pattern = [""] * num_options
+        pattern += ["/"] * num_options
+        pattern += ["x"] * num_options
+    else:
+        cat_ord = {
+            "type": [
+                ", ".join((zn, cn))
+                for cn in ["hazardous", "outside", "contained"]
+                for zn in options
+            ],
+        }
+        colors = [
+            c
+            for c in [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
+            for _ in range(num_options)
+        ]
+        base_pattern = ["", "/", "x", "-", "\\", "+", "|", "."]
+        if num_options > len(base_pattern):
+            base_pattern *= int(np.ceil(num_options / len(base_pattern)))
+            warnings.warn(f"More {split}s than pattern options. "
+                          f"Some {split}s will share pattern.")
+        pattern = base_pattern[:num_options] * 3
+    return cat_ord, colors, pattern
+
+
 def _find_scale_factor(
     table_provider: EnsembleTableProvider,
     scale: Union[Co2MassScale, Co2VolumeScale],
 ) -> float:
+    """
+    Move this further out so that it's only called once, and make it so that
+    only the selected data is used if only one region or zone is chosen in the dropdown menu.
+    """
     if scale in (Co2MassScale.KG, Co2VolumeScale.CUBIC_METERS):
         return 1.0
     if scale in (Co2MassScale.MTONS, Co2VolumeScale.BILLION_CUBIC_METERS):
@@ -279,61 +342,15 @@ def generate_co2_volume_figure(
     df = _read_terminal_co2_volumes(
         table_provider, realizations, scale, containment_info
     )
-    if containment_info["containment_view"] != ContainmentViews.CONTAINMENTSPLIT:
-        if containment_info["containment_view"] == ContainmentViews.ZONESPLIT:
-            split = "zone"
-            options = "zones"
-        else:
-            split = "region"
-            options = "regions"
+    view = containment_info["containment_view"]
+    if view != ContainmentViews.CONTAINMENTSPLIT:
+        split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
         color = "type"
         pattern_shape = "type"  # ['', '/', '\\', 'x', '-', '|', '+', '.'],
-        if containment_info["order"] > 2:
-            cat_ord = {
-                "type": [
-                    ", ".join((zn, cn))
-                    for zn in containment_info[options]
-                    for cn in ["contained", "outside", "hazardous"]
-                ],
-            }
-            colors = [
-                c
-                for c in _split_colors(len(containment_info[options]), split)
-                for _ in range(3)
-            ]
-            pattern = ["", "/", "x"] * len(containment_info[options])
-        else:
-            cat_ord = {
-                "type": [
-                    ", ".join((zn, cn))
-                    for cn in ["contained", "outside", "hazardous"]
-                    for zn in containment_info[options]
-                ],
-            }
-            colors = [
-                c
-                for _ in range(3)
-                for c in _split_colors(len(containment_info[options]), split)
-            ]
-            pattern = [""] * len(containment_info[options])
-            pattern += ["/"] * len(containment_info[options])
-            pattern += ["x"] * len(containment_info[options])
-        if containment_info["colors"] < 3:
-            cat_ord = {
-                "type": [
-                    ", ".join((zn, cn))
-                    for cn in ["hazardous", "outside", "contained"]
-                    for zn in containment_info[options]
-                ],
-            }
-            colors = [
-                c
-                for c in [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
-                for _ in range(len(containment_info[options]))
-            ]
-            pattern = ["", "/", "x", "-", "\\", "+", "|", "."][
-                : len(containment_info[options])
-            ] * 3
+        cat_ord, colors, pattern = _prepare_pattern_and_color_options(
+            containment_info,
+            split,
+        )
 
         df["type"] = [
             ", ".join((zn, cn)) for zn, cn in zip(df[split], df["containment"])
@@ -388,13 +405,9 @@ def generate_co2_time_containment_one_realization_figure(
             "total",
         ]
     )
-    if containment_info["containment_view"] != ContainmentViews.CONTAINMENTSPLIT:
-        if containment_info["containment_view"] == ContainmentViews.ZONESPLIT:
-            split = "zone"
-            options = "zones"
-        else:
-            split = "region"
-            options = "regions"
+    view = containment_info["containment_view"]
+    if view != ContainmentViews.CONTAINMENTSPLIT:
+        split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
         phase = containment_info["phase"]
         containments = ["contained", "outside", "hazardous"]
         df = df.drop(
@@ -415,19 +428,10 @@ def generate_co2_time_containment_one_realization_figure(
         df = pandas.melt(df, id_vars=["date", split])
         df["variable"] = df[split] + ", " + df["variable"]
         df = df.drop(columns=[split])
-        cat_ord = {
-            "type": [
-                name + ", " + containment
-                for name in containment_info[options]
-                for containment in ["contained", "outside", "hazardous"]
-            ]
-        }
-        pattern = ["", "/", "x"] * len(containment_info[options])
-        colors = [
-            col
-            for col in _split_colors(len(containment_info[options]), split)
-            for i in range(3)
-        ]
+        cat_ord, colors, pattern = _prepare_pattern_and_color_options(
+            containment_info,
+            split,
+        )
     else:
         df = df.drop(
             columns=[
@@ -497,16 +501,13 @@ def _prepare_time_figure_options(
 ) -> Tuple[pandas.DataFrame, Dict[str, Tuple[str, str, str]], List[str]]:
     view = containment_info["containment_view"]
     if view != ContainmentViews.CONTAINMENTSPLIT:
+        containments = ["contained", "outside", "hazardous"]
         colnames = [
             "_".join((_PHASE_DICT[containment_info["phase"]], c))
-            for c in ["contained", "outside", "hazardous"]
+            for c in containments
         ]
         split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
-        options = (
-            containment_info["zones"]
-            if split == "zone"
-            else containment_info["regions"]
-        )
+        options = containment_info[f"{split}s"]
         df = df.drop(
             columns=[
                 "REAL",
@@ -523,20 +524,33 @@ def _prepare_time_figure_options(
         for name in options:
             part_df = df[colnames][df[split] == name]
             part_df = part_df.rename(
-                columns={cn: name + ", " + cn.split("_")[1] for cn in colnames}
+                columns={cn: ", ".join((name, cn.split("_")[1])) for cn in colnames}
             ).reset_index(drop=True)
             df_ = pandas.concat([df_, part_df], axis=1)
-        colors = _split_colors(len(options), split)
-        cols_to_plot = {}
-        for c, line_type in zip(
-            ["contained", "outside", "hazardous"], ["solid", "dot", "dash"]
-        ):
-            for name, col in zip(options, colors):
-                cols_to_plot[name + ", " + c] = (
-                    name + ", " + c,
-                    line_type,
-                    col,
-                )
+        if containment_info["ordering"] < 2:
+            colors = _split_colors(len(options), split)
+            cols_to_plot = {}
+            for con, line_type in zip(containments, ["solid", "dot", "dash"]):
+                for name, col in zip(options, colors):
+                    cols_to_plot[", ".join((name, con))] = (
+                        ", ".join((name, con)),
+                        line_type,
+                        col,
+                    )
+        else:
+            colors = [_COLOR_CONTAINED, _COLOR_OUTSIDE, _COLOR_HAZARDOUS]
+            patterns = [f"{round(i / len(options) * 25)}px" for i in range(len(options))]
+            if len(options) > 8:
+                warnings.warn(f"Large number of {split}s might make it hard "
+                              f"to distinguish different dashed lines.")
+            cols_to_plot = {}
+            for con, col in zip(containments, colors):
+                for name, pat in zip(options, patterns):
+                    cols_to_plot[", ".join((name, con))] = (
+                        ", ".join((name, con)),
+                        pat,
+                        col,
+                    )
         active_cols_at_startup = [name + ", contained" for name in options]
         df = df_
     else:
