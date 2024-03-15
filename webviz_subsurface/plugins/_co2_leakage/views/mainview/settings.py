@@ -834,9 +834,15 @@ class FeedbackLayout(wcc.Dialog):
             open=False,
             children=[
                 dcc.Markdown(
-                    """If you have any feedback regarding the CO2-leakage application,
-                please contact XXX@XX.X."""
-                )
+                    """If you have any feedback regarding the CO2-Leakage application,
+                    don't hesitate to"""
+                ),
+                dcc.Link(
+                    ["send an email!"],
+                    href=f'mailto:{get_emails()}&subject=Feedback regarding the CO2-Leakage application',
+                    target='_blank',
+                    style={'float': 'left'}
+                ),
             ],
         )
 
@@ -844,10 +850,32 @@ class FeedbackLayout(wcc.Dialog):
 class FeedbackButton(html.Button):
     def __init__(self) -> None:
         style = LayoutStyle.FEEDBACK_BUTTON
-        style["display"] = "none"
         super().__init__(
             LayoutLabels.FEEDBACK,
             id=ViewSettings.Ids.FEEDBACK_BUTTON,
             style=style,
             n_clicks=0,
         )
+
+
+def decrypt_email(encrypted_email, key):
+    decrypted_email = []
+    for char in encrypted_email:
+        decrypted_email.append(chr(ord(char) ^ key))
+    return ''.join(decrypted_email)
+
+
+def get_emails():
+    emails = [
+        decrypt_email(m, i + 1)
+        for i, m in enumerate(
+            [
+                'GLLNAdpthons/bnl',
+                'OLCIKBgswklmp,amo',
+                'pfhCmq-ml',
+                'bjarnajDjv*jk',
+                'vlfdfmdEkw+kj',
+            ]
+        )
+    ]
+    return ";".join(emails[:2]) + "?cc=" + ";".join(emails[2:])
