@@ -169,15 +169,15 @@ def comparison_selections(
                                 "value": "plots",
                             },
                             {
-                                "label": "Difference table for selected response",
+                                "label": "Diff table for selected response",
                                 "value": "single-response table",
                             },
                             {
-                                "label": "Difference table for multiple responses",
+                                "label": "Diff table for multiple responses",
                                 "value": "multi-response table",
                             },
                             {
-                                "label": "Volume change analysis plot (waterfall)",
+                                "label": "Volume change analysis plot",
                                 "value": "waterfall plot",
                             },
                         ],
