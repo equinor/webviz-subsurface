@@ -155,11 +155,7 @@ def _prepare_pattern_and_color_options(
                 for cn in ["contained", "outside", "hazardous"]
             ],
         }
-        colors = [
-            c
-            for c in _split_colors(num_options, split)
-            for _ in range(3)
-        ]
+        colors = [c for c in _split_colors(num_options, split) for _ in range(3)]
         pattern = ["", "/", "x"] * num_options
     elif containment_info["ordering"] == 1:
         cat_ord = {
@@ -169,11 +165,7 @@ def _prepare_pattern_and_color_options(
                 for zn in options
             ],
         }
-        colors = [
-            c
-            for _ in range(3)
-            for c in _split_colors(num_options, split)
-        ]
+        colors = [c for _ in range(3) for c in _split_colors(num_options, split)]
         pattern = [""] * num_options
         pattern += ["/"] * num_options
         pattern += ["x"] * num_options
@@ -193,8 +185,10 @@ def _prepare_pattern_and_color_options(
         base_pattern = ["", "/", "x", "-", "\\", "+", "|", "."]
         if num_options > len(base_pattern):
             base_pattern *= int(np.ceil(num_options / len(base_pattern)))
-            warnings.warn(f"More {split}s than pattern options. "
-                          f"Some {split}s will share pattern.")
+            warnings.warn(
+                f"More {split}s than pattern options. "
+                f"Some {split}s will share pattern."
+            )
         pattern = base_pattern[:num_options] * 3
     return cat_ord, colors, pattern
 
@@ -203,10 +197,6 @@ def _find_scale_factor(
     table_provider: EnsembleTableProvider,
     scale: Union[Co2MassScale, Co2VolumeScale],
 ) -> float:
-    """
-    Move this further out so that it's only called once, and make it so that
-    only the selected data is used if only one region or zone is chosen in the dropdown menu.
-    """
     if scale in (Co2MassScale.KG, Co2VolumeScale.CUBIC_METERS):
         return 1.0
     if scale in (Co2MassScale.MTONS, Co2VolumeScale.BILLION_CUBIC_METERS):
@@ -364,6 +354,12 @@ def generate_co2_volume_figure(
         colors = [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
         pattern_shape = "phase"
         pattern = ["", "/"]
+    df["prop"] = np.zeros(df.shape[0])
+    for r in realizations:
+        summed_amount = np.sum(df.loc[df["real"] == str(r)]["amount"])
+        df.loc[df["real"] == str(r), "prop"] = summed_amount
+    df["prop"] = np.round(df["amount"] / df["prop"] * 1000) / 10
+    df["prop"] = df["prop"].map(lambda p: str(p) + "%")
     fig = px.bar(
         df,
         y="real",
@@ -375,6 +371,7 @@ def generate_co2_volume_figure(
         orientation="h",
         category_orders=cat_ord,
         color_discrete_sequence=colors,
+        hover_data={"prop": True, "real": False},
     )
     fig.layout.legend.title.text = ""
     fig.layout.legend.orientation = "h"
@@ -469,6 +466,12 @@ def generate_co2_time_containment_one_realization_figure(
         y_limits[0] = 0.0
     elif y_limits[1] is None and y_limits[0] is not None:
         y_limits[1] = max(df.groupby("date")["mass"].sum()) * 1.05
+    df["prop"] = np.zeros(df.shape[0])
+    for d in np.unique(df["date"]):
+        summed_amount = np.sum(df.loc[df["date"] == d]["mass"])
+        df.loc[df["date"] == d, "prop"] = summed_amount
+    df["prop"] = np.round(df["mass"] / df["prop"] * 1000) / 10
+    df["prop"] = df["prop"].map(lambda p: str(p) + "%")
     fig = px.area(
         df,
         x="date",
@@ -479,6 +482,7 @@ def generate_co2_time_containment_one_realization_figure(
         pattern_shape="type",
         pattern_shape_sequence=pattern,  # ['', '/', '\\', 'x', '-', '|', '+', '.'],
         range_y=y_limits,
+        hover_data=["prop"],
     )
     fig.layout.yaxis.range = y_limits
     fig.layout.legend.orientation = "h"
@@ -503,8 +507,7 @@ def _prepare_time_figure_options(
     if view != ContainmentViews.CONTAINMENTSPLIT:
         containments = ["contained", "outside", "hazardous"]
         colnames = [
-            "_".join((_PHASE_DICT[containment_info["phase"]], c))
-            for c in containments
+            "_".join((_PHASE_DICT[containment_info["phase"]], c)) for c in containments
         ]
         split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
         options = containment_info[f"{split}s"]
@@ -539,10 +542,14 @@ def _prepare_time_figure_options(
                     )
         else:
             colors = [_COLOR_CONTAINED, _COLOR_OUTSIDE, _COLOR_HAZARDOUS]
-            patterns = [f"{round(i / len(options) * 25)}px" for i in range(len(options))]
+            patterns = [
+                f"{round(i / len(options) * 25)}px" for i in range(len(options))
+            ]
             if len(options) > 8:
-                warnings.warn(f"Large number of {split}s might make it hard "
-                              f"to distinguish different dashed lines.")
+                warnings.warn(
+                    f"Large number of {split}s might make it hard "
+                    f"to distinguish different dashed lines."
+                )
             cols_to_plot = {}
             for con, col in zip(containments, colors):
                 for name, pat in zip(options, patterns):
@@ -553,6 +560,8 @@ def _prepare_time_figure_options(
                     )
         active_cols_at_startup = [name + ", contained" for name in options]
         df = df_
+        cols = cols_to_plot.keys()
+        df["total"] = df[cols].sum(axis=1)
     else:
         df.sort_values(by="date", inplace=True)
         cols_to_plot = {
@@ -569,7 +578,7 @@ def _prepare_time_figure_options(
             "Outside aqueous": ("aqueous_outside", "dash", _COLOR_OUTSIDE),
             "Hazardous aqueous": ("aqueous_hazardous", "dash", _COLOR_HAZARDOUS),
         }
-        active_cols_at_startup = ["Total", "Outside", "Hazardous"]
+        active_cols_at_startup = ["Total", "Outside", "Hazardous", "Contained"]
     return df, cols_to_plot, active_cols_at_startup
 
 
@@ -600,7 +609,7 @@ def generate_co2_time_containment_figure(
         sub_df = df[df["realization"] == rlz]
         common_args = {
             "x": sub_df["date"],
-            "hovertemplate": "%{x}: %{y}<br>Realization: %{meta[0]}",
+            "hovertemplate": "%{x}: %{y}<br>Realization: %{meta[0]}<br>Prop: %{customdata}%",
             "meta": [rlz],
             "showlegend": False,
         }
@@ -613,7 +622,8 @@ def generate_co2_time_containment_figure(
             }
             if col not in active_cols_at_startup:
                 args["visible"] = "legendonly"
-            fig.add_scatter(y=sub_df[value[0]], **args, **common_args)
+            z = np.round(sub_df[value[0]] / sub_df["total"] * 1000) / 10
+            fig.add_scatter(y=sub_df[value[0]], **args, **common_args, customdata=z)
     fig.layout.legend.orientation = "h"
     fig.layout.legend.title.text = ""
     fig.layout.legend.y = -0.3

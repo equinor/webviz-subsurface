@@ -260,7 +260,9 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
             Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
-            Input(self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "value"),
+            Input(
+                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "value"
+            ),
         )
         @callback_typecheck
         def update_graphs(
@@ -575,18 +577,17 @@ class CO2Leakage(WebvizPluginABC):
 
         @callback(
             Output(
-                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "options"
+                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES),
+                "options",
             ),
             Output(
                 self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "style"
             ),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
         )
-        def hide_bar_plot_checkboxes(
-                view: str
-        ) -> Tuple[List[Dict], Dict]:
+        def hide_bar_plot_checkboxes(view: str) -> Tuple[List[Dict], Dict]:
             if view == ContainmentViews.CONTAINMENTSPLIT:
-                return {}, {"display": "none"}
+                return [], {"display": "none"}
             style = {
                 "display": "flex",
                 "flexDirection": "row",
