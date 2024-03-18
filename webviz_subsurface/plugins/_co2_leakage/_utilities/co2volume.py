@@ -468,8 +468,7 @@ def generate_co2_time_containment_one_realization_figure(
         y_limits[1] = max(df.groupby("date")["mass"].sum()) * 1.05
     df["prop"] = np.zeros(df.shape[0])
     for d in np.unique(df["date"]):
-        summed_amount = np.sum(df.loc[df["date"] == d]["mass"])
-        df.loc[df["date"] == d, "prop"] = summed_amount
+        df.loc[df["date"] == d, "prop"] = np.sum(df.loc[df["date"] == d]["mass"])
     df["prop"] = np.round(df["mass"] / df["prop"] * 1000) / 10
     df["prop"] = df["prop"].map(lambda p: str(p) + "%")
     fig = px.area(
@@ -503,13 +502,16 @@ def _prepare_time_figure_options(
     df: pandas.DataFrame,
     containment_info: Dict[str, Any],
 ) -> Tuple[pandas.DataFrame, Dict[str, Tuple[str, str, str]], List[str]]:
-    view = containment_info["containment_view"]
-    if view != ContainmentViews.CONTAINMENTSPLIT:
-        containments = ["contained", "outside", "hazardous"]
+    if containment_info["containment_view"] != ContainmentViews.CONTAINMENTSPLIT:
         colnames = [
-            "_".join((_PHASE_DICT[containment_info["phase"]], c)) for c in containments
+            "_".join((_PHASE_DICT[containment_info["phase"]], con))
+            for con in ["contained", "outside", "hazardous"]
         ]
-        split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
+        split = (
+            "zone"
+            if containment_info["containment_view"] == ContainmentViews.ZONESPLIT
+            else "region"
+        )
         options = containment_info[f"{split}s"]
         df = df.drop(
             columns=[
@@ -533,7 +535,9 @@ def _prepare_time_figure_options(
         if containment_info["ordering"] < 2:
             colors = _split_colors(len(options), split)
             cols_to_plot = {}
-            for con, line_type in zip(containments, ["solid", "dot", "dash"]):
+            for con, line_type in zip(
+                ["contained", "outside", "hazardous"], ["solid", "dot", "dash"]
+            ):
                 for name, col in zip(options, colors):
                     cols_to_plot[", ".join((name, con))] = (
                         ", ".join((name, con)),
@@ -542,7 +546,7 @@ def _prepare_time_figure_options(
                     )
         else:
             colors = [_COLOR_CONTAINED, _COLOR_OUTSIDE, _COLOR_HAZARDOUS]
-            patterns = [
+            line_types = [
                 f"{round(i / len(options) * 25)}px" for i in range(len(options))
             ]
             if len(options) > 8:
@@ -551,17 +555,16 @@ def _prepare_time_figure_options(
                     f"to distinguish different dashed lines."
                 )
             cols_to_plot = {}
-            for con, col in zip(containments, colors):
-                for name, pat in zip(options, patterns):
+            for con, col in zip(["contained", "outside", "hazardous"], colors):
+                for name, line_type in zip(options, line_types):
                     cols_to_plot[", ".join((name, con))] = (
                         ", ".join((name, con)),
-                        pat,
+                        line_type,
                         col,
                     )
         active_cols_at_startup = [name + ", contained" for name in options]
         df = df_
-        cols = cols_to_plot.keys()
-        df["total"] = df[cols].sum(axis=1)
+        df["total"] = df[cols_to_plot.keys()].sum(axis=1)
     else:
         df.sort_values(by="date", inplace=True)
         cols_to_plot = {
@@ -619,11 +622,11 @@ def generate_co2_time_containment_figure(
                 "marker_color": value[2],
                 "legendgroup": col,
                 "name": col,
+                "customdata": np.round(sub_df[value[0]] / sub_df["total"] * 1000) / 10,
             }
             if col not in active_cols_at_startup:
                 args["visible"] = "legendonly"
-            z = np.round(sub_df[value[0]] / sub_df["total"] * 1000) / 10
-            fig.add_scatter(y=sub_df[value[0]], **args, **common_args, customdata=z)
+            fig.add_scatter(y=sub_df[value[0]], **args, **common_args)
     fig.layout.legend.orientation = "h"
     fig.layout.legend.title.text = ""
     fig.layout.legend.y = -0.3

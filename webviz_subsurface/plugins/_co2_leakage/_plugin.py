@@ -230,6 +230,8 @@ class CO2Leakage(WebvizPluginABC):
             raise ValueError(f"Failed to fetch dates for attribute '{att_name}'")
         return dates
 
+    # Might want to do some refactoring if this gets too big
+    # pylint: disable=too-many-statements
     def _set_callbacks(self) -> None:
         # Cannot avoid many arguments since all the parameters are needed
         # to determine what to plot
