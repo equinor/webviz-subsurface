@@ -17,6 +17,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     generate_containment_figures,
     generate_unsmry_figures,
     get_plume_polygon,
+    set_plot_ids,
     process_containment_info,
     process_summed_mass,
     process_visualization_info,
@@ -323,11 +324,7 @@ class CO2Leakage(WebvizPluginABC):
                         y_limits,
                         cont_info,
                     )
-                for fig in out["figs"]:
-                    fig["layout"][
-                        "uirevision"
-                    ] = f"{source}-{co2_scale}-{cont_info['zone']}-{cont_info['region']}"
-                out["figs"][-1]["layout"]["uirevision"] += f"-{realizations}"
+                set_plot_ids(out["figs"], source, co2_scale, cont_info, realizations)
             elif source == GraphSource.UNSMRY:
                 if self._unsmry_providers is not None:
                     if ensemble in self._unsmry_providers:
@@ -336,8 +333,7 @@ class CO2Leakage(WebvizPluginABC):
                             co2_scale,
                             self._co2_table_providers[ensemble],
                         )
-                        out["figs"][: len(u_figs)] = u_figs
-                        out["styles"][: len(u_figs)] = [{}] * len(u_figs)
+                        out = {"figs": u_figs, "styles": [{}] * len(u_figs)}
                 else:
                     LOGGER.warning(
                         """UNSMRY file has not been specified as input.
@@ -597,7 +593,7 @@ class CO2Leakage(WebvizPluginABC):
             split = "zones" if view == ContainmentViews.ZONESPLIT else "regions"
             options = [
                 {"label": f"Sort by {split}", "value": 0},
-                {"label": "Sort by containment status", "value": 1},
+                {"label": "Sort by containment", "value": 1},
                 {"label": "Color by containment", "value": 2},
             ]
             return options, style

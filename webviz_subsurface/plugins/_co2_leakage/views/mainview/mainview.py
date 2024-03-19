@@ -95,7 +95,7 @@ class MapViewElement(ViewElementABC):
                 dcc.RadioItems(
                     options=[
                         {"label": "Sort by zones", "value": 0},
-                        {"label": "Sort by containment status", "value": 1},
+                        {"label": "Sort by containment", "value": 1},
                         {"label": "Color by containment", "value": 2},
                     ],
                     value=0,

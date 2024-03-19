@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import geojson
 import numpy as np
 import plotly.graph_objects as go
+from dash import no_update
 import webviz_subsurface_components as wsc
 from flask_caching import Cache
 
@@ -214,6 +215,8 @@ def create_map_annotations(
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if surface_data is not None:
+        num_digits = np.ceil(np.log(surface_data.color_map_range[1]) / np.log(10))
+        numbersize = max((6, min((17 - num_digits, 11))))
         annotations.append(
             wsc.ViewAnnotation(
                 id="1_view",
@@ -227,6 +230,8 @@ def create_map_annotations(
                         openColorSelector=False,
                         legendScaleSize=0.1,
                         legendFontSize=20,
+                        tickFontSize=numbersize,
+                        numberOfTicks=2,
                         colorTables=colortables,
                     ),
                     wsc.ViewFooter(children=formation),
@@ -497,7 +502,13 @@ def process_containment_info(
         GraphSource.CONTAINMENT_ACTUAL_VOLUME,
     ]:
         if view == ContainmentViews.CONTAINMENTSPLIT:
-            return {"zone": zone, "region": region, "containment_view": view}
+            return {
+                "zone": zone,
+                "region": region,
+                "containment_view": view,
+                "phase": None,
+                "ordering": None,
+            }
         if view == ContainmentViews.ZONESPLIT and len(zones) > 0:
             zones = [zone_name for zone_name in zones if zone_name != "all"]
         elif view == ContainmentViews.REGIONSPLIT and len(regions) > 0:
@@ -520,6 +531,29 @@ def process_containment_info(
             "ordering": ordering,
         }
     return {"containment_view": ContainmentViews.CONTAINMENTSPLIT}
+
+
+def set_plot_ids(
+    figs: List[go.Figure],
+    source: GraphSource,
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    containment_info: Dict,
+    realizations: List[int],
+) -> None:
+    if figs[0] != no_update:
+        id = "-".join(
+            (
+                source,
+                scale,
+                containment_info['zone'],
+                containment_info['region'],
+                str(containment_info['phase']),
+                str(containment_info['ordering']),
+            )
+        )
+        for fig in figs:
+            fig["layout"]["uirevision"] = id
+        figs[-1]["layout"]["uirevision"] += f"-{realizations}"
 
 
 def process_summed_mass(
