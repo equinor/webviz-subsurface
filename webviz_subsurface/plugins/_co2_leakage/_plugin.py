@@ -22,6 +22,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     process_visualization_info,
     property_origin,
     readable_name,
+    set_plot_ids,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
     FaultPolygonsHandler,
@@ -29,6 +30,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    ContainmentViews,
     GraphSource,
     MapAttribute,
 )
@@ -229,11 +231,12 @@ class CO2Leakage(WebvizPluginABC):
             raise ValueError(f"Failed to fetch dates for attribute '{att_name}'")
         return dates
 
+    # Might want to do some refactoring if this gets too big
+    # pylint: disable=too-many-statements
     def _set_callbacks(self) -> None:
         # Cannot avoid many arguments since all the parameters are needed
         # to determine what to plot
         # pylint: disable=too-many-arguments
-        # pylint: disable=too-many-locals
         @callback(
             Output(
                 self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"
@@ -259,6 +262,10 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.ZONE), "value"),
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
+            Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
+            Input(
+                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "value"
+            ),
         )
         @callback_typecheck
         def update_graphs(
@@ -273,12 +280,16 @@ class CO2Leakage(WebvizPluginABC):
             zone: Optional[str],
             region: Optional[str],
             containment_view: str,
+            phase: str,
+            ordering: int,
         ) -> Tuple[Dict, go.Figure, go.Figure]:
             out = {"figs": [no_update] * 3, "styles": [{"display": "none"}] * 3}
             cont_info = process_containment_info(
                 zone,
                 region,
                 containment_view,
+                phase,
+                ordering,
                 self._zone_and_region_options[ensemble][source],
                 source,
             )
@@ -313,11 +324,7 @@ class CO2Leakage(WebvizPluginABC):
                         y_limits,
                         cont_info,
                     )
-                for fig in out["figs"]:
-                    fig["layout"][
-                        "uirevision"
-                    ] = f"{source}-{co2_scale}-{cont_info['zone']}-{cont_info['region']}"
-                out["figs"][-1]["layout"]["uirevision"] += f"-{realizations}"
+                set_plot_ids(out["figs"], source, co2_scale, cont_info, realizations)
             elif source == GraphSource.UNSMRY:
                 if self._unsmry_providers is not None:
                     if ensemble in self._unsmry_providers:
@@ -326,8 +333,7 @@ class CO2Leakage(WebvizPluginABC):
                             co2_scale,
                             self._co2_table_providers[ensemble],
                         )
-                        out["figs"][: len(u_figs)] = u_figs
-                        out["styles"][: len(u_figs)] = [{}] * len(u_figs)
+                        out = {"figs": list(u_figs), "styles": [{}] * len(u_figs)}
                 else:
                     LOGGER.warning(
                         """UNSMRY file has not been specified as input.
@@ -352,8 +358,7 @@ class CO2Leakage(WebvizPluginABC):
                 }
                 for i, d in enumerate(date_list)
             }
-            initial_date = max(dates.keys())
-            return dates, initial_date
+            return dates, max(dates.keys())
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_WRAPPER), "style"),
@@ -569,3 +574,28 @@ class CO2Leakage(WebvizPluginABC):
             if _n_clicks is not None:
                 return _n_clicks > 0
             raise PreventUpdate
+
+        @callback(
+            Output(
+                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES),
+                "options",
+            ),
+            Output(
+                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "style"
+            ),
+            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
+        )
+        def hide_bar_plot_checkboxes(view: str) -> Tuple[List[Dict], Dict]:
+            if view == ContainmentViews.CONTAINMENTSPLIT:
+                return [], {"display": "none"}
+            style = {
+                "display": "flex",
+                "flexDirection": "row",
+            }
+            split = "zones" if view == ContainmentViews.ZONESPLIT else "regions"
+            options = [
+                {"label": f"Sort by {split}", "value": 0},
+                {"label": "Sort by containment", "value": 1},
+                {"label": "Color by containment", "value": 2},
+            ]
+            return options, style

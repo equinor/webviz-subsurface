@@ -19,6 +19,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     LayoutLabels,
     LayoutStyle,
     MapAttribute,
+    PhaseOptions,
 )
 
 
@@ -51,6 +52,8 @@ class ViewSettings(SettingsGroupABC):
         ZONE = "zone"
         REGION = "region"
         CONTAINMENT_VIEW = "containment_view"
+        PHASE = "phase"
+        PHASEDROPDOWN = "phase_drop_down"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -129,6 +132,8 @@ class ViewSettings(SettingsGroupABC):
                     self.register_component_unique_id(self.Ids.ZONE),
                     self.register_component_unique_id(self.Ids.REGION),
                     self.register_component_unique_id(self.Ids.CONTAINMENT_VIEW),
+                    self.register_component_unique_id(self.Ids.PHASE),
+                    self.register_component_unique_id(self.Ids.PHASEDROPDOWN),
                 ],
                 self._has_zones,
                 self._has_regions,
@@ -338,13 +343,16 @@ class ViewSettings(SettingsGroupABC):
             Output("region_col", "style"),
             Output("both_col", "style"),
             Output("zone_region_header", "style"),
+            Output(
+                self.component_unique_id(self.Ids.PHASEDROPDOWN).to_string(), "style"
+            ),
             Input(
                 self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
             ),
         )
         def hide_dropdowns(view: str) -> List[Dict[str, str]]:
             if view != ContainmentViews.CONTAINMENTSPLIT:
-                return [{"display": "none"}] * 4
+                return [{"display": "none"}] * 4 + [{}]
             disp_zone = "flex" if self._has_zones else "none"
             disp_region = "flex" if self._has_regions else "none"
             disp_either = "flex" if self._has_zones or self._has_regions else "none"
@@ -361,6 +369,7 @@ class ViewSettings(SettingsGroupABC):
                 },
                 {"display": disp_either},
                 {"display": disp_either},
+                {"display": "none"},
             ]
 
 
@@ -663,6 +672,19 @@ class GraphSelectorsLayout(wcc.Selectors):
                     id="both_col",
                     style={"display": disp},
                 ),
+                html.Div(
+                    [
+                        "Containment for specific phase",
+                        wcc.Dropdown(
+                            options=list(PhaseOptions),
+                            value=PhaseOptions.TOTAL,
+                            clearable=False,
+                            id=containment_ids[3],
+                        ),
+                    ],
+                    id=containment_ids[4],
+                    style={"display": "none"},
+                ),
                 "Unit",
                 wcc.Dropdown(
                     id=co2_scale_id,
@@ -800,7 +822,7 @@ def _compile_property_options() -> List[Dict[str, Any]]:
 
 
 class FeedbackLayout(wcc.Dialog):
-    """Layout for the options dialog"""
+    """Layout for the feedback button"""
 
     def __init__(
         self,
@@ -812,9 +834,16 @@ class FeedbackLayout(wcc.Dialog):
             open=False,
             children=[
                 dcc.Markdown(
-                    """If you have any feedback regarding the CO2-leakage application,
-                please contact XXX@XX.X."""
-                )
+                    """If you have any feedback regarding the CO2-Leakage application,
+                    don't hesitate to"""
+                ),
+                dcc.Link(
+                    ["send an email!"],
+                    href=f"mailto:{get_emails()}&subject=Feedback regarding the "
+                    f"CO2-Leakage application",
+                    target="_blank",
+                    style={"float": "left"},
+                ),
             ],
         )
 
@@ -822,10 +851,32 @@ class FeedbackLayout(wcc.Dialog):
 class FeedbackButton(html.Button):
     def __init__(self) -> None:
         style = LayoutStyle.FEEDBACK_BUTTON
-        style["display"] = "none"
         super().__init__(
             LayoutLabels.FEEDBACK,
             id=ViewSettings.Ids.FEEDBACK_BUTTON,
             style=style,
             n_clicks=0,
         )
+
+
+def decrypt_email(encrypted_email: str, key: int) -> str:
+    decrypted_email = []
+    for char in encrypted_email:
+        decrypted_email.append(chr(ord(char) ^ key))
+    return "".join(decrypted_email)
+
+
+def get_emails() -> str:
+    emails = [
+        decrypt_email(m, i + 1)
+        for i, m in enumerate(
+            [
+                "GLLNAdpthons/bnl",
+                "OLCIKBgswklmp,amo",
+                "pfhCmq-ml",
+                "bjarnajDjv*jk",
+                "vlfdfmdEkw+kj",
+            ]
+        )
+    ]
+    return ";".join(emails[:2]) + "?cc=" + ";".join(emails[2:])

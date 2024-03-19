@@ -6,6 +6,7 @@ import geojson
 import numpy as np
 import plotly.graph_objects as go
 import webviz_subsurface_components as wsc
+from dash import no_update
 from flask_caching import Cache
 
 from webviz_subsurface._providers import (
@@ -214,6 +215,8 @@ def create_map_annotations(
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if surface_data is not None:
+        num_digits = np.ceil(np.log(surface_data.color_map_range[1]) / np.log(10))
+        numbersize = max((6, min((17 - num_digits, 11))))
         annotations.append(
             wsc.ViewAnnotation(
                 id="1_view",
@@ -227,6 +230,8 @@ def create_map_annotations(
                         openColorSelector=False,
                         legendScaleSize=0.1,
                         legendFontSize=20,
+                        tickFontSize=numbersize,
+                        numberOfTicks=2,
                         colorTables=colortables,
                     ),
                     wsc.ViewFooter(children=formation),
@@ -383,7 +388,7 @@ def generate_containment_figures(
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realization: int,
     y_limits: List[Optional[float]],
-    containment_info: Dict[str, Union[str, None, List[str]]],
+    containment_info: Dict[str, Union[str, None, List[str], int]],
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
         fig0 = generate_co2_volume_figure(
@@ -485,9 +490,11 @@ def process_containment_info(
     zone: Optional[str],
     region: Optional[str],
     view: Optional[str],
+    phase: str,
+    ordering: int,
     zone_and_region_options: Dict[str, List[str]],
     source: str,
-) -> Dict[str, Union[str, None, List[str]]]:
+) -> Dict[str, Union[str, None, List[str], int]]:
     zones = zone_and_region_options["zones"]
     regions = zone_and_region_options["regions"]
     if source in [
@@ -495,7 +502,13 @@ def process_containment_info(
         GraphSource.CONTAINMENT_ACTUAL_VOLUME,
     ]:
         if view == ContainmentViews.CONTAINMENTSPLIT:
-            return {"zone": zone, "region": region, "containment_view": view}
+            return {
+                "zone": zone,
+                "region": region,
+                "containment_view": view,
+                "phase": None,
+                "ordering": None,
+            }
         if view == ContainmentViews.ZONESPLIT and len(zones) > 0:
             zones = [zone_name for zone_name in zones if zone_name != "all"]
         elif view == ContainmentViews.REGIONSPLIT and len(regions) > 0:
@@ -505,6 +518,8 @@ def process_containment_info(
                 "zone": zone,
                 "region": region,
                 "containment_view": ContainmentViews.CONTAINMENTSPLIT,
+                "phase": phase,
+                "ordering": ordering,
             }
         return {
             "zone": zone,
@@ -512,8 +527,33 @@ def process_containment_info(
             "containment_view": view,
             "zones": zones,
             "regions": regions,
+            "phase": phase,
+            "ordering": ordering,
         }
     return {"containment_view": ContainmentViews.CONTAINMENTSPLIT}
+
+
+def set_plot_ids(
+    figs: List[go.Figure],
+    source: GraphSource,
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    containment_info: Dict,
+    realizations: List[int],
+) -> None:
+    if figs[0] != no_update:
+        plot_id = "-".join(
+            (
+                source,
+                scale,
+                containment_info["zone"],
+                containment_info["region"],
+                str(containment_info["phase"]),
+                str(containment_info["ordering"]),
+            )
+        )
+        for fig in figs:
+            fig["layout"]["uirevision"] = plot_id
+        figs[-1]["layout"]["uirevision"] += f"-{realizations}"
 
 
 def process_summed_mass(
