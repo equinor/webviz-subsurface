@@ -547,6 +547,7 @@ def set_plot_ids(
                 scale,
                 containment_info["zone"],
                 containment_info["region"],
+                containment_info["containment_view"],
                 str(containment_info["phase"]),
                 str(containment_info["ordering"]),
             )

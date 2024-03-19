@@ -318,7 +318,7 @@ def _adjust_figure(fig: go.Figure) -> None:
     fig.layout.title.x = 0.5
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
     fig.layout.margin.b = 6
-    fig.layout.margin.t = 40
+    fig.layout.margin.t = 15
     fig.layout.margin.l = 10
     fig.layout.margin.r = 10
 
@@ -372,20 +372,25 @@ def generate_co2_volume_figure(
         color=color,
         pattern_shape=pattern_shape,
         pattern_shape_sequence=pattern,
-        title="End-state CO<sub>2</sub> containment (all realizations)",
         orientation="h",
         category_orders=cat_ord,
         color_discrete_sequence=colors,
         hover_data={"prop": True, "real": False},
     )
     fig.layout.legend.title.text = ""
-    fig.layout.legend.orientation = "h"
-    fig.layout.legend.y = -0.3
+    fig.layout.legend.orientation = "v"
     fig.layout.legend.font = {"size": 8}
+    fig.layout.legend.itemwidth = 40
     fig.layout.yaxis.title = "Realization"
     fig.layout.xaxis.exponentformat = "power"
     fig.layout.xaxis.title = scale.value
     _adjust_figure(fig)
+    fig.update_layout(
+        legend=dict(
+            x=1.05,
+            xanchor="left",
+        )
+    )
     return fig
 
 
@@ -494,17 +499,20 @@ def generate_co2_time_containment_one_realization_figure(
         hover_data=["prop"],
     )
     fig.layout.yaxis.range = y_limits
-    fig.layout.legend.orientation = "h"
+    fig.layout.legend.orientation = "v"
     fig.layout.legend.title.text = ""
-    fig.layout.legend.y = -0.3
     fig.layout.legend.font = {"size": 8}
-    fig.layout.title = "CO<sub>2</sub> containment for realization: " + str(
-        time_series_realization
-    )
+    fig.layout.legend.itemwidth = 40
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
     fig.layout.yaxis.exponentformat = "power"
     _adjust_figure(fig)
+    fig.update_layout(
+        legend=dict(
+            x=1.05,
+            xanchor="left",
+        )
+    )
     return fig
 
 
@@ -648,16 +656,20 @@ def generate_co2_time_containment_figure(
             if col not in active_cols_at_startup:
                 args["visible"] = "legendonly"
             fig.add_scatter(y=sub_df[value[0]], **args, **common_args)
-    fig.layout.legend.orientation = "h"
+    fig.layout.legend.orientation = "v"
     fig.layout.legend.title.text = ""
-    fig.layout.legend.y = -0.3
     fig.layout.legend.font = {"size": 8}
+    fig.layout.legend.itemwidth = 40
     fig.layout.legend.tracegroupgap = 0
-    fig.layout.title = "CO<sub>2</sub> containment (all realizations)"
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
     fig.layout.yaxis.exponentformat = "power"
     fig.layout.yaxis.autorange = True
     _adjust_figure(fig)
-    # fig.update_layout(legend=dict(font=dict(size=8)), legend_tracegroupgap=0)
+    fig.update_layout(
+        legend=dict(
+            x=1.05,
+            xanchor="left",
+        )
+    )
     return fig

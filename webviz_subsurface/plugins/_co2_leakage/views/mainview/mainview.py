@@ -57,7 +57,7 @@ class MapViewElement(ViewElementABC):
                                 ),
                             ],
                             style={
-                                "padding": "1vh",
+                                "padding": "0.5vh",
                                 "height": "37vh",
                                 "position": "relative",
                             },
@@ -75,16 +75,13 @@ class MapViewElement(ViewElementABC):
                         ),
                     ],
                     style={
-                        "height": "47vh",
+                        "height": "45vh",
                     },
                 ),
                 wcc.Frame(
                     # id=get_uuid(LayoutElements.PLOT_VIEW),
                     style={
-                        "height": "33vh",
-                        "display": "flex",
-                        "flexDirection": "row",
-                        "justifyContent": "space-evenly",
+                        "height": "34vh",
                     },
                     children=_summary_graph_layout(
                         self.register_component_unique_id(self.Ids.BAR_PLOT),
@@ -119,25 +116,52 @@ def _summary_graph_layout(
     time_plot_one_realization_id: str,
 ) -> List:
     return [
-        wcc.Graph(
-            id=bar_plot_id,
-            figure=go.Figure(),
-            config={
-                "displayModeBar": False,
-            },
-        ),
-        wcc.Graph(
-            id=time_plot_id,
-            figure=go.Figure(),
-            config={
-                "displayModeBar": False,
-            },
-        ),
-        wcc.Graph(
-            id=time_plot_one_realization_id,
-            figure=go.Figure(),
-            config={
-                "displayModeBar": False,
-            },
+        wcc.Tabs(
+            id="TAB",
+            value="custom",
+            children=[
+                wcc.Tab(
+                    label="End-state CO2 containment (all realizations)",
+                    children=[
+                        html.Div(
+                            wcc.Graph(
+                                id=bar_plot_id,
+                                figure=go.Figure(),
+                                config={
+                                    "displayModeBar": False,
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+                wcc.Tab(
+                    label="CO2 containment over time (all realizations)",
+                    children=[
+                        html.Div(
+                            wcc.Graph(
+                                id=time_plot_id,
+                                figure=go.Figure(),
+                                config={
+                                    "displayModeBar": False,
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+                wcc.Tab(
+                    label="CO2 containment over time (one realization)",
+                    children=[
+                        html.Div(
+                            wcc.Graph(
+                                id=time_plot_one_realization_id,
+                                figure=go.Figure(),
+                                config={
+                                    "displayModeBar": False,
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ],
         ),
     ]

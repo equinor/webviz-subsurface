@@ -301,7 +301,7 @@ class CO2Leakage(WebvizPluginABC):
                     y_min_val if len(y_min_auto) == 0 else None,
                     y_max_val if len(y_max_auto) == 0 else None,
                 ]
-                out["styles"] = [{}] * 3
+                out["styles"] = [{"height": "29vh", "width": "90%"}] * 3
                 if (
                     source == GraphSource.CONTAINMENT_MASS
                     and ensemble in self._co2_table_providers
