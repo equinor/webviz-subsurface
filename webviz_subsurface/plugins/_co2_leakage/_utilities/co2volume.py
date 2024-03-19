@@ -323,6 +323,7 @@ def _adjust_figure(fig: go.Figure) -> None:
     fig.layout.margin.r = 10
 
 
+# pylint: disable=too-many-locals
 def generate_co2_volume_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
@@ -354,11 +355,15 @@ def generate_co2_volume_figure(
         colors = [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
         pattern_shape = "phase"
         pattern = ["", "/"]
-    df["prop"] = np.zeros(df.shape[0])
+    prop = np.zeros(df.shape[0])
     for r in realizations:
         summed_amount = np.sum(df.loc[df["real"] == str(r)]["amount"])
-        df.loc[df["real"] == str(r), "prop"] = summed_amount
-    df["prop"] = np.round(df["amount"] / df["prop"] * 1000) / 10
+        prop[np.where(df["real"] == str(r))[0]] = summed_amount
+    nonzero = np.where(prop > 0)[0]
+    prop[nonzero] = (
+        np.round(np.array(df["amount"])[nonzero] / prop[nonzero] * 1000) / 10
+    )
+    df["prop"] = prop
     df["prop"] = df["prop"].map(lambda p: str(p) + "%")
     fig = px.bar(
         df,
@@ -384,6 +389,7 @@ def generate_co2_volume_figure(
     return fig
 
 
+# pylint: disable=too-many-locals
 def generate_co2_time_containment_one_realization_figure(
     table_provider: EnsembleTableProvider,
     scale: Union[Co2MassScale, Co2VolumeScale],
@@ -466,11 +472,15 @@ def generate_co2_time_containment_one_realization_figure(
         y_limits[0] = 0.0
     elif y_limits[1] is None and y_limits[0] is not None:
         y_limits[1] = max(df.groupby("date")["mass"].sum()) * 1.05
-    df["prop"] = np.zeros(df.shape[0])
+
+    prop = np.zeros(df.shape[0])
     for d in np.unique(df["date"]):
-        df.loc[df["date"] == d, "prop"] = np.sum(df.loc[df["date"] == d]["mass"])
-    df["prop"] = np.round(df["mass"] / df["prop"] * 1000) / 10
+        prop[np.where(df["date"] == d)[0]] = np.sum(df.loc[df["date"] == d]["mass"])
+    nonzero = np.where(prop > 0)[0]
+    prop[nonzero] = np.round(np.array(df["mass"])[nonzero] / prop[nonzero] * 1000) / 10
+    df["prop"] = prop
     df["prop"] = df["prop"].map(lambda p: str(p) + "%")
+
     fig = px.area(
         df,
         x="date",
@@ -585,6 +595,7 @@ def _prepare_time_figure_options(
     return df, cols_to_plot, active_cols_at_startup
 
 
+# pylint: disable=too-many-locals
 def generate_co2_time_containment_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
@@ -617,12 +628,22 @@ def generate_co2_time_containment_figure(
             "showlegend": False,
         }
         for col, value in cols_to_plot.items():
+            prop = np.zeros(sub_df.shape[0])
+            nonzero = np.where(np.array(sub_df["total"]) > 0)[0]
+            prop[nonzero] = (
+                np.round(
+                    np.array(sub_df[value[0]])[nonzero]
+                    / np.array(sub_df["total"])[nonzero]
+                    * 1000
+                )
+                / 10
+            )
             args = {
                 "line_dash": value[1],
                 "marker_color": value[2],
                 "legendgroup": col,
                 "name": col,
-                "customdata": np.round(sub_df[value[0]] / sub_df["total"] * 1000) / 10,
+                "customdata": prop,
             }
             if col not in active_cols_at_startup:
                 args["visible"] = "legendonly"

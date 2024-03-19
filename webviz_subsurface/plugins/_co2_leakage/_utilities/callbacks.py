@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import geojson
 import numpy as np
 import plotly.graph_objects as go
-from dash import no_update
 import webviz_subsurface_components as wsc
+from dash import no_update
 from flask_caching import Cache
 
 from webviz_subsurface._providers import (
@@ -541,18 +541,18 @@ def set_plot_ids(
     realizations: List[int],
 ) -> None:
     if figs[0] != no_update:
-        id = "-".join(
+        plot_id = "-".join(
             (
                 source,
                 scale,
-                containment_info['zone'],
-                containment_info['region'],
-                str(containment_info['phase']),
-                str(containment_info['ordering']),
+                containment_info["zone"],
+                containment_info["region"],
+                str(containment_info["phase"]),
+                str(containment_info["ordering"]),
             )
         )
         for fig in figs:
-            fig["layout"]["uirevision"] = id
+            fig["layout"]["uirevision"] = plot_id
         figs[-1]["layout"]["uirevision"] += f"-{realizations}"
 
 

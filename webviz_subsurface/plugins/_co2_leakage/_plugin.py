@@ -17,12 +17,12 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     generate_containment_figures,
     generate_unsmry_figures,
     get_plume_polygon,
-    set_plot_ids,
     process_containment_info,
     process_summed_mass,
     process_visualization_info,
     property_origin,
     readable_name,
+    set_plot_ids,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
     FaultPolygonsHandler,
@@ -333,7 +333,7 @@ class CO2Leakage(WebvizPluginABC):
                             co2_scale,
                             self._co2_table_providers[ensemble],
                         )
-                        out = {"figs": u_figs, "styles": [{}] * len(u_figs)}
+                        out = {"figs": list(u_figs), "styles": [{}] * len(u_figs)}
                 else:
                     LOGGER.warning(
                         """UNSMRY file has not been specified as input.
@@ -391,7 +391,9 @@ class CO2Leakage(WebvizPluginABC):
             Output(ViewSettings.Ids.WELL_FILTER_HEADER, "style"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
-        def set_well_options(ensemble: str) -> Any:
+        def set_well_options(
+            ensemble: str,
+        ) -> Tuple[List[Any], List[str], Dict[Any, Any], Dict[Any, Any]]:
             return (
                 [{"label": i, "value": i} for i in self._well_pick_names[ensemble]],
                 self._well_pick_names[ensemble],
