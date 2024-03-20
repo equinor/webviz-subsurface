@@ -97,7 +97,7 @@ setup(
         "fmu-tools>=1.8",
         "geojson>=2.5.0",
         "jsonschema>=3.2.0",
-        "opm>=2020.10.1,<=2022.10; sys_platform=='linux'",
+        "opm>=2020.10.1; sys_platform=='linux'",
         "pandas>=1.1.5,<2.0",
         "pillow>=6.1",
         "pyarrow>=5.0.0",
