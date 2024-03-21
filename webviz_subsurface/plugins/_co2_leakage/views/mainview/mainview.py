@@ -30,6 +30,9 @@ class MapViewElement(ViewElementABC):
         BAR_PLOT_ORDER = "bar-plot-order"
         CONTAINMENT_COLORS = "containment-order"
         CONTAINMENT_CHECKBOXES = "containment-checkboxes"
+        SIZE_SLIDER = "size-slider"
+        TOP_ELEMENT = "top-element"
+        BOTTOM_ELEMENT = "bottom-element"
 
     def __init__(self, color_scales: List[Dict[str, Any]]) -> None:
         super().__init__()
@@ -40,6 +43,7 @@ class MapViewElement(ViewElementABC):
             [
                 wcc.Frame(
                     # id=self.register_component_unique_id(LayoutElements.MAP_VIEW),
+                    id=self.register_component_unique_id(self.Ids.TOP_ELEMENT),
                     color="white",
                     highlight=False,
                     children=[
@@ -57,8 +61,8 @@ class MapViewElement(ViewElementABC):
                                 ),
                             ],
                             style={
-                                "padding": "0.5vh",
-                                "height": "37vh",
+                                "padding": "1%",
+                                "height": "80%",
                                 "position": "relative",
                             },
                         ),
@@ -71,41 +75,89 @@ class MapViewElement(ViewElementABC):
                                 marks={0: ""},
                                 value=0,
                             ),
-                            id=self.register_component_unique_id(self.Ids.DATE_WRAPPER),
+                            id=self.register_component_unique_id(
+                                self.Ids.DATE_WRAPPER
+                            ),
                         ),
                     ],
                     style={
-                        "height": "45vh",
+                        "height": "44vh",
                     },
                 ),
                 wcc.Frame(
                     # id=get_uuid(LayoutElements.PLOT_VIEW),
-                    style={
-                        "height": "34vh",
-                    },
-                    children=_summary_graph_layout(
-                        self.register_component_unique_id(self.Ids.BAR_PLOT),
-                        self.register_component_unique_id(self.Ids.TIME_PLOT),
-                        self.register_component_unique_id(self.Ids.TIME_PLOT_ONE_REAL),
-                    ),
-                ),
-                dcc.RadioItems(
-                    options=[
-                        {"label": "Sort by zones", "value": 0},
-                        {"label": "Sort by containment", "value": 1},
-                        {"label": "Color by containment", "value": 2},
-                    ],
-                    value=0,
-                    inline=True,
                     id=self.register_component_unique_id(
-                        self.Ids.CONTAINMENT_CHECKBOXES
+                        self.Ids.BOTTOM_ELEMENT
                     ),
+                    style={
+                        "height": "35vh",
+                    },
+                    children=[
+                        html.Div(
+                            _summary_graph_layout(
+                                self.register_component_unique_id(
+                                    self.Ids.BAR_PLOT
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.TIME_PLOT
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.TIME_PLOT_ONE_REAL
+                                ),
+                            )
+                        ),
+                        html.Div(
+                            dcc.RadioItems(
+                                options=[
+                                    {"label": "Sort by zones", "value": 0},
+                                    {
+                                        "label": "Sort by containment",
+                                        "value": 1,
+                                    },
+                                    {
+                                        "label": "Color by containment",
+                                        "value": 2,
+                                    },
+                                ],
+                                value=0,
+                                inline=True,
+                                id=self.register_component_unique_id(
+                                    self.Ids.CONTAINMENT_CHECKBOXES
+                                ),
+                            ),
+                            #style={
+                            #    "position": "absolute",
+                            #    "bottom": 0,
+                            #},
+                        ),
+                    ],
+                ),
+                html.Div(
+                    [
+                        wcc.Slider(
+                            id=self.register_component_unique_id(self.Ids.SIZE_SLIDER),
+                            min=20,
+                            max=60,
+                            step=1,
+                            value=35,
+                            vertical=False,
+                            marks={
+                                20: "Big map",
+                                35: "Standard",
+                                60: "Big plots",
+                            },
+                        ),
+                    ],
+                    style={
+                        "width": "100%",
+                    },
                 ),
             ],
             style={
-                "flex": 3,
+                #"flex": 3,
                 "display": "flex",
                 "flexDirection": "column",
+                "height": "90vh",
             },
         )
 

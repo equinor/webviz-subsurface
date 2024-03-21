@@ -246,11 +246,6 @@ class CO2Leakage(WebvizPluginABC):
             Output(
                 self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "figure"
             ),
-            Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "style"),
-            Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "style"),
-            Output(
-                self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "style"
-            ),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
             Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
             Input(self._settings_component(ViewSettings.Ids.CO2_SCALE), "value"),
@@ -283,7 +278,7 @@ class CO2Leakage(WebvizPluginABC):
             phase: str,
             ordering: int,
         ) -> Tuple[Dict, go.Figure, go.Figure]:
-            out = {"figs": [no_update] * 3, "styles": [{"display": "none"}] * 3}
+            figs = [no_update] * 3
             cont_info = process_containment_info(
                 zone,
                 region,
@@ -301,12 +296,11 @@ class CO2Leakage(WebvizPluginABC):
                     y_min_val if len(y_min_auto) == 0 else None,
                     y_max_val if len(y_max_auto) == 0 else None,
                 ]
-                out["styles"] = [{"height": "29vh", "width": "90%"}] * 3
                 if (
                     source == GraphSource.CONTAINMENT_MASS
                     and ensemble in self._co2_table_providers
                 ):
-                    out["figs"][: len(out["figs"])] = generate_containment_figures(
+                    figs[: len(figs)] = generate_containment_figures(
                         self._co2_table_providers[ensemble],
                         co2_scale,
                         realizations[0],
@@ -317,14 +311,14 @@ class CO2Leakage(WebvizPluginABC):
                     source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
                     and ensemble in self._co2_actual_volume_table_providers
                 ):
-                    out["figs"][: len(out["figs"])] = generate_containment_figures(
+                    figs[: len(figs)] = generate_containment_figures(
                         self._co2_actual_volume_table_providers[ensemble],
                         co2_scale,
                         realizations[0],
                         y_limits,
                         cont_info,
                     )
-                set_plot_ids(out["figs"], source, co2_scale, cont_info, realizations)
+                set_plot_ids(figs, source, co2_scale, cont_info, realizations)
             elif source == GraphSource.UNSMRY:
                 if self._unsmry_providers is not None:
                     if ensemble in self._unsmry_providers:
@@ -333,13 +327,13 @@ class CO2Leakage(WebvizPluginABC):
                             co2_scale,
                             self._co2_table_providers[ensemble],
                         )
-                        out = {"figs": list(u_figs), "styles": [{}] * len(u_figs)}
+                        figs = list(u_figs)
                 else:
                     LOGGER.warning(
                         """UNSMRY file has not been specified as input.
                          Please use unsmry_relpath in the configuration."""
                     )
-            return cont_info["containment_view"], *out["figs"], *out["styles"]  # type: ignore
+            return cont_info["containment_view"], *figs  # type: ignore
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "marks"),
@@ -599,3 +593,43 @@ class CO2Leakage(WebvizPluginABC):
                 {"label": "Color by containment", "value": 2},
             ]
             return options, style
+
+        @callback(
+            Output(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
+            Output(self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"),
+            Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "style"),
+            Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "style"),
+            Output(
+                self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "style"
+            ),
+            Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
+            Input(self._view_component(MapViewElement.Ids.SIZE_SLIDER), "value"),
+            State(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
+            State(self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"),
+            Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
+        )
+        def resize_plots(
+            ensemble: str,
+            slider_value: float,
+            top_style: Dict,
+            bottom_style: Dict,
+            source: GraphSource,
+        ):
+            bottom_style["height"] = f"{slider_value}vh"
+            top_style["height"] = f"{79 - slider_value}vh"
+
+            styles = [{"height": f"{slider_value * 0.95 - 6}vh", "width": "90%"}] * 3
+            if (
+                (source == GraphSource.UNSMRY and self._unsmry_providers is None)
+                or (
+                    source == GraphSource.CONTAINMENT_MASS
+                    and ensemble not in self._co2_table_providers
+                )
+                or (
+                    source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
+                    and ensemble not in self._co2_actual_volume_table_providers
+                )
+            ):
+                styles = [{"display": "none"}] * 3
+
+            return top_style, bottom_style, *styles
