@@ -344,7 +344,6 @@ class ViewSettings(SettingsGroupABC):
             Output("zone_col", "style"),
             Output("region_col", "style"),
             Output("both_col", "style"),
-            #Output("zone_region_header", "style"),
             Output(
                 self.component_unique_id(self.Ids.PHASEDROPDOWN).to_string(), "style"
             ),
@@ -354,7 +353,6 @@ class ViewSettings(SettingsGroupABC):
         )
         def hide_dropdowns(view: str) -> List[Dict[str, str]]:
             if view != ContainmentViews.CONTAINMENTSPLIT:
-                #return [{"display": "none"}] * 4 + [{}]
                 return [{"display": "none"}] * 3 + [{}]
             disp_zone = "flex" if self._has_zones else "none"
             disp_region = "flex" if self._has_regions else "none"
@@ -371,12 +369,13 @@ class ViewSettings(SettingsGroupABC):
                     "flex-direction": "column",
                 },
                 {"display": disp_either},
-                #{"display": disp_either},
                 {"display": "none"},
             ]
 
         @callback(
-            Output(self.component_unique_id(self.Ids.COLOR_OPTIONS).to_string(), "disabled"),
+            Output(
+                self.component_unique_id(self.Ids.COLOR_OPTIONS).to_string(), "disabled"
+            ),
             Input(
                 self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
             ),
@@ -659,16 +658,9 @@ class GraphSelectorsLayout(wcc.Selectors):
                         "margin-bottom": "1px",
                     },
                 ),
-                #html.Div(
-                #    header,
-                #    id="zone_region_header",
-                #    style={"display": disp},
-                #),
                 html.Div(
                     [
                         html.Div(
-                            #([] if only_zone else ["zone"])
-                            #+ [
                             [
                                 "Specific zone",
                                 wcc.Dropdown(
@@ -684,8 +676,6 @@ class GraphSelectorsLayout(wcc.Selectors):
                             },
                         ),
                         html.Div(
-                            #([] if only_region else ["region"])
-                            #+ [
                             [
                                 "Specific region",
                                 wcc.Dropdown(
@@ -706,7 +696,6 @@ class GraphSelectorsLayout(wcc.Selectors):
                 ),
                 html.Div(
                     [
-                        #"Containment for specific phase",
                         "Specific phase",
                         wcc.Dropdown(
                             options=list(PhaseOptions),
@@ -729,8 +718,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                     value=2,
                     clearable=False,
                 ),
-                "Fix y-limits between realizations:\n"
-                "Minimum",
+                "Fix y-limits between realizations:\nMinimum",
                 html.Div(
                     [
                         dcc.Input(id=y_min_ids[0], type="number"),

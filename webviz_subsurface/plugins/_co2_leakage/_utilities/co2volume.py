@@ -393,10 +393,10 @@ def generate_co2_volume_figure(
     fig.layout.xaxis.title = scale.value
     _adjust_figure(fig)
     fig.update_layout(
-        legend=dict(
-            x=1.05,
-            xanchor="left",
-        )
+        legend={
+            "x": 1.05,
+            "xanchor": "left",
+        }
     )
     return fig
 
@@ -514,10 +514,10 @@ def generate_co2_time_containment_one_realization_figure(
     fig.layout.yaxis.exponentformat = "power"
     _adjust_figure(fig)
     fig.update_layout(
-        legend=dict(
-            x=1.05,
-            xanchor="left",
-        )
+        legend={
+            "x": 1.05,
+            "xanchor": "left",
+        }
     )
     return fig
 
@@ -672,9 +672,9 @@ def generate_co2_time_containment_figure(
     fig.layout.yaxis.autorange = True
     _adjust_figure(fig)
     fig.update_layout(
-        legend=dict(
-            x=1.05,
-            xanchor="left",
-        )
+        legend={
+            "x": 1.05,
+            "xanchor": "left",
+        }
     )
     return fig

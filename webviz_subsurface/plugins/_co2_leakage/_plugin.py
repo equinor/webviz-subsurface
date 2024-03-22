@@ -30,7 +30,6 @@ from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
-    ContainmentViews,
     GraphSource,
     MapAttribute,
 )
@@ -275,7 +274,7 @@ class CO2Leakage(WebvizPluginABC):
             containment_view: str,
             phase: str,
             ordering: int,
-        ) -> Tuple[Dict, go.Figure, go.Figure]:
+        ) -> Tuple[Dict, go.Figure, go.Figure, go.Figure]:
             figs = [no_update] * 3
             cont_info = process_containment_info(
                 zone,
@@ -587,22 +586,22 @@ class CO2Leakage(WebvizPluginABC):
             top_style: Dict,
             bottom_style: Dict,
             source: GraphSource,
-        ):
+        ) -> List[Dict]:
             bottom_style["height"] = f"{slider_value}vh"
             top_style["height"] = f"{80 - slider_value}vh"
 
             styles = [{"height": f"{slider_value * 0.9 - 4}vh", "width": "90%"}] * 3
-            if (
-                (source == GraphSource.UNSMRY and self._unsmry_providers is None)
-                or (
-                    source == GraphSource.CONTAINMENT_MASS
-                    and ensemble not in self._co2_table_providers
-                )
-                or (
-                    source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
-                    and ensemble not in self._co2_actual_volume_table_providers
-                )
+            if source == GraphSource.UNSMRY and self._unsmry_providers is None:
+                styles = [{"display": "none"}] * 3
+            elif (
+                source == GraphSource.CONTAINMENT_MASS
+                and ensemble not in self._co2_table_providers
+            ):
+                styles = [{"display": "none"}] * 3
+            elif (
+                source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
+                and ensemble not in self._co2_actual_volume_table_providers
             ):
                 styles = [{"display": "none"}] * 3
 
-            return top_style, bottom_style, *styles
+            return [top_style, bottom_style] + styles

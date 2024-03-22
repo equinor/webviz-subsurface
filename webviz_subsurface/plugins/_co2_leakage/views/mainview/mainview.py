@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import dcc, html
+from dash import html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
@@ -109,9 +109,9 @@ class MapViewElement(ViewElementABC):
                             value=37,
                             vertical=False,
                             marks={
-                                #1: "Top",
+                                # 1: "Top",
                                 37: "Drag to scale the size of the containment plots",
-                                #79: "Bottom",
+                                # 79: "Bottom",
                             },
                         ),
                     ],
@@ -121,7 +121,6 @@ class MapViewElement(ViewElementABC):
                 ),
             ],
             style={
-                # "flex": 3,
                 "display": "flex",
                 "flexDirection": "column",
                 "height": "90vh",
