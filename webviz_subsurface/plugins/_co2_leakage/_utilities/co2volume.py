@@ -152,23 +152,23 @@ def _prepare_pattern_and_color_options(
             "type": [
                 ", ".join((zn, cn))
                 for zn in options
-                for cn in ["contained", "outside", "hazardous"]
+                for cn in ["hazardous", "outside", "contained"]
             ],
         }
         colors = [c for c in _split_colors(num_options, split) for _ in range(3)]
-        pattern = ["", "/", "x"] * num_options
+        pattern = ["x", "/", ""] * num_options
     elif containment_info["ordering"] == 1:
         cat_ord = {
             "type": [
                 ", ".join((zn, cn))
-                for cn in ["contained", "outside", "hazardous"]
+                for cn in ["hazardous", "outside", "contained"]
                 for zn in options
             ],
         }
         colors = [c for _ in range(3) for c in _split_colors(num_options, split)]
-        pattern = [""] * num_options
+        pattern = ["x"] * num_options
         pattern += ["/"] * num_options
-        pattern += ["x"] * num_options
+        pattern += [""] * num_options
     else:
         cat_ord = {
             "type": [
@@ -237,6 +237,12 @@ def _read_terminal_co2_volumes(
             phase = containment_info["phase"]
             assert isinstance(phase, str)
             last_ = df[df["date"] == np.max(df["date"])]
+            records["sort_key"] += (
+                [np.sum(last_["total_hazardous"])] * 3 * last_.shape[0]
+            )
+            records["sort_key_secondary"] += (
+                [np.sum(last_["total_outside"])] * 3 * last_.shape[0]
+            )
             for i in range(last_.shape[0]):
                 last = last_.iloc[i]
                 label = str(real)
@@ -249,8 +255,6 @@ def _read_terminal_co2_volumes(
                 ]
                 records["containment"] += ["contained", "outside", "hazardous"]
                 records[split] += [last[split]] * 3
-                records["sort_key"] += [label] * 3
-                records["sort_key_secondary"] += [last[split]] * 3
         else:
             last = df.iloc[np.argmax(df["date"])]
             label = str(real)
@@ -273,8 +277,12 @@ def _read_terminal_co2_volumes(
                 "hazardous",
             ]
             records["phase"] += ["aqueous", "gas", "aqueous", "gas", "aqueous", "gas"]
-            records["sort_key"] += [last["gas_hazardous"]] * 6
-            records["sort_key_secondary"] += [last["gas_outside"]] * 6
+            records["sort_key"] += [
+                last["gas_hazardous"] + last["aqueous_hazardous"]
+            ] * 6
+            records["sort_key_secondary"] += [
+                last["gas_outside"] + last["aqueous_outside"]
+            ] * 6
     df = pandas.DataFrame.from_dict(records)
     df.sort_values(
         ["sort_key", "sort_key_secondary"], inplace=True, ascending=[True, True]
@@ -379,7 +387,6 @@ def generate_co2_volume_figure(
     )
     fig.layout.legend.title.text = ""
     fig.layout.legend.orientation = "v"
-    fig.layout.legend.font = {"size": 8}
     fig.layout.legend.itemwidth = 40
     fig.layout.yaxis.title = "Realization"
     fig.layout.xaxis.exponentformat = "power"
@@ -417,7 +424,7 @@ def generate_co2_time_containment_one_realization_figure(
     if view != ContainmentViews.CONTAINMENTSPLIT:
         split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
         phase = containment_info["phase"]
-        containments = ["contained", "outside", "hazardous"]
+        containments = ["hazardous", "outside", "contained"]
         df = df.drop(
             columns=[
                 "_".join((_PHASE_DICT[p], c))
@@ -501,7 +508,6 @@ def generate_co2_time_containment_one_realization_figure(
     fig.layout.yaxis.range = y_limits
     fig.layout.legend.orientation = "v"
     fig.layout.legend.title.text = ""
-    fig.layout.legend.font = {"size": 8}
     fig.layout.legend.itemwidth = 40
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
@@ -658,7 +664,6 @@ def generate_co2_time_containment_figure(
             fig.add_scatter(y=sub_df[value[0]], **args, **common_args)
     fig.layout.legend.orientation = "v"
     fig.layout.legend.title.text = ""
-    fig.layout.legend.font = {"size": 8}
     fig.layout.legend.itemwidth = 40
     fig.layout.legend.tracegroupgap = 0
     fig.layout.xaxis.title = "Time"

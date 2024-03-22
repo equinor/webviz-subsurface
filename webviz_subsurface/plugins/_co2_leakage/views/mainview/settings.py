@@ -54,6 +54,7 @@ class ViewSettings(SettingsGroupABC):
         CONTAINMENT_VIEW = "containment_view"
         PHASE = "phase"
         PHASEDROPDOWN = "phase_drop_down"
+        COLOR_OPTIONS = "color-options"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -134,6 +135,7 @@ class ViewSettings(SettingsGroupABC):
                     self.register_component_unique_id(self.Ids.CONTAINMENT_VIEW),
                     self.register_component_unique_id(self.Ids.PHASE),
                     self.register_component_unique_id(self.Ids.PHASEDROPDOWN),
+                    self.register_component_unique_id(self.Ids.COLOR_OPTIONS),
                 ],
                 self._has_zones,
                 self._has_regions,
@@ -342,7 +344,7 @@ class ViewSettings(SettingsGroupABC):
             Output("zone_col", "style"),
             Output("region_col", "style"),
             Output("both_col", "style"),
-            Output("zone_region_header", "style"),
+            #Output("zone_region_header", "style"),
             Output(
                 self.component_unique_id(self.Ids.PHASEDROPDOWN).to_string(), "style"
             ),
@@ -352,7 +354,8 @@ class ViewSettings(SettingsGroupABC):
         )
         def hide_dropdowns(view: str) -> List[Dict[str, str]]:
             if view != ContainmentViews.CONTAINMENTSPLIT:
-                return [{"display": "none"}] * 4 + [{}]
+                #return [{"display": "none"}] * 4 + [{}]
+                return [{"display": "none"}] * 3 + [{}]
             disp_zone = "flex" if self._has_zones else "none"
             disp_region = "flex" if self._has_regions else "none"
             disp_either = "flex" if self._has_zones or self._has_regions else "none"
@@ -368,9 +371,18 @@ class ViewSettings(SettingsGroupABC):
                     "flex-direction": "column",
                 },
                 {"display": disp_either},
-                {"display": disp_either},
+                #{"display": disp_either},
                 {"display": "none"},
             ]
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.COLOR_OPTIONS).to_string(), "disabled"),
+            Input(
+                self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
+            ),
+        )
+        def disable_color_options(containment_view: str) -> bool:
+            return containment_view == ContainmentViews.CONTAINMENTSPLIT
 
 
 class OpenDialogButton(html.Button):
@@ -616,16 +628,6 @@ class GraphSelectorsLayout(wcc.Selectors):
             label="Graph Settings",
             open_details=False,
             children=[
-                html.Div(
-                    [
-                        dcc.RadioItems(
-                            options,
-                            ContainmentViews.CONTAINMENTSPLIT,
-                            id=containment_ids[2],
-                        ),
-                    ],
-                    style={"display": disp, "flex-direction": "column"},
-                ),
                 "Source",
                 wcc.Dropdown(
                     id=graph_source_id,
@@ -633,16 +635,42 @@ class GraphSelectorsLayout(wcc.Selectors):
                     value=GraphSource.CONTAINMENT_MASS,
                     clearable=False,
                 ),
-                html.Div(
-                    header,
-                    id="zone_region_header",
-                    style={"display": disp},
+                "Unit",
+                wcc.Dropdown(
+                    id=co2_scale_id,
+                    options=list(Co2MassScale),
+                    value=Co2MassScale.MTONS,
+                    clearable=False,
                 ),
                 html.Div(
                     [
+                        "Split by",
+                        dcc.RadioItems(
+                            options,
+                            ContainmentViews.CONTAINMENTSPLIT,
+                            id=containment_ids[2],
+                            inline=True,
+                        ),
+                    ],
+                    style={
+                        "display": disp,
+                        "flex-direction": "row",
+                        "margin-top": "5px",
+                        "margin-bottom": "1px",
+                    },
+                ),
+                #html.Div(
+                #    header,
+                #    id="zone_region_header",
+                #    style={"display": disp},
+                #),
+                html.Div(
+                    [
                         html.Div(
-                            ([] if only_zone else ["zone"])
-                            + [
+                            #([] if only_zone else ["zone"])
+                            #+ [
+                            [
+                                "Specific zone",
                                 wcc.Dropdown(
                                     id=containment_ids[0],
                                     clearable=False,
@@ -652,11 +680,14 @@ class GraphSelectorsLayout(wcc.Selectors):
                             style={
                                 "width": "50%" if has_regions else "100%",
                                 "display": disp_zone,
+                                "flex-direction": "column",
                             },
                         ),
                         html.Div(
-                            ([] if only_region else ["region"])
-                            + [
+                            #([] if only_region else ["region"])
+                            #+ [
+                            [
+                                "Specific region",
                                 wcc.Dropdown(
                                     id=containment_ids[1],
                                     clearable=False,
@@ -666,6 +697,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             style={
                                 "width": "50%" if has_zones else "100%",
                                 "display": disp_region,
+                                "flex-direction": "column",
                             },
                         ),
                     ],
@@ -674,7 +706,8 @@ class GraphSelectorsLayout(wcc.Selectors):
                 ),
                 html.Div(
                     [
-                        "Containment for specific phase",
+                        #"Containment for specific phase",
+                        "Specific phase",
                         wcc.Dropdown(
                             options=list(PhaseOptions),
                             value=PhaseOptions.TOTAL,
@@ -685,13 +718,18 @@ class GraphSelectorsLayout(wcc.Selectors):
                     id=containment_ids[4],
                     style={"display": "none"},
                 ),
-                "Unit",
+                "Color options (zones/regions)",
                 wcc.Dropdown(
-                    id=co2_scale_id,
-                    options=list(Co2MassScale),
-                    value=Co2MassScale.MTONS,
+                    id=containment_ids[5],
+                    options=[
+                        {"label": "Color by containment (standard)", "value": 2},
+                        {"label": "Color by zone/region", "value": 1},
+                        {"label": "Color and sort by zone/region", "value": 0},
+                    ],
+                    value=2,
                     clearable=False,
                 ),
+                "Fix y-limits between realizations:\n"
                 "Minimum",
                 html.Div(
                     [

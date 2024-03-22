@@ -258,9 +258,7 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
             Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
-            Input(
-                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "value"
-            ),
+            Input(self._settings_component(ViewSettings.Ids.COLOR_OPTIONS), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -570,31 +568,6 @@ class CO2Leakage(WebvizPluginABC):
             raise PreventUpdate
 
         @callback(
-            Output(
-                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES),
-                "options",
-            ),
-            Output(
-                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "style"
-            ),
-            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
-        )
-        def hide_bar_plot_checkboxes(view: str) -> Tuple[List[Dict], Dict]:
-            if view == ContainmentViews.CONTAINMENTSPLIT:
-                return [], {"display": "none"}
-            style = {
-                "display": "flex",
-                "flexDirection": "row",
-            }
-            split = "zones" if view == ContainmentViews.ZONESPLIT else "regions"
-            options = [
-                {"label": f"Sort by {split}", "value": 0},
-                {"label": "Sort by containment", "value": 1},
-                {"label": "Color by containment", "value": 2},
-            ]
-            return options, style
-
-        @callback(
             Output(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
             Output(self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"),
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "style"),
@@ -616,9 +589,9 @@ class CO2Leakage(WebvizPluginABC):
             source: GraphSource,
         ):
             bottom_style["height"] = f"{slider_value}vh"
-            top_style["height"] = f"{79 - slider_value}vh"
+            top_style["height"] = f"{80 - slider_value}vh"
 
-            styles = [{"height": f"{slider_value * 0.95 - 6}vh", "width": "90%"}] * 3
+            styles = [{"height": f"{slider_value * 0.9 - 4}vh", "width": "90%"}] * 3
             if (
                 (source == GraphSource.UNSMRY and self._unsmry_providers is None)
                 or (
