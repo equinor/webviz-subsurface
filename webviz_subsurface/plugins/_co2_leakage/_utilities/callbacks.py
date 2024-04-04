@@ -489,9 +489,12 @@ def process_visualization_info(
 def process_containment_info(
     zone: Optional[str],
     region: Optional[str],
-    view: Optional[str],
     phase: str,
+    containment: str,
     ordering: int,
+    color_choice: str,
+    mark_choice: str,
+    sorting: str,
     zone_and_region_options: Dict[str, List[str]],
     source: str,
 ) -> Dict[str, Union[str, None, List[str], int]]:
@@ -501,26 +504,18 @@ def process_containment_info(
         GraphSource.CONTAINMENT_MASS,
         GraphSource.CONTAINMENT_ACTUAL_VOLUME,
     ]:
-        if view == ContainmentViews.CONTAINMENTSPLIT:
-            return {
-                "zone": zone,
-                "region": region,
-                "containment_view": view,
-                "phase": None,
-                "ordering": None,
-            }
-        if view == ContainmentViews.ZONESPLIT and len(zones) > 0:
-            zones = [zone_name for zone_name in zones if zone_name != "all"]
-        elif view == ContainmentViews.REGIONSPLIT and len(regions) > 0:
-            regions = [reg_name for reg_name in regions if reg_name != "all"]
+        if "zone" in [color_choice, mark_choice]:
+            view = ContainmentViews.ZONESPLIT
+        elif "region" in [color_choice, mark_choice]:
+            view = ContainmentViews.REGIONSPLIT
         else:
-            return {
-                "zone": zone,
-                "region": region,
-                "containment_view": ContainmentViews.CONTAINMENTSPLIT,
-                "phase": phase,
-                "ordering": ordering,
-            }
+            view = ContainmentViews.CONTAINMENTSPLIT
+        if len(zones) > 0:
+            zones = [zone_name for zone_name in zones if zone_name != "all"]
+        if len(regions) > 0:
+            regions = [reg_name for reg_name in regions if reg_name != "all"]
+        containments = ["hazardous", "outside", "contained"]
+        phases = ["gas", "aqueous"]
         return {
             "zone": zone,
             "region": region,
@@ -528,7 +523,13 @@ def process_containment_info(
             "zones": zones,
             "regions": regions,
             "phase": phase,
+            "containment": containment,
             "ordering": ordering,
+            "color_choice": color_choice,
+            "mark_choice": mark_choice,
+            "sorting": sorting,
+            "phases": phases,
+            "containments": containments,
         }
     return {"containment_view": ContainmentViews.CONTAINMENTSPLIT}
 

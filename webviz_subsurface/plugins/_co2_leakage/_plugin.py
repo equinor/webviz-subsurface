@@ -30,6 +30,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    ContainmentViews,
     GraphSource,
     MapAttribute,
 )
@@ -255,9 +256,12 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.ZONE), "value"),
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
-            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
+            #Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
             Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
-            Input(self._settings_component(ViewSettings.Ids.COLOR_OPTIONS), "value"),
+            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT), "value"),
+            Input("color_by", "value"),
+            Input("mark_by", "value"),
+            Input("sorting", "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -271,17 +275,57 @@ class CO2Leakage(WebvizPluginABC):
             y_max_val: Optional[float],
             zone: Optional[str],
             region: Optional[str],
-            containment_view: str,
+            #containment_view: str,
             phase: str,
-            ordering: int,
+            containment: str,
+            #ordering: int,
+            color_choice: str,
+            mark_choice: Optional[str],
+            sorting: str,
         ) -> Tuple[Dict, go.Figure, go.Figure, go.Figure]:
+            if mark_choice is None:
+                mark_choice = "phase"
+            if color_choice == "containment":
+                if mark_choice == "zone":
+                    containment_view = ContainmentViews.ZONESPLIT
+                    ordering = 2
+                elif mark_choice == "region":
+                    containment_view = ContainmentViews.REGIONSPLIT
+                    ordering = 2
+                else:
+                    containment_view = ContainmentViews.CONTAINMENTSPLIT
+                    ordering = None
+            elif color_choice == "zone":
+                containment_view = ContainmentViews.ZONESPLIT
+                if mark_choice == "containment":
+                    if sorting == "color":
+                        ordering = 0
+                    else:
+                        ordering = 1
+                else:
+                    ordering = 0
+            else:
+                if color_choice != "region":
+                    print("Hmmm, color by should be Region")
+                containment_view = ContainmentViews.REGIONSPLIT
+                if mark_choice == "containment":
+                    if sorting == "color":
+                        ordering = 0
+                    else:
+                        ordering = 1
+                else:
+                    ordering = 0
+
             figs = [no_update] * 3
             cont_info = process_containment_info(
                 zone,
                 region,
-                containment_view,
                 phase,
+                containment,
                 ordering,
+                color_choice,
+                mark_choice,
+                sorting,
                 self._zone_and_region_options[ensemble][source],
                 source,
             )

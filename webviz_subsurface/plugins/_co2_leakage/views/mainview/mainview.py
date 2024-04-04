@@ -136,10 +136,11 @@ def _summary_graph_layout(
     return [
         wcc.Tabs(
             id="TAB",
-            value="custom",
+            value="tab-1",
             children=[
                 wcc.Tab(
                     label="End-state containment (all realizations)",
+                    value="tab-1",
                     children=[
                         html.Div(
                             wcc.Graph(
@@ -154,6 +155,7 @@ def _summary_graph_layout(
                 ),
                 wcc.Tab(
                     label="Containment over time (all realizations)",
+                    value="tab-2",
                     children=[
                         html.Div(
                             wcc.Graph(
@@ -168,6 +170,7 @@ def _summary_graph_layout(
                 ),
                 wcc.Tab(
                     label="Containment over time (one realization)",
+                    value="tab-3",
                     children=[
                         html.Div(
                             wcc.Graph(

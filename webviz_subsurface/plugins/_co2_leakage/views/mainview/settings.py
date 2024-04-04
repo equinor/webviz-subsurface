@@ -19,7 +19,6 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     LayoutLabels,
     LayoutStyle,
     MapAttribute,
-    PhaseOptions,
 )
 
 
@@ -53,8 +52,9 @@ class ViewSettings(SettingsGroupABC):
         REGION = "region"
         CONTAINMENT_VIEW = "containment_view"
         PHASE = "phase"
-        PHASEDROPDOWN = "phase_drop_down"
-        COLOR_OPTIONS = "color-options"
+        PHASE_DROPDOWN = "phase_drop_down"
+        CONTAINMENT = "containment"
+        CONTAINMENT_DROPDOWN = "containment_drop_down"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -134,8 +134,9 @@ class ViewSettings(SettingsGroupABC):
                     self.register_component_unique_id(self.Ids.REGION),
                     self.register_component_unique_id(self.Ids.CONTAINMENT_VIEW),
                     self.register_component_unique_id(self.Ids.PHASE),
-                    self.register_component_unique_id(self.Ids.PHASEDROPDOWN),
-                    self.register_component_unique_id(self.Ids.COLOR_OPTIONS),
+                    self.register_component_unique_id(self.Ids.PHASE_DROPDOWN),
+                    self.register_component_unique_id(self.Ids.CONTAINMENT),
+                    self.register_component_unique_id(self.Ids.CONTAINMENT_DROPDOWN),
                 ],
                 self._has_zones,
                 self._has_regions,
@@ -277,21 +278,6 @@ class ViewSettings(SettingsGroupABC):
             return [], None
 
         @callback(
-            Output(self.component_unique_id(self.Ids.ZONE).to_string(), "disabled"),
-            Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
-            Input(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
-            Input(
-                self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
-            ),
-        )
-        def disable_zone(zone: str, region: str, containment_view: str) -> bool:
-            return (
-                zone is None
-                or containment_view != ContainmentViews.CONTAINMENTSPLIT
-                or (region is not None and region != "all")
-            )
-
-        @callback(
             Output(self.component_unique_id(self.Ids.REGION).to_string(), "options"),
             Output(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
             Input(self.component_unique_id(self.Ids.GRAPH_SOURCE).to_string(), "value"),
@@ -311,21 +297,6 @@ class ViewSettings(SettingsGroupABC):
             return [], None
 
         @callback(
-            Output(self.component_unique_id(self.Ids.REGION).to_string(), "disabled"),
-            Input(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
-            Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
-            Input(
-                self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
-            ),
-        )
-        def disable_region(region: str, zone: str, containment_view: str) -> bool:
-            return (
-                region is None
-                or containment_view != ContainmentViews.CONTAINMENTSPLIT
-                or (zone is not None and zone != "all")
-            )
-
-        @callback(
             Output(
                 self.component_unique_id(self.Ids.MASS_UNIT).to_string(), "disabled"
             ),
@@ -341,47 +312,72 @@ class ViewSettings(SettingsGroupABC):
             return False
 
         @callback(
+            Output("mark_by", "options"),
+            Output("mark_by", "value"),
             Output("zone_col", "style"),
             Output("region_col", "style"),
             Output("both_col", "style"),
             Output(
-                self.component_unique_id(self.Ids.PHASEDROPDOWN).to_string(), "style"
+                self.component_unique_id(self.Ids.PHASE_DROPDOWN).to_string(), "style"
             ),
-            Input(
-                self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
-            ),
-        )
-        def hide_dropdowns(view: str) -> List[Dict[str, str]]:
-            if view != ContainmentViews.CONTAINMENTSPLIT:
-                return [{"display": "none"}] * 3 + [{}]
-            disp_zone = "flex" if self._has_zones else "none"
-            disp_region = "flex" if self._has_regions else "none"
-            disp_either = "flex" if self._has_zones or self._has_regions else "none"
-            return [
-                {
-                    "width": "50%" if self._has_regions else "100%",
-                    "display": disp_zone,
-                    "flex-direction": "column",
-                },
-                {
-                    "width": "50%" if self._has_zones else "100%",
-                    "display": disp_region,
-                    "flex-direction": "column",
-                },
-                {"display": disp_either},
-                {"display": "none"},
-            ]
-
-        @callback(
             Output(
-                self.component_unique_id(self.Ids.COLOR_OPTIONS).to_string(), "disabled"
+                self.component_unique_id(self.Ids.CONTAINMENT_DROPDOWN).to_string(), "style"
             ),
-            Input(
-                self.component_unique_id(self.Ids.CONTAINMENT_VIEW).to_string(), "value"
-            ),
+            Input("color_by", "value"),
+            Input("mark_by", "value")
         )
-        def disable_color_options(containment_view: str) -> bool:
-            return containment_view == ContainmentViews.CONTAINMENTSPLIT
+        def set_mark_options(color_choice: str, mark_choice: str) -> List[Dict]:
+            mark_options = [{"label": "Phase", "value": "phase"}]
+            if self._has_zones and color_choice == "containment":
+                mark_options.append({"label": "Zone", "value": "zone"})
+            if self._has_regions and color_choice == "containment":
+                mark_options.append({"label": "Region", "value": "region"})
+            if color_choice in ["zone", "region"]:
+                mark_options.append({"label": "Containment", "value": "containment"})
+            if mark_choice is None or mark_choice == color_choice:
+                mark_choice = "phase"
+            if mark_choice in ["zone", "region"] and color_choice in ["zone", "region"]:
+                mark_choice = "phase"
+
+            zone_style = {"display": "none"}
+            region_style = {"display": "none"}
+            both_style = {"display": "none"}
+            phase_style = {"display": "none"}
+            containment_style = {"display": "none"}
+
+            if color_choice == "containment":
+                if mark_choice == "phase":
+                    disp_zone = "flex" if self._has_zones else "none"
+                    disp_region = "flex" if self._has_regions else "none"
+                    disp_either = "flex" if self._has_zones or self._has_regions else "none"
+                    zone_style = {
+                        "width": "50%" if self._has_regions else "100%",
+                        "display": disp_zone,
+                        "flex-direction": "column",
+                    }
+                    region_style = {
+                        "width": "50%" if self._has_zones else "100%",
+                        "display": disp_region,
+                        "flex-direction": "column",
+                    }
+                    both_style = {"display": disp_either}
+                else:  # mark_choice == "zone" / "region"
+                    phase_style = {
+                        "display": "flex",
+                        "flex-direction": "column",
+                    }
+            else:  # color_choice == "zone" / "region"
+                if mark_choice == "phase":
+                    containment_style = {
+                        "display": "flex",
+                        "flex-direction": "column",
+                    }
+                else:  # mark_choice == "containment"
+                    phase_style = {
+                        "display": "flex",
+                        "flex-direction": "column",
+                    }
+            return mark_options, mark_choice, zone_style, region_style, both_style, phase_style, containment_style
 
 
 class OpenDialogButton(html.Button):
@@ -619,10 +615,13 @@ class GraphSelectorsLayout(wcc.Selectors):
         elif only_region:
             header += " region"
         options = [ContainmentViews.CONTAINMENTSPLIT]
+        color_options = [{"label": "Containment (standard)", "value": "containment"}]
         if has_zones:
             options.append(ContainmentViews.ZONESPLIT)
+            color_options.append({"label": "Zone", "value": "zone"})
         if has_regions:
             options.append(ContainmentViews.REGIONSPLIT)
+            color_options.append({"label": "Region", "value": "region"})
         super().__init__(
             label="Graph Settings",
             open_details=False,
@@ -652,7 +651,65 @@ class GraphSelectorsLayout(wcc.Selectors):
                         ),
                     ],
                     style={
-                        "display": disp,
+                        "display": "none",  # disp,
+                        "flex-direction": "row",
+                        "margin-top": "5px",
+                        "margin-bottom": "1px",
+                    },
+                ),
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                "Color by",
+                                wcc.Dropdown(
+                                    options=color_options,
+                                    value="containment",
+                                    id="color_by",
+                                    clearable=False,
+                                ),
+                            ],
+                            id="colby",
+                            style={
+                                "width": "50%",
+                                "flex-direction": "column",
+                            },
+                        ),
+                        html.Div(
+                            [
+                                "Mark by",
+                                wcc.Dropdown(
+                                    id="mark_by",
+                                    clearable=False,
+                                ),
+                            ],
+                            id="markby",
+                            style={
+                                "width": "50%",
+                                "flex-direction": "column",
+                            },
+                        ),
+                    ],
+                    id="colbymarkby",
+                    style={
+                        "display": "flex",  # disp,
+                        "flex-direction": "row",
+                        "margin-top": "10px",
+                        "margin-bottom": "1px",
+                    },
+                ),
+                html.Div(
+                    [
+                        "Sort by",
+                        dcc.RadioItems(
+                            options=["color", "marking"],
+                            value="color",
+                            id="sorting",
+                            inline=True,
+                        ),
+                    ],
+                    style={
+                        "display": "flex",
                         "flex-direction": "row",
                         "margin-top": "5px",
                         "margin-bottom": "1px",
@@ -698,8 +755,12 @@ class GraphSelectorsLayout(wcc.Selectors):
                     [
                         "Specific phase",
                         wcc.Dropdown(
-                            options=list(PhaseOptions),
-                            value=PhaseOptions.TOTAL,
+                            options=[
+                                {"label": "Total", "value": "total"},
+                                {"label": "Aqueous", "value": "aqueous"},
+                                {"label": "Gas", "value": "gas"},
+                            ],
+                            value="total",
                             clearable=False,
                             id=containment_ids[3],
                         ),
@@ -707,18 +768,29 @@ class GraphSelectorsLayout(wcc.Selectors):
                     id=containment_ids[4],
                     style={"display": "none"},
                 ),
-                "Color options (zones/regions)",
-                wcc.Dropdown(
-                    id=containment_ids[5],
-                    options=[
-                        {"label": "Color by containment (standard)", "value": 2},
-                        {"label": "Color by zone/region", "value": 1},
-                        {"label": "Color and sort by zone/region", "value": 0},
+                html.Div(
+                    [
+                        "Specific containment status",
+                        wcc.Dropdown(
+                            options=[
+                                {"label": "Total", "value": "total"},
+                                {"label": "Contained", "value": "contained"},
+                                {"label": "Outside", "value": "outside"},
+                                {"label": "Hazardous", "value": "hazardous"},
+                            ],
+                            value="total",
+                            clearable=False,
+                            id=containment_ids[5],
+                        ),
                     ],
-                    value=2,
-                    clearable=False,
+                    id=containment_ids[6],
+                    style={"display": "none"},
                 ),
-                "Fix y-limits between realizations:\nMinimum",
+                html.Div(
+                    "Fix y-limits in third plot:",
+                    style={"margin-top": "10px"},
+                ),
+                "Minimum",
                 html.Div(
                     [
                         dcc.Input(id=y_min_ids[0], type="number"),
