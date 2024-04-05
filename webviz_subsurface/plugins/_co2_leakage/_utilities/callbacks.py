@@ -31,7 +31,6 @@ from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
-    ContainmentViews,
     GraphSource,
     LayoutLabels,
     MapAttribute,
@@ -489,48 +488,36 @@ def process_visualization_info(
 def process_containment_info(
     zone: Optional[str],
     region: Optional[str],
-    view: Optional[str],
     phase: str,
-    ordering: int,
+    containment: str,
+    color_choice: str,
+    mark_choice: Optional[str],
+    sorting: str,
     zone_and_region_options: Dict[str, List[str]],
-    source: str,
 ) -> Dict[str, Union[str, None, List[str], int]]:
+    if mark_choice is None:
+        mark_choice = "phase"
     zones = zone_and_region_options["zones"]
     regions = zone_and_region_options["regions"]
-    if source in [
-        GraphSource.CONTAINMENT_MASS,
-        GraphSource.CONTAINMENT_ACTUAL_VOLUME,
-    ]:
-        if view == ContainmentViews.CONTAINMENTSPLIT:
-            return {
-                "zone": zone,
-                "region": region,
-                "containment_view": view,
-                "phase": None,
-                "ordering": None,
-            }
-        if view == ContainmentViews.ZONESPLIT and len(zones) > 0:
-            zones = [zone_name for zone_name in zones if zone_name != "all"]
-        elif view == ContainmentViews.REGIONSPLIT and len(regions) > 0:
-            regions = [reg_name for reg_name in regions if reg_name != "all"]
-        else:
-            return {
-                "zone": zone,
-                "region": region,
-                "containment_view": ContainmentViews.CONTAINMENTSPLIT,
-                "phase": phase,
-                "ordering": ordering,
-            }
-        return {
-            "zone": zone,
-            "region": region,
-            "containment_view": view,
-            "zones": zones,
-            "regions": regions,
-            "phase": phase,
-            "ordering": ordering,
-        }
-    return {"containment_view": ContainmentViews.CONTAINMENTSPLIT}
+    if len(zones) > 0:
+        zones = [zone_name for zone_name in zones if zone_name != "all"]
+    if len(regions) > 0:
+        regions = [reg_name for reg_name in regions if reg_name != "all"]
+    containments = ["hazardous", "outside", "contained"]
+    phases = ["gas", "aqueous"]
+    return {
+        "zone": zone,
+        "region": region,
+        "zones": zones,
+        "regions": regions,
+        "phase": phase,
+        "containment": containment,
+        "color_choice": color_choice,
+        "mark_choice": mark_choice,
+        "sorting": sorting,
+        "phases": phases,
+        "containments": containments,
+    }
 
 
 def set_plot_ids(
@@ -548,7 +535,9 @@ def set_plot_ids(
                 containment_info["zone"],
                 containment_info["region"],
                 str(containment_info["phase"]),
-                str(containment_info["ordering"]),
+                str(containment_info["containment"]),
+                containment_info["color_choice"],
+                containment_info["mark_choice"],
             )
         )
         for fig in figs:

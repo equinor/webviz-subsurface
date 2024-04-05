@@ -30,7 +30,6 @@ from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons import (
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
-    ContainmentViews,
     GraphSource,
     MapAttribute,
 )
@@ -238,18 +237,10 @@ class CO2Leakage(WebvizPluginABC):
         # to determine what to plot
         # pylint: disable=too-many-arguments
         @callback(
-            Output(
-                self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"
-            ),
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Output(
                 self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "figure"
-            ),
-            Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "style"),
-            Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "style"),
-            Output(
-                self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "style"
             ),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
             Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
@@ -261,11 +252,11 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.Y_MAX_GRAPH), "value"),
             Input(self._settings_component(ViewSettings.Ids.ZONE), "value"),
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
-            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
             Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
-            Input(
-                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "value"
-            ),
+            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT), "value"),
+            Input(self._settings_component(ViewSettings.Ids.COLOR_BY), "value"),
+            Input(self._settings_component(ViewSettings.Ids.MARK_BY), "value"),
+            Input(self._settings_component(ViewSettings.Ids.SORT_PLOT), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -279,19 +270,22 @@ class CO2Leakage(WebvizPluginABC):
             y_max_val: Optional[float],
             zone: Optional[str],
             region: Optional[str],
-            containment_view: str,
             phase: str,
-            ordering: int,
-        ) -> Tuple[Dict, go.Figure, go.Figure]:
-            out = {"figs": [no_update] * 3, "styles": [{"display": "none"}] * 3}
+            containment: str,
+            color_choice: str,
+            mark_choice: Optional[str],
+            sorting: str,
+        ) -> Tuple[Dict, go.Figure, go.Figure, go.Figure]:
+            figs = [no_update] * 3
             cont_info = process_containment_info(
                 zone,
                 region,
-                containment_view,
                 phase,
-                ordering,
+                containment,
+                color_choice,
+                mark_choice,
+                sorting,
                 self._zone_and_region_options[ensemble][source],
-                source,
             )
             if source in [
                 GraphSource.CONTAINMENT_MASS,
@@ -301,12 +295,11 @@ class CO2Leakage(WebvizPluginABC):
                     y_min_val if len(y_min_auto) == 0 else None,
                     y_max_val if len(y_max_auto) == 0 else None,
                 ]
-                out["styles"] = [{}] * 3
                 if (
                     source == GraphSource.CONTAINMENT_MASS
                     and ensemble in self._co2_table_providers
                 ):
-                    out["figs"][: len(out["figs"])] = generate_containment_figures(
+                    figs[: len(figs)] = generate_containment_figures(
                         self._co2_table_providers[ensemble],
                         co2_scale,
                         realizations[0],
@@ -317,14 +310,14 @@ class CO2Leakage(WebvizPluginABC):
                     source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
                     and ensemble in self._co2_actual_volume_table_providers
                 ):
-                    out["figs"][: len(out["figs"])] = generate_containment_figures(
+                    figs[: len(figs)] = generate_containment_figures(
                         self._co2_actual_volume_table_providers[ensemble],
                         co2_scale,
                         realizations[0],
                         y_limits,
                         cont_info,
                     )
-                set_plot_ids(out["figs"], source, co2_scale, cont_info, realizations)
+                set_plot_ids(figs, source, co2_scale, cont_info, realizations)
             elif source == GraphSource.UNSMRY:
                 if self._unsmry_providers is not None:
                     if ensemble in self._unsmry_providers:
@@ -333,13 +326,13 @@ class CO2Leakage(WebvizPluginABC):
                             co2_scale,
                             self._co2_table_providers[ensemble],
                         )
-                        out = {"figs": list(u_figs), "styles": [{}] * len(u_figs)}
+                        figs = list(u_figs)
                 else:
                     LOGGER.warning(
                         """UNSMRY file has not been specified as input.
                          Please use unsmry_relpath in the configuration."""
                     )
-            return cont_info["containment_view"], *out["figs"], *out["styles"]  # type: ignore
+            return figs  # type: ignore
 
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_SLIDER), "marks"),
@@ -409,7 +402,7 @@ class CO2Leakage(WebvizPluginABC):
             )
 
         # Cannot avoid many arguments and/or locals since all layers of the DeckGL map
-        # needs to be updated simultaneously
+        # need to be updated simultaneously
         # pylint: disable=too-many-arguments,too-many-locals
         @callback(
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
@@ -576,26 +569,41 @@ class CO2Leakage(WebvizPluginABC):
             raise PreventUpdate
 
         @callback(
+            Output(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
+            Output(self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"),
+            Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "style"),
+            Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "style"),
             Output(
-                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES),
-                "options",
+                self._view_component(MapViewElement.Ids.TIME_PLOT_ONE_REAL), "style"
             ),
-            Output(
-                self._view_component(MapViewElement.Ids.CONTAINMENT_CHECKBOXES), "style"
-            ),
-            Input(self._settings_component(ViewSettings.Ids.CONTAINMENT_VIEW), "value"),
+            Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
+            Input(self._view_component(MapViewElement.Ids.SIZE_SLIDER), "value"),
+            State(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
+            State(self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"),
+            Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
         )
-        def hide_bar_plot_checkboxes(view: str) -> Tuple[List[Dict], Dict]:
-            if view == ContainmentViews.CONTAINMENTSPLIT:
-                return [], {"display": "none"}
-            style = {
-                "display": "flex",
-                "flexDirection": "row",
-            }
-            split = "zones" if view == ContainmentViews.ZONESPLIT else "regions"
-            options = [
-                {"label": f"Sort by {split}", "value": 0},
-                {"label": "Sort by containment", "value": 1},
-                {"label": "Color by containment", "value": 2},
-            ]
-            return options, style
+        def resize_plots(
+            ensemble: str,
+            slider_value: float,
+            top_style: Dict,
+            bottom_style: Dict,
+            source: GraphSource,
+        ) -> List[Dict]:
+            bottom_style["height"] = f"{slider_value}vh"
+            top_style["height"] = f"{80 - slider_value}vh"
+
+            styles = [{"height": f"{slider_value * 0.9 - 4}vh", "width": "90%"}] * 3
+            if source == GraphSource.UNSMRY and self._unsmry_providers is None:
+                styles = [{"display": "none"}] * 3
+            elif (
+                source == GraphSource.CONTAINMENT_MASS
+                and ensemble not in self._co2_table_providers
+            ):
+                styles = [{"display": "none"}] * 3
+            elif (
+                source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
+                and ensemble not in self._co2_actual_volume_table_providers
+            ):
+                styles = [{"display": "none"}] * 3
+
+            return [top_style, bottom_style] + styles
