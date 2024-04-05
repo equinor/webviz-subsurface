@@ -71,9 +71,3 @@ class LayoutStyle:
         "line-height": "30px",
         "background-color": "lightgrey",
     }
-
-
-class ContainmentViews(StrEnum):
-    CONTAINMENTSPLIT = "phase"
-    ZONESPLIT = "zone"
-    REGIONSPLIT = "region"

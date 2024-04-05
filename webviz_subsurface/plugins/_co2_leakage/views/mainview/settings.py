@@ -14,7 +14,6 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
-    ContainmentViews,
     GraphSource,
     LayoutLabels,
     LayoutStyle,
@@ -50,7 +49,6 @@ class ViewSettings(SettingsGroupABC):
         Y_MAX_AUTO_GRAPH = "y-max-auto-graph"
         ZONE = "zone"
         REGION = "region"
-        CONTAINMENT_VIEW = "containment_view"
         PHASE = "phase"
         PHASE_DROPDOWN = "phase_drop_down"
         CONTAINMENT = "containment"
@@ -132,7 +130,6 @@ class ViewSettings(SettingsGroupABC):
                 [
                     self.register_component_unique_id(self.Ids.ZONE),
                     self.register_component_unique_id(self.Ids.REGION),
-                    self.register_component_unique_id(self.Ids.CONTAINMENT_VIEW),
                     self.register_component_unique_id(self.Ids.PHASE),
                     self.register_component_unique_id(self.Ids.PHASE_DROPDOWN),
                     self.register_component_unique_id(self.Ids.CONTAINMENT),
@@ -321,12 +318,24 @@ class ViewSettings(SettingsGroupABC):
                 self.component_unique_id(self.Ids.PHASE_DROPDOWN).to_string(), "style"
             ),
             Output(
-                self.component_unique_id(self.Ids.CONTAINMENT_DROPDOWN).to_string(), "style"
+                self.component_unique_id(self.Ids.CONTAINMENT_DROPDOWN).to_string(),
+                "style",
             ),
             Input("color_by", "value"),
-            Input("mark_by", "value")
+            Input("mark_by", "value"),
         )
-        def set_mark_options(color_choice: str, mark_choice: str) -> List[Dict]:
+        def organize_color_and_mark_menus(
+            color_choice: str,
+            mark_choice: Optional[str],
+        ) -> Tuple[
+            List[Dict[str, str]],
+            str,
+            Dict[str, str],
+            Dict[str, str],
+            Dict[str, str],
+            Dict[str, str],
+            Dict[str, str],
+        ]:
             mark_options = [{"label": "Phase", "value": "phase"}]
             if self._has_zones and color_choice == "containment":
                 mark_options.append({"label": "Zone", "value": "zone"})
@@ -338,46 +347,20 @@ class ViewSettings(SettingsGroupABC):
                 mark_choice = "phase"
             if mark_choice in ["zone", "region"] and color_choice in ["zone", "region"]:
                 mark_choice = "phase"
-
-            zone_style = {"display": "none"}
-            region_style = {"display": "none"}
-            both_style = {"display": "none"}
-            phase_style = {"display": "none"}
-            containment_style = {"display": "none"}
-
-            if color_choice == "containment":
-                if mark_choice == "phase":
-                    disp_zone = "flex" if self._has_zones else "none"
-                    disp_region = "flex" if self._has_regions else "none"
-                    disp_either = "flex" if self._has_zones or self._has_regions else "none"
-                    zone_style = {
-                        "width": "50%" if self._has_regions else "100%",
-                        "display": disp_zone,
-                        "flex-direction": "column",
-                    }
-                    region_style = {
-                        "width": "50%" if self._has_zones else "100%",
-                        "display": disp_region,
-                        "flex-direction": "column",
-                    }
-                    both_style = {"display": disp_either}
-                else:  # mark_choice == "zone" / "region"
-                    phase_style = {
-                        "display": "flex",
-                        "flex-direction": "column",
-                    }
-            else:  # color_choice == "zone" / "region"
-                if mark_choice == "phase":
-                    containment_style = {
-                        "display": "flex",
-                        "flex-direction": "column",
-                    }
-                else:  # mark_choice == "containment"
-                    phase_style = {
-                        "display": "flex",
-                        "flex-direction": "column",
-                    }
-            return mark_options, mark_choice, zone_style, region_style, both_style, phase_style, containment_style
+            zone_style, region_style, both_style, phase_style, containment_style = (
+                _make_styles(
+                    color_choice, mark_choice, self._has_zones, self._has_regions
+                )
+            )
+            return (
+                mark_options,
+                mark_choice,
+                zone_style,
+                region_style,
+                both_style,
+                phase_style,
+                containment_style,
+            )
 
 
 class OpenDialogButton(html.Button):
@@ -614,13 +597,10 @@ class GraphSelectorsLayout(wcc.Selectors):
             header += " zone"
         elif only_region:
             header += " region"
-        options = [ContainmentViews.CONTAINMENTSPLIT]
         color_options = [{"label": "Containment (standard)", "value": "containment"}]
         if has_zones:
-            options.append(ContainmentViews.ZONESPLIT)
             color_options.append({"label": "Zone", "value": "zone"})
         if has_regions:
-            options.append(ContainmentViews.REGIONSPLIT)
             color_options.append({"label": "Region", "value": "region"})
         super().__init__(
             label="Graph Settings",
@@ -639,23 +619,6 @@ class GraphSelectorsLayout(wcc.Selectors):
                     options=list(Co2MassScale),
                     value=Co2MassScale.MTONS,
                     clearable=False,
-                ),
-                html.Div(
-                    [
-                        "Split by",
-                        dcc.RadioItems(
-                            options,
-                            ContainmentViews.CONTAINMENTSPLIT,
-                            id=containment_ids[2],
-                            inline=True,
-                        ),
-                    ],
-                    style={
-                        "display": "none",  # disp,
-                        "flex-direction": "row",
-                        "margin-top": "5px",
-                        "margin-bottom": "1px",
-                    },
                 ),
                 html.Div(
                     [
@@ -762,10 +725,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                             ],
                             value="total",
                             clearable=False,
-                            id=containment_ids[3],
+                            id=containment_ids[2],
                         ),
                     ],
-                    id=containment_ids[4],
+                    id=containment_ids[3],
                     style={"display": "none"},
                 ),
                 html.Div(
@@ -780,10 +743,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                             ],
                             value="total",
                             clearable=False,
-                            id=containment_ids[5],
+                            id=containment_ids[4],
                         ),
                     ],
-                    id=containment_ids[6],
+                    id=containment_ids[5],
                     style={"display": "none"},
                 ),
                 html.Div(
@@ -978,3 +941,53 @@ def get_emails() -> str:
         )
     ]
     return ";".join(emails[:2]) + "?cc=" + ";".join(emails[2:])
+
+
+def _make_styles(
+    color_choice: str,
+    mark_choice: str,
+    has_zones: bool,
+    has_regions: bool,
+) -> List[Dict[str, str]]:
+    zone_style = {"display": "none"}
+    region_style = {"display": "none"}
+    both_style = {"display": "none"}
+    phase_style = {"display": "none"}
+    containment_style = {"display": "none"}
+
+    if color_choice == "containment":
+        if mark_choice == "phase":
+            zone_style = {
+                "width": "50%" if has_regions else "100%",
+                "display": "flex" if has_zones else "none",
+                "flex-direction": "column",
+            }
+            region_style = {
+                "width": "50%" if has_zones else "100%",
+                "display": "flex" if has_regions else "none",
+                "flex-direction": "column",
+            }
+            both_style = {"display": ("flex" if has_zones or has_regions else "none")}
+        else:  # mark_choice == "zone" / "region"
+            phase_style = {
+                "display": "flex",
+                "flex-direction": "column",
+            }
+    else:  # color_choice == "zone" / "region"
+        if mark_choice == "phase":
+            containment_style = {
+                "display": "flex",
+                "flex-direction": "column",
+            }
+        else:  # mark_choice == "containment"
+            phase_style = {
+                "display": "flex",
+                "flex-direction": "column",
+            }
+    return [
+        zone_style,
+        region_style,
+        both_style,
+        phase_style,
+        containment_style,
+    ]
