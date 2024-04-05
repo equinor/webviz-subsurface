@@ -336,7 +336,7 @@ class ViewSettings(SettingsGroupABC):
         )
         def organize_color_and_mark_menus(
             color_choice: str,
-            mark_choice: Optional[str],
+            mark_choice: str,
         ) -> Tuple[
             List[Dict[str, str]],
             str,
@@ -357,20 +357,10 @@ class ViewSettings(SettingsGroupABC):
                 mark_choice = "phase"
             if mark_choice in ["zone", "region"] and color_choice in ["zone", "region"]:
                 mark_choice = "phase"
-            zone_style, region_style, both_style, phase_style, containment_style = (
-                _make_styles(
-                    color_choice, mark_choice, self._has_zones, self._has_regions
-                )
+            zone, region, both, phase, containment = _make_styles(
+                color_choice, mark_choice, self._has_zones, self._has_regions
             )
-            return (
-                mark_options,
-                mark_choice,
-                zone_style,
-                region_style,
-                both_style,
-                phase_style,
-                containment_style,
-            )
+            return mark_options, mark_choice, zone, region, both, phase, containment
 
 
 class OpenDialogButton(html.Button):
@@ -600,18 +590,19 @@ class GraphSelectorsLayout(wcc.Selectors):
         disp = "flex" if has_zones or has_regions else "none"
         disp_zone = "flex" if has_zones else "none"
         disp_region = "flex" if has_regions else "none"
-        only_zone = has_zones and not has_regions
-        only_region = has_regions and not has_zones
         header = "Containment for specific"
-        if only_zone:
+        if has_zones and not has_regions:
             header += " zone"
-        elif only_region:
+        elif has_regions and not has_zones:
             header += " region"
         color_options = [{"label": "Containment (standard)", "value": "containment"}]
+        mark_options = [{"label": "Phase", "value": "phase"}]
         if has_zones:
             color_options.append({"label": "Zone", "value": "zone"})
+            mark_options.append({"label": "Zone", "value": "zone"})
         if has_regions:
             color_options.append({"label": "Region", "value": "region"})
+            mark_options.append({"label": "Region", "value": "region"})
         super().__init__(
             label="Graph Settings",
             open_details=False,
@@ -651,6 +642,8 @@ class GraphSelectorsLayout(wcc.Selectors):
                             [
                                 "Mark by",
                                 wcc.Dropdown(
+                                    options=mark_options,
+                                    value="phase",
                                     id=containment_ids[1],
                                     clearable=False,
                                 ),
@@ -956,44 +949,23 @@ def _make_styles(
     has_zones: bool,
     has_regions: bool,
 ) -> List[Dict[str, str]]:
-    zone_style = {"display": "none"}
-    region_style = {"display": "none"}
-    both_style = {"display": "none"}
-    phase_style = {"display": "none"}
-    containment_style = {"display": "none"}
+    zone = {"display": "none", "flex-direction": "column"}
+    region = {"display": "none", "flex-direction": "column"}
+    both = {"display": "none"}
+    phase = {"display": "none", "flex-direction": "column"}
+    containment = {"display": "none", "flex-direction": "column"}
     if color_choice == "containment":
         if mark_choice == "phase":
-            zone_style = {
-                "width": "50%" if has_regions else "100%",
-                "display": "flex" if has_zones else "none",
-                "flex-direction": "column",
-            }
-            region_style = {
-                "width": "50%" if has_zones else "100%",
-                "display": "flex" if has_regions else "none",
-                "flex-direction": "column",
-            }
-            both_style = {"display": ("flex" if has_zones or has_regions else "none")}
+            zone["width"] = "50%" if has_regions else "100%"
+            zone["display"] = "flex" if has_zones else "none"
+            region["width"] = "50%" if has_zones else "100%"
+            region["display"] = "flex" if has_regions else "none"
+            both["display"] = "flex" if has_zones or has_regions else "none"
         else:  # mark_choice == "zone" / "region"
-            phase_style = {
-                "display": "flex",
-                "flex-direction": "column",
-            }
+            phase["display"] = "flex"
     else:  # color_choice == "zone" / "region"
         if mark_choice == "phase":
-            containment_style = {
-                "display": "flex",
-                "flex-direction": "column",
-            }
-        else:  # mark_choice == "containment"
-            phase_style = {
-                "display": "flex",
-                "flex-direction": "column",
-            }
-    return [
-        zone_style,
-        region_style,
-        both_style,
-        phase_style,
-        containment_style,
-    ]
+            containment["display"] = "flex"
+        else:  # mark == "containment"
+            phase["display"] = "flex"
+    return [zone, region, both, phase, containment]
