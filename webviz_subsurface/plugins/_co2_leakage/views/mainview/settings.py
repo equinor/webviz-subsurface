@@ -47,12 +47,18 @@ class ViewSettings(SettingsGroupABC):
         Y_MAX_GRAPH = "y-max-graph"
         Y_MIN_AUTO_GRAPH = "y-min-auto-graph"
         Y_MAX_AUTO_GRAPH = "y-max-auto-graph"
+        COLOR_BY = "color-by"
+        MARK_BY = "mark-by"
+        SORT_PLOT = "sort-plot"
         ZONE = "zone"
+        ZONE_COL = "zone-column"
+        REGION_COL = "region-column"
+        ZONE_REGION = "zone-and-region"
         REGION = "region"
         PHASE = "phase"
-        PHASE_DROPDOWN = "phase_drop_down"
+        PHASE_MENU = "phase-menu"
         CONTAINMENT = "containment"
-        CONTAINMENT_DROPDOWN = "containment_drop_down"
+        CONTAINMENT_MENU = "containment-menu"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -128,12 +134,18 @@ class ViewSettings(SettingsGroupABC):
                     self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
                 ],
                 [
+                    self.register_component_unique_id(self.Ids.COLOR_BY),
+                    self.register_component_unique_id(self.Ids.MARK_BY),
+                    self.register_component_unique_id(self.Ids.SORT_PLOT),
                     self.register_component_unique_id(self.Ids.ZONE),
+                    self.register_component_unique_id(self.Ids.ZONE_COL),
                     self.register_component_unique_id(self.Ids.REGION),
+                    self.register_component_unique_id(self.Ids.REGION_COL),
+                    self.register_component_unique_id(self.Ids.ZONE_REGION),
                     self.register_component_unique_id(self.Ids.PHASE),
-                    self.register_component_unique_id(self.Ids.PHASE_DROPDOWN),
+                    self.register_component_unique_id(self.Ids.PHASE_MENU),
                     self.register_component_unique_id(self.Ids.CONTAINMENT),
-                    self.register_component_unique_id(self.Ids.CONTAINMENT_DROPDOWN),
+                    self.register_component_unique_id(self.Ids.CONTAINMENT_MENU),
                 ],
                 self._has_zones,
                 self._has_regions,
@@ -309,20 +321,18 @@ class ViewSettings(SettingsGroupABC):
             return False
 
         @callback(
-            Output("mark_by", "options"),
-            Output("mark_by", "value"),
-            Output("zone_col", "style"),
-            Output("region_col", "style"),
-            Output("both_col", "style"),
+            Output(self.component_unique_id(self.Ids.MARK_BY).to_string(), "options"),
+            Output(self.component_unique_id(self.Ids.MARK_BY).to_string(), "value"),
+            Output(self.component_unique_id(self.Ids.ZONE_COL).to_string(), "style"),
+            Output(self.component_unique_id(self.Ids.REGION_COL).to_string(), "style"),
+            Output(self.component_unique_id(self.Ids.ZONE_REGION).to_string(), "style"),
+            Output(self.component_unique_id(self.Ids.PHASE_MENU).to_string(), "style"),
             Output(
-                self.component_unique_id(self.Ids.PHASE_DROPDOWN).to_string(), "style"
-            ),
-            Output(
-                self.component_unique_id(self.Ids.CONTAINMENT_DROPDOWN).to_string(),
+                self.component_unique_id(self.Ids.CONTAINMENT_MENU).to_string(),
                 "style",
             ),
-            Input("color_by", "value"),
-            Input("mark_by", "value"),
+            Input(self.component_unique_id(self.Ids.COLOR_BY).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.MARK_BY).to_string(), "value"),
         )
         def organize_color_and_mark_menus(
             color_choice: str,
@@ -628,11 +638,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=color_options,
                                     value="containment",
-                                    id="color_by",
+                                    id=containment_ids[0],
                                     clearable=False,
                                 ),
                             ],
-                            id="colby",
                             style={
                                 "width": "50%",
                                 "flex-direction": "column",
@@ -642,18 +651,16 @@ class GraphSelectorsLayout(wcc.Selectors):
                             [
                                 "Mark by",
                                 wcc.Dropdown(
-                                    id="mark_by",
+                                    id=containment_ids[1],
                                     clearable=False,
                                 ),
                             ],
-                            id="markby",
                             style={
                                 "width": "50%",
                                 "flex-direction": "column",
                             },
                         ),
                     ],
-                    id="colbymarkby",
                     style={
                         "display": "flex",  # disp,
                         "flex-direction": "row",
@@ -667,7 +674,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                         dcc.RadioItems(
                             options=["color", "marking"],
                             value="color",
-                            id="sorting",
+                            id=containment_ids[2],
                             inline=True,
                         ),
                     ],
@@ -684,11 +691,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                             [
                                 "Specific zone",
                                 wcc.Dropdown(
-                                    id=containment_ids[0],
+                                    id=containment_ids[3],
                                     clearable=False,
                                 ),
                             ],
-                            id="zone_col",
+                            id=containment_ids[4],
                             style={
                                 "width": "50%" if has_regions else "100%",
                                 "display": disp_zone,
@@ -699,11 +706,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                             [
                                 "Specific region",
                                 wcc.Dropdown(
-                                    id=containment_ids[1],
+                                    id=containment_ids[5],
                                     clearable=False,
                                 ),
                             ],
-                            id="region_col",
+                            id=containment_ids[6],
                             style={
                                 "width": "50%" if has_zones else "100%",
                                 "display": disp_region,
@@ -711,7 +718,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             },
                         ),
                     ],
-                    id="both_col",
+                    id=containment_ids[7],
                     style={"display": disp},
                 ),
                 html.Div(
@@ -725,10 +732,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                             ],
                             value="total",
                             clearable=False,
-                            id=containment_ids[2],
+                            id=containment_ids[8],
                         ),
                     ],
-                    id=containment_ids[3],
+                    id=containment_ids[9],
                     style={"display": "none"},
                 ),
                 html.Div(
@@ -743,10 +750,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                             ],
                             value="total",
                             clearable=False,
-                            id=containment_ids[4],
+                            id=containment_ids[10],
                         ),
                     ],
-                    id=containment_ids[5],
+                    id=containment_ids[11],
                     style={"display": "none"},
                 ),
                 html.Div(
@@ -954,7 +961,6 @@ def _make_styles(
     both_style = {"display": "none"}
     phase_style = {"display": "none"}
     containment_style = {"display": "none"}
-
     if color_choice == "containment":
         if mark_choice == "phase":
             zone_style = {

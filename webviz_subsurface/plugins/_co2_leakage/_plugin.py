@@ -254,9 +254,9 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.REGION), "value"),
             Input(self._settings_component(ViewSettings.Ids.PHASE), "value"),
             Input(self._settings_component(ViewSettings.Ids.CONTAINMENT), "value"),
-            Input("color_by", "value"),
-            Input("mark_by", "value"),
-            Input("sorting", "value"),
+            Input(self._settings_component(ViewSettings.Ids.COLOR_BY), "value"),
+            Input(self._settings_component(ViewSettings.Ids.MARK_BY), "value"),
+            Input(self._settings_component(ViewSettings.Ids.SORT_PLOT), "value"),
         )
         @callback_typecheck
         def update_graphs(
@@ -402,7 +402,7 @@ class CO2Leakage(WebvizPluginABC):
             )
 
         # Cannot avoid many arguments and/or locals since all layers of the DeckGL map
-        # needs to be updated simultaneously
+        # need to be updated simultaneously
         # pylint: disable=too-many-arguments,too-many-locals
         @callback(
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
