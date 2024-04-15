@@ -232,7 +232,6 @@ class CO2Leakage(WebvizPluginABC):
 
     # Might want to do some refactoring if this gets too big
     # pylint: disable=too-many-statements
-    # pylint: disable=too-many-locals
     def _set_callbacks(self) -> None:
         # Cannot avoid many arguments since all the parameters are needed
         # to determine what to plot
@@ -277,6 +276,7 @@ class CO2Leakage(WebvizPluginABC):
             mark_choice: Optional[str],
             sorting: str,
         ) -> Tuple[Dict, go.Figure, go.Figure, go.Figure]:
+            # pylint: disable=too-many-locals
             figs = [no_update] * 3
             cont_info = process_containment_info(
                 zone,
