@@ -528,12 +528,20 @@ def set_plot_ids(
     realizations: List[int],
 ) -> None:
     if figs[0] != no_update:
+        zone_str = (
+            containment_info["zone"] if containment_info["zone"] is not None else "None"
+        )
+        region_str = (
+            containment_info["region"]
+            if containment_info["region"] is not None
+            else "None"
+        )
         plot_id = "-".join(
             (
                 source,
                 scale,
-                containment_info["zone"],
-                containment_info["region"],
+                zone_str,
+                region_str,
                 str(containment_info["phase"]),
                 str(containment_info["containment"]),
                 containment_info["color_choice"],
