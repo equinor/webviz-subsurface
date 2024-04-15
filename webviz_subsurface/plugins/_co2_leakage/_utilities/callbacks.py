@@ -262,6 +262,7 @@ def create_map_viewports() -> Dict:
 
 
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
 def create_map_layers(
     formation: str,
     surface_data: Optional[SurfaceData],
