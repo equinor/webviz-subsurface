@@ -232,6 +232,7 @@ class CO2Leakage(WebvizPluginABC):
 
     # Might want to do some refactoring if this gets too big
     # pylint: disable=too-many-statements
+    # pylint: disable=too-many-locals
     def _set_callbacks(self) -> None:
         # Cannot avoid many arguments since all the parameters are needed
         # to determine what to plot
