@@ -213,7 +213,11 @@ def create_map_annotations(
     unit: str,
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
-    if surface_data is not None:
+    if (
+        surface_data is not None
+        and surface_data.color_map_range[0] is not None
+        and surface_data.color_map_range[1] is not None
+    ):
         num_digits = np.ceil(np.log(surface_data.color_map_range[1]) / np.log(10))
         numbersize = max((6, min((17 - num_digits, 11))))
         annotations.append(
