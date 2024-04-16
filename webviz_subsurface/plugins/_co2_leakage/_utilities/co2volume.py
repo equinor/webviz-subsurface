@@ -666,12 +666,13 @@ def generate_co2_time_containment_figure(
                 )
                 / 10
             )
+            # NBNB-AS: Check this, mypy complains:
             args = {
                 "line_dash": value[1],
                 "marker_color": value[2],
                 "legendgroup": col,
                 "name": col,
-                "customdata": prop,
+                "customdata": prop,  # type: ignore
             }
             if col not in active_cols_at_startup:
                 args["visible"] = "legendonly"
