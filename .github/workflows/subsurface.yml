@@ -92,7 +92,6 @@ jobs:
           mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
           pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
           rm -rf ./tests/assets
-          webviz docs --portable ./docs_build --skip-open
 
       - name: 🐳 Build Docker example image
         if: github.event_name != 'release'
@@ -134,6 +133,8 @@ jobs:
       - name: 📚 Update GitHub pages
         if: github.event_name == 'release' && matrix.python-version == '3.8'
         run: |
+          webviz docs --portable ./docs_build --skip-open
+
           cp -R ./docs_build ../docs_build
 
           git config --local user.email "webviz-github-action"
