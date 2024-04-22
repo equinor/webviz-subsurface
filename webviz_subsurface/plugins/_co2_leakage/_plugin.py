@@ -171,7 +171,7 @@ class CO2Leakage(WebvizPluginABC):
                 ensemble_paths,
                 self._co2_table_providers,
                 self._co2_actual_volume_table_providers,
-                self._ensemble_surface_providers,
+                self._co2_table_providers,
             )
         except Exception as err:
             self._error_message = f"Plugin initialization failed: {err}"
