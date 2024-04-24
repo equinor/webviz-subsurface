@@ -363,6 +363,15 @@ class ViewSettings(SettingsGroupABC):
             )
             return mark_options, mark_choice, zone, region, phase, containment
 
+        @callback(
+            Output(self.component_unique_id(self.Ids.ZONE).to_string(), "disabled"),
+            Output(self.component_unique_id(self.Ids.REGION).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
+        )
+        def disable_zone_or_region(zone: str, region: str) -> Tuple[bool, bool]:
+            return region != "all", zone != "all"
+
 
 class OpenDialogButton(html.Button):
     def __init__(self) -> None:
