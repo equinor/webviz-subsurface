@@ -325,7 +325,6 @@ class ViewSettings(SettingsGroupABC):
             Output(self.component_unique_id(self.Ids.MARK_BY).to_string(), "value"),
             Output(self.component_unique_id(self.Ids.ZONE_COL).to_string(), "style"),
             Output(self.component_unique_id(self.Ids.REGION_COL).to_string(), "style"),
-            Output(self.component_unique_id(self.Ids.ZONE_REGION).to_string(), "style"),
             Output(self.component_unique_id(self.Ids.PHASE_MENU).to_string(), "style"),
             Output(
                 self.component_unique_id(self.Ids.CONTAINMENT_MENU).to_string(),
@@ -344,9 +343,11 @@ class ViewSettings(SettingsGroupABC):
             Dict[str, str],
             Dict[str, str],
             Dict[str, str],
-            Dict[str, str],
         ]:
-            mark_options = [{"label": "Phase", "value": "phase"}]
+            mark_options = [
+                {"label": "Phase", "value": "phase"},
+                {"label": "None", "value": "none"},
+            ]
             if self._has_zones and color_choice == "containment":
                 mark_options.append({"label": "Zone", "value": "zone"})
             if self._has_regions and color_choice == "containment":
@@ -357,10 +358,19 @@ class ViewSettings(SettingsGroupABC):
                 mark_choice = "phase"
             if mark_choice in ["zone", "region"] and color_choice in ["zone", "region"]:
                 mark_choice = "phase"
-            zone, region, both, phase, containment = _make_styles(
+            zone, region, phase, containment = _make_styles(
                 color_choice, mark_choice, self._has_zones, self._has_regions
             )
-            return mark_options, mark_choice, zone, region, both, phase, containment
+            return mark_options, mark_choice, zone, region, phase, containment
+
+        @callback(
+            Output(self.component_unique_id(self.Ids.ZONE).to_string(), "disabled"),
+            Output(self.component_unique_id(self.Ids.REGION).to_string(), "disabled"),
+            Input(self.component_unique_id(self.Ids.ZONE).to_string(), "value"),
+            Input(self.component_unique_id(self.Ids.REGION).to_string(), "value"),
+        )
+        def disable_zone_or_region(zone: str, region: str) -> Tuple[bool, bool]:
+            return region != "all", zone != "all"
 
 
 class OpenDialogButton(html.Button):
@@ -587,7 +597,6 @@ class GraphSelectorsLayout(wcc.Selectors):
         has_zones: bool,
         has_regions: bool,
     ):
-        disp = "flex" if has_zones or has_regions else "none"
         disp_zone = "flex" if has_zones else "none"
         disp_region = "flex" if has_regions else "none"
         header = "Containment for specific"
@@ -682,7 +691,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                     [
                         html.Div(
                             [
-                                "Specific zone",
+                                "Zone",
                                 wcc.Dropdown(
                                     id=containment_ids[3],
                                     clearable=False,
@@ -697,7 +706,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                         ),
                         html.Div(
                             [
-                                "Specific region",
+                                "Region",
                                 wcc.Dropdown(
                                     id=containment_ids[5],
                                     clearable=False,
@@ -710,44 +719,44 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 "flex-direction": "column",
                             },
                         ),
+                        html.Div(
+                            [
+                                "Phase",
+                                wcc.Dropdown(
+                                    options=[
+                                        {"label": "Total", "value": "total"},
+                                        {"label": "Aqueous", "value": "aqueous"},
+                                        {"label": "Gas", "value": "gas"},
+                                    ],
+                                    value="total",
+                                    clearable=False,
+                                    id=containment_ids[8],
+                                ),
+                            ],
+                            id=containment_ids[9],
+                            style={"display": "none"},
+                        ),
+                        html.Div(
+                            [
+                                "Containment",
+                                wcc.Dropdown(
+                                    options=[
+                                        {"label": "Total", "value": "total"},
+                                        {"label": "Contained", "value": "contained"},
+                                        {"label": "Outside", "value": "outside"},
+                                        {"label": "Hazardous", "value": "hazardous"},
+                                    ],
+                                    value="total",
+                                    clearable=False,
+                                    id=containment_ids[10],
+                                ),
+                            ],
+                            id=containment_ids[11],
+                            style={"display": "none"},
+                        ),
                     ],
                     id=containment_ids[7],
-                    style={"display": disp},
-                ),
-                html.Div(
-                    [
-                        "Specific phase",
-                        wcc.Dropdown(
-                            options=[
-                                {"label": "Total", "value": "total"},
-                                {"label": "Aqueous", "value": "aqueous"},
-                                {"label": "Gas", "value": "gas"},
-                            ],
-                            value="total",
-                            clearable=False,
-                            id=containment_ids[8],
-                        ),
-                    ],
-                    id=containment_ids[9],
-                    style={"display": "none"},
-                ),
-                html.Div(
-                    [
-                        "Specific containment status",
-                        wcc.Dropdown(
-                            options=[
-                                {"label": "Total", "value": "total"},
-                                {"label": "Contained", "value": "contained"},
-                                {"label": "Outside", "value": "outside"},
-                                {"label": "Hazardous", "value": "hazardous"},
-                            ],
-                            value="total",
-                            clearable=False,
-                            id=containment_ids[10],
-                        ),
-                    ],
-                    id=containment_ids[11],
-                    style={"display": "none"},
+                    style={"display": "flex"},
                 ),
                 html.Div(
                     "Fix y-limits in third plot:",
@@ -949,23 +958,37 @@ def _make_styles(
     has_zones: bool,
     has_regions: bool,
 ) -> List[Dict[str, str]]:
-    zone = {"display": "none", "flex-direction": "column"}
-    region = {"display": "none", "flex-direction": "column"}
-    both = {"display": "none"}
-    phase = {"display": "none", "flex-direction": "column"}
-    containment = {"display": "none", "flex-direction": "column"}
+    zone = {"display": "none", "flex-direction": "column", "width": "100%"}
+    region = {"display": "none", "flex-direction": "column", "width": "100%"}
+    phase = {"display": "none", "flex-direction": "column", "width": "100%"}
+    containment = {"display": "none", "flex-direction": "column", "width": "100%"}
     if color_choice == "containment":
         if mark_choice == "phase":
             zone["width"] = "50%" if has_regions else "100%"
             zone["display"] = "flex" if has_zones else "none"
             region["width"] = "50%" if has_zones else "100%"
             region["display"] = "flex" if has_regions else "none"
-            both["display"] = "flex" if has_zones or has_regions else "none"
+        elif mark_choice == "none":
+            zone["width"] = "33%" if has_regions else "50%"
+            zone["display"] = "flex" if has_zones else "none"
+            region["width"] = "33%" if has_zones else "50%"
+            region["display"] = "flex" if has_regions else "none"
+            phase["width"] = (
+                "33%"
+                if has_zones and has_regions
+                else "100%" if not has_regions and not has_zones else "50%"
+            )
+            phase["display"] = "flex"
         else:  # mark_choice == "zone" / "region"
             phase["display"] = "flex"
     else:  # color_choice == "zone" / "region"
         if mark_choice == "phase":
             containment["display"] = "flex"
+        elif mark_choice == "none":
+            containment["width"] = "50%"
+            containment["display"] = "flex"
+            phase["width"] = "50%"
+            phase["display"] = "flex"
         else:  # mark == "containment"
             phase["display"] = "flex"
-    return [zone, region, both, phase, containment]
+    return [zone, region, phase, containment]
