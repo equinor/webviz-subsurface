@@ -976,7 +976,9 @@ def _make_styles(
             phase["width"] = (
                 "33%"
                 if has_zones and has_regions
-                else "100%" if not has_regions and not has_zones else "50%"
+                else "100%"
+                if not has_regions and not has_zones
+                else "50%"
             )
             phase["display"] = "flex"
         else:  # mark_choice == "zone" / "region"
