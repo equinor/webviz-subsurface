@@ -69,6 +69,7 @@ jobs:
         run: pip freeze
 
       - name: 🕵️ Check code style & linting
+        if: github.event_name != 'release'
         run: |
           black --check webviz_subsurface tests setup.py
           pylint webviz_subsurface tests setup.py
@@ -77,6 +78,7 @@ jobs:
           mypy --package webviz_subsurface
 
       - name: 🤖 Run tests
+        if: github.event_name != 'release'
         env:
           # If you want the CI to (temporarily) run against your fork of the testdada,
           # change the value her from "equinor" to your username.
@@ -90,9 +92,9 @@ jobs:
           mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
           pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
           rm -rf ./tests/assets
-          webviz docs --portable ./docs_build --skip-open
 
       - name: 🐳 Build Docker example image
+        if: github.event_name != 'release'
         run: |
           pip install --pre webviz-config-equinor
           export SOURCE_URL_WEBVIZ_SUBSURFACE=https://github.com/$GITHUB_REPOSITORY
@@ -105,13 +107,13 @@ jobs:
           popd
 
       - name: 🐳 Update Docker Hub example image
-        if: github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.8'
+        if: github.event_name != 'release' && github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.8'
         run: |
           echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
           docker push webviz/example_subsurface_image:equinor-theme
 
       - name: 🐳 Update review/test Docker example image
-        if: github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.8'
+        if: github.event_name != 'release' && github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.8'
         run: |
           docker tag webviz/example_subsurface_image:equinor-theme ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
 
@@ -131,6 +133,8 @@ jobs:
       - name: 📚 Update GitHub pages
         if: github.event_name == 'release' && matrix.python-version == '3.8'
         run: |
+          webviz docs --portable ./docs_build --skip-open
+
           cp -R ./docs_build ../docs_build
 
           git config --local user.email "webviz-github-action"
