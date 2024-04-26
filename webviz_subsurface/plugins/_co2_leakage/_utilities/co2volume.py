@@ -609,13 +609,60 @@ def generate_co2_time_containment_one_realization_figure(
         pattern_shape=pattern_shape,
         pattern_shape_sequence=marks,  # ['', '/', '\\', 'x', '-', '|', '+', '.'],
         range_y=y_limits,
-        hover_data=["prop"],
+        hover_data={
+            "prop": True,
+            "amount": ":.3f",
+        },
     )
+    _add_hover_info_in_field(fig, df, cat_ord, colors)
     fig.layout.yaxis.range = y_limits
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
     _adjust_figure(fig)
     return fig
+
+
+def _add_hover_info_in_field(
+    fig: go.Figure,
+    df: pandas.DataFrame,
+    cat_ord: Dict,
+    colors: List,
+) -> None:
+    """
+    Plots additional, invisible points in the middle of each field in the third plot,
+    solely to display hover information inside the fields
+    (which is not possible directly with plotly.express.area)
+    """
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+    months += ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    dates = np.unique(df["date"])
+    date_strings = {
+        date: f"{months[int(date.split('-')[1]) - 1]} {date.split('-')[0]}"
+        for date in dates
+    }
+    prev_vals = {date: 0 for date in dates}
+    for name, color in zip(cat_ord["type"], colors):
+        sub_df = df[df["type"] == name]
+        for date in dates:
+            amount = sub_df[sub_df["date"] == date]["amount"].item()
+            prop = sub_df[sub_df["date"] == date]["prop"].item()
+            prev_val = prev_vals[date]
+            new_val = prev_val + amount
+            mid_val = (prev_val + new_val) / 2
+            fig.add_trace(
+                go.Scatter(
+                    x=[date],
+                    y=[mid_val],
+                    mode="lines",
+                    line=go.scatter.Line(color=color),
+                    text=f"type={name}<br>date={date_strings[date]}<br>"
+                    f"amount={amount:.3f}<br>prop={prop}",
+                    hoverinfo="text",
+                    hoveron="points",
+                    showlegend=False,
+                )
+            )
+            prev_vals[date] = new_val
 
 
 def _make_cols_to_plot(
