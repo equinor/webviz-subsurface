@@ -9,7 +9,7 @@ TESTS_REQUIRE = [
     "dash[testing]",
     "isort",
     "mypy",
-    "pylint<=2.13.9",  # Locked due to https://github.com/equinor/webviz-subsurface/issues/1052
+    "pylint",
     "pytest-mock",
     "pytest-xdist",
     "pytest-forked",
