@@ -73,6 +73,7 @@ def tornado_controllers(
             if page_selected == "torn_bulk_inplace"
             else [selections["Response"]]
         )
+        realplot = None
         for response in responses:
             if not (response == "BULK" and page_selected == "torn_bulk_inplace"):
                 if selections["Reference"] not in selections["Sensitivities"]:
@@ -132,7 +133,7 @@ def tornado_controllers(
                 height="39vh",
                 table_id={"table_id": f"{page_selected}-torntable"},
             )
-        elif selections["bottom_viz"] == "realplot" and figures:
+        elif realplot and selections["bottom_viz"] == "realplot" and figures:
             bottom_display = [
                 wcc.Graph(
                     config={"displayModeBar": False},
