@@ -439,7 +439,7 @@ def _get_wells_vectors_phases(
     wells, vectors = sorted(wells), sorted(vectors)
 
     if not vectors:
-        RuntimeError("No WOPT, WWPT or WGPT vectors found.")
+        raise RuntimeError("No WOPT, WWPT or WGPT vectors found.")
 
     if drop_list:
         logging.debug(
@@ -496,7 +496,7 @@ def _get_well_collections_from_attr(
     df_well_groups = well_attributes.dataframe_melted.dropna()
     df_cols = df_well_groups.columns
     if "WELL" not in df_cols or "VALUE" not in df_cols:
-        RuntimeError(
+        raise RuntimeError(
             f"The {well_attributes.file_name} file must contain the columns"
             " 'WELL' and 'VALUE'"
         )
