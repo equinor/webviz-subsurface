@@ -243,9 +243,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def seismic_layout(self) -> html.Div:
         if self.segyfiles:
             return html.Div(
-                style=self.set_style(marginTop="20px")
-                if self.segyfiles
-                else {"display": "none"},
+                style=(
+                    self.set_style(marginTop="20px")
+                    if self.segyfiles
+                    else {"display": "none"}
+                ),
                 children=html.Label(
                     children=[
                         html.Span("Seismic:", style={"font-weight": "bold"}),

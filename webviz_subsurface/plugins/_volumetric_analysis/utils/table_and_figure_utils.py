@@ -148,7 +148,7 @@ def create_figure_matrix(figures: List[go.Figure]) -> List[List[go.Figure]]:
     len_of_matrix = figs_in_row * math.ceil(len(figures) / figs_in_row)
     # extend figure list with None to fit size of matrix
     figures.extend([None] * (len_of_matrix - len(figures)))
-    return [figures[i: i + figs_in_row] for i in range(0, len_of_matrix, figs_in_row)]
+    return [figures[i : i + figs_in_row] for i in range(0, len_of_matrix, figs_in_row)]
 
 
 def update_tornado_figures_xaxis(figures: List[go.Figure]) -> None:

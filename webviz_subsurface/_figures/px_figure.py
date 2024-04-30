@@ -79,16 +79,20 @@ def update_xaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
         linewidth=2,
         linecolor="black",
         mirror=True,
-        title=None
-        if facet_col is not None or not isinstance(kwargs.get("x"), str)
-        else kwargs.get("x"),
-        showticklabels=(data_frame[facet_col].nunique() <= 100)
-        if facet_col is not None
-        else None,
+        title=(
+            None
+            if facet_col is not None or not isinstance(kwargs.get("x"), str)
+            else kwargs.get("x")
+        ),
+        showticklabels=(
+            (data_frame[facet_col].nunique() <= 100) if facet_col is not None else None
+        ),
         tickangle=0,
-        tickfont_size=max((20 - (0.4 * data_frame[facet_col].nunique())), 10)
-        if facet_col is not None
-        else None,
+        tickfont_size=(
+            max((20 - (0.4 * data_frame[facet_col].nunique())), 10)
+            if facet_col is not None
+            else None
+        ),
         fixedrange=plot_type == "distribution",
     ).update_xaxes(**kwargs.get("xaxis", {}))
 
@@ -118,19 +122,23 @@ def update_traces(figure: go.Figure, **kwargs: Any) -> go.Figure:
     facet_col = kwargs.get("facet_col")
     return (
         figure.update_traces(
-            marker_size=max((20 - (1.5 * data_frame[facet_col].nunique())), 5)
-            if facet_col is not None
-            else 20,
+            marker_size=(
+                max((20 - (1.5 * data_frame[facet_col].nunique())), 5)
+                if facet_col is not None
+                else 20
+            ),
             selector=lambda t: t["type"] in ["scatter", "scattergl"],
         )
         .update_traces(textposition="inside", selector=dict(type="pie"))
         .for_each_trace(lambda t: set_marker_color(t))
         .for_each_trace(
-            lambda t: t.update(
-                xbins_size=(t["x"].max() - t["x"].min()) / kwargs.get("nbins", 15)
-            )
-            if is_numeric_dtype(t["x"])
-            else None,
+            lambda t: (
+                t.update(
+                    xbins_size=(t["x"].max() - t["x"].min()) / kwargs.get("nbins", 15)
+                )
+                if is_numeric_dtype(t["x"])
+                else None
+            ),
             selector=dict(type="histogram"),
         )
     )
@@ -158,12 +166,14 @@ def for_each_annotation(figure: go.Figure, **kwargs: Any) -> go.Figure:
     return figure.for_each_annotation(
         lambda a: a.update(
             text=(a.text.split("=")[-1]),
-            visible=data_frame[facet_col].nunique() <= 42
-            if facet_col is not None
-            else None,
-            font_size=max((18 - (0.4 * data_frame[facet_col].nunique())), 10)
-            if facet_col is not None
-            else None,
+            visible=(
+                data_frame[facet_col].nunique() <= 42 if facet_col is not None else None
+            ),
+            font_size=(
+                max((18 - (0.4 * data_frame[facet_col].nunique())), 10)
+                if facet_col is not None
+                else None
+            ),
         )
     )
 

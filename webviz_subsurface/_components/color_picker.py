@@ -73,7 +73,9 @@ class ColorPicker:
             warnings.warn("No color found for filter!")
             return "#ffffff"
         if len(df["COLOR"].unique()) > 1:
-            warnings.warn(f"Multiple colors found for filter, using first color: {color_list[df.index[0]]}")
+            warnings.warn(
+                f"Multiple colors found for filter, using first color: {color_list[df.index[0]]}"
+            )
         return color_list[df.index[0]]
 
     @property
