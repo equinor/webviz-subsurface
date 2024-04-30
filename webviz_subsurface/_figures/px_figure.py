@@ -1,4 +1,5 @@
 import inspect
+import math
 from typing import Any, Callable, List, Optional, Union
 
 import pandas as pd
@@ -40,11 +41,12 @@ def set_default_args(**plotargs: Any) -> dict:
 
     if plotargs.get("facet_col") is not None:
         facet_cols = plotargs["data_frame"][plotargs["facet_col"]].nunique()
+
+        x = math.ceil((math.sqrt(1 + 4 * facet_cols) - 1) / 2)
+        facet_col_wrap = min(x, 20)
+
         plotargs.update(
-            facet_col_wrap=min(
-                min([x for x in range(100) if (x * (x + 1)) >= facet_cols]),
-                20,
-            ),
+            facet_col_wrap=facet_col_wrap,
             facet_row_spacing=max((0.08 - (0.00071 * facet_cols)), 0.03),
             facet_col_spacing=max((0.06 - (0.00071 * facet_cols)), 0.03),
         )
