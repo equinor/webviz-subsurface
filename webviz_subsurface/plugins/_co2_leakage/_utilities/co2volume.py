@@ -144,8 +144,8 @@ def _get_marks(num_marks: int, mark_choice: str) -> List[str]:
         if num_marks > len(base_pattern):
             base_pattern *= int(np.ceil(num_marks / len(base_pattern)))
             warnings.warn(
-                f"More {type}s than pattern options. "
-                f"Some {type}s will share pattern."
+                f"More {mark_choice}s than pattern options. "
+                f"Some {mark_choice}s will share pattern."
             )
         return base_pattern[:num_marks]
     return ["", "/"]
