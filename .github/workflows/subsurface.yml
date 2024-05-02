@@ -48,10 +48,10 @@ jobs:
           if [[ $(pip freeze) ]]; then
             pip freeze | grep -vw "pip" | xargs pip uninstall -y
           fi
-          pip install "shapely<2"
-          pip install "bleach<5"  # https://github.com/equinor/webviz-config/issues/586
-          pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
-          pip install "selenium<4.3"  # breaking change in selenium==4.3
+          pip install "shapely"
+          pip install "bleach"
+          pip install "werkzeug"
+          pip install "selenium"
           pip install .
 
           # Testing against our latest release (including pre-releases)
@@ -189,9 +189,9 @@ jobs:
       - name: 📦 Install webviz-subsurface with dependencies
         run: |
           pip install --upgrade pip
-          pip install "bleach<5"  # https://github.com/equinor/webviz-config/issues/586
-          pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
-          pip install "selenium<4.3"  # breaking change in selenium==4.3
+          pip install "bleach"
+          pip install "werkzeug"
+          pip install "selenium"
           pip install "scipy<1.9.3"   # breaking change in scipy==1.9.3
           pip install "pytest<7.2.0"
           pip install "pytest-xdist<3.0"
