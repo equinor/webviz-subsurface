@@ -117,23 +117,23 @@ def distribution_controllers(
                 )
                 if selections["Plot type"] == "bar"
                 else False,
-                layout=dict(
-                    title=dict(
-                        text=(
-                            f"{volume_description(selections['X Response'])}"
+                layout={
+                    "title": (
+                        {
+                            "text": f"{volume_description(selections['X Response'])}"
                             + (
                                 f" [{volume_unit(selections['X Response'])}]"
                                 if selections["X Response"]
                                 in volumemodel.volume_columns
                                 else ""
-                            )
-                        ),
-                        x=0.5,
-                        xref="paper",
-                        font=dict(size=18),
+                            ),
+                            "x": 0.5,
+                            "xref": "paper",
+                            "font": {"size": 18},
+                        }
                     ),
-                ),
-                yaxis=dict(showticklabels=True),
+                },
+                yaxis={"showticklabels": True},
             )
             .add_annotation(fluid_annotation(selections))
             .update_xaxes({"matches": None} if not selections["X axis matches"] else {})
@@ -236,8 +236,8 @@ def distribution_controllers(
                         color_discrete_sequence=selections["Colorscale"],
                         color=selector,
                     )
-                    .update_traces(marker_line=dict(color="#000000", width=1))
-                    .update_layout(margin=dict(l=10, b=10))
+                    .update_traces(marker_line={"color": "#000000", "width": 1})
+                    .update_layout(margin={"l": 10, "b": 10})
                 )
                 if not color
                 else []
@@ -252,7 +252,12 @@ def distribution_controllers(
                 layout={"bargap": 0.05},
                 color_discrete_sequence=selections["Colorscale"],
                 color=selections["Color by"],
-                xaxis=dict(type="category", tickangle=45, tickfont_size=17, title=None),
+                xaxis={
+                    "type": "category",
+                    "tickangle": 45,
+                    "tickfont_size": 17,
+                    "title": None,
+                },
                 text_auto=get_text_format_bar_plot(
                     responses=[selections["X Response"]],
                     selections=selections,
@@ -327,7 +332,7 @@ def distribution_controllers(
                 color="calculation",
                 custom_data=["calculation", "index"],
                 title=title,
-                yaxis=dict(showticklabels=True),
+                yaxis={"showticklabels": True},
             )
             .update_traces(
                 hovertemplate=(
@@ -339,10 +344,10 @@ def distribution_controllers(
             )
             .update_traces(line_color="black", selector={"name": "mean"})
             .update_traces(
-                line=dict(color="firebrick", dash="dash"), selector={"name": "p10"}
+                line={"color": "firebrick", "dash": "dash"}, selector={"name": "p10"}
             )
             .update_traces(
-                line=dict(color="royalblue", dash="dash"), selector={"name": "p90"}
+                line={"color": "royalblue", "dash": "dash"}, selector={"name": "p90"}
             )
             .update_xaxes({"matches": None} if not selections["X axis matches"] else {})
             .update_yaxes({"matches": None} if not selections["Y axis matches"] else {})

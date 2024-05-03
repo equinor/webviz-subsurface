@@ -111,18 +111,19 @@ def fluid_table_style() -> list:
 
 def fluid_annotation(selections: dict) -> dict:
     fluid_text = (" + ").join(selections["filters"]["FLUID_ZONE"])
-    return dict(
-        visible=bool(selections["Fluid annotation"])
+
+    return {
+        "visible": bool(selections["Fluid annotation"])
         and selections["Subplots"] != "FLUID_ZONE",
-        x=1,
-        y=1,
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        text="Fluid zone<br>" + fluid_text,
-        font=dict(size=15, color="black"),
-        bgcolor="#E8E8E8",
-    )
+        "x": 1,
+        "y": 1,
+        "xref": "paper",
+        "yref": "paper",
+        "showarrow": False,
+        "text": "Fluid zone<br>" + fluid_text,
+        "font": {"size": 15, "color": "black"},
+        "bgcolor": "#E8E8E8",
+    }
 
 
 def add_correlation_line(figure: go.Figure, xy_min: float, xy_max: float) -> go.Figure:
@@ -135,7 +136,7 @@ def add_correlation_line(figure: go.Figure, xy_min: float, xy_max: float) -> go.
         y0=xy_min,
         x1=xy_max,
         y1=xy_max,
-        line=dict(color="black", width=2, dash="dash"),
+        line={"color": "black", "width": 2, "dash": "dash"},
     )
 
 
@@ -156,7 +157,7 @@ def update_tornado_figures_xaxis(figures: List[go.Figure]) -> None:
     Update the x-axis range for a list of tornado figures with the maximum absolute
     x-value from all figures. Axis will be centered around 0.
     """
-    x_absmax = max([max(abs(trace.x)) for fig in figures for trace in fig.data])
+    x_absmax = max(max(abs(trace.x)) for fig in figures for trace in fig.data)
     for fig in figures:
         fig.update_layout(xaxis_range=[-x_absmax, x_absmax])
 

@@ -539,9 +539,7 @@ def plugin_callbacks(
                             colorTables=color_tables,
                         ),
                         wsc.ViewFooter(
-                            children=make_viewport_label(
-                                surface_elements[idx], tab_name, multi
-                            )
+                            children=make_viewport_label(data, tab_name, multi)
                         ),
                     ],
                 )
@@ -558,7 +556,7 @@ def plugin_callbacks(
                         f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
                         f"{LayoutElements.WELLS_LAYER}-{idx}",
                     ],
-                    "name": make_viewport_label(surface_elements[idx], tab_name, multi),
+                    "name": make_viewport_label(data, tab_name, multi),
                 }
             )
         updated_view_layout = view_layout(len(surface_elements), view_columns)
@@ -1041,7 +1039,7 @@ def view_layout(views: int, columns: Optional[int] = None) -> List[int]:
     columns = (
         columns
         if columns is not None
-        else min([x for x in range(1, 20, 1) if (x * x) >= views])
+        else min(x for x in range(1, 20, 1) if (x * x) >= views)
     )
     rows = math.ceil(views / columns)
     return [rows, columns]

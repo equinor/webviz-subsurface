@@ -152,7 +152,6 @@ class Unit:
         care of keeping its symbol tidy.
         """
 
-        # pylint: disable=super-init-not-called
         def __init__(
             self,
             value: Union[float, UnitBase],  # type: ignore[name-defined]

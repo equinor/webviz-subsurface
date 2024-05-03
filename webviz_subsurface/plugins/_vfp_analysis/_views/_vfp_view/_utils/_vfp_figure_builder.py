@@ -68,15 +68,15 @@ class VfpFigureBuilder:
                 "hoverinfo": "y+x+text",
                 "showlegend": False,
                 "mode": "markers+lines",
-                "marker": dict(
-                    cmax=cmax,
-                    cmin=cmin,
-                    cmid=(cmin + cmax) / 2,
-                    color=[cvalue] * len(rates),
-                    colorscale=[[0, RED], [0.5, MID_COLOR], [1, GREEN]],
-                    showscale=showscale,
-                    colorbar={"title": vfp_table.param_types[color_by].value},
-                ),
+                "marker": {
+                    "cmax": cmax,
+                    "cmin": cmin,
+                    "cmid": (cmin + cmax) / 2,
+                    "color": [cvalue] * len(rates),
+                    "colorscale": [[0, RED], [0.5, MID_COLOR], [1, GREEN]],
+                    "showscale": showscale,
+                    "colorbar": {"title": vfp_table.param_types[color_by].value},
+                },
                 "line": {"color": _get_color(cmax, cmin, cvalue)},
             }
         )

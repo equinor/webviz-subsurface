@@ -1,13 +1,14 @@
 import abc
 import datetime
 from dataclasses import dataclass
-from enum import Enum
 from typing import List, Optional, Sequence
 
 import pandas as pd
 
+from webviz_subsurface._utils.enum_shim import StrEnum
 
-class Frequency(Enum):
+
+class Frequency(StrEnum):
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"

@@ -412,7 +412,6 @@ def extract_tree(
     works recursively and is initially called with the terminal node of the tree
     (usually FIELD)
     """
-    # pylint: disable=too-many-locals
     node_sumvecs = sumvecs[sumvecs["NODENAME"] == nodename]
     nodedict = get_nodedict(gruptree, nodename)
 
@@ -593,15 +592,11 @@ def create_leafnodetype_maps(
             )
 
             sumprod = sum(
-                [
-                    smry[sumvec].sum()
-                    for sumvec in prod_sumvecs
-                    if sumvec in smry.columns
-                ]
+                smry[sumvec].sum() for sumvec in prod_sumvecs if sumvec in smry.columns
             )
 
             suminj = sum(
-                [smry[sumvec].sum() for sumvec in inj_sumvecs if sumvec in smry.columns]
+                smry[sumvec].sum() for sumvec in inj_sumvecs if sumvec in smry.columns
             )
 
             is_prod_map[nodename] = sumprod > 0

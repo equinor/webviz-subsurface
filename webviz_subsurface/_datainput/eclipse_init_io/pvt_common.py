@@ -632,15 +632,15 @@ def surface_mass_density(
     else:
         raise AttributeError("Phase must be Liquid, Water or Vapour.")
 
-    tabdims = ecl_file.__getitem__("TABDIMS")
-    tab = ecl_file.__getitem__("TAB")
+    tabdims = ecl_file["TABDIMS"]
+    tab = ecl_file["TAB"]
 
     start = tabdims[InitFileDefinitions.TABDIMS_IBDENS_OFFSET_ITEM] - 1
     nreg = tabdims[InitFileDefinitions.TABDIMS_NTDENS_ITEM]
 
     rho = tab[start + nreg * (col + 0) : start + nreg * (col + 1)]
 
-    intehead = ecl_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)
+    intehead = ecl_file[InitFileDefinitions.INTEHEAD_KW]
     unit_system = EclUnits.create_unit_system(
         intehead[InitFileDefinitions.INTEHEAD_UNIT_INDEX]
     )

@@ -1,11 +1,12 @@
-from enum import Enum
 from typing import Dict, List, Optional
 
 import geojson
 import pandas as pd
 
+from webviz_subsurface._utils.enum_shim import StrEnum
 
-class WellPickTableColumns(str, Enum):
+
+class WellPickTableColumns(StrEnum):
     X_UTME = "X_UTME"
     Y_UTMN = "Y_UTMN"
     Z_TVDSS = "Z_TVDSS"

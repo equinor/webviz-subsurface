@@ -1,7 +1,7 @@
-from enum import Enum
+from webviz_subsurface._utils.enum_shim import StrEnum
 
 
-class LayerTypes(str, Enum):
+class LayerTypes(StrEnum):
     HILLSHADING = "Hillshading2DLayer"
     MAP3D = "MapLayer"
     COLORMAP = "ColormapLayer"
@@ -12,7 +12,7 @@ class LayerTypes(str, Enum):
     GEOJSON = "GeoJsonLayer"
 
 
-class LayerNames(str, Enum):
+class LayerNames(StrEnum):
     HILLSHADING = "Surface (hillshading)"
     MAP3D = "3D Map"
     COLORMAP = "Surface (color)"
@@ -23,7 +23,7 @@ class LayerNames(str, Enum):
     GEOJSON = "GeoJsonLayer"
 
 
-class SurfaceMode(str, Enum):
+class SurfaceMode(StrEnum):
     MEAN = "Mean"
     REALIZATION = "Single realization"
     OBSERVED = "Observed"

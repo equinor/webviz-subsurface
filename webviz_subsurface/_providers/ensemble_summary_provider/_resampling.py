@@ -74,7 +74,6 @@ def generate_normalized_sample_dates(
 def interpolate_backfill(
     x: np.ndarray, xp: np.ndarray, yp: np.ndarray, yleft: float, yright: float
 ) -> np.ndarray:
-    # pylint: disable=invalid-name
     """Do back-filling interpolation of the coordinates in xp and yp, evaluated at the
     x-coordinates specified in x.
     Note that xp and yp must be arrays of the same length.
@@ -253,7 +252,6 @@ def resample_segmented_multi_real_table(table: pa.Table, freq: Frequency) -> pa.
 def _compute_interpolation_weight(
     d: np.datetime64, d0: np.datetime64, d1: np.datetime64
 ) -> float:
-    # pylint: disable=invalid-name
     d_as_uint = d.astype(np.uint64)
     d0_as_uint = d0.astype(np.uint64)
     d1_as_uint = d1.astype(np.uint64)

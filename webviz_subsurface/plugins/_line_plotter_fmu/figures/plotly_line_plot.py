@@ -207,7 +207,7 @@ class PlotlyLinePlot:
             traces.extend(self._statistical_traces)
         if self._observation_traces:
             traces.extend(self._observation_traces)
-        return dict(layout=self._layout, data=traces)
+        return {"layout": self._layout, "data": traces}
 
 
 def set_real_color(df_norm: pd.DataFrame, real_no: str) -> str:

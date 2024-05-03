@@ -1,7 +1,6 @@
 import logging
 import shutil
 import warnings
-from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Set
 
@@ -9,6 +8,7 @@ import numpy as np
 import pandas as pd
 import xtgeo
 
+from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._stat_surf_cache import StatSurfCache
@@ -40,7 +40,7 @@ class Col:
     REL_PATH = "rel_path"
 
 
-class SurfaceType(str, Enum):
+class SurfaceType(StrEnum):
     OBSERVED = "observed"
     SIMULATED = "simulated"
 

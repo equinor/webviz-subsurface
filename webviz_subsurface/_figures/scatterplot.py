@@ -76,7 +76,7 @@ class ScatterPlot:
                 x=x_values,
                 y=y_values,
                 mode=mode,
-                line=dict(dash=dash, color=color),
+                line={"dash": dash, "color": color},
                 showlegend=showlegend,
                 hovertext=text,
                 name=text,
@@ -110,4 +110,4 @@ class ScatterPlot:
             "Observation Error",
             dash="dash",
         )
-        self._figure.update_layout(legend=dict(orientation="h"))
+        self._figure.update_layout(legend={"orientation": "h"})

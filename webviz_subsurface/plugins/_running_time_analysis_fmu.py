@@ -522,7 +522,7 @@ def render_parcoord(
     layout.update(theme["layout"])
     # Ensure sufficient spacing between each dimension and margin for labels
     width = len(dimensions) * 100 + 250
-    margin_b = max([len(param) for param in params]) * 8
+    margin_b = max(len(param) for param in params) * 8
     layout.update({"width": width, "height": 800, "margin": {"b": margin_b, "t": 30}})
     return {"data": [data], "layout": layout}
 

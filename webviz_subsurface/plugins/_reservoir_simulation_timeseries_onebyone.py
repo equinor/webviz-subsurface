@@ -594,8 +594,8 @@ folder, to avoid risk of not extracting the right data.
             date = date_click["points"][0]["x"]
             if figure is None:
                 raise PreventUpdate
-            ymin = min([min(trace["y"]) for trace in figure["data"]])
-            ymax = max([max(trace["y"]) for trace in figure["data"]])
+            ymin = min(min(trace["y"]) for trace in figure["data"])
+            ymax = max(max(trace["y"]) for trace in figure["data"])
             figure["layout"]["shapes"] = [
                 {"type": "line", "x0": date, "x1": date, "y0": ymin, "y1": ymax}
             ]

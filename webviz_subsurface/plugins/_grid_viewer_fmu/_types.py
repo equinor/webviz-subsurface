@@ -1,12 +1,12 @@
-from enum import Enum
+from webviz_subsurface._utils.enum_shim import StrEnum
 
 
-class PROPERTYTYPE(str, Enum):
+class PROPERTYTYPE(StrEnum):
     STATIC = "Static"
     DYNAMIC = "Dynamic"
 
 
-class GRIDDIRECTION(str, Enum):
+class GRIDDIRECTION(StrEnum):
     I = "I"
     J = "J"
     K = "K"
