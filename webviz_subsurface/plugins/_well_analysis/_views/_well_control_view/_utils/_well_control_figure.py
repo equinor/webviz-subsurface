@@ -162,7 +162,6 @@ def add_network_pressure_traces(
 def add_ctrlmode_bar(
     fig: go.Figure, node_info: Dict, smry: pd.DataFrame, real: int, chart_row: int
 ) -> None:
-    # pylint: disable=too-many-locals
     """Adding area traces to the single realization control mode bar"""
     sumvec = node_info["ctrlmode_sumvec"]
     categories = get_ctrlmode_categories(node_info["type"])

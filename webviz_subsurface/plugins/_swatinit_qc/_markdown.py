@@ -44,7 +44,6 @@ in the **QC_FLAG** column.
 """
 
 
-# pylint: disable=anomalous-backslash-in-string
 def pc_columns_description() -> str:
     return f"""
 > **Column descriptions**
@@ -53,7 +52,7 @@ def pc_columns_description() -> str:
 > - **PPCW**  - Maximum capillary pressure after scaling
 > - **{SwatinitQcDataModel.COLNAME_THRESHOLD}**  - Column showing how many percent of the pc-scaled dataset that match the user-selected threshold
 
-*PPCW = PCOW_MAX \* PC_SCALING*
+**PPCW = PCOW_MAX `*` PC_SCALING**
 
 A threshold for the maximum capillary scaling can be set in the menu.
 The table will show how many percent of the dataset that exceeds this value, and cells above the threshold will be shown in the map ➡️

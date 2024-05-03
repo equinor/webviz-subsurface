@@ -28,11 +28,11 @@ class WaterfallPlot:
     # Ensure fixed order of plot elements:
     ORDER = [
         "SWATINIT_WVOL",
-        QcFlags.SWL_TRUNC.value,
-        QcFlags.PPCWMAX.value,
-        QcFlags.FINE_EQUIL.value,
-        QcFlags.HC_BELOW_FWL.value,
-        QcFlags.SWATINIT_1.value,
+        QcFlags.SWL_TRUNC,
+        QcFlags.PPCWMAX,
+        QcFlags.FINE_EQUIL,
+        QcFlags.HC_BELOW_FWL,
+        QcFlags.SWATINIT_1,
         "SWAT_WVOL",
     ]
     MEASURES = [

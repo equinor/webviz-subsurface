@@ -1,6 +1,7 @@
 import warnings
-from enum import Enum
 from typing import Dict, List
+
+from webviz_subsurface._utils.enum_shim import StrEnum
 
 from ._types import LayerTypes
 
@@ -11,7 +12,7 @@ class DeckGLMapLayersModel:
     def __init__(self, layers: List[Dict]) -> None:
         self._layers = layers
 
-    def _update_layer_by_type(self, layer_type: Enum, layer_data: Dict) -> None:
+    def _update_layer_by_type(self, layer_type: StrEnum, layer_data: Dict) -> None:
         """Update a layer specification by the layer type. If multiple layers are found,
         no update is performed."""
         layers = list(filter(lambda x: x["@@type"] == layer_type, self._layers))

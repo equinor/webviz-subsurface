@@ -158,7 +158,8 @@ def tornado_controllers(
                         else tornado_error_layout(
                             "No data left after filtering"
                             if dframe.empty
-                            else f"Reference sensitivity '{selections['Reference']}' not in input data"
+                            else f"Reference sensitivity '{selections['Reference']}' "
+                            + "not in input data"
                         )
                     ),
                     "conditions": {"page": page_selected},

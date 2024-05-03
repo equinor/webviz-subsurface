@@ -394,7 +394,7 @@ class Water(FluidImplementation):
             A Water object or None if the data in the Eclipse file was invalid
 
         """
-        intehead = ecl_init_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)
+        intehead = ecl_init_file[InitFileDefinitions.INTEHEAD_KW]
         intehead_phase = intehead[InitFileDefinitions.INTEHEAD_PHASE_INDEX]
 
         if (intehead_phase & (1 << 2)) == 0:
@@ -402,8 +402,8 @@ class Water(FluidImplementation):
 
         raw = EclPropertyTableRawData()
 
-        tab_dims = ecl_init_file.__getitem__("TABDIMS")
-        tab = ecl_init_file.__getitem__("TAB")
+        tab_dims = ecl_init_file["TABDIMS"]
+        tab = ecl_init_file["TAB"]
 
         raw.num_primary = 1  # Single record per region
         raw.num_rows = 1  # Single record per region

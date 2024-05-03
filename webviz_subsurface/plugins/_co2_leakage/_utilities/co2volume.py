@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -7,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from webviz_subsurface._providers import EnsembleTableProvider
+from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
@@ -14,7 +14,7 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
 )
 
 
-class _Columns(Enum):
+class _Columns(StrEnum):
     REALIZATION = "realization"
     VOLUME = "volume"
     CONTAINMENT = "containment"

@@ -129,7 +129,7 @@ def update_traces(figure: go.Figure, **kwargs: Any) -> go.Figure:
             ),
             selector=lambda t: t["type"] in ["scatter", "scattergl"],
         )
-        .update_traces(textposition="inside", selector=dict(type="pie"))
+        .update_traces(textposition="inside", selector={"type": "pie"})
         .for_each_trace(lambda t: set_marker_color(t))
         .for_each_trace(
             lambda t: (
@@ -139,7 +139,7 @@ def update_traces(figure: go.Figure, **kwargs: Any) -> go.Figure:
                 if is_numeric_dtype(t["x"])
                 else None
             ),
-            selector=dict(type="histogram"),
+            selector={"type": "histogram"},
         )
     )
 
@@ -154,7 +154,7 @@ def set_marker_color(trace: go) -> go:
         opacity = marker_attributes.get(
             "opacity", 0.5 if trace.type in ["scatter", "scattergl"] else 0.7
         )
-        trace.update(marker_line=dict(color=trace.marker.color, width=1))
+        trace.update(marker_line={"color": trace.marker.color, "width": 1})
         trace.update(marker_color=hex_to_rgb(trace.marker.color, opacity=opacity))
         trace.update(marker_opacity=1)
     return trace
@@ -180,20 +180,20 @@ def for_each_annotation(figure: go.Figure, **kwargs: Any) -> go.Figure:
 
 def empty_figure_layout() -> go.Figure:
     return go.Figure(
-        layout=dict(
-            xaxis={"visible": False},
-            yaxis={"visible": False},
-            plot_bgcolor="white",
-            annotations=[
-                dict(
-                    text="No data available for figure",
-                    xref="paper",
-                    yref="paper",
-                    showarrow=False,
-                    font={"size": 20},
-                )
+        layout={
+            "xaxis": {"visible": False},
+            "yaxis": {"visible": False},
+            "plot_bgcolor": "white",
+            "annotations": [
+                {
+                    "text": "No data available for figure",
+                    "xref": "paper",
+                    "yref": "paper",
+                    "showarrow": False,
+                    "font": {"size": 20},
+                }
             ],
-        )
+        },
     )
 
 
@@ -246,7 +246,10 @@ def create_hover_boxes_for_violin_plots(
                 showlegend=False,
                 text=hover_text,
                 hoverinfo="text",
-                hoverlabel=dict(bgcolor="#E6FAEC", font=dict(color="#243746", size=15)),
+                hoverlabel={
+                    "bgcolor": "#E6FAEC",
+                    "font": {"color": "#243746", "size": 15},
+                },
             )
         )
     return hovertraces

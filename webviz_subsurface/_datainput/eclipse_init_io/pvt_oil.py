@@ -753,15 +753,15 @@ class Oil(FluidImplementation):
             An Oil object or None if the data in the Eclipse file was invalid
 
         """
-        intehead = ecl_init_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)
+        intehead = ecl_init_file[InitFileDefinitions.INTEHEAD_KW]
 
-        logihead = ecl_init_file.__getitem__(InitFileDefinitions.LOGIHEAD_KW)
+        logihead = ecl_init_file[InitFileDefinitions.LOGIHEAD_KW]
         is_is_const_compr = bool(logihead[is_const_compr_index()])
 
         raw = EclPropertyTableRawData()
 
-        tab_dims = ecl_init_file.__getitem__("TABDIMS")
-        tab = ecl_init_file.__getitem__("TAB")
+        tab_dims = ecl_init_file["TABDIMS"]
+        tab = ecl_init_file["TAB"]
 
         num_rs = tab_dims[InitFileDefinitions.TABDIMS_NRPVTO_ITEM]
 

@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -7,6 +6,7 @@ from webviz_config.common_cache import CACHE
 
 from webviz_subsurface._models import SurfaceSetModel
 from webviz_subsurface._utils.colors import hex_to_rgba_str
+from webviz_subsurface._utils.enum_shim import StrEnum
 
 from ...._utils.fanchart_plotting import (
     FanchartData,
@@ -16,7 +16,7 @@ from ...._utils.fanchart_plotting import (
 )
 
 
-class FanChartStatistics(str, Enum):
+class FanChartStatistics(StrEnum):
     MINIMUM = "Min"
     MAXIMUM = "Max"
     P10 = "P10"

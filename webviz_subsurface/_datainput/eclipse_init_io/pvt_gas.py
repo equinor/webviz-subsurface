@@ -527,7 +527,7 @@ class Gas(FluidImplementation):
             A Gas object or None if the data in the Eclipse file was invalid
 
         """
-        intehead = ecl_init_file.__getitem__(InitFileDefinitions.INTEHEAD_KW)
+        intehead = ecl_init_file[InitFileDefinitions.INTEHEAD_KW]
         intehead_phase = intehead[InitFileDefinitions.INTEHEAD_PHASE_INDEX]
 
         if (intehead_phase & (1 << 2)) == 0:
@@ -535,8 +535,8 @@ class Gas(FluidImplementation):
 
         raw = EclPropertyTableRawData()
 
-        tab_dims = ecl_init_file.__getitem__("TABDIMS")
-        tab = ecl_init_file.__getitem__("TAB")
+        tab_dims = ecl_init_file["TABDIMS"]
+        tab = ecl_init_file["TAB"]
 
         num_rv = tab_dims[InitFileDefinitions.TABDIMS_NRPVTG_ITEM]
         num_pg = tab_dims[InitFileDefinitions.TABDIMS_NPPVTG_ITEM]
@@ -547,7 +547,7 @@ class Gas(FluidImplementation):
         if raw.num_tables == 0:
             return None
 
-        logihead = ecl_init_file.__getitem__(InitFileDefinitions.LOGIHEAD_KW)
+        logihead = ecl_init_file[InitFileDefinitions.LOGIHEAD_KW]
 
         if logihead[InitFileDefinitions.LOGIHEAD_RV_INDEX]:
             raw.num_primary = num_pg

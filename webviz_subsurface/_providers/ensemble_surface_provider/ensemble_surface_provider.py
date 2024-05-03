@@ -1,12 +1,13 @@
 import abc
 from dataclasses import dataclass
-from enum import Enum
 from typing import List, Optional, Union
 
 import xtgeo
 
+from webviz_subsurface._utils.enum_shim import StrEnum
 
-class SurfaceStatistic(str, Enum):
+
+class SurfaceStatistic(StrEnum):
     MEAN = "Mean"
     STDDEV = "StdDev"
     MINIMUM = "Minimum"
