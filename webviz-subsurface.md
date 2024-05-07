@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.24` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.27` of `webviz-subsurface`.
 
 
 
@@ -134,14 +134,11 @@ ensemble
 * **`file_containment_boundary`:** Path to a polygon representing the containment area
 * **`file_hazardous_boundary`:** Path to a polygon representing the hazardous area
 * **`well_pick_file`:** Path to a file containing well picks
-* **`co2_containment_relpath`:** Path to a table of co2 containment data (amount of
+* **`plume_mass_relpath`:** Path to a table of co2 containment data (amount of
     CO2 outside/inside a boundary), for co2 mass. Relative to each realization.
-* **`co2_containment_volume_actual_relpath`:** Path to a table of co2 containment data (amount
+* **`plume_actual_volume_relpath`:** Path to a table of co2 containment data (amount
     of CO2 outside/inside a boundary), for co2 volume of type "actual". Relative to each
     realization.
-* **`co2_containment_volume_actual_simple_relpath`:** Path to a table of co2 containment data
-    (amount of CO2 outside/inside a boundary), for co2 volume of type "actual_simple".
-    Relative to each realization.
 * **`unsmry_relpath`:** Relative path to a csv version of a unified summary file
 * **`fault_polygon_attribute`:** Polygons with this attribute are used as fault
     polygons
@@ -187,8 +184,6 @@ ensemble
 
 
 
-
-
 ---
 How to use in YAML config file:
 ```yaml
@@ -197,10 +192,9 @@ How to use in YAML config file:
         file_containment_boundary:  # Optional, type Union[str, NoneType].
         file_hazardous_boundary:  # Optional, type Union[str, NoneType].
         well_pick_file:  # Optional, type Union[str, NoneType].
-        co2_containment_relpath:  # Optional, type str.
-        co2_containment_volume_actual_relpath:  # Optional, type str.
-        co2_containment_volume_actual_simple_relpath:  # Optional, type str.
-        unsmry_relpath:  # Optional, type str.
+        plume_mass_relpath:  # Optional, type str.
+        plume_actual_volume_relpath:  # Optional, type str.
+        unsmry_relpath:  # Optional, type Union[str, NoneType].
         fault_polygon_attribute:  # Optional, type str.
         initial_surface:  # Optional, type Union[str, NoneType].
         map_attribute_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
