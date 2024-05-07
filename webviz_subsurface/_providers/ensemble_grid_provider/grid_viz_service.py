@@ -365,15 +365,15 @@ class GridVizService:
 
             plane = vtkPlane()
             plane.SetOrigin([x_0, y_0, 0])
-            plane.SetNormal(right_vec)
+            plane.SetNormal(right_vec.tolist())
 
             plane_0 = vtkPlane()
             plane_0.SetOrigin([x_0, y_0, 0])
-            plane_0.SetNormal(fwd_vec)
+            plane_0.SetNormal(fwd_vec.tolist())
 
             plane_1 = vtkPlane()
             plane_1.SetOrigin([x_1, y_1, 0])
-            plane_1.SetNormal(-fwd_vec)
+            plane_1.SetNormal((-fwd_vec).tolist())
 
             cutter_alg.SetPlane(plane)
             cutter_alg.Update()
@@ -478,7 +478,7 @@ class GridVizService:
         i_ref = reference(0)
         j_ref = reference(0)
         k_ref = reference(0)
-        grid.ComputeCellStructuredCoords(cell_id, i_ref, j_ref, k_ref, True)
+        grid.ComputeCellStructuredCoords(cell_id, i_ref, j_ref, k_ref, True)  # type: ignore[arg-type]
 
         cell_property_val: Optional[np.ndarray] = None
         if property_spec:
@@ -497,9 +497,9 @@ class GridVizService:
 
         return PickResult(
             cell_index=original_cell_id,
-            cell_i=i_ref.get(),
-            cell_j=j_ref.get(),
-            cell_k=k_ref.get(),
+            cell_i=i_ref.get(),  # type: ignore[arg-type, misc]
+            cell_j=j_ref.get(),  # type: ignore[arg-type, misc]
+            cell_k=k_ref.get(),  # type: ignore[arg-type, misc]
             intersection_point=isect_pt,
             cell_property_value=cell_property_val,
         )
