@@ -56,9 +56,10 @@ def extract_mismatch(ens_paths: dict, observation_file: Path) -> pd.DataFrame:
     # 5) Merge in the COUNT column.
     # 6) Rename columns such that the columns from fmu.ensemble corresponds
     #    to those used in the webviz history match visualization.
+
     return (
         df_mismatch.groupby(["OBSKEY", "SIGN", "REAL", "ENSEMBLE"])
-        .sum()[["NORMALISED_MISMATCH"]]
+        .sum(numeric_only=True)[["NORMALISED_MISMATCH"]]
         .pivot_table(
             index=["OBSKEY", "REAL", "ENSEMBLE"],
             columns="SIGN",
