@@ -9,7 +9,7 @@ TESTS_REQUIRE = [
     "dash[testing]",
     "isort",
     "mypy",
-    "pylint",
+    "pylint<3.2.0",
     "pytest-mock",
     "pytest-xdist",
     "pytest-forked",
