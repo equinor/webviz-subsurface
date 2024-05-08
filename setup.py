@@ -98,7 +98,7 @@ setup(
         "geojson>=2.5.0",
         "jsonschema>=3.2.0",
         "opm>=2023.10; sys_platform=='linux'",
-        "pandas>=1.1.5,<2.0",
+        "pandas>=1.1.5",
         "pillow>=6.1",
         "pyarrow>=5.0.0",
         "pyjwt>=2.6.0",
