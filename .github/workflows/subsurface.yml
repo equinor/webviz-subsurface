@@ -105,7 +105,7 @@ jobs:
           rm -rf ./tests/assets
 
       - name: 🐳 Build Docker example image
-        if: github.event_name != 'release'
+        #if: github.event_name != 'release'
         run: |
           pip install --pre webviz-config-equinor
           export SOURCE_URL_WEBVIZ_SUBSURFACE=https://github.com/$GITHUB_REPOSITORY
@@ -113,12 +113,14 @@ jobs:
           webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
           rm -rf ./webviz-subsurface-testdata
           pushd example_subsurface_app
+          
+          sed -i '29i RUN apt-get install -y libgomp1' Dockerfile  # Temp. workaround for recent version of opm
 
           docker build -t webviz/example_subsurface_image:equinor-theme .
           popd
 
       - name: 🐳 Update Docker Hub example image
-        if: github.event_name != 'release' && github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.8'
+        #if: github.event_name != 'release' && github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.8'
         run: |
           echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
           docker push webviz/example_subsurface_image:equinor-theme
