@@ -75,7 +75,7 @@ def _create_vtk_esgrid_from_verts_and_conn(
     vtk_cell_array.SetData(8, conn_idarr)
 
     vtk_esgrid = vtkExplicitStructuredGrid()
-    vtk_esgrid.SetDimensions(point_dims)
+    vtk_esgrid.SetDimensions(point_dims.tolist())
     vtk_esgrid.SetPoints(vtk_points)
     vtk_esgrid.SetCells(vtk_cell_array)
 
