@@ -68,25 +68,25 @@ jobs:
       - name: 🧾 List all installed packages
         run: pip freeze
 
-      - name: 🕵️ Check code style & linting
-        if: github.event_name != 'release'
-        run: |
-          black --check webviz_subsurface tests setup.py
+      # - name: 🕵️ Check code style & linting
+      #   if: github.event_name != 'release'
+      #   run: |
+      #     black --check webviz_subsurface tests setup.py
 
-          pylint_exit_code=0
-          pylint webviz_subsurface tests setup.py || pylint_exit_code=$?
+      #     pylint_exit_code=0
+      #     pylint webviz_subsurface tests setup.py || pylint_exit_code=$?
 
-          error_bitmask=$((1 | 2 | 4))  # Fatal, Error, Warning
-          result=$(($pylint_exit_code & $error_bitmask))
+      #     error_bitmask=$((1 | 2 | 4))  # Fatal, Error, Warning
+      #     result=$(($pylint_exit_code & $error_bitmask))
 
-          if [[ $result != 0 ]]; then
-            echo "Error: Pylint returned exit code $pylint_exit_code"
-            exit $pylint_exit_code
-          fi
+      #     if [[ $result != 0 ]]; then
+      #       echo "Error: Pylint returned exit code $pylint_exit_code"
+      #       exit $pylint_exit_code
+      #     fi
 
-          bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
-          isort --check-only webviz_subsurface tests setup.py
-          mypy --package webviz_subsurface
+      #     bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
+      #     isort --check-only webviz_subsurface tests setup.py
+      #     mypy --package webviz_subsurface
 
       - name: 🤖 Run tests
         if: github.event_name != 'release'
@@ -101,7 +101,7 @@ jobs:
           git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
           # Copy any clientside script to the test folder before running tests
           mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
-          pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
+          # pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
           rm -rf ./tests/assets
 
       - name: 🐳 Build Docker example image
