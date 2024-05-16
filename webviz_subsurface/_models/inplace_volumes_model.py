@@ -357,9 +357,10 @@ class InplaceVolumesModel:
             filters_excl_facies, groups, parameters, properties
         )
         # Remove "FACIES" to compute facies fraction for the individual groups
-        groups = [x for x in groups if x != "FACIES"]
-        df = dframe.groupby(groups) if groups else dframe
-        dframe["FACIES_FRACTION"] = df["BULK"].transform(lambda x: x / x.sum())
+        if "FACIES_FRACTION" in self.property_columns:
+            groups = [x for x in groups if x != "FACIES"]
+            df = dframe.groupby(groups) if groups else dframe
+            dframe["FACIES_FRACTION"] = df["BULK"].transform(lambda x: x / x.sum())
 
         return dframe[dframe["FACIES"].isin(filters["FACIES"])] if filters else dframe
 
