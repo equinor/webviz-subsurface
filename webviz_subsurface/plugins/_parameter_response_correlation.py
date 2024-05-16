@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple
 
+import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 from dash import Input, Output, dcc, html
@@ -633,9 +634,11 @@ Responses are extracted automatically from the `.arrow` files in the individual 
 def correlate(inputdf, response, method="pearson") -> pd.DataFrame:
     """Returns the correlation matrix for a dataframe"""
     if method == "pearson":
-        corrdf = inputdf.corr(method=method)
+        numeric_df = inputdf.select_dtypes(include=[np.number])
+        corrdf = numeric_df.corr(method=method)
     elif method == "spearman":
-        corrdf = inputdf.rank().corr(method="pearson")
+        numeric_df = inputdf.select_dtypes(include=[np.number])
+        corrdf = numeric_df.rank().corr(method="pearson")
     else:
         raise ValueError(
             f"Correlation method {method} is invalid. "
