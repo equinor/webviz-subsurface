@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] - YYYY-MM-DD
 
+### Added
+- [#1293](https://github.com/equinor/webviz-subsurface/pull/1293) - Added automatic calculation of `STOIIP_TOTAL` / `GIIP_TOTAL` in `VolumetricAnalysis`.
+
 ### Fixed
 - [#1287](https://github.com/equinor/webviz-subsurface/pull/1287) - Fixed bug when grouping on FACIES for non-standard static sources.
 
