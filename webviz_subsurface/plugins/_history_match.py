@@ -79,7 +79,7 @@ observations/observations.yml).
         iterations = []
         for ensemble in self.ensembles:
             df = data[data.ensemble_name == ensemble]
-            iterations.append(df.groupby("obs_group_name").mean())
+            iterations.append(df.groupby("obs_group_name").mean(numeric_only=True))
 
         sorted_iterations = HistoryMatch._sort_iterations(iterations)
 

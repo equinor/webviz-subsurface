@@ -18,7 +18,7 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> pd.DataFrame:
 
     # Infer datatype (Pandas cannot answer it) based on the first element:
     if isinstance(sampled_date_value, pd.Timestamp):
-        df["DATE"] = pd.Series(pd.to_pydatetime(df["DATE"]), dtype="object")
+        df["DATE"] = pd.Series(pd.Series.to_pydatetime(df["DATE"]), dtype="object")
 
     elif isinstance(sampled_date_value, str):
         # Do not use pd.Series.apply() here, Pandas would try to convert it to
