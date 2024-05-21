@@ -135,7 +135,10 @@ def filter_pvt_data_frame(
             if data_frame_stored:
                 continue
             stored_data_frames.append(ens_merged_dataframe)
-        cleaned_data_frame = cleaned_data_frame.append(ens_merged_dataframe)
+
+        cleaned_data_frame = pd.concat(
+            [cleaned_data_frame, ens_merged_dataframe], ignore_index=True
+        )
 
     return cleaned_data_frame
 
