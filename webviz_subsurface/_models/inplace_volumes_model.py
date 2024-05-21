@@ -36,6 +36,8 @@ class InplaceVolumesModel:
         "GIIP",
         "ASSOCIATEDOIL",
         "ASSOCIATEDGAS",
+        "STOIIP_TOTAL",
+        "GIIP_TOTAL",
         "BULK",
         "NET",
         "PORV",
@@ -92,6 +94,16 @@ class InplaceVolumesModel:
             self._dataframe = pd.merge(
                 self._dataframe, self.pmodel.sens_df, on=["ENSEMBLE", "REAL"]
             )
+
+        # create HC_TOTAL columns
+        if "STOIIP" in self._dataframe and "ASSOCIATEDOIL" in self._dataframe:
+            self._dataframe["STOIIP_TOTAL"] = self._dataframe["STOIIP"].fillna(
+                0
+            ) + self._dataframe["ASSOCIATEDOIL"].fillna(0)
+        if "GIIP" in self._dataframe and "ASSOCIATEDGAS" in self._dataframe:
+            self._dataframe["GIIP_TOTAL"] = self._dataframe["GIIP"].fillna(
+                0
+            ) + self._dataframe["ASSOCIATEDGAS"].fillna(0)
 
         # set column order
         colorder = self.selectors + self.VOLCOL_ORDER
