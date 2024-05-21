@@ -114,6 +114,8 @@ jobs:
           rm -rf ./webviz-subsurface-testdata
           pushd example_subsurface_app
 
+          sed -i '29i RUN apt-get update && apt-get install -y libgomp1' Dockerfile  # Temp. workaround for recent version of opm
+
           docker build -t webviz/example_subsurface_image:equinor-theme .
           popd
 
