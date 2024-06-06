@@ -2381,7 +2381,7 @@ def update_obs_sim_map_plot(
             mode="markers",
             marker={
                 "size": marker_size,
-                "color": ensdf["sim_mean"],
+                "color": ensdf_stat["sim_mean"],
                 "colorscale": color_scale,
                 "colorbar_x": 0.63,
                 "colorbar_thicknessmode": "fraction",
