@@ -73,7 +73,9 @@ class ColorPicker:
             warnings.warn("No color found for filter!")
             return "#ffffff"
         if len(df["COLOR"].unique()) > 1:
-            warnings.warn("Multiple colors found for filter. " "Return first color.")
+            warnings.warn(
+                f"Multiple colors found for filter, using first color: {color_list[df.index[0]]}"
+            )
         return color_list[df.index[0]]
 
     @property
@@ -172,7 +174,7 @@ class ColorPicker:
             return dash_daq.ColorPicker(  # pylint: disable=not-callable
                 {"id": self._uuid, "element": "picker"},
                 label=f"Color for {[col for col in self._dframe.iloc[row_no] if col != 'COLOR']}",
-                value=dict(hex=current_color_store[row_no]),
+                value={"hex": current_color_store[row_no]},
             )
 
         @app.callback(

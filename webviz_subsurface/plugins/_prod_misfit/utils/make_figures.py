@@ -243,9 +243,13 @@ def _calculate_misfits(
     plot_phases = []
     color_phases = {}
 
-    phase_misfit_name = dict(Oil="OIL_MISFIT", Water="WAT_MISFIT", Gas="GAS_MISFIT")
-    diff_name = dict(Oil="DIFF_WOPT", Water="DIFF_WWPT", Gas="DIFF_WGPT")
-    color = dict(Oil="#2ca02c", Water="#1f77b4", Gas="#d62728")
+    phase_misfit_name = {
+        "Oil": "OIL_MISFIT",
+        "Water": "WAT_MISFIT",
+        "Gas": "GAS_MISFIT",
+    }
+    diff_name = {"Oil": "DIFF_WOPT", "Water": "DIFF_WWPT", "Gas": "DIFF_WGPT"}
+    color = {"Oil": "#2ca02c", "Water": "#1f77b4", "Gas": "#d62728"}
 
     for phase in phases:
         phase_columns = [x for x in all_columns if x.startswith(diff_name[phase])]
@@ -310,7 +314,7 @@ def _create_fig_barplot(
     fig.update_yaxes(title_text="Cumulative misfit")
     fig.add_hline(mean_misfit)
     fig.add_annotation(average_arrow_annotation(mean_misfit))
-    fig.update_layout(margin=dict(l=20, r=20, t=30, b=20))
+    fig.update_layout(margin={"l": 20, "r": 20, "t": 30, "b": 20})
     # fig.update_layout(coloraxis_colorbar_thickness=20)
     # fig.update(layout_coloraxis_showscale=False)
 
@@ -342,7 +346,7 @@ def _create_fig_diffplot(
 
     phase_columns = [x for x in all_columns if x.startswith(phase_vector[phase])]
     phase_well_labels = [col.split(":")[1] for col in phase_columns]
-    text_labels = dict(value=f"{phase} diff (sim-obs)", variable="Well name")
+    text_labels = {"value": f"{phase} diff (sim-obs)", "variable": "Well name"}
 
     if boxplot_points == "strip":
         fig_phase = px.strip(

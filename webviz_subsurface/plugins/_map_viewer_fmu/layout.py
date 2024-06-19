@@ -1,16 +1,18 @@
-from enum import Enum, unique
+from enum import unique
 from typing import Any, Callable, Dict, List, Union
 
 import webviz_core_components as wcc
 from dash import dcc, html
 from webviz_subsurface_components import DashSubsurfaceViewer  # type: ignore
 
+from webviz_subsurface._utils.enum_shim import StrEnum
+
 from ._types import LayerNames, LayerTypes, SurfaceMode
 from ._utils import create_colormap_image_string, round_to_significant
 
 
 @unique
-class LayoutElements(str, Enum):
+class LayoutElements(StrEnum):
     """Contains all ids used in plugin. Note that some id's are
     used as combinations of LEFT/RIGHT_VIEW together with other elements to
     support pattern matching callbacks."""
@@ -48,7 +50,7 @@ class LayoutElements(str, Enum):
     OPTIONS_DIALOG = "options-dialog"
 
 
-class LayoutLabels(str, Enum):
+class LayoutLabels(StrEnum):
     """Text labels used in layout components"""
 
     ATTRIBUTE = "Surface attribute"
@@ -99,21 +101,21 @@ class LayoutStyle:
     }
 
 
-class Tabs(str, Enum):
+class Tabs(StrEnum):
     CUSTOM = "custom"
     STATS = "stats"
     DIFF = "diff"
     SPLIT = "split"
 
 
-class TabsLabels(str, Enum):
+class TabsLabels(StrEnum):
     CUSTOM = "Custom view"
     STATS = "Map statistics"
     DIFF = "Difference between two maps"
     SPLIT = "Maps per selector"
 
 
-class MapSelector(str, Enum):
+class MapSelector(StrEnum):
     ENSEMBLE = "ensemble"
     ATTRIBUTE = "attribute"
     NAME = "name"
@@ -122,7 +124,7 @@ class MapSelector(str, Enum):
     REALIZATIONS = "realizations"
 
 
-class ColorSelector(str, Enum):
+class ColorSelector(StrEnum):
     COLORMAP = "colormap"
     COLOR_RANGE = "color_range"
 

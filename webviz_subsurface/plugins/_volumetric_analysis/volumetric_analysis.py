@@ -199,6 +199,10 @@ reek_test_data/aggregated_data/parameters.csv)
             volumes_table=volumes_table,
             fipfile=get_path(self.fipfile) if self.fipfile else None,
         )
+        if self.fipfile and vcomb.dframe.empty:
+            raise ValueError(
+                "Not possible to obtain any results using the provided fipfile."
+            )
         self.disjoint_set_df = vcomb.disjoint_set_df
         self.volmodel = InplaceVolumesModel(
             volumes_table=vcomb.dframe,

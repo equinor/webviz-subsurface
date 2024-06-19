@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [UNRELEASED] - YYYY-MM-DD
+
+### Added
+- [#1293](https://github.com/equinor/webviz-subsurface/pull/1293) - Added automatic calculation of `STOIIP_TOTAL` / `GIIP_TOTAL` in `VolumetricAnalysis`.
+
+### Fixed
+- [#1287](https://github.com/equinor/webviz-subsurface/pull/1287) - Fixed bug when grouping on FACIES for non-standard static sources.
+
+## [0.2.25] - 2024-03-18
+
 ### Added
 - [#1266](https://github.com/equinor/webviz-subsurface/pull/1266) - Added waterfall plot for analysing volume changes in `VolumetricAnalysis`.
 

@@ -9,7 +9,7 @@ TESTS_REQUIRE = [
     "dash[testing]",
     "isort",
     "mypy",
-    "pylint<=2.13.9",  # Locked due to https://github.com/equinor/webviz-subsurface/issues/1052
+    "pylint<3.2.0",
     "pytest-mock",
     "pytest-xdist",
     "pytest-forked",
@@ -97,8 +97,8 @@ setup(
         "fmu-tools>=1.8",
         "geojson>=2.5.0",
         "jsonschema>=3.2.0",
-        "opm>=2020.10.1,<=2022.10; sys_platform=='linux'",
-        "pandas>=1.1.5,<2.0",
+        "opm>=2023.10; sys_platform=='linux'",
+        "pandas>=1.1.5,<3",
         "pillow>=6.1",
         "pyarrow>=5.0.0",
         "pyjwt>=2.6.0",
@@ -106,7 +106,7 @@ setup(
         "scipy>=1.2",
         "statsmodels>=0.12.1",  # indirect dependency through https://plotly.com/python/linear-fits/
         "xtgeo>=2.20.0",
-        "vtk>=9.2.2,<9.3",
+        "vtk>=9.2.2",
         "webviz-config",
         "webviz-core-components>=0.6",
         "webviz-subsurface-components==1.0.2",

@@ -1,5 +1,4 @@
 import re
-from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -9,8 +8,10 @@ from webviz_config import WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.webviz_store import webvizstore
 
+from webviz_subsurface._utils.enum_shim import StrEnum
 
-class QcFlags(str, Enum):
+
+class QcFlags(StrEnum):
     """Constants for use by check_swatinit"""
 
     FINE_EQUIL = "FINE_EQUIL"
@@ -102,14 +103,14 @@ class SwatinitQcDataModel:
     def qc_flag_colors(self) -> Dict[str, str]:
         """Predefined colors for the QC_FLAG column"""
         return {
-            QcFlags.FINE_EQUIL.value: self.colors[8],
-            QcFlags.HC_BELOW_FWL.value: self.colors[5],
-            QcFlags.PC_SCALED.value: self.colors[2],
-            QcFlags.PPCWMAX.value: self.colors[9],
-            QcFlags.SWATINIT_1.value: self.colors[6],
-            QcFlags.SWL_TRUNC.value: self.colors[3],
-            QcFlags.UNKNOWN.value: self.colors[1],
-            QcFlags.WATER.value: self.colors[0],
+            QcFlags.FINE_EQUIL: self.colors[8],
+            QcFlags.HC_BELOW_FWL: self.colors[5],
+            QcFlags.PC_SCALED: self.colors[2],
+            QcFlags.PPCWMAX: self.colors[9],
+            QcFlags.SWATINIT_1: self.colors[6],
+            QcFlags.SWL_TRUNC: self.colors[3],
+            QcFlags.UNKNOWN: self.colors[1],
+            QcFlags.WATER: self.colors[0],
         }
 
     @property
@@ -272,7 +273,7 @@ class SwatinitQcDataModel:
     def table_data_qc_vol_overview(self) -> tuple:
         """Return data and columns for dash_table showing overview of qc volumes"""
 
-        skip_if_zero = [QcFlags.UNKNOWN.value, QcFlags.WATER.value]
+        skip_if_zero = [QcFlags.UNKNOWN, QcFlags.WATER]
         column_order = [
             "",
             "Response",
@@ -293,7 +294,7 @@ class SwatinitQcDataModel:
             }
         )
         # Then report the volume change per QC_FLAG
-        for key in [x.value for x in QcFlags]:
+        for key in QcFlags:
             if key in skip_if_zero and np.isclose(qc_vols[key], 0, atol=1):
                 # Tolerance is 1 rm3, which is small in relevant contexts.
                 continue

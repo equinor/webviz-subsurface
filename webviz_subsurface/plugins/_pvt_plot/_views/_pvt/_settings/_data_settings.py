@@ -55,18 +55,19 @@ class DataSettings(SettingsGroupABC):
         return phase_descriptions
 
     def layout(self) -> List[Component]:
-        self._ensemble_properties = dict(
-            id=self.register_component_unique_id(DataSettings.Ids.ENSEMBLES),
-            label="Ensembles",
-            options=[{"label": x, "value": x} for x in self.ensembles],
-            vertical=True,
-        )
-        self._pvtnum_properties = dict(
-            id=self.register_component_unique_id(DataSettings.Ids.PVTNUM),
-            label="Pvtnum",
-            options=[{"label": x, "value": x} for x in self.pvtnum],
-            vertical=True,
-        )
+        self._ensemble_properties = {
+            "id": self.register_component_unique_id(DataSettings.Ids.ENSEMBLES),
+            "label": "Ensembles",
+            "options": [{"label": x, "value": x} for x in self.ensembles],
+            "vertical": True,
+        }
+
+        self._pvtnum_properties = {
+            "id": self.register_component_unique_id(DataSettings.Ids.PVTNUM),
+            "label": "Pvtnum",
+            "options": [{"label": x, "value": x} for x in self.pvtnum],
+            "vertical": True,
+        }
 
         return [
             wcc.RadioItems(

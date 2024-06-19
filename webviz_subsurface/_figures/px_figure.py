@@ -1,4 +1,5 @@
 import inspect
+import math
 from typing import Any, Callable, List, Optional, Union
 
 import pandas as pd
@@ -40,11 +41,12 @@ def set_default_args(**plotargs: Any) -> dict:
 
     if plotargs.get("facet_col") is not None:
         facet_cols = plotargs["data_frame"][plotargs["facet_col"]].nunique()
+
+        x = math.ceil((math.sqrt(1 + 4 * facet_cols) - 1) / 2)
+        facet_col_wrap = min(x, 20)
+
         plotargs.update(
-            facet_col_wrap=min(
-                min([x for x in range(100) if (x * (x + 1)) >= facet_cols]),
-                20,
-            ),
+            facet_col_wrap=facet_col_wrap,
             facet_row_spacing=max((0.08 - (0.00071 * facet_cols)), 0.03),
             facet_col_spacing=max((0.06 - (0.00071 * facet_cols)), 0.03),
         )
@@ -77,16 +79,20 @@ def update_xaxes(figure: go.Figure, plot_type: str, **kwargs: Any) -> go.Figure:
         linewidth=2,
         linecolor="black",
         mirror=True,
-        title=None
-        if facet_col is not None or not isinstance(kwargs.get("x"), str)
-        else kwargs.get("x"),
-        showticklabels=(data_frame[facet_col].nunique() <= 100)
-        if facet_col is not None
-        else None,
+        title=(
+            None
+            if facet_col is not None or not isinstance(kwargs.get("x"), str)
+            else kwargs.get("x")
+        ),
+        showticklabels=(
+            (data_frame[facet_col].nunique() <= 100) if facet_col is not None else None
+        ),
         tickangle=0,
-        tickfont_size=max((20 - (0.4 * data_frame[facet_col].nunique())), 10)
-        if facet_col is not None
-        else None,
+        tickfont_size=(
+            max((20 - (0.4 * data_frame[facet_col].nunique())), 10)
+            if facet_col is not None
+            else None
+        ),
         fixedrange=plot_type == "distribution",
     ).update_xaxes(**kwargs.get("xaxis", {}))
 
@@ -116,20 +122,24 @@ def update_traces(figure: go.Figure, **kwargs: Any) -> go.Figure:
     facet_col = kwargs.get("facet_col")
     return (
         figure.update_traces(
-            marker_size=max((20 - (1.5 * data_frame[facet_col].nunique())), 5)
-            if facet_col is not None
-            else 20,
+            marker_size=(
+                max((20 - (1.5 * data_frame[facet_col].nunique())), 5)
+                if facet_col is not None
+                else 20
+            ),
             selector=lambda t: t["type"] in ["scatter", "scattergl"],
         )
-        .update_traces(textposition="inside", selector=dict(type="pie"))
+        .update_traces(textposition="inside", selector={"type": "pie"})
         .for_each_trace(lambda t: set_marker_color(t))
         .for_each_trace(
-            lambda t: t.update(
-                xbins_size=(t["x"].max() - t["x"].min()) / kwargs.get("nbins", 15)
-            )
-            if is_numeric_dtype(t["x"])
-            else None,
-            selector=dict(type="histogram"),
+            lambda t: (
+                t.update(
+                    xbins_size=(t["x"].max() - t["x"].min()) / kwargs.get("nbins", 15)
+                )
+                if is_numeric_dtype(t["x"])
+                else None
+            ),
+            selector={"type": "histogram"},
         )
     )
 
@@ -144,7 +154,7 @@ def set_marker_color(trace: go) -> go:
         opacity = marker_attributes.get(
             "opacity", 0.5 if trace.type in ["scatter", "scattergl"] else 0.7
         )
-        trace.update(marker_line=dict(color=trace.marker.color, width=1))
+        trace.update(marker_line={"color": trace.marker.color, "width": 1})
         trace.update(marker_color=hex_to_rgb(trace.marker.color, opacity=opacity))
         trace.update(marker_opacity=1)
     return trace
@@ -156,32 +166,34 @@ def for_each_annotation(figure: go.Figure, **kwargs: Any) -> go.Figure:
     return figure.for_each_annotation(
         lambda a: a.update(
             text=(a.text.split("=")[-1]),
-            visible=data_frame[facet_col].nunique() <= 42
-            if facet_col is not None
-            else None,
-            font_size=max((18 - (0.4 * data_frame[facet_col].nunique())), 10)
-            if facet_col is not None
-            else None,
+            visible=(
+                data_frame[facet_col].nunique() <= 42 if facet_col is not None else None
+            ),
+            font_size=(
+                max((18 - (0.4 * data_frame[facet_col].nunique())), 10)
+                if facet_col is not None
+                else None
+            ),
         )
     )
 
 
 def empty_figure_layout() -> go.Figure:
     return go.Figure(
-        layout=dict(
-            xaxis={"visible": False},
-            yaxis={"visible": False},
-            plot_bgcolor="white",
-            annotations=[
-                dict(
-                    text="No data available for figure",
-                    xref="paper",
-                    yref="paper",
-                    showarrow=False,
-                    font={"size": 20},
-                )
+        layout={
+            "xaxis": {"visible": False},
+            "yaxis": {"visible": False},
+            "plot_bgcolor": "white",
+            "annotations": [
+                {
+                    "text": "No data available for figure",
+                    "xref": "paper",
+                    "yref": "paper",
+                    "showarrow": False,
+                    "font": {"size": 20},
+                }
             ],
-        )
+        },
     )
 
 
@@ -234,7 +246,10 @@ def create_hover_boxes_for_violin_plots(
                 showlegend=False,
                 text=hover_text,
                 hoverinfo="text",
-                hoverlabel=dict(bgcolor="#E6FAEC", font=dict(color="#243746", size=15)),
+                hoverlabel={
+                    "bgcolor": "#E6FAEC",
+                    "font": {"color": "#243746", "size": 15},
+                },
             )
         )
     return hovertraces

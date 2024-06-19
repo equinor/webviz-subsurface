@@ -522,7 +522,7 @@ def render_parcoord(
     layout.update(theme["layout"])
     # Ensure sufficient spacing between each dimension and margin for labels
     width = len(dimensions) * 100 + 250
-    margin_b = max([len(param) for param in params]) * 8
+    margin_b = max(len(param) for param in params) * 8
     layout.update({"width": width, "height": 800, "margin": {"b": margin_b, "t": 30}})
     return {"data": [data], "layout": layout}
 
@@ -627,6 +627,7 @@ def make_status_df(
             ["ENSEMBLE", "REAL", "RUNTIME", "REAL_SCALED_RUNTIME", "name", "status"]
         ].rename(columns={"name": "JOB", "status": "STATUS"})
         # Status DataFrame to be used with parallel coordinates
+        # pylint: disable=unsubscriptable-object
         if all(real_df["STATUS"] == "Success"):
             real_status.append(
                 {
@@ -649,6 +650,7 @@ def make_status_df(
             )
 
         # Need unique job ids names to separate jobs in same realization with same name in json file
+        # pylint: disable=unsupported-assignment-operation
         real_df["JOB_ID"] = range(0, len(real_df["JOB"]))
 
         # Update max runtime for jobs in ensemble

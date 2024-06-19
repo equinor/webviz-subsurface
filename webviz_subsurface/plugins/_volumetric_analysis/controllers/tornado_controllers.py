@@ -73,6 +73,7 @@ def tornado_controllers(
             if page_selected == "torn_bulk_inplace"
             else [selections["Response"]]
         )
+        realplot = None
         for response in responses:
             if not (response == "BULK" and page_selected == "torn_bulk_inplace"):
                 if selections["Reference"] not in selections["Sensitivities"]:
@@ -132,29 +133,34 @@ def tornado_controllers(
                 height="39vh",
                 table_id={"table_id": f"{page_selected}-torntable"},
             )
-        elif selections["bottom_viz"] == "realplot" and figures:
+        elif realplot and selections["bottom_viz"] == "realplot" and figures:
             bottom_display = [
-                wcc.Graph(
-                    config={"displayModeBar": False},
-                    style={"height": "40vh"},
-                    figure=realplot,
+                (
+                    wcc.Graph(
+                        config={"displayModeBar": False},
+                        style={"height": "40vh"},
+                        figure=realplot,
+                    )
+                    if not subplots
+                    else "Realization plot not available when `Subplots` is active"
                 )
-                if not subplots
-                else "Realization plot not available when `Subplots` is active"
             ]
 
         return update_relevant_components(
             id_list=id_list,
             update_info=[
                 {
-                    "new_value": tornado_plots_layout(
-                        figures=figures, bottom_display=bottom_display
-                    )
-                    if figures
-                    else tornado_error_layout(
-                        "No data left after filtering"
-                        if dframe.empty
-                        else f"Reference sensitivity '{selections['Reference']}' not in input data"
+                    "new_value": (
+                        tornado_plots_layout(
+                            figures=figures, bottom_display=bottom_display
+                        )
+                        if figures
+                        else tornado_error_layout(
+                            "No data left after filtering"
+                            if dframe.empty
+                            else f"Reference sensitivity '{selections['Reference']}' "
+                            + "not in input data"
+                        )
                     ),
                     "conditions": {"page": page_selected},
                 }
@@ -209,9 +215,9 @@ def tornado_controllers(
             ]
             settings["Response"] = {
                 "options": [{"label": i, "value": i} for i in volume_options],
-                "value": volume_options[0]
-                if initial_page_load
-                else selections["Response"],
+                "value": (
+                    volume_options[0] if initial_page_load else selections["Response"]
+                ),
                 "disabled": len(volume_options) == 1,
             }
         else:
@@ -288,10 +294,12 @@ def tornado_figure_and_table(
     ).figure
 
     figure.update_xaxes(side="bottom", title=None).update_layout(
-        title_text=f"Tornadoplot for {response} <br>"
-        + f"Fluid zone: {(' + ').join(selections['filters']['FLUID_ZONE'])}"
-        if group is None
-        else f"{response} {group}",
+        title_text=(
+            f"Tornadoplot for {response} <br>"
+            + f"Fluid zone: {(' + ').join(selections['filters']['FLUID_ZONE'])}"
+            if group is None
+            else f"{response} {group}"
+        ),
         title_font_size=font_size,
         margin={"t": 70},
     )
@@ -328,12 +336,14 @@ def create_realplot(df: pd.DataFrame, sensitivity_colors: dict) -> go.Figure:
         .update_layout(legend_title_text="")
         .for_each_trace(
             lambda t: (
-                t.update(marker_line_color="black")
-                if t["customdata"][0][0] == "high"
-                else t.update(marker_line_color="white", marker_line_width=2)
+                (
+                    t.update(marker_line_color="black")
+                    if t["customdata"][0][0] == "high"
+                    else t.update(marker_line_color="white", marker_line_width=2)
+                )
+                if t["customdata"][0][0] != "mc"
+                else None
             )
-            if t["customdata"][0][0] != "mc"
-            else None
         )
     )
 

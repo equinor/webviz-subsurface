@@ -1,5 +1,4 @@
 import datetime
-from enum import Enum
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -12,13 +11,14 @@ from webviz_subsurface._utils.colors import (
     rgba_to_str,
     scale_rgb_lightness,
 )
+from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface._utils.simulation_timeseries import (
     get_simulation_line_shape,
     set_simulation_line_shape_fallback,
 )
 
 
-class Colors(str, Enum):
+class Colors(StrEnum):
     RED = rgba_to_str((255, 18, 67, 1))
     MID = rgba_to_str((220, 220, 220, 1))
     GREEN = rgba_to_str((62, 208, 62, 1))

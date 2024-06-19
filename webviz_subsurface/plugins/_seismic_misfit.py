@@ -2114,7 +2114,7 @@ def update_misfit_plot(
         fig.update_yaxes(title_text="Cumulative misfit")
         fig.add_hline(mean_diff)
         fig.add_annotation(average_arrow_annotation(mean_diff, "y"))
-        fig.update_layout(margin=dict(l=20, r=20, t=30, b=20))
+        fig.update_layout(margin={"l": 20, "r": 20, "t": 30, "b": 20})
         fig.update_layout(coloraxis_colorbar_thickness=20)
         # fig.update(layout_coloraxis_showscale=False)
 
@@ -2273,7 +2273,7 @@ def update_obsdata_map(
     fig.update_layout(coloraxis_colorbar_yanchor="top")
     fig.update_layout(coloraxis_colorbar_len=0.9)
     fig.update_layout(coloraxis_colorbar_thickness=20)
-    fig.update_traces(marker=dict(size=marker_size), selector=dict(mode="markers"))
+    fig.update_traces(marker={"size": marker_size}, selector={"mode": "markers"})
 
     fig.update_layout(uirevision="true")  # don't update layout during callbacks
 
@@ -2350,18 +2350,18 @@ def update_obs_sim_map_plot(
             x=ensdf_stat["east"],
             y=ensdf_stat["north"],
             mode="markers",
-            marker=dict(
-                size=marker_size,
-                color=ensdf["obs"],
-                colorscale=color_scale,
-                colorbar_x=0.29,
-                colorbar_thicknessmode="fraction",
-                colorbar_thickness=0.02,
-                colorbar_len=0.9,
-                cmin=range_col[0],
-                cmax=range_col[1],
-                showscale=True,
-            ),
+            marker={
+                "size": marker_size,
+                "color": ensdf["obs"],
+                "colorscale": color_scale,
+                "colorbar_x": 0.29,
+                "colorbar_thicknessmode": "fraction",
+                "colorbar_thickness": 0.02,
+                "colorbar_len": 0.9,
+                "cmin": range_col[0],
+                "cmax": range_col[1],
+                "showscale": True,
+            },
             showlegend=False,
             text=ensdf.obs,
             customdata=list(zip(ensdf.region, ensdf.east)),
@@ -2379,18 +2379,18 @@ def update_obs_sim_map_plot(
             x=ensdf_stat["east"],
             y=ensdf_stat["north"],
             mode="markers",
-            marker=dict(
-                size=marker_size,
-                color=ensdf_stat["sim_mean"],
-                colorscale=color_scale,
-                colorbar_x=0.63,
-                colorbar_thicknessmode="fraction",
-                colorbar_thickness=0.02,
-                colorbar_len=0.9,
-                cmin=range_col[0],
-                cmax=range_col[1],
-                showscale=True,
-            ),
+            marker={
+                "size": marker_size,
+                "color": ensdf_stat["sim_mean"],
+                "colorscale": color_scale,
+                "colorbar_x": 0.63,
+                "colorbar_thicknessmode": "fraction",
+                "colorbar_thickness": 0.02,
+                "colorbar_len": 0.9,
+                "cmin": range_col[0],
+                "cmax": range_col[1],
+                "showscale": True,
+            },
             showlegend=False,
             text=ensdf_stat.sim_mean,
             customdata=list(zip(ensdf.region, ensdf.east)),
@@ -2409,18 +2409,18 @@ def update_obs_sim_map_plot(
                 x=ensdf_stat["east"],
                 y=ensdf_stat["north"],
                 mode="markers",
-                marker=dict(
-                    size=marker_size,
-                    color=ensdf_stat["diff_mean"],
-                    cmin=0,
-                    cmax=obs_range[1] * scale_col_range,
-                    colorscale=SEISMIC_DIFF,
-                    colorbar_x=0.97,
-                    colorbar_thicknessmode="fraction",
-                    colorbar_thickness=0.02,
-                    colorbar_len=0.9,
-                    showscale=True,
-                ),
+                marker={
+                    "size": marker_size,
+                    "color": ensdf_stat["diff_mean"],
+                    "cmin": 0,
+                    "cmax": obs_range[1] * scale_col_range,
+                    "colorscale": SEISMIC_DIFF,
+                    "colorbar_x": 0.97,
+                    "colorbar_thicknessmode": "fraction",
+                    "colorbar_thickness": 0.02,
+                    "colorbar_len": 0.9,
+                    "showscale": True,
+                },
                 showlegend=False,
                 text=ensdf_stat.diff_mean,
                 customdata=list(zip(ensdf.region, ensdf.east)),
@@ -2439,23 +2439,22 @@ def update_obs_sim_map_plot(
                 x=ensdf_stat["east"],
                 y=ensdf_stat["north"],
                 mode="markers",
-                marker=dict(
-                    size=marker_size,
-                    color=ensdf_stat[coverage],
-                    cmin=-1.0,
-                    cmax=2.0,
-                    colorscale=SEISMIC_COVERAGE,
-                    colorbar=dict(
-                        # title="Coverage",
-                        tickvals=[-0.5, 0.5, 1.5],
-                        ticktext=["Overmodelled", "Coverage", "Undermodelled"],
-                    ),
-                    colorbar_x=0.97,
-                    colorbar_thicknessmode="fraction",
-                    colorbar_thickness=0.02,
-                    colorbar_len=0.9,
-                    showscale=True,
-                ),
+                marker={
+                    "size": marker_size,
+                    "color": ensdf_stat["coverage"],
+                    "cmin": -1.0,
+                    "cmax": 2.0,
+                    "colorscale": SEISMIC_COVERAGE,
+                    "colorbar": {
+                        "tickvals": [-0.5, 0.5, 1.5],
+                        "ticktext": ["Overmodelled", "Coverage", "Undermodelled"],
+                    },
+                    "colorbar_x": 0.97,
+                    "colorbar_thicknessmode": "fraction",
+                    "colorbar_thickness": 0.02,
+                    "colorbar_len": 0.9,
+                    "showscale": True,
+                },
                 opacity=0.5,
                 showlegend=False,
                 text=ensdf_stat[coverage],
@@ -2474,16 +2473,16 @@ def update_obs_sim_map_plot(
                 x=ensdf["east"],
                 y=ensdf["north"],
                 mode="markers",
-                marker=dict(
-                    size=marker_size,
-                    color=ensdf.region,
-                    colorscale=px.colors.qualitative.Plotly,
-                    colorbar_x=0.97,
-                    colorbar_thicknessmode="fraction",
-                    colorbar_thickness=0.02,
-                    colorbar_len=0.9,
-                    showscale=False,
-                ),
+                marker={
+                    "size": marker_size,
+                    "color": ensdf.region,
+                    "colorscale": px.colors.qualitative.Plotly,
+                    "colorbar_x": 0.97,
+                    "colorbar_thicknessmode": "fraction",
+                    "colorbar_thickness": 0.02,
+                    "colorbar_len": 0.9,
+                    "showscale": False,
+                },
                 opacity=0.8,
                 showlegend=False,
                 hovertemplate="Region: %{text}<extra></extra>",
@@ -2550,8 +2549,8 @@ def update_obs_sim_map_plot(
                     x=df_sliced_stat["east"],
                     y=df_sliced_stat["obs"],
                     mode="markers+lines",
-                    marker=dict(color="red", size=5),
-                    line=dict(width=2, dash="solid"),
+                    marker={"color": "red", "size": 5},
+                    line={"width": 2, "dash": "solid"},
                     showlegend=True,
                 ),
                 go.Scatter(
@@ -2559,8 +2558,8 @@ def update_obs_sim_map_plot(
                     x=df_sliced_stat["east"],
                     y=df_sliced_stat["sim_mean"],
                     mode="markers+lines",
-                    marker=dict(color="green", size=3),
-                    line=dict(width=1, dash="dot"),
+                    marker={"color": "green", "size": 3},
+                    line={"width": 1, "dash": "dot"},
                     showlegend=True,
                 ),
                 go.Scatter(
@@ -2568,16 +2567,16 @@ def update_obs_sim_map_plot(
                     x=df_sliced_stat["east"],
                     y=df_sliced_stat["sim_p10"],
                     mode="lines",
-                    marker=dict(color="#444"),
-                    line=dict(width=1),
+                    marker={"color": "#444"},
+                    line={"width": 1},
                     showlegend=True,
                 ),
                 go.Scatter(
                     name="Sim p90",
                     x=df_sliced_stat["east"],
                     y=df_sliced_stat["sim_p90"],
-                    marker=dict(color="#444"),
-                    line=dict(width=1),
+                    marker={"color": "#444"},
+                    line={"width": 1},
                     mode="lines",
                     fillcolor="rgba(68, 68, 68, 0.3)",
                     fill="tonexty",
@@ -2588,7 +2587,7 @@ def update_obs_sim_map_plot(
                     x=df_sliced_stat["east"],
                     y=df_sliced_stat["sim_min"],
                     mode="lines",
-                    line=dict(width=1, dash="dot", color="grey"),
+                    line={"width": 1, "dash": "dot", "color": "grey"},
                     showlegend=True,
                 ),
                 go.Scatter(
@@ -2596,7 +2595,7 @@ def update_obs_sim_map_plot(
                     x=df_sliced_stat["east"],
                     y=df_sliced_stat["sim_max"],
                     mode="lines",
-                    line=dict(width=1, dash="dot", color="grey"),
+                    line={"width": 1, "dash": "dot", "color": "grey"},
                     showlegend=True,
                 ),
             ]
@@ -2630,8 +2629,8 @@ def update_obs_sim_map_plot(
                     x=df_sliced_reals["east"],
                     y=df_sliced_reals["obs"],
                     mode="markers+lines",
-                    marker=dict(color="red", size=7),
-                    line=dict(width=5, dash="solid"),
+                    marker={"color": "red", "size": 7},
+                    line={"width": 5, "dash": "solid"},
                     showlegend=True,
                 ),
             ],
@@ -2645,7 +2644,7 @@ def update_obs_sim_map_plot(
                         y=df_sliced_reals[col],
                         mode="lines",  # "markers+lines",
                         line_shape="linear",
-                        line=dict(width=1, dash="dash"),
+                        line={"width": 1, "dash": "dash"},
                         name=col,
                         showlegend=True,
                         hoverinfo="name",
@@ -2758,7 +2757,7 @@ def update_crossplot(
             "data_number": True,
         },
     )
-    fig.update_traces(marker=dict(sizemode="area"), error_y_thickness=1.0)
+    fig.update_traces(marker={"sizemode": "area"}, error_y_thickness=1.0)
     fig.update_layout(uirevision="true")  # don't update layout during callbacks
 
     # add zero/diagonal line
@@ -2781,8 +2780,8 @@ def update_crossplot(
     # set marker line color = black (default is white)
     if sizeby is None:
         fig.update_traces(
-            marker=dict(line=dict(width=0.4, color="black")),
-            selector=dict(mode="markers"),
+            marker={"line": {"width": 0.4, "color": "black"}},
+            selector={"mode": "markers"},
         )
 
     figures.append(wcc.Graph(figure=fig.to_dict(), style={"height": total_height}))
@@ -2893,11 +2892,16 @@ def update_errorbarplot(
             "data_number": True,
         },
     )
-    fig.update_traces(error_y_thickness=1.0, selector=dict(type="scatter"))
+    fig.update_traces(error_y_thickness=1.0, selector={"type": "scatter"})
 
     # -----------------------
     obserrory = (
-        dict(type="data", array=df_stat["obs_error"], visible=True, thickness=1.0)
+        {
+            "type": "data",
+            "array": df_stat["obs_error"],
+            "visible": True,
+            "thickness": 1.0,
+        }
         if showerrorbarobs is not None
         else None
     )
@@ -2969,12 +2973,12 @@ def update_errorbarplot_superimpose(
         errory = None
 
         if showerrorbar == "sim_std":
-            errory = dict(
-                type="data",
-                array=ensdf_stat[ens_name]["sim_std"],
-                visible=True,
-                thickness=1.0,
-            )
+            errory = {
+                "type": "data",
+                "array": ensdf_stat[ens_name]["sim_std"],
+                "visible": True,
+                "thickness": 1.0,
+            }
         elif showerrorbar == "sim_p10_p90":
             ensdf_stat[ens_name]["error_plus"] = abs(
                 ensdf_stat[ens_name]["sim_mean"] - ensdf_stat[ens_name]["sim_p10"]
@@ -2982,14 +2986,14 @@ def update_errorbarplot_superimpose(
             ensdf_stat[ens_name]["error_minus"] = abs(
                 ensdf_stat[ens_name]["sim_mean"] - ensdf_stat[ens_name]["sim_p90"]
             )
-            errory = dict(
-                type="data",
-                symmetric=False,
-                array=ensdf_stat[ens_name]["error_plus"],
-                arrayminus=ensdf_stat[ens_name]["error_minus"],
-                visible=True,
-                thickness=1.0,
-            )
+            errory = {
+                "type": "data",
+                "symmetric": False,
+                "array": ensdf_stat[ens_name]["error_plus"],
+                "arrayminus": ensdf_stat[ens_name]["error_minus"],
+                "visible": True,
+                "thickness": 1.0,
+            }
 
         # -------------------------------------------------------------
         ensdf_stat[ens_name] = ensdf_stat[ens_name].sort_values(by=["region"])
@@ -3008,12 +3012,12 @@ def update_errorbarplot_superimpose(
 
             obserrory = None
             if showerrorbarobs is not None:
-                obserrory = dict(
-                    type="data",
-                    array=ensdf_stat[ens_name]["obs_error"],
-                    visible=True,
-                    thickness=1.0,
-                )
+                obserrory = {
+                    "type": "data",
+                    "array": ensdf_stat[ens_name]["obs_error"],
+                    "visible": True,
+                    "thickness": 1.0,
+                }
 
             fig.add_scattergl(
                 x=ensdf_stat[ens_name]["counter"],

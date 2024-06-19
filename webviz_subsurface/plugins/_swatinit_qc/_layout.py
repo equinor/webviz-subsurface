@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import IntEnum, auto
 from typing import Any, Callable, List, Optional
 
 import pandas as pd
@@ -15,7 +15,7 @@ from ._markdown import (
 
 
 # pylint: disable = too-few-public-methods
-class LayoutElements(str, Enum):
+class LayoutElements(IntEnum):
     PLOT_WRAPPER = auto()
     PLOT_SELECTOR = auto()
     TABLE_WRAPPER = auto()
@@ -125,7 +125,7 @@ class FullScreen(wcc.WebvizPluginPlaceholder):
 
 
 class TabQqPlotLayout:
-    class MainPlots(str, Enum):
+    class MainPlots(IntEnum):
         WATERFALL = auto()
         PROP_VS_DEPTH = auto()
 

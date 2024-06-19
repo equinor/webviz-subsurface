@@ -103,7 +103,7 @@ def calc_from_cumulatives(
 def _verify_time_index(
     df: pd.DataFrame, time_index: str, time_index_input: str
 ) -> None:
-    freqs = {"D": "daily", "MS": "monthly", "AS-JAN": "yearly"}
+    freqs = {"D": "daily", "MS": "monthly", "AS-JAN": "yearly", "YS-JAN": "yearly"}
     valid_time_indices = {
         "daily": ["daily", "monthly", "yearly"],
         "monthly": ["monthly", "yearly"],

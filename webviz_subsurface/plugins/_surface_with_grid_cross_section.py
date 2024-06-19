@@ -344,8 +344,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             grid = load_grid(get_path(self.gridfile))
             if (
                 grid.subgrids is not None
-                and sum([len(subgrid) for subgrid in grid.subgrids.values()])
-                != grid.nlay
+                and sum(len(subgrid) for subgrid in grid.subgrids.values()) != grid.nlay
             ):
                 warnings.warn(
                     (

@@ -140,46 +140,46 @@ class TornadoBarChart:
     def data(self) -> List:
         colors = self.create_color_list(self._tornadotable["sensname"].unique())
         return [
-            dict(
-                type="bar",
-                y=self._tornadotable["sensname"],
-                x=self._tornadotable["low"],
-                name="low",
-                base=self._tornadotable["low_base"]
+            {
+                "type": "bar",
+                "y": self._tornadotable["sensname"],
+                "x": self._tornadotable["low"],
+                "name": "low",
+                "base": self._tornadotable["low_base"]
                 if not self._use_true_base
                 else (self._reference_average + self._tornadotable["low_base"]),
-                customdata=self._tornadotable["low_reals"],
-                text=self.bar_labels("low"),
-                textposition="auto",
-                insidetextanchor="middle",
-                hoverinfo="text",
-                hovertext=self.hover_labels(),
-                orientation="h",
-                marker={
+                "customdata": self._tornadotable["low_reals"],
+                "text": self.bar_labels("low"),
+                "textposition": "auto",
+                "insidetextanchor": "middle",
+                "hoverinfo": "text",
+                "hovertext": self.hover_labels(),
+                "orientation": "h",
+                "marker": {
                     "line": {"width": 1.5, "color": "black"},
                     "color": colors if self._color_by_sens else None,
                 },
-            ),
-            dict(
-                type="bar",
-                y=self._tornadotable["sensname"],
-                x=self._tornadotable["high"],
-                name="high",
-                base=self._tornadotable["high_base"]
+            },
+            {
+                "type": "bar",
+                "y": self._tornadotable["sensname"],
+                "x": self._tornadotable["high"],
+                "name": "high",
+                "base": self._tornadotable["high_base"]
                 if not self._use_true_base
                 else (self._reference_average + self._tornadotable["high_base"]),
-                customdata=self._tornadotable["high_reals"],
-                text=self.bar_labels("high"),
-                textposition="auto",
-                insidetextanchor="middle",
-                hoverinfo="text",
-                hovertext=self.hover_labels(),
-                orientation="h",
-                marker={
+                "customdata": self._tornadotable["high_reals"],
+                "text": self.bar_labels("high"),
+                "textposition": "auto",
+                "insidetextanchor": "middle",
+                "hoverinfo": "text",
+                "hovertext": self.hover_labels(),
+                "orientation": "h",
+                "marker": {
                     "line": {"width": 1.5, "color": "black"},
                     "color": colors if self._color_by_sens else None,
                 },
-            ),
+            },
         ]
 
     def calculate_scatter_value(self, case_values: pd.Series) -> List:

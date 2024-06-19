@@ -103,7 +103,8 @@ def comparison_callback(
         responses = [selections["Response"]] + [
             col
             for col in volumemodel.responses
-            if col not in volumemodel.hc_responses and col != selections["Response"]
+            if col not in volumemodel.hc_responses + ["STOIIP_TOTAL", "GIIP_TOTAL"]
+            and col != selections["Response"]
         ]
         df = create_comparison_df(
             volumemodel,
@@ -135,9 +136,11 @@ def comparison_callback(
         require_response = selections["Response"] in ("STOIIP", "GIIP")
         required_columns = ["BULK", "PORO", "SW"]
         required_columns.append("BO" if selections["Response"] == "STOIIP" else "BG")
-        if not require_response or all(col in df for col in required_columns):
+        if not (
+            require_response and all(f"{col} diff" in df for col in required_columns)
+        ):
             return html.Div(
-                "Waterfall plot is only available for analyzing STOIIP/GIIP changes from static"
+                "Waterfall plot is only available for analyzing STOIIP/GIIP changes from static "
                 f"sources containing all {required_columns=}."
             )
         return waterfall_plot_layout(

@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
       - name: 🧹 Remove unused pre-installed software
@@ -35,10 +35,10 @@ jobs:
           df -h
 
       - name: 📖 Checkout commit locally
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: 🐍 Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -48,10 +48,10 @@ jobs:
           if [[ $(pip freeze) ]]; then
             pip freeze | grep -vw "pip" | xargs pip uninstall -y
           fi
-          pip install "shapely<2"
-          pip install "bleach<5"  # https://github.com/equinor/webviz-config/issues/586
-          pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
-          pip install "selenium<4.3"  # breaking change in selenium==4.3
+          pip install "shapely"
+          pip install "bleach"
+          pip install "werkzeug"
+          pip install "selenium"
           pip install .
 
           # Testing against our latest release (including pre-releases)
@@ -72,7 +72,18 @@ jobs:
         if: github.event_name != 'release'
         run: |
           black --check webviz_subsurface tests setup.py
-          pylint webviz_subsurface tests setup.py
+
+          pylint_exit_code=0
+          pylint webviz_subsurface tests setup.py || pylint_exit_code=$?
+
+          error_bitmask=$((1 | 2 | 4))  # Fatal, Error, Warning
+          result=$(($pylint_exit_code & $error_bitmask))
+
+          if [[ $result != 0 ]]; then
+            echo "Error: Pylint returned exit code $pylint_exit_code"
+            exit $pylint_exit_code
+          fi
+
           bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
           isort --check-only webviz_subsurface tests setup.py
           mypy --package webviz_subsurface
@@ -102,6 +113,8 @@ jobs:
           webviz build ./webviz-subsurface-testdata/webviz_examples/webviz-full-demo.yml --portable ./example_subsurface_app --theme equinor
           rm -rf ./webviz-subsurface-testdata
           pushd example_subsurface_app
+
+          sed -i '29i RUN apt-get update && apt-get install -y libgomp1' Dockerfile  # Temp. workaround for recent version of opm
 
           docker build -t webviz/example_subsurface_image:equinor-theme .
           popd
@@ -168,19 +181,19 @@ jobs:
 
     steps:
       - name: 📖 Checkout commit locally
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: 🐍 Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: 📦 Install webviz-subsurface with dependencies
         run: |
           pip install --upgrade pip
-          pip install "bleach<5"  # https://github.com/equinor/webviz-config/issues/586
-          pip install "werkzeug<2.1"  # ...while waiting for https://github.com/plotly/dash/issues/1992
-          pip install "selenium<4.3"  # breaking change in selenium==4.3
+          pip install "bleach"
+          pip install "werkzeug"
+          pip install "selenium"
           pip install "scipy<1.9.3"   # breaking change in scipy==1.9.3
           pip install "pytest<7.2.0"
           pip install "pytest-xdist<3.0"

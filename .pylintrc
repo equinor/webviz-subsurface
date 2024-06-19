@@ -5,8 +5,8 @@ init-hook = "import astroid; astroid.context.InferenceContext.max_inferred = 500
 
 [MESSAGES CONTROL]
 
-disable = bad-continuation, missing-docstring, duplicate-code, logging-fstring-interpolation, unspecified-encoding
-enable = useless-suppression, no-print
+disable = missing-docstring, duplicate-code, logging-fstring-interpolation, unspecified-encoding
+enable = useless-suppression
 
 [DESIGN]
 
@@ -26,6 +26,7 @@ good-names = i,
              z,
              df,
              _
+
 
 [MISCELLANEOUS]
 

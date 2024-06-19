@@ -104,10 +104,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     ):
         super().__init__()
 
-        if wellfiles is not None == wellfolder is not None:
-            raise ValueError(
-                'Incorrent arguments. Either provide "wellfiles" or "wellfolder"'
-            )
         self.wellfolder = wellfolder
         self.wellsuffix = wellsuffix
         self.wellfiles: List[str]
@@ -115,6 +111,10 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             self.wellfiles = json.load(find_files(wellfolder, wellsuffix))
         elif wellfiles is not None:
             self.wellfiles = [str(well) for well in wellfiles]
+        else:
+            raise ValueError(
+                "Incorrect arguments, either provide wellfiles or wellfolder"
+            )
 
         self.surfacefolder = surfacefolder
         self.surfacefiles = surfacefiles
@@ -243,9 +243,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
     def seismic_layout(self) -> html.Div:
         if self.segyfiles:
             return html.Div(
-                style=self.set_style(marginTop="20px")
-                if self.segyfiles
-                else {"display": "none"},
+                style=(
+                    self.set_style(marginTop="20px")
+                    if self.segyfiles
+                    else {"display": "none"}
+                ),
                 children=html.Label(
                     children=[
                         html.Span("Seismic:", style={"font-weight": "bold"}),

@@ -18,10 +18,10 @@ def rgb_to_hex(color: List[int]) -> str:
     return f"#{color[1]:02x}{color[2]:02x}{color[3]:02x}"
 
 
-def image_to_base64(img: Image) -> str:
+def image_to_base64(img: Image) -> str:  # type: ignore[valid-type]
     """Convert an image to a base64 string."""
     buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
+    img.save(buffer, format="PNG")  # type: ignore[attr-defined]
     buffer.seek(0)
     return base64.b64encode(buffer.read()).decode("utf-8")
 

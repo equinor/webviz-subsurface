@@ -1,6 +1,5 @@
 import logging
 import shutil
-from enum import Enum
 from pathlib import Path
 from typing import List, Optional
 
@@ -8,6 +7,7 @@ import numpy as np
 import pandas as pd
 import xtgeo
 
+from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ._egrid_file_discovery import EclipseCaseFileInfo
@@ -16,15 +16,14 @@ from .ensemble_grid_provider import EnsembleGridProvider
 LOGGER = logging.getLogger(__name__)
 
 
-# pylint: disable=too-few-public-methods
-class Col:
+class Col(StrEnum):
     REAL = "realization"
     EGRID = "egrid_path"
     INIT = "init_path"
     UNRST = "unrst_path"
 
 
-class GridType(str, Enum):
+class GridType(StrEnum):
     GEOMETRY = "geometry"
     STATIC_PROPERTY = "static_property"
     DYNAMIC_PROPERTY = "dynamic_property"
