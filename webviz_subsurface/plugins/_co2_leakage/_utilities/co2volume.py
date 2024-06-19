@@ -1,5 +1,4 @@
 import warnings
-from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
