@@ -27,6 +27,11 @@ class MapViewElement(ViewElementABC):
         BAR_PLOT = "bar-plot"
         TIME_PLOT = "time-plot"
         TIME_PLOT_ONE_REAL = "time-plot-one-realization"
+        BAR_PLOT_ORDER = "bar-plot-order"
+        CONTAINMENT_COLORS = "containment-order"
+        SIZE_SLIDER = "size-slider"
+        TOP_ELEMENT = "top-element"
+        BOTTOM_ELEMENT = "bottom-element"
 
     def __init__(self, color_scales: List[Dict[str, Any]]) -> None:
         super().__init__()
@@ -37,6 +42,7 @@ class MapViewElement(ViewElementABC):
             [
                 wcc.Frame(
                     # id=self.register_component_unique_id(LayoutElements.MAP_VIEW),
+                    id=self.register_component_unique_id(self.Ids.TOP_ELEMENT),
                     color="white",
                     highlight=False,
                     children=[
@@ -54,8 +60,8 @@ class MapViewElement(ViewElementABC):
                                 ),
                             ],
                             style={
-                                "padding": "1vh",
-                                "height": "37vh",
+                                "padding": "1%",
+                                "height": "80%",
                                 "position": "relative",
                             },
                         ),
@@ -72,28 +78,52 @@ class MapViewElement(ViewElementABC):
                         ),
                     ],
                     style={
-                        "height": "47vh",
+                        "height": "43vh",
                     },
                 ),
                 wcc.Frame(
                     # id=get_uuid(LayoutElements.PLOT_VIEW),
+                    id=self.register_component_unique_id(self.Ids.BOTTOM_ELEMENT),
                     style={
-                        "height": "33vh",
-                        "display": "flex",
-                        "flexDirection": "row",
-                        "justifyContent": "space-evenly",
+                        "height": "37vh",
                     },
-                    children=_summary_graph_layout(
-                        self.register_component_unique_id(self.Ids.BAR_PLOT),
-                        self.register_component_unique_id(self.Ids.TIME_PLOT),
-                        self.register_component_unique_id(self.Ids.TIME_PLOT_ONE_REAL),
-                    ),
+                    children=[
+                        html.Div(
+                            _summary_graph_layout(
+                                self.register_component_unique_id(self.Ids.BAR_PLOT),
+                                self.register_component_unique_id(self.Ids.TIME_PLOT),
+                                self.register_component_unique_id(
+                                    self.Ids.TIME_PLOT_ONE_REAL
+                                ),
+                            )
+                        ),
+                    ],
+                ),
+                html.Div(
+                    [
+                        wcc.Slider(
+                            id=self.register_component_unique_id(self.Ids.SIZE_SLIDER),
+                            min=1,
+                            max=79,
+                            step=2,
+                            value=37,
+                            vertical=False,
+                            marks={
+                                # 1: "Top",
+                                37: "Drag to scale the size of the containment plots",
+                                # 79: "Bottom",
+                            },
+                        ),
+                    ],
+                    style={
+                        "width": "100%",
+                    },
                 ),
             ],
             style={
-                "flex": 3,
                 "display": "flex",
                 "flexDirection": "column",
+                "height": "90vh",
             },
         )
 
@@ -104,25 +134,55 @@ def _summary_graph_layout(
     time_plot_one_realization_id: str,
 ) -> List:
     return [
-        wcc.Graph(
-            id=bar_plot_id,
-            figure=go.Figure(),
-            config={
-                "displayModeBar": False,
-            },
-        ),
-        wcc.Graph(
-            id=time_plot_id,
-            figure=go.Figure(),
-            config={
-                "displayModeBar": False,
-            },
-        ),
-        wcc.Graph(
-            id=time_plot_one_realization_id,
-            figure=go.Figure(),
-            config={
-                "displayModeBar": False,
-            },
+        wcc.Tabs(
+            id="TAB",
+            value="tab-1",
+            children=[
+                wcc.Tab(
+                    label="End-state containment (all realizations)",
+                    value="tab-1",
+                    children=[
+                        html.Div(
+                            wcc.Graph(
+                                id=bar_plot_id,
+                                figure=go.Figure(),
+                                config={
+                                    "displayModeBar": False,
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+                wcc.Tab(
+                    label="Containment over time (all realizations)",
+                    value="tab-2",
+                    children=[
+                        html.Div(
+                            wcc.Graph(
+                                id=time_plot_id,
+                                figure=go.Figure(),
+                                config={
+                                    "displayModeBar": False,
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+                wcc.Tab(
+                    label="Containment over time (one realization)",
+                    value="tab-3",
+                    children=[
+                        html.Div(
+                            wcc.Graph(
+                                id=time_plot_one_realization_id,
+                                figure=go.Figure(),
+                                config={
+                                    "displayModeBar": False,
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ],
         ),
     ]

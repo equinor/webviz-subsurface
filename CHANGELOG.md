@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [#1266](https://github.com/equinor/webviz-subsurface/pull/1266) - Added waterfall plot for analysing volume changes in `VolumetricAnalysis`.
 
+### Changed
+- [#1269](https://github.com/equinor/webviz-subsurface/pull/1269) - Visual improvements to `CO2Leakage`: split plots into tabs, add slider, add options for which category to use for color/markings.
+
 ## [0.2.24] - 2024-01-25
 
 ### Added

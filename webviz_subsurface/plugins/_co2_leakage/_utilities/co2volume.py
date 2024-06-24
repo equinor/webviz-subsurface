@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -10,7 +11,6 @@ from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
-    ContainmentViews,
 )
 
 
@@ -50,23 +50,6 @@ def _read_dataframe(
     df = table_provider.get_column_data(table_provider.column_names(), [realization])
     if any(split in list(df.columns) for split in ["zone", "region"]):
         df = _process_containment_information(df, containment_info)
-        if containment_info["containment_view"] != ContainmentViews.CONTAINMENTSPLIT:
-            df["aqueous"] = (
-                df["aqueous_contained"]
-                + df["aqueous_outside"]
-                + df["aqueous_hazardous"]
-            )
-            df["gas"] = df["gas_contained"] + df["gas_outside"] + df["gas_hazardous"]
-            df = df.drop(
-                columns=[
-                    "aqueous_contained",
-                    "aqueous_outside",
-                    "aqueous_hazardous",
-                    "gas_contained",
-                    "gas_outside",
-                    "gas_hazardous",
-                ]
-            )
     if scale_factor == 1.0:
         return df
     for col in df.columns:
@@ -100,14 +83,14 @@ def _process_containment_information(
     df: pandas.DataFrame,
     containment_info: Dict[str, Union[str, None, List[str]]],
 ) -> pandas.DataFrame:
-    view = containment_info["containment_view"]
-    if view == ContainmentViews.ZONESPLIT:
+    choices = [containment_info["color_choice"], containment_info["mark_choice"]]
+    if "zone" in choices:
         return (
             df[df["zone"] != "all"]
             .drop(columns="region", errors="ignore")
             .reset_index(drop=True)
         )
-    if view == ContainmentViews.REGIONSPLIT:
+    if "region" in choices:
         return (
             df[df["region"] != "all"]
             .drop(columns="zone", errors="ignore")
@@ -138,7 +121,9 @@ def _process_containment_information(
     return df
 
 
-def _split_colors(num_cols: int, split: str = "zone") -> List[str]:
+def _get_colors(num_cols: int = 3, split: str = "zone") -> List[str]:
+    if split == "containment":
+        return [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
     options = list(_COLOR_ZONES)
     if split == "region":
         options.reverse()
@@ -147,6 +132,149 @@ def _split_colors(num_cols: int, split: str = "zone") -> List[str]:
     num_lengths = int(np.ceil(num_cols / len(options)))
     new_cols = options * num_lengths
     return new_cols[:num_cols]
+
+
+def _get_marks(num_marks: int, mark_choice: str) -> List[str]:
+    if mark_choice == "none":
+        return [""] * num_marks
+    if mark_choice == "containment":
+        return ["x", "/", ""]
+    if mark_choice in ["zone", "region"]:
+        base_pattern = ["", "/", "x", "-", "\\", "+", "|", "."]
+        if num_marks > len(base_pattern):
+            base_pattern *= int(np.ceil(num_marks / len(base_pattern)))
+            warnings.warn(
+                f"More {mark_choice}s than pattern options. "
+                f"Some {mark_choice}s will share pattern."
+            )
+        return base_pattern[:num_marks]
+    return ["", "/"]
+
+
+def _prepare_pattern_and_color_options(
+    containment_info: Dict,
+    color_choice: str,
+    mark_choice: str,
+) -> Tuple[Dict, List, List]:
+    num_colors = len(containment_info[f"{color_choice}s"])
+    num_marks = (
+        num_colors
+        if mark_choice == "none"
+        else len(containment_info[f"{mark_choice}s"])
+    )
+    marks = _get_marks(num_marks, mark_choice)
+    colors = _get_colors(num_colors, color_choice)
+    if mark_choice == "none":
+        cat_ord = {"type": containment_info[f"{color_choice}s"]}
+        return cat_ord, colors, marks
+    if containment_info["sorting"] == "color":
+        cat_ord = {
+            "type": [
+                ", ".join((c, m))
+                for c in containment_info[f"{color_choice}s"]
+                for m in containment_info[f"{mark_choice}s"]
+            ],
+        }
+        colors = [c for c in colors for _ in range(num_marks)]
+        marks = marks * num_colors
+    else:
+        cat_ord = {
+            "type": [
+                ", ".join((c, m))
+                for m in containment_info[f"{mark_choice}s"]
+                for c in containment_info[f"{color_choice}s"]
+            ],
+        }
+        colors = colors * num_marks
+        marks = [m for m in marks for _ in range(num_colors)]
+    return cat_ord, colors, marks
+
+
+def _drop_unused_columns(
+    df: pandas.DataFrame,
+    containment_info: Dict,
+    keep_realization: bool = True,
+    figure: int = 2,
+) -> Tuple[pandas.DataFrame, List[str]]:
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    containment = containment_info["containment"]
+    containments = containment_info["containments"]
+    phase = containment_info["phase"]
+    phases = containment_info["phases"]
+    split = _find_split(color_choice, mark_choice)
+
+    cols_to_keep = ["date"]
+    if keep_realization:
+        cols_to_keep += ["realization"]
+    cols_to_return = []
+    if split == "standard":
+        if mark_choice == "none":
+            cols_to_return += ["_".join((phase, c)) for c in containments]
+        else:
+            cols_to_return += [
+                "_".join((p, c))
+                for c in containments
+                for p in phases  # ["total"] + phases
+            ]
+            # cols_to_return += ["total"] + ["_".join(("total", p)) for p in phases]
+    else:
+        cols_to_keep += [split]
+        if mark_choice == split:
+            cols_to_return += ["_".join((phase, c)) for c in containments]
+        elif mark_choice == "none":
+            if containment == "total":
+                cols_to_return += (
+                    ["total"] if phase == "total" else ["_".join(("total", phase))]
+                )
+            else:
+                cols_to_return += ["_".join((phase, containment))]
+        elif mark_choice == "containment":
+            cols_to_return += ["_".join((phase, c)) for c in containments]
+        else:
+            if figure == 2:
+                cols_to_return += [
+                    (
+                        "total"
+                        if containment == "total"
+                        else "_".join(("total", containment))
+                    )
+                ]
+            cols_to_return += (
+                ["total_gas", "total_aqueous"]
+                if containment == "total"
+                else ["_".join((p, containment)) for p in phases]
+            )
+    cols_to_keep += cols_to_return
+    df = df.drop(columns=[col for col in df.columns if col not in cols_to_keep])
+    return df, cols_to_return
+
+
+def _rename_columns_figure2(
+    part_df: pandas.DataFrame,
+    mark_choice: str,
+    name: str,
+    colnames: List[str],
+    containment: str,
+    phases: List[str],
+) -> pandas.DataFrame:
+    if mark_choice == "none":
+        renaming = {c: name for c in colnames}
+    elif mark_choice == "phase":
+        if containment == "total":
+            renaming = {
+                c: ", ".join((name, p)) for c, p in zip(colnames, ["total"] + phases)
+            }
+        else:
+            renaming = {
+                c: ", ".join((name, c.split("_", maxsplit=1)[0])) for c in colnames
+            }
+    elif mark_choice in ["zone", "region"]:
+        renaming = {cn: ", ".join((cn.split("_")[1], name)) for cn in colnames}
+    else:  # mark_choice == "containment"
+        renaming = {cn: ", ".join((name, cn.split("_")[1])) for cn in colnames}
+    part_df = part_df.rename(columns=renaming).reset_index(drop=True)
+    return part_df
 
 
 def _find_scale_factor(
@@ -169,68 +297,116 @@ def _read_terminal_co2_volumes(
     scale: Union[Co2MassScale, Co2VolumeScale],
     containment_info: Dict[str, Union[str, None, List[str]]],
 ) -> pandas.DataFrame:
-    view = containment_info["containment_view"]
     records: Dict[str, List[Any]] = {
         "real": [],
         "amount": [],
-        "phase": [],
         "sort_key": [],
         "sort_key_secondary": [],
     }
-    if view == ContainmentViews.ZONESPLIT:
-        records["zone"] = []
-    elif view == ContainmentViews.REGIONSPLIT:
-        records["region"] = []
-    else:
-        records["containment"] = []
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    assert isinstance(color_choice, str)
+    assert isinstance(mark_choice, str)
+    records[color_choice] = []
+    if mark_choice != "none":
+        records[mark_choice] = []
     scale_factor = _find_scale_factor(table_provider, scale)
     for real in realizations:
         df = _read_dataframe(table_provider, real, scale_factor, containment_info)
-        if view != ContainmentViews.CONTAINMENTSPLIT:
-            split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
-            last_ = df[df["date"] == np.max(df["date"])]
-            for i in range(last_.shape[0]):
-                last = last_.iloc[i]
-                label = str(real)
-
-                records["real"] += [label] * 2
-                records["amount"] += [
-                    last["aqueous"],
-                    last["gas"],
-                ]
-                records["phase"] += ["aqueous", "gas"]
-                records[split] += [last[split]] * 2
-                records["sort_key"] += [label] * 2
-                records["sort_key_secondary"] += [last[split]] * 2
-        else:
-            last = df.iloc[np.argmax(df["date"])]
-            label = str(real)
-
-            records["real"] += [label] * 6
-            records["amount"] += [
-                last["aqueous_contained"],
-                last["gas_contained"],
-                last["aqueous_outside"],
-                last["gas_outside"],
-                last["aqueous_hazardous"],
-                last["gas_hazardous"],
-            ]
-            records["containment"] += [
-                "contained",
-                "contained",
-                "outside",
-                "outside",
-                "hazardous",
-                "hazardous",
-            ]
-            records["phase"] += ["aqueous", "gas", "aqueous", "gas", "aqueous", "gas"]
-            records["sort_key"] += [last["gas_hazardous"]] * 6
-            records["sort_key_secondary"] += [last["gas_outside"]] * 6
+        _add_to_records(
+            records, color_choice, mark_choice, df, str(real), containment_info
+        )
     df = pandas.DataFrame.from_dict(records)
     df.sort_values(
         ["sort_key", "sort_key_secondary"], inplace=True, ascending=[True, True]
     )
     return df
+
+
+def _add_to_records(
+    records: Dict[str, List[Any]],
+    color_choice: str,
+    mark_choice: str,
+    df: pandas.DataFrame,
+    label: str,
+    containment_info: Dict,
+) -> None:
+    phase = containment_info["phase"]
+    containments = containment_info["containments"]
+    split = _find_split(color_choice, mark_choice)
+    if split == "standard":
+        last = df.iloc[np.argmax(df["date"])]
+        factor = 6 if mark_choice == "phase" else 3
+        records["real"] += [label] * factor
+        if mark_choice == "phase":
+            record = [
+                [last["_".join((p, c))], c, p]
+                for c in containments
+                for p in (containment_info["phases"])
+            ]
+        else:
+            record = [[last["_".join((phase, c))], c] for c in containments]
+        records["amount"] += [r[0] for r in record]
+        records["containment"] += [r[1] for r in record]
+        if mark_choice == "phase":
+            records["phase"] += [r[2] for r in record]
+        records["sort_key"] += [last["total_hazardous"]] * factor
+        records["sort_key_secondary"] += [last["total_outside"]] * factor
+    else:
+        containment = containment_info["containment"]
+        factor = 1 if mark_choice == "none" else 2 if mark_choice == "phase" else 3
+        last_ = df[df["date"] == np.max(df["date"])]
+        records["sort_key"] += (
+            [np.sum(last_["total_hazardous"])] * factor * last_.shape[0]
+        )
+        records["sort_key_secondary"] += (
+            [np.sum(last_["total_outside"])] * factor * last_.shape[0]
+        )
+        for i in range(last_.shape[0]):
+            last = last_.iloc[i]
+            records["real"] += [label] * factor
+            if mark_choice in ["containment", "zone", "region"]:
+                records["amount"] += [last["_".join((phase, c))] for c in containments]
+                records[mark_choice] += (
+                    containments
+                    if mark_choice == "containment"
+                    else [last[split]] * factor
+                )
+            elif mark_choice == "none":
+                if containment == "total":
+                    records["amount"] += (
+                        [last["total"]]
+                        if phase == "total"
+                        else [last["_".join(("total", phase))]]
+                    )
+                else:
+                    records["amount"] += [last["_".join((phase, containment))]]
+            else:  # mark_choice == "phase"
+                if containment == "total":
+                    records["amount"] += [
+                        last["total_aqueous"],
+                        last["total_gas"],
+                    ]
+                else:
+                    records["amount"] += [
+                        last["_".join(("aqueous", containment))],
+                        last["_".join(("gas", containment))],
+                    ]
+                records[mark_choice] += ["aqueous", "gas"]
+            records[color_choice] += (
+                containments
+                if mark_choice in ["zone", "region"]
+                else [last[split]] * factor
+            )
+
+
+def _find_split(color_choice: str, mark_choice: str) -> str:
+    split = "standard"
+    if "zone" in [color_choice, mark_choice]:
+        split = "zone"
+    elif "region" in [color_choice, mark_choice]:
+        split = "region"
+    return split
 
 
 def _read_co2_volumes(
@@ -251,27 +427,63 @@ def _read_co2_volumes(
 
 
 def _change_type_names(df: pandas.DataFrame) -> None:
-    df["type"] = df["type"].replace("total", "Total")
-    df["type"] = df["type"].replace("total_contained", "Contained")
-    df["type"] = df["type"].replace("total_outside", "Outside")
-    df["type"] = df["type"].replace("total_hazardous", "Hazardous")
-    df["type"] = df["type"].replace("total_gas", "Gas")
-    df["type"] = df["type"].replace("total_aqueous", "Aqueous")
-    df["type"] = df["type"].replace("gas_contained", "Contained mobile gas")
-    df["type"] = df["type"].replace("gas_outside", "Outside mobile gas")
-    df["type"] = df["type"].replace("gas_hazardous", "Hazardous mobile gas")
-    df["type"] = df["type"].replace("aqueous_contained", "Contained aqueous")
-    df["type"] = df["type"].replace("aqueous_outside", "Outside aqueous")
-    df["type"] = df["type"].replace("aqueous_hazardous", "Hazardous aqueous")
+    df["type"] = df["type"].replace("gas_contained", "contained, gas")
+    df["type"] = df["type"].replace("gas_outside", "outside, gas")
+    df["type"] = df["type"].replace("gas_hazardous", "hazardous, gas")
+    df["type"] = df["type"].replace("aqueous_contained", "contained, aqueous")
+    df["type"] = df["type"].replace("aqueous_outside", "outside, aqueous")
+    df["type"] = df["type"].replace("aqueous_hazardous", "hazardous, aqueous")
+    df["type"] = df["type"].replace("total_contained", "contained, total")
+    df["type"] = df["type"].replace("total_outside", "outside, total")
+    df["type"] = df["type"].replace("total_hazardous", "hazardous, total")
+
+
+def _change_type_names_mark_choice_none(df: pandas.DataFrame) -> None:
+    df["type"] = df["type"].replace("gas_contained", "contained")
+    df["type"] = df["type"].replace("gas_outside", "outside")
+    df["type"] = df["type"].replace("gas_hazardous", "hazardous")
+    df["type"] = df["type"].replace("aqueous_contained", "contained")
+    df["type"] = df["type"].replace("aqueous_outside", "outside")
+    df["type"] = df["type"].replace("aqueous_hazardous", "hazardous")
+    df["type"] = df["type"].replace("total_contained", "contained")
+    df["type"] = df["type"].replace("total_outside", "outside")
+    df["type"] = df["type"].replace("total_hazardous", "hazardous")
 
 
 def _adjust_figure(fig: go.Figure) -> None:
+    fig.layout.legend.orientation = "v"
+    fig.layout.legend.title.text = ""
+    fig.layout.legend.itemwidth = 40
+    fig.layout.xaxis.exponentformat = "power"
     fig.layout.title.x = 0.5
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
     fig.layout.margin.b = 6
-    fig.layout.margin.t = 40
+    fig.layout.margin.t = 15
     fig.layout.margin.l = 10
     fig.layout.margin.r = 10
+    fig.update_layout(
+        legend={
+            "x": 1.05,
+            "xanchor": "left",
+        }
+    )
+
+
+def _add_prop_to_df(
+    df: pandas.DataFrame,
+    list_to_iterate: Union[List, np.ndarray],
+    column: str,
+) -> None:
+    prop = np.zeros(df.shape[0])
+    for element in list_to_iterate:
+        summed_amount = np.sum(df.loc[df[column] == element]["amount"])
+        prop[np.where(df[column] == element)[0]] = summed_amount
+    nonzero = np.where(prop > 0)[0]
+    prop[nonzero] = (
+        np.round(np.array(df["amount"])[nonzero] / prop[nonzero] * 1000) / 10
+    )
+    df["prop"] = prop
+    df["prop"] = df["prop"].map(lambda p: str(p) + "%")
 
 
 def generate_co2_volume_figure(
@@ -283,43 +495,56 @@ def generate_co2_volume_figure(
     df = _read_terminal_co2_volumes(
         table_provider, realizations, scale, containment_info
     )
-    if containment_info["containment_view"] == ContainmentViews.ZONESPLIT:
-        color = "zone"
-        cat_ord = {"zone": containment_info["zones"], "phase": ["gas", "aqueous"]}
-        colors = _split_colors(len(containment_info["zones"]))
-    elif containment_info["containment_view"] == ContainmentViews.REGIONSPLIT:
-        color = "region"
-        cat_ord = {"region": containment_info["regions"], "phase": ["gas", "aqueous"]}
-        colors = _split_colors(len(containment_info["regions"]), "region")
-    else:
-        color = "containment"
-        cat_ord = {
-            "containment": ["hazardous", "outside", "contained"],
-            "phase": ["gas", "aqueous"],
-        }
-        colors = [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    cat_ord, colors, marks = _prepare_pattern_and_color_options(
+        containment_info,
+        color_choice,
+        mark_choice,
+    )
+    df["type"] = (
+        [", ".join((c, p)) for c, p in zip(df[color_choice], df[mark_choice])]
+        if mark_choice != "none"
+        else df[color_choice]
+    )
+    _add_prop_to_df(df, [str(r) for r in realizations], "real")
+    pattern_shape = "type" if mark_choice != "none" else None
     fig = px.bar(
         df,
         y="real",
         x="amount",
-        color=color,
-        pattern_shape="phase",
-        title="End-state CO<sub>2</sub> containment (all realizations)",
+        color="type",
+        pattern_shape=pattern_shape,
+        pattern_shape_sequence=marks,
         orientation="h",
         category_orders=cat_ord,
         color_discrete_sequence=colors,
+        hover_data={"prop": True, "real": False},
     )
-    fig.layout.legend.title.text = ""
-    fig.layout.legend.orientation = "h"
-    fig.layout.legend.y = -0.3
-    fig.layout.legend.font = {"size": 8}
     fig.layout.yaxis.title = "Realization"
-    fig.layout.xaxis.exponentformat = "power"
     fig.layout.xaxis.title = scale.value
     _adjust_figure(fig)
     return fig
 
 
+def _rename_columns_figure3(
+    mark_choice: str,
+    containment: str,
+    cols_kept: List[str],
+) -> Dict[str, str]:
+    if mark_choice == "phase":
+        if containment == "total":
+            renaming = {"total_gas": "gas", "total_aqueous": "aqueous"}
+        else:
+            renaming = {col: col.split("_")[0] for col in cols_kept}
+    elif mark_choice == "none":
+        renaming = {}
+    else:  # mark_choice == "containment"
+        renaming = {col: col.split("_")[1] for col in cols_kept}
+    return renaming
+
+
+# pylint: disable=too-many-locals
 def generate_co2_time_containment_one_realization_figure(
     table_provider: EnsembleTableProvider,
     scale: Union[Co2MassScale, Co2VolumeScale],
@@ -331,177 +556,251 @@ def generate_co2_time_containment_one_realization_figure(
         table_provider, [time_series_realization], scale, containment_info
     )
     df.sort_values(by="date", inplace=True)
-    df = df.drop(
-        columns=[
-            "realization",
-            "REAL",
-            "total",
-            "total_contained",
-            "total_outside",
-            "total_hazardous",
-            "total_gas",
-            "total_aqueous",
-        ]
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    split = _find_split(color_choice, mark_choice)
+    containment = containment_info["containment"]
+    df, colnames = _drop_unused_columns(
+        df, containment_info, keep_realization=False, figure=3
     )
-    if containment_info["containment_view"] == ContainmentViews.ZONESPLIT:
-        df = pandas.melt(df, id_vars=["date", "zone"])
-        df["variable"] = df["zone"] + ", " + df["variable"]
-        df = df.drop(columns=["zone"])
-        cat_ord = {
-            "type": [
-                zone_name + ", " + phase
-                for zone_name in containment_info["zones"]
-                for phase in ["gas", "aqueous"]
-            ]
-        }
-        pattern = ["", "/"] * len(containment_info["zones"])
-        colors = [
-            col
-            for col in _split_colors(len(containment_info["zones"]))
-            for i in range(2)
-        ]
-    elif containment_info["containment_view"] == ContainmentViews.REGIONSPLIT:
-        df = pandas.melt(df, id_vars=["date", "region"])
-        df["variable"] = df["region"] + ", " + df["variable"]
-        df = df.drop(columns=["region"])
-        cat_ord = {
-            "type": [
-                region_name + ", " + phase
-                for region_name in containment_info["regions"]
-                for phase in ["gas", "aqueous"]
-            ]
-        }
-        pattern = ["", "/"] * len(containment_info["regions"])
-        colors = [
-            col
-            for col in _split_colors(len(containment_info["regions"]), "region")
-            for i in range(2)
-        ]
-    else:
+    if split == "standard":
         df = pandas.melt(df, id_vars=["date"])
-        cat_ord = {
-            "type": [
-                "Hazardous mobile gas",
-                "Hazardous aqueous",
-                "Outside mobile gas",
-                "Outside aqueous",
-                "Contained mobile gas",
-                "Contained aqueous",
-            ]
-        }
-        pattern = ["", "/"] * 3
-        colors = [
-            _COLOR_HAZARDOUS,
-            _COLOR_HAZARDOUS,
-            _COLOR_OUTSIDE,
-            _COLOR_OUTSIDE,
-            _COLOR_CONTAINED,
-            _COLOR_CONTAINED,
-        ]
-    df = df.rename(columns={"value": "mass", "variable": "type"})
-    df.sort_values(by="date", inplace=True)
-    _change_type_names(df)
+    else:
+        renaming = _rename_columns_figure3(
+            mark_choice,
+            containment,
+            colnames,
+        )
+        df = df.rename(columns=renaming)
+        df = pandas.melt(df, id_vars=["date", split])
+        if mark_choice == "none":
+            df["variable"] = df[split]
+        else:
+            df["variable"] = (
+                df["variable"] + ", " + df[split]
+                if mark_choice == split
+                else df[split] + ", " + df["variable"]
+            )
+        df = df.drop(columns=[split])
+    cat_ord, colors, marks = _prepare_pattern_and_color_options(
+        containment_info,
+        color_choice,
+        mark_choice,
+    )
+    df = df.rename(columns={"value": "amount", "variable": "type"})
+    if mark_choice == "none":
+        _change_type_names_mark_choice_none(df)
+    else:
+        _change_type_names(df)
     if y_limits[0] is None and y_limits[1] is not None:
         y_limits[0] = 0.0
     elif y_limits[1] is None and y_limits[0] is not None:
-        y_limits[1] = max(df.groupby("date")["mass"].sum()) * 1.05
+        y_limits[1] = max(df.groupby("date")["amount"].sum()) * 1.05
+
+    _add_prop_to_df(df, np.unique(df["date"]), "date")
+    pattern_shape = "type" if mark_choice != "none" else None
     fig = px.area(
         df,
         x="date",
-        y="mass",
+        y="amount",
         color="type",
         category_orders=cat_ord,
         color_discrete_sequence=colors,
-        pattern_shape="type",
-        pattern_shape_sequence=pattern,  # ['', '/', '\\', 'x', '-', '|', '+', '.'],
+        pattern_shape=pattern_shape,
+        pattern_shape_sequence=marks,  # ['', '/', '\\', 'x', '-', '|', '+', '.'],
         range_y=y_limits,
+        hover_data={
+            "prop": True,
+            "amount": ":.3f",
+        },
     )
+    _add_hover_info_in_field(fig, df, cat_ord, colors)
     fig.layout.yaxis.range = y_limits
-    fig.layout.legend.orientation = "h"
-    fig.layout.legend.title.text = ""
-    fig.layout.legend.y = -0.3
-    fig.layout.legend.font = {"size": 8}
-    fig.layout.title = "CO<sub>2</sub> containment for realization: " + str(
-        time_series_realization
-    )
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
-    fig.layout.yaxis.exponentformat = "power"
     _adjust_figure(fig)
     return fig
+
+
+def _add_hover_info_in_field(
+    fig: go.Figure,
+    df: pandas.DataFrame,
+    cat_ord: Dict,
+    colors: List,
+) -> None:
+    """
+    Plots additional, invisible points in the middle of each field in the third plot,
+    solely to display hover information inside the fields
+    (which is not possible directly with plotly.express.area)
+    """
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+    months += ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    dates = np.unique(df["date"])
+    date_strings = {
+        date: f"{months[int(date.split('-')[1]) - 1]} {date.split('-')[0]}"
+        for date in dates
+    }
+    prev_vals = {date: 0 for date in dates}
+    for name, color in zip(cat_ord["type"], colors):
+        sub_df = df[df["type"] == name]
+        for date in dates:
+            amount = sub_df[sub_df["date"] == date]["amount"].item()
+            prop = sub_df[sub_df["date"] == date]["prop"].item()
+            prev_val = prev_vals[date]
+            new_val = prev_val + amount
+            mid_val = (prev_val + new_val) / 2
+            fig.add_trace(
+                go.Scatter(
+                    x=[date],
+                    y=[mid_val],
+                    mode="lines",
+                    line=go.scatter.Line(color=color),
+                    text=f"type={name}<br>date={date_strings[date]}<br>"
+                    f"amount={amount:.3f}<br>prop={prop}",
+                    hoverinfo="text",
+                    hoveron="points",
+                    showlegend=False,
+                )
+            )
+            prev_vals[date] = new_val
+
+
+def _make_cols_to_plot(
+    split: str,
+    df_: pandas.DataFrame,
+    containment_info: Dict,
+) -> Tuple[Dict[str, Tuple[str, str, str]], List[str]]:
+    mark_choice = containment_info["mark_choice"]
+    color_choice = containment_info["color_choice"]
+    phase = containment_info["phase"]
+    phases = containment_info["phases"]
+    containments = containment_info["containments"]
+    options = containment_info[f"{split}s"]
+    if mark_choice in ["phase", "none"]:
+        colors = _get_colors(len(options), split)
+        if mark_choice == "none":
+            line_type = (
+                "solid" if phase == "total" else "dot" if phase == "gas" else "dash"
+            )
+            cols_to_plot = {
+                name: (name, line_type, col) for name, col in zip(options, colors)
+            }
+            df_["total"] = df_[options].sum(axis=1)
+            active_cols_at_startup = options
+        else:
+            cols_to_plot = {
+                ", ".join((name, p)): (", ".join((name, p)), line_type, col)
+                for name, col in zip(options, colors)
+                for p, line_type in zip(["total"] + phases, ["solid", "dot", "dash"])
+            }
+            df_["total"] = df_[[", ".join((name, "total")) for name in options]].sum(
+                axis=1
+            )
+            active_cols_at_startup = [name + ", total" for name in options]
+    else:
+        if mark_choice == split:
+            colors = _get_colors(split=color_choice)
+            line_types = [
+                f"{round(i / len(options) * 25)}px" for i in range(len(options))
+            ]
+            if len(options) > 8:
+                warnings.warn(
+                    f"Large number of {split}s might make it hard "
+                    f"to distinguish different dashed lines."
+                )
+            cols_to_plot = {
+                ", ".join((con, name)): (", ".join((con, name)), line_type, col)
+                for con, col in zip(containments, colors)
+                for name, line_type in zip(options, line_types)
+            }
+            active_cols_at_startup = ["contained, " + name for name in options]
+        else:  # mark_choice == "containment"
+            colors = _get_colors(len(options), split)
+            cols_to_plot = {
+                ", ".join((name, con)): (", ".join((name, con)), line_type, col)
+                for name, col in zip(options, colors)
+                for con, line_type in zip(containments, ["dash", "dot", "solid"])
+            }
+            active_cols_at_startup = [name + ", contained" for name in options]
+        df_["total"] = df_[cols_to_plot.keys()].sum(axis=1)
+    return cols_to_plot, active_cols_at_startup
 
 
 def _prepare_time_figure_options(
     df: pandas.DataFrame,
     containment_info: Dict[str, Any],
 ) -> Tuple[pandas.DataFrame, Dict[str, Tuple[str, str, str]], List[str]]:
-    view = containment_info["containment_view"]
-    if view != ContainmentViews.CONTAINMENTSPLIT:
-        split = "zone" if view == ContainmentViews.ZONESPLIT else "region"
-        options = (
-            containment_info["zones"]
-            if split == "zone"
-            else containment_info["regions"]
-        )
-        df = df.drop(
-            columns=[
-                "REAL",
-                "total_gas",
-                "total_aqueous",
-                "total_contained",
-                "total_outside",
-                "total_hazardous",
-                "region" if split == "zone" else "zone",
-            ],
-            errors="ignore",
-        )
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    split = _find_split(color_choice, mark_choice)
+    containment = containment_info["containment"]
+    containments = containment_info["containments"]
+    phase = containment_info["phase"]
+    phases = containment_info["phases"]
+    if split == "standard":
+        df.sort_values(by="date", inplace=True)
+        if mark_choice == "none":
+            new_names = ["total"] + containments
+            colors = [_COLOR_TOTAL, _COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
+            line_type = (
+                "solid" if phase == "total" else "dot" if phase == "gas" else "dash"
+            )
+            colnames = ["total"]
+            colnames += ["_".join((phase, c)) for c in containments]
+            cols_to_plot = {
+                new_name: (colname, line_type, color)
+                for new_name, colname, color in zip(new_names, colnames, colors)
+            }
+            cols_to_keep = colnames + ["date", "realization"]
+            cols_to_keep[0] = (
+                "total" if phase == "total" else "_".join(("total", phase))
+            )
+            df = df.drop(columns=[col for col in df.columns if col not in cols_to_keep])
+            df = df.rename(columns={cols_to_keep[0]: "total"}).reset_index(drop=True)
+        else:
+            cols_to_plot = {
+                "total": ("total", "solid", _COLOR_TOTAL),
+                "hazardous": ("total_hazardous", "solid", _COLOR_HAZARDOUS),
+                "outside": ("total_outside", "solid", _COLOR_OUTSIDE),
+                "contained": ("total_contained", "solid", _COLOR_CONTAINED),
+                "gas": ("total_gas", "dot", _COLOR_TOTAL),
+                "aqueous": ("total_aqueous", "dash", _COLOR_TOTAL),
+                "hazardous, gas": ("gas_hazardous", "dot", _COLOR_HAZARDOUS),
+                "outside, gas": ("gas_outside", "dot", _COLOR_OUTSIDE),
+                "contained, gas": ("gas_contained", "dot", _COLOR_CONTAINED),
+                "hazardous, aqueous": ("aqueous_hazardous", "dash", _COLOR_HAZARDOUS),
+                "contained, aqueous": ("aqueous_contained", "dash", _COLOR_CONTAINED),
+                "outside, aqueous": ("aqueous_outside", "dash", _COLOR_OUTSIDE),
+            }
+        active_cols_at_startup = ["total"] + containments
+    else:
+        options = containment_info[f"{split}s"]
+        df, colnames = _drop_unused_columns(df, containment_info)
         df.sort_values(by=["date", "realization"], inplace=True)
         df_ = df[["date", "realization"]][df[split] == options[0]].reset_index(
             drop=True
         )
         for name in options:
-            part_df = df[["total", "gas", "aqueous"]][df[split] == name]
-            part_df = part_df.rename(
-                columns={
-                    "total": name + ", total",
-                    "gas": name + ", gas",
-                    "aqueous": name + ", aqueous",
-                }
-            ).reset_index(drop=True)
+            part_df = df[colnames][df[split] == name]
+            part_df = _rename_columns_figure2(
+                part_df,
+                mark_choice,
+                name,
+                colnames,
+                containment,
+                phases,
+            )
             df_ = pandas.concat([df_, part_df], axis=1)
-        colors = _split_colors(len(options), split)
-        cols_to_plot = {}
-        for phase, line_type in zip(
-            ["total", "gas", "aqueous"], ["solid", "dot", "dash"]
-        ):
-            for name, col in zip(options, colors):
-                cols_to_plot[name + ", " + phase] = (
-                    name + ", " + phase,
-                    line_type,
-                    col,
-                )
-        active_cols_at_startup = [name + ", total" for name in options]
+        cols_to_plot, active_cols_at_startup = _make_cols_to_plot(
+            split,
+            df_,
+            containment_info,
+        )
         df = df_
-    else:
-        df.sort_values(by="date", inplace=True)
-        cols_to_plot = {
-            "Total": ("total", "solid", _COLOR_TOTAL),
-            "Contained": ("total_contained", "solid", _COLOR_CONTAINED),
-            "Outside": ("total_outside", "solid", _COLOR_OUTSIDE),
-            "Hazardous": ("total_hazardous", "solid", _COLOR_HAZARDOUS),
-            "Gas": ("total_gas", "dot", _COLOR_TOTAL),
-            "Aqueous": ("total_aqueous", "dash", _COLOR_TOTAL),
-            "Contained mobile gas": ("gas_contained", "dot", _COLOR_CONTAINED),
-            "Outside mobile gas": ("gas_outside", "dot", _COLOR_OUTSIDE),
-            "Hazardous mobile gas": ("gas_hazardous", "dot", _COLOR_HAZARDOUS),
-            "Contained aqueous": ("aqueous_contained", "dash", _COLOR_CONTAINED),
-            "Outside aqueous": ("aqueous_outside", "dash", _COLOR_OUTSIDE),
-            "Hazardous aqueous": ("aqueous_hazardous", "dash", _COLOR_HAZARDOUS),
-        }
-        active_cols_at_startup = ["Total", "Outside", "Hazardous"]
     return df, cols_to_plot, active_cols_at_startup
 
 
+# pylint: disable=too-many-locals
 def generate_co2_time_containment_figure(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
@@ -529,30 +828,35 @@ def generate_co2_time_containment_figure(
         sub_df = df[df["realization"] == rlz]
         common_args = {
             "x": sub_df["date"],
-            "hovertemplate": "%{x}: %{y}<br>Realization: %{meta[0]}",
+            "hovertemplate": "%{x}: %{y}<br>Realization: %{meta[0]}<br>Prop: %{customdata}%",
             "meta": [rlz],
             "showlegend": False,
         }
         for col, value in cols_to_plot.items():
+            prop = np.zeros(sub_df.shape[0])
+            nonzero = np.where(np.array(sub_df["total"]) > 0)[0]
+            prop[nonzero] = (
+                np.round(
+                    np.array(sub_df[value[0]])[nonzero]
+                    / np.array(sub_df["total"])[nonzero]
+                    * 1000
+                )
+                / 10
+            )
+            # NBNB-AS: Check this, mypy complains:
             args = {
                 "line_dash": value[1],
                 "marker_color": value[2],
                 "legendgroup": col,
                 "name": col,
+                "customdata": prop,  # type: ignore
             }
             if col not in active_cols_at_startup:
                 args["visible"] = "legendonly"
             fig.add_scatter(y=sub_df[value[0]], **args, **common_args)
-    fig.layout.legend.orientation = "h"
-    fig.layout.legend.title.text = ""
-    fig.layout.legend.y = -0.3
-    fig.layout.legend.font = {"size": 8}
     fig.layout.legend.tracegroupgap = 0
-    fig.layout.title = "CO<sub>2</sub> containment (all realizations)"
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
-    fig.layout.yaxis.exponentformat = "power"
     fig.layout.yaxis.autorange = True
     _adjust_figure(fig)
-    # fig.update_layout(legend=dict(font=dict(size=8)), legend_tracegroupgap=0)
     return fig

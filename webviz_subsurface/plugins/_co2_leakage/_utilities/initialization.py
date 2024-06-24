@@ -122,12 +122,12 @@ def init_zone_and_region_options(
     ensemble_roots: Dict[str, str],
     mass_table: Dict[str, EnsembleTableProvider],
     actual_volume_table: Dict[str, EnsembleTableProvider],
-    ensemble_provider: Dict[str, EnsembleSurfaceProvider],
+    co2_table_provider: Dict[str, EnsembleTableProvider],
 ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
     options: Dict[str, Dict[str, Dict[str, List[str]]]] = {}
     for ens in ensemble_roots.keys():
         options[ens] = {}
-        real = ensemble_provider[ens].realizations()[0]
+        real = co2_table_provider[ens].realizations()[0]
         for source, table in zip(
             [GraphSource.CONTAINMENT_MASS, GraphSource.CONTAINMENT_ACTUAL_VOLUME],
             [mass_table, actual_volume_table],
