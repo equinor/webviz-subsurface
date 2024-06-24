@@ -1,8 +1,10 @@
 from webviz_subsurface._utils.enum_shim import StrEnum
 
 
+
 class MapAttribute(StrEnum):
-    MIGRATION_TIME = "Migration Time"
+    MIGRATION_TIME_SGAS = "Migration time (SGAS)"
+    MIGRATION_TIME_AMFG = "Migration time (AMFG)"
     MAX_SGAS = "Maximum SGAS"
     MAX_AMFG = "Maximum AMFG"
     SGAS_PLUME = "Plume (SGAS)"

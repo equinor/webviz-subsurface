@@ -1,8 +1,9 @@
 import warnings
+from datetime import datetime as dt
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import pandas
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -45,80 +46,46 @@ def _read_dataframe(
     table_provider: EnsembleTableProvider,
     realization: int,
     scale_factor: float,
-    containment_info: Dict[str, Union[str, None, List[str]]],
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     df = table_provider.get_column_data(table_provider.column_names(), [realization])
-    if any(split in list(df.columns) for split in ["zone", "region"]):
-        df = _process_containment_information(df, containment_info)
     if scale_factor == 1.0:
         return df
-    for col in df.columns:
-        if col not in ["date", "zone", "region"]:
-            df[col] /= scale_factor
+    df["amount"] /= scale_factor
     return df
 
 
-def read_zone_and_region_options(
+def read_menu_options(
     table_provider: EnsembleTableProvider,
     realization: int,
+    relpath: str,
 ) -> Dict[str, List[str]]:
-    df = table_provider.get_column_data(table_provider.column_names(), [realization])
+    col_names = table_provider.column_names()
+    df = table_provider.get_column_data(col_names, [realization])
+    required_columns = ["date", "amount", "phase", "containment", "zone", "region"]
+    missing_columns = [col for col in required_columns if col not in col_names]
+    if len(missing_columns) > 0:
+        raise KeyError(
+            f"Missing expected columns {', '.join(missing_columns)} in {relpath}"
+            f" in realization {realization} (and possibly other csv-files). "
+            f"Provided files are likely from an old version of ccs-scripts."
+        )
     zones = ["all"]
-    if "zone" in list(df.columns):
-        for zone in list(df["zone"]):
-            if zone not in zones:
-                zones.append(zone)
+    for zone in list(df["zone"]):
+        if zone not in zones:
+            zones.append(zone)
     regions = ["all"]
-    if "region" in list(df.columns):
-        for region in list(df["region"]):
-            if region not in regions:
-                regions.append(region)
+    for region in list(df["region"]):
+        if region not in regions:
+            regions.append(region)
+    if "free_gas" in list(df["phase"]):
+        phases = ["total", "free_gas", "trapped_gas", "aqueous"]
+    else:
+        phases = ["total", "gas", "aqueous"]
     return {
         "zones": zones if len(zones) > 1 else [],
         "regions": regions if len(regions) > 1 else [],
+        "phases": phases,
     }
-
-
-def _process_containment_information(
-    df: pandas.DataFrame,
-    containment_info: Dict[str, Union[str, None, List[str]]],
-) -> pandas.DataFrame:
-    choices = [containment_info["color_choice"], containment_info["mark_choice"]]
-    if "zone" in choices:
-        return (
-            df[df["zone"] != "all"]
-            .drop(columns="region", errors="ignore")
-            .reset_index(drop=True)
-        )
-    if "region" in choices:
-        return (
-            df[df["region"] != "all"]
-            .drop(columns="zone", errors="ignore")
-            .reset_index(drop=True)
-        )
-    zone = containment_info["zone"]
-    region = containment_info["region"]
-    if zone not in ["all", None]:
-        if zone in list(df["zone"]):
-            return df[df["zone"] == zone].drop(
-                columns=["zone", "region"], errors="ignore"
-            )
-        print(f"Zone {zone} not found, using sum for each unique date.")
-    elif region not in ["all", None]:
-        if region in list(df["region"]):
-            return df[df["region"] == region].drop(
-                columns=["zone", "region"], errors="ignore"
-            )
-        print(f"Region {region} not found, using sum for each unique date.")
-    if "zone" in list(df.columns):
-        if "region" in list(df.columns):
-            return df[
-                [a and b for a, b in zip(df["zone"] == "all", df["region"] == "all")]
-            ].drop(columns=["zone", "region"])
-        df = df[df["zone"] == "all"].drop(columns=["zone"])
-    elif "region" in list(df.columns):
-        df = df[df["region"] == "all"].drop(columns=["region"])
-    return df
 
 
 def _get_colors(num_cols: int = 3, split: str = "zone") -> List[str]:
@@ -148,133 +115,114 @@ def _get_marks(num_marks: int, mark_choice: str) -> List[str]:
                 f"Some {mark_choice}s will share pattern."
             )
         return base_pattern[:num_marks]
-    return ["", "/"]
+    return ["", "/"] if num_marks == 2 else ["", ".", "/"]
+
+
+def _get_line_types(mark_options: List[str], mark_choice: str) -> List[str]:
+    if mark_choice == "none":
+        return ["solid"]
+    if mark_choice == "containment":
+        return ["dash", "dot", "solid"]
+    if mark_choice in ["zone", "region"]:
+        if len(mark_options) > 8:
+            warnings.warn(
+                f"Large number of {mark_choice}s might make it hard "
+                f"to distinguish different dashed lines."
+            )
+        return [
+            f"{round(i / len(mark_options) * 25)}px" for i in range(len(mark_options))
+        ]
+    return ["dot", "dash"] if "gas" in mark_options else ["dot", "dashdot", "dash"]
 
 
 def _prepare_pattern_and_color_options(
+    df: pd.DataFrame,
     containment_info: Dict,
     color_choice: str,
     mark_choice: str,
 ) -> Tuple[Dict, List, List]:
-    num_colors = len(containment_info[f"{color_choice}s"])
-    num_marks = (
-        num_colors
-        if mark_choice == "none"
-        else len(containment_info[f"{mark_choice}s"])
-    )
+    mark_options = [] if mark_choice == "none" else containment_info[f"{mark_choice}s"]
+    color_options = containment_info[f"{color_choice}s"]
+    num_colors = len(color_options)
+    num_marks = num_colors if mark_choice == "none" else len(mark_options)
     marks = _get_marks(num_marks, mark_choice)
     colors = _get_colors(num_colors, color_choice)
     if mark_choice == "none":
-        cat_ord = {"type": containment_info[f"{color_choice}s"]}
+        cat_ord = {"type": color_options}
+        df["type"] = df[color_choice]
         return cat_ord, colors, marks
+    df["type"] = [", ".join((c, m)) for c, m in zip(df[color_choice], df[mark_choice])]
     if containment_info["sorting"] == "color":
         cat_ord = {
-            "type": [
-                ", ".join((c, m))
-                for c in containment_info[f"{color_choice}s"]
-                for m in containment_info[f"{mark_choice}s"]
-            ],
+            "type": [", ".join((c, m)) for c in color_options for m in mark_options],
         }
         colors = [c for c in colors for _ in range(num_marks)]
         marks = marks * num_colors
     else:
         cat_ord = {
-            "type": [
-                ", ".join((c, m))
-                for m in containment_info[f"{mark_choice}s"]
-                for c in containment_info[f"{color_choice}s"]
-            ],
+            "type": [", ".join((c, m)) for m in mark_options for c in color_options],
         }
         colors = colors * num_marks
         marks = [m for m in marks for _ in range(num_colors)]
     return cat_ord, colors, marks
 
 
-def _drop_unused_columns(
-    df: pandas.DataFrame,
+def _prepare_line_type_and_color_options(
+    df: pd.DataFrame,
     containment_info: Dict,
-    keep_realization: bool = True,
-    figure: int = 2,
-) -> Tuple[pandas.DataFrame, List[str]]:
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
-    containment = containment_info["containment"]
-    containments = containment_info["containments"]
-    phase = containment_info["phase"]
-    phases = containment_info["phases"]
-    split = _find_split(color_choice, mark_choice)
-
-    cols_to_keep = ["date"]
-    if keep_realization:
-        cols_to_keep += ["realization"]
-    cols_to_return = []
-    if split == "standard":
-        if mark_choice == "none":
-            cols_to_return += ["_".join((phase, c)) for c in containments]
-        else:
-            cols_to_return += [
-                "_".join((p, c))
-                for c in containments
-                for p in phases  # ["total"] + phases
-            ]
-            # cols_to_return += ["total"] + ["_".join(("total", p)) for p in phases]
-    else:
-        cols_to_keep += [split]
-        if mark_choice == split:
-            cols_to_return += ["_".join((phase, c)) for c in containments]
-        elif mark_choice == "none":
-            if containment == "total":
-                cols_to_return += (
-                    ["total"] if phase == "total" else ["_".join(("total", phase))]
-                )
-            else:
-                cols_to_return += ["_".join((phase, containment))]
-        elif mark_choice == "containment":
-            cols_to_return += ["_".join((phase, c)) for c in containments]
-        else:
-            if figure == 2:
-                cols_to_return += [
-                    (
-                        "total"
-                        if containment == "total"
-                        else "_".join(("total", containment))
-                    )
-                ]
-            cols_to_return += (
-                ["total_gas", "total_aqueous"]
-                if containment == "total"
-                else ["_".join((p, containment)) for p in phases]
-            )
-    cols_to_keep += cols_to_return
-    df = df.drop(columns=[col for col in df.columns if col not in cols_to_keep])
-    return df, cols_to_return
-
-
-def _rename_columns_figure2(
-    part_df: pandas.DataFrame,
+    color_choice: str,
     mark_choice: str,
-    name: str,
-    colnames: List[str],
-    containment: str,
-    phases: List[str],
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
+    mark_options = []
+    if mark_choice != "none":
+        mark_options = list(containment_info[f"{mark_choice}s"])
+    color_options = list(containment_info[f"{color_choice}s"])
+    num_colors = len(color_options)
+    line_types = _get_line_types(mark_options, mark_choice)
+    colors = _get_colors(num_colors, color_choice)
+    filter_mark = True
+    if mark_choice == "phase":
+        mark_options = ["total"] + mark_options
+        line_types = ["solid"] + line_types
+        filter_mark = False
+    if color_choice == "containment":
+        color_options = ["total"] + color_options
+        colors = ["black"] + colors
+    else:
+        _filter_rows(df, color_choice, mark_choice, filter_mark)
     if mark_choice == "none":
-        renaming = {c: name for c in colnames}
-    elif mark_choice == "phase":
-        if containment == "total":
-            renaming = {
-                c: ", ".join((name, p)) for c, p in zip(colnames, ["total"] + phases)
+        df["name"] = df[color_choice]
+        return pd.DataFrame(
+            {
+                "name": color_options,
+                "color": colors,
+                "line_type": line_types * len(colors),
             }
-        else:
-            renaming = {
-                c: ", ".join((name, c.split("_", maxsplit=1)[0])) for c in colnames
+        )
+    df["name"] = [", ".join((c, m)) for c, m in zip(df[color_choice], df[mark_choice])]
+    _change_names(df, color_options, mark_options)
+    if containment_info["sorting"] == "color":
+        options = pd.DataFrame(
+            {
+                "name": [
+                    ", ".join((c, m)) for c in color_options for m in mark_options
+                ],
+                "color": [c for c in colors for _ in mark_options],
+                "line_type": [l for _ in colors for l in line_types],
             }
-    elif mark_choice in ["zone", "region"]:
-        renaming = {cn: ", ".join((cn.split("_")[1], name)) for cn in colnames}
-    else:  # mark_choice == "containment"
-        renaming = {cn: ", ".join((name, cn.split("_")[1])) for cn in colnames}
-    part_df = part_df.rename(columns=renaming).reset_index(drop=True)
-    return part_df
+        )
+    else:
+        options = pd.DataFrame(
+            {
+                "name": [
+                    ", ".join((c, m)) for m in mark_options for c in color_options
+                ],
+                "color": [c for _ in mark_options for c in colors],
+                "line_type": [l for l in line_types for _ in colors],
+            }
+        )
+    _change_names(options, color_options, mark_options)
+    return options
 
 
 def _find_scale_factor(
@@ -296,7 +244,7 @@ def _read_terminal_co2_volumes(
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
     containment_info: Dict[str, Union[str, None, List[str]]],
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     records: Dict[str, List[Any]] = {
         "real": [],
         "amount": [],
@@ -311,143 +259,102 @@ def _read_terminal_co2_volumes(
     if mark_choice != "none":
         records[mark_choice] = []
     scale_factor = _find_scale_factor(table_provider, scale)
+    data_frame = None
     for real in realizations:
-        df = _read_dataframe(table_provider, real, scale_factor, containment_info)
-        _add_to_records(
-            records, color_choice, mark_choice, df, str(real), containment_info
-        )
-    df = pandas.DataFrame.from_dict(records)
-    df.sort_values(
+        df = _read_dataframe(table_provider, real, scale_factor)
+        df = df[df["date"] == np.max(df["date"])]
+        _add_sort_key_and_real(df, str(real), containment_info)
+        _filter_columns(df, color_choice, mark_choice, containment_info)
+        _filter_rows(df, color_choice, mark_choice)
+        if data_frame is None:
+            data_frame = df
+        else:
+            data_frame = pd.concat([data_frame, df])
+    assert data_frame is not None
+    data_frame.sort_values(
         ["sort_key", "sort_key_secondary"], inplace=True, ascending=[True, True]
     )
-    return df
+    return data_frame
 
 
-def _add_to_records(
-    records: Dict[str, List[Any]],
+def _filter_columns(
+    df: pd.DataFrame,
     color_choice: str,
     mark_choice: str,
-    df: pandas.DataFrame,
+    containment_info: Dict,
+) -> None:
+    filter_columns = [
+        col
+        for col in ["phase", "containment", "zone", "region"]
+        if col not in [mark_choice, color_choice]
+    ]
+    for col in filter_columns:
+        df.query(f'{col} == "{containment_info[col]}"', inplace=True)
+    df.drop(columns=filter_columns, inplace=True)
+
+
+def _filter_rows(
+    df: pd.DataFrame,
+    color_choice: str,
+    mark_choice: str,
+    filter_mark: bool = True,
+) -> None:
+    df.query(f'{color_choice} not in ["total", "all"]', inplace=True)
+    if mark_choice != "none" and filter_mark:
+        df.query(f'{mark_choice} not in ["total", "all"]', inplace=True)
+
+
+def _add_sort_key_and_real(
+    df: pd.DataFrame,
     label: str,
     containment_info: Dict,
 ) -> None:
-    phase = containment_info["phase"]
-    containments = containment_info["containments"]
-    split = _find_split(color_choice, mark_choice)
-    if split == "standard":
-        last = df.iloc[np.argmax(df["date"])]
-        factor = 6 if mark_choice == "phase" else 3
-        records["real"] += [label] * factor
-        if mark_choice == "phase":
-            record = [
-                [last["_".join((p, c))], c, p]
-                for c in containments
-                for p in (containment_info["phases"])
-            ]
-        else:
-            record = [[last["_".join((phase, c))], c] for c in containments]
-        records["amount"] += [r[0] for r in record]
-        records["containment"] += [r[1] for r in record]
-        if mark_choice == "phase":
-            records["phase"] += [r[2] for r in record]
-        records["sort_key"] += [last["total_hazardous"]] * factor
-        records["sort_key_secondary"] += [last["total_outside"]] * factor
-    else:
-        containment = containment_info["containment"]
-        factor = 1 if mark_choice == "none" else 2 if mark_choice == "phase" else 3
-        last_ = df[df["date"] == np.max(df["date"])]
-        records["sort_key"] += (
-            [np.sum(last_["total_hazardous"])] * factor * last_.shape[0]
-        )
-        records["sort_key_secondary"] += (
-            [np.sum(last_["total_outside"])] * factor * last_.shape[0]
-        )
-        for i in range(last_.shape[0]):
-            last = last_.iloc[i]
-            records["real"] += [label] * factor
-            if mark_choice in ["containment", "zone", "region"]:
-                records["amount"] += [last["_".join((phase, c))] for c in containments]
-                records[mark_choice] += (
-                    containments
-                    if mark_choice == "containment"
-                    else [last[split]] * factor
-                )
-            elif mark_choice == "none":
-                if containment == "total":
-                    records["amount"] += (
-                        [last["total"]]
-                        if phase == "total"
-                        else [last["_".join(("total", phase))]]
-                    )
-                else:
-                    records["amount"] += [last["_".join((phase, containment))]]
-            else:  # mark_choice == "phase"
-                if containment == "total":
-                    records["amount"] += [
-                        last["total_aqueous"],
-                        last["total_gas"],
-                    ]
-                else:
-                    records["amount"] += [
-                        last["_".join(("aqueous", containment))],
-                        last["_".join(("gas", containment))],
-                    ]
-                records[mark_choice] += ["aqueous", "gas"]
-            records[color_choice] += (
-                containments
-                if mark_choice in ["zone", "region"]
-                else [last[split]] * factor
-            )
-
-
-def _find_split(color_choice: str, mark_choice: str) -> str:
-    split = "standard"
-    if "zone" in [color_choice, mark_choice]:
-        split = "zone"
-    elif "region" in [color_choice, mark_choice]:
-        split = "region"
-    return split
+    sort_value = np.sum(
+        df[
+            (df["phase"] == "total")
+            & (df["containment"] == "hazardous")
+            & (df["zone"] == containment_info["zone"])
+            & (df["region"] == containment_info["region"])
+        ]["amount"]
+    )
+    sort_value_secondary = np.sum(
+        df[
+            (df["phase"] == "total")
+            & (df["containment"] == "outside")
+            & (df["zone"] == containment_info["zone"])
+            & (df["region"] == containment_info["region"])
+        ]["amount"]
+    )
+    df["real"] = [label] * df.shape[0]
+    df["sort_key"] = [sort_value] * df.shape[0]
+    df["sort_key_secondary"] = [sort_value_secondary] * df.shape[0]
 
 
 def _read_co2_volumes(
     table_provider: EnsembleTableProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    containment_info: Dict[str, Union[str, None, List[str]]],
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     scale_factor = _find_scale_factor(table_provider, scale)
-    return pandas.concat(
+    return pd.concat(
         [
-            _read_dataframe(
-                table_provider, real, scale_factor, containment_info
-            ).assign(realization=real)
-            for real in realizations
+            _read_dataframe(table_provider, r, scale_factor).assign(realization=r)
+            for r in realizations
         ]
     )
 
 
-def _change_type_names(df: pandas.DataFrame) -> None:
-    df["type"] = df["type"].replace("gas_contained", "contained, gas")
-    df["type"] = df["type"].replace("gas_outside", "outside, gas")
-    df["type"] = df["type"].replace("gas_hazardous", "hazardous, gas")
-    df["type"] = df["type"].replace("aqueous_contained", "contained, aqueous")
-    df["type"] = df["type"].replace("aqueous_outside", "outside, aqueous")
-    df["type"] = df["type"].replace("aqueous_hazardous", "hazardous, aqueous")
-    df["type"] = df["type"].replace("total_contained", "contained, total")
-    df["type"] = df["type"].replace("total_outside", "outside, total")
-    df["type"] = df["type"].replace("total_hazardous", "hazardous, total")
-
-
-def _change_type_names_mark_choice_none(df: pandas.DataFrame) -> None:
-    df["type"] = df["type"].replace("gas_contained", "contained")
-    df["type"] = df["type"].replace("gas_outside", "outside")
-    df["type"] = df["type"].replace("gas_hazardous", "hazardous")
-    df["type"] = df["type"].replace("aqueous_contained", "contained")
-    df["type"] = df["type"].replace("aqueous_outside", "outside")
-    df["type"] = df["type"].replace("aqueous_hazardous", "hazardous")
-    df["type"] = df["type"].replace("total_contained", "contained")
-    df["type"] = df["type"].replace("total_outside", "outside")
-    df["type"] = df["type"].replace("total_hazardous", "hazardous")
+def _change_names(
+    df: pd.DataFrame,
+    color_options: List[str],
+    mark_options: List[str],
+) -> None:
+    for m in mark_options + ["total", "all"]:
+        df["name"] = df["name"].replace(f"total, {m}", m)
+        df["name"] = df["name"].replace(f"all, {m}", m)
+    for m in color_options:
+        df["name"] = df["name"].replace(f"{m}, total", m)
+        df["name"] = df["name"].replace(f"{m}, all", m)
 
 
 def _adjust_figure(fig: go.Figure) -> None:
@@ -470,13 +377,21 @@ def _adjust_figure(fig: go.Figure) -> None:
 
 
 def _add_prop_to_df(
-    df: pandas.DataFrame,
+    df: pd.DataFrame,
     list_to_iterate: Union[List, np.ndarray],
     column: str,
+    filter_columns: Optional[List[str]] = None,
 ) -> None:
     prop = np.zeros(df.shape[0])
     for element in list_to_iterate:
-        summed_amount = np.sum(df.loc[df[column] == element]["amount"])
+        if filter_columns is None:
+            summed_amount = np.sum(df.loc[df[column] == element]["amount"])
+        else:
+            filter_for_sum = df[column] == element
+            for col in filter_columns:
+                if col in df.columns:
+                    filter_for_sum &= ~df[col].isin(["total", "all"])
+            summed_amount = np.sum(df.loc[filter_for_sum]["amount"])
         prop[np.where(df[column] == element)[0]] = summed_amount
     nonzero = np.where(prop > 0)[0]
     prop[nonzero] = (
@@ -497,51 +412,29 @@ def generate_co2_volume_figure(
     )
     color_choice = containment_info["color_choice"]
     mark_choice = containment_info["mark_choice"]
+    _add_prop_to_df(df, [str(r) for r in realizations], "real")
     cat_ord, colors, marks = _prepare_pattern_and_color_options(
+        df,
         containment_info,
         color_choice,
         mark_choice,
     )
-    df["type"] = (
-        [", ".join((c, p)) for c, p in zip(df[color_choice], df[mark_choice])]
-        if mark_choice != "none"
-        else df[color_choice]
-    )
-    _add_prop_to_df(df, [str(r) for r in realizations], "real")
-    pattern_shape = "type" if mark_choice != "none" else None
     fig = px.bar(
         df,
         y="real",
         x="amount",
         color="type",
-        pattern_shape=pattern_shape,
+        color_discrete_sequence=colors,
+        pattern_shape="type" if mark_choice != "none" else None,
         pattern_shape_sequence=marks,
         orientation="h",
         category_orders=cat_ord,
-        color_discrete_sequence=colors,
         hover_data={"prop": True, "real": False},
     )
     fig.layout.yaxis.title = "Realization"
     fig.layout.xaxis.title = scale.value
     _adjust_figure(fig)
     return fig
-
-
-def _rename_columns_figure3(
-    mark_choice: str,
-    containment: str,
-    cols_kept: List[str],
-) -> Dict[str, str]:
-    if mark_choice == "phase":
-        if containment == "total":
-            renaming = {"total_gas": "gas", "total_aqueous": "aqueous"}
-        else:
-            renaming = {col: col.split("_")[0] for col in cols_kept}
-    elif mark_choice == "none":
-        renaming = {}
-    else:  # mark_choice == "containment"
-        renaming = {col: col.split("_")[1] for col in cols_kept}
-    return renaming
 
 
 # pylint: disable=too-many-locals
@@ -552,62 +445,37 @@ def generate_co2_time_containment_one_realization_figure(
     y_limits: List[Optional[float]],
     containment_info: Dict[str, Any],
 ) -> go.Figure:
-    df = _read_co2_volumes(
-        table_provider, [time_series_realization], scale, containment_info
-    )
-    df.sort_values(by="date", inplace=True)
+    df = _read_co2_volumes(table_provider, [time_series_realization], scale)
     color_choice = containment_info["color_choice"]
     mark_choice = containment_info["mark_choice"]
-    split = _find_split(color_choice, mark_choice)
-    containment = containment_info["containment"]
-    df, colnames = _drop_unused_columns(
-        df, containment_info, keep_realization=False, figure=3
-    )
-    if split == "standard":
-        df = pandas.melt(df, id_vars=["date"])
+    _filter_columns(df, color_choice, mark_choice, containment_info)
+    _filter_rows(df, color_choice, mark_choice)
+    if containment_info["sorting"] == "marking" and mark_choice != "none":
+        sort_order = ["date", mark_choice]
     else:
-        renaming = _rename_columns_figure3(
-            mark_choice,
-            containment,
-            colnames,
-        )
-        df = df.rename(columns=renaming)
-        df = pandas.melt(df, id_vars=["date", split])
-        if mark_choice == "none":
-            df["variable"] = df[split]
-        else:
-            df["variable"] = (
-                df["variable"] + ", " + df[split]
-                if mark_choice == split
-                else df[split] + ", " + df["variable"]
-            )
-        df = df.drop(columns=[split])
-    cat_ord, colors, marks = _prepare_pattern_and_color_options(
-        containment_info,
-        color_choice,
-        mark_choice,
-    )
-    df = df.rename(columns={"value": "amount", "variable": "type"})
-    if mark_choice == "none":
-        _change_type_names_mark_choice_none(df)
-    else:
-        _change_type_names(df)
+        sort_order = ["date", color_choice]
+    df.sort_values(by=sort_order, inplace=True)
     if y_limits[0] is None and y_limits[1] is not None:
         y_limits[0] = 0.0
     elif y_limits[1] is None and y_limits[0] is not None:
         y_limits[1] = max(df.groupby("date")["amount"].sum()) * 1.05
 
     _add_prop_to_df(df, np.unique(df["date"]), "date")
-    pattern_shape = "type" if mark_choice != "none" else None
+    cat_ord, colors, marks = _prepare_pattern_and_color_options(
+        df,
+        containment_info,
+        color_choice,
+        mark_choice,
+    )
     fig = px.area(
         df,
         x="date",
         y="amount",
         color="type",
-        category_orders=cat_ord,
         color_discrete_sequence=colors,
-        pattern_shape=pattern_shape,
-        pattern_shape_sequence=marks,  # ['', '/', '\\', 'x', '-', '|', '+', '.'],
+        pattern_shape="type" if mark_choice != "none" else None,
+        pattern_shape_sequence=marks,
+        category_orders=cat_ord,
         range_y=y_limits,
         hover_data={
             "prop": True,
@@ -622,9 +490,25 @@ def generate_co2_time_containment_one_realization_figure(
     return fig
 
 
+def spaced_dates(dates: List[str], num_between: int) -> Dict[str, List[str]]:
+    dates_list = [dt.strptime(date, "%Y-%m-%d") for date in dates]
+    date_dict: Dict[str, List[str]] = {date: [] for date in dates}
+    for i in range(len(dates_list) - 1):
+        date_dict[dates[i]].append(dates[i])
+        delta = (dates_list[i + 1] - dates_list[i]) / (num_between + 1)
+        for j in range(1, num_between + 1):
+            new_date = dates_list[i] + delta * j
+            if j <= num_between / 2:
+                date_dict[dates[i]].append(new_date.strftime("%Y-%m-%d"))
+            else:
+                date_dict[dates[i + 1]].append(new_date.strftime("%Y-%m-%d"))
+    date_dict[dates[-1]].append(dates[-1])
+    return date_dict
+
+
 def _add_hover_info_in_field(
     fig: go.Figure,
-    df: pandas.DataFrame,
+    df: pd.DataFrame,
     cat_ord: Dict,
     colors: List,
 ) -> None:
@@ -641,163 +525,32 @@ def _add_hover_info_in_field(
         for date in dates
     }
     prev_vals = {date: 0 for date in dates}
+    date_dict = spaced_dates(dates, 4)
     for name, color in zip(cat_ord["type"], colors):
         sub_df = df[df["type"] == name]
         for date in dates:
             amount = sub_df[sub_df["date"] == date]["amount"].item()
             prop = sub_df[sub_df["date"] == date]["prop"].item()
             prev_val = prev_vals[date]
-            new_val = prev_val + amount
-            mid_val = (prev_val + new_val) / 2
+            p15 = prev_val + 0.15 * amount
+            p85 = prev_val + 0.85 * amount
+            y_vals = np.linspace(p15, p85, 8).tolist() * len(date_dict[date])
+            y_vals.sort()
             fig.add_trace(
                 go.Scatter(
-                    x=[date],
-                    y=[mid_val],
+                    x=date_dict[date] * 8,
+                    y=y_vals,
                     mode="lines",
                     line=go.scatter.Line(color=color),
                     text=f"type={name}<br>date={date_strings[date]}<br>"
                     f"amount={amount:.3f}<br>prop={prop}",
+                    opacity=0,
                     hoverinfo="text",
                     hoveron="points",
                     showlegend=False,
                 )
             )
-            prev_vals[date] = new_val
-
-
-def _make_cols_to_plot(
-    split: str,
-    df_: pandas.DataFrame,
-    containment_info: Dict,
-) -> Tuple[Dict[str, Tuple[str, str, str]], List[str]]:
-    mark_choice = containment_info["mark_choice"]
-    color_choice = containment_info["color_choice"]
-    phase = containment_info["phase"]
-    phases = containment_info["phases"]
-    containments = containment_info["containments"]
-    options = containment_info[f"{split}s"]
-    if mark_choice in ["phase", "none"]:
-        colors = _get_colors(len(options), split)
-        if mark_choice == "none":
-            line_type = (
-                "solid" if phase == "total" else "dot" if phase == "gas" else "dash"
-            )
-            cols_to_plot = {
-                name: (name, line_type, col) for name, col in zip(options, colors)
-            }
-            df_["total"] = df_[options].sum(axis=1)
-            active_cols_at_startup = options
-        else:
-            cols_to_plot = {
-                ", ".join((name, p)): (", ".join((name, p)), line_type, col)
-                for name, col in zip(options, colors)
-                for p, line_type in zip(["total"] + phases, ["solid", "dot", "dash"])
-            }
-            df_["total"] = df_[[", ".join((name, "total")) for name in options]].sum(
-                axis=1
-            )
-            active_cols_at_startup = [name + ", total" for name in options]
-    else:
-        if mark_choice == split:
-            colors = _get_colors(split=color_choice)
-            line_types = [
-                f"{round(i / len(options) * 25)}px" for i in range(len(options))
-            ]
-            if len(options) > 8:
-                warnings.warn(
-                    f"Large number of {split}s might make it hard "
-                    f"to distinguish different dashed lines."
-                )
-            cols_to_plot = {
-                ", ".join((con, name)): (", ".join((con, name)), line_type, col)
-                for con, col in zip(containments, colors)
-                for name, line_type in zip(options, line_types)
-            }
-            active_cols_at_startup = ["contained, " + name for name in options]
-        else:  # mark_choice == "containment"
-            colors = _get_colors(len(options), split)
-            cols_to_plot = {
-                ", ".join((name, con)): (", ".join((name, con)), line_type, col)
-                for name, col in zip(options, colors)
-                for con, line_type in zip(containments, ["dash", "dot", "solid"])
-            }
-            active_cols_at_startup = [name + ", contained" for name in options]
-        df_["total"] = df_[cols_to_plot.keys()].sum(axis=1)
-    return cols_to_plot, active_cols_at_startup
-
-
-def _prepare_time_figure_options(
-    df: pandas.DataFrame,
-    containment_info: Dict[str, Any],
-) -> Tuple[pandas.DataFrame, Dict[str, Tuple[str, str, str]], List[str]]:
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
-    split = _find_split(color_choice, mark_choice)
-    containment = containment_info["containment"]
-    containments = containment_info["containments"]
-    phase = containment_info["phase"]
-    phases = containment_info["phases"]
-    if split == "standard":
-        df.sort_values(by="date", inplace=True)
-        if mark_choice == "none":
-            new_names = ["total"] + containments
-            colors = [_COLOR_TOTAL, _COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
-            line_type = (
-                "solid" if phase == "total" else "dot" if phase == "gas" else "dash"
-            )
-            colnames = ["total"]
-            colnames += ["_".join((phase, c)) for c in containments]
-            cols_to_plot = {
-                new_name: (colname, line_type, color)
-                for new_name, colname, color in zip(new_names, colnames, colors)
-            }
-            cols_to_keep = colnames + ["date", "realization"]
-            cols_to_keep[0] = (
-                "total" if phase == "total" else "_".join(("total", phase))
-            )
-            df = df.drop(columns=[col for col in df.columns if col not in cols_to_keep])
-            df = df.rename(columns={cols_to_keep[0]: "total"}).reset_index(drop=True)
-        else:
-            cols_to_plot = {
-                "total": ("total", "solid", _COLOR_TOTAL),
-                "hazardous": ("total_hazardous", "solid", _COLOR_HAZARDOUS),
-                "outside": ("total_outside", "solid", _COLOR_OUTSIDE),
-                "contained": ("total_contained", "solid", _COLOR_CONTAINED),
-                "gas": ("total_gas", "dot", _COLOR_TOTAL),
-                "aqueous": ("total_aqueous", "dash", _COLOR_TOTAL),
-                "hazardous, gas": ("gas_hazardous", "dot", _COLOR_HAZARDOUS),
-                "outside, gas": ("gas_outside", "dot", _COLOR_OUTSIDE),
-                "contained, gas": ("gas_contained", "dot", _COLOR_CONTAINED),
-                "hazardous, aqueous": ("aqueous_hazardous", "dash", _COLOR_HAZARDOUS),
-                "contained, aqueous": ("aqueous_contained", "dash", _COLOR_CONTAINED),
-                "outside, aqueous": ("aqueous_outside", "dash", _COLOR_OUTSIDE),
-            }
-        active_cols_at_startup = ["total"] + containments
-    else:
-        options = containment_info[f"{split}s"]
-        df, colnames = _drop_unused_columns(df, containment_info)
-        df.sort_values(by=["date", "realization"], inplace=True)
-        df_ = df[["date", "realization"]][df[split] == options[0]].reset_index(
-            drop=True
-        )
-        for name in options:
-            part_df = df[colnames][df[split] == name]
-            part_df = _rename_columns_figure2(
-                part_df,
-                mark_choice,
-                name,
-                colnames,
-                containment,
-                phases,
-            )
-            df_ = pandas.concat([df_, part_df], axis=1)
-        cols_to_plot, active_cols_at_startup = _make_cols_to_plot(
-            split,
-            df_,
-            containment_info,
-        )
-        df = df_
-    return df, cols_to_plot, active_cols_at_startup
+            prev_vals[date] = prev_val + amount
 
 
 # pylint: disable=too-many-locals
@@ -807,53 +560,58 @@ def generate_co2_time_containment_figure(
     scale: Union[Co2MassScale, Co2VolumeScale],
     containment_info: Dict[str, Any],
 ) -> go.Figure:
-    df = _read_co2_volumes(table_provider, realizations, scale, containment_info)
-    df, cols_to_plot, active_cols_at_startup = _prepare_time_figure_options(
-        df, containment_info
+    df = _read_co2_volumes(table_provider, realizations, scale)
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    _filter_columns(df, color_choice, mark_choice, containment_info)
+    options = _prepare_line_type_and_color_options(
+        df, containment_info, color_choice, mark_choice
+    )
+    active_cols_at_startup = list(
+        options[options["line_type"].isin(["solid", "0px"])]["name"]
     )
     fig = go.Figure()
     # Generate dummy scatters for legend entries
     dummy_args = {"x": df["date"], "mode": "lines", "hoverinfo": "none"}
-    for col, value in cols_to_plot.items():
+    for name, color, line_type in zip(
+        options["name"], options["color"], options["line_type"]
+    ):
         args = {
-            "line_dash": value[1],
-            "marker_color": value[2],
-            "legendgroup": col,
-            "name": col,
+            "line_dash": line_type,
+            "marker_color": color,
+            "legendgroup": name,
+            "name": name,
         }
-        if col not in active_cols_at_startup:
+        if name not in active_cols_at_startup:
             args["visible"] = "legendonly"
         fig.add_scatter(y=[0.0], **dummy_args, **args)
     for rlz in realizations:
-        sub_df = df[df["realization"] == rlz]
+        sub_df = df[df["realization"] == rlz].copy().reset_index()
+        _add_prop_to_df(
+            sub_df, np.unique(df["date"]), "date", [color_choice, mark_choice]
+        )
         common_args = {
             "x": sub_df["date"],
             "hovertemplate": "%{x}: %{y}<br>Realization: %{meta[0]}<br>Prop: %{customdata}%",
             "meta": [rlz],
             "showlegend": False,
         }
-        for col, value in cols_to_plot.items():
-            prop = np.zeros(sub_df.shape[0])
-            nonzero = np.where(np.array(sub_df["total"]) > 0)[0]
-            prop[nonzero] = (
-                np.round(
-                    np.array(sub_df[value[0]])[nonzero]
-                    / np.array(sub_df["total"])[nonzero]
-                    * 1000
-                )
-                / 10
-            )
+        for name, color, line_type in zip(
+            options["name"], options["color"], options["line_type"]
+        ):
             # NBNB-AS: Check this, mypy complains:
             args = {
-                "line_dash": value[1],
-                "marker_color": value[2],
-                "legendgroup": col,
-                "name": col,
-                "customdata": prop,  # type: ignore
+                "line_dash": line_type,
+                "marker_color": color,
+                "legendgroup": name,
+                "name": name,
+                "customdata": sub_df[sub_df["name"] == name]["prop"],  # type: ignore
             }
-            if col not in active_cols_at_startup:
+            if name not in active_cols_at_startup:
                 args["visible"] = "legendonly"
-            fig.add_scatter(y=sub_df[value[0]], **args, **common_args)
+            fig.add_scatter(
+                y=sub_df[sub_df["name"] == name]["amount"], **args, **common_args
+            )
     fig.layout.legend.tracegroupgap = 0
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value

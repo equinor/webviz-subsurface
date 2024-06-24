@@ -35,10 +35,10 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.initialization import (
     init_map_attribute_names,
+    init_menu_options,
     init_surface_providers,
     init_table_provider,
     init_well_pick_provider,
-    init_zone_and_region_options,
     process_files,
 )
 from webviz_subsurface.plugins._co2_leakage.views.mainview.mainview import (
@@ -166,12 +166,13 @@ class CO2Leakage(WebvizPluginABC):
                 well_pick_dict,
                 map_surface_names_to_well_pick_names,
             )
-            # Zone and region options
-            self._zone_and_region_options = init_zone_and_region_options(
+            # Phase (in case of residual trapping), zone and region options
+            self._menu_options = init_menu_options(
                 ensemble_paths,
                 self._co2_table_providers,
                 self._co2_actual_volume_table_providers,
-                self._co2_table_providers,
+                plume_mass_relpath,
+                plume_actual_volume_relpath,
             )
         except Exception as err:
             self._error_message = f"Plugin initialization failed: {err}"
@@ -197,7 +198,7 @@ class CO2Leakage(WebvizPluginABC):
                 self._map_attribute_names,
                 [c["name"] for c in self._color_tables],  # type: ignore
                 self._well_pick_names,
-                self._zone_and_region_options,
+                self._menu_options,
             ),
             self.Ids.MAIN_SETTINGS,
         )
@@ -286,7 +287,7 @@ class CO2Leakage(WebvizPluginABC):
                 color_choice,
                 mark_choice,
                 sorting,
-                self._zone_and_region_options[ensemble][source],
+                self._menu_options[ensemble][source],
             )
             if source in [
                 GraphSource.CONTAINMENT_MASS,
@@ -359,7 +360,10 @@ class CO2Leakage(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
         )
         def toggle_date_slider(attribute: str) -> Dict[str, str]:
-            if MapAttribute(attribute) == MapAttribute.MIGRATION_TIME:
+            if MapAttribute(attribute) in [
+                MapAttribute.MIGRATION_TIME_SGAS,
+                MapAttribute.MIGRATION_TIME_AMFG,
+            ]:
                 return {"display": "none"}
             return {}
 
