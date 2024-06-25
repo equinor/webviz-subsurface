@@ -98,7 +98,7 @@ jobs:
           # change the value her from "master" to the relevant branch name.
           TESTDATA_REPO_BRANCH: develop
         run: |
-          git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata-as.git
+          git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
           # Copy any clientside script to the test folder before running tests
           mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
           pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
