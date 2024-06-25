@@ -515,7 +515,6 @@ class CO2Leakage(WebvizPluginABC):
                 self._summed_co2,
                 self._visualization_info["unit"],
             )
-            # Plume polygon
             plume_polygon = None
             if contour_data is not None:
                 plume_polygon = get_plume_polygon(
