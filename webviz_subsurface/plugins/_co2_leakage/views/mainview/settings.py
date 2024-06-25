@@ -291,7 +291,7 @@ class ViewSettings(SettingsGroupABC):
                 phases = self._menu_options[ensemble][source]["phases"]
                 options = [{"label": phase.title(), "value": phase} for phase in phases]
                 return options, no_update if current_value in phases else "total"
-            return [], None
+            return [], "total"
 
         @callback(
             Output(self.component_unique_id(self.Ids.ZONE).to_string(), "options"),
@@ -310,7 +310,7 @@ class ViewSettings(SettingsGroupABC):
                 if len(zones) > 0:
                     options = [{"label": zone.title(), "value": zone} for zone in zones]
                     return options, no_update if current_value in zones else "all"
-            return [], None
+            return [], "all"
 
         @callback(
             Output(self.component_unique_id(self.Ids.REGION).to_string(), "options"),
@@ -329,7 +329,7 @@ class ViewSettings(SettingsGroupABC):
                 if len(regions) > 0:
                     options = [{"label": reg.title(), "value": reg} for reg in regions]
                     return options, no_update if current_value in regions else "all"
-            return [], None
+            return [], "all"
 
         @callback(
             Output(
@@ -712,6 +712,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             [
                                 "Zone",
                                 wcc.Dropdown(
+                                    value="all",
                                     id=containment_ids[3],
                                     clearable=False,
                                 ),
@@ -727,6 +728,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             [
                                 "Region",
                                 wcc.Dropdown(
+                                    value="all",
                                     id=containment_ids[5],
                                     clearable=False,
                                 ),
@@ -742,6 +744,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             [
                                 "Phase",
                                 wcc.Dropdown(
+                                    value="total",
                                     clearable=False,
                                     id=containment_ids[8],
                                 ),
