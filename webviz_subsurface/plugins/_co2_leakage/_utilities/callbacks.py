@@ -56,7 +56,7 @@ def property_origin(
         return map_attribute_names[MapAttribute.MAX_SGAS]
     if attribute == MapAttribute.AMFG_PLUME:
         return map_attribute_names[MapAttribute.MAX_AMFG]
-    raise AssertionError(f"No origin defined for property: {attribute}")
+    raise AssertionError(f"Map attribute name not found for property: {attribute}")
 
 
 @dataclass
@@ -86,7 +86,9 @@ class SurfaceData:
             visualization_info,
             map_attribute_names,
         )
-        assert surf_meta is not None  # Should not occur
+        if surf_meta is None:  # Surface file does not exist
+            return None, None
+        assert isinstance(img_url, str)
         value_range = (
             0.0 if np.ma.is_masked(surf_meta.val_min) else surf_meta.val_min,
             0.0 if np.ma.is_masked(surf_meta.val_max) else surf_meta.val_max,
@@ -132,7 +134,15 @@ def derive_surface_address(
             threshold=contour_data["threshold"] if contour_data else 0.0,
             smoothing=contour_data["smoothing"] if contour_data else 0.0,
         )
-    date = None if attribute == MapAttribute.MIGRATION_TIME else date
+    date = (
+        None
+        if attribute
+        in [
+            MapAttribute.MIGRATION_TIME_SGAS,
+            MapAttribute.MIGRATION_TIME_AMFG,
+        ]
+        else date
+    )
     if len(realization) == 1:
         return SimulatedSurfaceAddress(
             attribute=map_attribute_names[attribute],
@@ -151,7 +161,10 @@ def derive_surface_address(
 
 def readable_name(attribute: MapAttribute) -> str:
     unit = ""
-    if attribute == MapAttribute.MIGRATION_TIME:
+    if attribute in [
+        MapAttribute.MIGRATION_TIME_SGAS,
+        MapAttribute.MIGRATION_TIME_AMFG,
+    ]:
         unit = " [year]"
     elif attribute in (MapAttribute.AMFG_PLUME, MapAttribute.SGAS_PLUME):
         unit = " [# real.]"
@@ -198,7 +211,10 @@ def get_plume_polygon(
 
 
 def _find_legend_title(attribute: MapAttribute, unit: str) -> str:
-    if attribute == MapAttribute.MIGRATION_TIME:
+    if attribute in [
+        MapAttribute.MIGRATION_TIME_SGAS,
+        MapAttribute.MIGRATION_TIME_AMFG,
+    ]:
         return "years"
     if attribute in [MapAttribute.MASS, MapAttribute.DISSOLVED, MapAttribute.FREE]:
         return unit
@@ -497,18 +513,22 @@ def process_containment_info(
     color_choice: str,
     mark_choice: Optional[str],
     sorting: str,
-    zone_and_region_options: Dict[str, List[str]],
+    menu_options: Dict[str, List[str]],
 ) -> Dict[str, Union[str, None, List[str], int]]:
     if mark_choice is None:
         mark_choice = "phase"
-    zones = zone_and_region_options["zones"]
-    regions = zone_and_region_options["regions"]
+    zones = menu_options["zones"]
+    regions = menu_options["regions"]
     if len(zones) > 0:
         zones = [zone_name for zone_name in zones if zone_name != "all"]
     if len(regions) > 0:
         regions = [reg_name for reg_name in regions if reg_name != "all"]
     containments = ["hazardous", "outside", "contained"]
-    phases = ["gas", "aqueous"]
+    phases = [phase for phase in menu_options["phases"] if phase != "total"]
+    if "zone" in [mark_choice, color_choice]:
+        region = "all"
+    if "region" in [mark_choice, color_choice]:
+        zone = "all"
     return {
         "zone": zone,
         "region": region,

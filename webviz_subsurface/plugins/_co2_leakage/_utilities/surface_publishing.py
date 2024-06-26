@@ -1,3 +1,4 @@
+import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -44,7 +45,7 @@ def publish_and_get_surface_metadata(
     address: Union[SurfaceAddress, TruncatedSurfaceAddress],
     visualization_info: Dict[str, Any],
     map_attribute_names: Dict[MapAttribute, str],
-) -> Tuple[Optional[SurfaceImageMeta], str, Optional[Any]]:
+) -> Tuple[Optional[SurfaceImageMeta], Optional[str], Optional[Any]]:
     if isinstance(address, TruncatedSurfaceAddress):
         return _publish_and_get_truncated_surface_metadata(server, provider, address)
     provider_id: str = provider.provider_id()
@@ -53,9 +54,13 @@ def publish_and_get_surface_metadata(
     summed_mass = None
     if not surf_meta:
         # This means we need to compute the surface
-        surface = provider.get_surface(address)
+        try:
+            surface = provider.get_surface(address)
+        except ValueError:
+            surface = None
         if not surface:
-            raise ValueError(f"Could not get surface for address: {address}")
+            warnings.warn(f"Could not find surface file with properties: {address}")
+            return None, None, None
         if address.attribute in [
             map_attribute_names[MapAttribute.MASS],
             map_attribute_names[MapAttribute.FREE],
@@ -64,7 +69,11 @@ def publish_and_get_surface_metadata(
             surface.values = surface.values / SCALE_DICT[visualization_info["unit"]]
         summed_mass = np.ma.sum(surface.values)
         if (
-            address.attribute != map_attribute_names[MapAttribute.MIGRATION_TIME]
+            address.attribute
+            not in [
+                map_attribute_names[MapAttribute.MIGRATION_TIME_SGAS],
+                map_attribute_names[MapAttribute.MIGRATION_TIME_AMFG],
+            ]
             and visualization_info["threshold"] >= 0
         ):
             surface.operation("elile", visualization_info["threshold"])
