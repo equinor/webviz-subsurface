@@ -359,12 +359,16 @@ def create_tornado_table(
         use_si_format=use_si_format,
         precision=4 if use_si_format else 3,
     )
+    mean_col = "Mean (mc)"
     table_data = tornado_table.as_plotly_table
     for data in table_data:
-        data["Reference"] = tornado_data.reference_average
+        data[mean_col] = tornado_data.mean_per_mc_sens.get(data["Sensitivity"])
         if group is not None:
             data[subplots] = group
 
     columns = create_table_columns(columns=[subplots]) if subplots is not None else []
     columns.extend(tornado_table.columns)
+    columns.insert(
+        -3, create_table_columns(columns=[mean_col], use_si_format=[mean_col])[0]
+    )
     return table_data, columns

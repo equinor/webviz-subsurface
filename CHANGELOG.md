@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] - YYYY-MM-DD
 
 ### Added
+- [#1297](https://github.com/equinor/webviz-subsurface/pull/1297) - Added mean for mc sensitivities in the tornadotable in `VolumetricAnalysis`.
+
+## [0.2.30] - 2024-06-10
+
+### Added
 - [#1293](https://github.com/equinor/webviz-subsurface/pull/1293) - Added automatic calculation of `STOIIP_TOTAL` / `GIIP_TOTAL` in `VolumetricAnalysis`.
 
 ### Changed
