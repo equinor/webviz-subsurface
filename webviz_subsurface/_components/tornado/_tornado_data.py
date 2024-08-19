@@ -25,6 +25,9 @@ class TornadoData:
             self._cut_sensitivities_by_ref()
         self._sort_sensitivities_by_max()
         self._real_df = self._create_real_df(dframe)
+        self.mean_per_mc_sens = (
+            dframe[dframe["SENSTYPE"] == "mc"].groupby("SENSNAME")["VALUE"].mean()
+        )
 
     def _validate_input(self, dframe: pd.DataFrame) -> None:
         for col in self.REQUIRED_COLUMNS:

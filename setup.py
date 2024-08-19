@@ -14,7 +14,7 @@ TESTS_REQUIRE = [
     "pytest-xdist",
     "pytest-forked",
     "selenium>=3.141",
-    "types-pkg-resources",
+    "types-setuptools",
     "types-pyyaml",
 ]
 
