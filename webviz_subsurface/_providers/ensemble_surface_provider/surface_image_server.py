@@ -56,7 +56,6 @@ class SurfaceImageServer:
                 "CACHE_TYPE": "FileSystemCache",
                 "CACHE_DIR": cache_dir,
                 "CACHE_DEFAULT_TIMEOUT": 0,
-                "CACHE_OPTIONS": {"mode": 0o660},
             }
         )
         self._image_cache.init_app(app.server)
