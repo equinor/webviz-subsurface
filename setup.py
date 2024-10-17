@@ -8,7 +8,7 @@ TESTS_REQUIRE = [
     "black>=22.1,<24",
     "dash[testing]",
     "isort",
-    "mypy",
+    "mypy<1.12",
     "pylint<3.2.0",
     "pytest-mock",
     "pytest-xdist",

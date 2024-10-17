@@ -3,16 +3,15 @@ import io
 import json
 import logging
 import math
+import tempfile
 from dataclasses import asdict, dataclass
 from typing import Any, List, Optional, Tuple, Union
 from urllib.parse import quote
-from uuid import uuid4
 
 import flask
 import flask_caching
 import xtgeo
 from dash import Dash
-from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
@@ -46,10 +45,7 @@ class SurfaceImageMeta:
 
 class SurfaceImageServer:
     def __init__(self, app: Dash) -> None:
-        cache_dir = (
-            WEBVIZ_INSTANCE_INFO.storage_folder
-            / f"SurfaceImageServer_filecache_{uuid4()}"
-        )
+        cache_dir = tempfile.mkdtemp()
         LOGGER.debug(f"Setting up file cache in: {cache_dir}")
         self._image_cache = flask_caching.Cache(
             config={
