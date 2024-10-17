@@ -1,7 +1,7 @@
 
 ### webviz-subsurface package
 
-?> :bookmark: This documentation is valid for version `0.2.31` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.32` of `webviz-subsurface`.
 
 
 
