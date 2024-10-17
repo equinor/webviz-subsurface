@@ -1,3 +1,13 @@
+<h4>This package will be deprecated - we move instead all collaboration focus to the reusable React and Dash components in:
+<ul>
+  <li>https://github.com/equinor/webviz-subsurface-components</li>
+  <li>https://github.com/equinor/webviz-core-components</li>
+</ul>
+and the FMU use case to https://github.com/equinor/webviz
+</h2>
+
+<hr/>
+
 [![PyPI version](https://badge.fury.io/py/webviz-subsurface.svg)](https://badge.fury.io/py/webviz-subsurface)
 [![Build Status](https://github.com/equinor/webviz-subsurface/workflows/webviz-subsurface/badge.svg)](https://github.com/equinor/webviz-subsurface/actions?query=branch%3Amaster)
 [![Python 3.8 | 3.9 | 3.10 | 3.11 | 3.12](https://img.shields.io/badge/python-3.8%20|%203.9%20|%203.10%20|%203.11%20|%203.12-blue.svg)](https://www.python.org/)
