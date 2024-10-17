@@ -7,13 +7,11 @@ import tempfile
 from dataclasses import asdict, dataclass
 from typing import Any, List, Optional, Tuple, Union
 from urllib.parse import quote
-from uuid import uuid4
 
 import flask
 import flask_caching
 import xtgeo
 from dash import Dash
-from webviz_config.webviz_instance_info import WEBVIZ_INSTANCE_INFO
 
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
