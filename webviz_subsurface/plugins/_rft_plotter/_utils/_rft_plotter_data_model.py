@@ -116,6 +116,9 @@ class RftPlotterDataModel:
         self.ertdatadf_inactive = filter_frame(self.ertdatadf, {"ACTIVE": 0})
         self.ertdatadf = filter_frame(self.ertdatadf, {"ACTIVE": 1})
 
+        if self.ertdatadf.empty:
+            raise ValueError("There are no active RFT points in the input data.")
+
         self.ertdatadf["STDDEV"] = self.ertdatadf.groupby(
             ["WELL", "DATE", "ZONE", "ENSEMBLE", "TVD"]
         )["SIMULATED"].transform("std")
