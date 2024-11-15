@@ -68,6 +68,8 @@ class WellPickProvider:
             properties = {
                 "name": row[WellPickTableColumns.WELL],
                 "attribute": str(row[attribute]),
+                "line_color": row.get("line_color", [0, 0, 0]),
+                "text_color": row.get("text_color", [0, 0, 0]),
             }
 
             feature = geojson.Feature(
