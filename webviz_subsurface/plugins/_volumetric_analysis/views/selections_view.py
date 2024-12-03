@@ -159,7 +159,6 @@ def plot_selector_dropdowns(
 def settings_layout(
     volumemodel: InplaceVolumesModel, uuid: str, theme: WebvizConfigTheme, tab: str
 ) -> wcc.Selectors:
-
     return wcc.Selectors(
         label="⚙️ SETTINGS",
         open_details=False,
