@@ -324,7 +324,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             ]
 
             zslice_arr = get_zslice(cube, state["zslice"])
-            print(self.colors)
+
             fig = make_heatmap(
                 zslice_arr,
                 self.plotly_theme,

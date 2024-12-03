@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, List
+from typing import Any, Callable, Dict, Optional
 
 import webviz_core_components as wcc
 from dash import ALL, Input, Output, State, callback, callback_context, no_update
