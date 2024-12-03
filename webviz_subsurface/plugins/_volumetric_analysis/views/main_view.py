@@ -3,7 +3,6 @@ from typing import Callable, Optional
 import pandas as pd
 import webviz_core_components as wcc
 from dash import dcc
-from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -22,7 +21,6 @@ from .tornado_view import tornado_main_layout, tornado_selections_layout
 def main_view(
     get_uuid: Callable,
     volumemodel: InplaceVolumesModel,
-    theme: WebvizConfigTheme,
     disjoint_set_df: Optional[pd.DataFrame] = None,
 ) -> dcc.Tabs:
     tabs = []
@@ -37,7 +35,6 @@ def main_view(
                         uuid=get_uuid("selections"),
                         tab="voldist",
                         volumemodel=volumemodel,
-                        theme=theme,
                     ),
                     filter_layout(
                         uuid=get_uuid("filters"), tab="voldist", volumemodel=volumemodel

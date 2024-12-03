@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -32,7 +32,7 @@ from ..views.distribution_main_layout import (
 
 # pylint: disable=too-many-statements
 def distribution_controllers(
-    get_uuid: Callable, volumemodel: InplaceVolumesModel
+    get_uuid: Callable, volumemodel: InplaceVolumesModel, colors: List[str]
 ) -> None:
     @callback(
         Output({"id": get_uuid("main-voldist"), "page": "custom"}, "children"),
@@ -105,18 +105,18 @@ def distribution_controllers(
                 nbins=selections["hist_bins"],
                 facet_col=selections["Subplots"],
                 color=selections["Color by"],
-                color_discrete_sequence=selections["Colorscale"],
-                color_continuous_scale=selections["Colorscale"],
-                color_discrete_map=FLUID_COLORS
-                if selections["Color by"] == "FLUID_ZONE"
-                else None,
+                color_discrete_sequence=colors,
+                color_continuous_scale=colors,
+                color_discrete_map=(
+                    FLUID_COLORS if selections["Color by"] == "FLUID_ZONE" else None
+                ),
                 barmode=selections["barmode"],
                 boxmode=selections["barmode"],
-                text_auto=get_text_format_bar_plot(
-                    selected_data, selections, volumemodel
-                )
-                if selections["Plot type"] == "bar"
-                else False,
+                text_auto=(
+                    get_text_format_bar_plot(selected_data, selections, volumemodel)
+                    if selections["Plot type"] == "bar"
+                    else False
+                ),
                 layout={
                     "title": (
                         {
@@ -151,18 +151,22 @@ def distribution_controllers(
 
         return custom_plotting_layout(
             figure=figure,
-            tables=make_tables(
-                dframe=dframe,
-                responses=list({selections["X Response"], selections["Y Response"]}),
-                groups=groups,
-                volumemodel=volumemodel,
-                page_selected=page_selected,
-                selections=selections,
-                table_type="Statistics table",
-                view_height=37,
-            )
-            if selections["bottom_viz"] == "table"
-            else None,
+            tables=(
+                make_tables(
+                    dframe=dframe,
+                    responses=list(
+                        {selections["X Response"], selections["Y Response"]}
+                    ),
+                    groups=groups,
+                    volumemodel=volumemodel,
+                    page_selected=page_selected,
+                    selections=selections,
+                    table_type="Statistics table",
+                    view_height=37,
+                )
+                if selections["bottom_viz"] == "table"
+                else None
+            ),
         )
 
     @callback(
@@ -233,7 +237,7 @@ def distribution_controllers(
                         data_frame=dframe,
                         values=selections["X Response"],
                         names=selector,
-                        color_discrete_sequence=selections["Colorscale"],
+                        color_discrete_sequence=colors,
                         color=selector,
                     )
                     .update_traces(marker_line={"color": "#000000", "width": 1})
@@ -250,7 +254,7 @@ def distribution_controllers(
                 title=f"{selections['X Response']} per {selector}",
                 barmode="overlay" if selector == selections["Color by"] else "group",
                 layout={"bargap": 0.05},
-                color_discrete_sequence=selections["Colorscale"],
+                color_discrete_sequence=colors,
                 color=selections["Color by"],
                 xaxis={
                     "type": "category",
@@ -263,9 +267,9 @@ def distribution_controllers(
                     selections=selections,
                     volumemodel=volumemodel,
                 ),
-                color_discrete_map=FLUID_COLORS
-                if selections["Color by"] == "FLUID_ZONE"
-                else None,
+                color_discrete_map=(
+                    FLUID_COLORS if selections["Color by"] == "FLUID_ZONE" else None
+                ),
             ).update_layout(margin_t=35)
 
             if selections["X Response"] not in volumemodel.hc_responses:

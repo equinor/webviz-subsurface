@@ -94,6 +94,7 @@ Only relevant if `ensembles` is defined. The key (e.g. `geogrid`) will be used a
 * **`non_net_facies`:** List of facies which are non-net.
 * **`fipfile`:** Path to a yaml-file that defines a match between FIPNUM regions
     and human readable regions, zones and etc to be used as filters.
+* **`colors`:** List of hex colors use.
 ---
 
 ?> The input files must follow FMU standards.
@@ -153,6 +154,7 @@ reek_test_data/aggregated_data/parameters.csv)
         non_net_facies: Optional[List[str]] = None,
         fipfile: Path = None,
         drop_failed_realizations: bool = True,
+        colors: List[str] = None,
     ):
         super().__init__()
         WEBVIZ_ASSETS.add(
@@ -169,7 +171,46 @@ reek_test_data/aggregated_data/parameters.csv)
             f" Plugin argument drop_failed_realizations is set to {drop_failed_realizations}. "
             "An 'OK' file in the realization runpath is used as success criteria"
         )
-
+        self.colors = (
+            colors
+            if colors is not None
+            else [
+                "#1F77B4",
+                "#FF7F0E",
+                "#2CA02C",
+                "#D62728",
+                "#9467BD",
+                "#8C564B",
+                "#E377C2",
+                "#7F7F7F",
+                "#BCBD22",
+                "#17BECF",
+                "#FD3216",
+                "#00FE35",
+                "#6A76FC",
+                "#FED4C4",
+                "#FE00CE",
+                "#0DF9FF",
+                "#F6F926",
+                "#FF9616",
+                "#479B55",
+                "#EEA6FB",
+                "#DC587D",
+                "#D626FF",
+                "#6E899C",
+                "#00B5F7",
+                "#B68E00",
+                "#C9FBE5",
+                "#FF0092",
+                "#22FFA7",
+                "#E3EE9E",
+                "#86CE00",
+                "#BC7196",
+                "#7E7DCD",
+                "#FC6955",
+                "#E48F72",
+            ]
+        )
         if csvfile_vol:
             table_provider = EnsembleTableProviderFactory.instance()
             volumes_table = table_provider.create_from_ensemble_csv_file(csvfile_vol)
@@ -221,7 +262,6 @@ reek_test_data/aggregated_data/parameters.csv)
                 main_view(
                     get_uuid=self.uuid,
                     volumemodel=self.volmodel,
-                    theme=self.theme,
                     disjoint_set_df=self.disjoint_set_df,
                 ),
             ],
@@ -229,7 +269,9 @@ reek_test_data/aggregated_data/parameters.csv)
 
     def set_callbacks(self) -> None:
         selections_controllers(get_uuid=self.uuid, volumemodel=self.volmodel)
-        distribution_controllers(get_uuid=self.uuid, volumemodel=self.volmodel)
+        distribution_controllers(
+            get_uuid=self.uuid, volumemodel=self.volmodel, colors=self.colors
+        )
         tornado_controllers(
             get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
         )

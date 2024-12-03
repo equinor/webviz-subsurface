@@ -478,7 +478,9 @@ class GridVizService:
         i_ref = reference(0)
         j_ref = reference(0)
         k_ref = reference(0)
-        grid.ComputeCellStructuredCoords(cell_id, i_ref, j_ref, k_ref, True)  # type: ignore[arg-type]
+        grid.ComputeCellStructuredCoords(
+            cell_id, i_ref, j_ref, k_ref, True  # type: ignore[arg-type]
+        )
 
         cell_property_val: Optional[np.ndarray] = None
         if property_spec:
