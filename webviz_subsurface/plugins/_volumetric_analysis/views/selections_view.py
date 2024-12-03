@@ -2,7 +2,7 @@ from typing import List, Optional
 
 import webviz_core_components as wcc
 from dash import dcc, html
-from webviz_config import WebvizConfigTheme
+
 
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -10,7 +10,6 @@ from webviz_subsurface._models import InplaceVolumesModel
 def selections_layout(
     uuid: str,
     volumemodel: InplaceVolumesModel,
-    theme: WebvizConfigTheme,
     tab: str,
 ) -> html.Div:
     selectors = "/".join(
@@ -33,7 +32,7 @@ def selections_layout(
                 ],
             ),
             plot_selections_layout(uuid, volumemodel, tab),
-            settings_layout(volumemodel, uuid, theme, tab),
+            settings_layout(volumemodel, uuid, tab),
         ]
     )
 
@@ -157,7 +156,7 @@ def plot_selector_dropdowns(
 
 
 def settings_layout(
-    volumemodel: InplaceVolumesModel, uuid: str, theme: WebvizConfigTheme, tab: str
+    volumemodel: InplaceVolumesModel, uuid: str, tab: str
 ) -> wcc.Selectors:
     return wcc.Selectors(
         label="⚙️ SETTINGS",
