@@ -35,7 +35,6 @@ def main_view(
                         uuid=get_uuid("selections"),
                         tab="voldist",
                         volumemodel=volumemodel,
-                        theme=theme,
                     ),
                     filter_layout(
                         uuid=get_uuid("filters"), tab="voldist", volumemodel=volumemodel

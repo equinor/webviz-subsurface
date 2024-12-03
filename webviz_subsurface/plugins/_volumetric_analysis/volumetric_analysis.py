@@ -262,7 +262,6 @@ reek_test_data/aggregated_data/parameters.csv)
                 main_view(
                     get_uuid=self.uuid,
                     volumemodel=self.volmodel,
-                    theme=self.theme,
                     disjoint_set_df=self.disjoint_set_df,
                 ),
             ],
