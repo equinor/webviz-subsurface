@@ -3,7 +3,6 @@ from typing import Callable, Optional
 import pandas as pd
 import webviz_core_components as wcc
 from dash import dcc
-from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._models import InplaceVolumesModel
 
