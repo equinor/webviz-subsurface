@@ -159,7 +159,7 @@ def plot_selector_dropdowns(
 def settings_layout(
     volumemodel: InplaceVolumesModel, uuid: str, theme: WebvizConfigTheme, tab: str
 ) -> wcc.Selectors:
-    theme_colors = theme.plotly_theme.get("layout", {}).get("colorway", [])
+
     return wcc.Selectors(
         label="⚙️ SETTINGS",
         open_details=False,
@@ -168,13 +168,6 @@ def settings_layout(
             subplot_xaxis_range(uuid=uuid, tab=tab),
             histogram_options(uuid=uuid, tab=tab),
             bar_text_options(uuid=uuid, tab=tab),
-            html.Span("Colors", style={"font-weight": "bold"}),
-            wcc.ColorScales(
-                id={"id": uuid, "tab": tab, "settings": "Colorscale"},
-                colorscale=theme_colors,
-                fixSwatches=True,
-                nSwatches=12,
-            ),
         ],
     )
 
