@@ -151,6 +151,7 @@ class ParametersModel:
         # if mix of gen_kw and sensitivity ensembles add
         # dummy sensitivvity columns to gen_kw ensembles
         gen_kw_mask = self._dataframe["SENSNAME"].isnull()
+        self._dataframe["SENSNAME"] = self._dataframe["SENSNAME"].astype(str)
         self._dataframe.loc[gen_kw_mask, "SENSNAME"] = "🎲"
         self._dataframe.loc[gen_kw_mask, "SENSCASE"] = "p10_p90"
 
