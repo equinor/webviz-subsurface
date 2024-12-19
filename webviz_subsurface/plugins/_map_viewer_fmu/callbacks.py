@@ -53,7 +53,7 @@ def plugin_callbacks(
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
     field_outline_polygons: xtgeo.Polygons,
-    field_outline_color: List[int],
+    field_outline_color: Tuple[float, float, float],
     map_surface_names_to_fault_polygons: Dict[str, str],
     well_picks_provider: Optional[WellPickProvider],
     fault_polygon_attribute: Optional[str],
