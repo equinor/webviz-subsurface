@@ -37,7 +37,9 @@ def filter_and_sum_responses(
     if aggregation == "sum":
         return df.groupby("REAL").sum().reset_index()[["REAL", response]]
     if aggregation == "mean":
-        return df.groupby("REAL").mean().reset_index()[["REAL", response]]
+        return (
+            df.groupby("REAL").mean(numeric_only=True).reset_index()[["REAL", response]]
+        )
     raise ValueError(f"Unknown aggregation '{aggregation}'.")
 
 
