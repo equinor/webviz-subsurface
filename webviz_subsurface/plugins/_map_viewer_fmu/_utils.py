@@ -1,11 +1,11 @@
 import base64
 import io
 import math
-from typing import List, Dict
+from typing import Dict, List
 
-from PIL import Image, ImageDraw
 import geojson
 import xtgeo
+from PIL import Image, ImageDraw
 
 
 def round_to_significant(val: float, sig: int = 4) -> float:

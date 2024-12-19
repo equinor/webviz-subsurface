@@ -8,8 +8,8 @@ from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import xtgeo
 import webviz_subsurface_components as wsc
+import xtgeo
 from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile

@@ -3,8 +3,8 @@ from typing import Dict, List, Optional
 import geojson
 import pandas as pd
 
-from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface._utils.colors import hex_to_rgb
+from webviz_subsurface._utils.enum_shim import StrEnum
 
 
 class WellPickTableColumns(StrEnum):

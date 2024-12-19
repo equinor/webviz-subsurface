@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
-from dash import Dash, html
 import xtgeo
+from dash import Dash, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from webviz_subsurface._providers import (
@@ -19,8 +19,9 @@ from webviz_subsurface._providers.ensemble_surface_provider.surface_array_server
 from webviz_subsurface._providers.ensemble_surface_provider.surface_image_server import (
     SurfaceImageServer,
 )
-from webviz_subsurface._utils.webvizstore_functions import read_csv, get_path
 from webviz_subsurface._utils.colors import hex_to_rgb
+from webviz_subsurface._utils.webvizstore_functions import get_path, read_csv
+
 from ._tmp_well_pick_provider import WellPickProvider
 from .callbacks import plugin_callbacks
 from .color_tables import default_color_tables
