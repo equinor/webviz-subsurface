@@ -93,7 +93,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Path(gridfile).stem for gridfile in gridparameterfiles
             ]
         self.plotly_theme = webviz_settings.theme.plotly_theme
-        self.initial_colors = (
+        self.colors = (
             colors
             if colors is not None
             else [
@@ -153,10 +153,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             {
                 "id": self.ids("gridparameter"),
                 "content": "The visualized grid parameter.",
-            },
-            {
-                "id": self.ids("color-scale"),
-                "content": ("Click this button to change colorscale"),
             },
             {
                 "id": self.ids("color-values"),
@@ -223,14 +219,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     ],
                                     value=self.gridparafiles[0],
                                     clearable=False,
-                                ),
-                                wcc.Label(
-                                    children="Set colorscale",
-                                ),
-                                wcc.ColorScales(
-                                    id=self.ids("color-scale"),
-                                    colorscale=self.initial_colors,
-                                    nSwatches=12,
                                 ),
                                 wcc.RangeSlider(
                                     label="Set color range",
@@ -335,10 +323,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("gridparameter"), "value"),
                 Input(self.ids("surface"), "value"),
                 Input(self.ids("color-values"), "value"),
-                Input(self.ids("color-scale"), "colorscale"),
             ],
         )
-        def _render_fence(coords, gridparameter, surfacepath, color_values, colorscale):
+        def _render_fence(coords, gridparameter, surfacepath, color_values):
             if not coords:
                 raise PreventUpdate
             grid = load_grid(get_path(self.gridfile))
@@ -369,7 +356,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 s_arr=s_arr,
                 theme=self.plotly_theme,
                 s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
-                colorscale=colorscale,
+                colorscale=self.colors,
                 xmin=hmin,
                 xmax=hmax,
                 ymin=vmin,

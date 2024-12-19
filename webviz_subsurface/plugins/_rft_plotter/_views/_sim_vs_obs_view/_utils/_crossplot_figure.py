@@ -17,7 +17,10 @@ def update_crossplot(
 
     for _ens, ensdf in df.groupby("ENSEMBLE"):
         dframe = (
-            ensdf.groupby(["WELL", "DATE", "ZONE", "TVD"]).mean().reset_index().copy()
+            ensdf.groupby(["WELL", "DATE", "ZONE", "TVD"])
+            .mean(numeric_only=True)
+            .reset_index()
+            .copy()
         )
         trace = {
             "x": dframe["OBSERVED"],

@@ -49,7 +49,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
         self.zunit = zunit
         self.segyfiles: List[str] = [str(segy) for segy in segyfiles]
-        self.initial_colors = (
+        self.colors = (
             colors
             if colors
             else [
@@ -68,7 +68,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             ]
         )
         self.init_state = self.update_state(self.segyfiles[0])
-        self.init_state.get("colorscale", self.initial_colors)
         self.init_state.get("uirevision", str(uuid4()))
 
         self.plotly_theme = webviz_settings.theme.plotly_theme
@@ -86,7 +85,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             "color_min_value": float(f"{round(cube.values.min(), 2):2f}"),
             "color_max_value": float(f"{round(cube.values.max(), 2):2f}"),
             "uirevision": str(uuid4()),
-            "colorscale": self.initial_colors,
         }
         if kwargs:
             for key, value in kwargs.items():
@@ -120,10 +118,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             {
                 "id": self.uuid("zslice"),
                 "content": "Selected zslice for the seismic cube.",
-            },
-            {
-                "id": self.uuid("color-scale"),
-                "content": "Click this button to change colorscale",
             },
             {
                 "id": self.uuid("color-values"),
@@ -162,18 +156,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 ),
                 html.Div(
                     children=[
-                        wcc.Label(
-                            children="Set colorscale",
-                        ),
-                        wcc.ColorScales(
-                            id=self.uuid("color-scale"),
-                            colorscale=self.initial_colors,
-                            nSwatches=12,
-                        ),
-                    ],
-                ),
-                html.Div(
-                    children=[
                         wcc.RangeSlider(
                             label="Color range",
                             id=self.uuid("color-values"),
@@ -183,7 +165,8 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                 self.init_state["min_value"],
                                 self.init_state["max_value"],
                             ],
-                            tooltip={"placement": "bottom"},
+                            marks=None,
+                            tooltip={"placement": "bottom", "always_visible": True},
                             step=calculate_slider_step(
                                 min_value=self.init_state["min_value"],
                                 max_value=self.init_state["max_value"],
@@ -257,7 +240,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.uuid("xline"), "clickData"),
                 Input(self.uuid("zslice"), "clickData"),
                 Input(self.uuid("color-values"), "value"),
-                Input(self.uuid("color-scale"), "colorscale"),
                 Input(self.uuid("zoom"), "n_clicks"),
                 Input(self.uuid("color-reset"), "n_clicks"),
             ],
@@ -272,7 +254,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             xcd: Union[dict, None],
             zcd: Union[dict, None],
             color_values: List[float],
-            colorscale: List[float],
             _zoom_btn: Union[int, None],
             _reset_range_btn: Union[int, None],
             zfig: Union[dict, None],
@@ -311,7 +292,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             else:
                 store["color_min_value"] = color_values[0]
                 store["color_max_value"] = color_values[1]
-            store["colorscale"] = colorscale
             return json.dumps(store)
 
         @app.callback(
@@ -358,7 +338,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 reverse_y=False,
                 zmin=state["color_min_value"],
                 zmax=state["color_max_value"],
-                colorscale=state["colorscale"],
+                colorscale=self.colors,
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes
@@ -406,7 +386,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 yaxis_title=self.zunit,
                 zmin=state["color_min_value"],
                 zmax=state["color_max_value"],
-                colorscale=state["colorscale"],
+                colorscale=self.colors,
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes
@@ -451,7 +431,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 yaxis_title=self.zunit,
                 zmin=state["color_min_value"],
                 zmax=state["color_max_value"],
-                colorscale=state["colorscale"],
+                colorscale=self.colors,
                 uirevision=state["uirevision"],
             )
             fig["layout"]["shapes"] = shapes

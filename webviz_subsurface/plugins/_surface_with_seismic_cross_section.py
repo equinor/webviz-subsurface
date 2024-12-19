@@ -85,7 +85,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         else:
             self.segynames = [Path(segyfile).stem for segyfile in segyfiles]
         self.plotly_theme = webviz_settings.theme.plotly_theme
-        self.initial_colors = (
+        self.colors = (
             colors
             if colors is not None
             else [
@@ -147,10 +147,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             {
                 "id": self.ids("cube"),
                 "content": "The visualized cube.",
-            },
-            {
-                "id": self.ids("color-scale"),
-                "content": ("Click this button to change colorscale"),
             },
             {
                 "id": self.ids("color-values"),
@@ -215,14 +211,6 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                     ],
                                     value=self.segyfiles[0],
                                     clearable=False,
-                                ),
-                                wcc.Label(
-                                    children="Set colorscale",
-                                ),
-                                wcc.ColorScales(
-                                    id=self.ids("color-scale"),
-                                    colorscale=self.initial_colors,
-                                    nSwatches=12,
                                 ),
                                 wcc.RangeSlider(
                                     label="Set color range",
@@ -320,10 +308,9 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 Input(self.ids("cube"), "value"),
                 Input(self.ids("surface"), "value"),
                 Input(self.ids("color-values"), "value"),
-                Input(self.ids("color-scale"), "colorscale"),
             ],
         )
-        def _render_fence(coords, cubepath, surfacepath, color_values, colorscale):
+        def _render_fence(coords, cubepath, surfacepath, color_values):
             if not coords:
                 raise PreventUpdate
             cube = load_cube_data(get_path(cubepath))
@@ -337,7 +324,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 s_arr=s_arr,
                 theme=self.plotly_theme,
                 s_name=self.surfacenames[self.surfacefiles.index(surfacepath)],
-                colorscale=colorscale,
+                colorscale=self.colors,
                 xmin=hmin,
                 xmax=hmax,
                 ymin=vmin,

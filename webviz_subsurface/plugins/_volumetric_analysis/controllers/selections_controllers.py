@@ -21,10 +21,6 @@ def selections_controllers(
             {"id": get_uuid("filters"), "tab": ALL, "selector": ALL, "type": ALL},
             "value",
         ),
-        Input(
-            {"id": get_uuid("selections"), "tab": ALL, "settings": "Colorscale"},
-            "colorscale",
-        ),
         Input(get_uuid("initial-load-info"), "data"),
         State(get_uuid("page-selected"), "data"),
         State(get_uuid("tabs"), "value"),
@@ -37,7 +33,6 @@ def selections_controllers(
     def _update_selections(
         selectors: list,
         filters: list,
-        colorscale: str,
         initial_load: dict,
         selected_page: str,
         selected_tab: str,
@@ -63,7 +58,6 @@ def selections_controllers(
             if id_value["tab"] == selected_tab
         }
 
-        page_selections.update(Colorscale=colorscale[0] if colorscale else None)
         page_selections.update(ctx_clicked=ctx["prop_id"])
 
         # check if a page needs to be updated due to page refresh or
@@ -240,9 +234,9 @@ def selections_controllers(
 
         settings["bottom_viz"] = {
             "options": visualization_options,
-            "value": "none"
-            if selected_page != "custom"
-            else selections.get("bottom_viz"),
+            "value": (
+                "none" if selected_page != "custom" else selections.get("bottom_viz")
+            ),
         }
 
         return tuple(
@@ -336,9 +330,11 @@ def selections_controllers(
             selector_is_multi = page_filter_settings[selector]["multi"]
             if not multi and selector_is_multi:
                 values = [
-                    "rms_seed"
-                    if selector == "SENSNAME_CASE" and "rms_seed" in options
-                    else options[0]
+                    (
+                        "rms_seed"
+                        if selector == "SENSNAME_CASE" and "rms_seed" in options
+                        else options[0]
+                    )
                 ]
             elif multi and not selector_is_multi:
                 values = options
