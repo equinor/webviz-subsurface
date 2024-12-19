@@ -6,7 +6,7 @@ from dash import html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
-from webviz_subsurface_components import DashSubsurfaceViewer
+from webviz_subsurface_components import SubsurfaceViewer
 
 
 class MainView(ViewABC):
@@ -48,7 +48,7 @@ class MapViewElement(ViewElementABC):
                     children=[
                         html.Div(
                             [
-                                DashSubsurfaceViewer(
+                                SubsurfaceViewer(
                                     id=self.register_component_unique_id(
                                         self.Ids.DECKGL_MAP
                                     ),

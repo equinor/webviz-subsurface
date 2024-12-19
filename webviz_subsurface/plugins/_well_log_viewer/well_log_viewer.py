@@ -171,7 +171,7 @@ Format of the `initial_settings` argument:
                                         self.initial_well_name
                                     )
                                 ),
-                                colorTables=self.colortables,
+                                colorMapFunctions=self.colortables,
                                 axisMnemos={"MD": ["MD"], "TVD": ["TVD"]},
                             ),
                         )
