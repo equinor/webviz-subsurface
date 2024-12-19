@@ -65,7 +65,6 @@ class WellPickProvider:
             point = geojson.Point(coordinates=coords, validate=validate_geometry)
 
             geocoll = geojson.GeometryCollection(geometries=[point])
-            print(row)
             properties = {
                 "name": row[WellPickTableColumns.WELL],
                 "attribute": str(row[attribute]),
