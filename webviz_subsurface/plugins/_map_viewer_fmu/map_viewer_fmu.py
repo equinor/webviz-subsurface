@@ -19,7 +19,7 @@ from webviz_subsurface._providers.ensemble_surface_provider.surface_array_server
 from webviz_subsurface._providers.ensemble_surface_provider.surface_image_server import (
     SurfaceImageServer,
 )
-from webviz_subsurface._utils.webvizstore_functions import read_csv
+from webviz_subsurface._utils.webvizstore_functions import read_csv, get_path
 from webviz_subsurface._utils.colors import hex_to_rgb
 from ._tmp_well_pick_provider import WellPickProvider
 from .callbacks import plugin_callbacks
@@ -166,10 +166,10 @@ color-tables.json for color_tables format.
             self._fault_polygons_server.add_provider(fault_polygons_provider)
         self.field_outline_polygons = None
         self.field_outline_polygons_file_path = field_outline_polygons_file_path
-        if field_outline_polygons_file_path is not None:
+        if self.field_outline_polygons_file_path is not None:
             try:
-                self.field_outline_polygons = xtgeo.Polygons(
-                    read_csv(field_outline_polygons_file_path)
+                self.field_outline_polygons = xtgeo.polygons_from_file(
+                    get_path(self.field_outline_polygons_file_path)
                 )
             except:
                 print("Error reading field outline polygons file")
@@ -227,6 +227,6 @@ color-tables.json for color_tables format.
             store_functions.append((read_csv, [{"csv_file": self.well_pick_file}]))
         if self.field_outline_polygons_file_path is not None:
             store_functions.append(
-                (read_csv, [{"csv_file": self.field_outline_polygons_file_path}])
+                (get_path, [{"path": self.field_outline_polygons_file_path}])
             )
         return store_functions
