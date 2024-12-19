@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import webviz_subsurface_components as wsc
+import xtgeo
 from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile
@@ -32,7 +33,7 @@ from webviz_subsurface._providers import (
 from ._layer_model import DeckGLMapLayersModel
 from ._tmp_well_pick_provider import WellPickProvider
 from ._types import LayerTypes, SurfaceMode
-from ._utils import round_to_significant
+from ._utils import round_to_significant, xtgeo_polygons_to_geojson
 from .layout import (
     DefaultSettings,
     LayoutElements,
@@ -51,6 +52,8 @@ def plugin_callbacks(
     surface_server: Union[SurfaceArrayServer, SurfaceImageServer],
     ensemble_fault_polygons_providers: Dict[str, EnsembleFaultPolygonsProvider],
     fault_polygons_server: FaultPolygonsServer,
+    field_outline_polygons: xtgeo.Polygons,
+    field_outline_color: Tuple[float, float, float],
     map_surface_names_to_fault_polygons: Dict[str, str],
     well_picks_provider: Optional[WellPickProvider],
     fault_polygon_attribute: Optional[str],
@@ -518,9 +521,27 @@ def plugin_callbacks(
                     layer_data={
                         "data": well_picks_provider.get_geojson(
                             selected_wells, horizon_name
-                        )
+                        ),
+                        "getLineColor": "@@=properties.point_color",
+                        "getFillColor": "@@=properties.point_color",
+                        "getTextColor": "@@=properties.text_color",
                     },
                 )
+            if (
+                LayoutLabels.SHOW_FIELD_OUTLINE in options
+                and field_outline_polygons is not None
+            ):
+                layer_model.update_layer_by_id(
+                    layer_id=f"{LayoutElements.FIELD_OUTLINE_LAYER}-{idx}",
+                    layer_data={
+                        "data": xtgeo_polygons_to_geojson(field_outline_polygons),
+                        "filled": False,
+                        "depthTest": False,
+                        "lineWidthMinPixels": 2,
+                        "getLineColor": field_outline_color,
+                    },
+                )
+
         viewports = []
         view_annotations = []
         for idx, data in enumerate(surface_elements):
@@ -550,10 +571,13 @@ def plugin_callbacks(
                     "show3D": False,
                     "isSync": True,
                     "layerIds": [
-                        f"{LayoutElements.MAP3D_LAYER}-{idx}"
-                        if isinstance(surface_server, SurfaceArrayServer)
-                        else f"{LayoutElements.COLORMAP_LAYER}-{idx}",
+                        (
+                            f"{LayoutElements.MAP3D_LAYER}-{idx}"
+                            if isinstance(surface_server, SurfaceArrayServer)
+                            else f"{LayoutElements.COLORMAP_LAYER}-{idx}"
+                        ),
                         f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
+                        f"{LayoutElements.FIELD_OUTLINE_LAYER}-{idx}",
                         f"{LayoutElements.WELLS_LAYER}-{idx}",
                     ],
                     "name": make_viewport_label(data, tab_name, multi),
@@ -851,13 +875,15 @@ def plugin_callbacks(
                     "colormap": {"value": colormap, "options": colormaps},
                     "color_range": {
                         "value": color_range,
-                        "step": calculate_slider_step(
-                            min_value=value_range[0],
-                            max_value=value_range[1],
-                            steps=100,
-                        )
-                        if value_range[0] != value_range[1]
-                        else 0,
+                        "step": (
+                            calculate_slider_step(
+                                min_value=value_range[0],
+                                max_value=value_range[1],
+                                steps=100,
+                            )
+                            if value_range[0] != value_range[1]
+                            else 0
+                        ),
                         "range": value_range,
                     },
                 }

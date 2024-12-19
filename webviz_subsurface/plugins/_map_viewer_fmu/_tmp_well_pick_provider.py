@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 import geojson
 import pandas as pd
 
+from webviz_subsurface._utils.colors import hex_to_rgb
 from webviz_subsurface._utils.enum_shim import StrEnum
 
 
@@ -64,10 +65,11 @@ class WellPickProvider:
             point = geojson.Point(coordinates=coords, validate=validate_geometry)
 
             geocoll = geojson.GeometryCollection(geometries=[point])
-
             properties = {
                 "name": row[WellPickTableColumns.WELL],
                 "attribute": str(row[attribute]),
+                "point_color": hex_to_rgb(row.get("point_color", "#000")),
+                "text_color": hex_to_rgb(row.get("text_color", "#000")),
             }
 
             feature = geojson.Feature(
