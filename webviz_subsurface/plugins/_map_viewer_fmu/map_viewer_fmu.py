@@ -171,7 +171,7 @@ color-tables.json for color_tables format.
                 self.field_outline_polygons = xtgeo.polygons_from_file(
                     get_path(self.field_outline_polygons_file_path)
                 )
-            except:
+            except ValueError:
                 print("Error reading field outline polygons file")
         self.field_outline_color = hex_to_rgb(field_outline_color)
         self.map_surface_names_to_fault_polygons = (
