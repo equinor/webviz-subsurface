@@ -522,8 +522,9 @@ def plugin_callbacks(
                         "data": well_picks_provider.get_geojson(
                             selected_wells, horizon_name
                         ),
-                        "getLineColor": "@@=properties.color",
-                        "getTextColor": "@@=properties.color",
+                        "getLineColor": "@@=properties.point_color",
+                        "getFillColor": "@@=properties.point_color",
+                        "getTextColor": "@@=properties.text_color",
                     },
                 )
             if (

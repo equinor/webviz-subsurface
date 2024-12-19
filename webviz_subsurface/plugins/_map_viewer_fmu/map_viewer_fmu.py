@@ -163,6 +163,7 @@ color-tables.json for color_tables format.
         for fault_polygons_provider in self._ensemble_fault_polygons_providers.values():
             self._fault_polygons_server.add_provider(fault_polygons_provider)
         self.field_outline_polygons = None
+        self.field_outline_polygons_file_path = field_outline_polygons_file_path
         if field_outline_polygons_file_path is not None:
             try:
                 self.field_outline_polygons = xtgeo.Polygons(
