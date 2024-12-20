@@ -1,8 +1,10 @@
 import base64
 import io
 import math
-from typing import List
+from typing import Dict, List
 
+import geojson
+import xtgeo
 from PIL import Image, ImageDraw
 
 
@@ -39,3 +41,18 @@ def create_colormap_image_string(
         draw.rectangle([(x_0, 0), (x_1, height)], fill=rgb_to_hex(color))
 
     return f"data:image/png;base64,{image_to_base64(img)}"
+
+
+def xtgeo_polygons_to_geojson(polygons: xtgeo.Polygons) -> Dict:
+    feature_arr = []
+    for name, polygon in polygons.dataframe.groupby("POLY_ID"):
+        coords = [list(zip(polygon.X_UTME, polygon.Y_UTMN))]
+        feature = geojson.Feature(
+            geometry=geojson.Polygon(coords),
+            properties={
+                "name": f"id:{name}",
+                "color": [200, 200, 200],
+            },
+        )
+        feature_arr.append(feature)
+    return geojson.FeatureCollection(features=feature_arr)

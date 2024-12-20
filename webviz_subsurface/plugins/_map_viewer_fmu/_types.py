@@ -9,6 +9,7 @@ class LayerTypes(StrEnum):
     WELLTOPSLAYER = "GeoJsonLayer"
     DRAWING = "DrawingLayer"
     FAULTPOLYGONS = "FaultPolygonsLayer"
+    FIELD_OUTLINE = "GeoJsonLayer"
     GEOJSON = "GeoJsonLayer"
 
 
