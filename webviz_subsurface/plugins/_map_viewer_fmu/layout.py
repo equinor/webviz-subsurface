@@ -37,15 +37,17 @@ class LayoutElements(StrEnum):
     RANGE_RESET = "color-range-reset-button"
     RESET_BUTTOM_CLICK = "color-range-reset-stored-state"
     FAULTPOLYGONS = "fault-polygon-toggle"
+    FIELD_OUTLINE_TOGGLE = "field-outline-toggle"
     WRAPPER = "wrapper-for-selector-component"
     COLORWRAPPER = "wrapper-for-color-selector-component"
     OPTIONS = "options"
 
     COLORMAP_LAYER = "deckglcolormaplayer"
-    HILLSHADING_LAYER = "deckglhillshadinglayer"
+
     WELLS_LAYER = "deckglwelllayer"
     MAP3D_LAYER = "deckglmap3dlayer"
     FAULTPOLYGONS_LAYER = "deckglfaultpolygonslayer"
+    FIELD_OUTLINE_LAYER = "deckglfieldoutlinelayer"
     REALIZATIONS_FILTER = "realization-filter-selector"
     OPTIONS_DIALOG = "options-dialog"
 
@@ -69,8 +71,8 @@ class LayoutLabels(StrEnum):
     LINK = "🔗 Link"
     FAULTPOLYGONS = "Fault polygons"
     SHOW_FAULTPOLYGONS = "Show fault polygons"
+    SHOW_FIELD_OUTLINE = "Show field outline"
     SHOW_WELLS = "Show wells"
-    SHOW_HILLSHADING = "Hillshading"
     COMMON_SELECTIONS = "Options and global filters"
     REAL_FILTER = "Realization filter"
     WELL_FILTER = "Well filter"
@@ -183,7 +185,7 @@ def main_layout(
     realizations: List[int],
     color_tables: List[Dict],
     show_fault_polygons: bool = True,
-    hillshading_enabled: bool = True,
+    show_field_outline: bool = False,
     render_surfaces_as_images: bool = True,
 ) -> html.Div:
     return html.Div(
@@ -240,9 +242,9 @@ def main_layout(
             DialogLayout(
                 get_uuid,
                 show_fault_polygons,
+                show_field_outline,
                 well_names,
                 realizations,
-                hillshading_enabled,
             ),
         ]
     )
@@ -304,17 +306,19 @@ class DialogLayout(wcc.Dialog):
         self,
         get_uuid: Callable,
         show_fault_polygons: bool,
+        show_field_outline: bool,
         well_names: List[str],
         realizations: List[int],
-        hillshading_enabled: bool = True,
     ) -> None:
-        checklist_options = [LayoutLabels.SHOW_HILLSHADING]
-        checklist_values = (
-            [LayoutLabels.SHOW_HILLSHADING] if hillshading_enabled else []
-        )
+        checklist_options = []
+        checklist_values = []
         if show_fault_polygons:
             checklist_options.append(LayoutLabels.SHOW_FAULTPOLYGONS)
             checklist_values.append(LayoutLabels.SHOW_FAULTPOLYGONS)
+
+        if show_field_outline:
+            checklist_options.append(LayoutLabels.SHOW_FIELD_OUTLINE)
+            checklist_values.append(LayoutLabels.SHOW_FIELD_OUTLINE)
 
         if well_names:
             checklist_options.append(LayoutLabels.SHOW_WELLS)
@@ -358,9 +362,11 @@ class LinkCheckBox(wcc.Checklist):
         clicked = selector in DefaultSettings.LINKED_SELECTORS.get(tab, [])
         super().__init__(
             id={
-                "id": get_uuid(LayoutElements.LINK)
-                if selector not in ["color_range", "colormap"]
-                else get_uuid(LayoutElements.COLORLINK),
+                "id": (
+                    get_uuid(LayoutElements.LINK)
+                    if selector not in ["color_range", "colormap"]
+                    else get_uuid(LayoutElements.COLORLINK)
+                ),
                 "tab": tab,
                 "selector": selector,
             },
@@ -570,9 +576,11 @@ class MapSelectorLayout(html.Div):
     ) -> None:
         super().__init__(
             style={
-                "display": "none"
-                if tab == Tabs.STATS and selector == MapSelector.MODE
-                else "block"
+                "display": (
+                    "none"
+                    if tab == Tabs.STATS and selector == MapSelector.MODE
+                    else "block"
+                )
             },
             children=wcc.Selectors(
                 label=label,
@@ -805,7 +813,13 @@ def update_map_layers(
                     "parameters": {"depthTest": False},
                 }
             )
-
+        layers.append(
+            {
+                "@@type": LayerTypes.FIELD_OUTLINE,
+                "id": f"{LayoutElements.FIELD_OUTLINE_LAYER}-{idx}",
+                "data": {"type": "FeatureCollection", "features": []},
+            }
+        )
         if include_well_layer:
             layers.append(
                 {
