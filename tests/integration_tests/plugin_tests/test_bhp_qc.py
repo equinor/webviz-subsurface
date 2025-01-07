@@ -9,4 +9,5 @@ def test_bhp_qc(_webviz_duo: WebvizComposite, shared_settings: dict) -> None:
     )
 
     _webviz_duo.start_server(plugin)
+    print(_webviz_duo.get_logs())
     assert not _webviz_duo.get_logs()
