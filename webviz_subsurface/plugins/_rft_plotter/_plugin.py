@@ -102,8 +102,8 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
     def __init__(
         self,
         webviz_settings: WebvizSettings,
-        rft: Path = Path("share/results/tables/rft.csv"),
-        rft_ert: Path = Path("share/results/tables/rft_ert.csv"),
+        rft: str = "share/results/tables/rft.csv",
+        rft_ert: str = "share/results/tables/rft_ert.csv",
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
         ensembles: Optional[List[str]] = None,
