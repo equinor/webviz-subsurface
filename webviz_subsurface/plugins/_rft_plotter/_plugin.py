@@ -116,6 +116,8 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         self._datamodel = RftPlotterDataModel(
             webviz_settings,
             ensembles,
+            rft,
+            rft_ert,
             formations,
             faultlines,
             obsdata,

@@ -35,6 +35,7 @@ class RftPlotterDataModel:
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
     ):
+        # pylint: disable = too-many-arguments
         self.formations = formations
         self.faultlines = faultlines
         self.obsdata = obsdata
