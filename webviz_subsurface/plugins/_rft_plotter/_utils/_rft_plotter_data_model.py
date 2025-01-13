@@ -27,6 +27,8 @@ class RftPlotterDataModel:
         self,
         webviz_settings: WebvizSettings,
         ensembles: Optional[List[str]],
+        rft: Path = None,
+        rft_ert: Path = None,
         formations: Path = None,
         faultlines: Path = None,
         obsdata: Path = None,
@@ -67,12 +69,12 @@ class RftPlotterDataModel:
 
             self.ertdatadf = create_csvfile_providerset_from_paths(
                 ens_paths,
-                "share/results/tables/rft_ert.csv",
+                rft_ert,
             ).get_aggregated_dataframe()
 
             try:
                 self.simdf = create_csvfile_providerset_from_paths(
-                    ens_paths, "share/results/tables/rft.csv"
+                    ens_paths, rft
                 ).get_aggregated_dataframe()
 
             except ValueError as err:
@@ -210,7 +212,13 @@ class RftPlotterDataModel:
         zone: str,
         reals: List[int],
         keep_all_rfts: bool,
-    ) -> Tuple[Optional[pd.DataFrame], float, float, List[str], List[str],]:
+    ) -> Tuple[
+        Optional[pd.DataFrame],
+        float,
+        float,
+        List[str],
+        List[str],
+    ]:
         """This method merges rft observations and parameters.
 
         The RFT observations are converted from long form (all simulated values
