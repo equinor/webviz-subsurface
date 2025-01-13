@@ -212,13 +212,7 @@ class RftPlotterDataModel:
         zone: str,
         reals: List[int],
         keep_all_rfts: bool,
-    ) -> Tuple[
-        Optional[pd.DataFrame],
-        float,
-        float,
-        List[str],
-        List[str],
-    ]:
+    ) -> Tuple[Optional[pd.DataFrame], float, float, List[str], List[str],]:
         """This method merges rft observations and parameters.
 
         The RFT observations are converted from long form (all simulated values
