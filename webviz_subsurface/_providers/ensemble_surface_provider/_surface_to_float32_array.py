@@ -6,7 +6,7 @@ import xtgeo
 
 def surface_to_float32_array(surface: xtgeo.RegularSurface) -> io.BytesIO:
     values = surface.values.astype(np.float32)
-    values.fill_value = np.NaN
+    values.fill_value = np.nan
     values = np.ma.filled(values)
 
     # Rotate 90 deg left.
