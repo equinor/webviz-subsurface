@@ -17,7 +17,7 @@ def _truncate_day_to_monday(datetime_day: np.datetime64) -> np.datetime64:
 def _quarter_start_month(datetime_day: np.datetime64) -> np.datetime64:
     # A bit hackish, utilizes the fact that datetime64 is relative to epoch
     # 1970-01-01 which is the first day in Q1.
-    datetime_month = np.datetime64(datetime_day, "M")
+    datetime_month = datetime_day.astype("M8[M]")
     return datetime_month - (datetime_month.astype(int) % 3)
 
 
@@ -30,44 +30,52 @@ def generate_normalized_sample_dates(
     """
 
     if freq == Frequency.DAILY:
-        start = np.datetime64(min_date, "D")
-        stop = np.datetime64(max_date, "D")
+        start = min_date.astype("M8[D]")
+        stop = max_date.astype("M8[D]")
         if stop < max_date:
-            stop += 1
-        sampledates = np.arange(start, stop + 1)
+            stop += np.timedelta64(1, "D")
+        sampledates = np.arange(start, stop + np.timedelta64(1, "D"))
+
     elif freq == Frequency.WEEKLY:
-        start = _truncate_day_to_monday(np.datetime64(min_date, "D"))
-        stop = _truncate_day_to_monday(np.datetime64(max_date, "D"))
+        start = _truncate_day_to_monday(min_date.astype("M8[D]"))
+        stop = _truncate_day_to_monday(max_date.astype("M8[D]"))
         if start > min_date:
-            start -= 7
+            start -= np.timedelta64(7, "D")
         if stop < max_date:
-            stop += 7
-        sampledates = np.arange(start, stop + 1, 7)
+            stop += np.timedelta64(7, "D")
+        sampledates = np.arange(
+            start, stop + np.timedelta64(1, "D"), np.timedelta64(7, "D")
+        )
+
     elif freq == Frequency.MONTHLY:
-        start = np.datetime64(min_date, "M")
-        stop = np.datetime64(max_date, "M")
+        start = min_date.astype("M8[M]")
+        stop = max_date.astype("M8[M]")
         if stop < max_date:
-            stop += 1
-        sampledates = np.arange(start, stop + 1)
+            stop += np.timedelta64(1, "M")
+        sampledates = np.arange(start, stop + np.timedelta64(1, "M"))
+
     elif freq == Frequency.QUARTERLY:
         start = _quarter_start_month(min_date)
         stop = _quarter_start_month(max_date)
         if stop < max_date:
-            stop += 3
-        sampledates = np.arange(start, stop + 1, 3)
+            stop += np.timedelta64(3, "M")
+        sampledates = np.arange(
+            start, stop + np.timedelta64(1, "M"), np.timedelta64(3, "M")
+        )
+
     elif freq == Frequency.YEARLY:
-        start = np.datetime64(min_date, "Y")
-        stop = np.datetime64(max_date, "Y")
+        start = min_date.astype("M8[Y]")
+        stop = max_date.astype("M8[Y]")
         if stop < max_date:
-            stop += 1
-        sampledates = np.arange(start, stop + 1)
+            stop += np.timedelta64(1, "Y")
+        sampledates = np.arange(start, stop + np.timedelta64(1, "Y"))
+
     else:
         raise NotImplementedError(
             f"Currently not supporting resampling to frequency {freq}."
         )
 
-    sampledates = sampledates.astype("datetime64[ms]")
-
+    sampledates = sampledates.astype("M8[ms]")
     return sampledates
 
 

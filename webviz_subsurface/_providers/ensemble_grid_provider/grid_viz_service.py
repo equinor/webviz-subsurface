@@ -365,15 +365,15 @@ class GridVizService:
 
             plane = vtkPlane()
             plane.SetOrigin([x_0, y_0, 0])
-            plane.SetNormal(right_vec.tolist())
+            plane.SetNormal(right_vec.tolist())  # type: ignore
 
             plane_0 = vtkPlane()
             plane_0.SetOrigin([x_0, y_0, 0])
-            plane_0.SetNormal(fwd_vec.tolist())
+            plane_0.SetNormal(fwd_vec.tolist())  # type: ignore
 
             plane_1 = vtkPlane()
             plane_1.SetOrigin([x_1, y_1, 0])
-            plane_1.SetNormal((-fwd_vec).tolist())
+            plane_1.SetNormal((-fwd_vec).tolist())  # type: ignore
 
             cutter_alg.SetPlane(plane)
             cutter_alg.Update()

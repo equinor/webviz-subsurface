@@ -374,7 +374,7 @@ class ProviderImplArrowPresampled(EnsembleSummaryProvider):
             f"find_unique={et_find_unique_ms}ms)"
         )
 
-        return intersected_dates.astype(datetime.datetime).tolist()
+        return intersected_dates.astype(datetime.datetime).tolist()  # type: ignore
 
     def get_vectors_df(
         self,

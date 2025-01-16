@@ -105,4 +105,4 @@ def _find_contours(
 
 def _simplify(poly: np.ndarray, simplify_dist: float) -> List[List[float]]:
     simplified = shapely.geometry.LineString(poly).simplify(simplify_dist)
-    return np.array(simplified.coords).tolist()
+    return np.array(simplified.coords).tolist()  # type: ignore
