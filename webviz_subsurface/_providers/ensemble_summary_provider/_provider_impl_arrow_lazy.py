@@ -313,7 +313,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             f"find_unique={et_find_unique_ms}ms)"
         )
 
-        return intersected_dates.astype(datetime.datetime).tolist()
+        return intersected_dates.astype(datetime.datetime).tolist()  # type: ignore
 
     def get_vectors_df(
         self,
@@ -377,7 +377,7 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             table = table.filter(real_mask)
         et_filter_ms = timer.lap_ms()
 
-        np_lookup_date = np.datetime64(date, "ms")
+        np_lookup_date = np.datetime64(date).astype("M8[ms]")
         table = sample_segmented_multi_real_table_at_date(table, np_lookup_date)
 
         et_resample_ms = timer.lap_ms()

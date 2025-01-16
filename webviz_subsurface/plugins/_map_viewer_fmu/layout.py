@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Union
 
 import webviz_core_components as wcc
 from dash import dcc, html
-from webviz_subsurface_components import DashSubsurfaceViewer  # type: ignore
+from webviz_subsurface_components import SubsurfaceViewer  # type: ignore
 
 from webviz_subsurface._utils.enum_shim import StrEnum
 
@@ -271,7 +271,7 @@ class MapViewLayout(FullScreen):
     ) -> None:
         super().__init__(
             children=html.Div(
-                DashSubsurfaceViewer(
+                SubsurfaceViewer(
                     id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
                     layers=update_map_layers(1, render_surfaces_as_images),
                     colorTables=color_tables,

@@ -57,7 +57,6 @@ jobs:
           # Testing against our latest release (including pre-releases)
           pip install --pre --upgrade webviz-config webviz-core-components webviz-subsurface-components
 
-
       - name: 📦 Install test dependencies
         run: |
           pip install .[tests]
@@ -101,7 +100,7 @@ jobs:
           git clone --depth 1 --branch $TESTDATA_REPO_BRANCH https://github.com/$TESTDATA_REPO_OWNER/webviz-subsurface-testdata.git
           # Copy any clientside script to the test folder before running tests
           mkdir ./tests/assets && cp ./webviz_subsurface/_assets/js/* ./tests/assets
-          pytest ./tests --headless --forked --testdata-folder ./webviz-subsurface-testdata
+          pytest ./tests --headless --forked -s --testdata-folder ./webviz-subsurface-testdata
           rm -rf ./tests/assets
 
       - name: 🐳 Build Docker example image

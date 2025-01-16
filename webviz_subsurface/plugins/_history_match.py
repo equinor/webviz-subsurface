@@ -155,7 +155,7 @@ def _get_sorted_edges(number_observation_groups: int) -> Dict[str, list]:
             np.random.chisquare(df=1, size=number_observation_groups)
         )
 
-    sorted_values = np.flip(sorted_values, 0)
+    sorted_values = np.flip(sorted_values, 0)  # type: ignore
 
     p10 = np.percentile(sorted_values, 90, axis=1)
     p90 = np.percentile(sorted_values, 10, axis=1)

@@ -557,9 +557,9 @@ def make_status_df(
         if len(set(range(min(reals), max(reals) + 1))) > len(set(reals)):
             missing_df = ens_dfs[0].copy()
             missing_df["STATUS"] = "Realization not started"
-            missing_df["RUNTIME"] = np.NaN
-            missing_df["JOB_SCALED_RUNTIME"] = np.NaN
-            missing_df["ENS_SCALED_RUNTIME"] = np.NaN
+            missing_df["RUNTIME"] = np.nan
+            missing_df["JOB_SCALED_RUNTIME"] = np.nan
+            missing_df["ENS_SCALED_RUNTIME"] = np.nan
             for missing_real in set(range(min(reals), max(reals) + 1)).difference(
                 set(reals)
             ):

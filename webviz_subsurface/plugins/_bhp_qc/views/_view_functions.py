@@ -20,7 +20,7 @@ def filter_df(df: pd.DataFrame, ensemble: str, wells: List[str]) -> pd.DataFrame
     in statistics.
     """
     columns = ["ENSEMBLE"] + [f"WBHP:{well}" for well in wells]
-    return df.loc[df["ENSEMBLE"] == ensemble][columns].replace(0, np.NaN)
+    return df.loc[df["ENSEMBLE"] == ensemble][columns].replace(0, np.nan)
 
 
 def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
