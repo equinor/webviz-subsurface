@@ -102,6 +102,8 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
     def __init__(
         self,
         webviz_settings: WebvizSettings,
+        rft: str = "share/results/tables/rft.csv",
+        rft_ert: str = "share/results/tables/rft_ert.csv",
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
         ensembles: Optional[List[str]] = None,
@@ -109,11 +111,14 @@ forward_models.html?highlight=gendata_rft#MERGE_RFT_ERTOBS).
         obsdata: Path = None,
         faultlines: Path = None,
     ) -> None:
+        # pylint: disable = too-many-arguments
         super().__init__()
 
         self._datamodel = RftPlotterDataModel(
             webviz_settings,
             ensembles,
+            rft,
+            rft_ert,
             formations,
             faultlines,
             obsdata,

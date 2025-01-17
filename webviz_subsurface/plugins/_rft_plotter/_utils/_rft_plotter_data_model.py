@@ -27,12 +27,15 @@ class RftPlotterDataModel:
         self,
         webviz_settings: WebvizSettings,
         ensembles: Optional[List[str]],
+        rft: str,
+        rft_ert: str,
         formations: Path = None,
         faultlines: Path = None,
         obsdata: Path = None,
         csvfile_rft: Path = None,
         csvfile_rft_ert: Path = None,
     ):
+        # pylint: disable = too-many-arguments
         self.formations = formations
         self.faultlines = faultlines
         self.obsdata = obsdata
@@ -67,12 +70,12 @@ class RftPlotterDataModel:
 
             self.ertdatadf = create_csvfile_providerset_from_paths(
                 ens_paths,
-                "share/results/tables/rft_ert.csv",
+                rft_ert,
             ).get_aggregated_dataframe()
 
             try:
                 self.simdf = create_csvfile_providerset_from_paths(
-                    ens_paths, "share/results/tables/rft.csv"
+                    ens_paths, rft
                 ).get_aggregated_dataframe()
 
             except ValueError as err:
