@@ -11,7 +11,6 @@ import xtgeo
 from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface._utils.perf_timer import PerfTimer
 
-from ._stat_surf_cache import StatSurfCache
 from ._surface_discovery import SurfaceFileInfo
 from .ensemble_surface_provider import (
     EnsembleSurfaceProvider,
@@ -26,7 +25,6 @@ LOGGER = logging.getLogger(__name__)
 
 REL_SIM_DIR = "sim"
 REL_OBS_DIR = "obs"
-REL_STAT_CACHE_DIR = "stat_cache"
 
 
 # pylint: disable=too-few-public-methods
@@ -52,8 +50,6 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         self._provider_id = provider_id
         self._provider_dir = provider_dir
         self._inventory_df = surface_inventory_df
-
-        self._stat_surf_cache = StatSurfCache(self._provider_dir / REL_STAT_CACHE_DIR)
 
     @staticmethod
     # pylint: disable=too-many-locals
@@ -237,22 +233,10 @@ class ProviderImplFile(EnsembleSurfaceProvider):
     ) -> Optional[xtgeo.RegularSurface]:
         timer = PerfTimer()
 
-        surf = self._stat_surf_cache.fetch(address)
-        if surf:
-            LOGGER.debug(
-                f"Fetched statistical surface from cache in: {timer.elapsed_s():.2f}s"
-            )
-            return surf
-
         surf = self._create_statistical_surface(address)
-        et_create_s = timer.lap_s()
-
-        self._stat_surf_cache.store(address, surf)
-        et_write_cache_s = timer.lap_s()
 
         LOGGER.debug(
-            f"Created and wrote statistical surface to cache in: {timer.elapsed_s():.2f}s ("
-            f"create={et_create_s:.2f}s, store={et_write_cache_s:.2f}s), "
+            f"Created statistical surface in: {timer.elapsed_s():.2f}s ("
             f"[stat={address.statistic}, "
             f"attr={address.attribute}, name={address.name}, date={address.datestr}]"
         )
