@@ -25,7 +25,6 @@ LOGGER = logging.getLogger(__name__)
 
 REL_SIM_DIR = "sim"
 REL_OBS_DIR = "obs"
-REL_STAT_CACHE_DIR = "stat_cache"
 
 
 # pylint: disable=too-few-public-methods
@@ -238,7 +237,7 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         et_create_s = timer.lap_s()
 
         LOGGER.debug(
-            f"Created and wrote statistical surface to cache in: {timer.elapsed_s():.2f}s ("
+            f"Created statistical surface in: {timer.elapsed_s():.2f}s ("
             f"[stat={address.statistic}, "
             f"attr={address.attribute}, name={address.name}, date={address.datestr}]"
         )
