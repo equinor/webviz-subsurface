@@ -234,7 +234,6 @@ class ProviderImplFile(EnsembleSurfaceProvider):
         timer = PerfTimer()
 
         surf = self._create_statistical_surface(address)
-        et_create_s = timer.lap_s()
 
         LOGGER.debug(
             f"Created statistical surface in: {timer.elapsed_s():.2f}s ("
