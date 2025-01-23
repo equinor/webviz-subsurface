@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.34` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.35` of `webviz-subsurface`.
 
 
 
@@ -2340,6 +2340,10 @@ Several visualizations are available:
 
 
 
+
+
+
+
 **Using data per realization**
 
 * **`ensembles`**: Which ensembles in `shared_settings` to visualize.
@@ -2379,6 +2383,8 @@ https://xtgeo.readthedocs.io/en/latest/apiref/xtgeo.xyz.polygons.html#xtgeo.xyz.
 How to use in YAML config file:
 ```yaml
     - RftPlotter:
+        rft:  # Optional, type str.
+        rft_ert:  # Optional, type str.
         csvfile_rft:  # Optional, type str (corresponding to a path).
         csvfile_rft_ert:  # Optional, type str (corresponding to a path).
         ensembles:  # Optional, type Union[typing.List[str], NoneType].

@@ -1,6 +1,6 @@
 # Plugin project webviz-config
 
-?> :bookmark: This documentation is valid for version `0.6.4` of `webviz-config`.
+?> :bookmark: This documentation is valid for version `0.6.5` of `webviz-config`.
 
 
 
