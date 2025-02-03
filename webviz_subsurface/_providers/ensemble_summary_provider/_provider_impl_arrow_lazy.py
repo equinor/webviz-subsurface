@@ -56,7 +56,7 @@ def _find_first_non_increasing_date_pair(
 ) -> Tuple[Optional[np.datetime64], Optional[np.datetime64]]:
     dates_np = table.column("DATE").to_numpy()
     offending_indices = np.asarray(np.diff(dates_np) <= np.timedelta64(0)).nonzero()[0]
-    if not offending_indices:
+    if len(offending_indices) == 0:
         return (None, None)
 
     return (dates_np[offending_indices[0]], dates_np[offending_indices[0] + 1])
