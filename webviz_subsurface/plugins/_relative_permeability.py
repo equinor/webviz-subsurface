@@ -971,7 +971,7 @@ def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
 
     traces = []
     for ens_no, (ens, ens_df) in enumerate(
-        df[["ENSEMBLE", "REAL", "SATNUM", sataxis] + curves].groupby(["ENSEMBLE"])
+        df[["ENSEMBLE", "REAL", "SATNUM", sataxis] + curves].groupby("ENSEMBLE")
     ):
         for satnum_no, (satnum, satnum_df) in enumerate(
             ens_df[["REAL", "SATNUM", sataxis] + curves].groupby("SATNUM")
