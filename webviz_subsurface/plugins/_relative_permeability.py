@@ -471,11 +471,9 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                         ],
                                         value="statistics",
                                     ),
-                                    style=(
-                                        {"display": "none"}
-                                        if self.plugin_mode == "scal_scenarios"
-                                        else {"display": "block"}
-                                    ),
+                                    style={"display": "none"}
+                                    if self.plugin_mode == "scal_scenarios"
+                                    else {"display": "block"},
                                 ),
                                 html.Div(
                                     wcc.Checklist(
@@ -485,17 +483,13 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
                                             {"label": val.capitalize(), "value": val}
                                             for val in ["pess", "base", "opt"]
                                         ],
-                                        value=(
-                                            ["pess", "base", "opt"]
-                                            if self.scal_ensembles is not None
-                                            else []
-                                        ),
-                                    ),
-                                    style=(
-                                        {"display": "block"}
+                                        value=["pess", "base", "opt"]
                                         if self.scal_ensembles is not None
-                                        else {"display": "none"}
+                                        else [],
                                     ),
+                                    style={"display": "block"}
+                                    if self.scal_ensembles is not None
+                                    else {"display": "none"},
                                 ),
                                 wcc.RadioItems(
                                     label="Y-axis",
@@ -714,26 +708,24 @@ webviz-subsurface-testdata/blob/master/reek_history_match/share/scal/scalreek.cs
 
         return [
             (
-                (
-                    load_satfunc,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "ensemble_set_name": "EnsembleSet",
-                        }
-                    ],
-                )
-                if self.relpermfile is None
-                else (
-                    load_csv,
-                    [
-                        {
-                            "ensemble_paths": self.ens_paths,
-                            "csv_file": self.relpermfile,
-                            "ensemble_set_name": "EnsembleSet",
-                        }
-                    ],
-                )
+                load_satfunc,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
+            )
+            if self.relpermfile is None
+            else (
+                load_csv,
+                [
+                    {
+                        "ensemble_paths": self.ens_paths,
+                        "csv_file": self.relpermfile,
+                        "ensemble_set_name": "EnsembleSet",
+                    }
+                ],
             )
         ] + (
             []
@@ -1077,11 +1069,9 @@ def plot_layout(nplots, curves, sataxis, color_by, linlog, theme):
     titles = (
         ["Relative Permeability", "Capillary Pressure"]
         if nplots == 2
-        else (
-            ["Relative Permeability"]
-            if any(curve.startswith("KR") for curve in curves)
-            else ["Capillary Pressure"]
-        )
+        else ["Relative Permeability"]
+        if any(curve.startswith("KR") for curve in curves)
+        else ["Capillary Pressure"]
     )
     layout = theme.copy()
     layout.update(
@@ -1108,36 +1098,34 @@ def plot_layout(nplots, curves, sataxis, color_by, linlog, theme):
             ],
         }
         if nplots == 1
-        else (
-            {
-                "annotations": [
-                    {
-                        "showarrow": False,
-                        "text": titles[0],
-                        "x": 0.5,
-                        "xanchor": "center",
-                        "xref": "paper",
-                        "y": 1.0,
-                        "yanchor": "bottom",
-                        "yref": "paper",
-                        "font": {"size": 16},
-                    },
-                    {
-                        "showarrow": False,
-                        "text": titles[1],
-                        "x": 0.5,
-                        "xanchor": "center",
-                        "xref": "paper",
-                        "y": 0.475,
-                        "yanchor": "bottom",
-                        "yref": "paper",
-                        "font": {"size": 16},
-                    },
-                ],
-            }
-            if nplots == 2
-            else {}
-        )
+        else {
+            "annotations": [
+                {
+                    "showarrow": False,
+                    "text": titles[0],
+                    "x": 0.5,
+                    "xanchor": "center",
+                    "xref": "paper",
+                    "y": 1.0,
+                    "yanchor": "bottom",
+                    "yref": "paper",
+                    "font": {"size": 16},
+                },
+                {
+                    "showarrow": False,
+                    "text": titles[1],
+                    "x": 0.5,
+                    "xanchor": "center",
+                    "xref": "paper",
+                    "y": 0.475,
+                    "yanchor": "bottom",
+                    "yref": "paper",
+                    "font": {"size": 16},
+                },
+            ],
+        }
+        if nplots == 2
+        else {}
     )
 
     layout["legend"] = {"title": {"text": color_by.lower().capitalize()}}
