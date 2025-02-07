@@ -1000,7 +1000,9 @@ def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
                 legend_group = (
                     curve
                     if color_by == "CURVE"
-                    else ens if color_by == "ENSEMBLE" else satnum
+                    else ens
+                    if color_by == "ENSEMBLE"
+                    else satnum
                 )
                 show_legend = (
                     bool(color_by == "CURVE" and ens_no == 0 and satnum_no == 0)
