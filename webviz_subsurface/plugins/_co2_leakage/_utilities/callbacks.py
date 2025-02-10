@@ -11,7 +11,6 @@ from flask_caching import Cache
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProvider,
-    EnsembleTableProvider,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
@@ -21,19 +20,29 @@ from webviz_subsurface._providers import (
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
 )
-from webviz_subsurface._utils.webvizstore_functions import read_csv
 from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
 from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
+    generate_co2_statistics_figure,
     generate_co2_time_containment_figure,
     generate_co2_time_containment_one_realization_figure,
     generate_co2_volume_figure,
 )
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
+    ContainmentDataProvider,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.ensemble_well_picks import (
+    EnsembleWellPicks,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
+    FilteredMapAttribute,
     GraphSource,
     LayoutLabels,
     MapAttribute,
+    MapGroup,
+    MapType,
+    MenuOptions,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.summary_graphs import (
     generate_summary_figure,
@@ -42,21 +51,22 @@ from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import
     TruncatedSurfaceAddress,
     publish_and_get_surface_metadata,
 )
-from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
-    WellPickProvider,
+from webviz_subsurface.plugins._co2_leakage._utilities.unsmry_data_provider import (
+    UnsmryDataProvider,
 )
 
 
 def property_origin(
-    attribute: MapAttribute, map_attribute_names: Dict[MapAttribute, str]
+    attribute: MapAttribute, map_attribute_names: FilteredMapAttribute
 ) -> str:
-    if attribute in map_attribute_names:
-        return map_attribute_names[attribute]
-    if attribute == MapAttribute.SGAS_PLUME:
-        return map_attribute_names[MapAttribute.MAX_SGAS]
-    if attribute == MapAttribute.AMFG_PLUME:
-        return map_attribute_names[MapAttribute.MAX_AMFG]
-    raise AssertionError(f"Map attribute name not found for property: {attribute}")
+    if MapType[MapAttribute(attribute).name].value == "PLUME":
+        return [
+            map_attribute_names[attr]
+            for attr in MapAttribute
+            if MapGroup[attr.name].value == MapGroup[MapAttribute(attribute).name].value
+            and MapType[attr.name] == "MAX"
+        ][0]
+    return map_attribute_names[attribute]
 
 
 @dataclass
@@ -77,7 +87,7 @@ class SurfaceData:
         color_map_name: str,
         readable_name_: str,
         visualization_info: Dict[str, Any],
-        map_attribute_names: Dict[MapAttribute, str],
+        map_attribute_names: FilteredMapAttribute,
     ) -> Tuple[Any, Optional[Any]]:
         surf_meta, img_url, summed_mass = publish_and_get_surface_metadata(
             server,
@@ -115,17 +125,14 @@ def derive_surface_address(
     attribute: MapAttribute,
     date: Optional[str],
     realization: List[int],
-    map_attribute_names: Dict[MapAttribute, str],
+    map_attribute_names: FilteredMapAttribute,
     statistic: str,
     contour_data: Optional[Dict[str, Any]],
 ) -> Union[SurfaceAddress, TruncatedSurfaceAddress]:
-    if attribute in (MapAttribute.SGAS_PLUME, MapAttribute.AMFG_PLUME):
+    if MapType[MapAttribute(attribute).name].value == "PLUME":
+        max_attr_name = f"MAX_{MapGroup[MapAttribute(attribute).name]}"
         assert date is not None
-        basis = (
-            MapAttribute.MAX_SGAS
-            if attribute == MapAttribute.SGAS_PLUME
-            else MapAttribute.MAX_AMFG
-        )
+        basis = getattr(MapAttribute, max_attr_name)
         return TruncatedSurfaceAddress(
             name=surface_name,
             datestr=date,
@@ -136,11 +143,7 @@ def derive_surface_address(
         )
     date = (
         None
-        if attribute
-        in [
-            MapAttribute.MIGRATION_TIME_SGAS,
-            MapAttribute.MIGRATION_TIME_AMFG,
-        ]
+        if MapType[MapAttribute(attribute).name].value == "MIGRATION_TIME"
         else date
     )
     if len(realization) == 1:
@@ -161,12 +164,9 @@ def derive_surface_address(
 
 def readable_name(attribute: MapAttribute) -> str:
     unit = ""
-    if attribute in [
-        MapAttribute.MIGRATION_TIME_SGAS,
-        MapAttribute.MIGRATION_TIME_AMFG,
-    ]:
+    if MapType[MapAttribute(attribute).name].value == "MIGRATION_TIME":
         unit = " [year]"
-    elif attribute in (MapAttribute.AMFG_PLUME, MapAttribute.SGAS_PLUME):
+    elif MapType[MapAttribute(attribute).name].value == "PLUME":
         unit = " [# real.]"
     return f"{attribute.value}{unit}"
 
@@ -211,12 +211,9 @@ def get_plume_polygon(
 
 
 def _find_legend_title(attribute: MapAttribute, unit: str) -> str:
-    if attribute in [
-        MapAttribute.MIGRATION_TIME_SGAS,
-        MapAttribute.MIGRATION_TIME_AMFG,
-    ]:
+    if MapType[MapAttribute(attribute).name].value == "MIGRATION_TIME":
         return "years"
-    if attribute in [MapAttribute.MASS, MapAttribute.DISSOLVED, MapAttribute.FREE]:
+    if MapType[MapAttribute(attribute).name].value == "MASS":
         return unit
     return ""
 
@@ -234,7 +231,8 @@ def create_map_annotations(
         and surface_data.color_map_range[0] is not None
         and surface_data.color_map_range[1] is not None
     ):
-        num_digits = np.ceil(np.log(surface_data.color_map_range[1]) / np.log(10))
+        max_value = surface_data.color_map_range[1]
+        num_digits = 4 if max_value < 1 else np.ceil(np.log(max_value) / np.log(10))
         numbersize = max((6, min((17 - num_digits, 11))))
         annotations.append(
             wsc.ViewAnnotation(
@@ -283,12 +281,13 @@ def create_map_viewports() -> Dict:
 
 # pylint: disable=too-many-arguments
 def create_map_layers(
+    realizations: List[int],
     formation: str,
     surface_data: Optional[SurfaceData],
     fault_polygon_url: Optional[str],
-    file_containment_boundary: Optional[str],
-    file_hazardous_boundary: Optional[str],
-    well_pick_provider: Optional[WellPickProvider],
+    containment_bounds_url: Optional[str],
+    haz_bounds_url: Optional[str],
+    well_pick_provider: Optional[EnsembleWellPicks],
     plume_extent_data: Optional[geojson.FeatureCollection],
     options_dialog_options: List[int],
     selected_wells: List[str],
@@ -322,8 +321,9 @@ def create_map_layers(
                 "data": fault_polygon_url,
             }
         )
+
     if (
-        file_containment_boundary is not None
+        containment_bounds_url is not None
         and LayoutLabels.SHOW_CONTAINMENT_POLYGON in options_dialog_options
     ):
         layers.append(
@@ -331,14 +331,15 @@ def create_map_layers(
                 "@@type": "GeoJsonLayer",
                 "name": "Containment Polygon",
                 "id": "license-boundary-layer",
-                "data": _parse_polygon_file(file_containment_boundary),
+                "data": containment_bounds_url,
                 "stroked": False,
                 "getFillColor": [0, 172, 0, 120],
                 "visible": True,
             }
         )
+
     if (
-        file_hazardous_boundary is not None
+        haz_bounds_url is not None
         and LayoutLabels.SHOW_HAZARDOUS_POLYGON in options_dialog_options
     ):
         layers.append(
@@ -346,48 +347,25 @@ def create_map_layers(
                 "@@type": "GeoJsonLayer",
                 "name": "Hazardous Polygon",
                 "id": "hazardous-boundary-layer",
-                "data": _parse_polygon_file(file_hazardous_boundary),
+                "data": haz_bounds_url,
                 "stroked": False,
                 "getFillColor": [200, 0, 0, 120],
                 "visible": True,
             }
         )
+
     if (
         well_pick_provider is not None
         and formation is not None
+        and len(realizations) > 0
         and LayoutLabels.SHOW_WELLS in options_dialog_options
     ):
-        well_data = dict(well_pick_provider.get_geojson(selected_wells, formation))
-        if "features" in well_data:
-            if len(well_data["features"]) == 0:
-                wellstring = "well: " if len(selected_wells) == 1 else "wells: "
-                wellstring += ", ".join(selected_wells)
-                warnings.warn(
-                    f"Combination of formation: {formation} and "
-                    f"{wellstring} not found in well picks file."
-                )
-            for i in range(len(well_data["features"])):
-                current_attribute = well_data["features"][i]["properties"]["attribute"]
-                well_data["features"][i]["properties"]["attribute"] = (
-                    " " + current_attribute
-                )
-        layers.append(
-            {
-                "@@type": "GeoJsonLayer",
-                "name": "Well Picks",
-                "id": "well-picks-layer",
-                "data": well_data,
-                "visible": True,
-                "getText": "@@=properties.attribute",
-                "getTextSize": 12,
-                "getTextAnchor": "start",
-                "pointType": "circle+text",
-                "lineWidthMinPixels": 2,
-                "pointRadiusMinPixels": 2,
-                "pickable": True,
-                "parameters": {"depthTest": False},
-            }
+        layer = well_pick_provider.geojson_layer(
+            realizations[0], selected_wells, formation
         )
+        if layer is not None:
+            layers.append(layer)
+
     if plume_extent_data is not None:
         layers.append(
             {
@@ -403,27 +381,44 @@ def create_map_layers(
 
 
 def generate_containment_figures(
-    table_provider: EnsembleTableProvider,
+    table_provider: ContainmentDataProvider,
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
-    realization: int,
+    realizations: List[int],
     y_limits: List[Optional[float]],
     containment_info: Dict[str, Union[str, None, List[str], int]],
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
-        fig0 = generate_co2_volume_figure(
+        fig0 = (
+            no_update
+            if not containment_info["update_first_figure"]
+            else generate_co2_volume_figure(
+                table_provider,
+                table_provider.realizations,
+                co2_scale,
+                containment_info,
+            )
+        )
+        fig1 = (
+            generate_co2_time_containment_figure(
+                table_provider,
+                realizations,
+                co2_scale,
+                containment_info,
+            )
+            if len(realizations) > 1
+            else generate_co2_time_containment_one_realization_figure(
+                table_provider,
+                co2_scale,
+                realizations[0],
+                y_limits,
+                containment_info,
+            )
+        )
+        fig2 = generate_co2_statistics_figure(
             table_provider,
-            table_provider.realizations(),
+            realizations,
             co2_scale,
             containment_info,
-        )
-        fig1 = generate_co2_time_containment_figure(
-            table_provider,
-            table_provider.realizations(),
-            co2_scale,
-            containment_info,
-        )
-        fig2 = generate_co2_time_containment_one_realization_figure(
-            table_provider, co2_scale, realization, y_limits, containment_info
         )
     except KeyError as exc:
         warnings.warn(f"Could not generate CO2 figures: {exc}")
@@ -432,58 +427,20 @@ def generate_containment_figures(
 
 
 def generate_unsmry_figures(
-    table_provider_unsmry: EnsembleTableProvider,
+    table_provider_unsmry: UnsmryDataProvider,
     co2_mass_scale: Union[Co2MassScale, Co2VolumeScale],
-    table_provider_containment: EnsembleTableProvider,
-) -> Tuple[go.Figure]:
-    return (
-        generate_summary_figure(
-            table_provider_unsmry,
-            table_provider_unsmry.realizations(),
-            co2_mass_scale,
-            table_provider_containment,
-            table_provider_containment.realizations(),
-        ),
+    table_provider_containment: ContainmentDataProvider,
+) -> go.Figure:
+    return generate_summary_figure(
+        table_provider_unsmry,
+        co2_mass_scale,
+        table_provider_containment,
     )
 
 
-def _parse_polygon_file(filename: str) -> Dict[str, Any]:
-    df = read_csv(filename)
-    if "x" in df.columns:
-        xyz = df[["x", "y"]].values
-    elif "X_UTME" in df.columns:
-        if "POLY_ID" in df.columns:
-            xyz = [gf[["X_UTME", "Y_UTMN"]].values for _, gf in df.groupby("POLY_ID")]
-        else:
-            xyz = df[["X_UTME", "Y_UTMN"]].values
-    else:
-        # Attempt to use the first two columns as the x and y coordinates
-        xyz = df.values[:, :2]
-    if isinstance(xyz, list):
-        poly_type = "MultiPolygon"
-        coords = [[arr.tolist()] for arr in xyz]
-    else:
-        poly_type = "Polygon"
-        coords = [xyz.tolist()]
-    as_geojson = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "properties": {},
-                "geometry": {
-                    "type": poly_type,
-                    "coordinates": coords,
-                },
-            }
-        ],
-    }
-    return as_geojson
-
-
 def process_visualization_info(
-    n_clicks: int,
-    threshold: Optional[float],
+    attribute: str,
+    thresholds: dict,
     unit: str,
     stored_info: Dict[str, Any],
     cache: Cache,
@@ -491,17 +448,21 @@ def process_visualization_info(
     """
     Clear surface cache if the threshold for visualization or mass unit is changed
     """
+    stored_info["attribute"] = attribute
     stored_info["change"] = False
-    stored_info["n_clicks"] = n_clicks
-    if unit != stored_info["unit"]:
+    if (
+        MapType[MapAttribute(attribute).name].value not in ["PLUME", "MIGRATION_TIME"]
+        and unit != stored_info["unit"]
+    ):
         stored_info["unit"] = unit
         stored_info["change"] = True
-    if threshold is not None and threshold != stored_info["threshold"]:
-        stored_info["threshold"] = threshold
-        stored_info["change"] = True
+    if thresholds is not None:
+        for att in stored_info["thresholds"].keys():
+            if stored_info["thresholds"][att] != thresholds[att]:
+                stored_info["change"] = True
+                stored_info["thresholds"][att] = thresholds[att]
     if stored_info["change"]:
         cache.clear()
-    # stored_info["n_clicks"] = n_clicks
     return stored_info
 
 
@@ -510,21 +471,33 @@ def process_containment_info(
     region: Optional[str],
     phase: str,
     containment: str,
+    plume_group: str,
     color_choice: str,
     mark_choice: Optional[str],
     sorting: str,
-    menu_options: Dict[str, List[str]],
+    lines_to_show: str,
+    date_option: str,
+    menu_options: MenuOptions,
 ) -> Dict[str, Union[str, None, List[str], int]]:
     if mark_choice is None:
         mark_choice = "phase"
     zones = menu_options["zones"]
     regions = menu_options["regions"]
+    plume_groups = menu_options["plume_groups"]
     if len(zones) > 0:
         zones = [zone_name for zone_name in zones if zone_name != "all"]
     if len(regions) > 0:
         regions = [reg_name for reg_name in regions if reg_name != "all"]
-    containments = ["hazardous", "outside", "contained"]
-    phases = [phase for phase in menu_options["phases"] if phase != "total"]
+    if len(plume_groups) > 0:
+        plume_groups = [pg_name for pg_name in plume_groups if pg_name != "all"]
+
+        def plume_sort_key(name: str) -> int:
+            if name == "undetermined":
+                return 999
+            return name.count("+")
+
+        plume_groups = sorted(plume_groups, key=plume_sort_key)
+
     if "zone" in [mark_choice, color_choice]:
         region = "all"
     if "region" in [mark_choice, color_choice]:
@@ -536,45 +509,72 @@ def process_containment_info(
         "regions": regions,
         "phase": phase,
         "containment": containment,
+        "plume_group": plume_group,
         "color_choice": color_choice,
         "mark_choice": mark_choice,
         "sorting": sorting,
-        "phases": phases,
-        "containments": containments,
+        "phases": [phase for phase in menu_options["phases"] if phase != "total"],
+        "containments": ["hazardous", "outside", "contained"],
+        "plume_groups": plume_groups,
+        "use_stats": lines_to_show == "stat",
+        "date_option": date_option,
     }
 
 
-def set_plot_ids(
-    figs: List[go.Figure],
+def make_plot_ids(
+    ensemble: str,
     source: GraphSource,
     scale: Union[Co2MassScale, Co2VolumeScale],
     containment_info: Dict,
     realizations: List[int],
+    lines_to_show: str,
+    num_figs: int,
+) -> List[str]:
+    zone_str = (
+        containment_info["zone"] if containment_info["zone"] is not None else "None"
+    )
+    region_str = (
+        containment_info["region"] if containment_info["region"] is not None else "None"
+    )
+    plume_group_str = (
+        containment_info["plume_group"]
+        if containment_info["plume_group"] is not None
+        else "None"
+    )
+    mark_choice_str = (
+        containment_info["mark_choice"]
+        if containment_info["mark_choice"] is not None
+        else "None"
+    )
+    plot_id = "-".join(
+        (
+            ensemble,
+            source,
+            scale,
+            zone_str,
+            region_str,
+            plume_group_str,
+            str(containment_info["phase"]),
+            str(containment_info["containment"]),
+            containment_info["color_choice"],
+            mark_choice_str,
+            containment_info["sorting"],
+            containment_info["date_option"],
+        )
+    )
+    ids = [plot_id]
+    ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
+    ids[1] += f"-{lines_to_show}"
+    return ids
+
+
+def set_plot_ids(
+    figs: List[go.Figure],
+    plot_ids: List[str],
 ) -> None:
-    if figs[0] != no_update:
-        zone_str = (
-            containment_info["zone"] if containment_info["zone"] is not None else "None"
-        )
-        region_str = (
-            containment_info["region"]
-            if containment_info["region"] is not None
-            else "None"
-        )
-        plot_id = "-".join(
-            (
-                source,
-                scale,
-                zone_str,
-                region_str,
-                str(containment_info["phase"]),
-                str(containment_info["containment"]),
-                containment_info["color_choice"],
-                containment_info["mark_choice"],
-            )
-        )
-        for fig in figs:
+    for fig, plot_id in zip(figs, plot_ids):
+        if fig != no_update:
             fig["layout"]["uirevision"] = plot_id
-        figs[-1]["layout"]["uirevision"] += f"-{realizations}"
 
 
 def process_summed_mass(
@@ -589,11 +589,7 @@ def process_summed_mass(
 ) -> Tuple[Optional[SurfaceData], Dict[str, float]]:
     summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}-{unit}"
     if len(realization) == 1:
-        if attribute in [
-            MapAttribute.MASS,
-            MapAttribute.DISSOLVED,
-            MapAttribute.FREE,
-        ]:
+        if MapType[MapAttribute(attribute).name].value == "MASS":
             if summed_mass is not None and summed_co2_key not in summed_co2:
                 summed_co2[summed_co2_key] = summed_mass
             if summed_co2_key in summed_co2 and surf_data is not None:
