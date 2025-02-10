@@ -13,9 +13,9 @@ class MainView(ViewABC):
     class Ids(StrEnum):
         MAIN_ELEMENT = "main-element"
 
-    def __init__(self, color_scales: List[Dict[str, Any]]):
+    def __init__(self, color_scales: List[Dict[str, Any]], content: Dict[str, bool]):
         super().__init__("Main View")
-        self._view_element = MapViewElement(color_scales)
+        self._view_element = MapViewElement(color_scales, content)
         self.add_view_element(self._view_element, self.Ids.MAIN_ELEMENT)
 
 
@@ -26,20 +26,24 @@ class MapViewElement(ViewElementABC):
         DATE_WRAPPER = "date-wrapper"
         BAR_PLOT = "bar-plot"
         TIME_PLOT = "time-plot"
-        TIME_PLOT_ONE_REAL = "time-plot-one-realization"
+        STATISTICS_PLOT = "statistics-plot"
         BAR_PLOT_ORDER = "bar-plot-order"
         CONTAINMENT_COLORS = "containment-order"
         SIZE_SLIDER = "size-slider"
         TOP_ELEMENT = "top-element"
         BOTTOM_ELEMENT = "bottom-element"
 
-    def __init__(self, color_scales: List[Dict[str, Any]]) -> None:
+    def __init__(
+        self, color_scales: List[Dict[str, Any]], content: Dict[str, bool]
+    ) -> None:
         super().__init__()
         self._color_scales = color_scales
+        self._content = content
 
     def inner_layout(self) -> Component:
-        return html.Div(
-            [
+        layout_elements = []
+        if self._content["maps"]:
+            layout_elements.append(
                 wcc.Frame(
                     # id=self.register_component_unique_id(LayoutElements.MAP_VIEW),
                     id=self.register_component_unique_id(self.Ids.TOP_ELEMENT),
@@ -78,14 +82,17 @@ class MapViewElement(ViewElementABC):
                         ),
                     ],
                     style={
-                        "height": "43vh",
+                        "height": "43vh" if self._content["any_table"] else "100%",
                     },
-                ),
+                )
+            )
+        if self._content["any_table"]:
+            layout_elements.append(
                 wcc.Frame(
                     # id=get_uuid(LayoutElements.PLOT_VIEW),
                     id=self.register_component_unique_id(self.Ids.BOTTOM_ELEMENT),
                     style={
-                        "height": "37vh",
+                        "height": "37vh" if self._content["maps"] else "100%",
                     },
                     children=[
                         html.Div(
@@ -93,12 +100,15 @@ class MapViewElement(ViewElementABC):
                                 self.register_component_unique_id(self.Ids.BAR_PLOT),
                                 self.register_component_unique_id(self.Ids.TIME_PLOT),
                                 self.register_component_unique_id(
-                                    self.Ids.TIME_PLOT_ONE_REAL
+                                    self.Ids.STATISTICS_PLOT
                                 ),
                             )
                         ),
                     ],
-                ),
+                )
+            )
+        if self._content["maps"] and self._content["any_table"]:
+            layout_elements.append(
                 html.Div(
                     [
                         wcc.Slider(
@@ -118,8 +128,10 @@ class MapViewElement(ViewElementABC):
                     style={
                         "width": "100%",
                     },
-                ),
-            ],
+                )
+            )
+        return html.Div(
+            layout_elements,
             style={
                 "display": "flex",
                 "flexDirection": "column",
@@ -131,7 +143,7 @@ class MapViewElement(ViewElementABC):
 def _summary_graph_layout(
     bar_plot_id: str,
     time_plot_id: str,
-    time_plot_one_realization_id: str,
+    statistics_plot_id: str,
 ) -> List:
     return [
         wcc.Tabs(
@@ -139,7 +151,7 @@ def _summary_graph_layout(
             value="tab-1",
             children=[
                 wcc.Tab(
-                    label="End-state containment (all realizations)",
+                    label="Containment state",
                     value="tab-1",
                     children=[
                         html.Div(
@@ -154,7 +166,7 @@ def _summary_graph_layout(
                     ],
                 ),
                 wcc.Tab(
-                    label="Containment over time (all realizations)",
+                    label="Containment over time",
                     value="tab-2",
                     children=[
                         html.Div(
@@ -169,12 +181,12 @@ def _summary_graph_layout(
                     ],
                 ),
                 wcc.Tab(
-                    label="Containment over time (one realization)",
+                    label="Statistics",
                     value="tab-3",
                     children=[
                         html.Div(
                             wcc.Graph(
-                                id=time_plot_one_realization_id,
+                                id=statistics_plot_id,
                                 figure=go.Figure(),
                                 config={
                                     "displayModeBar": False,
