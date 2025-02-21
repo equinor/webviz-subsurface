@@ -54,6 +54,26 @@ def publish_and_get_surface_metadata(
             *_publish_and_get_truncated_surface_metadata(server, provider, address),
             None,
         )
+    address_map_attribute = next(
+        (
+            key
+            for key, value in map_attribute_names.filtered_values.items()
+            if value == address.attribute
+        ),
+        None,
+    )
+    assert address_map_attribute is not None
+    if MapType[address_map_attribute.name].value == "MIGRATION_TIME" and isinstance(
+        address, StatisticalSurfaceAddress
+    ):
+        return (
+            *_publish_and_get_statistical_time_surface_metadata(
+                server,
+                provider,
+                address,
+            ),
+            None,
+        )
     provider_id: str = provider.provider_id()
     qualified_address = QualifiedSurfaceAddress(provider_id, address)
     surf_meta = server.get_surface_metadata(qualified_address)
@@ -67,15 +87,7 @@ def publish_and_get_surface_metadata(
         if not surface:
             warnings.warn(f"Could not find surface file with properties: {address}")
             return None, None, None
-        address_map_attribute = next(
-            (
-                key
-                for key, value in map_attribute_names.filtered_values.items()
-                if value == address.attribute
-            ),
-            None,
-        )
-        assert address_map_attribute is not None
+
         if MapType[address_map_attribute.name].value == "MASS":
             surface.values = surface.values / SCALE_DICT[visualization_info["unit"]]
             summed_mass = np.ma.sum(surface.values)
@@ -144,3 +156,84 @@ def _generate_surface(
     template.values = plume_count
     template.values.mask = plume_count < 1e-4  # type: ignore
     return template
+
+
+def _publish_and_get_statistical_time_surface_metadata(
+    server: SurfaceImageServer,
+    provider: EnsembleSurfaceProvider,
+    address: StatisticalSurfaceAddress,
+) -> Tuple[Optional[SurfaceImageMeta], str]:
+    qualified_address = QualifiedSurfaceAddress(
+        provider.provider_id(),
+        StatisticalSurfaceAddress(
+            address.attribute,
+            address.name,
+            address.datestr,
+            address.statistic,
+            address.realizations,
+        ),
+    )
+    surf_meta = server.get_surface_metadata(qualified_address)
+    if surf_meta is None:
+        surface = _generate_statisical_time_surface(provider, address)
+        if surface is None:
+            raise ValueError(f"Could not generate surface for address: {address}")
+        server.publish_surface(qualified_address, surface)
+        surf_meta = server.get_surface_metadata(qualified_address)
+    return surf_meta, server.encode_partial_url(qualified_address)
+
+
+def _generate_statisical_time_surface(
+    provider: EnsembleSurfaceProvider,
+    address: StatisticalSurfaceAddress,
+) -> Optional[xtgeo.RegularSurface]:
+    surfaces = [
+        provider.get_surface(
+            SimulatedSurfaceAddress(
+                attribute=address.attribute,
+                name=address.name,
+                datestr=address.datestr,
+                realization=r,
+            )
+        )
+        for r in address.realizations
+    ]
+    surfaces = [s for s in surfaces if s is not None]
+    if len(surfaces) == 0:
+        return None
+    statistical_map = _statistics_on_time_map(surfaces, address.statistic)
+    if statistical_map is None:
+        return None
+    template: xtgeo.RegularSurface = surfaces[0].copy()  # type: ignore
+    template.values = statistical_map
+    return template
+
+
+# pylint: disable=too-many-return-statements
+def _statistics_on_time_map(
+    surfaces: List[xtgeo.RegularSurface],
+    statistic: SurfaceStatistic,
+) -> Optional[np.ndarray]:
+    maps = np.zeros((len(surfaces), *surfaces[0].values.shape))
+    for i, surface in enumerate(surfaces):
+        maps[i, :, :] = surface.values
+        masked = np.where(surface.values.mask)
+        maps[i, masked[0], masked[1]] = np.inf
+    if statistic == SurfaceStatistic.MEAN:
+        return _turn_inf_to_nan(np.mean(maps, axis=0))
+    if statistic == SurfaceStatistic.STDDEV:
+        return _turn_inf_to_nan(np.std(maps, axis=0))
+    if statistic == SurfaceStatistic.MINIMUM:
+        return _turn_inf_to_nan(np.min(maps, axis=0))
+    if statistic == SurfaceStatistic.MAXIMUM:
+        return _turn_inf_to_nan(np.max(maps, axis=0))
+    if statistic == SurfaceStatistic.P10:
+        return _turn_inf_to_nan(np.percentile(maps, 10, axis=0))
+    if statistic == SurfaceStatistic.P90:
+        return _turn_inf_to_nan(np.percentile(maps, 90, axis=0))
+    return None
+
+
+def _turn_inf_to_nan(surface: np.ndarray) -> np.ndarray:
+    surface[np.where(surface == np.inf)] = np.nan
+    return surface
