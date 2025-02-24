@@ -422,19 +422,18 @@ def _change_names(
         df["name"] = df["name"].replace(f"{m}, all", m)
 
 
-def _adjust_figure(fig: go.Figure, plot_title: Optional[str] = None) -> None:
+def _adjust_figure(fig: go.Figure, plot_title: str) -> None:
     fig.layout.legend.orientation = "v"
     fig.layout.legend.title.text = ""
     fig.layout.legend.itemwidth = 40
     fig.layout.xaxis.exponentformat = "power"
-    if plot_title is not None:
-        fig.layout.title.text = plot_title
-        fig.layout.title.font = {"size": 14}
-        fig.layout.margin.t = 40
-        fig.layout.title.y = 0.95
-    else:
-        fig.layout.margin.t = 15
+
+    fig.layout.title.text = plot_title
+    fig.layout.title.font = {"size": 14}
+    fig.layout.margin.t = 40
+    fig.layout.title.y = 0.95
     fig.layout.title.x = 0.4
+
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
     fig.layout.margin.b = 6
     fig.layout.margin.l = 10
@@ -508,7 +507,7 @@ def generate_co2_volume_figure(
     )
     fig.layout.yaxis.title = "Realization"
     fig.layout.xaxis.title = scale.value
-    _adjust_figure(fig, plot_title=containment_info["date_option"])
+    _adjust_figure(fig, plot_title=_make_title(containment_info))
     return fig
 
 
@@ -562,7 +561,7 @@ def generate_co2_time_containment_one_realization_figure(
     fig.layout.yaxis.range = y_limits
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
-    _adjust_figure(fig)
+    _adjust_figure(fig, plot_title=_make_title(containment_info, include_date=False))
     return fig
 
 
@@ -808,7 +807,7 @@ def generate_co2_time_containment_figure(
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
     fig.layout.yaxis.autorange = True
-    _adjust_figure(fig)
+    _adjust_figure(fig, plot_title=_make_title(containment_info, include_date=False))
     return fig
 
 
@@ -860,6 +859,72 @@ def generate_co2_statistics_figure(
     fig.layout.legend.tracegroupgap = 0
     fig.layout.xaxis.title = scale.value
     fig.layout.yaxis.title = "Probability"
-    _adjust_figure(fig, plot_title=containment_info["date_option"])
+    _adjust_figure(fig, plot_title=_make_title(containment_info))
 
     return fig
+
+
+def generate_co2_box_plot_figure(
+    table_provider: ContainmentDataProvider,
+    realizations: List[int],
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    containment_info: Dict[str, Any],
+) -> go.Figure:
+    date_option = containment_info["date_option"]
+    df = _read_co2_volumes(table_provider, realizations, scale)
+    df = df[df["date"] == date_option]
+    df = df.drop(columns=["date"]).reset_index(drop=True)
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    _filter_columns(df, color_choice, mark_choice, containment_info)
+    cat_ord, colors, _ = _prepare_pattern_and_color_options_statistics_plot(
+        df,
+        containment_info,
+        color_choice,
+        mark_choice,
+    )
+
+    fig = px.box(
+        df,
+        x=mark_choice if mark_choice != "none" else None,
+        y="amount",
+        color="type",
+        color_discrete_sequence=colors,
+        points="all" if containment_info["box_show_points"] else "outliers",
+        category_orders=cat_ord,
+        hover_data=["realization"],
+    )
+
+    default_option = _find_default_option_statistics_figure(df, cat_ord["type"])
+    for trace in fig.data:
+        if trace.name != default_option:
+            trace.visible = "legendonly"
+
+    fig.update_traces(
+        hovertemplate="Type: %{data.name}<br>Amount: %{y:.3f}<br>"
+        "Realization: %{customdata[0]}<extra></extra>",
+    )
+
+    fig.layout.yaxis.autorange = True
+    fig.layout.legend.tracegroupgap = 0
+    fig.layout.yaxis.title = scale.value
+    _adjust_figure(fig, plot_title=_make_title(containment_info))
+
+    return fig
+
+
+def _make_title(containment_info: Dict[str, Any], include_date: bool = True):
+    components = []
+    if containment_info["containment"] != "total":
+        components.append(containment_info["containment"].capitalize())
+    if containment_info["phase"] != "total":
+        components.append(containment_info["phase"].capitalize())
+    if containment_info["zone"] != "all":
+        components.append(containment_info["zone"])
+    if containment_info["region"] != "all":
+        components.append(containment_info["region"])
+    if containment_info["plume_group"] != "all":
+        components.append(containment_info["plume_group"])
+    if include_date:
+        components.append(containment_info["date_option"])
+    return " - ".join(components)
