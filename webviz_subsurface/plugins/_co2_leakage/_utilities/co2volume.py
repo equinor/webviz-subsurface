@@ -768,9 +768,9 @@ def generate_co2_time_containment_figure(
             )
         df_mean = df_grouped.agg("mean")
         df_mean["realization"] = ["mean"] * df_mean.shape[0]
-        df_p10 = df_grouped.agg(lambda x: np.quantile(x, 0.1))
+        df_p10 = df_grouped.agg(lambda x: np.quantile(x, 0.9))
         df_p10["realization"] = ["p10"] * df_p10.shape[0]
-        df_p90 = df_grouped.agg(lambda x: np.quantile(x, 0.9))
+        df_p90 = df_grouped.agg(lambda x: np.quantile(x, 0.1))
         df_p90["realization"] = ["p90"] * df_p90.shape[0]
         df = (
             pd.concat([df_mean, df_p10, df_p90])
