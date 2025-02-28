@@ -191,6 +191,8 @@ class CO2Leakage(WebvizPluginABC):
             "unit": "tons",
         }
         self._plot_id = ""
+        self._visibilities = {}
+        self._prev_pids = []
         self._color_tables = co2leakage_color_tables()
         self._well_pick_names: Dict[str, List[str]] = {
             ens: (
@@ -274,6 +276,12 @@ class CO2Leakage(WebvizPluginABC):
                     self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
                     "figure",
                 ),
+                State(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
+                State(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
+                State(
+                    self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
+                    "figure",
+                ),
                 Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
                 Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
                 Input(self._settings_component(ViewSettings.Ids.CO2_SCALE), "value"),
@@ -306,6 +314,9 @@ class CO2Leakage(WebvizPluginABC):
             )
             @callback_typecheck
             def update_graphs(
+                fig0: go.Figure,
+                fig1: go.Figure,
+                fig2: go.Figure,
                 ensemble: str,
                 source: GraphSource,
                 co2_scale: Union[Co2MassScale, Co2VolumeScale],
@@ -348,6 +359,19 @@ class CO2Leakage(WebvizPluginABC):
                     GraphSource.CONTAINMENT_MASS,
                     GraphSource.CONTAINMENT_ACTUAL_VOLUME,
                 ]:
+                    if len(self._prev_pids) > 0:
+                        """
+                        Each element in fig0[i]["data"] / fig1[i]["data"] / fig2[i]["data"] is a dict
+                        In these, there is or isn't a 'visible': 'legendonly',
+                        indicating whether the data corresponding to that legend is visible.
+                        It should be possible to make some function that iterates and stores
+                        the status of each element, and then set these where indicated further down.
+                        """
+                        dummydummy = 1337
+                        #self._visibilities[self._prev_pids[0]] = find_visibilities_func(fig0)
+                        #self._visibilities[self._prev_pids[1]] = find_visibilities_func(fig1)
+                        #self._visibilities[self._prev_pids[2]] = find_visibilities_func(fig2)
+
                     plot_ids = make_plot_ids(
                         ensemble,
                         source,
@@ -358,6 +382,7 @@ class CO2Leakage(WebvizPluginABC):
                         statistics_tab_option,
                         len(figs),
                     )
+                    self._prev_pids = plot_ids
                     cont_info["update_first_figure"] = self._plot_id != plot_ids[0]
                     self._plot_id = plot_ids[0]
                     y_limits = [
@@ -387,6 +412,15 @@ class CO2Leakage(WebvizPluginABC):
                             cont_info,
                         )
                     set_plot_ids(figs, plot_ids)
+                    for i, pid in enumerate(plot_ids):
+                        if i > 0 or cont_info["update_first_figure"]:
+                            if pid in self._visibilities.keys():
+                                dummydummy = 42
+                                """
+                                Here we can take the visibility statuses stored the last time that
+                                the figure had the same pid
+                                """
+                                #set_visibilities_func(figs[i], self._visibilities[pid])
                 elif source == GraphSource.UNSMRY:
                     if self._unsmry_providers is not None:
                         if ensemble in self._unsmry_providers:

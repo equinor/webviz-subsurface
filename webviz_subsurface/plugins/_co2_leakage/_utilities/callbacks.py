@@ -544,6 +544,15 @@ def make_plot_ids(
     statistics_tab_option: str,
     num_figs: int,
 ) -> List[str]:
+    """
+    Removed some keywords from plot id that we don't want to trigger updates for
+    with respect to visible legends and potentially zoom level.
+
+    Note: Currently the legends are reset if you swap to a plot with different plot id
+    and back, so it works temporarily, in a sense. This might be good enough for now.
+    If we want to store it more extensively, we need to do something like what's been
+    outlined in _plugin.py.
+    """
     zone_str = (
         containment_info["zone"] if containment_info["zone"] is not None else "None"
     )
@@ -573,12 +582,18 @@ def make_plot_ids(
             containment_info["color_choice"],
             mark_choice_str,
             containment_info["sorting"],
-            containment_info["date_option"],
+            #containment_info["date_option"],
+            """
+            'sorting' might be scary to remove if we want to follow the outline in
+            _plugin.py, unless you keep track of the elements in figure['data'] beyond
+            just their order.
+            """
         )
     )
-    ids = [plot_id]
-    ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
-    ids[1] += f"-{lines_to_show}"
+    ids = [plot_id] * num_figs
+    #ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
+    #ids[1] += f"-{lines_to_show}"
+    ids[1] += "-single" if len(realizations) == 1 else "-multiple"
     ids[2] += f"-{statistics_tab_option}"
     return ids
 
