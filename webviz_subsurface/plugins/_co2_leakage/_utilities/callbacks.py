@@ -487,7 +487,7 @@ def process_containment_info(
     lines_to_show: str,
     date_option: str,
     statistics_tab_option: str,
-    box_show_points: bool,
+    box_show_points: str,
     menu_options: MenuOptions,
 ) -> Dict[str, Union[str, None, List[str], int]]:
     if mark_choice is None:

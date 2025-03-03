@@ -1170,17 +1170,29 @@ class GraphSelectorsLayout(wcc.Selectors):
                     ],
                 ),
                 html.Div(
-                    "Box plot options:",
+                    "Box plot points to show:",
                     style={"margin-top": "10px"},
                 ),
                 html.Div(
                     [
-                        dcc.Checklist(
-                            ["Show realization points"],
-                            [],  # Default False
+                        dcc.RadioItems(
+                            options=[
+                                {"label": "All", "value": "all_points"},
+                                {"label": "Outliers", "value": "only_outliers"},
+                                {
+                                    "label": "None",
+                                    "value": "no_points",
+                                },
+                            ],
+                            value="only_outliers",
                             id=containment_ids[19],
+                            inline=True,
                         ),
-                    ]
+                    ],
+                    style={
+                        "display": "flex",
+                        "flex-direction": "row",
+                    },
                 ),
             ],
         )

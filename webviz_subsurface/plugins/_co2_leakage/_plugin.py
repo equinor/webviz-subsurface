@@ -325,7 +325,7 @@ class CO2Leakage(WebvizPluginABC):
                 lines_to_show: str,
                 date_option: str,
                 statistics_tab_option: str,
-                box_show_points: bool,
+                box_show_points: str,
             ) -> Tuple[Dict, go.Figure, go.Figure, go.Figure]:
                 # pylint: disable=too-many-locals
                 figs = [no_update] * 3
