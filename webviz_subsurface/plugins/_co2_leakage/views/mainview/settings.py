@@ -866,7 +866,7 @@ class GraphSelectorsLayout(wcc.Selectors):
         disp_zone = "flex" if content["zones"] else "none"
         disp_region = "flex" if content["regions"] else "none"
         disp_plume_group = "flex" if content["plume_groups"] else "none"
-        color_options = [{"label": "Containment (standard)", "value": "containment"}]
+        color_options = [{"label": "Containment", "value": "containment"}]
         mark_options = [{"label": "Phase", "value": "phase"}]
         if content["zones"]:
             color_options.append({"label": "Zone", "value": "zone"})
@@ -1037,7 +1037,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 "Containment",
                                 wcc.Dropdown(
                                     options=[
-                                        {"label": "Total", "value": "total"},
+                                        {"label": "All areas", "value": "total"},
                                         {"label": "Contained", "value": "contained"},
                                         {"label": "Outside", "value": "outside"},
                                         {"label": "Hazardous", "value": "hazardous"},
@@ -1179,10 +1179,6 @@ class GraphSelectorsLayout(wcc.Selectors):
                             options=[
                                 {"label": "All", "value": "all_points"},
                                 {"label": "Outliers", "value": "only_outliers"},
-                                {
-                                    "label": "None",
-                                    "value": "no_points",
-                                },
                             ],
                             value="only_outliers",
                             id=containment_ids[19],

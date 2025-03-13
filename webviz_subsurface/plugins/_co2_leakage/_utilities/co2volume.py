@@ -871,7 +871,6 @@ def generate_co2_box_plot_figure(
     containment_info: Dict[str, Any],
 ) -> go.Figure:
     eps = 0.00001
-    containment_info["sorting"] = "marking"  # Always override this for the box plot
     date_option = containment_info["date_option"]
     df = _read_co2_volumes(table_provider, realizations, scale)
     df = df[df["date"] == date_option]
@@ -887,15 +886,7 @@ def generate_co2_box_plot_figure(
         mark_choice,
     )
 
-    if containment_info["box_show_points"] == "all_points":
-        points = "all"
-    elif containment_info["box_show_points"] == "only_outliers":
-        points = "outliers"
-    else:
-        points = False
-
     fig = go.Figure()
-
     for count, type_val in enumerate(cat_ord["type"], 0):
         df_sub = df[df["type"] == type_val]
         values = df_sub["amount"].to_numpy()
@@ -904,7 +895,9 @@ def generate_co2_box_plot_figure(
         median_val = df_sub["amount"].median()
         q1 = _calculate_plotly_quantiles(values, 0.25)
         q3 = _calculate_plotly_quantiles(values, 0.75)
-        min_fence, max_fence = _calculate_plotly_whiskers(values, q1, q3, points)
+        p10 = np.percentile(values, 90)
+        p90 = np.percentile(values, 10)
+        min_fence, max_fence = _calculate_plotly_whiskers(values, q1, q3)
 
         fig.add_trace(
             go.Box(
@@ -912,7 +905,7 @@ def generate_co2_box_plot_figure(
                 y=values,
                 name=type_val,
                 marker_color=colors[count],
-                boxpoints=points,
+                boxpoints="all" if containment_info["box_show_points"] == "all_points" else "outliers",
                 customdata=real,
                 hovertemplate="<span style='font-family:Courier New;'>"
                 "Type       : %{data.name}<br>Amount     : %{y:.3f}<br>"
@@ -932,14 +925,16 @@ def generate_co2_box_plot_figure(
                 hoverinfo="none",
                 hovertemplate=(
                     "<span style='font-family:Courier New;'>"
-                    f"Type         : {type_val}<br>"
-                    f"Max          : {values.max():.3f}<br>"
-                    f"Top whisker  : {max_fence:.3f}<br>"
-                    f"Q3           : {q3:.3f}<br>"
-                    f"Median       : {median_val:.3f}<br>"
-                    f"Q1           : {q1:.3f}<br>"
-                    f"Lower whisker: {min_fence:.3f}<br>"
-                    f"Min          : {values.min():.3f}"
+                    f"Type           : {type_val}<br>"
+                    f"Max            : {values.max():.3f}<br>"
+                    f"Top whisker    : {max_fence:.3f}<br>"
+                    f"p10 (not shown): {p10:.3f}<br>"
+                    f"Q3             : {q3:.3f}<br>"
+                    f"Median         : {median_val:.3f}<br>"
+                    f"Q1             : {q1:.3f}<br>"
+                    f"p90 (not shown): {p90:.3f}<br>"
+                    f"Lower whisker  : {min_fence:.3f}<br>"
+                    f"Min            : {values.min():.3f}"
                     "</span><extra></extra>"
                 ),
                 showlegend=False,
@@ -1031,13 +1026,10 @@ def _calculate_plotly_quantiles(values: np.ndarray[float], percentile: float):
 
 
 def _calculate_plotly_whiskers(
-    values: np.ndarray[float], q1: float, q3: float, points: Union[str, bool]
+    values: np.ndarray[float], q1: float, q3: float
 ):
-    if not points:
-        return min(values), max(values)
-    else:
-        values_sorted = values.copy()
-        values_sorted.sort()
-        a = q1 - 1.5 * (q3 - q1)
-        b = q3 + 1.5 * (q3 - q1)
-        return values[values >= a].min(), values[values <= b].max()
+    values_sorted = values.copy()
+    values_sorted.sort()
+    a = q1 - 1.5 * (q3 - q1)
+    b = q3 + 1.5 * (q3 - q1)
+    return values[values >= a].min(), values[values <= b].max()
