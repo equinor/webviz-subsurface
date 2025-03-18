@@ -104,7 +104,7 @@ class CO2Leakage(WebvizPluginABC):
         ensembles: List[str],
         well_pick_file: Optional[str] = None,
         plume_mass_relpath: str = TABLES_PATH + "/plume_mass.csv",
-        plume_actual_volume_relpath: str = TABLES_PATH + "/plume_actual_volume.csv",
+        plume_actual_volume_relpath: Optional[str] = None,
         unsmry_relpath: Optional[str] = None,
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         initial_surface: Optional[str] = None,
