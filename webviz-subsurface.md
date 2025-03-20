@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.36` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.37` of `webviz-subsurface`.
 
 
 
@@ -131,8 +131,6 @@ Plugin for analyzing CO2 leakage potential across multiple realizations in an FM
 ensemble
 
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-* **`file_containment_boundary`:** Path to a polygon representing the containment area
-* **`file_hazardous_boundary`:** Path to a polygon representing the hazardous area
 * **`well_pick_file`:** Path to a file containing well picks
 * **`plume_mass_relpath`:** Path to a table of co2 containment data (amount of
     CO2 outside/inside a boundary), for co2 mass. Relative to each realization.
@@ -151,12 +149,12 @@ ensemble
     names and surface names used in the well pick file
 * **`map_surface_names_to_fault_polygons`:** Optional mapping between surface map
     names and surface names used by the fault polygons
+* **`boundary_settings`:** Settings (paths etc) for polygons representing the
+    containment and hazardous areas
 
 
 
 <!-- tab:Arguments -->
-
-
 
 
 
@@ -189,8 +187,6 @@ How to use in YAML config file:
 ```yaml
     - CO2Leakage:
         ensembles:  # Required, type List[str].
-        file_containment_boundary:  # Optional, type Union[str, NoneType].
-        file_hazardous_boundary:  # Optional, type Union[str, NoneType].
         well_pick_file:  # Optional, type Union[str, NoneType].
         plume_mass_relpath:  # Optional, type str.
         plume_actual_volume_relpath:  # Optional, type str.
@@ -200,6 +196,7 @@ How to use in YAML config file:
         map_attribute_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
         map_surface_names_to_well_pick_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
         map_surface_names_to_fault_polygons:  # Optional, type Union[typing.Dict[str, str], NoneType].
+        boundary_settings:  # Optional, type Union[webviz_subsurface.plugins._co2_leakage._utilities.generic.BoundarySettings, NoneType].
 ```
 
 
