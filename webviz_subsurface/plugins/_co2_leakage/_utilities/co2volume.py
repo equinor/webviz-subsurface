@@ -228,7 +228,7 @@ def _prepare_pattern_and_color_options_statistics_plot(
 
 
 def _find_default_option_statistics_figure(
-    df: pd.DataFrame, categories: list[str]
+    df: pd.DataFrame, categories: List[str]
 ) -> str:
     if "hazardous" in categories:
         default_option = "hazardous"

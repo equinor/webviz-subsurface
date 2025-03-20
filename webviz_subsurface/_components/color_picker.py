@@ -171,7 +171,7 @@ class ColorPicker:
             if not cell:
                 raise PreventUpdate
             row_no = cell["row"]
-            return dash_daq.ColorPicker(  # pylint: disable=not-callable
+            return dash_daq.ColorPicker(
                 {"id": self._uuid, "element": "picker"},
                 label=f"Color for {[col for col in self._dframe.iloc[row_no] if col != 'COLOR']}",
                 value={"hex": current_color_store[row_no]},
