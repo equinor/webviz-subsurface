@@ -1,10 +1,10 @@
-import glob
 import logging
 import os
 import warnings
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from fmu.ensemble import ScratchEnsemble
 from webviz_config import WebvizSettings
 
 from webviz_subsurface._providers import (
@@ -13,37 +13,80 @@ from webviz_subsurface._providers import (
     EnsembleTableProvider,
     EnsembleTableProviderFactory,
 )
-from webviz_subsurface._utils.webvizstore_functions import read_csv
-from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
-    read_menu_options,
+from webviz_subsurface._providers.ensemble_polygon_provider import PolygonServer
+from webviz_subsurface._providers.ensemble_surface_provider._surface_discovery import (
+    discover_per_realization_surface_files,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
+    ContainmentDataProvider,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.ensemble_well_picks import (
+    EnsembleWellPicks,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+    BoundarySettings,
+    FilteredMapAttribute,
     GraphSource,
     MapAttribute,
+    MapNamingConvention,
+    MenuOptions,
 )
-from webviz_subsurface.plugins._map_viewer_fmu._tmp_well_pick_provider import (
-    WellPickProvider,
+from webviz_subsurface.plugins._co2_leakage._utilities.polygon_handler import (
+    PolygonHandler,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.unsmry_data_provider import (
+    UnsmryDataProvider,
 )
 
 LOGGER = logging.getLogger(__name__)
+LOGGER_TO_SUPPRESS = logging.getLogger(
+    "webviz_subsurface._providers.ensemble_summary_provider._arrow_unsmry_import"
+)
+LOGGER_TO_SUPPRESS.setLevel(logging.ERROR)  # We replace the given warning with our own
 WARNING_THRESHOLD_CSV_FILE_SIZE_MB = 100.0
 
 
+def build_mapping(
+    webviz_settings: WebvizSettings,
+    ensembles: List[str],
+) -> Dict[str, str]:
+    available_attrs_per_ensemble = [
+        discover_per_realization_surface_files(
+            webviz_settings.shared_settings["scratch_ensembles"][ens],
+            "share/results/maps",
+        )
+        for ens in ensembles
+    ]
+    full_attr_list = [
+        [attr.attribute for attr in ens] for ens in available_attrs_per_ensemble
+    ]
+    unique_attributes = set()
+    for ens_attr in full_attr_list:
+        unique_attributes.update(ens_attr)
+    unique_attributes_list = list(unique_attributes)
+    mapping = {}
+    for attr in unique_attributes_list:
+        for name_convention in MapNamingConvention:
+            if attr == name_convention.value:
+                attribute_key = MapAttribute[name_convention.name].name
+                mapping[attribute_key] = attr
+                break
+    return mapping
+
+
 def init_map_attribute_names(
-    mapping: Optional[Dict[str, str]]
-) -> Dict[MapAttribute, str]:
+    webviz_settings: WebvizSettings,
+    ensembles: List[str],
+    mapping: Optional[Dict[str, str]],
+) -> FilteredMapAttribute:
     if mapping is None:
         # Based on name convention of xtgeoapp_grd3dmaps:
-        return {
-            MapAttribute.MIGRATION_TIME_SGAS: "migrationtime_sgas",
-            MapAttribute.MIGRATION_TIME_AMFG: "migrationtime_amfg",
-            MapAttribute.MAX_SGAS: "max_sgas",
-            MapAttribute.MAX_AMFG: "max_amfg",
-            MapAttribute.MASS: "co2-mass-total",
-            MapAttribute.DISSOLVED: "co2-mass-aqu-phase",
-            MapAttribute.FREE: "co2-mass-gas-phase",
-        }
-    return {MapAttribute[key]: value for key, value in mapping.items()}
+        mapping = build_mapping(webviz_settings, ensembles)
+    final_attributes = {
+        (MapAttribute[key].value if key in MapAttribute.__members__ else key): value
+        for key, value in mapping.items()
+    }
+    return FilteredMapAttribute(final_attributes)
 
 
 def init_surface_providers(
@@ -60,105 +103,155 @@ def init_surface_providers(
 
 
 def init_well_pick_provider(
-    well_pick_dict: Dict[str, Optional[str]],
+    ensemble_paths: Dict[str, str],
+    well_pick_path: Optional[str],
     map_surface_names_to_well_pick_names: Optional[Dict[str, str]],
-) -> Dict[str, Optional[WellPickProvider]]:
-    well_pick_provider: Dict[str, Optional[WellPickProvider]] = {}
-    ensembles = list(well_pick_dict.keys())
-    for ens in ensembles:
-        well_pick_path = well_pick_dict[ens]
-        if well_pick_path is None:
-            well_pick_provider[ens] = None
-        else:
-            try:
-                well_pick_provider[ens] = WellPickProvider(
-                    read_csv(well_pick_path), map_surface_names_to_well_pick_names
-                )
-            except OSError:
-                well_pick_provider[ens] = None
-    return well_pick_provider
+) -> Dict[str, EnsembleWellPicks]:
+    if well_pick_path is None:
+        return {}
+
+    return {
+        ens: EnsembleWellPicks(
+            ens_p, well_pick_path, map_surface_names_to_well_pick_names
+        )
+        for ens, ens_p in ensemble_paths.items()
+    }
 
 
-def init_table_provider(
+def init_polygon_provider_handlers(
+    server: PolygonServer,
+    ensemble_paths: Dict[str, str],
+    options: Optional[BoundarySettings],
+) -> Dict[str, PolygonHandler]:
+    filled_options: BoundarySettings = {
+        "polygon_file_pattern": "share/results/polygon/*.csv",
+        "attribute": "boundary",
+        "hazardous_name": "hazardous",
+        "containment_name": "containment",
+    }
+    if options is not None:
+        filled_options.update(options)
+    return {
+        ens: PolygonHandler(
+            server,
+            ens_path,
+            filled_options,
+        )
+        for ens, ens_path in ensemble_paths.items()
+    }
+
+
+def init_unsmry_data_providers(
+    ensemble_roots: Dict[str, str],
+    table_rel_path: Optional[str],
+) -> Dict[str, UnsmryDataProvider]:
+    if table_rel_path is None:
+        return {}
+    factory = EnsembleTableProviderFactory.instance()
+    providers = {
+        ens: _init_ensemble_table_provider(factory, ens, ens_path, table_rel_path)
+        for ens, ens_path in ensemble_roots.items()
+    }
+    return {k: UnsmryDataProvider(v) for k, v in providers.items() if v is not None}
+
+
+def init_containment_data_providers(
     ensemble_roots: Dict[str, str],
     table_rel_path: str,
-) -> Dict[str, EnsembleTableProvider]:
-    providers = {}
+) -> Dict[str, ContainmentDataProvider]:
     factory = EnsembleTableProviderFactory.instance()
-    for ens, ens_path in ensemble_roots.items():
-        max_size_mb = _find_max_file_size_mb(ens_path, table_rel_path)
-        if max_size_mb > WARNING_THRESHOLD_CSV_FILE_SIZE_MB:
-            text = (
-                "Some CSV-files are very large and might create problems when loading."
-            )
-            text += f"\n  ensembles: {ens}"
-            text += f"\n  CSV-files: {table_rel_path}"
-            text += f"\n  Max size : {max_size_mb:.2f} MB"
-            LOGGER.warning(text)
+    providers = {
+        ens: _init_ensemble_table_provider(factory, ens, ens_path, table_rel_path)
+        for ens, ens_path in ensemble_roots.items()
+    }
+    return {
+        k: ContainmentDataProvider(v) for k, v in providers.items() if v is not None
+    }
 
+
+def _init_ensemble_table_provider(
+    factory: EnsembleTableProviderFactory,
+    ens: str,
+    ens_path: str,
+    table_rel_path: str,
+) -> Optional[EnsembleTableProvider]:
+    try:
+        return factory.create_from_per_realization_arrow_file(ens_path, table_rel_path)
+    except (KeyError, ValueError) as exc:
         try:
-            providers[ens] = factory.create_from_per_realization_csv_file(
+            return factory.create_from_per_realization_csv_file(
                 ens_path, table_rel_path
             )
-        except (KeyError, ValueError) as exc:
+        except (KeyError, ValueError) as exc2:
             LOGGER.warning(
-                f'Did not load "{table_rel_path}" for ensemble "{ens}" with error {exc}'
+                f'\nTried reading "{table_rel_path}" for ensemble "{ens}" as csv with'
+                f" error \n- {exc2}, \nand as arrow with error \n- {exc}"
             )
-    return providers
+    return None
 
 
-def _find_max_file_size_mb(ens_path: str, table_rel_path: str) -> float:
-    glob_pattern = os.path.join(ens_path, table_rel_path)
-    paths = glob.glob(glob_pattern)
-    max_size = 0.0
-    for file in paths:
-        if os.path.exists(file):
-            file_stats = os.stat(file)
-            size_in_mb = file_stats.st_size / (1024 * 1024)
-            max_size = max(max_size, size_in_mb)
-    return max_size
+def init_realizations(ensemble_paths: Dict[str, str]) -> Dict[str, List[int]]:
+    realization_per_ens = {}
+    for ens, ens_path in ensemble_paths.items():
+        scratch_ensemble = ScratchEnsemble("dummyEnsembleName", paths=ens_path).filter(
+            "OK"
+        )
+        realization_per_ens[ens] = sorted(list(scratch_ensemble.realizations.keys()))
+    return realization_per_ens
 
 
 def init_menu_options(
     ensemble_roots: Dict[str, str],
-    mass_table: Dict[str, EnsembleTableProvider],
-    actual_volume_table: Dict[str, EnsembleTableProvider],
-    mass_relpath: str,
-    volume_relpath: str,
-) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
-    options: Dict[str, Dict[str, Dict[str, List[str]]]] = {}
+    mass_table: Dict[str, ContainmentDataProvider],
+    actual_volume_table: Dict[str, ContainmentDataProvider],
+    unsmry_providers: Dict[str, UnsmryDataProvider],
+) -> Dict[str, Dict[GraphSource, MenuOptions]]:
+    options: Dict[str, Dict[GraphSource, MenuOptions]] = {}
     for ens in ensemble_roots.keys():
         options[ens] = {}
-        for source, table, relpath in zip(
-            [GraphSource.CONTAINMENT_MASS, GraphSource.CONTAINMENT_ACTUAL_VOLUME],
-            [mass_table, actual_volume_table],
-            [mass_relpath, volume_relpath],
-        ):
-            real = table[ens].realizations()[0]
-            options[ens][source] = read_menu_options(table[ens], real, relpath)
-        options[ens][GraphSource.UNSMRY] = {
-            "zones": [],
-            "regions": [],
-            "phases": ["total", "gas", "aqueous"],
-        }
+        if ens in mass_table:
+            options[ens][GraphSource.CONTAINMENT_MASS] = mass_table[ens].menu_options
+        if ens in actual_volume_table:
+            options[ens][GraphSource.CONTAINMENT_ACTUAL_VOLUME] = actual_volume_table[
+                ens
+            ].menu_options
+        if ens in unsmry_providers:
+            options[ens][GraphSource.UNSMRY] = unsmry_providers[ens].menu_options
     return options
 
 
-def process_files(
-    cont_bound: Optional[str],
-    haz_bound: Optional[str],
-    well_file: Optional[str],
-    ensemble_paths: Dict[str, str],
-) -> List[Dict[str, Optional[str]]]:
-    """
-    Checks if the files exist (otherwise gives a warning and returns None)
-    Concatenates ensemble root dir and path to file if relative
-    """
-    ensembles = list(ensemble_paths.keys())
-    return [
-        {ens: _process_file(source, ensemble_paths[ens]) for ens in ensembles}
-        for source in [cont_bound, haz_bound, well_file]
-    ]
+def init_dictionary_of_content(
+    menu_options: Dict[str, Dict[GraphSource, MenuOptions]],
+    has_maps: bool,
+) -> Dict[str, bool]:
+    options = next(iter(menu_options.values()))
+    content = {
+        "mass": GraphSource.CONTAINMENT_MASS in options,
+        "volume": GraphSource.CONTAINMENT_ACTUAL_VOLUME in options,
+        "unsmry": GraphSource.UNSMRY in options,
+    }
+    content["any_table"] = max(content.values())
+    content["maps"] = has_maps
+    content["zones"] = False
+    content["regions"] = False
+    content["plume_groups"] = False
+    if content["mass"] or content["volume"]:
+        content["zones"] = max(
+            len(inner_dict["zones"]) > 0
+            for outer_dict in menu_options.values()
+            for inner_dict in outer_dict.values()
+        )
+        content["regions"] = max(
+            len(inner_dict["regions"]) > 0
+            for outer_dict in menu_options.values()
+            for inner_dict in outer_dict.values()
+        )
+        content["plume_groups"] = max(
+            len(inner_dict["plume_groups"]) > 0
+            for outer_dict in menu_options.values()
+            for inner_dict in outer_dict.values()
+        )
+    return content
 
 
 def _process_file(file: Optional[str], ensemble_path: str) -> Optional[str]:
