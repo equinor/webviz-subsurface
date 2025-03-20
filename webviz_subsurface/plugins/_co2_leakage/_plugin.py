@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import Dash, Input, Output, State, callback, html, no_update
+from dash import Dash, Input, Output, State, callback, html, no_update, Patch
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -25,7 +25,9 @@ from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import (
     property_origin,
     readable_name,
     set_plot_ids,
+    extract_legendonly,
 )
+from ._types import LegendData
 from webviz_subsurface.plugins._co2_leakage._utilities.fault_polygons_handler import (
     FaultPolygonsHandler,
 )
@@ -191,8 +193,6 @@ class CO2Leakage(WebvizPluginABC):
             "unit": "tons",
         }
         self._plot_id = ""
-        self._visibilities = {}
-        self._prev_pids = []
         self._color_tables = co2leakage_color_tables()
         self._well_pick_names: Dict[str, List[str]] = {
             ens: (
@@ -276,12 +276,7 @@ class CO2Leakage(WebvizPluginABC):
                     self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
                     "figure",
                 ),
-                State(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
-                State(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
-                State(
-                    self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
-                    "figure",
-                ),
+                Input(self._view_component(MapViewElement.Ids.LEGEND_DATA_STORE), "data"),
                 Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
                 Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
                 Input(self._settings_component(ViewSettings.Ids.CO2_SCALE), "value"),
@@ -314,9 +309,7 @@ class CO2Leakage(WebvizPluginABC):
             )
             @callback_typecheck
             def update_graphs(
-                fig0: go.Figure,
-                fig1: go.Figure,
-                fig2: go.Figure,
+                legend_data: LegendData,
                 ensemble: str,
                 source: GraphSource,
                 co2_scale: Union[Co2MassScale, Co2VolumeScale],
@@ -359,19 +352,6 @@ class CO2Leakage(WebvizPluginABC):
                     GraphSource.CONTAINMENT_MASS,
                     GraphSource.CONTAINMENT_ACTUAL_VOLUME,
                 ]:
-                    if len(self._prev_pids) > 0:
-                        """
-                        Each element in fig0[i]["data"] / fig1[i]["data"] / fig2[i]["data"] is a dict
-                        In these, there is or isn't a 'visible': 'legendonly',
-                        indicating whether the data corresponding to that legend is visible.
-                        It should be possible to make some function that iterates and stores
-                        the status of each element, and then set these where indicated further down.
-                        """
-                        dummydummy = 1337
-                        #self._visibilities[self._prev_pids[0]] = find_visibilities_func(fig0)
-                        #self._visibilities[self._prev_pids[1]] = find_visibilities_func(fig1)
-                        #self._visibilities[self._prev_pids[2]] = find_visibilities_func(fig2)
-
                     plot_ids = make_plot_ids(
                         ensemble,
                         source,
@@ -382,7 +362,6 @@ class CO2Leakage(WebvizPluginABC):
                         statistics_tab_option,
                         len(figs),
                     )
-                    self._prev_pids = plot_ids
                     cont_info["update_first_figure"] = self._plot_id != plot_ids[0]
                     self._plot_id = plot_ids[0]
                     y_limits = [
@@ -399,6 +378,7 @@ class CO2Leakage(WebvizPluginABC):
                             realizations,
                             y_limits,
                             cont_info,
+                            legend_data,
                         )
                     elif (
                         source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
@@ -410,17 +390,9 @@ class CO2Leakage(WebvizPluginABC):
                             realizations,
                             y_limits,
                             cont_info,
+                            legend_data,
                         )
                     set_plot_ids(figs, plot_ids)
-                    for i, pid in enumerate(plot_ids):
-                        if i > 0 or cont_info["update_first_figure"]:
-                            if pid in self._visibilities.keys():
-                                dummydummy = 42
-                                """
-                                Here we can take the visibility statuses stored the last time that
-                                the figure had the same pid
-                                """
-                                #set_visibilities_func(figs[i], self._visibilities[pid])
                 elif source == GraphSource.UNSMRY:
                     if self._unsmry_providers is not None:
                         if ensemble in self._unsmry_providers:
@@ -437,6 +409,8 @@ class CO2Leakage(WebvizPluginABC):
                              Please use unsmry_relpath in the configuration."""
                         )
                 return figs  # type: ignore
+
+            self._define_legend_change_callbacks()
 
             @callback(
                 Output(self._settings_component(ViewSettings.Ids.CO2_SCALE), "options"),
@@ -808,3 +782,44 @@ class CO2Leakage(WebvizPluginABC):
                     styles = [{"display": "none"}] * 3
 
                 return [top_style, bottom_style] + styles
+
+    def _define_legend_change_callbacks(self):
+        @callback(
+            Output(self._view_component(MapViewElement.Ids.LEGEND_DATA_STORE), "data"),
+            Input(self._view_component(MapViewElement.Ids.BAR_PLOT), "restyleData"),
+            State(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
+            Input(self._view_component(MapViewElement.Ids.TIME_PLOT), "restyleData"),
+            State(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
+            Input(self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "restyleData"),
+            State(self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "figure"),
+        )
+        def on_bar_legend_update(
+            bar_event: List[Any],
+            bar_figure: go.Figure,
+            time_event: List[Any],
+            time_figure: go.Figure,
+            stats_event: List[Any],
+            stats_figure: go.Figure,
+        ):
+            # We cannot subscribe to a legend click event directly, but we can subscribe
+            # to the more general "restyleData" event, and then try to identify if this
+            # was a click event or not. If yes, we update the appropriate store component
+            p = Patch()
+            if self._is_legend_click_event(bar_event):
+                p["bar_legendonly"] = extract_legendonly(bar_figure)
+            if self._is_legend_click_event(time_event):
+                p["time_legendonly"] = extract_legendonly(time_figure)
+            if self._is_legend_click_event(stats_event):
+                p["stats_legendonly"] = extract_legendonly(stats_figure)
+            return p
+
+    @staticmethod
+    def _is_legend_click_event(event: List[Any]) -> bool:
+        # A typical legend click event would be: [{'visible': ['legendonly']}, [1]]
+        if event is None or not isinstance(event, list):
+            return False
+        return any(
+            'legendonly' in e.get('visible', [])
+            for e in event
+            if isinstance(e, dict)
+        )
