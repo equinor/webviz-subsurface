@@ -123,9 +123,14 @@ class SurfaceData:
 
 
 def extract_legendonly(figure: go.Figure) -> List[str]:
-    # Finds the names of the traces in the figure which have their visibility set to
-    # "legendonly". In the figure, these traces are toggled OFF in the legend.
-    return [d['name'] for d in figure['data'] if d.get('visible', '') == 'legendonly']
+    # Finds the names OR legendgroup of the traces in the figure which have their
+    # visibility set to "legendonly". In the figure, these traces are toggled OFF in the
+    # legend.
+    return [
+        d.get('legendgroup', d.get('name'))
+        for d in figure['data']
+        if d.get('visible', '') == 'legendonly'
+    ]
 
 
 def derive_surface_address(

@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import Dash, Input, Output, State, callback, html, no_update, Patch
+from dash import Dash, Input, Output, State, callback, html, no_update, Patch, ctx
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -828,12 +828,19 @@ class CO2Leakage(WebvizPluginABC):
             # to the more general "restyleData" event, and then try to identify if this
             # was a click event or not. If yes, we update the appropriate store component
             p = Patch()
-            if self._is_legend_click_event(bar_event):
-                p["bar_legendonly"] = extract_legendonly(bar_figure)
-            if self._is_legend_click_event(time_event):
-                p["time_legendonly"] = extract_legendonly(time_figure)
-            if self._is_legend_click_event(stats_event):
-                p["stats_legendonly"] = extract_legendonly(stats_figure)
+            _id = ctx.triggered_id
+            if _id is None:
+                return p
+
+            if _id == self._view_component(MapViewElement.Ids.BAR_PLOT):
+                if self._is_legend_click_event(bar_event):
+                    p["bar_legendonly"] = extract_legendonly(bar_figure)
+            elif _id == self._view_component(MapViewElement.Ids.TIME_PLOT):
+                if self._is_legend_click_event(time_event):
+                    p["time_legendonly"] = extract_legendonly(time_figure)
+            elif _id == self._view_component(MapViewElement.Ids.STATISTICS_PLOT):
+                if self._is_legend_click_event(stats_event):
+                    p["stats_legendonly"] = extract_legendonly(stats_figure)
             return p
 
     @staticmethod
@@ -842,7 +849,7 @@ class CO2Leakage(WebvizPluginABC):
         if event is None or not isinstance(event, list):
             return False
         return any(
-            'legendonly' in e.get('visible', [])
+            'visible' in e
             for e in event
             if isinstance(e, dict)
         )

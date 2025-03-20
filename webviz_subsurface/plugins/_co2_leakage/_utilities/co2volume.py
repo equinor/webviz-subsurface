@@ -731,11 +731,11 @@ def generate_co2_time_containment_figure(
         df, containment_info, color_choice, mark_choice
     )
     if legendonly_traces is None:
-        active_cols_at_startup = list(
-            options[options["line_type"].isin(["solid", "0px"])]["name"]
+        inactive_cols_at_startup = list(
+            options[~(options["line_type"].isin(["solid", "0px"]))]["name"]
         )
     else:
-        active_cols_at_startup = legendonly_traces
+        inactive_cols_at_startup = legendonly_traces
     if "plume_group" in df:
         try:
             _connect_plume_groups(df, color_choice, mark_choice)
@@ -754,7 +754,7 @@ def generate_co2_time_containment_figure(
             "legendgroup": name,
             "name": name,
         }
-        if name not in active_cols_at_startup:
+        if name in inactive_cols_at_startup:
             args["visible"] = "legendonly"
         fig.add_scatter(y=[0.0], **dummy_args, **args)
 
@@ -816,7 +816,7 @@ def generate_co2_time_containment_figure(
             }
             if not containment_info["use_stats"]:
                 args["customdata"] = sub_df[sub_df["name"] == name]["prop"]
-            if name not in active_cols_at_startup:
+            if name in inactive_cols_at_startup:
                 args["visible"] = "legendonly"
             fig.add_scatter(
                 y=sub_df[sub_df["name"] == name]["amount"], **args, **common_args
