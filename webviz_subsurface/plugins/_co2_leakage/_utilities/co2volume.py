@@ -611,7 +611,7 @@ def _add_hover_info_in_field(
             p15 = prev_val + 0.15 * amount
             p85 = prev_val + 0.85 * amount
             y_vals = np.linspace(p15, p85, 8).tolist() * len(date_dict[date])
-            y_vals.sort()  # pylint: disable=attr-defined
+            y_vals.sort()  # type: ignore[attr-defined]
             fig.add_trace(
                 go.Scatter(
                     x=date_dict[date] * 8,
