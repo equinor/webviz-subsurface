@@ -29,6 +29,10 @@ _COLOR_TOTAL = "#222222"
 _COLOR_CONTAINED = "#00aa00"
 _COLOR_OUTSIDE = "#006ddd"
 _COLOR_HAZARDOUS = "#dd4300"
+_COLOR_GAS = "#84bc04"
+_COLOR_DISSOLVED = "#208eb7"
+_COLOR_FREE = "#b74532"
+_COLOR_TRAPPED = "#256b33"
 _COLOR_ZONES = [
     "#e91451",
     "#daa218",
@@ -80,6 +84,11 @@ def _read_dataframe(
 def _get_colors(num_cols: int = 3, split: str = "zone") -> List[str]:
     if split == "containment":
         return [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
+    elif split == "phase":
+        if num_cols == 2:
+            return [_COLOR_GAS, _COLOR_DISSOLVED]
+        else:
+            return [_COLOR_FREE, _COLOR_TRAPPED, _COLOR_DISSOLVED]
     options = list(_COLOR_ZONES)
     if split == "region":
         options.reverse()
@@ -104,6 +113,7 @@ def _get_marks(num_marks: int, mark_choice: str) -> List[str]:
                 f"Some {mark_choice}s will share pattern."
             )
         return base_pattern[:num_marks]
+    # mark_choice == "phase":
     return ["", "/"] if num_marks == 2 else ["", ".", "/"]
 
 
@@ -121,6 +131,7 @@ def _get_line_types(mark_options: List[str], mark_choice: str) -> List[str]:
         return [
             f"{round(i / len(mark_options) * 25)}px" for i in range(len(mark_options))
         ]
+    # mark_choice == "phase":
     return ["dot", "dash"] if "gas" in mark_options else ["dot", "dashdot", "dash"]
 
 
@@ -173,7 +184,7 @@ def _prepare_pattern_and_color_options_statistics_plot(
         mark_options = ["total"] + mark_options
         line_types = ["solid"] + line_types
         num_marks += 1
-    if color_choice == "containment":
+    if color_choice in ["containment", "phase"]:
         color_options = ["total"] + color_options
         colors = ["black"] + colors
         num_colors += 1
@@ -258,11 +269,11 @@ def _prepare_line_type_and_color_options(
     colors = _get_colors(num_colors, color_choice)
 
     filter_mark = True
-    if mark_choice == "phase":
+    if mark_choice in ["containment", "phase"]:
         mark_options = ["total"] + mark_options
         line_types = ["solid"] + line_types
         filter_mark = False
-    if color_choice == "containment":
+    if color_choice in ["containment", "phase"]:
         color_options = ["total"] + color_options
         colors = ["black"] + colors
     else:
@@ -905,7 +916,9 @@ def generate_co2_box_plot_figure(
                 y=values,
                 name=type_val,
                 marker_color=colors[count],
-                boxpoints="all" if containment_info["box_show_points"] == "all_points" else "outliers",
+                boxpoints="all"
+                if containment_info["box_show_points"] == "all_points"
+                else "outliers",
                 customdata=real,
                 hovertemplate="<span style='font-family:Courier New;'>"
                 "Type       : %{data.name}<br>Amount     : %{y:.3f}<br>"
@@ -967,7 +980,7 @@ def generate_co2_box_plot_figure(
     return fig
 
 
-def _make_title(c_info: Dict[str, Any], include_date: bool = True):
+def _make_title(c_info: Dict[str, Any], include_date: bool = True) -> str:
     components = []
     if include_date:
         components.append(c_info["date_option"])
@@ -1014,7 +1027,7 @@ def _make_title(c_info: Dict[str, Any], include_date: bool = True):
     return " - ".join(components)
 
 
-def _calculate_plotly_quantiles(values: np.ndarray[float], percentile: float):
+def _calculate_plotly_quantiles(values: np.ndarray[float], percentile: float) -> float:
     values_sorted = values.copy()
     values_sorted.sort()
     n_val = len(values_sorted)
@@ -1027,7 +1040,7 @@ def _calculate_plotly_quantiles(values: np.ndarray[float], percentile: float):
 
 def _calculate_plotly_whiskers(
     values: np.ndarray[float], q1: float, q3: float
-):
+) -> Tuple[float, float]:
     values_sorted = values.copy()
     values_sorted.sort()
     a = q1 - 1.5 * (q3 - q1)
