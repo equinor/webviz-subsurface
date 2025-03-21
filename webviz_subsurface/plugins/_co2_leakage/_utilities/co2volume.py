@@ -422,19 +422,18 @@ def _change_names(
         df["name"] = df["name"].replace(f"{m}, all", m)
 
 
-def _adjust_figure(fig: go.Figure, plot_title: Optional[str] = None) -> None:
+def _adjust_figure(fig: go.Figure, plot_title: str) -> None:
     fig.layout.legend.orientation = "v"
     fig.layout.legend.title.text = ""
     fig.layout.legend.itemwidth = 40
     fig.layout.xaxis.exponentformat = "power"
-    if plot_title is not None:
-        fig.layout.title.text = plot_title
-        fig.layout.title.font = {"size": 14}
-        fig.layout.margin.t = 40
-        fig.layout.title.y = 0.95
-    else:
-        fig.layout.margin.t = 15
+
+    fig.layout.title.text = plot_title
+    fig.layout.title.font = {"size": 14}
+    fig.layout.margin.t = 40
+    fig.layout.title.y = 0.95
     fig.layout.title.x = 0.4
+
     fig.layout.paper_bgcolor = "rgba(0,0,0,0)"
     fig.layout.margin.b = 6
     fig.layout.margin.l = 10
@@ -508,7 +507,7 @@ def generate_co2_volume_figure(
     )
     fig.layout.yaxis.title = "Realization"
     fig.layout.xaxis.title = scale.value
-    _adjust_figure(fig, plot_title=containment_info["date_option"])
+    _adjust_figure(fig, plot_title=_make_title(containment_info))
     return fig
 
 
@@ -562,7 +561,7 @@ def generate_co2_time_containment_one_realization_figure(
     fig.layout.yaxis.range = y_limits
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
-    _adjust_figure(fig)
+    _adjust_figure(fig, plot_title=_make_title(containment_info, include_date=False))
     return fig
 
 
@@ -756,7 +755,7 @@ def generate_co2_time_containment_figure(
             df_grouped = df_no_real.groupby(
                 ["date", "name", color_choice, mark_choice], as_index=False
             )
-        df_mean = df_grouped.agg(np.mean)
+        df_mean = df_grouped.agg("mean")
         df_mean["realization"] = ["mean"] * df_mean.shape[0]
         df_p10 = df_grouped.agg(lambda x: np.quantile(x, 0.1))
         df_p10["realization"] = ["p10"] * df_p10.shape[0]
@@ -808,7 +807,7 @@ def generate_co2_time_containment_figure(
     fig.layout.xaxis.title = "Time"
     fig.layout.yaxis.title = scale.value
     fig.layout.yaxis.autorange = True
-    _adjust_figure(fig)
+    _adjust_figure(fig, plot_title=_make_title(containment_info, include_date=False))
     return fig
 
 
@@ -860,6 +859,179 @@ def generate_co2_statistics_figure(
     fig.layout.legend.tracegroupgap = 0
     fig.layout.xaxis.title = scale.value
     fig.layout.yaxis.title = "Probability"
-    _adjust_figure(fig, plot_title=containment_info["date_option"])
+    _adjust_figure(fig, plot_title=_make_title(containment_info))
 
     return fig
+
+
+def generate_co2_box_plot_figure(
+    table_provider: ContainmentDataProvider,
+    realizations: List[int],
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    containment_info: Dict[str, Any],
+) -> go.Figure:
+    eps = 0.00001
+    date_option = containment_info["date_option"]
+    df = _read_co2_volumes(table_provider, realizations, scale)
+    df = df[df["date"] == date_option]
+    df = df.drop(columns=["date"]).reset_index(drop=True)
+
+    color_choice = containment_info["color_choice"]
+    mark_choice = containment_info["mark_choice"]
+    _filter_columns(df, color_choice, mark_choice, containment_info)
+    cat_ord, colors, _ = _prepare_pattern_and_color_options_statistics_plot(
+        df,
+        containment_info,
+        color_choice,
+        mark_choice,
+    )
+
+    fig = go.Figure()
+    for count, type_val in enumerate(cat_ord["type"], 0):
+        df_sub = df[df["type"] == type_val]
+        values = df_sub["amount"].to_numpy()
+        real = df_sub["realization"].to_numpy()
+
+        median_val = df_sub["amount"].median()
+        q1 = _calculate_plotly_quantiles(values, 0.25)
+        q3 = _calculate_plotly_quantiles(values, 0.75)
+        p10 = np.percentile(values, 90)
+        p90 = np.percentile(values, 10)
+        min_fence, max_fence = _calculate_plotly_whiskers(values, q1, q3)
+
+        fig.add_trace(
+            go.Box(
+                x=[count] * len(values),
+                y=values,
+                name=type_val,
+                marker_color=colors[count],
+                boxpoints="all"
+                if containment_info["box_show_points"] == "all_points"
+                else "outliers",
+                customdata=real,
+                hovertemplate="<span style='font-family:Courier New;'>"
+                "Type       : %{data.name}<br>Amount     : %{y:.3f}<br>"
+                "Realization: %{customdata}"
+                "</span><extra></extra>",
+                legendgroup=type_val,
+                width=0.55,
+            )
+        )
+
+        fig.add_trace(
+            go.Bar(
+                x=[count],
+                y=[values.max() - values.min() + 2 * eps],
+                base=[values.min() - eps],
+                opacity=0.0,
+                hoverinfo="none",
+                hovertemplate=(
+                    "<span style='font-family:Courier New;'>"
+                    f"Type           : {type_val}<br>"
+                    f"Max            : {values.max():.3f}<br>"
+                    f"Top whisker    : {max_fence:.3f}<br>"
+                    f"p10 (not shown): {p10:.3f}<br>"
+                    f"Q3             : {q3:.3f}<br>"
+                    f"Median         : {median_val:.3f}<br>"
+                    f"Q1             : {q1:.3f}<br>"
+                    f"p90 (not shown): {p90:.3f}<br>"
+                    f"Lower whisker  : {min_fence:.3f}<br>"
+                    f"Min            : {values.min():.3f}"
+                    "</span><extra></extra>"
+                ),
+                showlegend=False,
+                legendgroup=type_val,
+                name=type_val,
+                marker_color=colors[count],
+                width=0.56,
+            )
+        )
+
+    fig.update_layout(
+        xaxis=dict(
+            tickmode="array",
+            tickvals=[i for i in range(len(cat_ord["type"]))],
+            ticktext=cat_ord["type"],
+        )
+    )
+
+    if len(cat_ord["type"]) > 20:
+        default_option = _find_default_option_statistics_figure(df, cat_ord["type"])
+        for trace in fig.data:
+            if trace.name != default_option:
+                trace.visible = "legendonly"
+
+    fig.layout.yaxis.autorange = True
+    fig.layout.legend.tracegroupgap = 0
+    fig.layout.yaxis.title = scale.value
+    _adjust_figure(fig, plot_title=_make_title(containment_info))
+
+    return fig
+
+
+def _make_title(c_info: Dict[str, Any], include_date: bool = True) -> str:
+    components = []
+    if include_date:
+        components.append(c_info["date_option"])
+    if len(c_info["phases"]) > 0 and "phase" not in [
+        c_info["color_choice"],
+        c_info["mark_choice"],
+    ]:
+        if c_info["phase"] != "total":
+            components.append(c_info["phase"].capitalize())
+        else:
+            components.append("Phase: Total")
+    if len(c_info["containments"]) > 0 and "containment" not in [
+        c_info["color_choice"],
+        c_info["mark_choice"],
+    ]:
+        if c_info["containment"] != "total":
+            components.append(c_info["containment"].capitalize())
+        else:
+            components.append("All containments areas")
+    if len(c_info["zones"]) > 0 and "zone" not in [
+        c_info["color_choice"],
+        c_info["mark_choice"],
+    ]:
+        if c_info["zone"] != "all":
+            components.append(c_info["zone"])
+        else:
+            components.append("All zones")
+    if len(c_info["regions"]) > 0 and "region" not in [
+        c_info["color_choice"],
+        c_info["mark_choice"],
+    ]:
+        if c_info["region"] != "all":
+            components.append(c_info["region"])
+        else:
+            components.append("All regions")
+    if len(c_info["plume_groups"]) > 0 and "plume_group" not in [
+        c_info["color_choice"],
+        c_info["mark_choice"],
+    ]:
+        if c_info["plume_group"] != "all":
+            components.append(c_info["plume_group"])
+        else:
+            components.append("All plume groups")
+    return " - ".join(components)
+
+
+def _calculate_plotly_quantiles(values: np.ndarray, percentile: float) -> float:
+    values_sorted = values.copy()
+    values_sorted.sort()
+    n_val = len(values_sorted)
+    a = n_val * percentile - 0.5
+    if a.is_integer():
+        return float(values_sorted[int(a)])
+    else:
+        return float(np.interp(a, [x for x in range(0, n_val)], values_sorted))
+
+
+def _calculate_plotly_whiskers(
+    values: np.ndarray, q1: float, q3: float
+) -> Tuple[float, float]:
+    values_sorted = values.copy()
+    values_sorted.sort()
+    a = q1 - 1.5 * (q3 - q1)
+    b = q3 + 1.5 * (q3 - q1)
+    return values[values >= a].min(), values[values <= b].max()

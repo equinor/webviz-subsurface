@@ -157,8 +157,10 @@ def init_unsmry_data_providers(
 
 def init_containment_data_providers(
     ensemble_roots: Dict[str, str],
-    table_rel_path: str,
+    table_rel_path: Optional[str],
 ) -> Dict[str, ContainmentDataProvider]:
+    if table_rel_path is None:
+        return {}
     factory = EnsembleTableProviderFactory.instance()
     providers = {
         ens: _init_ensemble_table_provider(factory, ens, ens_path, table_rel_path)

@@ -74,6 +74,8 @@ class ViewSettings(SettingsGroupABC):
         PLUME_GROUP_MENU = "plume-group-menu"
         DATE_OPTION = "date-option"
         DATE_OPTION_COL = "date-option-column"
+        STATISTICS_TAB_OPTION = "statistics-tab-option"
+        BOX_SHOW_POINTS = "box-plot-points"
 
         PLUME_THRESHOLD = "plume-threshold"
         PLUME_SMOOTHING = "plume-smoothing"
@@ -185,6 +187,10 @@ class ViewSettings(SettingsGroupABC):
                         self.register_component_unique_id(self.Ids.Y_LIM_OPTIONS),
                         self.register_component_unique_id(self.Ids.DATE_OPTION),
                         self.register_component_unique_id(self.Ids.DATE_OPTION_COL),
+                        self.register_component_unique_id(
+                            self.Ids.STATISTICS_TAB_OPTION
+                        ),
+                        self.register_component_unique_id(self.Ids.BOX_SHOW_POINTS),
                     ],
                     self._content,
                 )
@@ -860,7 +866,7 @@ class GraphSelectorsLayout(wcc.Selectors):
         disp_zone = "flex" if content["zones"] else "none"
         disp_region = "flex" if content["regions"] else "none"
         disp_plume_group = "flex" if content["plume_groups"] else "none"
-        color_options = [{"label": "Containment (standard)", "value": "containment"}]
+        color_options = [{"label": "Containment", "value": "containment"}]
         mark_options = [{"label": "Phase", "value": "phase"}]
         if content["zones"]:
             color_options.append({"label": "Zone", "value": "zone"})
@@ -1031,7 +1037,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 "Containment",
                                 wcc.Dropdown(
                                     options=[
-                                        {"label": "Total", "value": "total"},
+                                        {"label": "All areas", "value": "total"},
                                         {"label": "Contained", "value": "contained"},
                                         {"label": "Outside", "value": "outside"},
                                         {"label": "Hazardous", "value": "hazardous"},
@@ -1143,6 +1149,46 @@ class GraphSelectorsLayout(wcc.Selectors):
                         "flex-direction": "column",
                     },
                     id=containment_ids[15],
+                ),
+                html.Div(
+                    "Statistics tab:",
+                    style={"margin-top": "10px"},
+                ),
+                html.Div(
+                    [
+                        dcc.RadioItems(
+                            options=[
+                                {
+                                    "label": "Probability plot",
+                                    "value": "probability_plot",
+                                },
+                                {"label": "Box plot", "value": "box_plot"},
+                            ],
+                            value="probability_plot",
+                            id=containment_ids[18],
+                        ),
+                    ],
+                ),
+                html.Div(
+                    "Box plot points to show:",
+                    style={"margin-top": "10px"},
+                ),
+                html.Div(
+                    [
+                        dcc.RadioItems(
+                            options=[
+                                {"label": "All", "value": "all_points"},
+                                {"label": "Outliers", "value": "only_outliers"},
+                            ],
+                            value="only_outliers",
+                            id=containment_ids[19],
+                            inline=True,
+                        ),
+                    ],
+                    style={
+                        "display": "flex",
+                        "flex-direction": "row",
+                    },
                 ),
             ],
         )
