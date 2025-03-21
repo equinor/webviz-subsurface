@@ -905,7 +905,9 @@ def generate_co2_box_plot_figure(
                 y=values,
                 name=type_val,
                 marker_color=colors[count],
-                boxpoints="all" if containment_info["box_show_points"] == "all_points" else "outliers",
+                boxpoints="all"
+                if containment_info["box_show_points"] == "all_points"
+                else "outliers",
                 customdata=real,
                 hovertemplate="<span style='font-family:Courier New;'>"
                 "Type       : %{data.name}<br>Amount     : %{y:.3f}<br>"
@@ -967,7 +969,7 @@ def generate_co2_box_plot_figure(
     return fig
 
 
-def _make_title(c_info: Dict[str, Any], include_date: bool = True):
+def _make_title(c_info: Dict[str, Any], include_date: bool = True) -> str:
     components = []
     if include_date:
         components.append(c_info["date_option"])
@@ -1014,20 +1016,20 @@ def _make_title(c_info: Dict[str, Any], include_date: bool = True):
     return " - ".join(components)
 
 
-def _calculate_plotly_quantiles(values: np.ndarray[float], percentile: float):
+def _calculate_plotly_quantiles(values: np.ndarray, percentile: float) -> float:
     values_sorted = values.copy()
     values_sorted.sort()
     n_val = len(values_sorted)
     a = n_val * percentile - 0.5
     if a.is_integer():
-        return values_sorted[int(a)]
+        return float(values_sorted[int(a)])
     else:
-        return np.interp(a, [x for x in range(0, n_val)], values_sorted)
+        return float(np.interp(a, [x for x in range(0, n_val)], values_sorted))
 
 
 def _calculate_plotly_whiskers(
-    values: np.ndarray[float], q1: float, q3: float
-):
+    values: np.ndarray, q1: float, q3: float
+) -> Tuple[float, float]:
     values_sorted = values.copy()
     values_sorted.sort()
     a = q1 - 1.5 * (q3 - q1)
