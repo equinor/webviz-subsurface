@@ -104,7 +104,7 @@ class CO2Leakage(WebvizPluginABC):
         ensembles: List[str],
         well_pick_file: Optional[str] = None,
         plume_mass_relpath: str = TABLES_PATH + "/plume_mass.csv",
-        plume_actual_volume_relpath: str = TABLES_PATH + "/plume_actual_volume.csv",
+        plume_actual_volume_relpath: Optional[str] = None,
         unsmry_relpath: Optional[str] = None,
         fault_polygon_attribute: str = "dl_extracted_faultlines",
         initial_surface: Optional[str] = None,
@@ -296,6 +296,13 @@ class CO2Leakage(WebvizPluginABC):
                 Input(self._settings_component(ViewSettings.Ids.SORT_PLOT), "value"),
                 Input(self._settings_component(ViewSettings.Ids.REAL_OR_STAT), "value"),
                 Input(self._settings_component(ViewSettings.Ids.DATE_OPTION), "value"),
+                Input(
+                    self._settings_component(ViewSettings.Ids.STATISTICS_TAB_OPTION),
+                    "value",
+                ),
+                Input(
+                    self._settings_component(ViewSettings.Ids.BOX_SHOW_POINTS), "value"
+                ),
             )
             @callback_typecheck
             def update_graphs(
@@ -317,6 +324,8 @@ class CO2Leakage(WebvizPluginABC):
                 sorting: str,
                 lines_to_show: str,
                 date_option: str,
+                statistics_tab_option: str,
+                box_show_points: str,
             ) -> Tuple[Dict, go.Figure, go.Figure, go.Figure]:
                 # pylint: disable=too-many-locals
                 figs = [no_update] * 3
@@ -331,6 +340,8 @@ class CO2Leakage(WebvizPluginABC):
                     sorting,
                     lines_to_show,
                     date_option,
+                    statistics_tab_option,
+                    box_show_points,
                     self._menu_options[ensemble][source],
                 )
                 if source in [
@@ -344,6 +355,7 @@ class CO2Leakage(WebvizPluginABC):
                         cont_info,
                         realizations,
                         lines_to_show,
+                        statistics_tab_option,
                         len(figs),
                     )
                     cont_info["update_first_figure"] = self._plot_id != plot_ids[0]
