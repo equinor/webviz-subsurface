@@ -77,14 +77,20 @@ def build_mapping(
 def init_map_attribute_names(
     webviz_settings: WebvizSettings,
     ensembles: List[str],
-    mapping: Optional[Dict[str, str]],
+    input_mapping: Optional[Dict[str, str]],
 ) -> FilteredMapAttribute:
-    if mapping is None:
-        # Based on name convention of xtgeoapp_grd3dmaps:
-        mapping = build_mapping(webviz_settings, ensembles)
+    default_mapping = build_mapping(webviz_settings, ensembles)
+    final_mapping = dict(default_mapping)
+    if input_mapping is not None:
+        for key, value in input_mapping.items():
+            if key in final_mapping and final_mapping[key] != value:
+                LOGGER.info(
+                    f"Conflict on attribute '{key}': prioritizing '{value}' (from input attributes) "
+                    f"over '{final_mapping[key]}' (from default attributes)")
+            final_mapping[key] = value
     final_attributes = {
         (MapAttribute[key].value if key in MapAttribute.__members__ else key): value
-        for key, value in mapping.items()
+        for key, value in final_mapping.items()
     }
     return FilteredMapAttribute(final_attributes)
 
