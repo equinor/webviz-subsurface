@@ -123,14 +123,13 @@ def _get_line_types(mark_options: List[str], mark_choice: str) -> List[str]:
     if mark_choice == "containment":
         return ["dash", "dot", "solid"]
     if mark_choice in ["zone", "region", "plume_group"]:
-        if len(mark_options) > 8:
+        options = ["solid", "dash", "dot", "dashdot", "longdash", "longdashdot"]
+        if len(mark_options) > 6:
             warnings.warn(
                 f"Large number of {mark_choice}s might make it hard "
                 f"to distinguish different dashed lines."
             )
-        return [
-            f"{round(i / len(mark_options) * 25)}px" for i in range(len(mark_options))
-        ]
+        return [options[i % 6] for i in range(len(mark_options))]
     # mark_choice == "phase":
     return ["dot", "dash"] if "gas" in mark_options else ["dot", "dashdot", "dash"]
 
