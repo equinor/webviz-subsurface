@@ -444,7 +444,7 @@ def generate_containment_figures(
                 realizations,
                 co2_scale,
                 containment_info,
-                legenddata["bar_legendonly"],
+                legenddata["box_legendonly"],
             )
     except KeyError as exc:
         warnings.warn(f"Could not generate CO2 figures: {exc}")

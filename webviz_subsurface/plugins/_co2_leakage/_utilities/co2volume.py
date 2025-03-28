@@ -238,9 +238,9 @@ def _prepare_pattern_and_color_options_statistics_plot(
     return cat_ord, colors, line_types
 
 
-def _find_default_option_statistics_figure(
+def _find_default_legendonly(
     df: pd.DataFrame, categories: list[str]
-) -> str:
+) -> List[str]:
     if "hazardous" in categories:
         default_option = "hazardous"
     else:
@@ -251,7 +251,10 @@ def _find_default_option_statistics_figure(
             if df_filtered["amount"].max() > max_value:
                 max_value = df_filtered["amount"].max()
                 default_option = category
-    return default_option
+
+    # The default list should contain all categories HIDDEN in the legend, so we need
+    # to create a copy of the list with default_option excluded instead.
+    return [c for c in categories if c != default_option]
 
 
 def _prepare_line_type_and_color_options(
@@ -866,8 +869,8 @@ def generate_co2_statistics_figure(
     )
 
     if legend_only_traces is None:
-        default_option = _find_default_option_statistics_figure(df, cat_ord["type"])
-        _toggle_trace_visibility(fig.data, [default_option])
+        default_option = _find_default_legendonly(df, cat_ord["type"])
+        _toggle_trace_visibility(fig.data, default_option)
     else:
         _toggle_trace_visibility(fig.data, legend_only_traces)
 
@@ -976,9 +979,9 @@ def generate_co2_box_plot_figure(
         )
     )
 
-    if len(cat_ord["type"]) > 20:
-        default_option = _find_default_option_statistics_figure(df, cat_ord["type"])
-        _toggle_trace_visibility(fig.data, [default_option])
+    if len(cat_ord["type"]) > 20 or legendonly_traces is None:
+        default_option = _find_default_legendonly(df, cat_ord["type"])
+        _toggle_trace_visibility(fig.data, default_option)
     else:
         _toggle_trace_visibility(fig.data, legendonly_traces)
 
