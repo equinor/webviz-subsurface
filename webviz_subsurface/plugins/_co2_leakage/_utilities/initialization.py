@@ -130,7 +130,7 @@ def init_polygon_provider_handlers(
     options: Optional[BoundarySettings],
 ) -> Dict[str, PolygonHandler]:
     filled_options: BoundarySettings = {
-        "polygon_file_pattern": "share/results/polygon/*.csv",
+        "polygon_file_pattern": "share/results/polygons/*.csv",
         "attribute": "boundary",
         "hazardous_name": "hazardous",
         "containment_name": "containment",
