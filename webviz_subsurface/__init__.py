@@ -5,7 +5,7 @@ from typing import Dict, Optional
 import jsonschema
 import webviz_config
 import yaml
-from pkg_resources import DistributionNotFound, get_distribution
+from pkg_resources import DistributionNotFound, get_distribution  # type: ignore
 
 from webviz_subsurface._utils.user_defined_vector_definitions import (
     USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,

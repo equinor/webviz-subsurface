@@ -29,10 +29,10 @@ _COLOR_TOTAL = "#222222"
 _COLOR_CONTAINED = "#00aa00"
 _COLOR_OUTSIDE = "#006ddd"
 _COLOR_HAZARDOUS = "#dd4300"
-_COLOR_GAS = "#84bc04"
 _COLOR_DISSOLVED = "#208eb7"
-_COLOR_FREE = "#b74532"
-_COLOR_TRAPPED = "#256b33"
+_COLOR_GAS = "#C41E3A"
+_COLOR_FREE = "#FF2400"
+_COLOR_TRAPPED = "#880808"
 _COLOR_ZONES = [
     "#e91451",
     "#daa218",
@@ -123,14 +123,13 @@ def _get_line_types(mark_options: List[str], mark_choice: str) -> List[str]:
     if mark_choice == "containment":
         return ["dash", "dot", "solid"]
     if mark_choice in ["zone", "region", "plume_group"]:
-        if len(mark_options) > 8:
+        options = ["solid", "dash", "dot", "dashdot", "longdash", "longdashdot"]
+        if len(mark_options) > 6:
             warnings.warn(
                 f"Large number of {mark_choice}s might make it hard "
                 f"to distinguish different dashed lines."
             )
-        return [
-            f"{round(i / len(mark_options) * 25)}px" for i in range(len(mark_options))
-        ]
+        return [options[i % 6] for i in range(len(mark_options))]
     # mark_choice == "phase":
     return ["dot", "dash"] if "gas" in mark_options else ["dot", "dashdot", "dash"]
 
@@ -627,7 +626,7 @@ def _add_hover_info_in_field(
             p15 = prev_val + 0.15 * amount
             p85 = prev_val + 0.85 * amount
             y_vals = np.linspace(p15, p85, 8).tolist() * len(date_dict[date])
-            y_vals.sort()
+            y_vals.sort()  # type: ignore[attr-defined]
             fig.add_trace(
                 go.Scatter(
                     x=date_dict[date] * 8,
@@ -1040,19 +1039,19 @@ def _make_title(c_info: Dict[str, Any], include_date: bool = True) -> str:
     return " - ".join(components)
 
 
-def _calculate_plotly_quantiles(values: np.ndarray[float], percentile: float) -> float:
+def _calculate_plotly_quantiles(values: np.ndarray, percentile: float) -> float:
     values_sorted = values.copy()
     values_sorted.sort()
     n_val = len(values_sorted)
     a = n_val * percentile - 0.5
     if a.is_integer():
-        return values_sorted[int(a)]
+        return float(values_sorted[int(a)])
     else:
-        return np.interp(a, [x for x in range(0, n_val)], values_sorted)
+        return float(np.interp(a, [x for x in range(0, n_val)], values_sorted))
 
 
 def _calculate_plotly_whiskers(
-    values: np.ndarray[float], q1: float, q3: float
+    values: np.ndarray, q1: float, q3: float
 ) -> Tuple[float, float]:
     values_sorted = values.copy()
     values_sorted.sort()
