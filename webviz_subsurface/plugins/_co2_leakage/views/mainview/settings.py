@@ -13,6 +13,8 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SurfaceStatistic,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import \
+    StatisticsTabOption
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
@@ -168,30 +170,31 @@ class ViewSettings(SettingsGroupABC):
                         self.register_component_unique_id(self.Ids.Y_MAX_GRAPH),
                         self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
                     ],
-                    [
-                        self.register_component_unique_id(self.Ids.COLOR_BY),
-                        self.register_component_unique_id(self.Ids.MARK_BY),
-                        self.register_component_unique_id(self.Ids.SORT_PLOT),
-                        self.register_component_unique_id(self.Ids.ZONE),
-                        self.register_component_unique_id(self.Ids.ZONE_COL),
-                        self.register_component_unique_id(self.Ids.REGION),
-                        self.register_component_unique_id(self.Ids.REGION_COL),
-                        self.register_component_unique_id(self.Ids.ZONE_REGION),
-                        self.register_component_unique_id(self.Ids.PHASE),
-                        self.register_component_unique_id(self.Ids.PHASE_MENU),
-                        self.register_component_unique_id(self.Ids.CONTAINMENT),
-                        self.register_component_unique_id(self.Ids.CONTAINMENT_MENU),
-                        self.register_component_unique_id(self.Ids.PLUME_GROUP),
-                        self.register_component_unique_id(self.Ids.PLUME_GROUP_MENU),
-                        self.register_component_unique_id(self.Ids.REAL_OR_STAT),
-                        self.register_component_unique_id(self.Ids.Y_LIM_OPTIONS),
-                        self.register_component_unique_id(self.Ids.DATE_OPTION),
-                        self.register_component_unique_id(self.Ids.DATE_OPTION_COL),
-                        self.register_component_unique_id(
-                            self.Ids.STATISTICS_TAB_OPTION
-                        ),
-                        self.register_component_unique_id(self.Ids.BOX_SHOW_POINTS),
-                    ],
+                    {
+                        k: self.register_component_unique_id(k)
+                        for k in [
+                            self.Ids.COLOR_BY,
+                            self.Ids.MARK_BY,
+                            self.Ids.SORT_PLOT,
+                            self.Ids.ZONE,
+                            self.Ids.ZONE_COL,
+                            self.Ids.REGION,
+                            self.Ids.REGION_COL,
+                            self.Ids.ZONE_REGION,
+                            self.Ids.PHASE,
+                            self.Ids.PHASE_MENU,
+                            self.Ids.CONTAINMENT,
+                            self.Ids.CONTAINMENT_MENU,
+                            self.Ids.PLUME_GROUP,
+                            self.Ids.PLUME_GROUP_MENU,
+                            self.Ids.REAL_OR_STAT,
+                            self.Ids.Y_LIM_OPTIONS,
+                            self.Ids.DATE_OPTION,
+                            self.Ids.DATE_OPTION_COL,
+                            self.Ids.STATISTICS_TAB_OPTION,
+                            self.Ids.BOX_SHOW_POINTS,
+                        ]
+                    },
                     self._content,
                 )
             )
@@ -870,7 +873,7 @@ class GraphSelectorsLayout(wcc.Selectors):
         co2_scale_id: str,
         y_min_ids: List[str],
         y_max_ids: List[str],
-        containment_ids: List[str],
+        containment_ids: Dict[ViewSettings.Ids, str],
         content: Dict[str, bool],
     ):
         disp_zone = "flex" if content["zones"] else "none"
@@ -905,6 +908,7 @@ class GraphSelectorsLayout(wcc.Selectors):
             if source_options[0] == GraphSource.CONTAINMENT_ACTUAL_VOLUME
             else (list(Co2MassScale), Co2MassScale.MTONS)
         )
+        ids = ViewSettings.Ids
         super().__init__(
             label="Graph Settings",
             open_details=not content["maps"],
@@ -931,7 +935,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=color_options,
                                     value="containment",
-                                    id=containment_ids[0],
+                                    id=containment_ids[ids.COLOR_BY],
                                     clearable=False,
                                 ),
                             ],
@@ -946,7 +950,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=mark_options,
                                     value="phase",
-                                    id=containment_ids[1],
+                                    id=containment_ids[ids.MARK_BY],
                                     clearable=False,
                                 ),
                             ],
@@ -969,7 +973,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                         dcc.RadioItems(
                             options=["color", "marking"],
                             value="color",
-                            id=containment_ids[2],
+                            id=containment_ids[ids.SORT_PLOT],
                             inline=True,
                         ),
                     ],
@@ -988,11 +992,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=[{"label": "All", "value": "all"}],
                                     value="all",
-                                    id=containment_ids[3],
+                                    id=containment_ids[ids.ZONE],
                                     clearable=False,
                                 ),
                             ],
-                            id=containment_ids[4],
+                            id=containment_ids[ids.ZONE_COL],
                             style={
                                 "width": (
                                     "33%"
@@ -1016,11 +1020,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=[{"label": "All", "value": "all"}],
                                     value="all",
-                                    id=containment_ids[5],
+                                    id=containment_ids[ids.REGION],
                                     clearable=False,
                                 ),
                             ],
-                            id=containment_ids[6],
+                            id=containment_ids[ids.REGION_COL],
                             style={
                                 "width": (
                                     "33%"
@@ -1042,10 +1046,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                                     options=[{"label": "Total", "value": "total"}],
                                     value="total",
                                     clearable=False,
-                                    id=containment_ids[8],
+                                    id=containment_ids[ids.PHASE],
                                 ),
                             ],
-                            id=containment_ids[9],
+                            id=containment_ids[ids.PHASE_MENU],
                             style={"display": "none"},
                         ),
                         html.Div(
@@ -1060,10 +1064,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                                     ],
                                     value="total",
                                     clearable=False,
-                                    id=containment_ids[10],
+                                    id=containment_ids[ids.CONTAINMENT],
                                 ),
                             ],
-                            id=containment_ids[11],
+                            id=containment_ids[ids.CONTAINMENT_MENU],
                             style={"display": "none"},
                         ),
                         html.Div(
@@ -1072,11 +1076,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=[{"label": "All", "value": "all"}],
                                     value="all",
-                                    id=containment_ids[12],
+                                    id=containment_ids[ids.PLUME_GROUP],
                                     clearable=False,
                                 ),
                             ],
-                            id=containment_ids[13],
+                            id=containment_ids[ids.PLUME_GROUP_MENU],
                             style={
                                 "width": (
                                     "33%"
@@ -1092,7 +1096,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             },
                         ),
                     ],
-                    id=containment_ids[7],
+                    id=containment_ids[ids.ZONE_REGION],
                     style={"display": "flex"},
                 ),
                 html.Div(
@@ -1107,7 +1111,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 {"label": "Mean/P10/P90", "value": "stat"},
                             ],
                             value="real",
-                            id=containment_ids[14],
+                            id=containment_ids[ids.REAL_OR_STAT],
                             inline=True,
                         ),
                     ],
@@ -1123,11 +1127,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                 html.Div(
                     [
                         wcc.Dropdown(
-                            id=containment_ids[16],
+                            id=containment_ids[ids.DATE_OPTION],
                             clearable=False,
                         ),
                     ],
-                    id=containment_ids[17],
+                    id=containment_ids[ids.DATE_OPTION_COL],
                     style={
                         "width": "100%",
                         "flex-direction": "row",
@@ -1164,7 +1168,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                         "display": "flex",
                         "flex-direction": "column",
                     },
-                    id=containment_ids[15],
+                    id=containment_ids[ids.Y_LIM_OPTIONS],
                 ),
                 html.Div(
                     "Statistics tab:",
@@ -1176,12 +1180,15 @@ class GraphSelectorsLayout(wcc.Selectors):
                             options=[
                                 {
                                     "label": "Probability plot",
-                                    "value": "probability_plot",
+                                    "value": StatisticsTabOption.PROBABILITY_PLOT,
                                 },
-                                {"label": "Box plot", "value": "box_plot"},
+                                {
+                                    "label": "Box plot",
+                                    "value": StatisticsTabOption.BOX_PLOT
+                                },
                             ],
-                            value="probability_plot",
-                            id=containment_ids[18],
+                            value=StatisticsTabOption.PROBABILITY_PLOT,
+                            id=containment_ids[ids.STATISTICS_TAB_OPTION],
                         ),
                     ],
                 ),
@@ -1197,7 +1204,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 {"label": "Outliers", "value": "only_outliers"},
                             ],
                             value="only_outliers",
-                            id=containment_ids[19],
+                            id=containment_ids[ids.BOX_SHOW_POINTS],
                             inline=True,
                         ),
                     ],

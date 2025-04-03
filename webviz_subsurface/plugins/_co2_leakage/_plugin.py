@@ -59,6 +59,7 @@ from webviz_subsurface.plugins._co2_leakage.views.mainview.settings import ViewS
 
 from . import _error
 from ._utilities.color_tables import co2leakage_color_tables
+from ._utilities.containment_info import StatisticsTabOption
 
 LOGGER = logging.getLogger(__name__)
 TABLES_PATH = "share/results/tables"
@@ -724,7 +725,7 @@ class CO2Leakage(WebvizPluginABC):
                 sorting: str,
                 lines_to_show: str,
                 date_option: str,
-                statistics_tab_option: str,
+                statistics_tab_option: StatisticsTabOption,
                 box_show_points: str,
         ) -> Tuple[Dict, go.Figure, go.Figure, go.Figure]:
             # pylint: disable=too-many-locals
@@ -755,10 +756,9 @@ class CO2Leakage(WebvizPluginABC):
                     cont_info,
                     realizations,
                     lines_to_show,
-                    statistics_tab_option,
                     len(figs),
                 )
-                cont_info["update_first_figure"] = self._plot_id != plot_ids[0]
+                cont_info.update_first_figure = self._plot_id != plot_ids[0]
                 self._plot_id = plot_ids[0]
                 y_limits = [
                     y_min_val if len(y_min_auto) == 0 else None,
@@ -815,6 +815,7 @@ class CO2Leakage(WebvizPluginABC):
             State(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Input(self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "restyleData"),
             State(self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "figure"),
+            Input(self._settings_component(ViewSettings.Ids.STATISTICS_TAB_OPTION), "value"),
         )
         def on_bar_legend_update(
             bar_event: List[Any],
@@ -823,6 +824,7 @@ class CO2Leakage(WebvizPluginABC):
             time_figure: go.Figure,
             stats_event: List[Any],
             stats_figure: go.Figure,
+            _: StatisticsTabOption,
         ):
             # We cannot subscribe to a legend click event directly, but we can subscribe
             # to the more general "restyleData" event, and then try to identify if this
@@ -838,7 +840,10 @@ class CO2Leakage(WebvizPluginABC):
             elif _id == self._view_component(MapViewElement.Ids.TIME_PLOT):
                 if self._is_legend_click_event(time_event):
                     p["time_legendonly"] = extract_legendonly(time_figure)
-            elif _id == self._view_component(MapViewElement.Ids.STATISTICS_PLOT):
+            elif _id in (
+                    self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
+                    self._settings_component(ViewSettings.Ids.STATISTICS_TAB_OPTION),
+            ):
                 if self._is_legend_click_event(stats_event):
                     p["stats_legendonly"] = extract_legendonly(stats_figure)
             return p

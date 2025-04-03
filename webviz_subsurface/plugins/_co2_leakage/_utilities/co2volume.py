@@ -12,6 +12,8 @@ from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
     ContainmentDataProvider,
 )
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import \
+    ContainmentInfo
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
@@ -136,22 +138,23 @@ def _get_line_types(mark_options: List[str], mark_choice: str) -> List[str]:
 
 def _prepare_pattern_and_color_options(
     df: pd.DataFrame,
-    containment_info: Dict,
+    containment_info: ContainmentInfo,
     color_choice: str,
     mark_choice: str,
 ) -> Tuple[Dict, List, List]:
-    mark_options = [] if mark_choice == "none" else containment_info[f"{mark_choice}s"]
-    color_options = containment_info[f"{color_choice}s"]
+    no_mark = mark_choice == "none"
+    mark_options = [] if no_mark else getattr(containment_info, f"{mark_choice}s")
+    color_options = getattr(containment_info, f"{color_choice}s")
     num_colors = len(color_options)
-    num_marks = num_colors if mark_choice == "none" else len(mark_options)
+    num_marks = num_colors if no_mark else len(mark_options)
     marks = _get_marks(num_marks, mark_choice)
     colors = _get_colors(num_colors, color_choice)
-    if mark_choice == "none":
+    if no_mark:
         cat_ord = {"type": color_options}
         df["type"] = df[color_choice]
         return cat_ord, colors, marks
     df["type"] = [", ".join((c, m)) for c, m in zip(df[color_choice], df[mark_choice])]
-    if containment_info["sorting"] == "color":
+    if containment_info.sorting == "color":
         cat_ord = {
             "type": [", ".join((c, m)) for c in color_options for m in mark_options],
         }
@@ -168,14 +171,15 @@ def _prepare_pattern_and_color_options(
 
 def _prepare_pattern_and_color_options_statistics_plot(
     df: pd.DataFrame,
-    containment_info: Dict,
+    containment_info: ContainmentInfo,
     color_choice: str,
     mark_choice: str,
 ) -> Tuple[Dict, List, List]:
-    mark_options = [] if mark_choice == "none" else containment_info[f"{mark_choice}s"]
-    color_options = containment_info[f"{color_choice}s"]
+    no_mark = mark_choice == "none"
+    mark_options = [] if no_mark else getattr(containment_info, f"{mark_choice}s")
+    color_options = getattr(containment_info, f"{color_choice}s")
     num_colors = len(color_options)
-    num_marks = num_colors if mark_choice == "none" else len(mark_options)
+    num_marks = num_colors if no_mark else len(mark_options)
     line_types = _get_line_types(mark_options, mark_choice)
     colors = _get_colors(num_colors, color_choice)
 
@@ -192,13 +196,13 @@ def _prepare_pattern_and_color_options_statistics_plot(
     filter_color = color_choice not in ["phase", "containment"]
     _filter_rows(df, color_choice, mark_choice, filter_mark, filter_color)
 
-    if mark_choice == "none":
+    if no_mark:
         cat_ord = {"type": color_options}
         df["type"] = df[color_choice]
         return cat_ord, colors, line_types
     df["type"] = [", ".join((c, m)) for c, m in zip(df[color_choice], df[mark_choice])]
 
-    if containment_info["sorting"] == "color":
+    if containment_info.sorting == "color":
         cat_ord = {
             "type": [", ".join((c, m)) for c in color_options for m in mark_options],
         }
@@ -258,14 +262,14 @@ def _find_default_legendonly(
 
 def _prepare_line_type_and_color_options(
     df: pd.DataFrame,
-    containment_info: Dict,
+    containment_info: ContainmentInfo,
     color_choice: str,
     mark_choice: str,
 ) -> pd.DataFrame:
     mark_options = []
     if mark_choice != "none":
-        mark_options = list(containment_info[f"{mark_choice}s"])
-    color_options = list(containment_info[f"{color_choice}s"])
+        mark_options = list(getattr(containment_info, f"{mark_choice}s"))
+    color_options = list(getattr(containment_info, f"{color_choice}s"))
     num_colors = len(color_options)
     line_types = _get_line_types(mark_options, mark_choice)
     colors = _get_colors(num_colors, color_choice)
@@ -291,7 +295,7 @@ def _prepare_line_type_and_color_options(
         )
     df["name"] = [", ".join((c, m)) for c, m in zip(df[color_choice], df[mark_choice])]
     _change_names(df, color_options, mark_options)
-    if containment_info["sorting"] == "color":
+    if containment_info.sorting == "color":
         options = pd.DataFrame(
             {
                 "name": [
@@ -319,7 +323,7 @@ def _read_terminal_co2_volumes(
     table_provider: ContainmentDataProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    containment_info: Dict[str, Union[str, None, List[str]]],
+    containment_info: ContainmentInfo,
 ) -> pd.DataFrame:
     records: Dict[str, List[Any]] = {
         "real": [],
@@ -327,8 +331,8 @@ def _read_terminal_co2_volumes(
         "sort_key": [],
         "sort_key_secondary": [],
     }
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
+    color_choice = containment_info.color_choice
+    mark_choice = containment_info.mark_choice
     assert isinstance(color_choice, str)
     assert isinstance(mark_choice, str)
     records[color_choice] = []
@@ -337,7 +341,7 @@ def _read_terminal_co2_volumes(
     data_frame = None
     for real in realizations:
         df = table_provider.extract_dataframe(real, scale)
-        df = df[df["date"] == containment_info["date_option"]]
+        df = df[df["date"] == containment_info.date_option]
         _add_sort_key_and_real(df, str(real), containment_info)
         _filter_columns(df, color_choice, mark_choice, containment_info)
         _filter_rows(df, color_choice, mark_choice)
@@ -356,7 +360,7 @@ def _filter_columns(
     df: pd.DataFrame,
     color_choice: str,
     mark_choice: str,
-    containment_info: Dict,
+    containment_info: ContainmentInfo,
 ) -> None:
     filter_columns = [
         col
@@ -364,7 +368,7 @@ def _filter_columns(
         if col not in [mark_choice, color_choice]
     ]
     for col in filter_columns:
-        df.query(f'{col} == "{containment_info[col]}"', inplace=True)
+        df.query(f'{col} == "{getattr(containment_info, col)}"', inplace=True)
     df.drop(columns=filter_columns, inplace=True)
 
 
@@ -384,24 +388,24 @@ def _filter_rows(
 def _add_sort_key_and_real(
     df: pd.DataFrame,
     label: str,
-    containment_info: Dict,
+    containment_info: ContainmentInfo,
 ) -> None:
     sort_value = np.sum(
         df[
             (df["phase"] == "total")
             & (df["containment"] == "hazardous")
-            & (df["zone"] == containment_info["zone"])
-            & (df["region"] == containment_info["region"])
-            & (df["plume_group"] == containment_info["plume_group"])
+            & (df["zone"] == containment_info.zone)
+            & (df["region"] == containment_info.region)
+            & (df["plume_group"] == containment_info.plume_group)
         ]["amount"]
     )
     sort_value_secondary = np.sum(
         df[
             (df["phase"] == "total")
             & (df["containment"] == "outside")
-            & (df["zone"] == containment_info["zone"])
-            & (df["region"] == containment_info["region"])
-            & (df["plume_group"] == containment_info["plume_group"])
+            & (df["zone"] == containment_info.zone)
+            & (df["region"] == containment_info.region)
+            & (df["plume_group"] == containment_info.plume_group)
         ]["amount"]
     )
     df["real"] = [label] * df.shape[0]
@@ -488,14 +492,14 @@ def generate_co2_volume_figure(
     table_provider: ContainmentDataProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    containment_info: Dict[str, Any],
+    containment_info: ContainmentInfo,
     legendonly_traces: Optional[List[str]],
 ) -> go.Figure:
     df = _read_terminal_co2_volumes(
         table_provider, realizations, scale, containment_info
     )
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
+    color_choice = containment_info.color_choice
+    mark_choice = containment_info.mark_choice
     _add_prop_to_df(df, [str(r) for r in realizations], "real")
     cat_ord, colors, marks = _prepare_pattern_and_color_options(
         df,
@@ -533,7 +537,7 @@ def generate_co2_time_containment_one_realization_figure(
     scale: Union[Co2MassScale, Co2VolumeScale],
     time_series_realization: int,
     y_limits: List[Optional[float]],
-    containment_info: Dict[str, Any],
+    containment_info: ContainmentInfo,
 ) -> go.Figure:
     df = _read_co2_volumes(table_provider, [time_series_realization], scale)
     color_choice = containment_info["color_choice"]
@@ -722,12 +726,12 @@ def generate_co2_time_containment_figure(
     table_provider: ContainmentDataProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    containment_info: Dict[str, Any],
+    containment_info: ContainmentInfo,
     legendonly_traces: Optional[List[str]],
 ) -> go.Figure:
     df = _read_co2_volumes(table_provider, realizations, scale)
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
+    color_choice = containment_info.color_choice
+    mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
     options = _prepare_line_type_and_color_options(
         df, containment_info, color_choice, mark_choice
@@ -765,7 +769,7 @@ def generate_co2_time_containment_figure(
         "Realization: %{meta[0]}<br>Proportion: %{customdata}"
     )
 
-    if containment_info["use_stats"]:
+    if containment_info.use_stats:
         df_no_real = df.drop(columns=["REAL", "realization"]).reset_index(drop=True)
         if mark_choice == "none":
             df_grouped = df_no_real.groupby(
@@ -794,7 +798,7 @@ def generate_co2_time_containment_figure(
     for rlz in realizations:
         lwd = 1.5 if rlz in ["p10", "p90"] else 2.5
         sub_df = df[df["realization"] == rlz].copy().reset_index(drop=True)
-        if not containment_info["use_stats"]:
+        if not containment_info.use_stats:
             _add_prop_to_df(
                 sub_df, np.unique(df["date"]), "date", [color_choice, mark_choice]
             )
@@ -816,7 +820,7 @@ def generate_co2_time_containment_figure(
                 "meta": [rlz, name],
                 "hovertemplate": hover_template,
             }
-            if not containment_info["use_stats"]:
+            if not containment_info.use_stats:
                 args["customdata"] = sub_df[sub_df["name"] == name]["prop"]
             if name in inactive_cols_at_startup:
                 args["visible"] = "legendonly"
@@ -835,15 +839,15 @@ def generate_co2_statistics_figure(
     table_provider: ContainmentDataProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    containment_info: Dict[str, Any],
+    containment_info: ContainmentInfo,
     legend_only_traces: Optional[List[str]],
 ) -> go.Figure:
-    date_option = containment_info["date_option"]
+    date_option = containment_info.date_option
     df = _read_co2_volumes(table_provider, realizations, scale)
     df = df[df["date"] == date_option]
     df = df.drop(columns=["date"]).reset_index(drop=True)
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
+    color_choice = containment_info.color_choice
+    mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
     cat_ord, colors, line_types = _prepare_pattern_and_color_options_statistics_plot(
         df,
@@ -890,17 +894,17 @@ def generate_co2_box_plot_figure(
     table_provider: ContainmentDataProvider,
     realizations: List[int],
     scale: Union[Co2MassScale, Co2VolumeScale],
-    containment_info: Dict[str, Any],
+    containment_info: ContainmentInfo,
     legendonly_traces: Optional[List[str]],
 ) -> go.Figure:
     eps = 0.00001
-    date_option = containment_info["date_option"]
+    date_option = containment_info.date_option
     df = _read_co2_volumes(table_provider, realizations, scale)
     df = df[df["date"] == date_option]
     df = df.drop(columns=["date"]).reset_index(drop=True)
 
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
+    color_choice = containment_info.color_choice
+    mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
     cat_ord, colors, _ = _prepare_pattern_and_color_options_statistics_plot(
         df,
@@ -912,6 +916,9 @@ def generate_co2_box_plot_figure(
     fig = go.Figure()
     for count, type_val in enumerate(cat_ord["type"], 0):
         df_sub = df[df["type"] == type_val]
+        if df_sub.size == 0:
+            continue
+
         values = df_sub["amount"].to_numpy()
         real = df_sub["realization"].to_numpy()
 
@@ -929,7 +936,7 @@ def generate_co2_box_plot_figure(
                 name=type_val,
                 marker_color=colors[count],
                 boxpoints="all"
-                if containment_info["box_show_points"] == "all_points"
+                if containment_info.box_show_points == "all_points"
                 else "outliers",
                 customdata=real,
                 hovertemplate="<span style='font-family:Courier New;'>"
@@ -992,48 +999,48 @@ def generate_co2_box_plot_figure(
     return fig
 
 
-def _make_title(c_info: Dict[str, Any], include_date: bool = True) -> str:
+def _make_title(c_info: ContainmentInfo, include_date: bool = True) -> str:
     components = []
     if include_date:
-        components.append(c_info["date_option"])
-    if len(c_info["phases"]) > 0 and "phase" not in [
-        c_info["color_choice"],
-        c_info["mark_choice"],
+        components.append(c_info.date_option)
+    if len(c_info.phases) > 0 and "phase" not in [
+        c_info.color_choice,
+        c_info.mark_choice,
     ]:
-        if c_info["phase"] != "total":
-            components.append(c_info["phase"].capitalize())
+        if c_info.phase != "total":
+            components.append(c_info.phase.capitalize())
         else:
             components.append("Phase: Total")
-    if len(c_info["containments"]) > 0 and "containment" not in [
-        c_info["color_choice"],
-        c_info["mark_choice"],
+    if len(c_info.containments) > 0 and "containment" not in [
+        c_info.color_choice,
+        c_info.mark_choice,
     ]:
-        if c_info["containment"] != "total":
-            components.append(c_info["containment"].capitalize())
+        if c_info.containment != "total":
+            components.append(c_info.containment.capitalize())
         else:
             components.append("All containments areas")
-    if len(c_info["zones"]) > 0 and "zone" not in [
-        c_info["color_choice"],
-        c_info["mark_choice"],
+    if len(c_info.zones) > 0 and "zone" not in [
+        c_info.color_choice,
+        c_info.mark_choice,
     ]:
-        if c_info["zone"] != "all":
-            components.append(c_info["zone"])
+        if c_info.zone != "all":
+            components.append(c_info.zone)
         else:
             components.append("All zones")
-    if len(c_info["regions"]) > 0 and "region" not in [
-        c_info["color_choice"],
-        c_info["mark_choice"],
+    if len(c_info.regions) > 0 and "region" not in [
+        c_info.color_choice,
+        c_info.mark_choice,
     ]:
-        if c_info["region"] != "all":
-            components.append(c_info["region"])
+        if c_info.region != "all":
+            components.append(c_info.region)
         else:
             components.append("All regions")
-    if len(c_info["plume_groups"]) > 0 and "plume_group" not in [
-        c_info["color_choice"],
-        c_info["mark_choice"],
+    if len(c_info.plume_groups) > 0 and "plume_group" not in [
+        c_info.color_choice,
+        c_info.mark_choice,
     ]:
-        if c_info["plume_group"] != "all":
-            components.append(c_info["plume_group"])
+        if c_info.plume_group != "all":
+            components.append(c_info.plume_group)
         else:
             components.append("All plume groups")
     return " - ".join(components)

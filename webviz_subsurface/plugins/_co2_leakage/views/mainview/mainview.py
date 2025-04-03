@@ -117,7 +117,6 @@ class MapViewElement(ViewElementABC):
                         bar_legendonly=None,
                         time_legendonly=None,
                         stats_legendonly=None,
-                        box_legendonly=None,
                     ),
                 )
             )
