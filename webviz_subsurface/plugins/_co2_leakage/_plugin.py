@@ -193,7 +193,6 @@ class CO2Leakage(WebvizPluginABC):
             "change": False,
             "unit": "tons",
         }
-        self._plot_id = ""
         self._color_tables = co2leakage_color_tables()
         self._well_pick_names: Dict[str, List[str]] = {
             ens: (
@@ -758,8 +757,6 @@ class CO2Leakage(WebvizPluginABC):
                     lines_to_show,
                     len(figs),
                 )
-                cont_info.update_first_figure = self._plot_id != plot_ids[0]
-                self._plot_id = plot_ids[0]
                 y_limits = [
                     y_min_val if len(y_min_auto) == 0 else None,
                     y_max_val if len(y_max_auto) == 0 else None,

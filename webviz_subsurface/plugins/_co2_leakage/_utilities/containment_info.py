@@ -8,7 +8,7 @@ class StatisticsTabOption(StrEnum):
     BOX_PLOT = "box-plot"
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class ContainmentInfo:
     zone: str | None
     region: str | None
@@ -27,4 +27,3 @@ class ContainmentInfo:
     date_option: str
     statistics_tab_option: StatisticsTabOption
     box_show_points: str
-    update_first_figure: bool = False

@@ -404,16 +404,12 @@ def generate_containment_figures(
     legenddata: LegendData,
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
-        fig0 = (
-            no_update
-            if not containment_info.update_first_figure
-            else generate_co2_volume_figure(
-                table_provider,
-                table_provider.realizations,
-                co2_scale,
-                containment_info,
-                legenddata["bar_legendonly"],
-            )
+        fig0 = generate_co2_volume_figure(
+            table_provider,
+            table_provider.realizations,
+            co2_scale,
+            containment_info,
+            legenddata["bar_legendonly"],
         )
         fig1 = (
             generate_co2_time_containment_figure(
