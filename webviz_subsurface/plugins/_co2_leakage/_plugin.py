@@ -138,8 +138,9 @@ Similar for `map_surface_names_to_fault_polygons`.
 `boundary_settings` is the final override option, and it can be used to specify
 polygons representing the containment and hazardous areas. By default, the polygons are
 expected to be named:
-- `share/results/containment--boundary.csv`
-- `share/results/hazarduous--boundary.csv`
+- `share/results/polygons/containment--boundary.csv`
+- `share/results/polygons/hazarduous--boundary.csv`
+
 This corresponds to the following input:
 ```
 boundary_settings:
