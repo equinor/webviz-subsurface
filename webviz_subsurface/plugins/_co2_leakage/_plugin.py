@@ -731,7 +731,10 @@ All four settings are optional, and if not specified, the default values are use
                 self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
                 "figure",
             ),
-            Input(self._view_component(MapViewElement.Ids.LEGEND_DATA_STORE), "data"),
+            # LEGEND_DATA_STORE is updated whenever the legend is clicked. However,
+            # there is not need to update the plots based on this change, since that
+            # is done by plotly internally. We therefore use State instead of Input
+            State(self._view_component(MapViewElement.Ids.LEGEND_DATA_STORE), "data"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
             Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
             Input(self._settings_component(ViewSettings.Ids.CO2_SCALE), "value"),
