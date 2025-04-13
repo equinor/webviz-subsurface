@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#1297](https://github.com/equinor/webviz-subsurface/pull/1297) - Added mean for mc sensitivities in the tornadotable in `VolumetricAnalysis`.
-
+- [#1327](https://github.com/equinor/webviz-subsurface/pull/1327) - Added histograms to parameter distributions in `ParameterAnalysis`.
 ## [0.2.30] - 2024-06-10
 
 ### Added
