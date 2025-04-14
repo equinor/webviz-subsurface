@@ -474,7 +474,7 @@ def process_visualization_info(
         cache.clear()
     return stored_info
 
-
+# pylint: disable=too-many-locals
 def process_containment_info(
     zone: Optional[str],
     region: Optional[str],
