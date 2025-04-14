@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#1297](https://github.com/equinor/webviz-subsurface/pull/1297) - Added mean for mc sensitivities in the tornadotable in `VolumetricAnalysis`.
+- [#1328](https://github.com/equinor/webviz-subsurface/pull/1328) - Use the same color for P10/P90 calculated cases for sensitivities from distributions (`TornadoPlot`)
 
 ## [0.2.30] - 2024-06-10
 
