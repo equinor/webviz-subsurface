@@ -950,9 +950,9 @@ def generate_co2_box_plot_figure(
 
     fig.update_layout(
         xaxis={
-            "tickmode2":"array",
-            "tickvals":list(range(len(cat_ord['type']))),
-            "ticktext":cat_ord["type"],
+            "tickmode": "array",
+            "tickvals": list(range(len(cat_ord["type"]))),
+            "ticktext": cat_ord["type"],
         }
     )
 
@@ -968,6 +968,7 @@ def generate_co2_box_plot_figure(
     _adjust_figure(fig, plot_title=_make_title(containment_info))
 
     return fig
+
 
 # pylint: disable=too-many-branches
 def _make_title(c_info: Dict[str, Any], include_date: bool = True) -> str:
