@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+# NBNB-AS: We should address this pylint message soon
 import warnings
 from datetime import datetime as dt
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -12,8 +14,9 @@ from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
     ContainmentDataProvider,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import \
-    ContainmentInfo
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+    ContainmentInfo,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
@@ -89,11 +92,10 @@ def _read_dataframe(
 def _get_colors(num_cols: int = 3, split: str = "zone") -> List[str]:
     if split == "containment":
         return [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
-    elif split == "phase":
+    if split == "phase":
         if num_cols == 2:
             return [_COLOR_GAS, _COLOR_DISSOLVED]
-        else:
-            return [_COLOR_FREE, _COLOR_TRAPPED, _COLOR_DISSOLVED]
+        return [_COLOR_FREE, _COLOR_TRAPPED, _COLOR_DISSOLVED]
     options = list(_COLOR_ZONES)
     if split == "region":
         options.reverse()
@@ -244,9 +246,7 @@ def _prepare_pattern_and_color_options_statistics_plot(
     return cat_ord, colors, line_types
 
 
-def _find_default_legendonly(
-    df: pd.DataFrame, categories: list[str]
-) -> List[str]:
+def _find_default_legendonly(df: pd.DataFrame, categories: List[str]) -> List[str]:
     if "hazardous" in categories:
         default_option = "hazardous"
     else:
@@ -543,11 +543,11 @@ def generate_co2_time_containment_one_realization_figure(
     containment_info: ContainmentInfo,
 ) -> go.Figure:
     df = _read_co2_volumes(table_provider, [time_series_realization], scale)
-    color_choice = containment_info["color_choice"]
-    mark_choice = containment_info["mark_choice"]
+    color_choice = containment_info.color_choice
+    mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
     _filter_rows(df, color_choice, mark_choice)
-    if containment_info["sorting"] == "marking" and mark_choice != "none":
+    if containment_info.sorting == "marking" and mark_choice != "none":
         sort_order = ["date", mark_choice]
     else:
         sort_order = ["date", color_choice]
@@ -724,7 +724,7 @@ def _connect_plume_groups(
     df.drop(columns="is_merged", inplace=True)
 
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, too-many-statements
 def generate_co2_time_containment_figure(
     table_provider: ContainmentDataProvider,
     realizations: List[int],
@@ -981,11 +981,11 @@ def generate_co2_box_plot_figure(
         )
 
     fig.update_layout(
-        xaxis=dict(
-            tickmode="array",
-            tickvals=[i for i in range(len(cat_ord["type"]))],
-            ticktext=cat_ord["type"],
-        )
+        xaxis={
+            "tickmode": "array",
+            "tickvals": list(range(len(cat_ord["type"]))),
+            "ticktext": cat_ord["type"],
+        }
     )
 
     if len(cat_ord["type"]) > 20 or legendonly_traces is None:
@@ -1002,6 +1002,7 @@ def generate_co2_box_plot_figure(
     return fig
 
 
+# pylint: disable=too-many-branches
 def _make_title(c_info: ContainmentInfo, include_date: bool = True) -> str:
     components = []
     if include_date:
@@ -1010,7 +1011,7 @@ def _make_title(c_info: ContainmentInfo, include_date: bool = True) -> str:
         c_info.color_choice,
         c_info.mark_choice,
     ]:
-        if c_info.phase != "total":
+        if c_info.phase is not None and c_info.phase != "total":
             components.append(c_info.phase.capitalize())
         else:
             components.append("Phase: Total")
@@ -1018,7 +1019,7 @@ def _make_title(c_info: ContainmentInfo, include_date: bool = True) -> str:
         c_info.color_choice,
         c_info.mark_choice,
     ]:
-        if c_info.containment != "total":
+        if c_info.containment is not None and c_info.containment != "total":
             components.append(c_info.containment.capitalize())
         else:
             components.append("All containments areas")
@@ -1026,15 +1027,20 @@ def _make_title(c_info: ContainmentInfo, include_date: bool = True) -> str:
         c_info.color_choice,
         c_info.mark_choice,
     ]:
-        if c_info.zone != "all":
+        if c_info.zone is not None and c_info.zone != "all":
             components.append(c_info.zone)
         else:
             components.append("All zones")
-    if len(c_info.regions) > 0 and "region" not in [
-        c_info.color_choice,
-        c_info.mark_choice,
-    ]:
-        if c_info.region != "all":
+    if (
+        c_info.regions is not None
+        and len(c_info.regions) > 0
+        and "region"
+        not in [
+            c_info.color_choice,
+            c_info.mark_choice,
+        ]
+    ):
+        if c_info.region is not None and c_info.region != "all":
             components.append(c_info.region)
         else:
             components.append("All regions")
@@ -1042,7 +1048,7 @@ def _make_title(c_info: ContainmentInfo, include_date: bool = True) -> str:
         c_info.color_choice,
         c_info.mark_choice,
     ]:
-        if c_info.plume_group != "all":
+        if c_info.plume_group is not None and c_info.plume_group != "all":
             components.append(c_info.plume_group)
         else:
             components.append("All plume groups")
@@ -1056,8 +1062,7 @@ def _calculate_plotly_quantiles(values: np.ndarray, percentile: float) -> float:
     a = n_val * percentile - 0.5
     if a.is_integer():
         return float(values_sorted[int(a)])
-    else:
-        return float(np.interp(a, [x for x in range(0, n_val)], values_sorted))
+    return float(np.interp(a, list(range(0, n_val)), values_sorted))
 
 
 def _calculate_plotly_whiskers(
@@ -1070,7 +1075,7 @@ def _calculate_plotly_whiskers(
     return values[values >= a].min(), values[values <= b].max()
 
 
-def _toggle_trace_visibility(traces, legendonly_names: List[str]):
+def _toggle_trace_visibility(traces: List, legendonly_names: List[str]) -> None:
     for t in traces:
         if t.name in legendonly_names:
             t.visible = "legendonly"

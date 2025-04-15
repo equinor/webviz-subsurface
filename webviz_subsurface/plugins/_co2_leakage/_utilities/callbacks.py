@@ -32,8 +32,10 @@ from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
 from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
     ContainmentDataProvider,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import \
-    ContainmentInfo, StatisticsTabOption
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+    ContainmentInfo,
+    StatisticsTabOption,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.ensemble_well_picks import (
     EnsembleWellPicks,
 )
@@ -129,9 +131,9 @@ def extract_legendonly(figure: go.Figure) -> List[str]:
     # visibility set to "legendonly". In the figure, these traces are toggled OFF in the
     # legend.
     return [
-        d.get('legendgroup', d.get('name'))
-        for d in figure['data']
-        if d.get('visible', '') == 'legendonly'
+        d.get("legendgroup", d.get("name"))
+        for d in figure["data"]
+        if d.get("visible", "") == "legendonly"
     ]
 
 
@@ -417,7 +419,7 @@ def generate_containment_figures(
                 realizations,
                 co2_scale,
                 containment_info,
-                legenddata["time_legendonly"]
+                legenddata["time_legendonly"],
             )
             if len(realizations) > 1
             else generate_co2_time_containment_one_realization_figure(
@@ -428,7 +430,10 @@ def generate_containment_figures(
                 containment_info,
             )
         )
-        if containment_info.statistics_tab_option == StatisticsTabOption.PROBABILITY_PLOT:
+        if (
+            containment_info.statistics_tab_option
+            == StatisticsTabOption.PROBABILITY_PLOT
+        ):
             fig2 = generate_co2_statistics_figure(
                 table_provider,
                 realizations,
@@ -491,6 +496,7 @@ def process_visualization_info(
     return stored_info
 
 
+# pylint: disable=too-many-locals
 def process_containment_info(
     zone: Optional[str],
     region: Optional[str],
@@ -556,7 +562,7 @@ def make_plot_ids(
     scale: Union[Co2MassScale, Co2VolumeScale],
     containment_info: ContainmentInfo,
     realizations: List[int],
-    lines_to_show: str,
+    # lines_to_show: str,
     num_figs: int,
 ) -> List[str]:
     """
@@ -568,9 +574,7 @@ def make_plot_ids(
     If we want to store it more extensively, we need to do something like what's been
     outlined in _plugin.py.
     """
-    zone_str = (
-        containment_info.zone if containment_info.zone is not None else "None"
-    )
+    zone_str = containment_info.zone if containment_info.zone is not None else "None"
     region_str = (
         containment_info.region if containment_info.region is not None else "None"
     )
@@ -601,8 +605,8 @@ def make_plot_ids(
         )
     )
     ids = [plot_id] * num_figs
-    #ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
-    #ids[1] += f"-{lines_to_show}"
+    # ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
+    # ids[1] += f"-{lines_to_show}"
     ids[1] += "-single" if len(realizations) == 1 else "-multiple"
     ids[2] += f"-{containment_info.statistics_tab_option}"
     return ids

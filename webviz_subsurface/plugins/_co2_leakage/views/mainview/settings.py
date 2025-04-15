@@ -13,8 +13,9 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SurfaceStatistic,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import \
-    StatisticsTabOption
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+    StatisticsTabOption,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
@@ -473,6 +474,7 @@ class ViewSettings(SettingsGroupABC):
                     return options, no_update if current_value in dates else dates[-1]
                 return [], None
 
+            # pylint: disable=too-many-branches
             @callback(
                 Output(
                     self.component_unique_id(self.Ids.MARK_BY).to_string(), "options"
@@ -867,13 +869,14 @@ class GraphSelectorsLayout(wcc.Selectors):
         "flexDirection": "row",
     }
 
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         graph_source_id: str,
         co2_scale_id: str,
         y_min_ids: List[str],
         y_max_ids: List[str],
-        containment_ids: Dict[ViewSettings.Ids, str],
+        containment_ids: Dict[str, str],  # ViewSettings.Ids
         content: Dict[str, bool],
     ):
         disp_zone = "flex" if content["zones"] else "none"
@@ -1184,7 +1187,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 },
                                 {
                                     "label": "Box plot",
-                                    "value": StatisticsTabOption.BOX_PLOT
+                                    "value": StatisticsTabOption.BOX_PLOT,
                                 },
                             ],
                             value=StatisticsTabOption.PROBABILITY_PLOT,

@@ -1,7 +1,7 @@
-from typing import TypedDict, Optional, List
+from typing import List, Optional, TypedDict
 
 
 class LegendData(TypedDict):
-    bar_legendonly: List[str] | None
-    time_legendonly: List[str] | None
-    stats_legendonly: List[str] | None
+    bar_legendonly: Optional[List[str]]
+    time_legendonly: Optional[List[str]]
+    stats_legendonly: Optional[List[str]]
