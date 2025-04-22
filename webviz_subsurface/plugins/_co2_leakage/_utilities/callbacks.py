@@ -20,6 +20,7 @@ from webviz_subsurface._providers import (
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
 )
+from webviz_subsurface.plugins._co2_leakage._types import LegendData
 from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
 from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
     generate_co2_box_plot_figure,
@@ -30,6 +31,10 @@ from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
     ContainmentDataProvider,
+)
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+    ContainmentInfo,
+    StatisticsTabOption,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.ensemble_well_picks import (
     EnsembleWellPicks,
@@ -119,6 +124,17 @@ class SurfaceData:
             ),
             summed_mass,
         )
+
+
+def extract_legendonly(figure: go.Figure) -> List[str]:
+    # Finds the names OR legendgroup of the traces in the figure which have their
+    # visibility set to "legendonly". In the figure, these traces are toggled OFF in the
+    # legend.
+    return [
+        d.get("legendgroup", d.get("name"))
+        for d in figure["data"]
+        if d.get("visible", "") == "legendonly"
+    ]
 
 
 def derive_surface_address(
@@ -386,18 +402,16 @@ def generate_containment_figures(
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realizations: List[int],
     y_limits: List[Optional[float]],
-    containment_info: Dict[str, Union[str, None, List[str], int]],
+    containment_info: ContainmentInfo,
+    legenddata: LegendData,
 ) -> Tuple[go.Figure, go.Figure, go.Figure]:
     try:
-        fig0 = (
-            no_update
-            if not containment_info["update_first_figure"]
-            else generate_co2_volume_figure(
-                table_provider,
-                table_provider.realizations,
-                co2_scale,
-                containment_info,
-            )
+        fig0 = generate_co2_volume_figure(
+            table_provider,
+            table_provider.realizations,
+            co2_scale,
+            containment_info,
+            legenddata["bar_legendonly"],
         )
         fig1 = (
             generate_co2_time_containment_figure(
@@ -405,6 +419,7 @@ def generate_containment_figures(
                 realizations,
                 co2_scale,
                 containment_info,
+                legenddata["time_legendonly"],
             )
             if len(realizations) > 1
             else generate_co2_time_containment_one_realization_figure(
@@ -415,19 +430,25 @@ def generate_containment_figures(
                 containment_info,
             )
         )
-        if containment_info["statistics_tab_option"] == "probability_plot":
+        if (
+            containment_info.statistics_tab_option
+            == StatisticsTabOption.PROBABILITY_PLOT
+        ):
             fig2 = generate_co2_statistics_figure(
                 table_provider,
                 realizations,
                 co2_scale,
                 containment_info,
+                legenddata["stats_legendonly"],
             )
         else:  # "box_plot"
+            # Deliberately uses same legend as statistics
             fig2 = generate_co2_box_plot_figure(
                 table_provider,
                 realizations,
                 co2_scale,
                 containment_info,
+                legenddata["stats_legendonly"],
             )
     except KeyError as exc:
         warnings.warn(f"Could not generate CO2 figures: {exc}")
@@ -475,6 +496,7 @@ def process_visualization_info(
     return stored_info
 
 
+# pylint: disable=too-many-locals
 def process_containment_info(
     zone: Optional[str],
     region: Optional[str],
@@ -486,10 +508,10 @@ def process_containment_info(
     sorting: str,
     lines_to_show: str,
     date_option: str,
-    statistics_tab_option: str,
+    statistics_tab_option: StatisticsTabOption,
     box_show_points: str,
     menu_options: MenuOptions,
-) -> Dict[str, Union[str, None, List[str], int]]:
+) -> ContainmentInfo:
     if mark_choice is None:
         mark_choice = "phase"
     zones = menu_options["zones"]
@@ -513,51 +535,57 @@ def process_containment_info(
         region = "all"
     if "region" in [mark_choice, color_choice]:
         zone = "all"
-    return {
-        "zone": zone,
-        "region": region,
-        "zones": zones,
-        "regions": regions,
-        "phase": phase,
-        "containment": containment,
-        "plume_group": plume_group,
-        "color_choice": color_choice,
-        "mark_choice": mark_choice,
-        "sorting": sorting,
-        "phases": [phase for phase in menu_options["phases"] if phase != "total"],
-        "containments": ["hazardous", "outside", "contained"],
-        "plume_groups": plume_groups,
-        "use_stats": lines_to_show == "stat",
-        "date_option": date_option,
-        "statistics_tab_option": statistics_tab_option,
-        "box_show_points": box_show_points,
-    }
+    return ContainmentInfo(
+        zone=zone,
+        region=region,
+        zones=zones,
+        regions=regions,
+        phase=phase,
+        containment=containment,
+        plume_group=plume_group,
+        color_choice=color_choice,
+        mark_choice=mark_choice,
+        sorting=sorting,
+        phases=[phase for phase in menu_options["phases"] if phase != "total"],
+        containments=["hazardous", "outside", "contained"],
+        plume_groups=plume_groups,
+        use_stats=lines_to_show == "stat",
+        date_option=date_option,
+        statistics_tab_option=statistics_tab_option,
+        box_show_points=box_show_points,
+    )
 
 
 def make_plot_ids(
     ensemble: str,
     source: GraphSource,
     scale: Union[Co2MassScale, Co2VolumeScale],
-    containment_info: Dict,
+    containment_info: ContainmentInfo,
     realizations: List[int],
-    lines_to_show: str,
-    statistics_tab_option: str,
+    # lines_to_show: str,
     num_figs: int,
 ) -> List[str]:
-    zone_str = (
-        containment_info["zone"] if containment_info["zone"] is not None else "None"
-    )
+    """
+    Removed some keywords from plot id that we don't want to trigger updates for
+    with respect to visible legends and potentially zoom level.
+
+    Note: Currently the legends are reset if you swap to a plot with different plot id
+    and back, so it works temporarily, in a sense. This might be good enough for now.
+    If we want to store it more extensively, we need to do something like what's been
+    outlined in _plugin.py.
+    """
+    zone_str = containment_info.zone if containment_info.zone is not None else "None"
     region_str = (
-        containment_info["region"] if containment_info["region"] is not None else "None"
+        containment_info.region if containment_info.region is not None else "None"
     )
     plume_group_str = (
-        containment_info["plume_group"]
-        if containment_info["plume_group"] is not None
+        containment_info.plume_group
+        if containment_info.plume_group is not None
         else "None"
     )
     mark_choice_str = (
-        containment_info["mark_choice"]
-        if containment_info["mark_choice"] is not None
+        containment_info.mark_choice
+        if containment_info.mark_choice is not None
         else "None"
     )
     plot_id = "-".join(
@@ -568,18 +596,19 @@ def make_plot_ids(
             zone_str,
             region_str,
             plume_group_str,
-            str(containment_info["phase"]),
-            str(containment_info["containment"]),
-            containment_info["color_choice"],
+            str(containment_info.phase),
+            str(containment_info.containment),
+            containment_info.color_choice,
             mark_choice_str,
-            containment_info["sorting"],
-            containment_info["date_option"],
+            containment_info.sorting,
+            containment_info.date_option,
         )
     )
-    ids = [plot_id]
-    ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
-    ids[1] += f"-{lines_to_show}"
-    ids[2] += f"-{statistics_tab_option}"
+    ids = [plot_id] * num_figs
+    # ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
+    # ids[1] += f"-{lines_to_show}"
+    ids[1] += "-single" if len(realizations) == 1 else "-multiple"
+    ids[2] += f"-{containment_info.statistics_tab_option}"
     return ids
 
 

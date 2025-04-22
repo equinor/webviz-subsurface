@@ -13,6 +13,9 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     SurfaceStatistic,
 )
 from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
+from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+    StatisticsTabOption,
+)
 from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
@@ -168,30 +171,31 @@ class ViewSettings(SettingsGroupABC):
                         self.register_component_unique_id(self.Ids.Y_MAX_GRAPH),
                         self.register_component_unique_id(self.Ids.Y_MAX_AUTO_GRAPH),
                     ],
-                    [
-                        self.register_component_unique_id(self.Ids.COLOR_BY),
-                        self.register_component_unique_id(self.Ids.MARK_BY),
-                        self.register_component_unique_id(self.Ids.SORT_PLOT),
-                        self.register_component_unique_id(self.Ids.ZONE),
-                        self.register_component_unique_id(self.Ids.ZONE_COL),
-                        self.register_component_unique_id(self.Ids.REGION),
-                        self.register_component_unique_id(self.Ids.REGION_COL),
-                        self.register_component_unique_id(self.Ids.ZONE_REGION),
-                        self.register_component_unique_id(self.Ids.PHASE),
-                        self.register_component_unique_id(self.Ids.PHASE_MENU),
-                        self.register_component_unique_id(self.Ids.CONTAINMENT),
-                        self.register_component_unique_id(self.Ids.CONTAINMENT_MENU),
-                        self.register_component_unique_id(self.Ids.PLUME_GROUP),
-                        self.register_component_unique_id(self.Ids.PLUME_GROUP_MENU),
-                        self.register_component_unique_id(self.Ids.REAL_OR_STAT),
-                        self.register_component_unique_id(self.Ids.Y_LIM_OPTIONS),
-                        self.register_component_unique_id(self.Ids.DATE_OPTION),
-                        self.register_component_unique_id(self.Ids.DATE_OPTION_COL),
-                        self.register_component_unique_id(
-                            self.Ids.STATISTICS_TAB_OPTION
-                        ),
-                        self.register_component_unique_id(self.Ids.BOX_SHOW_POINTS),
-                    ],
+                    {
+                        k: self.register_component_unique_id(k)
+                        for k in [
+                            self.Ids.COLOR_BY,
+                            self.Ids.MARK_BY,
+                            self.Ids.SORT_PLOT,
+                            self.Ids.ZONE,
+                            self.Ids.ZONE_COL,
+                            self.Ids.REGION,
+                            self.Ids.REGION_COL,
+                            self.Ids.ZONE_REGION,
+                            self.Ids.PHASE,
+                            self.Ids.PHASE_MENU,
+                            self.Ids.CONTAINMENT,
+                            self.Ids.CONTAINMENT_MENU,
+                            self.Ids.PLUME_GROUP,
+                            self.Ids.PLUME_GROUP_MENU,
+                            self.Ids.REAL_OR_STAT,
+                            self.Ids.Y_LIM_OPTIONS,
+                            self.Ids.DATE_OPTION,
+                            self.Ids.DATE_OPTION_COL,
+                            self.Ids.STATISTICS_TAB_OPTION,
+                            self.Ids.BOX_SHOW_POINTS,
+                        ]
+                    },
                     self._content,
                 )
             )
@@ -470,6 +474,7 @@ class ViewSettings(SettingsGroupABC):
                     return options, no_update if current_value in dates else dates[-1]
                 return [], None
 
+            # pylint: disable=too-many-branches
             @callback(
                 Output(
                     self.component_unique_id(self.Ids.MARK_BY).to_string(), "options"
@@ -500,21 +505,28 @@ class ViewSettings(SettingsGroupABC):
                 mark_choice: str,
             ) -> Tuple[List[Dict], str, Dict, Dict, Dict, Dict, Dict]:
                 mark_options = [
-                    {"label": "Phase", "value": "phase"},
                     {"label": "None", "value": "none"},
                 ]
-                if self._content["zones"] and color_choice == "containment":
-                    mark_options.append({"label": "Zone", "value": "zone"})
-                if self._content["regions"] and color_choice == "containment":
-                    mark_options.append({"label": "Region", "value": "region"})
-                if self._content["plume_groups"] and color_choice == "containment":
-                    mark_options.append(
-                        {"label": "Plume group", "value": "plume_group"}
-                    )
-                if color_choice in ["zone", "region", "plume_group"]:
-                    mark_options.append(
-                        {"label": "Containment", "value": "containment"}
-                    )
+                if color_choice in ["containment", "phase"]:
+                    if color_choice == "containment":
+                        mark_options.append({"label": "Phase", "value": "phase"})
+                    elif color_choice == "phase":
+                        mark_options.append(
+                            {"label": "Containment", "value": "containment"}
+                        )
+                    if self._content["zones"]:
+                        mark_options.append({"label": "Zone", "value": "zone"})
+                    if self._content["regions"]:
+                        mark_options.append({"label": "Region", "value": "region"})
+                    if self._content["plume_groups"]:
+                        mark_options.append(
+                            {"label": "Plume group", "value": "plume_group"}
+                        )
+                elif color_choice in ["zone", "region", "plume_group"]:
+                    mark_options += [
+                        {"label": "Containment", "value": "containment"},
+                        {"label": "Phase", "value": "phase"},
+                    ]
                     if (
                         color_choice in ["zone", "region"]
                         and self._content["plume_groups"]
@@ -528,7 +540,10 @@ class ViewSettings(SettingsGroupABC):
                         if self._content["regions"]:
                             mark_options.append({"label": "Region", "value": "region"})
                 if mark_choice is None or mark_choice == color_choice:
-                    mark_choice = "phase"
+                    if color_choice != "phase":
+                        mark_choice = "phase"
+                    else:
+                        mark_choice = "containment"
                 if mark_choice in ["zone", "region"] and color_choice in [
                     "zone",
                     "region",
@@ -854,20 +869,27 @@ class GraphSelectorsLayout(wcc.Selectors):
         "flexDirection": "row",
     }
 
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         graph_source_id: str,
         co2_scale_id: str,
         y_min_ids: List[str],
         y_max_ids: List[str],
-        containment_ids: List[str],
+        containment_ids: Dict[str, str],  # ViewSettings.Ids
         content: Dict[str, bool],
     ):
         disp_zone = "flex" if content["zones"] else "none"
         disp_region = "flex" if content["regions"] else "none"
         disp_plume_group = "flex" if content["plume_groups"] else "none"
-        color_options = [{"label": "Containment", "value": "containment"}]
-        mark_options = [{"label": "Phase", "value": "phase"}]
+        color_options = [
+            {"label": "Containment", "value": "containment"},
+            {"label": "Phase", "value": "phase"},
+        ]
+        mark_options = [
+            {"label": "Phase", "value": "phase"},
+            {"label": "Containment", "value": "containment"},
+        ]
         if content["zones"]:
             color_options.append({"label": "Zone", "value": "zone"})
             mark_options.append({"label": "Zone", "value": "zone"})
@@ -889,6 +911,7 @@ class GraphSelectorsLayout(wcc.Selectors):
             if source_options[0] == GraphSource.CONTAINMENT_ACTUAL_VOLUME
             else (list(Co2MassScale), Co2MassScale.MTONS)
         )
+        ids = ViewSettings.Ids
         super().__init__(
             label="Graph Settings",
             open_details=not content["maps"],
@@ -915,7 +938,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=color_options,
                                     value="containment",
-                                    id=containment_ids[0],
+                                    id=containment_ids[ids.COLOR_BY],
                                     clearable=False,
                                 ),
                             ],
@@ -930,7 +953,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=mark_options,
                                     value="phase",
-                                    id=containment_ids[1],
+                                    id=containment_ids[ids.MARK_BY],
                                     clearable=False,
                                 ),
                             ],
@@ -953,7 +976,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                         dcc.RadioItems(
                             options=["color", "marking"],
                             value="color",
-                            id=containment_ids[2],
+                            id=containment_ids[ids.SORT_PLOT],
                             inline=True,
                         ),
                     ],
@@ -972,11 +995,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=[{"label": "All", "value": "all"}],
                                     value="all",
-                                    id=containment_ids[3],
+                                    id=containment_ids[ids.ZONE],
                                     clearable=False,
                                 ),
                             ],
-                            id=containment_ids[4],
+                            id=containment_ids[ids.ZONE_COL],
                             style={
                                 "width": (
                                     "33%"
@@ -1000,11 +1023,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=[{"label": "All", "value": "all"}],
                                     value="all",
-                                    id=containment_ids[5],
+                                    id=containment_ids[ids.REGION],
                                     clearable=False,
                                 ),
                             ],
-                            id=containment_ids[6],
+                            id=containment_ids[ids.REGION_COL],
                             style={
                                 "width": (
                                     "33%"
@@ -1026,10 +1049,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                                     options=[{"label": "Total", "value": "total"}],
                                     value="total",
                                     clearable=False,
-                                    id=containment_ids[8],
+                                    id=containment_ids[ids.PHASE],
                                 ),
                             ],
-                            id=containment_ids[9],
+                            id=containment_ids[ids.PHASE_MENU],
                             style={"display": "none"},
                         ),
                         html.Div(
@@ -1044,10 +1067,10 @@ class GraphSelectorsLayout(wcc.Selectors):
                                     ],
                                     value="total",
                                     clearable=False,
-                                    id=containment_ids[10],
+                                    id=containment_ids[ids.CONTAINMENT],
                                 ),
                             ],
-                            id=containment_ids[11],
+                            id=containment_ids[ids.CONTAINMENT_MENU],
                             style={"display": "none"},
                         ),
                         html.Div(
@@ -1056,11 +1079,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 wcc.Dropdown(
                                     options=[{"label": "All", "value": "all"}],
                                     value="all",
-                                    id=containment_ids[12],
+                                    id=containment_ids[ids.PLUME_GROUP],
                                     clearable=False,
                                 ),
                             ],
-                            id=containment_ids[13],
+                            id=containment_ids[ids.PLUME_GROUP_MENU],
                             style={
                                 "width": (
                                     "33%"
@@ -1076,7 +1099,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                             },
                         ),
                     ],
-                    id=containment_ids[7],
+                    id=containment_ids[ids.ZONE_REGION],
                     style={"display": "flex"},
                 ),
                 html.Div(
@@ -1091,7 +1114,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 {"label": "Mean/P10/P90", "value": "stat"},
                             ],
                             value="real",
-                            id=containment_ids[14],
+                            id=containment_ids[ids.REAL_OR_STAT],
                             inline=True,
                         ),
                     ],
@@ -1107,11 +1130,11 @@ class GraphSelectorsLayout(wcc.Selectors):
                 html.Div(
                     [
                         wcc.Dropdown(
-                            id=containment_ids[16],
+                            id=containment_ids[ids.DATE_OPTION],
                             clearable=False,
                         ),
                     ],
-                    id=containment_ids[17],
+                    id=containment_ids[ids.DATE_OPTION_COL],
                     style={
                         "width": "100%",
                         "flex-direction": "row",
@@ -1148,7 +1171,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                         "display": "flex",
                         "flex-direction": "column",
                     },
-                    id=containment_ids[15],
+                    id=containment_ids[ids.Y_LIM_OPTIONS],
                 ),
                 html.Div(
                     "Statistics tab:",
@@ -1160,12 +1183,15 @@ class GraphSelectorsLayout(wcc.Selectors):
                             options=[
                                 {
                                     "label": "Probability plot",
-                                    "value": "probability_plot",
+                                    "value": StatisticsTabOption.PROBABILITY_PLOT,
                                 },
-                                {"label": "Box plot", "value": "box_plot"},
+                                {
+                                    "label": "Box plot",
+                                    "value": StatisticsTabOption.BOX_PLOT,
+                                },
                             ],
-                            value="probability_plot",
-                            id=containment_ids[18],
+                            value=StatisticsTabOption.PROBABILITY_PLOT,
+                            id=containment_ids[ids.STATISTICS_TAB_OPTION],
                         ),
                     ],
                 ),
@@ -1181,7 +1207,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                 {"label": "Outliers", "value": "only_outliers"},
                             ],
                             value="only_outliers",
-                            id=containment_ids[19],
+                            id=containment_ids[ids.BOX_SHOW_POINTS],
                             inline=True,
                         ),
                     ],
@@ -1438,6 +1464,59 @@ def _make_styles(
             else:
                 phase["width"] = plume_group["width"] = "100%"
             phase["display"] = "flex"
+    elif color_choice == "phase":
+        if mark_choice == "containment":
+            zone["display"] = "flex" if has_zones else "none"
+            region["display"] = "flex" if has_regions else "none"
+            plume_group["display"] = "flex" if has_plume_groups else "none"
+            n_categories = has_regions + has_zones + has_plume_groups
+            if n_categories == 3:
+                zone["width"] = region["width"] = plume_group["width"] = "33%"
+            elif n_categories == 2:
+                zone["width"] = region["width"] = plume_group["width"] = "50%"
+            else:
+                zone["width"] = region["width"] = plume_group["width"] = "100%"
+        elif mark_choice == "plume_group":
+            zone["display"] = "flex" if has_zones else "none"
+            region["display"] = "flex" if has_regions else "none"
+            containment["display"] = "flex"
+            n_categories = 1 + has_regions + has_zones
+            if n_categories == 3:
+                zone["width"] = region["width"] = containment["width"] = "33%"
+            elif n_categories == 2:
+                zone["width"] = region["width"] = containment["width"] = "50%"
+            else:
+                zone["width"] = region["width"] = containment["width"] = "100%"
+        elif mark_choice == "none":
+            zone["display"] = "flex" if has_zones else "none"
+            region["display"] = "flex" if has_regions else "none"
+            plume_group["display"] = "flex" if has_plume_groups else "none"
+            containment["display"] = "flex"
+            n_categories = 1 + has_regions + has_zones + has_plume_groups
+            if n_categories == 4:
+                containment["width"] = zone["width"] = region["width"] = plume_group[
+                    "width"
+                ] = "25%"
+            elif n_categories == 3:
+                containment["width"] = zone["width"] = region["width"] = plume_group[
+                    "width"
+                ] = "33%"
+            elif n_categories == 2:
+                containment["width"] = zone["width"] = region["width"] = plume_group[
+                    "width"
+                ] = "50%"
+            else:
+                containment["width"] = zone["width"] = region["width"] = plume_group[
+                    "width"
+                ] = "100%"
+        else:  # mark_choice == "zone" / "region"
+            plume_group["display"] = "flex" if has_plume_groups else "none"
+            n_categories = 1 + has_plume_groups
+            if n_categories == 2:
+                containment["width"] = plume_group["width"] = "50%"
+            else:
+                containment["width"] = plume_group["width"] = "100%"
+            containment["display"] = "flex"
     elif color_choice == "plume_group":
         if mark_choice == "phase":
             zone["display"] = "flex" if has_zones else "none"
@@ -1487,8 +1566,6 @@ def _make_styles(
             phase["display"] = "flex"
             containment["display"] = "flex"
             phase["width"] = containment["width"] = "50%"
-    elif color_choice == "phase":
-        pass  # Not an option
     else:  # color_choice == "zone" / "region"
         if mark_choice == "phase":
             plume_group["display"] = "flex" if has_plume_groups else "none"

@@ -2,11 +2,13 @@ from typing import Any, Dict, List
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import html
+from dash import dcc, html
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 from webviz_subsurface_components import SubsurfaceViewer
+
+from webviz_subsurface.plugins._co2_leakage._types import LegendData
 
 
 class MainView(ViewABC):
@@ -32,6 +34,7 @@ class MapViewElement(ViewElementABC):
         SIZE_SLIDER = "size-slider"
         TOP_ELEMENT = "top-element"
         BOTTOM_ELEMENT = "bottom-element"
+        LEGEND_DATA_STORE = "legend-data-store"
 
     def __init__(
         self, color_scales: List[Dict[str, Any]], content: Dict[str, bool]
@@ -105,6 +108,16 @@ class MapViewElement(ViewElementABC):
                             )
                         ),
                     ],
+                )
+            )
+            layout_elements.append(
+                dcc.Store(
+                    id=self.register_component_unique_id(self.Ids.LEGEND_DATA_STORE),
+                    data=LegendData(
+                        bar_legendonly=None,
+                        time_legendonly=None,
+                        stats_legendonly=None,
+                    ),
                 )
             )
         if self._content["maps"] and self._content["any_table"]:
