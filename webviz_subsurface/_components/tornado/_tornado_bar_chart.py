@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 from webviz_subsurface._abbreviations.number_formatting import si_prefixed
 
-from ._tornado_data import TornadoData
+from ._tornado_data import SensitivityType, TornadoData
 
 
 class TornadoBarChart:
@@ -136,9 +136,25 @@ class TornadoBarChart:
             hovertext.append(text)
         return hovertext
 
+    def get_sensitivity_colors(self, case: str) -> List:
+        """Create color list for bars based on sensitivity type
+        If colors are set by sensitivity, just create a color per sensitivty.
+        If not handle scalar and mc sensitivities separately.
+        For scalar, that is sensitivities with two "cases", use separate colors for each case.
+        For mc, use one color.
+        """
+        if self._color_by_sens:
+            return self.create_color_list(self._tornadotable["sensname"])
+        colors = []
+        for _, row in self._tornadotable.iterrows():
+            if row["senstype"] == SensitivityType.MONTE_CARLO or case == "low":
+                colors.append(self._plotly_theme["layout"]["colorway"][0])
+            else:
+                colors.append(self._plotly_theme["layout"]["colorway"][1])
+        return colors
+
     @property
     def data(self) -> List:
-        colors = self.create_color_list(self._tornadotable["sensname"].unique())
         return [
             {
                 "type": "bar",
@@ -157,7 +173,7 @@ class TornadoBarChart:
                 "orientation": "h",
                 "marker": {
                     "line": {"width": 1.5, "color": "black"},
-                    "color": colors if self._color_by_sens else None,
+                    "color": self.get_sensitivity_colors("low"),
                 },
             },
             {
@@ -177,7 +193,7 @@ class TornadoBarChart:
                 "orientation": "h",
                 "marker": {
                     "line": {"width": 1.5, "color": "black"},
-                    "color": colors if self._color_by_sens else None,
+                    "color": self.get_sensitivity_colors("high"),
                 },
             },
         ]
@@ -193,6 +209,15 @@ class TornadoBarChart:
 
     @property
     def scatter_data(self) -> List[Dict]:
+        def get_color(case_name_arr: pd.Series, case_type_arr: pd.Series) -> List:
+            colors = []
+            for case_name, case_type in zip(case_name_arr, case_type_arr):
+                if case_name == "low" or case_type == SensitivityType.MONTE_CARLO:
+                    colors.append(self._plotly_theme["layout"]["colorway"][0])
+                else:
+                    colors.append(self._plotly_theme["layout"]["colorway"][1])
+            return colors
+
         return [
             {
                 "type": "scatter",
@@ -202,14 +227,9 @@ class TornadoBarChart:
                 "text": df["REAL"],
                 "hovertemplate": "REAL: <b>%{text}</b><br>"
                 + "X: <b>%{x:.1f}</b> <extra></extra>",
-                "marker": {
-                    "size": 15,
-                    "color": self._plotly_theme["layout"]["colorway"][0]
-                    if case == "low"
-                    else self._plotly_theme["layout"]["colorway"][1],
-                },
+                "marker": {"size": 15, "color": get_color(df["case"], df["casetype"])},
             }
-            for case, df in self._realtable.groupby("case")
+            for _, df in self._realtable.groupby("case")
         ]
 
     @property

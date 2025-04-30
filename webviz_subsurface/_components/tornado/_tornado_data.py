@@ -3,6 +3,15 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
+from webviz_subsurface._utils.enum_shim import StrEnum
+
+
+class SensitivityType(StrEnum):
+    """Sensitivity types used in Tornado analysis."""
+
+    SCALAR = "scalar"
+    MONTE_CARLO = "mc"
+
 
 class TornadoData:
     REQUIRED_COLUMNS = ["REAL", "SENSNAME", "SENSCASE", "SENSTYPE", "VALUE"]
@@ -50,7 +59,11 @@ class TornadoData:
     def _create_real_df(self, dframe: pd.DataFrame) -> pd.DataFrame:
         """Make dataframe with value and case info per realization"""
         realdf = dframe[self.REQUIRED_COLUMNS].rename(
-            columns={"SENSNAME": "sensname", "SENSCASE": "senscase"}
+            columns={
+                "SENSNAME": "sensname",
+                "SENSCASE": "senscase",
+                "SENSTYPE": "senstype",
+            }
         )
 
         sensitivities = self._tornadotable["sensname"].unique()
@@ -61,7 +74,7 @@ class TornadoData:
                 casemask = realdf["REAL"].isin(val[f"real_{case}"])
                 realdf.loc[casemask, "case"] = case
 
-        mc_mask = realdf["SENSTYPE"] == "mc"
+        mc_mask = realdf["senstype"] == "mc"
         realdf["casetype"] = np.where(mc_mask, "mc", realdf["case"])
         realdf["sensname_case"] = np.where(
             mc_mask,
@@ -127,6 +140,7 @@ class TornadoData:
                                 sens_case_df["VALUE"].mean()
                             ),
                             "reals": list(map(int, sens_case_df["REAL"])),
+                            "senstype": SensitivityType.SCALAR,
                         }
                     )
             # If `SENSTYPE` is monte carlo get p10, p90
@@ -162,6 +176,7 @@ class TornadoData:
                         "values": p90,
                         "values_ref": self._scale_to_ref(p90),
                         "reals": low_reals,
+                        "senstype": SensitivityType.MONTE_CARLO,
                     }
                 )
                 avg_per_sensitivity.append(
@@ -171,6 +186,7 @@ class TornadoData:
                         "values": p10,
                         "values_ref": self._scale_to_ref(p10),
                         "reals": high_reals,
+                        "senstype": SensitivityType.MONTE_CARLO,
                     }
                 )
 
@@ -198,6 +214,7 @@ class TornadoData:
                     high["reals"] = []
                     high["senscase"] = None
                     high["values"] = self.reference_average
+
                 else:
                     low = (
                         low.copy()
@@ -218,6 +235,7 @@ class TornadoData:
                     "true_low": low["values"],
                     "low_reals": low["reals"],
                     "sensname": sensname,
+                    "senstype": sens_name_df["senstype"].unique()[0],
                     "high": self.calc_high_x(low["values_ref"], high["values_ref"]),
                     "high_base": self.calc_high_base(
                         low["values_ref"], high["values_ref"]
