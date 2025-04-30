@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 from webviz_subsurface._abbreviations.number_formatting import si_prefixed
 
-from ._tornado_data import TornadoData, SensitivityType
+from ._tornado_data import SensitivityType, TornadoData
 
 
 class TornadoBarChart:

@@ -1,7 +1,9 @@
 from typing import Dict, List, Optional, Union
-from enum import StrEnum
+
 import numpy as np
 import pandas as pd
+
+from webviz_subsurface._utils.enum_shim import StrEnum
 
 
 class SensitivityType(StrEnum):
