@@ -8,6 +8,8 @@ from webviz_config import WebvizConfigTheme
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models.parameter_model import ParametersModel as Pmodel
 
+from .._types import VisualizationType
+
 
 class ParametersModel:
     """Class to process and visualize ensemble parameter data"""
@@ -163,7 +165,7 @@ class ParametersModel:
         self,
         ensembles: list,
         parameters: List[Any],
-        plot_type: str = "distribution",
+        plot_type: VisualizationType = VisualizationType.DISTRIBUTION,
     ) -> go.Figure:
         """Create subplots for selected parameters"""
         df = self.dataframe_melted.copy()
@@ -171,7 +173,7 @@ class ParametersModel:
         df = df[df["PARAMETER"].isin(parameters)]
         df = self._sort_parameters_col(df, parameters)
 
-        return (
+        figure = (
             create_figure(
                 plot_type=plot_type,
                 data_frame=df,
@@ -179,6 +181,7 @@ class ParametersModel:
                 facet_col="PARAMETER",
                 color="ENSEMBLE",
                 color_discrete_sequence=self.colorway,
+                barmode="overlay",
             )
             .update_xaxes(matches=None)
             .for_each_trace(
@@ -189,6 +192,11 @@ class ParametersModel:
                 )
             )
         )
+        # Use bingroup=None so that Plotly calculates bins per trace
+        # This also means that individual ensembles will have separate binning.
+        if plot_type == VisualizationType.HISTOGRAM:
+            figure.update_traces(bingroup=None)
+        return figure
 
     def get_stat_value(self, parameter: str, ensemble: str, stat_column: str) -> float:
         """
