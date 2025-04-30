@@ -20,6 +20,7 @@ class ParamDistVisualizationType(SettingsGroupABC):
             wcc.RadioItems(
                 id=self.register_component_unique_id(self.Ids.VISUALIZATION_TYPE),
                 options=[
+                    {"label": "Histogram", "value": VisualizationType.HISTOGRAM},
                     {
                         "label": "Distribution plots",
                         "value": VisualizationType.DISTRIBUTION,
@@ -30,7 +31,7 @@ class ParamDistVisualizationType(SettingsGroupABC):
                         "value": VisualizationType.STAT_TABLE,
                     },
                 ],
-                value=VisualizationType.DISTRIBUTION,
+                value=VisualizationType.HISTOGRAM,
                 vertical=True,
             )
         ]
