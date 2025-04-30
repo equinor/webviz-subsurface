@@ -15,7 +15,8 @@ import pandas as pd
 # NOTE: Functions in this file cannot be used
 #       on non-Linux OSes.
 try:
-    from res2df.resdatafiles import ResdataFiles, common
+    from res2df import common
+    from res2df.resdatafiles import ResdataFiles
 except ImportError:
     pass
 
