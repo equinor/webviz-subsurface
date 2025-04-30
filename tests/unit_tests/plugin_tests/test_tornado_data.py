@@ -3,8 +3,8 @@ import pandas as pd
 import pytest
 
 from webviz_subsurface._components.tornado._tornado_data import (
-    TornadoData,
     SensitivityType,
+    TornadoData,
 )
 
 
