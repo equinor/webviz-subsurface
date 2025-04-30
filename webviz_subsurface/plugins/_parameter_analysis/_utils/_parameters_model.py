@@ -7,6 +7,7 @@ from webviz_config import WebvizConfigTheme
 
 from webviz_subsurface._figures import create_figure
 from webviz_subsurface._models.parameter_model import ParametersModel as Pmodel
+
 from .._types import VisualizationType
 
 
