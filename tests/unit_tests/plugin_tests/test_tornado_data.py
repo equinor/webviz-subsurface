@@ -2,7 +2,7 @@
 import pandas as pd
 import pytest
 
-from webviz_subsurface._components.tornado._tornado_data import TornadoData
+from webviz_subsurface._components.tornado._tornado_data import TornadoData, SensitivityType
 
 
 def test_tornado_data_init():
@@ -36,6 +36,7 @@ def test_tornado_data_init():
         "values": 11.0,
         "values_ref": -26.666666666666668,
         "reals": [0],
+        'senstype': 'mc'
     }
     low_high_list = tornado_data._calculate_tornado_low_high_list(avg_list)
     assert low_high_list[0] == {
@@ -52,6 +53,7 @@ def test_tornado_data_init():
         "high_tooltip": 26.666666666666668,
         "true_high": 19.0,
         "high_reals": [1],
+        'senstype': 'mc'
     }
 
     tornado_data = TornadoData(
@@ -72,6 +74,7 @@ def test_tornado_data_init():
             "high_tooltip": 13.5,
             "true_high": 19.0,
             "high_reals": [0, 1],
+            'senstype': SensitivityType.MONTE_CARLO
         },
         {
             "low": 0.0,
@@ -87,6 +90,8 @@ def test_tornado_data_init():
             "high_tooltip": 0.0,
             "true_high": 5.5,
             "high_reals": [2, 3],
+            'senstype': SensitivityType.SCALAR
+            
         },
         {
             "low": 0.0,
@@ -102,6 +107,7 @@ def test_tornado_data_init():
             "high_tooltip": 20.0,
             "true_high": 25.5,
             "high_reals": [4, 5],
+           'senstype': SensitivityType.SCALAR
         },
         {
             "low": 0.0,
@@ -117,5 +123,6 @@ def test_tornado_data_init():
             "high_tooltip": 5.300000000000001,
             "true_high": 10.8,
             "high_reals": [6, 7],
+           'senstype': SensitivityType.MONTE_CARLO
         },
     ]
