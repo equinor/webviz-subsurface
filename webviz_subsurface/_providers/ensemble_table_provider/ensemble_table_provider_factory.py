@@ -10,10 +10,10 @@ from webviz_config.webviz_factory import WebvizFactory
 from webviz_config.webviz_factory_registry import WEBVIZ_FACTORY_REGISTRY
 from webviz_config.webviz_instance_info import WebvizRunMode
 
-from webviz_subsurface._utils.perf_timer import PerfTimer
 from webviz_subsurface._utils.design_matrix import (
     rename_design_matrix_parameter_columns,
 )
+from webviz_subsurface._utils.perf_timer import PerfTimer
 
 from ..ensemble_summary_provider._arrow_unsmry_import import (
     load_per_realization_arrow_unsmry_files,
