@@ -235,8 +235,7 @@ class SeismicMisfit(WebvizPluginABC):
 
             obsinfo = _compare_dfs_obs(self.dframeobs[attribute_name], self.ens_names)
             self.caseinfo = (
-                f"{self.caseinfo}Attribute: {attribute_name}"
-                f"\n{obsinfo}\n-----------\n"
+                f"{self.caseinfo}Attribute: {attribute_name}\n{obsinfo}\n-----------\n"
             )
 
             # get sorted list of unique region values
@@ -2441,7 +2440,7 @@ def update_obs_sim_map_plot(
                 mode="markers",
                 marker={
                     "size": marker_size,
-                    "color": ensdf_stat["coverage"],
+                    "color": ensdf_stat[coverage],
                     "cmin": -1.0,
                     "cmax": 2.0,
                     "colorscale": SEISMIC_COVERAGE,
