@@ -48,7 +48,7 @@ jobs:
           if [[ $(pip freeze) ]]; then
             pip freeze | grep -vw "pip" | xargs pip uninstall -y
           fi
-          pip install "urllib3<2"
+          pip install "urllib3<2" "plotly<6.1"
           pip install .
 
           # Testing against our latest release (including pre-releases)
