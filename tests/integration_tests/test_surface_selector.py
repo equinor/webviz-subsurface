@@ -32,6 +32,7 @@ return_value = {
     "date": "20030101_20010601",
 }
 
+
 @pytest.mark.skip(reason="Test times out - unsure way - skip test for now")
 def test_surface_selector(dash_duo: dash.testing.composite.DashComposite) -> None:
     app = dash.Dash(__name__)
