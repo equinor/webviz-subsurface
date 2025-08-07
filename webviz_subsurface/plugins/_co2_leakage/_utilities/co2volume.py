@@ -623,7 +623,7 @@ def _add_hover_info_in_field(
         for date in dates
     }
     prev_vals = {date: 0 for date in dates}
-    date_dict = spaced_dates(dates, 4)  # pylint: disable=arg-type
+    date_dict = spaced_dates(dates, 4)  # type: ignore[arg-type]
     for name, color in zip(cat_ord["type"], colors):
         sub_df = df[df["type"] == name]
         for date in dates:
