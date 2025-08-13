@@ -602,7 +602,12 @@ def make_status_df(
         # Load each json-file to a DataFrame for the realization
         with open(row.FULLPATH) as fjson:
             status_dict = json.load(fjson)
-        real_df = pd.DataFrame(status_dict["jobs"])
+        if "steps" in status_dict:
+            real_df = pd.DataFrame(status_dict["steps"])
+        elif "jobs" in status_dict:
+            real_df = pd.DataFrame(status_dict["jobs"])
+        else:
+            raise KeyError(f"Neither 'steps' nor 'jobs' found in {status_file}")
 
         # If new ensemble, calculate ensemble scaled runtimes
         # for previous ensemble and reset temporary ensemble data
