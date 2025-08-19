@@ -61,7 +61,7 @@ FMU format.
 **Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`rel_file_pattern`:** path to `.arrow` files with summary data.
-* **`statistic_file`:** Csv file for each realization with property statistics. See the \
+* **`statistics_file`:** Csv file for each realization with property statistics. See the \
     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors \
     from the simulations will be extracted. Wild card asterisk `*` can be used.
