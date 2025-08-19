@@ -160,7 +160,9 @@ class ProviderImplArrowLazy(EnsembleSummaryProvider):
             f"{len(unique_column_names)} unique column names"
         )
 
-        full_table = pa.concat_tables(per_real_tables.values(), promote=True)
+        full_table = pa.concat_tables(
+            per_real_tables.values(), promote_options="default"
+        )
         elapsed.concat_tables_s = timer.lap_s()
 
         real_arr = np.empty(full_table.num_rows, np.int32)

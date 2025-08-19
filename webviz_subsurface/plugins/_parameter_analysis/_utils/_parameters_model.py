@@ -78,15 +78,15 @@ class ParametersModel:
             .groupby(["ENSEMBLE"])
             .agg(
                 [
-                    ("Avg", np.mean),
-                    ("Stddev", np.std),
+                    ("Avg", "mean"),
+                    ("Stddev", "std"),
                     ("P10", lambda x: np.percentile(x, 10)),
                     ("P90", lambda x: np.percentile(x, 90)),
-                    ("Min", np.min),
-                    ("Max", np.max),
+                    ("Min", "min"),
+                    ("Max", "max"),
                 ]
             )
-            .stack(0)
+            .stack(0, future_stack=True)
             .rename_axis(["ENSEMBLE", "PARAMETER"])
             .reset_index()
         )
