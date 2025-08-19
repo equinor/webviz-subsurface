@@ -1015,10 +1015,10 @@ def render_table(
                 table.append(
                     {
                         "Group": ens,
-                        "Minimum": df["nanmin"].iat[0],
-                        "Maximum": df["nanmax"].iat[0],
-                        "Mean": df["nanmean"].iat[0],
-                        "Stddev": df["nanstd"].iat[0],
+                        "Minimum": df["min"].iat[0],
+                        "Maximum": df["max"].iat[0],
+                        "Mean": df["mean"].iat[0],
+                        "Stddev": df["std"].iat[0],
                         "P10": df["p10"].iat[0],
                         "P90": df["p90"].iat[0],
                     }
@@ -1031,10 +1031,10 @@ def render_table(
             table.append(
                 {
                     "Group": col.split("_filtered_on_")[-1],
-                    "Minimum": df["nanmin"].iat[0],
-                    "Maximum": df["nanmax"].iat[0],
-                    "Mean": df["nanmean"].iat[0],
-                    "Stddev": df["nanstd"].iat[0],
+                    "Minimum": df["min"].iat[0],
+                    "Maximum": df["max"].iat[0],
+                    "Mean": df["mean"].iat[0],
+                    "Stddev": df["std"].iat[0],
                     "P10": df["p10"].iat[0],
                     "P90": df["p90"].iat[0],
                 }
@@ -1259,7 +1259,7 @@ def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
         stat_dfs.append(
             ens_df.drop(columns=["REAL", "ENSEMBLE"])
             .groupby("DATE", as_index=False)
-            .agg([np.nanmean, np.nanstd, np.nanmin, np.nanmax, p10, p90])
+            .agg(["mean", "std", "min", "max", p10, p90])
             .reset_index()
             .assign(ENSEMBLE=ens)
         )
@@ -1327,10 +1327,10 @@ def _get_fanchart_traces(
             high_name="P10",
         ),
         minimum_maximum=MinMaxData(
-            minimum=stat_df[column]["nanmin"].values,
-            maximum=stat_df[column]["nanmax"].values,
+            minimum=stat_df[column]["min"].values,
+            maximum=stat_df[column]["max"].values,
         ),
-        free_line=FreeLineData("Mean", stat_df[column]["nanmean"].values),
+        free_line=FreeLineData("Mean", stat_df[column]["mean"].values),
     )
 
     hovertemplate = f"{legend_group}"

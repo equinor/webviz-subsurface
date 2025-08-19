@@ -41,15 +41,15 @@ def calc_statistics(df: pd.DataFrame) -> pd.DataFrame:
     # Calculate statistics, ignoring NaNs.
     stat_df = (
         df.groupby("ENSEMBLE")
-        .agg([np.nanmean, "count", np.nanstd, np.nanmin, np.nanmax, p10, p50, p90])
+        .agg(["mean", "count", "std", "min", "max", p10, p50, p90])
         .reset_index(drop=True, level="ENSEMBLE")
     )
     # Rename nanmin, nanmax and nanmean to min, max and mean.
     col_stat_label_map = {
-        "nanmin": "min",
-        "nanmax": "max",
-        "nanmean": "mean",
-        "nanstd": "std",
+        "min": "min",
+        "max": "max",
+        "mean": "mean",
+        "std": "std",
         "p10": "high_p10",
         "p90": "low_p90",
     }

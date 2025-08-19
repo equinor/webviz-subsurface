@@ -82,7 +82,7 @@ def make_date_column_datetime_object(df: pd.DataFrame) -> None:
     # pylint: disable = unidiomatic-typecheck
     if type(sampled_date_value) == pd.Timestamp:
         df["DATE"] = pd.Series(
-            df["DATE"].dt.to_pydatetime(), dtype=object, index=df.index
+            np.array(df["DATE"].dt.to_pydatetime()), dtype=object, index=df.index
         )
         return None
 
