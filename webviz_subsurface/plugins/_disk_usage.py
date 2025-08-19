@@ -43,15 +43,25 @@ class DiskUsage(WebvizPluginABC):
         self.scratch_dir = scratch_dir
         self.date_input = date
         self.disk_usage = get_disk_usage(self.scratch_dir, self.date_input)
-        self.date = str(self.disk_usage["date"][0])
+
         self.theme = webviz_settings.theme
 
     @property
     def layout(self) -> html.Div:
+        if self.disk_usage.empty:
+            return html.Div(
+                [
+                    wcc.Header(
+                        f"No disk usage data found for {self.scratch_dir}.",
+                        style={"text-align": "center"},
+                    ),
+                ]
+            )
+        date = str(self.disk_usage["date"][0]) if not self.disk_usage.empty else None
         return html.Div(
             [
                 wcc.Header(
-                    f"Disk usage on {self.scratch_dir} per user as of {self.date}",
+                    f"Disk usage on {self.scratch_dir} per user as of {date}",
                     style={"text-align": "center"},
                 ),
                 wcc.FlexBox(
@@ -129,10 +139,10 @@ def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
         df, date = _loop_dates(scratch_dir)
     else:
         df = _get_disk_usage_for_date(scratch_dir, date)
-        if df is None:
-            raise FileNotFoundError(
-                f"No disk usage file found for {date} in {scratch_dir}."
-            )
+
+        # Return early if no data is found
+        if df.empty:
+            return df
 
     df.rename(
         columns={"usageKB": "usageKiB"}, inplace=True
@@ -174,7 +184,7 @@ def get_disk_usage(scratch_dir: Path, date: Optional[str]) -> pd.DataFrame:
     return df.sort_values(by="usageGiB", axis=0, ascending=False)
 
 
-def _get_disk_usage_for_date(scratch_dir: Path, date: str) -> Optional[pd.DataFrame]:
+def _get_disk_usage_for_date(scratch_dir: Path, date: str) -> pd.DataFrame:
     csv_file = scratch_dir / ".disk_usage" / f"disk_usage_user_test_{date}.csv"
     if csv_file.exists():
         return pd.read_csv(csv_file)
@@ -182,7 +192,8 @@ def _get_disk_usage_for_date(scratch_dir: Path, date: str) -> Optional[pd.DataFr
     csv_file = scratch_dir / ".disk_usage" / f"disk_usage_user_{date}.csv"
     if csv_file.exists():
         return pd.read_csv(csv_file)
-    return None
+    # Create empty DataFrame with expected columns if no file is found
+    return pd.DataFrame(columns=["userid", "usageGiB", "date"])
 
 
 def _loop_dates(scratch_dir: Path) -> Tuple[pd.DataFrame, str]:
