@@ -23,7 +23,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 keywords = []
-requires-python = "~=3.8"
+requires-python = "~=3.11"
 dependencies = [
     "dash>=2.0.0,<3",
     "dash_bootstrap_components>=0.10.3",
