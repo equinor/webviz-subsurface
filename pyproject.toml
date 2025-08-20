@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools>=61.0.0", "wheel", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "webviz-subsurface"
 description = "Webviz config plugins for subsurface data"
-dynamic = ["version"]
 readme = "README.md"
 authors = [
-    {name = "R&T Equinor"},
+    { name = "R&T Equinor" },
 ]
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
+requires-python = "~=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -21,9 +21,9 @@ classifiers = [
     "Topic :: Multimedia :: Graphics",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Visualization",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)", 
 ]
-keywords = []
-requires-python = "~=3.11"
+dynamic = ["version"]
 dependencies = [
     "dash>=2.0.0,<3",
     "dash_bootstrap_components>=0.10.3",
@@ -48,6 +48,13 @@ dependencies = [
     "webviz-config>=0.6.5",
     "webviz-subsurface-components>=1.0.3",
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/equinor/webviz-subsurface"
+"Documentation" = "https://equinor.github.io/webviz-subsurface"
+"Source" = "https://github.com/equinor/webviz-subsurface"
+"Tracker" = "https://github.com/equinor/webviz-subsurface/issues"
+
 [project.scripts]
 smry2arrow_batch = "webviz_subsurface.smry2arrow_batch:main"
 
@@ -99,11 +106,6 @@ WellCrossSection = "webviz_subsurface.plugins._well_cross_section:WellCrossSecti
 WellCrossSectionFMU = "webviz_subsurface.plugins._well_cross_section_fmu:WellCrossSectionFMU"
 WellLogViewer = "webviz_subsurface.plugins._well_log_viewer:WellLogViewer"
 
-[project.urls]
-"Documentation" = "https://equinor.github.io/webviz-subsurface"
-"Source" = "https://github.com/equinor/webviz-subsurface"
-"Tracker" = "https://github.com/equinor/webviz-subsurface/issues"
-
 [project.optional-dependencies]
 tests = [
     "bandit",
@@ -120,11 +122,20 @@ tests = [
     "types-pyyaml",
 ]
 
-[tool.setuptools_scm]
-write_to = "webviz_subsurface/_version.py"
-fallback_version = "0.0.0"
+[tool.setuptools]
+zip-safe = false
 
 [tool.setuptools.packages.find]
 exclude = ["tests*"]
-namespaces = false
 
+[tool.setuptools.package-data]
+webviz_subsurface = [
+    "_abbreviations/abbreviation_data/*.json",
+    "_assets/css/*.css",
+    "_assets/js/*.js",
+    "ert_jobs/config_jobs/*",
+]
+
+[tool.setuptools_scm]
+write_to = "webviz_subsurface/_version.py"
+fallback_version = "0.0.0"
