@@ -144,4 +144,4 @@ fallback_version = "0.0.0"
 ignore = ["webviz_subsurface/_version.py"]
 
 [tool.isort]
-skip = ["webviz_subsurface/_version.py"]
+skip_glob = ["**/_version.py"]
