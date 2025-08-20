@@ -81,7 +81,7 @@ jobs:
           fi
 
           bandit -r -c ./bandit.yml webviz_subsurface tests
-          isort --check-only webviz_subsurface tests
+          isort --check-only --skip webviz_subsurface/_version.py webviz_subsurface tests
           mypy --package webviz_subsurface
 
       - name: 🤖 Run tests

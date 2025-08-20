@@ -143,5 +143,3 @@ fallback_version = "0.0.0"
 [tool.pylint.main]
 ignore = ["webviz_subsurface/_version.py"]
 
-[tool.isort]
-skip_glob = ["**/_version.py"]
