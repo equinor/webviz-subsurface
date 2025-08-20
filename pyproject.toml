@@ -139,3 +139,6 @@ webviz_subsurface = [
 [tool.setuptools_scm]
 write_to = "webviz_subsurface/_version.py"
 fallback_version = "0.0.0"
+
+[tool.pylint.main]
+ignore = ["webviz_subsurface/_version.py"]
