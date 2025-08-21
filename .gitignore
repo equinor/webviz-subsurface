@@ -10,3 +10,4 @@ venv
 dist
 *~
 *.mypy_cache*
+_version.py
