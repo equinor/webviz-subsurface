@@ -1,7 +1,7 @@
 
 ### webviz-subsurface package
 
-?> :bookmark: This documentation is valid for version `0.2.39` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.40` of `webviz-subsurface`.
 
 
 
@@ -57,7 +57,7 @@ Additional data includes UNSMRY data and optionally irap binary surfaces stored 
 **Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`rel_file_pattern`:** path to `.arrow` files with summary data.
-* **`statistic_file`:** Csv file for each realization with property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
+* **`statistics_file`:** Csv file for each realization with property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
 * **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
 * **`surface_renaming`:** Optional dictionary to rename properties/zones to match filenames     stored on FMU standardized format (zone--property.gri)
@@ -85,12 +85,12 @@ def check_deprecation_argument(
 How to use in YAML config file:
 ```yaml
     - PropertyStatistics:
-        ensembles:  # Optional, type Union[list, NoneType].
+        ensembles:  # Optional, type Optional[list].
         rel_file_pattern:  # Optional, type str.
         statistics_file:  # Optional, type str.
-        surface_renaming:  # Optional, type Union[dict, NoneType].
+        surface_renaming:  # Optional, type Optional[dict].
         time_index:  # Optional, type str.
-        column_keys:  # Optional, type Union[list, NoneType].
+        column_keys:  # Optional, type Optional[list].
         csvfile_statistics:  # Deprecated, type str (corresponding to a path).
         csvfile_smry:  # Deprecated, type str (corresponding to a path).
 ```
@@ -172,7 +172,7 @@ def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, s
 How to use in YAML config file:
 ```yaml
     - SimulationTimeSeries:
-        ensembles:  # Optional, type Union[list, NoneType].
+        ensembles:  # Optional, type Optional[list].
         rel_file_pattern:  # Optional, type str.
         perform_presampling:  # Optional, type bool.
         obsfile:  # Optional, type str (corresponding to a path).

@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.39` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.40` of `webviz-subsurface`.
 
 
 
@@ -187,16 +187,16 @@ How to use in YAML config file:
 ```yaml
     - CO2Leakage:
         ensembles:  # Required, type List[str].
-        well_pick_file:  # Optional, type Union[str, NoneType].
+        well_pick_file:  # Optional, type Optional[str].
         plume_mass_relpath:  # Optional, type str.
-        plume_actual_volume_relpath:  # Optional, type Union[str, NoneType].
-        unsmry_relpath:  # Optional, type Union[str, NoneType].
+        plume_actual_volume_relpath:  # Optional, type Optional[str].
+        unsmry_relpath:  # Optional, type Optional[str].
         fault_polygon_attribute:  # Optional, type str.
-        initial_surface:  # Optional, type Union[str, NoneType].
-        map_attribute_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
-        map_surface_names_to_well_pick_names:  # Optional, type Union[typing.Dict[str, str], NoneType].
-        map_surface_names_to_fault_polygons:  # Optional, type Union[typing.Dict[str, str], NoneType].
-        boundary_settings:  # Optional, type Union[webviz_subsurface.plugins._co2_leakage._utilities.generic.BoundarySettings, NoneType].
+        initial_surface:  # Optional, type Optional[str].
+        map_attribute_names:  # Optional, type Optional[typing.Dict[str, str]].
+        map_surface_names_to_well_pick_names:  # Optional, type Optional[typing.Dict[str, str]].
+        map_surface_names_to_fault_polygons:  # Optional, type Optional[typing.Dict[str, str]].
+        boundary_settings:  # Optional, type Optional[webviz_subsurface.plugins._co2_leakage._utilities.generic.BoundarySettings].
 ```
 
 
@@ -304,7 +304,7 @@ How to use in YAML config file:
 ```yaml
     - DiskUsage:
         scratch_dir:  # Required, type str (corresponding to a path).
-        date:  # Optional, type Union[ForwardRef('str'), NoneType].
+        date:  # Optional, type Optional[ForwardRef('str')].
 ```
 
 
@@ -481,8 +481,8 @@ How to use in YAML config file:
         time_index:  # Optional, type str.
         terminal_node:  # Optional, type str.
         tree_type:  # Optional, type str.
-        excl_well_startswith:  # Optional, type Union[typing.List, NoneType].
-        excl_well_endswith:  # Optional, type Union[typing.List, NoneType].
+        excl_well_startswith:  # Optional, type Optional[typing.List].
+        excl_well_endswith:  # Optional, type Optional[typing.List].
 ```
 
 
@@ -1024,7 +1024,7 @@ How to use in YAML config file:
         ensembles:  # Required, type list.
         attributes:  # Optional, type list.
         well_pick_file:  # Optional, type str (corresponding to a path).
-        fault_polygon_attribute:  # Optional, type Union[str, NoneType].
+        fault_polygon_attribute:  # Optional, type Optional[str].
         field_outline_polygons_file_path:  # Optional, type str (corresponding to a path).
         field_outline_color:  # Optional, type str.
         map_surface_names_to_fault_polygons:  # Optional, type Dict[str, str].
@@ -1174,7 +1174,7 @@ How to use in YAML config file:
     - ParameterAnalysis:
         ensembles:  # Optional, type List[str].
         time_index:  # Optional, type str.
-        column_keys:  # Optional, type Union[list, NoneType].
+        column_keys:  # Optional, type Optional[list].
         drop_constants:  # Optional, type bool.
         rel_file_pattern:  # Optional, type str.
         obsfile:  # Optional, type str (corresponding to a path).
@@ -1773,7 +1773,7 @@ Additional data includes UNSMRY data and optionally irap binary surfaces stored 
 **Using raw ensemble data stored in realization folders**
 * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
 * **`rel_file_pattern`:** path to `.arrow` files with summary data.
-* **`statistic_file`:** Csv file for each realization with property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
+* **`statistics_file`:** Csv file for each realization with property statistics. See the     documentation in [fmu-tools](http://fmu-docs.equinor.com/) on how to generate this data.
 * **`column_keys`:** List of vectors to extract. If not given, all vectors     from the simulations will be extracted. Wild card asterisk `*` can be used.
 * **`time_index`:** Time separation between extracted values. Can be e.g. `monthly` (default) or     `yearly`.
 * **`surface_renaming`:** Optional dictionary to rename properties/zones to match filenames     stored on FMU standardized format (zone--property.gri)
@@ -1801,12 +1801,12 @@ def check_deprecation_argument(
 How to use in YAML config file:
 ```yaml
     - PropertyStatistics:
-        ensembles:  # Optional, type Union[list, NoneType].
+        ensembles:  # Optional, type Optional[list].
         rel_file_pattern:  # Optional, type str.
         statistics_file:  # Optional, type str.
-        surface_renaming:  # Optional, type Union[dict, NoneType].
+        surface_renaming:  # Optional, type Optional[dict].
         time_index:  # Optional, type str.
-        column_keys:  # Optional, type Union[list, NoneType].
+        column_keys:  # Optional, type Optional[list].
         csvfile_statistics:  # Deprecated, type str (corresponding to a path).
         csvfile_smry:  # Deprecated, type str (corresponding to a path).
 ```
@@ -1952,11 +1952,11 @@ Visualizes relative permeability and capillary pressure curves for FMU ensembles
 How to use in YAML config file:
 ```yaml
     - RelativePermeability:
-        ensembles:  # Optional, type Union[list, NoneType].
+        ensembles:  # Optional, type Optional[list].
         relpermfile:  # Optional, type str.
         scalfile:  # Optional, type str (corresponding to a path).
         sheet_name:  # Optional, type Union[str, int, list, NoneType].
-        scal_scenarios:  # Optional, type Union[dict, NoneType].
+        scal_scenarios:  # Optional, type Optional[dict].
 ```
 
 
@@ -2313,7 +2313,7 @@ How to use in YAML config file:
         ensembles:  # Required, type list.
         fipfile:  # Optional, type str (corresponding to a path).
         initial_vector:  # Optional, type str.
-        column_keys:  # Optional, type Union[list, NoneType].
+        column_keys:  # Optional, type Optional[list].
         sampling:  # Optional, type str.
         line_shape_fallback:  # Optional, type str.
 ```
@@ -2447,7 +2447,7 @@ How to use in YAML config file:
         rft_ert:  # Optional, type str.
         csvfile_rft:  # Optional, type str (corresponding to a path).
         csvfile_rft_ert:  # Optional, type str (corresponding to a path).
-        ensembles:  # Optional, type Union[typing.List[str], NoneType].
+        ensembles:  # Optional, type Optional[typing.List[str]].
         formations:  # Optional, type str (corresponding to a path).
         obsdata:  # Optional, type str (corresponding to a path).
         faultlines:  # Optional, type str (corresponding to a path).
@@ -2523,7 +2523,7 @@ How to use in YAML config file:
         ensembles:  # Required, type list.
         filter_shorter:  # Optional, type Union[int, float].
         status_file:  # Optional, type str.
-        visual_parameters:  # Optional, type Union[list, NoneType].
+        visual_parameters:  # Optional, type Optional[list].
 ```
 
 
@@ -2820,7 +2820,7 @@ def check_deprecation_argument(options: Optional[dict]) -> Optional[Tuple[str, s
 How to use in YAML config file:
 ```yaml
     - SimulationTimeSeries:
-        ensembles:  # Optional, type Union[list, NoneType].
+        ensembles:  # Optional, type Optional[list].
         rel_file_pattern:  # Optional, type str.
         perform_presampling:  # Optional, type bool.
         obsfile:  # Optional, type str (corresponding to a path).
@@ -3442,8 +3442,8 @@ How to use in YAML config file:
 ```yaml
     - SwatinitQC:
         csvfile:  # Optional, type str.
-        ensemble:  # Optional, type Union[str, NoneType].
-        realization:  # Optional, type Union[int, NoneType].
+        ensemble:  # Optional, type Optional[str].
+        realization:  # Optional, type Optional[int].
         faultlines:  # Optional, type str (corresponding to a path).
 ```
 
@@ -3571,8 +3571,8 @@ How to use in YAML config file:
 ```yaml
     - VfpAnalysis:
         vfp_file_pattern:  # Optional, type str.
-        ensemble:  # Optional, type Union[str, NoneType].
-        realization:  # Optional, type Union[int, NoneType].
+        ensemble:  # Optional, type Optional[str].
+        realization:  # Optional, type Optional[int].
 ```
 
 
@@ -3695,7 +3695,7 @@ How to use in YAML config file:
         ensembles:  # Optional, type list.
         volfiles:  # Optional, type dict.
         volfolder:  # Optional, type str.
-        non_net_facies:  # Optional, type Union[typing.List[str], NoneType].
+        non_net_facies:  # Optional, type Optional[typing.List[str]].
         fipfile:  # Optional, type str (corresponding to a path).
         drop_failed_realizations:  # Optional, type bool.
         colors:  # Optional, type List[str].
@@ -3797,12 +3797,12 @@ for visualizing:
 How to use in YAML config file:
 ```yaml
     - WellAnalysis:
-        ensembles:  # Optional, type Union[typing.List[str], NoneType].
+        ensembles:  # Optional, type Optional[typing.List[str]].
         rel_file_pattern:  # Optional, type str.
         gruptree_file:  # Optional, type str.
         well_attributes_file:  # Optional, type str.
         time_index:  # Optional, type str.
-        filter_out_startswith:  # Optional, type Union[str, NoneType].
+        filter_out_startswith:  # Optional, type Optional[str].
 ```
 
 
