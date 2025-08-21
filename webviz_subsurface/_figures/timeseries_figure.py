@@ -211,7 +211,7 @@ class TimeSeriesFigure:
             .groupby(["DATE"])
             .agg(
                 [
-                    ("Mean", np.nanmean),
+                    ("Mean", "mean"),
                     ("P10", lambda x: np.nanpercentile(x, q=90)),
                     ("P90", lambda x: np.nanpercentile(x, q=10)),
                 ]

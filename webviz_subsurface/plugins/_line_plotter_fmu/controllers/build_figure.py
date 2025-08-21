@@ -256,14 +256,14 @@ def calc_series_statistics(
     stat_df = (
         df[["ENSEMBLE", refaxis] + vectors]
         .groupby(["ENSEMBLE", refaxis])
-        .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90])
+        .agg(["mean", "min", "max", p10, p90])
         .reset_index()  # level=["label", refaxis], col_level=0)
     )
     # Rename nanmin, nanmax and nanmean to min, max and mean.
     col_stat_label_map = {
-        "nanmin": "min",
-        "nanmax": "max",
-        "nanmean": "mean",
+        "min": "min",
+        "max": "max",
+        "mean": "mean",
         "p10": "high_p10",
         "p90": "low_p90",
     }

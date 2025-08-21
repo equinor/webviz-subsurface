@@ -982,8 +982,8 @@ def add_statistic_traces(df, color_by, curves, sataxis, colors, nplots):
             ]
             df_stat = (
                 satnum_df_shared_axis.groupby(sataxis)
-                .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90])
-                .stack()
+                .agg(["mean", "min", "max", p10, p90])
+                .stack(future_stack=True)
                 .swaplevel()
             )
             for curve_no, curve in enumerate(curves):
@@ -1032,7 +1032,7 @@ def _get_fanchart_traces(
     """Renders a fanchart"""
 
     # Retrieve indices from one of the keys in series
-    x = curve_stats["nanmax"].index.tolist()
+    x = curve_stats["max"].index.tolist()
     data = FanchartData(
         samples=x,
         low_high=LowHighData(
@@ -1042,10 +1042,10 @@ def _get_fanchart_traces(
             high_name="P10",
         ),
         minimum_maximum=MinMaxData(
-            minimum=curve_stats["nanmin"].values,
-            maximum=curve_stats["nanmax"].values,
+            minimum=curve_stats["min"].values,
+            maximum=curve_stats["max"].values,
         ),
-        free_line=FreeLineData("Mean", curve_stats["nanmean"].values),
+        free_line=FreeLineData("Mean", curve_stats["mean"].values),
     )
 
     hovertemplate = f"{curve} <br>" f"Ensemble: {ens}, Satnum: {satnum}"

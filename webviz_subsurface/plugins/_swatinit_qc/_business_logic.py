@@ -208,7 +208,7 @@ class SwatinitQcDataModel:
             qc_vols[qc_cat.value] = 0.0
 
         # Overwrite dict values with correct figures:
-        for qc_cat, qc_df in dframe.groupby("QC_FLAG"):
+        for qc_cat, qc_df in dframe.groupby("QC_FLAG", observed=False):
             qc_vols[qc_cat] = (
                 (qc_df["SWAT"] - qc_df["SWATINIT"]) * qc_df["PORV"]
             ).sum()

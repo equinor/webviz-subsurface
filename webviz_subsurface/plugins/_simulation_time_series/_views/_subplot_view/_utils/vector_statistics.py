@@ -63,15 +63,15 @@ def create_vectors_statistics_df(vectors_df: pd.DataFrame) -> pd.DataFrame:
     statistics_df: pd.DataFrame = (
         vectors_df[["DATE"] + vector_names]
         .groupby(["DATE"])
-        .agg([np.nanmean, np.nanmin, np.nanmax, p10, p90, p50])
+        .agg(["mean", "min", "max", p10, p90, p50])
         .reset_index(level=["DATE"], col_level=0)
     )
 
     # Rename columns to StatisticsOptions enum types for strongly typed format
     col_stat_label_map = {
-        "nanmin": StatisticsOptions.MIN,
-        "nanmax": StatisticsOptions.MAX,
-        "nanmean": StatisticsOptions.MEAN,
+        "mean": StatisticsOptions.MEAN,
+        "min": StatisticsOptions.MIN,
+        "max": StatisticsOptions.MAX,
         "p10": StatisticsOptions.P10,
         "p90": StatisticsOptions.P90,
         "p50": StatisticsOptions.P50,
