@@ -1,0 +1,145 @@
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webviz-subsurface"
+description = "Webviz config plugins for subsurface data"
+readme = "README.md"
+authors = [
+    { name = "R&T Equinor" },
+]
+license = { file = "LICENSE" }
+requires-python = "~=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Environment :: Web Environment",
+    "Framework :: Dash",
+    "Framework :: Flask",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)", 
+]
+dynamic = ["version"]
+dependencies = [
+    "dash>=2.0.0,<3",
+    "dash_bootstrap_components>=0.10.3",
+    "dash-daq>=0.5.0",
+    "defusedxml>=0.6.0",
+    "res2df>=1.0; sys_platform=='linux'",
+    "flask-caching",
+    "fmu-ensemble>=1.2.3",
+    "fmu-tools>=1.8",
+    "geojson>=2.5.0",
+    "jsonschema>=3.2.0",
+    "opm>=2023.10; sys_platform=='linux'",
+    "pandas>=1.1.5,<3",
+    "pillow>=6.1",
+    "pyarrow>=5.0.0",
+    "pyjwt>=2.6.0",
+    "pyscal>=0.7.5",
+    "scipy>=1.2",
+    "statsmodels>=0.12.1",
+    "xtgeo>=2.20.0",
+    "vtk>=9.2.2",
+    "webviz-config>=0.6.5",
+    "webviz-subsurface-components>=1.0.3",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/equinor/webviz-subsurface"
+"Documentation" = "https://equinor.github.io/webviz-subsurface"
+"Source" = "https://github.com/equinor/webviz-subsurface"
+"Tracker" = "https://github.com/equinor/webviz-subsurface/issues"
+
+[project.scripts]
+smry2arrow_batch = "webviz_subsurface.smry2arrow_batch:main"
+
+[project.entry-points."webviz_config_plugins"]
+AssistedHistoryMatchingAnalysis = "webviz_subsurface.plugins._assisted_history_matching_analysis:AssistedHistoryMatchingAnalysis"
+BhpQc = "webviz_subsurface.plugins._bhp_qc:BhpQc"
+CO2Leakage = "webviz_subsurface.plugins._co2_leakage:CO2Leakage"
+DiskUsage = "webviz_subsurface.plugins._disk_usage:DiskUsage"
+EXPERIMENTALGridViewerFMU = "webviz_subsurface.plugins._grid_viewer_fmu:EXPERIMENTALGridViewerFMU"
+GroupTree = "webviz_subsurface.plugins._group_tree:GroupTree"
+HistoryMatch = "webviz_subsurface.plugins._history_match:HistoryMatch"
+HorizonUncertaintyViewer = "webviz_subsurface.plugins._horizon_uncertainty_viewer:HorizonUncertaintyViewer"
+InplaceVolumes = "webviz_subsurface.plugins._inplace_volumes:InplaceVolumes"
+InplaceVolumesOneByOne = "webviz_subsurface.plugins._inplace_volumes_onebyone:InplaceVolumesOneByOne"
+LinePlotterFMU = "webviz_subsurface.plugins._line_plotter_fmu.line_plotter_fmu:LinePlotterFMU"
+MapViewerFMU = "webviz_subsurface.plugins._map_viewer_fmu:MapViewerFMU"
+MorrisPlot = "webviz_subsurface.plugins._morris_plot:MorrisPlot"
+ParameterAnalysis = "webviz_subsurface.plugins._parameter_analysis:ParameterAnalysis"
+ParameterCorrelation = "webviz_subsurface.plugins._parameter_correlation:ParameterCorrelation"
+ParameterDistribution = "webviz_subsurface.plugins._parameter_distribution:ParameterDistribution"
+ParameterParallelCoordinates = "webviz_subsurface.plugins._parameter_parallel_coordinates:ParameterParallelCoordinates"
+ParameterResponseCorrelation = "webviz_subsurface.plugins._parameter_response_correlation:ParameterResponseCorrelation"
+ProdMisfit = "webviz_subsurface.plugins._prod_misfit:ProdMisfit"
+PropertyStatistics = "webviz_subsurface.plugins._property_statistics:PropertyStatistics"
+PvtPlot = "webviz_subsurface.plugins._pvt_plot:PvtPlot"
+RelativePermeability = "webviz_subsurface.plugins._relative_permeability:RelativePermeability"
+ReservoirSimulationTimeSeries = "webviz_subsurface.plugins._reservoir_simulation_timeseries:ReservoirSimulationTimeSeries"
+ReservoirSimulationTimeSeriesOneByOne = "webviz_subsurface.plugins._reservoir_simulation_timeseries_onebyone:ReservoirSimulationTimeSeriesOneByOne"
+ReservoirSimulationTimeSeriesRegional = "webviz_subsurface.plugins._reservoir_simulation_timeseries_regional:ReservoirSimulationTimeSeriesRegional"
+RftPlotter = "webviz_subsurface.plugins._rft_plotter:RftPlotter"
+RunningTimeAnalysisFMU = "webviz_subsurface.plugins._running_time_analysis_fmu:RunningTimeAnalysisFMU"
+SegyViewer = "webviz_subsurface.plugins._segy_viewer:SegyViewer"
+SeismicMisfit = "webviz_subsurface.plugins._seismic_misfit:SeismicMisfit"
+SimulationTimeSeries = "webviz_subsurface.plugins._simulation_time_series:SimulationTimeSeries"
+SimulationTimeSeriesOneByOne = "webviz_subsurface.plugins._simulation_time_series_onebyone:SimulationTimeSeriesOneByOne"
+StructuralUncertainty = "webviz_subsurface.plugins._structural_uncertainty:StructuralUncertainty"
+SubsurfaceMap = "webviz_subsurface.plugins._subsurface_map:SubsurfaceMap"
+SurfaceViewerFMU = "webviz_subsurface.plugins._surface_viewer_fmu:SurfaceViewerFMU"
+SurfaceWithGridCrossSection = "webviz_subsurface.plugins._surface_with_grid_cross_section:SurfaceWithGridCrossSection"
+SurfaceWithSeismicCrossSection = "webviz_subsurface.plugins._surface_with_seismic_cross_section :SurfaceWithSeismicCrossSection"
+SwatinitQC = "webviz_subsurface.plugins._swatinit_qc:SwatinitQC"
+TornadoPlotterFMU = "webviz_subsurface.plugins._tornado_plotter_fmu:TornadoPlotterFMU"
+VfpAnalysis = "webviz_subsurface.plugins._vfp_analysis:VfpAnalysis"
+VolumetricAnalysis = "webviz_subsurface.plugins._volumetric_analysis:VolumetricAnalysis"
+WellAnalysis = "webviz_subsurface.plugins._well_analysis:WellAnalysis"
+WellCompletion = "webviz_subsurface.plugins._well_completion:WellCompletion"
+WellCompletions = "webviz_subsurface.plugins._well_completions:WellCompletions"
+WellCrossSection = "webviz_subsurface.plugins._well_cross_section:WellCrossSection"
+WellCrossSectionFMU = "webviz_subsurface.plugins._well_cross_section_fmu:WellCrossSectionFMU"
+WellLogViewer = "webviz_subsurface.plugins._well_log_viewer:WellLogViewer"
+
+[project.optional-dependencies]
+tests = [
+    "bandit",
+    "black>=22.1,<24",
+    "dash[testing]",
+    "isort",
+    "mypy<1.12",
+    "pylint<3.2.0",
+    "pytest-mock",
+    "pytest-xdist",
+    "pytest-forked",
+    "selenium>=3.141",
+    "types-setuptools",
+    "types-pyyaml",
+]
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+webviz_subsurface = [
+    "_abbreviations/abbreviation_data/*.json",
+    "_assets/css/*.css",
+    "_assets/js/*.js",
+    "ert_jobs/config_jobs/*",
+]
+
+[tool.setuptools_scm]
+write_to = "webviz_subsurface/_version.py"
+fallback_version = "0.0.0"
+
+[tool.pylint.main]
+ignore = ["webviz_subsurface/_version.py"]
+
