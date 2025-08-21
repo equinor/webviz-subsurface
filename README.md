@@ -10,7 +10,7 @@ and the FMU use case to https://github.com/equinor/webviz
 
 [![PyPI version](https://badge.fury.io/py/webviz-subsurface.svg)](https://badge.fury.io/py/webviz-subsurface)
 [![Build Status](https://github.com/equinor/webviz-subsurface/workflows/webviz-subsurface/badge.svg)](https://github.com/equinor/webviz-subsurface/actions?query=branch%3Amaster)
-[![Python 3.8 | 3.9 | 3.10 | 3.11 | 3.12](https://img.shields.io/badge/python-3.8%20|%203.9%20|%203.10%20|%203.11%20|%203.12-blue.svg)](https://www.python.org/)
+[![Python  3.11 | 3.12](https://img.shields.io/badge/python-3.11%20|%203.12-blue.svg)](https://www.python.org/)
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 
 ## Webviz subsurface
