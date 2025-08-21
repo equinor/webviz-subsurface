@@ -67,10 +67,10 @@ jobs:
       - name: 🕵️ Check code style & linting
         if: github.event_name != 'release'
         run: |
-          black --check webviz_subsurface tests setup.py
+          black --check webviz_subsurface tests
 
           pylint_exit_code=0
-          pylint webviz_subsurface tests setup.py || pylint_exit_code=$?
+          pylint webviz_subsurface tests  || pylint_exit_code=$?
 
           error_bitmask=$((1 | 2 | 4))  # Fatal, Error, Warning
           result=$(($pylint_exit_code & $error_bitmask))
@@ -80,8 +80,8 @@ jobs:
             exit $pylint_exit_code
           fi
 
-          bandit -r -c ./bandit.yml webviz_subsurface tests setup.py
-          isort --check-only webviz_subsurface tests setup.py
+          bandit -r -c ./bandit.yml webviz_subsurface tests
+          isort --check-only --skip webviz_subsurface/_version.py webviz_subsurface tests
           mypy --package webviz_subsurface
 
       - name: 🤖 Run tests
@@ -135,8 +135,8 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
         run: |
-          python -m pip install --upgrade setuptools wheel twine
-          python setup.py sdist bdist_wheel
+          python -m pip install --upgrade build twine
+          python -m build
           twine upload dist/*
 
       - name: 📚 Update GitHub pages

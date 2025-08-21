@@ -106,7 +106,7 @@ color-tables.json for color_tables format.
         rel_surface_folder: str = "share/results/maps",
         color_tables: Path = None,
         hillshading_enabled: bool = None,
-        render_surfaces_as_images: bool = True,
+        render_surfaces_as_images: bool = False,
     ):
         super().__init__()
         self._hillshading = hillshading_enabled

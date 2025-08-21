@@ -115,7 +115,7 @@ def map_layout(
                         "disabled": False,
                         "label": "Hillshading",
                     },
-                    **props
+                    **props,
                 ),
             ),
         ],
