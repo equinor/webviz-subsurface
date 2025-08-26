@@ -3,13 +3,13 @@ from typing import Tuple, Union
 import pandas as pd
 
 from webviz_subsurface._providers import EnsembleTableProvider
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
     MenuOptions,
 )
 
-_PFLOTRAN_COLNAMES = ("DATE", "FGMDS", "FGMTR", "FGMGP")
+_PFLOTRAN_COLNAMES = ("DATE", "FGMDS", "FGMTR", "FGMMO")
 _ECLIPSE_COLNAMES = ("DATE", "FWCD", "FGCDI", "FGCDM")
 
 
@@ -23,7 +23,7 @@ class UnsmryDataProvider:
         self._provider = provider
         (
             self._colname_date,
-            self._colname_dissolved,
+            self._colname_dissolved_water,
             self._colname_trapped,
             self._colname_mobile,
         ) = UnsmryDataProvider._column_subset_unsmry(provider)
@@ -34,7 +34,7 @@ class UnsmryDataProvider:
         return {
             "zones": [],
             "regions": [],
-            "phases": ["total", "gas", "dissolved"],
+            "phases": ["total", "gas", "dissolved_water"],  ##NB: Split gas?
             "plume_groups": [],
             "dates": [],
         }
@@ -44,8 +44,8 @@ class UnsmryDataProvider:
         return self._colname_date
 
     @property
-    def colname_dissolved(self) -> str:
-        return self._colname_dissolved
+    def colname_dissolved_water(self) -> str:
+        return self._colname_dissolved_water
 
     @property
     def colname_trapped(self) -> str:
@@ -62,7 +62,7 @@ class UnsmryDataProvider:
     def extract(self, scale: Union[Co2MassScale, Co2VolumeScale]) -> pd.DataFrame:
         columns = [
             self._colname_date,
-            self._colname_dissolved,
+            self._colname_dissolved_water,
             self._colname_trapped,
             self._colname_mobile,
         ]
@@ -73,7 +73,7 @@ class UnsmryDataProvider:
             ]
         )
         full[self._colname_total] = (
-            full[self._colname_dissolved]
+            full[self._colname_dissolved_water]
             + full[self._colname_trapped]
             + full[self.colname_mobile]
         )
