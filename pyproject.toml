@@ -61,7 +61,7 @@ smry2arrow_batch = "webviz_subsurface.smry2arrow_batch:main"
 [project.entry-points."webviz_config_plugins"]
 AssistedHistoryMatchingAnalysis = "webviz_subsurface.plugins._assisted_history_matching_analysis:AssistedHistoryMatchingAnalysis"
 BhpQc = "webviz_subsurface.plugins._bhp_qc:BhpQc"
-CO2Leakage = "webviz_subsurface.plugins._co2_leakage:CO2Leakage"
+CO2Migration = "webviz_subsurface.plugins._co2_migration:CO2Migration"
 DiskUsage = "webviz_subsurface.plugins._disk_usage:DiskUsage"
 EXPERIMENTALGridViewerFMU = "webviz_subsurface.plugins._grid_viewer_fmu:EXPERIMENTALGridViewerFMU"
 GroupTree = "webviz_subsurface.plugins._group_tree:GroupTree"

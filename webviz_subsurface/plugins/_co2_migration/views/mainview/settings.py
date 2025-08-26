@@ -12,11 +12,13 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
     EnsembleSurfaceProvider,
     SurfaceStatistic,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.callbacks import property_origin
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+from webviz_subsurface.plugins._co2_migration._utilities.callbacks import (
+    property_origin,
+)
+from webviz_subsurface.plugins._co2_migration._utilities.containment_info import (
     StatisticsTabOption,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
     FilteredMapAttribute,
@@ -1350,13 +1352,13 @@ class FeedbackLayout(wcc.Dialog):
             open=False,
             children=[
                 dcc.Markdown(
-                    """If you have any feedback regarding the CO2-Leakage application,
+                    """If you have any feedback regarding the CO2-Migration application,
                     don't hesitate to"""
                 ),
                 dcc.Link(
                     ["send an email!"],
                     href=f"mailto:{get_emails()}&subject=Feedback regarding the "
-                    f"CO2-Leakage application",
+                    f"CO2-Migration application",
                     target="_blank",
                     style={"float": "left"},
                 ),

@@ -8,7 +8,7 @@ from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 from webviz_subsurface_components import SubsurfaceViewer
 
-from webviz_subsurface.plugins._co2_leakage._types import LegendData
+from webviz_subsurface.plugins._co2_migration._types import LegendData
 
 
 class MainView(ViewABC):

@@ -17,24 +17,25 @@ from webviz_subsurface._providers.ensemble_polygon_provider import PolygonServer
 from webviz_subsurface._providers.ensemble_surface_provider._surface_discovery import (
     discover_per_realization_surface_files,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
+from webviz_subsurface.plugins._co2_migration._utilities.containment_data_provider import (
     ContainmentDataProvider,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.ensemble_well_picks import (
+from webviz_subsurface.plugins._co2_migration._utilities.ensemble_well_picks import (
     EnsembleWellPicks,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     BoundarySettings,
     FilteredMapAttribute,
     GraphSource,
     MapAttribute,
     MapNamingConvention,
     MenuOptions,
+    PhasesScenario,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.polygon_handler import (
+from webviz_subsurface.plugins._co2_migration._utilities.polygon_handler import (
     PolygonHandler,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.unsmry_data_provider import (
+from webviz_subsurface.plugins._co2_migration._utilities.unsmry_data_provider import (
     UnsmryDataProvider,
 )
 
@@ -44,6 +45,25 @@ LOGGER_TO_SUPPRESS = logging.getLogger(
 )
 LOGGER_TO_SUPPRESS.setLevel(logging.ERROR)  # We replace the given warning with our own
 WARNING_THRESHOLD_CSV_FILE_SIZE_MB = 100.0
+
+
+def resolve_mapattribute_name(
+    attr_value: str, scenario: PhasesScenario
+) -> Optional[str]:
+    candidates = [
+        name
+        for name, member in MapNamingConvention.__members__.items()
+        if member.value == attr_value
+    ]
+    if not candidates:
+        return None
+    if len(candidates) == 1:
+        return candidates[0]
+    if scenario == PhasesScenario.THREE_PHASES:
+        for m in candidates:
+            if m.endswith("3PHASES"):
+                return m
+    return candidates[0]
 
 
 def build_mapping(
@@ -65,12 +85,26 @@ def build_mapping(
         unique_attributes.update(ens_attr)
     unique_attributes_list = list(unique_attributes)
     mapping = {}
+    scenario = PhasesScenario.TWO_PHASES
+    # NBNB: Solution for Cirrus realizations, not yet clear for Eclipse
+    if any("mfs" in item for item in unique_attributes_list):
+        scenario = PhasesScenario.THREE_PHASES
     for attr in unique_attributes_list:
-        for name_convention in MapNamingConvention:
-            if attr == name_convention.value:
-                attribute_key = MapAttribute[name_convention.name].name
-                mapping[attribute_key] = attr
-                break
+        matched_name = resolve_mapattribute_name(attr, scenario)
+        if not matched_name:
+            continue
+        if scenario == PhasesScenario.THREE_PHASES and any(
+            g in attr for g in ["sgas", "amfg"]
+        ):
+            LOGGER.info(
+                f"Map '{attr}' is available, but since the scenario is not saline aquifer,"
+                f" neither SGAS nor AMFG are informative about presence of CO2."
+                f" If either of these properties is still of interest, they can be"
+                f" explicitly requested via 'map_attribute_names' in the config file"
+            )
+            continue
+        attribute_key = MapAttribute[matched_name].name
+        mapping[attribute_key] = attr
     return mapping
 
 

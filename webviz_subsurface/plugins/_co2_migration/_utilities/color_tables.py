@@ -6,7 +6,7 @@ from webviz_subsurface.plugins._map_viewer_fmu.color_tables import default_color
 ColorTables = List[Dict[str, Any]]
 
 
-def co2leakage_color_tables() -> ColorTables:
+def co2migration_color_tables() -> ColorTables:
     tables = default_color_tables + uniform_color_tables()
     rev_tables = _reversed_color_tables(tables)
     return [t for tup in zip(tables, rev_tables) for t in tup]

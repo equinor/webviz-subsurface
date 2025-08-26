@@ -1,4 +1,5 @@
 # pylint: disable=too-many-lines
+# pylint: disable=C0103
 # NBNB-AS: We should address this pylint message soon
 import warnings
 from datetime import datetime as dt
@@ -11,13 +12,13 @@ import plotly.graph_objects as go
 
 from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface._utils.enum_shim import StrEnum
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
+from webviz_subsurface.plugins._co2_migration._utilities.containment_data_provider import (
     ContainmentDataProvider,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+from webviz_subsurface.plugins._co2_migration._utilities.containment_info import (
     ContainmentInfo,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
 )
@@ -30,14 +31,35 @@ class _Columns(StrEnum):
     VOLUME_OUTSIDE = "volume_outside"
 
 
-_COLOR_TOTAL = "#222222"
-_COLOR_CONTAINED = "#00aa00"
-_COLOR_OUTSIDE = "#006ddd"
-_COLOR_HAZARDOUS = "#dd4300"
-_COLOR_DISSOLVED = "#208eb7"
-_COLOR_GAS = "#C41E3A"
-_COLOR_FREE = "#FF2400"
-_COLOR_TRAPPED = "#880808"
+class Colors(StrEnum):
+    # pylint: disable=invalid-name
+    total = "#222222"
+    contained = "#00aa00"
+    outside = "#006ddd"
+    hazardous = "#dd4300"
+    dissolved_water = "#208eb7"
+    dissolved_oil = "#A0522D"
+    gas = "#C41E3A"
+    free = "#FF2400"
+    trapped = "#880808"
+
+
+class Marks(StrEnum):
+    dissolved_water = "/"
+    dissolved_oil = "x"
+    gas = ""
+    free = ""
+    trapped = "."
+
+
+class Lines(StrEnum):
+    dissolved_water = "dash"
+    dissolved_oil = "longdash"
+    gas = "dot"
+    free = "dot"
+    trapped = "dashdot"
+
+
 _COLOR_ZONES = [
     "#e91451",
     "#daa218",
@@ -89,16 +111,13 @@ def _read_dataframe(
     return df
 
 
-def _get_colors(num_cols: int = 3, split: str = "zone") -> List[str]:
-    if split == "containment":
-        return [_COLOR_HAZARDOUS, _COLOR_OUTSIDE, _COLOR_CONTAINED]
-    if split == "phase":
-        if num_cols == 2:
-            return [_COLOR_GAS, _COLOR_DISSOLVED]
-        return [_COLOR_FREE, _COLOR_TRAPPED, _COLOR_DISSOLVED]
+def _get_colors(color_options: List[str], split: str) -> List[str]:
+    if split in {"containment", "phase"}:
+        return [Colors[option] for option in color_options]
     options = list(_COLOR_ZONES)
     if split == "region":
         options.reverse()
+    num_cols = len(color_options)
     if len(options) >= num_cols:
         return options[:num_cols]
     num_lengths = int(np.ceil(num_cols / len(options)))
@@ -106,7 +125,8 @@ def _get_colors(num_cols: int = 3, split: str = "zone") -> List[str]:
     return new_cols[:num_cols]
 
 
-def _get_marks(num_marks: int, mark_choice: str) -> List[str]:
+def _get_marks(mark_options: List[str], mark_choice: str) -> List[str]:
+    num_marks = len(mark_options)
     if mark_choice == "none":
         return [""] * num_marks
     if mark_choice == "containment":
@@ -121,7 +141,7 @@ def _get_marks(num_marks: int, mark_choice: str) -> List[str]:
             )
         return base_pattern[:num_marks]
     # mark_choice == "phase":
-    return ["", "/"] if num_marks == 2 else ["", ".", "/"]
+    return [Marks[option] for option in mark_options]
 
 
 def _get_line_types(mark_options: List[str], mark_choice: str) -> List[str]:
@@ -138,7 +158,7 @@ def _get_line_types(mark_options: List[str], mark_choice: str) -> List[str]:
             )
         return [options[i % 6] for i in range(len(mark_options))]
     # mark_choice == "phase":
-    return ["dot", "dash"] if "gas" in mark_options else ["dot", "dashdot", "dash"]
+    return [Lines[option] for option in mark_options]
 
 
 def _prepare_pattern_and_color_options(
@@ -150,10 +170,10 @@ def _prepare_pattern_and_color_options(
     no_mark = mark_choice == "none"
     mark_options = [] if no_mark else getattr(containment_info, f"{mark_choice}s")
     color_options = getattr(containment_info, f"{color_choice}s")
+    marks = _get_marks(mark_options, mark_choice)
+    colors = _get_colors(color_options, color_choice)
     num_colors = len(color_options)
     num_marks = num_colors if no_mark else len(mark_options)
-    marks = _get_marks(num_marks, mark_choice)
-    colors = _get_colors(num_colors, color_choice)
     if no_mark:
         cat_ord = {"type": color_options}
         df["type"] = df[color_choice]
@@ -186,7 +206,7 @@ def _prepare_pattern_and_color_options_statistics_plot(
     num_colors = len(color_options)
     num_marks = num_colors if no_mark else len(mark_options)
     line_types = _get_line_types(mark_options, mark_choice)
-    colors = _get_colors(num_colors, color_choice)
+    colors = _get_colors(color_options, color_choice)
 
     if mark_choice == "phase":
         mark_options = ["total"] + mark_options
@@ -273,9 +293,8 @@ def _prepare_line_type_and_color_options(
     if mark_choice != "none":
         mark_options = list(getattr(containment_info, f"{mark_choice}s"))
     color_options = list(getattr(containment_info, f"{color_choice}s"))
-    num_colors = len(color_options)
     line_types = _get_line_types(mark_options, mark_choice)
-    colors = _get_colors(num_colors, color_choice)
+    colors = _get_colors(color_options, color_choice)
 
     filter_mark = True
     if mark_choice in ["containment", "phase"]:
