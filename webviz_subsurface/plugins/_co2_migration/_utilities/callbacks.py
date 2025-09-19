@@ -14,32 +14,32 @@ from webviz_subsurface._providers import (
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-    SurfaceImageMeta,
-    SurfaceImageServer,
+    SurfaceArrayMeta,
+    SurfaceArrayServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
 )
-from webviz_subsurface.plugins._co2_leakage._types import LegendData
-from webviz_subsurface.plugins._co2_leakage._utilities import plume_extent
-from webviz_subsurface.plugins._co2_leakage._utilities.co2volume import (
+from webviz_subsurface.plugins._co2_migration._types import LegendData
+from webviz_subsurface.plugins._co2_migration._utilities import plume_extent
+from webviz_subsurface.plugins._co2_migration._utilities.co2volume import (
     generate_co2_box_plot_figure,
     generate_co2_statistics_figure,
     generate_co2_time_containment_figure,
     generate_co2_time_containment_one_realization_figure,
     generate_co2_volume_figure,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_data_provider import (
+from webviz_subsurface.plugins._co2_migration._utilities.containment_data_provider import (
     ContainmentDataProvider,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.containment_info import (
+from webviz_subsurface.plugins._co2_migration._utilities.containment_info import (
     ContainmentInfo,
     StatisticsTabOption,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.ensemble_well_picks import (
+from webviz_subsurface.plugins._co2_migration._utilities.ensemble_well_picks import (
     EnsembleWellPicks,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
+from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     Co2MassScale,
     Co2VolumeScale,
     FilteredMapAttribute,
@@ -50,14 +50,14 @@ from webviz_subsurface.plugins._co2_leakage._utilities.generic import (
     MapType,
     MenuOptions,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.summary_graphs import (
+from webviz_subsurface.plugins._co2_migration._utilities.summary_graphs import (
     generate_summary_figure,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.surface_publishing import (
+from webviz_subsurface.plugins._co2_migration._utilities.surface_publishing import (
     TruncatedSurfaceAddress,
     publish_and_get_surface_metadata,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.unsmry_data_provider import (
+from webviz_subsurface.plugins._co2_migration._utilities.unsmry_data_provider import (
     UnsmryDataProvider,
 )
 
@@ -81,12 +81,12 @@ class SurfaceData:
     color_map_range: Tuple[Optional[float], Optional[float]]
     color_map_name: str
     value_range: Tuple[float, float]
-    meta_data: SurfaceImageMeta
+    meta_data: SurfaceArrayMeta
     img_url: str
 
     @staticmethod
     def from_server(
-        server: SurfaceImageServer,
+        server: SurfaceArrayServer,
         provider: EnsembleSurfaceProvider,
         address: Union[SurfaceAddress, TruncatedSurfaceAddress],
         color_map_range: Tuple[Optional[float], Optional[float]],
@@ -312,17 +312,22 @@ def create_map_layers(
     layers = []
     if surface_data is not None:
         # Update ColormapLayer
+        meta = surface_data.meta_data
         layers.append(
             {
-                "@@type": "ColormapLayer",
-                "name": surface_data.readable_name,
+                "@@type": "MapLayer",
                 "id": "colormap-layer",
-                "image": surface_data.img_url,
-                "bounds": surface_data.meta_data.deckgl_bounds,
-                "valueRange": surface_data.value_range,
-                "colorMapRange": surface_data.color_map_range,
+                "name": surface_data.readable_name,
+                "meshUrl": surface_data.img_url,
+                "frame": {
+                    "origin": [meta.x_ori, meta.y_ori],
+                    "count": [meta.x_count, meta.y_count],
+                    "increment": [meta.x_inc, meta.y_inc],
+                    "rotDeg": meta.rot_deg,
+                },
                 "colorMapName": surface_data.color_map_name,
-                "rotDeg": surface_data.meta_data.deckgl_rot_deg,
+                "colorMapRange": surface_data.color_map_range,
+                "material": False,
             }
         )
 
