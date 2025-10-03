@@ -7,7 +7,7 @@ from webviz_subsurface._providers.ensemble_polygon_provider import (
 from webviz_subsurface._providers.ensemble_polygon_provider.ensemble_polygon_provider import (
     PolygonsAddress,
 )
-from webviz_subsurface.plugins._co2_leakage._utilities.generic import BoundarySettings
+from webviz_subsurface.plugins._co2_migration._utilities.generic import BoundarySettings
 
 
 class PolygonHandler:
