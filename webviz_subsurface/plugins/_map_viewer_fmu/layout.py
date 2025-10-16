@@ -810,7 +810,7 @@ def update_map_layers(
                     "name": LayerNames.FAULTPOLYGONS,
                     "id": f"{LayoutElements.FAULTPOLYGONS_LAYER}-{idx}",
                     "visible": visible_fault_polygons_layer,
-                    "parameters": {"depthTest": False},
+                    "depthTest": False,
                 }
             )
         layers.append(
@@ -818,6 +818,7 @@ def update_map_layers(
                 "@@type": LayerTypes.FIELD_OUTLINE,
                 "id": f"{LayoutElements.FIELD_OUTLINE_LAYER}-{idx}",
                 "data": {"type": "FeatureCollection", "features": []},
+                "parameters": {"depthTest": False},
             }
         )
         if include_well_layer:
