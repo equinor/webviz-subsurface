@@ -7,7 +7,7 @@ import geojson
 import numpy as np
 import plotly.graph_objects as go
 import webviz_subsurface_components as wsc
-from dash import dcc, no_update
+from dash import dcc, html, no_update
 from flask_caching import Cache
 
 from webviz_subsurface._providers import (
@@ -234,12 +234,43 @@ def _find_legend_title(attribute: MapAttribute, unit: str) -> str:
     return ""
 
 
+def _create_summed_mass_annotation(
+    attribute: MapAttribute,
+    summed_mass: str,
+    unit: str,
+) -> Union[str, tuple]:
+    annotation = (
+        html.P(
+            [
+                f"Total {MapAttribute[attribute.name].value.lower()}:",
+                html.Br(),
+                f"{summed_mass:.2f} {unit}",
+            ]
+        )
+        if MapType[attribute.name].value == "MASS" and summed_mass is not None else ""
+    )
+    return html.Div(
+        annotation,
+        style={
+                "position": "absolute",
+                "top": "50px",
+                "left": "4px",
+                "backgroundColor": "rgba(255,255,255,0.8)",
+                "padding": "1px 1px",
+                "fontWeight": "bold",
+                "fontSize": "15px",
+                "display": "block",
+        },
+    )
+
+
 def create_map_annotations(
     formation: str,
     surface_data: Optional[SurfaceData],
     colortables: List[Dict[str, Any]],
     attribute: MapAttribute,
     unit: str,
+    current_total: Optional[float],
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if (
@@ -268,6 +299,7 @@ def create_map_annotations(
                         colorTables=colortables,
                     ),
                     wsc.ViewFooter(children=formation),
+                    _create_summed_mass_annotation(attribute, current_total, unit),
                 ],
             )
         )
@@ -631,20 +663,18 @@ def process_summed_mass(
     datestr: Optional[str],
     attribute: MapAttribute,
     summed_mass: Optional[float],
-    surf_data: Optional[SurfaceData],
     summed_co2: Dict[str, float],
     unit: str,
 ) -> Tuple[Optional[SurfaceData], Dict[str, float]]:
     summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}-{unit}"
+    current_total = None
     if len(realization) == 1:
         if MapType[MapAttribute(attribute).name].value == "MASS":
             if summed_mass is not None and summed_co2_key not in summed_co2:
                 summed_co2[summed_co2_key] = summed_mass
-            if summed_co2_key in summed_co2 and surf_data is not None:
-                surf_data.readable_name += (
-                    f" ({unit}) (Total: {summed_co2[summed_co2_key]:.2E}): "
-                )
-    return surf_data, summed_co2
+            if summed_co2_key in summed_co2:
+                current_total = summed_co2[summed_co2_key]
+    return current_total, summed_co2
 
 
 def export_figure_data_to_csv(

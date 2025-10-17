@@ -545,13 +545,12 @@ class CO2Migration(WebvizPluginABC):
                     map_attribute_names=self._map_attribute_names,
                 )
             assert isinstance(self._visualization_info["unit"], str)
-            surf_data, self._summed_co2 = process_summed_mass(
+            current_summed_mass, self._summed_co2 = process_summed_mass(
                 formation,
                 realization,
                 datestr,
                 attribute,
                 summed_mass,
-                surf_data,
                 self._summed_co2,
                 self._visualization_info["unit"],
             )
@@ -592,6 +591,7 @@ class CO2Migration(WebvizPluginABC):
                 colortables=self._color_tables,
                 attribute=attribute,
                 unit=self._visualization_info["unit"],
+                current_total=current_summed_mass,
             )
             viewports = no_update if current_views else create_map_viewports()
             return layers, annotations, viewports
