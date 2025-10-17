@@ -29,6 +29,7 @@ from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     GraphSource,
     MapAttribute,
     MapNamingConvention,
+    MapType,
     MenuOptions,
     PhasesScenario,
 )
@@ -141,6 +142,34 @@ def init_surface_providers(
         )
         for ens in ensembles
     }
+
+
+def init_dates_per_ensemble(
+    ensembles: List[str],
+    attribute_names: FilteredMapAttribute,
+    surface_providers: Dict[str, EnsembleSurfaceProvider],
+) -> Dict[str, List[str]]:
+    ensemble_dates: Dict[str, List[str]] = {}
+    for ens in ensembles:
+        surface_provider = surface_providers[ens]
+        dated_attributes = [
+            k
+            for k in attribute_names.filtered_values
+            if MapType[k.name].value != "MIGRATION_TIME"
+        ]
+        if len(dated_attributes) == 0:
+            ensemble_dates[ens] = []
+        else:
+            date_map_attribute = dated_attributes[0]
+            att_name = attribute_names[date_map_attribute]
+            dates = surface_provider.surface_dates_for_attribute(att_name)
+            if dates is None:
+                raise ValueError(
+                    f"Failed to fetch dates in ensemble {ens} "
+                    f"for attribute '{att_name}'"
+                )
+            ensemble_dates[ens] = dates
+    return ensemble_dates
 
 
 def init_well_pick_provider(

@@ -9,6 +9,9 @@ from webviz_config.webviz_plugin_subclasses import ViewABC, ViewElementABC
 from webviz_subsurface_components import SubsurfaceViewer
 
 from webviz_subsurface.plugins._co2_migration._types import LegendData
+from webviz_subsurface.plugins._co2_migration._utilities.containment_info import (
+    MainTabOption,
+)
 
 
 class MainView(ViewABC):
@@ -35,6 +38,9 @@ class MapViewElement(ViewElementABC):
         TOP_ELEMENT = "top-element"
         BOTTOM_ELEMENT = "bottom-element"
         LEGEND_DATA_STORE = "legend-data-store"
+        SUMMARY_TABS = "summary-tabs"
+        CSV_EXPORT_BUTTON = "csv-export-button"
+        DOWNLOAD_CSV = "download-csv"
 
     def __init__(
         self, color_scales: List[Dict[str, Any]], content: Dict[str, bool]
@@ -105,6 +111,15 @@ class MapViewElement(ViewElementABC):
                                 self.register_component_unique_id(
                                     self.Ids.STATISTICS_PLOT
                                 ),
+                                self.register_component_unique_id(
+                                    self.Ids.CSV_EXPORT_BUTTON
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.DOWNLOAD_CSV
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.SUMMARY_TABS
+                                ),
                             )
                         ),
                     ],
@@ -157,57 +172,96 @@ def _summary_graph_layout(
     bar_plot_id: str,
     time_plot_id: str,
     statistics_plot_id: str,
+    csv_export_button_id: str,
+    download_csv_id: str,
+    summary_tabs_id: str,
 ) -> List:
     return [
-        wcc.Tabs(
-            id="TAB",
-            value="tab-1",
-            children=[
-                wcc.Tab(
-                    label="Containment state",
-                    value="tab-1",
-                    children=[
-                        html.Div(
-                            wcc.Graph(
-                                id=bar_plot_id,
-                                figure=go.Figure(),
-                                config={
-                                    "displayModeBar": False,
-                                },
-                            ),
-                        ),
-                    ],
+        html.Div(
+            [
+                html.Button(
+                    "↓",
+                    id=csv_export_button_id,
+                    title="Export data in current plot to a CSV file",
+                    style={
+                        "position": "absolute",
+                        "bottom": "5px",
+                        "right": "5px",
+                        "backgroundColor": "#F4F4F4",
+                        "border": "1px solid #B0B0B0",
+                        "color": "#606060",
+                        "padding": "0",
+                        "borderRadius": "4px",
+                        "zIndex": "1000",  # Make sure it appears on top
+                        "fontSize": "18px",
+                        "fontWeight": "bold",
+                        "display": "flex",
+                        "alignItems": "center",  # Vertical centering
+                        "justifyContent": "center",  # Horizontal centering
+                        "lineHeight": "1",  # Prevents extra line spacing
+                        "textAlign": "center",
+                        "width": "32px",
+                        "height": "32px",
+                        "fontFamily": "Arial, sans-serif",
+                    },
                 ),
-                wcc.Tab(
-                    label="Containment over time",
-                    value="tab-2",
+                wcc.Tabs(
+                    id=summary_tabs_id,
+                    value=MainTabOption.CONTAINMENT_STATE,
                     children=[
-                        html.Div(
-                            wcc.Graph(
-                                id=time_plot_id,
-                                figure=go.Figure(),
-                                config={
-                                    "displayModeBar": False,
-                                },
-                            ),
+                        wcc.Tab(
+                            label="Containment state",
+                            value=MainTabOption.CONTAINMENT_STATE,
+                            children=[
+                                html.Div(
+                                    wcc.Graph(
+                                        id=bar_plot_id,
+                                        figure=go.Figure(),
+                                        config={
+                                            "displayModeBar": False,
+                                        },
+                                    ),
+                                ),
+                            ],
                         ),
-                    ],
-                ),
-                wcc.Tab(
-                    label="Statistics",
-                    value="tab-3",
-                    children=[
-                        html.Div(
-                            wcc.Graph(
-                                id=statistics_plot_id,
-                                figure=go.Figure(),
-                                config={
-                                    "displayModeBar": False,
-                                },
-                            ),
+                        wcc.Tab(
+                            label="Containment over time",
+                            value=MainTabOption.CONTAINMENT_OVER_TIME,
+                            children=[
+                                html.Div(
+                                    wcc.Graph(
+                                        id=time_plot_id,
+                                        figure=go.Figure(),
+                                        config={
+                                            "displayModeBar": False,
+                                        },
+                                    ),
+                                ),
+                            ],
+                        ),
+                        wcc.Tab(
+                            label="Statistics",
+                            value=MainTabOption.STATISTICS,
+                            children=[
+                                html.Div(
+                                    wcc.Graph(
+                                        id=statistics_plot_id,
+                                        figure=go.Figure(),
+                                        config={
+                                            "displayModeBar": False,
+                                        },
+                                    ),
+                                ),
+                            ],
                         ),
                     ],
                 ),
             ],
+            style={
+                "position": "relative",
+                "height": "100%",
+                "width": "100%",
+            },
         ),
+        dcc.Download(id=download_csv_id),
     ]

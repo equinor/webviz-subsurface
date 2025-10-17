@@ -9,6 +9,12 @@ class StatisticsTabOption(StrEnum):
     BOX_PLOT = "box-plot"
 
 
+class MainTabOption(StrEnum):
+    CONTAINMENT_STATE = "containment-state"
+    CONTAINMENT_OVER_TIME = "containment-over-time"
+    STATISTICS = "statistics"
+
+
 # pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)  # NBNB-AS: Removed slots=True (python>=3.10)
 class ContainmentInfo:
