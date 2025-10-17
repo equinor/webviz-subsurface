@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 # pylint: disable=C0103
 # NBNB-AS: We should address this pylint message soon
+import re
 import warnings
 from datetime import datetime as dt
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -542,8 +543,14 @@ def generate_co2_volume_figure(
         custom_data=["type", "prop"],
     )
     fig.update_traces(
-        hovertemplate="Type: %{customdata[0]}<br>Amount: %{x:.3f}<br>"
-        "Realization: %{y}<br>Proportion: %{customdata[1]}<extra></extra>",
+        hovertemplate=(
+            "<span style='font-family:Courier New;'>"
+            "Type       : %{customdata[0]}<br>"
+            "Amount     : %{x:.3f}<br>"
+            "Realization: %{y}<br>"
+            "Proportion : %{customdata[1]}"
+            "</span><extra></extra>"
+        ),
     )
     if legendonly_traces is not None:
         _toggle_trace_visibility(fig.data, legendonly_traces)
@@ -596,8 +603,14 @@ def generate_co2_time_containment_one_realization_figure(
         custom_data=["type", "prop"],
     )
     fig.update_traces(
-        hovertemplate="Type: %{customdata[0]}<br>Date: %{x}<br>"
-        "Amount: %{y:.3f}<br>Proportion: %{customdata[1]}<extra></extra>",
+        hovertemplate=(
+            "<span style='font-family:Courier New;'>"
+            "Type      : %{customdata[0]}<br>"
+            "Date      : %{x}<br>"
+            "Amount    : %{y:.3f}<br>"
+            "Proportion: %{customdata[1]}"
+            "</span><extra></extra>"
+        ),
     )
     _add_hover_info_in_field(fig, df, cat_ord, colors)
     fig.layout.yaxis.range = y_limits
@@ -659,8 +672,13 @@ def _add_hover_info_in_field(
                     y=y_vals,
                     mode="lines",
                     line=go.scatter.Line(color=color),
-                    text=f"Type: {name}<br>Date: {date_strings[date]}<br>"
-                    f"Amount: {amount:.3f}<br>Proportion: {prop}",
+                    text=(
+                        "<span style='font-family:Courier New;'>"
+                        f"Type      : {name}<br>"
+                        f"Date      : {date_strings[date]}<br>"
+                        f"Amount    : {amount:.3f}<br>"
+                        f"Proportion: {prop}"
+                    ),
                     opacity=0,
                     hoverinfo="text",
                     hoveron="points",
@@ -787,8 +805,13 @@ def generate_co2_time_containment_figure(
         fig.add_scatter(y=[0.0], **dummy_args, **args)
 
     hover_template = (
-        "Type: %{meta[1]}<br>Date: %{x}<br>Amount: %{y:.3f}<br>"
-        "Realization: %{meta[0]}<br>Proportion: %{customdata}"
+        "<span style='font-family:Courier New;'>"
+        "Type       : %{meta[1]}<br>"
+        "Date       : %{x}<br>"
+        "Amount     : %{y:.3f}<br>"
+        "Realization: %{meta[0]}<br>"
+        "Proportion : %{customdata}"
+        "</span><extra></extra>"
     )
 
     if containment_info.use_stats:
@@ -814,8 +837,12 @@ def generate_co2_time_containment_figure(
         )
         realizations = ["p10", "mean", "p90"]  # type: ignore
         hover_template = (
-            "Type: %{meta[1]}<br>Date: %{x}<br>Amount: %{y:.3f}<br>"
+            "<span style='font-family:Courier New;'>"
+            "Type     : %{meta[1]}<br>"
+            "Date     : %{x}<br>"
+            "Amount   : %{y:.3f}<br>"
             "Statistic: %{meta[0]}"
+            "</span><extra></extra>"
         )
     for rlz in realizations:
         lwd = 1.5 if rlz in ["p10", "p90"] else 2.5
@@ -842,6 +869,9 @@ def generate_co2_time_containment_figure(
                 "meta": [rlz, name],
                 "hovertemplate": hover_template,
             }
+            # Note: The current implementation of CSV export in extract_df_from_fig()
+            #       uses 'meta' to extract realization number and name.
+            #       Make sure to keep it in sync when modifying.
             if not containment_info.use_stats:
                 args["customdata"] = sub_df[sub_df["name"] == name]["prop"]
             if name in inactive_cols_at_startup:
@@ -878,8 +908,7 @@ def generate_co2_statistics_figure(
         mark_choice,
     )
 
-    # Remove if we want realization as label?
-    df = df.drop(columns=["REAL", "realization"]).reset_index(drop=True)
+    df = df.drop(columns=["REAL"]).reset_index(drop=True)
     fig = px.ecdf(
         df,
         x="amount",
@@ -891,6 +920,7 @@ def generate_co2_statistics_figure(
         line_dash="type" if mark_choice != "none" else None,
         line_dash_sequence=line_types,
         category_orders=cat_ord,
+        hover_data=["realization"],
     )
 
     if legend_only_traces is None:
@@ -899,9 +929,18 @@ def generate_co2_statistics_figure(
     else:
         _toggle_trace_visibility(fig.data, legend_only_traces)
 
+    # Note: The current implementation of CSV export in extract_df_from_fig()
+    #       uses the customdata+hovertemplate to extract realization number.
+    #       Make sure to keep it in sync when modifying.
     fig.update_traces(
-        hovertemplate="Type: %{data.name}<br>Amount: %{x:.3f}<br>"
-        "Probability: %{y:.3f}<extra></extra>",
+        hovertemplate=(
+            "<span style='font-family:Courier New;'>"
+            "Type       : %{data.name}<br>"
+            "Amount     : %{x:.3f}<br>"
+            "Probability: %{y:.3f}<br>"
+            "Realization: %{customdata[0]}"
+            "</span><extra></extra>"
+        ),
     )
     fig.layout.yaxis.range = [-0.02, 1.02]
     fig.layout.legend.tracegroupgap = 0
@@ -969,6 +1008,10 @@ def generate_co2_box_plot_figure(
                 width=0.55,
             )
         )
+
+        # Note: The current implementation of CSV export in extract_df_from_fig()
+        #       uses the hovertemplate text string to extract the data.
+        #       Changing the hovertemplate text string might break the CSV export.
 
         fig.add_trace(
             go.Bar(
@@ -1100,3 +1143,184 @@ def _toggle_trace_visibility(traces: List, legendonly_names: List[str]) -> None:
             t.visible = "legendonly"
         else:
             t.visible = True
+
+
+def parse_hover_template(hover_template: str) -> dict:
+    parsed_hover_dict = {}
+    for item in hover_template.split("<br>"):
+        # Remove HTML tags (like <span style='font-family:Courier New;'>)
+        clean_item = re.sub(r"<[^>]*>", "", item)
+        clean_item = clean_item.strip()
+
+        if ":" in clean_item:
+            key, value = clean_item.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            parsed_hover_dict[key] = value
+    return parsed_hover_dict
+
+
+def _extract_data_from_box_trace(trace: go.Box) -> dict[str, Any]:
+    if hasattr(trace, "hovertemplate"):
+        hover_dict = parse_hover_template(trace.hovertemplate)
+        trace_name = hover_dict.get("Type", "Unknown")
+        trace_name = trace_name.replace(",", "_").replace(" ", "")
+        return {
+            "type": trace_name,
+            "min": float(hover_dict.get("Min", -1)),
+            "lower_whisker": float(hover_dict.get("Lower whisker", -1)),
+            "p90": float(hover_dict.get("p90 (not shown)", -1)),
+            "q1": float(hover_dict.get("Q1", -1)),
+            "median": float(hover_dict.get("Median", -1)),
+            "q3": float(hover_dict.get("Q3", -1)),
+            "p10": float(hover_dict.get("p10 (not shown)", -1)),
+            "top_whisker": float(hover_dict.get("Top whisker", -1)),
+            "max": float(hover_dict.get("Max", -1)),
+        }
+    return {}
+
+
+def _extract_data_from_general_trace(
+    trace: Union[go.Box, go.Scatter], plot_choice: str
+) -> List[Dict[str, Any]]:
+    records = []
+    if plot_choice == "containment_time_multiple":
+        meta_data = getattr(trace, "meta", None)
+        realization = (
+            meta_data[0] if meta_data is not None and len(meta_data) > 0 else -1
+        )
+        trace_name = (
+            meta_data[1] if meta_data is not None and len(meta_data) > 1 else "Unknown"
+        )
+    else:
+        trace_name = getattr(trace, "name", "Unknown")
+
+    if plot_choice in ["probability", "containment_state"]:
+        if trace.x is not None and "_inputArray" in trace.x:
+            x_data = trace.x["_inputArray"]
+            x_data = {int(k): v for k, v in x_data.items() if str(k).isdigit()}
+    elif plot_choice in [
+        "containment_time_single",
+        "containment_time_multiple",
+    ]:
+        if trace.x is not None:
+            x_data = dict(enumerate(trace.x))
+    if plot_choice in [
+        "probability",
+        "containment_time_single",
+        "containment_time_multiple",
+    ]:
+        if trace.y is not None and "_inputArray" in trace.y:
+            y_data = trace.y["_inputArray"]
+            y_data = {int(k): v for k, v in y_data.items() if str(k).isdigit()}
+    elif plot_choice == "containment_state":
+        if trace.y is not None:
+            y_data = {k: int(v) for k, v in enumerate(trace.y)}
+    xy_data = {k: (x_data[k], y_data[k]) for k in x_data if k in y_data}
+
+    if plot_choice == "probability":
+        custom_data = []
+        if (
+            hasattr(trace, "customdata")
+            and trace.customdata is not None
+            and hasattr(trace, "hovertemplate")
+            and trace.hovertemplate is not None
+        ):
+            match = re.search(r"(\w+)\s*:\s*%\{customdata\[0\]\}", trace.hovertemplate)
+            col_name = match.group(1).lower() if match else "customdata"
+            if col_name == "realization":
+                if "_inputArray" in trace.customdata:
+                    custom_data = [x["0"] for x in trace.customdata["_inputArray"]]
+
+    trace_name = trace_name.replace(",", "_").replace(" ", "")
+    for j, (x_val, y_val) in xy_data.items():
+        if plot_choice == "probability":
+            record = {
+                "type": trace_name,
+                "amount": x_val,
+                "probability": y_val,
+            }
+            if custom_data:
+                record["realization"] = custom_data[j]
+        elif plot_choice == "containment_state":
+            record = {
+                "type": trace_name,
+                "amount": x_val,
+                "realization": y_val,
+            }
+        elif plot_choice == "containment_time_single":
+            record = {
+                "type": trace_name,
+                "date": x_val,
+                "amount": y_val,
+            }
+        elif plot_choice == "containment_time_multiple":
+            record = {
+                "type": trace_name,
+                "date": x_val,
+                "amount": y_val,
+            }
+            if realization in ["p10", "p90", "mean"]:
+                col_name = "statistic"
+            else:
+                col_name = "realization"
+            record[col_name] = realization
+        records.append(record)
+    return records
+
+
+def extract_df_from_fig(fig_data: tuple, plot_choice: str) -> pd.DataFrame:
+    if plot_choice == "containment_time":
+        # Distinguish between single and multiple realizations selected:
+        if hasattr(fig_data[0], "stackgroup") and fig_data[0].stackgroup is not None:
+            plot_choice = "containment_time_single"
+        else:
+            plot_choice = "containment_time_multiple"
+
+    data_records = []
+    for trace in fig_data:
+        if hasattr(trace, "visible") and trace.visible == "legendonly":
+            continue  # Skip hidden traces
+        if plot_choice == "containment_time_multiple":
+            is_data_point_trace = (
+                hasattr(trace, "showlegend")
+                and trace.showlegend is False
+                and hasattr(trace, "name")
+                and trace.name == ""
+            )
+            if not is_data_point_trace:
+                # Only keep subset of traces that we want
+                continue
+        elif plot_choice == "containment_time_single":
+            is_line_trace = (
+                hasattr(trace, "showlegend")
+                and trace.showlegend is False
+                and hasattr(trace, "mode")
+                and trace.mode == "lines"
+            )
+            if is_line_trace:
+                continue
+        elif plot_choice == "box":
+            is_invisible_trace = (
+                hasattr(trace, "showlegend")
+                and trace.showlegend is False
+                and hasattr(trace, "opacity")
+                and trace.opacity == 0
+            )
+            if not is_invisible_trace:
+                # Keep only the invisible box traces
+                # They have all the data stored in the hover box,
+                # while the visible traces only got lower/upper whisker and median
+                continue
+
+        if plot_choice == "box":
+            record = _extract_data_from_box_trace(trace)
+            if record:
+                data_records.append(record)
+        else:
+            if hasattr(trace, "x") and hasattr(trace, "y"):
+                records = _extract_data_from_general_trace(trace, plot_choice)
+                if records:
+                    data_records += records
+
+    return pd.DataFrame(data_records)
