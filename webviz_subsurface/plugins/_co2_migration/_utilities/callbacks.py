@@ -236,7 +236,7 @@ def _find_legend_title(attribute: MapAttribute, unit: str) -> str:
 
 def _create_summed_mass_annotation(
     attribute: MapAttribute,
-    summed_mass: str,
+    summed_mass: Optional[float],
     unit: str,
 ) -> Union[str, tuple]:
     annotation = (
@@ -247,23 +247,83 @@ def _create_summed_mass_annotation(
                 f"{summed_mass:.2f} {unit}",
             ]
         )
-        if MapType[attribute.name].value == "MASS" and summed_mass is not None else ""
+        if MapType[attribute.name].value == "MASS" and summed_mass is not None
+        else ""
     )
     return html.Div(
         annotation,
         style={
-                "position": "absolute",
-                "top": "50px",
-                "left": "4px",
-                "backgroundColor": "rgba(255,255,255,0.8)",
-                "padding": "1px 1px",
-                "fontWeight": "bold",
-                "fontSize": "15px",
-                "display": "block",
+            "position": "absolute",
+            "top": "50px",
+            "left": "4px",
+            "backgroundColor": "rgba(255,255,255,0.8)",
+            "padding": "1px 1px",
+            "fontWeight": "bold",
+            "fontSize": "15px",
+            "display": "block",
         },
     )
 
 
+def _create_polygon_legend(
+    options: List[str],
+    con_url: Optional[str],
+    haz_url: Optional[str],
+) -> List:
+    legend: List = []
+    hide_con = con_url is None or LayoutLabels.SHOW_CONTAINMENT_POLYGON not in options
+    hide_haz = haz_url is None or LayoutLabels.SHOW_HAZARDOUS_POLYGON not in options
+    if hide_con and hide_haz:
+        return legend
+    legend_items = []
+    square = {"width": "12px", "height": "12px", "marginRight": "6px"}
+    text = {"color": "black", "fontSize": "14px"}
+    if not hide_con:
+        legend_items.append(
+            html.Div(
+                style={"display": "flex", "alignItems": "center"},
+                children=[
+                    html.Div(
+                        style={**square, "backgroundColor": "rgba(0, 172, 0, 0.47)"}
+                    ),
+                    html.Div("Containment Polygon", style=text),
+                ],
+            )
+        )
+    if not hide_haz:
+        legend_items.append(
+            html.Div(
+                style={"display": "flex", "alignItems": "center"},
+                children=[
+                    html.Div(
+                        style={**square, "backgroundColor": "rgba(200, 0, 0, 0.47)"}
+                    ),
+                    html.Div("Hazardous Polygon", style=text),
+                ],
+            )
+        )
+    legend.append(
+        wsc.ViewAnnotation(
+            id="polygon_legends",
+            children=html.Div(
+                children=legend_items,
+                style={
+                    "position": "absolute",
+                    "top": "210px",
+                    "right": "4px",
+                    "backgroundColor": "rgba(255,255,255,0.9)",
+                    "padding": "6px 8px",
+                    "borderRadius": "4px",
+                    "boxShadow": "0 0 4px rgba(0,0,0,0.2)",
+                    "zIndex": 10,
+                },
+            ),
+        )
+    )
+    return legend
+
+
+# pylint: disable=too-many-arguments
 def create_map_annotations(
     formation: str,
     surface_data: Optional[SurfaceData],
@@ -271,6 +331,9 @@ def create_map_annotations(
     attribute: MapAttribute,
     unit: str,
     current_total: Optional[float],
+    options: List[str],
+    con_url: Optional[str],
+    haz_url: Optional[str],
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if (
@@ -300,7 +363,8 @@ def create_map_annotations(
                     ),
                     wsc.ViewFooter(children=formation),
                     _create_summed_mass_annotation(attribute, current_total, unit),
-                ],
+                ]
+                + _create_polygon_legend(options, con_url, haz_url),
             )
         )
     return annotations
@@ -337,7 +401,7 @@ def create_map_layers(
     haz_bounds_url: Optional[str],
     well_pick_provider: Optional[EnsembleWellPicks],
     plume_extent_data: Optional[geojson.FeatureCollection],
-    options_dialog_options: List[int],
+    options_dialog_options: List[str],
     selected_wells: List[str],
 ) -> List[Dict]:
     layers = []
@@ -665,7 +729,7 @@ def process_summed_mass(
     summed_mass: Optional[float],
     summed_co2: Dict[str, float],
     unit: str,
-) -> Tuple[Optional[SurfaceData], Dict[str, float]]:
+) -> Tuple[Optional[float], Dict[str, float]]:
     summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}-{unit}"
     current_total = None
     if len(realization) == 1:
