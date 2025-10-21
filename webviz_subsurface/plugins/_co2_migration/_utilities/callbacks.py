@@ -1,3 +1,4 @@
+import logging
 import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -6,7 +7,7 @@ import geojson
 import numpy as np
 import plotly.graph_objects as go
 import webviz_subsurface_components as wsc
-from dash import no_update
+from dash import dcc, no_update
 from flask_caching import Cache
 
 from webviz_subsurface._providers import (
@@ -23,6 +24,7 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
 from webviz_subsurface.plugins._co2_migration._types import LegendData
 from webviz_subsurface.plugins._co2_migration._utilities import plume_extent
 from webviz_subsurface.plugins._co2_migration._utilities.co2volume import (
+    extract_df_from_fig,
     generate_co2_box_plot_figure,
     generate_co2_statistics_figure,
     generate_co2_time_containment_figure,
@@ -60,6 +62,8 @@ from webviz_subsurface.plugins._co2_migration._utilities.surface_publishing impo
 from webviz_subsurface.plugins._co2_migration._utilities.unsmry_data_provider import (
     UnsmryDataProvider,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 def property_origin(
@@ -158,11 +162,6 @@ def derive_surface_address(
             threshold=contour_data["threshold"] if contour_data else 0.0,
             smoothing=contour_data["smoothing"] if contour_data else 0.0,
         )
-    date = (
-        None
-        if MapType[MapAttribute(attribute).name].value == "MIGRATION_TIME"
-        else date
-    )
     if len(realization) == 1:
         return SimulatedSurfaceAddress(
             attribute=map_attribute_names[attribute],
@@ -192,7 +191,7 @@ def get_plume_polygon(
     surface_provider: EnsembleSurfaceProvider,
     realizations: List[int],
     surface_name: str,
-    datestr: str,
+    datestr: Optional[str],
     contour_data: Dict[str, Any],
 ) -> Optional[geojson.FeatureCollection]:
     surface_attribute = contour_data["property"]
@@ -413,7 +412,7 @@ def generate_containment_figures(
     try:
         fig0 = generate_co2_volume_figure(
             table_provider,
-            table_provider.realizations,
+            realizations,
             co2_scale,
             containment_info,
             legenddata["bar_legendonly"],
@@ -629,7 +628,7 @@ def set_plot_ids(
 def process_summed_mass(
     formation: str,
     realization: List[int],
-    datestr: str,
+    datestr: Optional[str],
     attribute: MapAttribute,
     summed_mass: Optional[float],
     surf_data: Optional[SurfaceData],
@@ -646,3 +645,22 @@ def process_summed_mass(
                     f" ({unit}) (Total: {summed_co2[summed_co2_key]:.2E}): "
                 )
     return surf_data, summed_co2
+
+
+def export_figure_data_to_csv(
+    figure: Dict, file_name: str, plot_choice: str
+) -> Optional[Dict[str, Any]]:
+    """Export visible figure data to CSV file"""
+    try:
+        figure_go = go.Figure(figure)  # Dash State returns dict
+        df = extract_df_from_fig(figure_go.data, plot_choice)
+        if df.empty:
+            LOGGER.warning("No plot data to export to CSV file.")
+            return None
+
+        result = dcc.send_data_frame(df.to_csv, filename=file_name, index=False)
+        return result
+
+    except (ValueError, KeyError, AttributeError, TypeError) as e:
+        LOGGER.warning(f"Failed to export plot data to CSV file: {e}")
+        return None
