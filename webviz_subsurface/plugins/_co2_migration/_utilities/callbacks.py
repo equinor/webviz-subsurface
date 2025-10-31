@@ -254,8 +254,8 @@ def _create_summed_mass_annotation(
         annotation,
         style={
             "position": "absolute",
-            "top": "50px",
-            "left": "4px",
+            "top": "210px",
+            "right": "4px",
             "backgroundColor": "rgba(255,255,255,0.8)",
             "padding": "1px 1px",
             "fontWeight": "bold",
@@ -309,8 +309,8 @@ def _create_polygon_legend(
                 children=legend_items,
                 style={
                     "position": "absolute",
-                    "top": "210px",
-                    "right": "4px",
+                    "top": "50px",
+                    "left": "4px",
                     "backgroundColor": "rgba(255,255,255,0.9)",
                     "padding": "6px 8px",
                     "borderRadius": "4px",
