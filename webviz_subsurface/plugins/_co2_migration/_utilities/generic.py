@@ -213,6 +213,7 @@ class LayoutLabels(StrEnum):
     SHOW_FAULTPOLYGONS = "Show fault polygons"
     SHOW_CONTAINMENT_POLYGON = "Show containment polygon"
     SHOW_HAZARDOUS_POLYGON = "Show hazardous polygon"
+    SHOW_POLYGONS_AS_OUTLINES = "Show polygons as outlines"
     SHOW_WELLS = "Show wells"
     WELL_FILTER = "Well filter"
     COMMON_SELECTIONS = "Options and global filters"

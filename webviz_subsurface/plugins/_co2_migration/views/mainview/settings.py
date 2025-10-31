@@ -606,6 +606,7 @@ class DialogLayout(wcc.Dialog):
         checklist_values.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
         checklist_options.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
         checklist_values.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
+        checklist_options.append(LayoutLabels.SHOW_POLYGONS_AS_OUTLINES)
         checklist_options.append(LayoutLabels.SHOW_WELLS)
         checklist_values.append(LayoutLabels.SHOW_WELLS)
 

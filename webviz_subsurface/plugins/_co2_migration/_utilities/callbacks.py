@@ -273,6 +273,7 @@ def _create_polygon_legend(
     legend: List = []
     hide_con = con_url is None or LayoutLabels.SHOW_CONTAINMENT_POLYGON not in options
     hide_haz = haz_url is None or LayoutLabels.SHOW_HAZARDOUS_POLYGON not in options
+    outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options
     if hide_con and hide_haz:
         return legend
     legend_items = []
@@ -284,7 +285,15 @@ def _create_polygon_legend(
                 style={"display": "flex", "alignItems": "center"},
                 children=[
                     html.Div(
-                        style={**square, "backgroundColor": "rgba(0, 172, 0, 0.47)"}
+                        style={
+                            **square,
+                            "backgroundColor": "transparent"
+                            if outline
+                            else "rgba(0, 172, 0, 0.47)",
+                            "border": "3px solid rgba(0, 172, 0, 0.70)"
+                            if outline
+                            else "transparent",
+                        }
                     ),
                     html.Div("Containment Polygon", style=text),
                 ],
@@ -296,7 +305,15 @@ def _create_polygon_legend(
                 style={"display": "flex", "alignItems": "center"},
                 children=[
                     html.Div(
-                        style={**square, "backgroundColor": "rgba(200, 0, 0, 0.47)"}
+                        style={
+                            **square,
+                            "backgroundColor": "transparent"
+                            if outline
+                            else "rgba(200, 0, 0, 0.47)",
+                            "border": "3px solid rgba(200, 0, 0, 0.70)"
+                            if outline
+                            else "transparent",
+                        }
                     ),
                     html.Div("Hazardous Polygon", style=text),
                 ],
@@ -405,6 +422,7 @@ def create_map_layers(
     selected_wells: List[str],
 ) -> List[Dict]:
     layers = []
+    outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options_dialog_options
     if surface_data is not None:
         # Update ColormapLayer
         meta = surface_data.meta_data
@@ -449,8 +467,12 @@ def create_map_layers(
                 "name": "Containment Polygon",
                 "id": "license-boundary-layer",
                 "data": containment_bounds_url,
-                "stroked": False,
+                "stroked": outline,
+                "filled": not outline,
                 "getFillColor": [0, 172, 0, 120],
+                "getLineColor": [0, 172, 0, 120],
+                "getLineWidth": 3,
+                "lineWidthUnits": "pixels",
                 "visible": True,
             }
         )
@@ -465,8 +487,12 @@ def create_map_layers(
                 "name": "Hazardous Polygon",
                 "id": "hazardous-boundary-layer",
                 "data": haz_bounds_url,
-                "stroked": False,
+                "stroked": outline,
+                "filled": not outline,
                 "getFillColor": [200, 0, 0, 120],
+                "getLineColor": [200, 0, 0, 180],
+                "getLineWidth": 3,
+                "lineWidthUnits": "pixels",
                 "visible": True,
             }
         )
