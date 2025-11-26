@@ -874,7 +874,7 @@ class MapSelectorLayout(wcc.Selectors):
                                     value=5,
                                     type="number",
                                     min=1,
-                                    style={'width': '25%'},
+                                    style={"width": "25%"},
                                 ),
                                 dcc.Checklist(
                                     ["On/Off"],

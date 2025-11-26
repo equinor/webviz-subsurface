@@ -432,9 +432,9 @@ def create_map_layers(
         # Generate contour lines
         contours = []
         if (
-            show_contours and
-            surface_data.color_map_range[0] is not None and
-            surface_data.color_map_range[1] is not None
+            show_contours
+            and surface_data.color_map_range[0] is not None
+            and surface_data.color_map_range[1] is not None
         ):
             min_val, max_val = surface_data.color_map_range
             buffer = 0.01 * (max_val - min_val)  # Strange effects at min_val/max_val

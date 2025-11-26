@@ -439,7 +439,8 @@ class CO2Migration(WebvizPluginABC):
                     self._settings_component(ViewSettings.Ids.CONTOURS_SWITCH), "value"
                 ),
                 "contour_quantity": Input(
-                    self._settings_component(ViewSettings.Ids.CONTOURS_QUANTITY), "value"
+                    self._settings_component(ViewSettings.Ids.CONTOURS_QUANTITY),
+                    "value",
                 ),
                 "plume_threshold": Input(
                     self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD),
