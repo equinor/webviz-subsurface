@@ -68,9 +68,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             subplot_titles=[f'Ensemble: "{elm}"' for elm in self._selected_ensembles],
         )
         if theme:
-            self._figure.update_layout(
-                theme.create_themed_layout(self._figure.to_dict().get("layout", {}))
-            )
+            self._figure.update_layout(theme.create_themed_layout(self._figure.to_dict().get("layout", {})))
         self._set_keep_uirevision()
 
         # Set for storing added vectors
@@ -86,13 +84,8 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
     #############################################################################
 
     def create_graph_legends(self) -> None:
-        # Add legends for selected vectors - sort according to selected vectors
-        # NOTE: sorted() with key=self._selected_vectors.index requires that all of
-        # vectors in self._added_vector_traces set exist in self._selected_vectors list!
-        added_vector_traces = sorted(
-            self._added_vector_traces, key=self._selected_vectors.index
-        )
-        for index, vector in enumerate(added_vector_traces, start=1):
+        # Add legends for selected vectors
+        for index, vector in enumerate(self._added_vector_traces, start=1):
             vector_legend_trace = {
                 "name": vector,
                 "x": [None],
@@ -103,9 +96,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
                 "mode": "lines",
                 "line": {
                     "color": self._vector_colors.get(vector, "black"),
-                    "shape": self._vector_line_shapes.get(
-                        vector, self._line_shape_fallback
-                    ),
+                    "shape": self._vector_line_shapes.get(vector, self._line_shape_fallback),
                 },
                 "legendrank": index,
             }
@@ -181,18 +172,14 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         vector_traces_set: Dict[str, List[dict]] = {}
 
         # Get vectors - order not important
-        vectors: Set[str] = set(
-            vectors_statistics_df.columns.get_level_values(0)
-        ) - set(["DATE"])
+        vectors: Set[str] = set(vectors_statistics_df.columns.get_level_values(0)) - set(["DATE"])
         self._validate_vectors_are_selected(vectors)
 
         for vector in vectors:
             self._added_vector_traces.add(vector)
 
             # Retrieve DATE and statistics columns for specific vector
-            vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
-                vectors_statistics_df[vector]
-            )
+            vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(vectors_statistics_df[vector])
 
             color = self._vector_colors.get(vector, "black")
             if color_lightness_scale:
@@ -224,18 +211,14 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         vector_traces_set: Dict[str, List[dict]] = {}
 
         # Get vectors - order not important!
-        vectors: Set[str] = set(
-            vectors_statistics_df.columns.get_level_values(0)
-        ) - set(["DATE"])
+        vectors: Set[str] = set(vectors_statistics_df.columns.get_level_values(0)) - set(["DATE"])
         self._validate_vectors_are_selected(vectors)
 
         for vector in vectors:
             self._added_vector_traces.add(vector)
 
             # Retrieve DATE and statistics columns for specific vector
-            vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(
-                vectors_statistics_df[vector]
-            )
+            vector_statistics_df = pd.DataFrame(vectors_statistics_df["DATE"]).join(vectors_statistics_df[vector])
 
             color = self._vector_colors.get(vector, "#000000")  # Black Hex color
             line_shape = self._vector_line_shapes.get(vector, self._line_shape_fallback)
@@ -260,9 +243,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             raise ValueError('vectors_df is missing required columns ["DATE","REAL"]')
 
         if ensemble is None:
-            raise ValueError(
-                "Must provide ensemble argument of type str for this implementation!"
-            )
+            raise ValueError("Must provide ensemble argument of type str for this implementation!")
 
         samples = vectors_df["DATE"].tolist()
         vector_trace_set: Dict[str, dict] = {}
@@ -283,21 +264,15 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
             )
         self._add_vector_trace_set_to_figure(vector_trace_set, ensemble)
 
-    def add_vector_observations(
-        self, vector_name: str, vector_observations: dict
-    ) -> None:
+    def add_vector_observations(self, vector_name: str, vector_observations: dict) -> None:
         if vector_name not in self._selected_vectors:
             raise ValueError(f"Vector {vector_name} not among selected vectors!")
 
         vector_observations_traces_set = {
-            vector_name: create_vector_observation_traces(
-                vector_observations, legend_group=vector_name
-            )
+            vector_name: create_vector_observation_traces(vector_observations, legend_group=vector_name)
         }
         for ensemble in self._selected_ensembles:
-            self._add_vector_traces_set_to_figure(
-                vector_observations_traces_set, ensemble
-            )
+            self._add_vector_traces_set_to_figure(vector_observations_traces_set, ensemble)
 
     #############################################################################
     #
@@ -318,9 +293,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
     ) -> None:
         for trace in vector_trace_set.values():
             subplot_index = (
-                self._selected_ensembles.index(ensemble) + 1
-                if ensemble in self._selected_ensembles
-                else None
+                self._selected_ensembles.index(ensemble) + 1 if ensemble in self._selected_ensembles else None
             )
             if subplot_index is None:
                 continue
@@ -331,9 +304,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
     ) -> None:
         for vector_traces in vector_traces_set.values():
             subplot_index = (
-                self._selected_ensembles.index(ensemble) + 1
-                if ensemble in self._selected_ensembles
-                else None
+                self._selected_ensembles.index(ensemble) + 1 if ensemble in self._selected_ensembles else None
             )
             if subplot_index is None:
                 continue
@@ -351,6 +322,5 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         for vector in vectors:
             if vector not in self._selected_vectors:
                 raise ValueError(
-                    f'Vector "{vector}" does not exist among selected vectors: '
-                    f"{self._selected_vectors}"
+                    f'Vector "{vector}" does not exist among selected vectors: ' f"{self._selected_vectors}"
                 )
