@@ -12,6 +12,7 @@ class ParamRespOptions(SettingsGroupABC):
         VECTOR_FILTER = "vector-filter"
         SUBMIT_VECTOR_FILTER = "submit-vector-filter"
         VECTOR_FILTER_STORE = "vector-filter-store"
+        USE_VECTORS_WITH_OBSERVATIONS = "use-vectors-with-observations"
         AUTO_COMPUTE_CORRELATIONS = "auto-compute-correlations"
 
     def __init__(
@@ -22,6 +23,24 @@ class ParamRespOptions(SettingsGroupABC):
     def layout(self) -> List[Component]:
         return [
             html.Header("Vectors for parameter correlation"),
+            wcc.Checklist(
+                id=self.register_component_unique_id(
+                    self.Ids.AUTO_COMPUTE_CORRELATIONS
+                ),
+                options=[
+                    {"label": "Calculate correlations", "value": "AutoCompute"},
+                ],
+                value=["AutoCompute"],
+            ),
+            wcc.Checklist(
+                id=self.register_component_unique_id(
+                    self.Ids.USE_VECTORS_WITH_OBSERVATIONS
+                ),
+                options=[
+                    {"label": "Use vectors with observations", "value": "UseObs"},
+                ],
+                value=["UseObs"],
+            ),
             dcc.Textarea(
                 id=self.register_component_unique_id(self.Ids.VECTOR_FILTER),
                 style={"width": "95%", "height": "60px", "resize": "none"},
@@ -42,14 +61,5 @@ class ParamRespOptions(SettingsGroupABC):
             ),
             dcc.Store(
                 id=self.register_component_unique_id(self.Ids.VECTOR_FILTER_STORE)
-            ),
-            wcc.Checklist(
-                id=self.register_component_unique_id(
-                    self.Ids.AUTO_COMPUTE_CORRELATIONS
-                ),
-                options=[
-                    {"label": "Calculate correlations", "value": "AutoCompute"},
-                ],
-                value=["AutoCompute"],
             ),
         ]
