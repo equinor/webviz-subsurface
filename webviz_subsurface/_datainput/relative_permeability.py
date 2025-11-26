@@ -30,7 +30,7 @@ def load_satfunc(
 
 @webvizstore
 def load_scal_recommendation(
-    scalfile: Path, sheet_name: Optional[Union[str, int, list]] = None
+    scalfile: Path, sheet_name: str | None = None
 ) -> pd.DataFrame:
     return (
         PyscalFactory.create_scal_recommendation_list(
