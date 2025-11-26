@@ -54,6 +54,8 @@ class ViewSettings(SettingsGroupABC):
         CM_MAX = "cm-max"
         CM_MIN_AUTO = "cm-min-auto"
         CM_MAX_AUTO = "cm-max-auto"
+        CONTOURS_SWITCH = "contours-switch"
+        CONTOURS_QUANTITY = "contours-quantity"
 
         GRAPH_SOURCE = "graph-source"
         CO2_SCALE = "co2-scale"
@@ -155,6 +157,8 @@ class ViewSettings(SettingsGroupABC):
                     self.register_component_unique_id(self.Ids.CM_MAX),
                     self.register_component_unique_id(self.Ids.CM_MIN_AUTO),
                     self.register_component_unique_id(self.Ids.CM_MAX_AUTO),
+                    self.register_component_unique_id(self.Ids.CONTOURS_SWITCH),
+                    self.register_component_unique_id(self.Ids.CONTOURS_QUANTITY),
                     self.register_component_unique_id(self.Ids.MASS_UNIT),
                     self.register_component_unique_id(self.Ids.MASS_UNIT_UPDATE),
                     self._map_attribute_names,
@@ -771,6 +775,8 @@ class MapSelectorLayout(wcc.Selectors):
         cm_max_id: str,
         cm_min_auto_id: str,
         cm_max_auto_id: str,
+        contour_switch_id: str,
+        contour_quantity_id: str,
         mass_unit_id: str,
         mass_unit_update_id: str,
         map_attribute_names: FilteredMapAttribute,
@@ -858,6 +864,29 @@ class MapSelectorLayout(wcc.Selectors):
                                 ),
                             ],
                             style={"display": "flex"},
+                        ),
+                        "Contours",
+                        html.Div(
+                            [
+                                "#",
+                                dcc.Input(
+                                    id=contour_quantity_id,
+                                    value=5,
+                                    type="number",
+                                    min=1,
+                                    style={'width': '25%'},
+                                ),
+                                dcc.Checklist(
+                                    ["On/Off"],
+                                    [],
+                                    id=contour_switch_id,
+                                ),
+                            ],
+                            style={"display": "flex"},
+                            title=(
+                                "Contours work best with relatively smooth maps,"
+                                " and Minimum and Maximum set to 'auto'."
+                            ),
                         ),
                         OpenVisualizationThresholdsButton(),
                     ],

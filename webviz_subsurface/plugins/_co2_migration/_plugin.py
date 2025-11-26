@@ -435,6 +435,12 @@ class CO2Migration(WebvizPluginABC):
                 "cm_max_val": Input(
                     self._settings_component(ViewSettings.Ids.CM_MAX), "value"
                 ),
+                "contour_switch": Input(
+                    self._settings_component(ViewSettings.Ids.CONTOURS_SWITCH), "value"
+                ),
+                "contour_quantity": Input(
+                    self._settings_component(ViewSettings.Ids.CONTOURS_QUANTITY), "value"
+                ),
                 "plume_threshold": Input(
                     self._settings_component(ViewSettings.Ids.PLUME_THRESHOLD),
                     "value",
@@ -480,6 +486,8 @@ class CO2Migration(WebvizPluginABC):
             cm_min_val: Optional[float],
             cm_max_auto: List[str],
             cm_max_val: Optional[float],
+            contour_switch: List[str],
+            contour_quantity: Optional[float],
             plume_threshold: Optional[float],
             plume_smoothing: Optional[float],
             visualization_update: int,
@@ -584,6 +592,8 @@ class CO2Migration(WebvizPluginABC):
                 plume_extent_data=plume_polygon,
                 options_dialog_options=options_dialog_options,
                 selected_wells=selected_wells,
+                show_contours=len(contour_switch) > 0,
+                num_contours=contour_quantity,
             )
             annotations = create_map_annotations(
                 formation=formation,

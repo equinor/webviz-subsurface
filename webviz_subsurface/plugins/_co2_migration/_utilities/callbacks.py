@@ -420,12 +420,27 @@ def create_map_layers(
     plume_extent_data: Optional[geojson.FeatureCollection],
     options_dialog_options: List[str],
     selected_wells: List[str],
+    show_contours: bool,
+    num_contours: float,
 ) -> List[Dict]:
     layers = []
     outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options_dialog_options
     if surface_data is not None:
         # Update ColormapLayer
         meta = surface_data.meta_data
+
+        # Generate contour lines
+        contours = []
+        if (
+            show_contours and
+            surface_data.color_map_range[0] is not None and
+            surface_data.color_map_range[1] is not None
+        ):
+            min_val, max_val = surface_data.color_map_range
+            buffer = 0.01 * (max_val - min_val)  # Strange effects at min_val/max_val
+            step = (max_val - min_val + 2 * buffer) / (np.round(num_contours) + 1)
+            contours = [min_val + step - buffer, step]
+
         layers.append(
             {
                 "@@type": "MapLayer",
@@ -441,6 +456,7 @@ def create_map_layers(
                 "colorMapName": surface_data.color_map_name,
                 "colorMapRange": surface_data.color_map_range,
                 "material": False,
+                "contours": contours,
             }
         )
 
