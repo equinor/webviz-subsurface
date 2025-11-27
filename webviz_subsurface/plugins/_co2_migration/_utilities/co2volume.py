@@ -32,19 +32,6 @@ class _Columns(StrEnum):
     VOLUME_OUTSIDE = "volume_outside"
 
 
-class Colors(StrEnum):
-    # pylint: disable=invalid-name
-    total = "#222222"
-    contained = "#00aa00"
-    outside = "#006ddd"
-    hazardous = "#dd4300"
-    dissolved_water = "#208eb7"
-    dissolved_oil = "#A0522D"
-    gas = "#C41E3A"
-    free_gas = "#FF2400"
-    trapped_gas = "#880808"
-
-
 class Marks(StrEnum):
     dissolved_water = "/"
     dissolved_oil = "x"
@@ -61,42 +48,45 @@ class Lines(StrEnum):
     trapped_gas = "dashdot"
 
 
-_COLOR_ZONES = [
-    "#e91451",
-    "#daa218",
-    "#208eb7",
-    "#84bc04",
-    "#b74532",
-    "#9a89b4",
-    "#8d30ba",
-    "#256b33",
-    "#95704d",
-    "#1357ca",
-    "#f75ef0",
-    "#34b36f",
+_CONTAINMENT_COLORS = {
+    "total": ("#222222", "#909090"),
+    "contained": ("#00aa00", "#55ff55"),
+    "outside": ("#006ddd", "#6eb6ff"),
+    "hazardous": ("#dd4300", "#ff9a6e"),
+}
+
+
+_PHASE_COLORS = {
+    "total": ("#222222", "#909090"),
+    "dissolved_water": ("#208eb7", "#81cde9"),
+    "dissolved_oil": ("#A0522D", "#C28163"),
+    "gas": ("#C41E3A", "#E42E5A"),
+    "free_gas": ("#FF2400", "#FF7430"),
+    "trapped_gas": ("#880808", "#C84848"),
+}
+
+
+_GENERAL_COLORS = [
+    ("#e91451", "#f589a8"),
+    ("#daa218", "#f2d386"),
+    ("#208eb7", "#81cde9"),
+    ("#84bc04", "#cdfc63"),
+    ("#b74532", "#e19e92"),
+    ("#9a89b4", "#ccc4d9"),
+    ("#8d30ba", "#c891e3"),
+    ("#256b33", "#77d089"),
+    ("#95704d", "#cfb7a1"),
+    ("#1357ca", "#7ba7f3"),
+    ("#f75ef0", "#fbaef7"),
+    ("#34b36f", "#93e0b7"),
 ]
+
 
 _LIGHTER_COLORS = {
     "black": "#909090",
-    "#222222": "#909090",
-    "#00aa00": "#55ff55",
-    "#006ddd": "#6eb6ff",
-    "#dd4300": "#ff9a6e",
-    "#e91451": "#f589a8",
-    "#daa218": "#f2d386",
-    "#208eb7": "#81cde9",
-    "#84bc04": "#cdfc63",
-    "#b74532": "#e19e92",
-    "#9a89b4": "#ccc4d9",
-    "#8d30ba": "#c891e3",
-    "#256b33": "#77d089",
-    "#95704d": "#cfb7a1",
-    "#1357ca": "#7ba7f3",
-    "#f75ef0": "#fbaef7",
-    "#34b36f": "#93e0b7",
-    "#C41E3A": "#E42E5A",
-    "#FF2400": "#FF7430",
-    "#880808": "#C84848",
+    **{color: lighter for color, lighter in _CONTAINMENT_COLORS.values()},
+    **{color: lighter for color, lighter in _PHASE_COLORS.values()},
+    **{color: lighter for color, lighter in _GENERAL_COLORS},
 }
 
 
@@ -113,9 +103,11 @@ def _read_dataframe(
 
 
 def _get_colors(color_options: List[str], split: str) -> List[str]:
-    if split in {"containment", "phase"}:
-        return [Colors[option] for option in color_options]
-    options = list(_COLOR_ZONES)
+    if split == "containment":
+        return [_CONTAINMENT_COLORS[option][0] for option in color_options]
+    if split == "phase":
+        return [_PHASE_COLORS[option][0] for option in color_options]
+    options = list([x[0] for x in _GENERAL_COLORS])
     if split == "region":
         options.reverse()
     num_cols = len(color_options)
