@@ -281,13 +281,14 @@ reek_test_data/aggregated_data/parameters.csv)
         fipfile_qc_controller(get_uuid=self.uuid, disjoint_set_df=self.disjoint_set_df)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        functions = []
         if self.fipfile is not None:
-            return [(get_path, [{"path": self.fipfile}])]
+            functions.append((get_path, [{"path": self.fipfile}]))
         if self.csvfile_vol is not None:
-            return [(read_csv, [{"csv_file": self.csvfile_vol}])]
+            functions.append((read_csv, [{"csv_file": self.csvfile_vol}]))
         if self.csvfile_parameters is not None:
-            return [(read_csv, [{"csv_file": self.csvfile_parameters}])]
-        return []
+            functions.append((read_csv, [{"csv_file": self.csvfile_parameters}]))
+        return functions
 
 
 @webvizstore
