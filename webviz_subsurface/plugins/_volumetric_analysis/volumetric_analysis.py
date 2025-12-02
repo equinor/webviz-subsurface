@@ -13,7 +13,7 @@ from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._models.inplace_volumes_model import (
     extract_volframe_from_tableprovider,
 )
-from webviz_subsurface._providers import EnsembleTableProviderFactory
+
 from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
     create_parameter_providerset_from_paths,
 )
@@ -233,7 +233,8 @@ reek_test_data/aggregated_data/parameters.csv)
             parameters = parameter_provider_set.get_aggregated_dataframe()
         else:
             raise ValueError(
-                'Incorrect arguments. Either provide both "csvfile_vol" and "csvfile_parameters" or "ensembles" and "volfiles"'
+                'Incorrect arguments. Either provide both "csvfile_vol" and '
+                '"csvfile_parameters" or "ensembles" and "volfiles"'
             )
 
         vcomb = VolumeValidatorAndCombinator(
