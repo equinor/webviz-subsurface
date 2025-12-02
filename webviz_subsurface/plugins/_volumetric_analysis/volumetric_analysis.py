@@ -159,7 +159,12 @@ reek_test_data/aggregated_data/parameters.csv)
         colors: List[str] = None,
     ):
         super().__init__()
-        WEBVIZ_ASSETS.add(Path(webviz_subsurface.__file__).parent / "_assets" / "css" / "inplace_volumes.css")
+        WEBVIZ_ASSETS.add(
+            Path(webviz_subsurface.__file__).parent
+            / "_assets"
+            / "css"
+            / "inplace_volumes.css"
+        )
 
         self.fipfile = fipfile
         self.csvfile_vol = csvfile_vol
@@ -216,21 +221,30 @@ reek_test_data/aggregated_data/parameters.csv)
                 parameters = read_csv(self.csvfile_parameters)
 
         elif ensembles and volfiles:
-            ensemble_paths = {ens: webviz_settings.shared_settings["scratch_ensembles"][ens] for ens in ensembles}
+            ensemble_paths = {
+                ens: webviz_settings.shared_settings["scratch_ensembles"][ens]
+                for ens in ensembles
+            }
             volumes_table = extract_volframe_from_tableprovider(
                 ensemble_paths, volfolder, volfiles, drop_failed_realizations
             )
-            parameter_provider_set = create_parameter_providerset_from_paths(ensemble_paths, drop_failed_realizations)
+            parameter_provider_set = create_parameter_providerset_from_paths(
+                ensemble_paths, drop_failed_realizations
+            )
             parameters = parameter_provider_set.get_aggregated_dataframe()
         else:
-            raise ValueError('Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"')
+            raise ValueError(
+                'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
+            )
 
         vcomb = VolumeValidatorAndCombinator(
             volumes_table=volumes_table,
             fipfile=get_path(self.fipfile) if self.fipfile else None,
         )
         if self.fipfile and vcomb.dframe.empty:
-            raise ValueError("Not possible to obtain any results using the provided fipfile.")
+            raise ValueError(
+                "Not possible to obtain any results using the provided fipfile."
+            )
         self.disjoint_set_df = vcomb.disjoint_set_df
         self.volmodel = InplaceVolumesModel(
             volumes_table=vcomb.dframe,
@@ -256,8 +270,12 @@ reek_test_data/aggregated_data/parameters.csv)
 
     def set_callbacks(self) -> None:
         selections_controllers(get_uuid=self.uuid, volumemodel=self.volmodel)
-        distribution_controllers(get_uuid=self.uuid, volumemodel=self.volmodel, colors=self.colors)
-        tornado_controllers(get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme)
+        distribution_controllers(
+            get_uuid=self.uuid, volumemodel=self.volmodel, colors=self.colors
+        )
+        tornado_controllers(
+            get_uuid=self.uuid, volumemodel=self.volmodel, theme=self.theme
+        )
         comparison_controllers(get_uuid=self.uuid, volumemodel=self.volmodel)
         layout_controllers(get_uuid=self.uuid)
         export_data_controllers(get_uuid=self.uuid)
