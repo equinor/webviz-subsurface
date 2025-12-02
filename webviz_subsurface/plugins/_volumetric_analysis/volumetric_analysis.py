@@ -215,10 +215,9 @@ reek_test_data/aggregated_data/parameters.csv)
                 "#E48F72",
             ]
         )
-        if self.csvfile_vol is not None:
+        if self.csvfile_vol is not None and self.csvfile_parameters is not None:
             volumes_table = read_csv(self.csvfile_vol)
-            if self.csvfile_parameters is not None:
-                parameters = read_csv(self.csvfile_parameters)
+            parameters = read_csv(self.csvfile_parameters)
 
         elif ensembles and volfiles:
             ensemble_paths = {
@@ -234,7 +233,7 @@ reek_test_data/aggregated_data/parameters.csv)
             parameters = parameter_provider_set.get_aggregated_dataframe()
         else:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
+                'Incorrect arguments. Either provide both "csvfile_vol" and "csvfile_parameters" or "ensembles" and "volfiles"'
             )
 
         vcomb = VolumeValidatorAndCombinator(
