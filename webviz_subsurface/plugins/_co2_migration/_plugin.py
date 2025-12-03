@@ -40,6 +40,7 @@ from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     MapAttribute,
     MapThresholds,
     MapType,
+    deactivate_polygon_warnings,
 )
 from webviz_subsurface.plugins._co2_migration._utilities.initialization import (
     init_containment_data_providers,
@@ -95,7 +96,7 @@ class CO2Migration(WebvizPluginABC):
     * **`map_surface_names_to_fault_polygons`:** Mapping between surface map names and
         surface names used by the fault polygons
     * **`boundary_settings`:** Settings for polygons representing the containment and
-        hazardous areas
+        nogo areas
     ---
 
     This plugin is tightly linked to the FMU CCS post-process available in the ccs-scripts
@@ -141,17 +142,17 @@ class CO2Migration(WebvizPluginABC):
     Similar for `map_surface_names_to_fault_polygons`.
 
     `boundary_settings` is the final override option, and it can be used to specify
-    polygons representing the containment and hazardous areas. By default, the polygons are
+    polygons representing the containment and nogo areas. By default, the polygons are
     expected to be named:
     - `share/results/polygons/containment--boundary.csv`
-    - `share/results/polygons/hazarduous--boundary.csv`
+    - `share/results/polygons/nogo--boundary.csv`
 
     This corresponds to the following input:
     ```
     boundary_settings:
       polygon_file_pattern: share/results/polygons/*.csv
       attribute: boundary
-      hazardous_name: hazardous
+      nogo_name: nogo
       containment_name: containment
     ```
     All four settings are optional, and if not specified, the default values are used.
@@ -181,6 +182,7 @@ class CO2Migration(WebvizPluginABC):
     ):
         super().__init__()
         self._error_message = ""
+        deactivate_polygon_warnings()
         try:
             ensemble_paths = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
@@ -576,6 +578,9 @@ class CO2Migration(WebvizPluginABC):
             fault_polygon_url = self._fault_polygon_handlers[
                 ensemble
             ].extract_fault_polygon_url(formation, realization)
+            nogo_polygon_url = self._polygon_handlers[ensemble].extract_nogo_poly_url(
+                realization
+            )
             hazardous_polygon_url = self._polygon_handlers[
                 ensemble
             ].extract_hazardous_poly_url(realization)
@@ -588,7 +593,8 @@ class CO2Migration(WebvizPluginABC):
                 surface_data=surf_data,
                 fault_polygon_url=fault_polygon_url,
                 containment_bounds_url=containment_polygon_url,
-                haz_bounds_url=hazardous_polygon_url,
+                nogo_bounds_url=nogo_polygon_url,
+                hazardous_bounds_url=hazardous_polygon_url,
                 well_pick_provider=self._well_pick_provider.get(ensemble, None),
                 plume_extent_data=plume_polygon,
                 options_dialog_options=options_dialog_options,
@@ -606,6 +612,7 @@ class CO2Migration(WebvizPluginABC):
                 options=options_dialog_options,
                 con_url=containment_polygon_url,
                 haz_url=hazardous_polygon_url,
+                nogo_url=nogo_polygon_url,
             )
             viewports = no_update if current_views else create_map_viewports()
             return layers, annotations, viewports

@@ -268,13 +268,16 @@ def _create_summed_mass_annotation(
 def _create_polygon_legend(
     options: List[str],
     con_url: Optional[str],
-    haz_url: Optional[str],
+    haz_url: Optional[str],  # Keep for backward compatibility
+    nogo_url: Optional[str],
 ) -> List:
     legend: List = []
     hide_con = con_url is None or LayoutLabels.SHOW_CONTAINMENT_POLYGON not in options
-    hide_haz = haz_url is None or LayoutLabels.SHOW_HAZARDOUS_POLYGON not in options
+    hide_nogo = (
+        nogo_url is None and haz_url is None
+    ) or LayoutLabels.SHOW_NOGO_POLYGON not in options
     outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options
-    if hide_con and hide_haz:
+    if hide_con and hide_nogo:
         return legend
     legend_items = []
     square = {"width": "12px", "height": "12px", "marginRight": "6px"}
@@ -299,7 +302,7 @@ def _create_polygon_legend(
                 ],
             )
         )
-    if not hide_haz:
+    if not hide_nogo:
         legend_items.append(
             html.Div(
                 style={"display": "flex", "alignItems": "center"},
@@ -315,7 +318,7 @@ def _create_polygon_legend(
                             else "transparent",
                         }
                     ),
-                    html.Div("Hazardous Polygon", style=text),
+                    html.Div("No-go Polygon", style=text),
                 ],
             )
         )
@@ -351,6 +354,7 @@ def create_map_annotations(
     options: List[str],
     con_url: Optional[str],
     haz_url: Optional[str],
+    nogo_url: Optional[str],
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if (
@@ -381,7 +385,7 @@ def create_map_annotations(
                     wsc.ViewFooter(children=formation),
                     _create_summed_mass_annotation(attribute, current_total, unit),
                 ]
-                + _create_polygon_legend(options, con_url, haz_url),
+                + _create_polygon_legend(options, con_url, haz_url, nogo_url),
             )
         )
     return annotations
@@ -399,7 +403,8 @@ def create_map_viewports() -> Dict:
                     "colormap-layer",
                     "fault-polygons-layer",
                     "license-boundary-layer",
-                    "hazardous-boundary-layer",
+                    "nogo-boundary-layer",
+                    "hazardous-boundary-layer",  # Keep for backward compatibility
                     "well-picks-layer",
                     "plume-polygon-layer",
                 ],
@@ -415,7 +420,8 @@ def create_map_layers(
     surface_data: Optional[SurfaceData],
     fault_polygon_url: Optional[str],
     containment_bounds_url: Optional[str],
-    haz_bounds_url: Optional[str],
+    nogo_bounds_url: Optional[str],
+    hazardous_bounds_url: Optional[str],  # Keep for backward compatibility
     well_pick_provider: Optional[EnsembleWellPicks],
     plume_extent_data: Optional[geojson.FeatureCollection],
     options_dialog_options: List[str],
@@ -494,15 +500,35 @@ def create_map_layers(
         )
 
     if (
-        haz_bounds_url is not None
-        and LayoutLabels.SHOW_HAZARDOUS_POLYGON in options_dialog_options
+        nogo_bounds_url is not None
+        and LayoutLabels.SHOW_NOGO_POLYGON in options_dialog_options
     ):
         layers.append(
             {
                 "@@type": "GeoJsonLayer",
-                "name": "Hazardous Polygon",
+                "name": "No-go Polygon",
+                "id": "nogo-boundary-layer",
+                "data": nogo_bounds_url,
+                "stroked": outline,
+                "filled": not outline,
+                "getFillColor": [200, 0, 0, 120],
+                "getLineColor": [200, 0, 0, 180],
+                "getLineWidth": 3,
+                "lineWidthUnits": "pixels",
+                "visible": True,
+            }
+        )
+
+    if (
+        hazardous_bounds_url is not None
+        and LayoutLabels.SHOW_NOGO_POLYGON in options_dialog_options
+    ):
+        layers.append(
+            {
+                "@@type": "GeoJsonLayer",
+                "name": "No-go Polygon",
                 "id": "hazardous-boundary-layer",
-                "data": haz_bounds_url,
+                "data": hazardous_bounds_url,
                 "stroked": outline,
                 "filled": not outline,
                 "getFillColor": [200, 0, 0, 120],
@@ -689,7 +715,7 @@ def process_containment_info(
         mark_choice=mark_choice,
         sorting=sorting,
         phases=[phase for phase in menu_options["phases"] if phase != "total"],
-        containments=["hazardous", "outside", "contained"],
+        containments=["nogo", "outside", "contained"],
         plume_groups=plume_groups,
         use_stats=lines_to_show == "stat",
         date_option=date_option,

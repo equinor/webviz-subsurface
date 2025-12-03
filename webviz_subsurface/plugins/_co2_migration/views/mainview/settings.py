@@ -608,8 +608,8 @@ class DialogLayout(wcc.Dialog):
         checklist_values.append(LayoutLabels.SHOW_FAULTPOLYGONS)
         checklist_options.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
         checklist_values.append(LayoutLabels.SHOW_CONTAINMENT_POLYGON)
-        checklist_options.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
-        checklist_values.append(LayoutLabels.SHOW_HAZARDOUS_POLYGON)
+        checklist_options.append(LayoutLabels.SHOW_NOGO_POLYGON)
+        checklist_values.append(LayoutLabels.SHOW_NOGO_POLYGON)
         checklist_options.append(LayoutLabels.SHOW_POLYGONS_AS_OUTLINES)
         checklist_options.append(LayoutLabels.SHOW_WELLS)
         checklist_values.append(LayoutLabels.SHOW_WELLS)
@@ -1095,7 +1095,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                                         {"label": "All areas", "value": "total"},
                                         {"label": "Contained", "value": "contained"},
                                         {"label": "Outside", "value": "outside"},
-                                        {"label": "Hazardous", "value": "hazardous"},
+                                        {"label": "No-go", "value": "nogo"},
                                     ],
                                     value="total",
                                     clearable=False,
