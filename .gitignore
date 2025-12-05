@@ -1,13 +1,23 @@
 .eggs
 *.egg-info
 __pycache__
-node_modules
-venv
-.vscode
+
 .pytest_cache
 *.pyc
 .DS_Store
-dist
 *~
 *.mypy_cache*
 _version.py
+
+# Dependency directories
+node_modules
+
+# build / generate output
+dist
+build
+
+#.vscode
+.vscode/
+
+# Python virtual environments
+.venv*
