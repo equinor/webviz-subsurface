@@ -13,11 +13,9 @@ from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._models.inplace_volumes_model import (
     extract_volframe_from_tableprovider,
 )
-
 from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
     create_parameter_providerset_from_paths,
 )
-
 from webviz_subsurface._utils.webvizstore_functions import read_csv
 
 from .controllers import (
