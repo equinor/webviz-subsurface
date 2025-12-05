@@ -86,8 +86,12 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
     #############################################################################
 
     def create_graph_legends(self) -> None:
-        # Add legends for selected vectors
-        for index, vector in enumerate(self._added_vector_traces, start=1):
+        # Add legends for selected vectors - sort according to selected vectors
+        self._validate_vectors_are_selected(self._added_vector_traces)
+        added_vector_traces = sorted(
+            self._added_vector_traces, key=self._selected_vectors.index
+        )
+        for index, vector in enumerate(added_vector_traces, start=1):
             vector_legend_trace = {
                 "name": vector,
                 "x": [None],
@@ -136,11 +140,12 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
 
-        # Get vectors - order not important
+        # Get vectors - sort after validation
         vectors: Set[str] = set(vectors_df.columns) - set(["DATE", "REAL"])
         self._validate_vectors_are_selected(vectors)
+        sorted_vectors = sorted(vectors, key=self._selected_vectors.index)
 
-        for vector in vectors:
+        for vector in sorted_vectors:
             self._added_vector_traces.add(vector)
 
             vector_df = vectors_df[["DATE", "REAL", vector]]
@@ -175,13 +180,14 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
 
-        # Get vectors - order not important
+        # Get vectors - sort after validation
         vectors: Set[str] = set(
             vectors_statistics_df.columns.get_level_values(0)
         ) - set(["DATE"])
         self._validate_vectors_are_selected(vectors)
+        sorted_vectors = sorted(vectors, key=self._selected_vectors.index)
 
-        for vector in vectors:
+        for vector in sorted_vectors:
             self._added_vector_traces.add(vector)
 
             # Retrieve DATE and statistics columns for specific vector
@@ -218,13 +224,14 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         # Dictionary with vector name as key and list of ensemble traces as value
         vector_traces_set: Dict[str, List[dict]] = {}
 
-        # Get vectors - order not important!
+        # Get vectors - sort after validation
         vectors: Set[str] = set(
             vectors_statistics_df.columns.get_level_values(0)
         ) - set(["DATE"])
         self._validate_vectors_are_selected(vectors)
+        sorted_vectors = sorted(vectors, key=self._selected_vectors.index)
 
-        for vector in vectors:
+        for vector in sorted_vectors:
             self._added_vector_traces.add(vector)
 
             # Retrieve DATE and statistics columns for specific vector
@@ -261,10 +268,13 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
 
         samples = vectors_df["DATE"].tolist()
         vector_trace_set: Dict[str, dict] = {}
+
+        # Get vectors - sort after validation
         vectors: Set[str] = set(vectors_df.columns) - set(["DATE", "REAL"])
         self._validate_vectors_are_selected(vectors)
+        sorted_vectors = sorted(vectors, key=self._selected_vectors.index)
 
-        for vector in vectors:
+        for vector in sorted_vectors:
             # Set status for added history trace
             self._added_history_trace = True
 
@@ -343,9 +353,9 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         `Input:`
         * vectors: Set[str] - set of vector names to verify
         """
-        for vector in vectors:
-            if vector not in self._selected_vectors:
-                raise ValueError(
-                    f'Vector "{vector}" does not exist among selected vectors: '
-                    f"{self._selected_vectors}"
-                )
+
+        missing = vectors - set(self._selected_vectors)
+        if missing:
+            raise ValueError(
+                f"Unexpected vectors found: {missing}. Does not exist among selected vectors: {self._selected_vectors}"
+            )
