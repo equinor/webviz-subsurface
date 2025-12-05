@@ -464,13 +464,6 @@ class ParameterResponseView(ViewABC):
 
             raise PreventUpdate("Event not recognized.")
 
-        @callback_typecheck
-        def _update_vector_filter_store_and_button_style(
-            value: List[str],
-        ) -> Tuple[str, Dict]:
-            """Disable vector filter submit button if using only vectors with observations"""
-            return ("UseObs" in value, "UseObs" in value)
-
         @callback(
             Output(
                 self.settings_group_unique_id(
