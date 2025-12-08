@@ -219,12 +219,14 @@ class ParameterResponseView(ViewABC):
 
             if len(realizations) <= 1:
                 return [empty_figure()] * 4
-
-            vectors_for_param_corr = (
-                self._vectormodel.filter_vectors(column_keys, ensemble=ensemble)
-                if column_keys is not None
-                else []
-            )
+            if options is not None and options["use_vectors_with_observations"]:
+                vectors_for_param_corr = list(self._observations.keys())
+            else:
+                vectors_for_param_corr = (
+                    self._vectormodel.filter_vectors(column_keys, ensemble=ensemble)
+                    if column_keys is not None
+                    else []
+                )
 
             try:
                 # Get dataframe with vectors and dataframe with parameters and merge
@@ -360,11 +362,13 @@ class ParameterResponseView(ViewABC):
                 historical_vector_df=self._vectormodel.get_historical_vector_df(
                     selected_vector, ensemble
                 ),
-                observations=self._observations[selected_vector]
-                if options
-                and options["show_observations"]
-                and selected_vector in self._observations
-                else {},
+                observations=(
+                    self._observations[selected_vector]
+                    if options
+                    and options["show_observations"]
+                    and selected_vector in self._observations
+                    else {}
+                ),
                 color_col=param,
                 line_shape_fallback=self._vectormodel.line_shape_fallback,
             ).figure
@@ -473,6 +477,12 @@ class ParameterResponseView(ViewABC):
                 ),
                 "style",
             ),
+            Output(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.VECTOR_FILTER
+                ),
+                "style",
+            ),
             Input(
                 self.settings_group_unique_id(
                     self.Ids.OPTIONS, ParamRespOptions.Ids.SUBMIT_VECTOR_FILTER
@@ -482,6 +492,12 @@ class ParameterResponseView(ViewABC):
             Input(
                 self.settings_group_unique_id(
                     self.Ids.OPTIONS, ParamRespOptions.Ids.VECTOR_FILTER
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.USE_VECTORS_WITH_OBSERVATIONS
                 ),
                 "value",
             ),
@@ -497,24 +513,42 @@ class ParameterResponseView(ViewABC):
                 ),
                 "style",
             ),
+            State(
+                self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.VECTOR_FILTER
+                ),
+                "style",
+            ),
         )
         @callback_typecheck
         def _update_vector_filter_store_and_button_style(
             _n_click: Union[None, int],
             vector_filter: Union[None, str],
+            use_vectors_with_observations: Union[None, str],
             stored: Union[None, str],
-            style: Dict,
-        ) -> Tuple[str, Dict]:
+            style_btn: Dict,
+            style_textarea: Dict,
+        ) -> Tuple[str, Dict, Dict]:
             """Update vector-filter-store if submit button is clicked and
             style of submit button"""
+            vector_filter_used = (
+                use_vectors_with_observations
+                and "UseObs" in use_vectors_with_observations
+            )
             ctx = callback_context.triggered[0]["prop_id"]
             button_click = "submit" in ctx
             insync = stored == vector_filter
-            style["background-color"] = (
+            style_btn["background-color"] = (
                 "#E8E8E8" if insync or button_click else "#7393B3"
             )
-            style["color"] = "#555" if insync or button_click else "#fff"
-            return vector_filter if button_click else no_update, style
+            style_btn["color"] = "#555" if insync or button_click else "#fff"
+            style_btn["visibility"] = "hidden" if vector_filter_used else "visible"
+            style_textarea["visibility"] = "hidden" if vector_filter_used else "visible"
+            return (
+                vector_filter if button_click else no_update,
+                style_btn,
+                style_textarea,
+            )
 
         @callback(
             Output(
@@ -575,6 +609,12 @@ class ParameterResponseView(ViewABC):
             ),
             Input(
                 self.settings_group_unique_id(
+                    self.Ids.OPTIONS, ParamRespOptions.Ids.USE_VECTORS_WITH_OBSERVATIONS
+                ),
+                "value",
+            ),
+            Input(
+                self.settings_group_unique_id(
                     self.Ids.OPTIONS, ParamRespOptions.Ids.AUTO_COMPUTE_CORRELATIONS
                 ),
                 "value",
@@ -602,6 +642,7 @@ class ParameterResponseView(ViewABC):
         @callback_typecheck
         def _update_plot_options(
             checkbox_options: List[str],
+            use_vectors_with_observations: List[str],
             autocompute_options: List[str],
             color_clickdata: Union[None, Dict[str, List[Dict[str, Any]]]],
             opacity: float,
@@ -618,6 +659,8 @@ class ParameterResponseView(ViewABC):
 
             return {
                 "show_dateline": "DateLine" in checkbox_options,
+                "use_vectors_with_observations": "UseObs"
+                in use_vectors_with_observations,
                 "autocompute_corr": "AutoCompute" in autocompute_options,
                 "color": None if color_clickdata is None else color,
                 "opacity": opacity,
