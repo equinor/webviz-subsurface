@@ -528,10 +528,13 @@ class ParameterResponseView(ViewABC):
             stored: Union[None, str],
             style_btn: Dict,
             style_textarea: Dict,
-        ) -> Tuple[str, Dict]:
+        ) -> Tuple[str, Dict, Dict]:
             """Update vector-filter-store if submit button is clicked and
             style of submit button"""
-            vector_filter_used = "UseObs" in use_vectors_with_observations
+            vector_filter_used = (
+                use_vectors_with_observations
+                and "UseObs" in use_vectors_with_observations
+            )
             ctx = callback_context.triggered[0]["prop_id"]
             button_click = "submit" in ctx
             insync = stored == vector_filter
