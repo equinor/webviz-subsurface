@@ -41,24 +41,24 @@ class Colors(StrEnum):
     dissolved_water = "#208eb7"
     dissolved_oil = "#A0522D"
     gas = "#C41E3A"
-    free = "#FF2400"
-    trapped = "#880808"
+    free_gas = "#FF2400"
+    trapped_gas = "#880808"
 
 
 class Marks(StrEnum):
     dissolved_water = "/"
     dissolved_oil = "x"
     gas = ""
-    free = ""
-    trapped = "."
+    free_gas = ""
+    trapped_gas = "."
 
 
 class Lines(StrEnum):
     dissolved_water = "dash"
     dissolved_oil = "longdash"
     gas = "dot"
-    free = "dot"
-    trapped = "dashdot"
+    free_gas = "dot"
+    trapped_gas = "dashdot"
 
 
 _COLOR_ZONES = [
