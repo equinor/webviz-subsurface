@@ -13,10 +13,10 @@ from webviz_subsurface._models import InplaceVolumesModel
 from webviz_subsurface._models.inplace_volumes_model import (
     extract_volframe_from_tableprovider,
 )
-from webviz_subsurface._providers import EnsembleTableProviderFactory
 from webviz_subsurface._utils.ensemble_table_provider_set_factory import (
     create_parameter_providerset_from_paths,
 )
+from webviz_subsurface._utils.webvizstore_functions import read_csv
 
 from .controllers import (
     comparison_controllers,
@@ -165,6 +165,8 @@ reek_test_data/aggregated_data/parameters.csv)
         )
 
         self.fipfile = fipfile
+        self.csvfile_vol = csvfile_vol
+        self.csvfile_parameters = csvfile_parameters
         parameters: Optional[pd.DataFrame] = None
 
         LOGGER.warning(
@@ -211,13 +213,9 @@ reek_test_data/aggregated_data/parameters.csv)
                 "#E48F72",
             ]
         )
-        if csvfile_vol:
-            table_provider = EnsembleTableProviderFactory.instance()
-            volumes_table = table_provider.create_from_ensemble_csv_file(csvfile_vol)
-            if csvfile_parameters:
-                parameters = table_provider.create_from_ensemble_csv_file(
-                    csvfile_parameters
-                )
+        if self.csvfile_vol is not None and self.csvfile_parameters is not None:
+            volumes_table = read_csv(self.csvfile_vol)
+            parameters = read_csv(self.csvfile_parameters)
 
         elif ensembles and volfiles:
             ensemble_paths = {
@@ -233,7 +231,8 @@ reek_test_data/aggregated_data/parameters.csv)
             parameters = parameter_provider_set.get_aggregated_dataframe()
         else:
             raise ValueError(
-                'Incorrent arguments. Either provide a "csvfile_vol" or "ensembles" and "volfiles"'
+                'Incorrect arguments. Either provide both "csvfile_vol" and '
+                '"csvfile_parameters" or "ensembles" and "volfiles"'
             )
 
         vcomb = VolumeValidatorAndCombinator(
@@ -281,9 +280,14 @@ reek_test_data/aggregated_data/parameters.csv)
         fipfile_qc_controller(get_uuid=self.uuid, disjoint_set_df=self.disjoint_set_df)
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
+        functions = []
         if self.fipfile is not None:
-            return [(get_path, [{"path": self.fipfile}])]
-        return []
+            functions.append((get_path, [{"path": self.fipfile}]))
+        if self.csvfile_vol is not None:
+            functions.append((read_csv, [{"csv_file": self.csvfile_vol}]))
+        if self.csvfile_parameters is not None:
+            functions.append((read_csv, [{"csv_file": self.csvfile_parameters}]))
+        return functions
 
 
 @webvizstore
