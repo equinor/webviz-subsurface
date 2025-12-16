@@ -69,7 +69,7 @@ def read_zone_layer_mapping(
         )
         df_real["K1"] = df_real.index
         df_real["REAL"] = real
-        zonelist = remove_invalid_colors(zonelist)
+        zonelist = remove_invalid_colors(zonelist) if zonelist else []
         zone_color_mapping = {
             zonedict["name"]: zonedict["color"]
             for zonedict in zonelist
