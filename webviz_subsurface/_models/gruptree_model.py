@@ -192,11 +192,11 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
                         f"Keyword {self._tree_type.value} not found in {row['FULLPATH']}"
                     )
 
-                # Only filter if both tree types are present and we have a selected
-                # tree type
-                if len(unique_keywords) > 1:
-                    # Filter to include only dates where the selected tree type is defined
-                    # and only include WELSPECS that belong to the selected tree type
+                # Only filter if both tree types are present
+                if (
+                    TreeType.GRUPTREE.value in unique_keywords
+                    and TreeType.BRANPROP.value in unique_keywords
+                ):
                     df_real = self._filter_by_tree_type(df_real, self._tree_type)
 
             if (
