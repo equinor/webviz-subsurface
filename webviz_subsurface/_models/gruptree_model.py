@@ -191,16 +191,13 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
                     raise ValueError(
                         f"Keyword {self._tree_type.value} not found in {row['FULLPATH']}"
                     )
+
+                # Only filter if both tree types are present
                 if (
-                    self._tree_type == TreeType.GRUPTREE
+                    TreeType.GRUPTREE.value in unique_keywords
                     and TreeType.BRANPROP.value in unique_keywords
                 ):
-                    # Filter out BRANPROP entries
-                    df_real = df_real[df_real["KEYWORD"] != TreeType.BRANPROP.value]
-
-                if self._tree_type == TreeType.BRANPROP:
-                    # Filter out GRUPTREE entries
-                    df_real = df_real[df_real["KEYWORD"] != TreeType.GRUPTREE.value]
+                    df_real = self._filter_by_tree_type(df_real, self._tree_type)
 
             if (
                 i > 0
@@ -222,3 +219,30 @@ GruptreeDataModel({self._ens_name!r}, {self._ens_path!r}, {self._gruptree_file!r
         df["DATE"] = pd.to_datetime(df["DATE"])
 
         return df.where(pd.notnull(df), None)
+
+    @staticmethod
+    def _filter_by_tree_type(df: pd.DataFrame, tree_type: TreeType) -> pd.DataFrame:
+        """
+        Filter dataframe to include only dates where the selected tree type is defined,
+        and only include WELSPECS nodes that belong to the selected tree type.
+
+        A WELSPECS node belongs to a tree if its parent node exists in that tree's definition.
+        """
+        # Find dates where the selected tree type is defined
+        dates_with_tree_type = df[df["KEYWORD"] == tree_type.value]["DATE"].unique()
+
+        # Filter to only include rows from those dates
+        df = df[df["DATE"].isin(dates_with_tree_type)].copy()
+
+        # Get all nodes that are defined in the selected tree type (across all dates)
+        tree_nodes = set(df[df["KEYWORD"] == tree_type.value]["CHILD"].unique())
+
+        # Keep rows that are:
+        # 1. The selected tree type itself (GRUPTREE or BRANPROP)
+        # 2. WELSPECS whose parent exists in the selected tree type
+        is_selected_tree = df["KEYWORD"] == tree_type.value
+        is_welspecs_with_valid_parent = (df["KEYWORD"] == "WELSPECS") & df[
+            "PARENT"
+        ].isin(tree_nodes)
+
+        return df[is_selected_tree | is_welspecs_with_valid_parent].copy()
