@@ -357,5 +357,7 @@ class EnsembleSubplotBuilder(GraphFigureBuilderBase):
         missing = vectors - set(self._selected_vectors)
         if missing:
             raise ValueError(
-                f"Unexpected vectors found: {missing}. Does not exist among selected vectors: {self._selected_vectors}"
+                f"Unexpected vectors found: {missing}."
+                f" Does not exist among selected vectors: "
+                f"{self._selected_vectors}"
             )

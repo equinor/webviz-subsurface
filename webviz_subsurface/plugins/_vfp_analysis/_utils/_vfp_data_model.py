@@ -241,7 +241,7 @@ def _read_vfp_arrow(filename: str) -> io.BytesIO:
     source = pa.memory_map(filename, "r")
     reader = pa.ipc.RecordBatchFileReader(source)
     pa_table = reader.read_all()
-    vfp_dict = pyarrow2basic_data(pa_table)
+    vfp_dict = pyarrow2basic_data(pa_table) or {}
 
     for key, _ in vfp_dict.items():
         # Convert types to strings
