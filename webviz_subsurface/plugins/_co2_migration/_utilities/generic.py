@@ -3,10 +3,13 @@ from __future__ import (  # Change to import Self from typing if we update to Py
 )
 
 import logging
+import warnings
 from enum import Enum
-from typing import Dict, List, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from webviz_subsurface._utils.enum_shim import StrEnum
+
+LOGGER = logging.getLogger(__name__)
 
 
 class MapAttribute(StrEnum):
@@ -296,31 +299,32 @@ class BoundarySettings(TypedDict):
     containment_name: str
 
 
-class IgnoreFaultPolyWarning(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        fault_poly = (
-            "No simulated fault polygons found for SimulatedFaultPolygonsAddress"
-            in record.getMessage()
-        )
-        return not fault_poly
-
-
 class IgnoreHazardousPolyWarning(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         haz_poly = (
-            "hazardous" in record.getMessage()
-            and "SimulatedPolygonsAddress" in record.getMessage()
-        )
+            "hazardous" in record.getMessage() or "invalid" in record.getMessage()
+        ) and "SimulatedPolygonsAddress" in record.getMessage()
         return not haz_poly
 
 
 def deactivate_polygon_warnings():
     logger1 = logging.getLogger(
-        "webviz_subsurface._providers.ensemble_fault_polygons_provider._provider_impl_file"
-    )
-    logger1.addFilter(IgnoreFaultPolyWarning())
-
-    logger2 = logging.getLogger(
         "webviz_subsurface._providers.ensemble_polygon_provider._provider_impl_file"
     )
-    logger2.addFilter(IgnoreHazardousPolyWarning())
+    logger1.addFilter(IgnoreHazardousPolyWarning())
+
+
+def check_hazardous_polygon(boundary_settings: Optional[BoundarySettings]):
+    if boundary_settings is not None and "hazardous_name" in boundary_settings:
+        warning_txt = (
+            "In config file: 'hazardous_name' under 'boundary_settings' is deprecated and will be "
+            "removed in future versions. Use 'nogo_name' instead."
+        )
+        warnings.warn(
+            warning_txt,
+            DeprecationWarning,
+        )
+        LOGGER.warning(warning_txt)
+        # Only use nogo polygon if both are specified
+        if "nogo_name" in boundary_settings:
+            boundary_settings["hazardous_name"] = "invalid"

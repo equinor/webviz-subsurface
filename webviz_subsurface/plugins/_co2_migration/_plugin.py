@@ -40,6 +40,7 @@ from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     MapAttribute,
     MapThresholds,
     MapType,
+    check_hazardous_polygon,
     deactivate_polygon_warnings,
 )
 from webviz_subsurface.plugins._co2_migration._utilities.initialization import (
@@ -182,8 +183,9 @@ class CO2Migration(WebvizPluginABC):
     ):
         super().__init__()
         self._error_message = ""
-        deactivate_polygon_warnings()
         try:
+            deactivate_polygon_warnings()
+            check_hazardous_polygon(boundary_settings)
             ensemble_paths = {
                 ensemble_name: webviz_settings.shared_settings["scratch_ensembles"][
                     ensemble_name
