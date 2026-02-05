@@ -307,14 +307,14 @@ class IgnoreHazardousPolyWarning(logging.Filter):
         return not haz_poly
 
 
-def deactivate_polygon_warnings():
+def deactivate_polygon_warnings() -> None:
     logger1 = logging.getLogger(
         "webviz_subsurface._providers.ensemble_polygon_provider._provider_impl_file"
     )
     logger1.addFilter(IgnoreHazardousPolyWarning())
 
 
-def check_hazardous_polygon(boundary_settings: Optional[BoundarySettings]):
+def check_hazardous_polygon(boundary_settings: Optional[BoundarySettings]) -> None:
     if boundary_settings is not None and "hazardous_name" in boundary_settings:
         warning_txt = (
             "In config file: 'hazardous_name' under 'boundary_settings' is deprecated and will be "

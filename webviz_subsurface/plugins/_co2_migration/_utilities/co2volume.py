@@ -11,7 +11,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface.plugins._co2_migration._utilities.containment_data_provider import (
     ContainmentDataProvider,
@@ -84,9 +83,9 @@ _GENERAL_COLORS = [
 
 _LIGHTER_COLORS = {
     "black": "#909090",
-    **{color: lighter for color, lighter in _CONTAINMENT_COLORS.values()},
-    **{color: lighter for color, lighter in _PHASE_COLORS.values()},
-    **{color: lighter for color, lighter in _GENERAL_COLORS},
+    **dict(_CONTAINMENT_COLORS.values()),
+    **dict(_PHASE_COLORS.values()),
+    **dict(_GENERAL_COLORS),
 }
 
 _LABEL_TRANSLATIONS = {
@@ -106,7 +105,7 @@ def _translate_labels(df: Union[pd.DataFrame, Dict], column: str = "type") -> No
             return ", ".join(translated_parts)
         return _LABEL_TRANSLATIONS.get(label, label)
 
-    if type(df) == dict:
+    if isinstance(df, dict):
         df[column] = [translate_label(label) for label in df[column]]
     else:
         df[column] = df[column].apply(translate_label)
@@ -117,7 +116,7 @@ def _get_colors(color_options: List[str], split: str) -> List[str]:
         return [_CONTAINMENT_COLORS[option][0] for option in color_options]
     if split == "phase":
         return [_PHASE_COLORS[option][0] for option in color_options]
-    options = list([x[0] for x in _GENERAL_COLORS])
+    options = [x[0] for x in _GENERAL_COLORS]
     if split == "region":
         options.reverse()
     num_cols = len(color_options)

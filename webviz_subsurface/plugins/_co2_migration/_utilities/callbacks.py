@@ -343,7 +343,7 @@ def _create_polygon_legend(
     return legend
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-locals
 def create_map_annotations(
     formation: str,
     surface_data: Optional[SurfaceData],
@@ -427,7 +427,7 @@ def create_map_layers(
     options_dialog_options: List[str],
     selected_wells: List[str],
     show_contours: bool,
-    num_contours: float,
+    num_contours: Optional[float],
 ) -> List[Dict]:
     layers = []
     outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options_dialog_options
@@ -441,8 +441,10 @@ def create_map_layers(
             show_contours
             and surface_data.color_map_range[0] is not None
             and surface_data.color_map_range[1] is not None
+            and num_contours is not None
         ):
             min_val, max_val = surface_data.color_map_range
+            assert min_val is not None and max_val is not None
             buffer = 0.01 * (max_val - min_val)  # Strange effects at min_val/max_val
             step = (max_val - min_val + 2 * buffer) / (np.round(num_contours) + 1)
             contours = [min_val + step - buffer, step]
