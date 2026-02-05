@@ -34,6 +34,9 @@ class ContainmentDataProvider:
         df = self._provider.get_column_data(
             self._provider.column_names(), [realization]
         )
+        # Backward compatibility:
+        df["containment"] = df["containment"].replace({"hazardous": "nogo"})
+
         scale_factor = self._find_scale_factor(scale)
         if scale_factor == 1.0:
             return df
@@ -45,6 +48,9 @@ class ContainmentDataProvider:
         co2_scale: Union[Co2MassScale, Co2VolumeScale],
     ) -> pd.DataFrame:
         df = self._provider.get_column_data(self._provider.column_names())
+        # Backward compatibility:
+        df["containment"] = df["containment"].replace({"hazardous": "nogo"})
+
         df = df.loc[
             (df["zone"] == "all")
             & (df["region"] == "all")

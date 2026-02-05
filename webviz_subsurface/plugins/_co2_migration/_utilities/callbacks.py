@@ -7,7 +7,7 @@ import geojson
 import numpy as np
 import plotly.graph_objects as go
 import webviz_subsurface_components as wsc
-from dash import dcc, no_update
+from dash import dcc, html, no_update
 from flask_caching import Cache
 
 from webviz_subsurface._providers import (
@@ -234,12 +234,127 @@ def _find_legend_title(attribute: MapAttribute, unit: str) -> str:
     return ""
 
 
+def _create_summed_mass_annotation(
+    attribute: MapAttribute,
+    summed_mass: Optional[float],
+    unit: str,
+) -> Union[str, tuple]:
+    annotation = (
+        html.P(
+            [
+                f"Total {MapAttribute[attribute.name].value.lower()}:",
+                html.Br(),
+                f"{summed_mass:.2f} {unit}",
+            ]
+        )
+        if MapType[attribute.name].value == "MASS" and summed_mass is not None
+        else ""
+    )
+    return html.Div(
+        annotation,
+        style={
+            "position": "absolute",
+            "top": "210px",
+            "right": "4px",
+            "backgroundColor": "rgba(255,255,255,0.8)",
+            "padding": "1px 1px",
+            "fontWeight": "bold",
+            "fontSize": "15px",
+            "display": "block",
+        },
+    )
+
+
+def _create_polygon_legend(
+    options: List[str],
+    con_url: Optional[str],
+    haz_url: Optional[str],  # Keep for backward compatibility
+    nogo_url: Optional[str],
+) -> List:
+    legend: List = []
+    hide_con = con_url is None or LayoutLabels.SHOW_CONTAINMENT_POLYGON not in options
+    hide_nogo = (
+        nogo_url is None and haz_url is None
+    ) or LayoutLabels.SHOW_NOGO_POLYGON not in options
+    outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options
+    if hide_con and hide_nogo:
+        return legend
+    legend_items = []
+    square = {"width": "12px", "height": "12px", "marginRight": "6px"}
+    text = {"color": "black", "fontSize": "14px"}
+    if not hide_con:
+        legend_items.append(
+            html.Div(
+                style={"display": "flex", "alignItems": "center"},
+                children=[
+                    html.Div(
+                        style={
+                            **square,
+                            "backgroundColor": "transparent"
+                            if outline
+                            else "rgba(0, 172, 0, 0.47)",
+                            "border": "3px solid rgba(0, 172, 0, 0.70)"
+                            if outline
+                            else "transparent",
+                        }
+                    ),
+                    html.Div("Containment Polygon", style=text),
+                ],
+            )
+        )
+    if not hide_nogo:
+        legend_items.append(
+            html.Div(
+                style={"display": "flex", "alignItems": "center"},
+                children=[
+                    html.Div(
+                        style={
+                            **square,
+                            "backgroundColor": "transparent"
+                            if outline
+                            else "rgba(200, 0, 0, 0.47)",
+                            "border": "3px solid rgba(200, 0, 0, 0.70)"
+                            if outline
+                            else "transparent",
+                        }
+                    ),
+                    html.Div("No-go Polygon", style=text),
+                ],
+            )
+        )
+    legend.append(
+        wsc.ViewAnnotation(
+            id="polygon_legends",
+            children=html.Div(
+                children=legend_items,
+                style={
+                    "position": "absolute",
+                    "top": "50px",
+                    "left": "4px",
+                    "backgroundColor": "rgba(255,255,255,0.9)",
+                    "padding": "6px 8px",
+                    "borderRadius": "4px",
+                    "boxShadow": "0 0 4px rgba(0,0,0,0.2)",
+                    "zIndex": 10,
+                },
+            ),
+        )
+    )
+    return legend
+
+
+# pylint: disable=too-many-arguments, too-many-locals
 def create_map_annotations(
     formation: str,
     surface_data: Optional[SurfaceData],
     colortables: List[Dict[str, Any]],
     attribute: MapAttribute,
     unit: str,
+    current_total: Optional[float],
+    options: List[str],
+    con_url: Optional[str],
+    haz_url: Optional[str],
+    nogo_url: Optional[str],
 ) -> List[wsc.ViewAnnotation]:
     annotations = []
     if (
@@ -268,7 +383,9 @@ def create_map_annotations(
                         colorTables=colortables,
                     ),
                     wsc.ViewFooter(children=formation),
-                ],
+                    _create_summed_mass_annotation(attribute, current_total, unit),
+                ]
+                + _create_polygon_legend(options, con_url, haz_url, nogo_url),
             )
         )
     return annotations
@@ -286,7 +403,8 @@ def create_map_viewports() -> Dict:
                     "colormap-layer",
                     "fault-polygons-layer",
                     "license-boundary-layer",
-                    "hazardous-boundary-layer",
+                    "nogo-boundary-layer",
+                    "hazardous-boundary-layer",  # Keep for backward compatibility
                     "well-picks-layer",
                     "plume-polygon-layer",
                 ],
@@ -302,16 +420,35 @@ def create_map_layers(
     surface_data: Optional[SurfaceData],
     fault_polygon_url: Optional[str],
     containment_bounds_url: Optional[str],
-    haz_bounds_url: Optional[str],
+    nogo_bounds_url: Optional[str],
+    hazardous_bounds_url: Optional[str],  # Keep for backward compatibility
     well_pick_provider: Optional[EnsembleWellPicks],
     plume_extent_data: Optional[geojson.FeatureCollection],
-    options_dialog_options: List[int],
+    options_dialog_options: List[str],
     selected_wells: List[str],
+    show_contours: bool,
+    num_contours: Optional[float],
 ) -> List[Dict]:
     layers = []
+    outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options_dialog_options
     if surface_data is not None:
         # Update ColormapLayer
         meta = surface_data.meta_data
+
+        # Generate contour lines
+        contours = []
+        if (
+            show_contours
+            and surface_data.color_map_range[0] is not None
+            and surface_data.color_map_range[1] is not None
+            and num_contours is not None
+        ):
+            min_val, max_val = surface_data.color_map_range
+            assert min_val is not None and max_val is not None
+            buffer = 0.01 * (max_val - min_val)  # Strange effects at min_val/max_val
+            step = (max_val - min_val + 2 * buffer) / (np.round(num_contours) + 1)
+            contours = [min_val + step - buffer, step]
+
         layers.append(
             {
                 "@@type": "MapLayer",
@@ -327,6 +464,7 @@ def create_map_layers(
                 "colorMapName": surface_data.color_map_name,
                 "colorMapRange": surface_data.color_map_range,
                 "material": False,
+                "contours": contours,
             }
         )
 
@@ -353,24 +491,52 @@ def create_map_layers(
                 "name": "Containment Polygon",
                 "id": "license-boundary-layer",
                 "data": containment_bounds_url,
-                "stroked": False,
+                "stroked": outline,
+                "filled": not outline,
                 "getFillColor": [0, 172, 0, 120],
+                "getLineColor": [0, 172, 0, 120],
+                "getLineWidth": 3,
+                "lineWidthUnits": "pixels",
                 "visible": True,
             }
         )
 
     if (
-        haz_bounds_url is not None
-        and LayoutLabels.SHOW_HAZARDOUS_POLYGON in options_dialog_options
+        nogo_bounds_url is not None
+        and LayoutLabels.SHOW_NOGO_POLYGON in options_dialog_options
     ):
         layers.append(
             {
                 "@@type": "GeoJsonLayer",
-                "name": "Hazardous Polygon",
-                "id": "hazardous-boundary-layer",
-                "data": haz_bounds_url,
-                "stroked": False,
+                "name": "No-go Polygon",
+                "id": "nogo-boundary-layer",
+                "data": nogo_bounds_url,
+                "stroked": outline,
+                "filled": not outline,
                 "getFillColor": [200, 0, 0, 120],
+                "getLineColor": [200, 0, 0, 180],
+                "getLineWidth": 3,
+                "lineWidthUnits": "pixels",
+                "visible": True,
+            }
+        )
+
+    if (
+        hazardous_bounds_url is not None
+        and LayoutLabels.SHOW_NOGO_POLYGON in options_dialog_options
+    ):
+        layers.append(
+            {
+                "@@type": "GeoJsonLayer",
+                "name": "No-go Polygon",
+                "id": "hazardous-boundary-layer",
+                "data": hazardous_bounds_url,
+                "stroked": outline,
+                "filled": not outline,
+                "getFillColor": [200, 0, 0, 120],
+                "getLineColor": [200, 0, 0, 180],
+                "getLineWidth": 3,
+                "lineWidthUnits": "pixels",
                 "visible": True,
             }
         )
@@ -551,7 +717,7 @@ def process_containment_info(
         mark_choice=mark_choice,
         sorting=sorting,
         phases=[phase for phase in menu_options["phases"] if phase != "total"],
-        containments=["hazardous", "outside", "contained"],
+        containments=["nogo", "outside", "contained"],
         plume_groups=plume_groups,
         use_stats=lines_to_show == "stat",
         date_option=date_option,
@@ -631,20 +797,18 @@ def process_summed_mass(
     datestr: Optional[str],
     attribute: MapAttribute,
     summed_mass: Optional[float],
-    surf_data: Optional[SurfaceData],
     summed_co2: Dict[str, float],
     unit: str,
-) -> Tuple[Optional[SurfaceData], Dict[str, float]]:
+) -> Tuple[Optional[float], Dict[str, float]]:
     summed_co2_key = f"{formation}-{realization[0]}-{datestr}-{attribute}-{unit}"
+    current_total = None
     if len(realization) == 1:
         if MapType[MapAttribute(attribute).name].value == "MASS":
             if summed_mass is not None and summed_co2_key not in summed_co2:
                 summed_co2[summed_co2_key] = summed_mass
-            if summed_co2_key in summed_co2 and surf_data is not None:
-                surf_data.readable_name += (
-                    f" ({unit}) (Total: {summed_co2[summed_co2_key]:.2E}): "
-                )
-    return surf_data, summed_co2
+            if summed_co2_key in summed_co2:
+                current_total = summed_co2[summed_co2_key]
+    return current_total, summed_co2
 
 
 def export_figure_data_to_csv(

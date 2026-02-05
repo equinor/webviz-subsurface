@@ -11,7 +11,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from webviz_subsurface._providers import EnsembleTableProvider
 from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface.plugins._co2_migration._utilities.containment_data_provider import (
     ContainmentDataProvider,
@@ -32,19 +31,6 @@ class _Columns(StrEnum):
     VOLUME_OUTSIDE = "volume_outside"
 
 
-class Colors(StrEnum):
-    # pylint: disable=invalid-name
-    total = "#222222"
-    contained = "#00aa00"
-    outside = "#006ddd"
-    hazardous = "#dd4300"
-    dissolved_water = "#208eb7"
-    dissolved_oil = "#A0522D"
-    gas = "#C41E3A"
-    free_gas = "#FF2400"
-    trapped_gas = "#880808"
-
-
 class Marks(StrEnum):
     dissolved_water = "/"
     dissolved_oil = "x"
@@ -61,61 +47,76 @@ class Lines(StrEnum):
     trapped_gas = "dashdot"
 
 
-_COLOR_ZONES = [
-    "#e91451",
-    "#daa218",
-    "#208eb7",
-    "#84bc04",
-    "#b74532",
-    "#9a89b4",
-    "#8d30ba",
-    "#256b33",
-    "#95704d",
-    "#1357ca",
-    "#f75ef0",
-    "#34b36f",
-]
-
-_LIGHTER_COLORS = {
-    "black": "#909090",
-    "#222222": "#909090",
-    "#00aa00": "#55ff55",
-    "#006ddd": "#6eb6ff",
-    "#dd4300": "#ff9a6e",
-    "#e91451": "#f589a8",
-    "#daa218": "#f2d386",
-    "#208eb7": "#81cde9",
-    "#84bc04": "#cdfc63",
-    "#b74532": "#e19e92",
-    "#9a89b4": "#ccc4d9",
-    "#8d30ba": "#c891e3",
-    "#256b33": "#77d089",
-    "#95704d": "#cfb7a1",
-    "#1357ca": "#7ba7f3",
-    "#f75ef0": "#fbaef7",
-    "#34b36f": "#93e0b7",
-    "#C41E3A": "#E42E5A",
-    "#FF2400": "#FF7430",
-    "#880808": "#C84848",
+_CONTAINMENT_COLORS = {
+    "total": ("#222222", "#909090"),
+    "contained": ("#00aa00", "#55ff55"),
+    "outside": ("#006ddd", "#6eb6ff"),
+    "nogo": ("#dd4300", "#ff9a6e"),
 }
 
 
-def _read_dataframe(
-    table_provider: EnsembleTableProvider,
-    realization: int,
-    scale_factor: float,
-) -> pd.DataFrame:
-    df = table_provider.get_column_data(table_provider.column_names(), [realization])
-    if scale_factor == 1.0:
-        return df
-    df["amount"] /= scale_factor
-    return df
+_PHASE_COLORS = {
+    "total": ("#222222", "#909090"),
+    "dissolved_water": ("#208eb7", "#81cde9"),
+    "dissolved_oil": ("#A0522D", "#C28163"),
+    "gas": ("#C41E3A", "#E42E5A"),
+    "free_gas": ("#FF2400", "#FF7430"),
+    "trapped_gas": ("#880808", "#C84848"),
+}
+
+
+_GENERAL_COLORS = [
+    ("#e91451", "#f589a8"),
+    ("#daa218", "#f2d386"),
+    ("#208eb7", "#81cde9"),
+    ("#84bc04", "#cdfc63"),
+    ("#b74532", "#e19e92"),
+    ("#9a89b4", "#ccc4d9"),
+    ("#8d30ba", "#c891e3"),
+    ("#256b33", "#77d089"),
+    ("#95704d", "#cfb7a1"),
+    ("#1357ca", "#7ba7f3"),
+    ("#f75ef0", "#fbaef7"),
+    ("#34b36f", "#93e0b7"),
+]
+
+
+_LIGHTER_COLORS = {
+    "black": "#909090",
+    **dict(_CONTAINMENT_COLORS.values()),
+    **dict(_PHASE_COLORS.values()),
+    **dict(_GENERAL_COLORS),
+}
+
+_LABEL_TRANSLATIONS = {
+    "nogo": "no-go",
+    "dissolved_water": "dissolved water",
+    "dissolved_oil": "dissolved oil",
+    "free_gas": "free gas",
+    "trapped_gas": "trapped gas",
+}
+
+
+def _translate_labels(df: Union[pd.DataFrame, Dict], column: str = "type") -> None:
+    def translate_label(label: str) -> str:
+        if ", " in label:
+            parts = label.split(", ")
+            translated_parts = [_LABEL_TRANSLATIONS.get(part, part) for part in parts]
+            return ", ".join(translated_parts)
+        return _LABEL_TRANSLATIONS.get(label, label)
+
+    if isinstance(df, dict):
+        df[column] = [translate_label(label) for label in df[column]]
+    else:
+        df[column] = df[column].apply(translate_label)
 
 
 def _get_colors(color_options: List[str], split: str) -> List[str]:
-    if split in {"containment", "phase"}:
-        return [Colors[option] for option in color_options]
-    options = list(_COLOR_ZONES)
+    if split == "containment":
+        return [_CONTAINMENT_COLORS[option][0] for option in color_options]
+    if split == "phase":
+        return [_PHASE_COLORS[option][0] for option in color_options]
+    options = [x[0] for x in _GENERAL_COLORS]
     if split == "region":
         options.reverse()
     num_cols = len(color_options)
@@ -268,8 +269,8 @@ def _prepare_pattern_and_color_options_statistics_plot(
 
 
 def _find_default_legendonly(df: pd.DataFrame, categories: List[str]) -> List[str]:
-    if "hazardous" in categories:
-        default_option = "hazardous"
+    if "no-go" in categories:
+        default_option = "no-go"
     else:
         max_value = -999.9
         default_option = categories[0]
@@ -416,7 +417,7 @@ def _add_sort_key_and_real(
     sort_value = np.sum(
         df[
             (df["phase"] == "total")
-            & (df["containment"] == "hazardous")
+            & (df["containment"] == "nogo")
             & (df["zone"] == containment_info.zone)
             & (df["region"] == containment_info.region)
             & (df["plume_group"] == containment_info.plume_group)
@@ -530,6 +531,9 @@ def generate_co2_volume_figure(
         color_choice,
         mark_choice,
     )
+    _translate_labels(df, "type")
+    _translate_labels(cat_ord, "type")
+
     fig = px.bar(
         df,
         y="real",
@@ -590,6 +594,9 @@ def generate_co2_time_containment_one_realization_figure(
         color_choice,
         mark_choice,
     )
+    _translate_labels(df, "type")
+    _translate_labels(cat_ord, "type")
+
     fig = px.area(
         df,
         x="date",
@@ -776,6 +783,8 @@ def generate_co2_time_containment_figure(
     options = _prepare_line_type_and_color_options(
         df, containment_info, color_choice, mark_choice
     )
+    _translate_labels(df, "name")
+    _translate_labels(options, "name")
     if legendonly_traces is None:
         inactive_cols_at_startup = list(
             options[~(options["line_type"].isin(["solid", "0px"]))]["name"]
@@ -787,6 +796,14 @@ def generate_co2_time_containment_figure(
             _connect_plume_groups(df, color_choice, mark_choice)
         except ValueError:
             pass
+
+    options["name"] = options["name"].apply(
+        lambda label: ", ".join(
+            [_LABEL_TRANSLATIONS.get(part, part) for part in label.split(", ")]
+        )
+        if ", " in label
+        else _LABEL_TRANSLATIONS.get(label, label)
+    )
 
     fig = go.Figure()
     # Generate dummy scatters for legend entries
@@ -907,6 +924,8 @@ def generate_co2_statistics_figure(
         color_choice,
         mark_choice,
     )
+    _translate_labels(df, "type")
+    _translate_labels(cat_ord, "type")
 
     df = df.drop(columns=["REAL"]).reset_index(drop=True)
     fig = px.ecdf(
@@ -973,6 +992,8 @@ def generate_co2_box_plot_figure(
         color_choice,
         mark_choice,
     )
+    _translate_labels(df, "type")
+    _translate_labels(cat_ord, "type")
 
     fig = go.Figure()
     for count, type_val in enumerate(cat_ord["type"], 0):
