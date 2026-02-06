@@ -1,0 +1,27 @@
+name: webviz-subsurface
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  webviz-subsurface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📖 Checkout commit locally
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 🚢 Build and deploy Python package
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine upload dist/*
