@@ -129,16 +129,6 @@ jobs:
           echo ${{ secrets.review_docker_registry_token }} | docker login ${{ secrets.review_docker_registry_url }} --username ${{ secrets.review_docker_registry_username }} --password-stdin
           docker push ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
 
-      - name: 🚢 Build and deploy Python package
-        if: github.event_name == 'release' && matrix.python-version == '3.11'
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.pypi_webviz_token }}
-        run: |
-          python -m pip install --upgrade build twine
-          python -m build
-          twine upload dist/*
-
       - name: 📚 Update GitHub pages
         if: github.event_name == 'release' && matrix.python-version == '3.11'
         run: |
