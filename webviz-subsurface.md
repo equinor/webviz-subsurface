@@ -1,6 +1,6 @@
 # Plugin project webviz-subsurface
 
-?> :bookmark: This documentation is valid for version `0.2.44` of `webviz-subsurface`.
+?> :bookmark: This documentation is valid for version `0.2.46` of `webviz-subsurface`.
 
 
 
@@ -179,7 +179,7 @@ FMU ensemble
 * **`map_surface_names_to_fault_polygons`:** Mapping between surface map names and
     surface names used by the fault polygons
 * **`boundary_settings`:** Settings for polygons representing the containment and
-    hazardous areas
+    nogo areas
 
 
 ---
@@ -247,17 +247,17 @@ map_surface_names_to_well_pick_names:
 Similar for `map_surface_names_to_fault_polygons`.
 
 `boundary_settings` is the final override option, and it can be used to specify
-polygons representing the containment and hazardous areas. By default, the polygons are
+polygons representing the containment and nogo areas. By default, the polygons are
 expected to be named:
 - `share/results/polygons/containment--boundary.csv`
-- `share/results/polygons/hazarduous--boundary.csv`
+- `share/results/polygons/nogo--boundary.csv`
 
 This corresponds to the following input:
 ```
 boundary_settings:
   polygon_file_pattern: share/results/polygons/*.csv
   attribute: boundary
-  hazardous_name: hazardous
+  nogo_name: nogo
   containment_name: containment
 ```
 All four settings are optional, and if not specified, the default values are used.
