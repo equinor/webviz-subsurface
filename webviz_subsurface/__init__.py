@@ -1,11 +1,11 @@
 import glob
 import pathlib
+from importlib.metadata import PackageNotFoundError, version
 from typing import Dict, Optional
 
 import jsonschema
 import webviz_config
 import yaml
-from importlib.metadata import PackageNotFoundError, version
 
 from webviz_subsurface._utils.user_defined_vector_definitions import (
     USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
