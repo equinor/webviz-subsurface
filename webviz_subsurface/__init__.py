@@ -64,9 +64,9 @@ def subscribe_predefined_expressions(
             output[key] = config_folder / path
 
         if not portable:
-            predefined_expressions_data: Dict[str, ConfigExpressionData] = (
-                yaml.safe_load(output[key].read_text())
-            )
+            predefined_expressions_data: Dict[
+                str, ConfigExpressionData
+            ] = yaml.safe_load(output[key].read_text())
 
             try:
                 jsonschema.validate(
