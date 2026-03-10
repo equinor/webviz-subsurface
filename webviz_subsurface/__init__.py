@@ -5,7 +5,7 @@ from typing import Dict, Optional
 import jsonschema
 import webviz_config
 import yaml
-from pkg_resources import DistributionNotFound, get_distribution  # type: ignore
+from importlib.metadata import PackageNotFoundError, version
 
 from webviz_subsurface._utils.user_defined_vector_definitions import (
     USER_DEFINED_VECTOR_DEFINITIONS_JSON_SCHEMA,
@@ -16,8 +16,8 @@ from webviz_subsurface._utils.vector_calculator import (
 )
 
 try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
+    __version__ = version(__name__)
+except PackageNotFoundError:
     # package is not installed
     pass
 
@@ -64,9 +64,9 @@ def subscribe_predefined_expressions(
             output[key] = config_folder / path
 
         if not portable:
-            predefined_expressions_data: Dict[
-                str, ConfigExpressionData
-            ] = yaml.safe_load(output[key].read_text())
+            predefined_expressions_data: Dict[str, ConfigExpressionData] = (
+                yaml.safe_load(output[key].read_text())
+            )
 
             try:
                 jsonschema.validate(
