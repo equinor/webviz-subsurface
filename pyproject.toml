@@ -46,7 +46,7 @@ dependencies = [
     "xtgeo>=2.20.0",
     "vtk>=9.2.2",
     "webviz-config>=0.6.5",
-    "webviz-subsurface-components>=1.0.3",
+    "webviz-subsurface-components>=1.0.6",
 ]
 
 [project.urls]
