@@ -2,7 +2,7 @@ from typing import List, Optional
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash.dash_table.DataTable import DataTable
+from dash.dash_table import DataTable
 from dash import dcc, html
 
 from webviz_subsurface._models import InplaceVolumesModel

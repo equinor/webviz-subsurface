@@ -11,7 +11,7 @@ import numpy as np
 import webviz_core_components as wcc
 import webviz_subsurface_components
 import xtgeo
-from dash.dash_table.DataTable import DataTable
+from dash.dash_table import DataTable
 from dash import Dash, Input, Output, State, callback_context, dcc, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin

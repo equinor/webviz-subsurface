@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple
 
 import webviz_core_components as wcc
-from dash.dash_table.DataTable import DataTable
+from dash.dash_table import DataTable
 from dash import Input, Output, State, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash.dash_table.DataTable import DataTable
+from dash.dash_table import DataTable
 from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 

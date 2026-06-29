@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dcc, html
-from dash.dash_table.DataTable import DataTable
+from dash.dash_table import DataTable
 
 from ._business_logic import SwatinitQcDataModel
 from ._markdown import (
