@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 import yaml
-from dash.dash_table import DataTable
 from dash import (
     ALL,
     Dash,
@@ -21,6 +20,7 @@ from dash import (
     dcc,
     html,
 )
+from dash.dash_table import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE

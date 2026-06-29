@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pandas as pd
 import webviz_core_components as wcc
-from dash.dash_table import DataTable
 from dash import (
     ClientsideFunction,
     Dash,
@@ -16,6 +15,7 @@ from dash import (
     dcc,
     html,
 )
+from dash.dash_table import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS

@@ -2,8 +2,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
-from dash.dash_table import DataTable
 from dash import html
+from dash.dash_table import DataTable
 
 from ..models import PropertyStatisticsModel
 from .selector_view import (
