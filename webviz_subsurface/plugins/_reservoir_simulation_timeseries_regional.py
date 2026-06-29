@@ -18,7 +18,6 @@ from dash import (
     Output,
     State,
     callback_context,
-    dash_table,
     dcc,
     html,
 )
