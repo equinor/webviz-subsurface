@@ -6,7 +6,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, dash_table, dcc, html
+from dash.dash_table.DataTable import DataTable
+from dash import Dash, Input, Output, dcc, html
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -353,7 +354,7 @@ class AssistedHistoryMatchingAnalysis(WebvizPluginABC):
 
             ks_filtered = ks_filtered.sort_values(by="Ks_value", ascending=False)
 
-            return dash_table.DataTable(
+            return DataTable(
                 columns=[{"name": i, "id": i} for i in ks_filtered.columns],
                 editable=True,
                 style_data_conditional=[

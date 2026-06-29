@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 import yaml
+from dash.dash_table.DataTable import DataTable
 from dash import (
     ALL,
     Dash,
@@ -988,7 +989,7 @@ def render_single_date_graph(
 
 def render_table(
     stat_df: pd.DataFrame, mode: str, groupby: str, date: str
-) -> dash_table.DataTable:
+) -> DataTable:
     columns = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]
@@ -1050,7 +1051,7 @@ def render_table(
             except KeyError:
                 pass
     return (
-        dash_table.DataTable(
+        DataTable(
             sort_action="native",
             filter_action="native",
             page_action="native",

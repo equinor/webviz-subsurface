@@ -1,7 +1,8 @@
 from typing import Callable, List, Union
 
 import webviz_core_components as wcc
-from dash import ALL, Dash, Input, Output, dash_table
+from dash.dash_table.DataTable import DataTable
+from dash import ALL, Dash, Input, Output
 
 from ..models import PropertyStatisticsModel
 
@@ -26,13 +27,13 @@ def property_qc_controller(
         selectors: list,
         plot_type: str,
         match_axis: List[str],
-    ) -> Union[dash_table.DataTable, wcc.Graph]:
+    ) -> Union[DataTable, wcc.Graph]:
         ensembles = ensembles if isinstance(ensembles, list) else [ensembles]
         if plot_type == "table":
             columns, dframe = property_model.make_statistics_table(
                 prop=prop, ensembles=ensembles, selector_values=selectors
             )
-            return dash_table.DataTable(
+            return DataTable(
                 style_table={
                     "height": "75vh",
                     "overflow": "auto",

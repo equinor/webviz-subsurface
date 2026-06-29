@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pandas as pd
 import webviz_core_components as wcc
+from dash.dash_table.DataTable import DataTable
 from dash import (
     ClientsideFunction,
     Dash,
@@ -325,7 +326,7 @@ class TornadoWidget:
                         html.Div(
                             id=self.ids("table-wrapper"),
                             style={"display": "none"},
-                            children=dash_table.DataTable(
+                            children=DataTable(
                                 id=self.ids("tornado-table"),
                                 style_cell={
                                     "whiteSpace": "normal",

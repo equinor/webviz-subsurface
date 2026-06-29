@@ -1,5 +1,6 @@
 import webviz_core_components as wcc
-from dash import dash_table, html
+from dash.dash_table.DataTable import DataTable
+from dash import html
 
 
 def uncertainty_table_layout(
@@ -22,7 +23,7 @@ def uncertainty_table_layout(
                     ),
                 ]
             ),
-            dash_table.DataTable(
+            DataTable(
                 id={"id": uuid, "element": "table"},
                 columns=[
                     {"id": "Surface name", "name": "Surface name", "selectable": False},

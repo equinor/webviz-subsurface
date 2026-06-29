@@ -5,7 +5,8 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, dash_table, dcc, html
+from dash.dash_table.DataTable import DataTable
+from dash import Dash, Input, Output, dcc, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
 from webviz_config.deprecation_decorators import deprecated_plugin
@@ -378,7 +379,7 @@ but the following responses are given more descriptive names automatically:
                                             style={"textAlign": "center"},
                                             children="",
                                         ),
-                                        dash_table.DataTable(
+                                        DataTable(
                                             id=self.ids("table"),
                                             sort_action="native",
                                             filter_action="native",
@@ -416,7 +417,7 @@ but the following responses are given more descriptive names automatically:
                 group: The selector to group the data by
                 selections: Active values from the selector columns
             Return:
-                Plotly Graph/dash_table.DataTable
+                Plotly Graph/DataTable
             """
             # pylint: disable=line-too-long
             # TODO(Sigurd) Tricky to figure out the type hints without a bit of guesswork here due to the use of *args

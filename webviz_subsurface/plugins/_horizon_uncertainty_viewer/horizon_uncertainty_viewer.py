@@ -11,7 +11,8 @@ import numpy as np
 import webviz_core_components as wcc
 import webviz_subsurface_components
 import xtgeo
-from dash import Dash, Input, Output, State, callback_context, dash_table, dcc, html
+from dash.dash_table.DataTable import DataTable
+from dash import Dash, Input, Output, State, callback_context, dcc, html
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.deprecation_decorators import deprecated_plugin
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -345,9 +346,9 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
         )
 
     @property
-    def target_points_tab_layout(self) -> dash_table.DataTable:
+    def target_points_tab_layout(self) -> DataTable:
         df = self.df_well_target_points.get_targetpoints_df()
-        return dash_table.DataTable(
+        return DataTable(
             id=self.ids("target-point-table"),
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict("records"),
@@ -528,7 +529,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
                         "textAlign": "center",
                     },
                 ),
-                dash_table.DataTable(
+                DataTable(
                     id=self.ids("uncertainty-table"),
                     columns=[{"name": i, "id": i} for i in df.columns],
                     data=df.to_dict("records"),
@@ -757,7 +758,7 @@ class HorizonUncertaintyViewer(WebvizPluginABC):
             wellpoints_df = self.df_well_target_points.update_wellpoints_df(column_list)
             return html.Div(
                 [
-                    dash_table.DataTable(
+                    DataTable(
                         id=self.ids("well-points-table"),
                         columns=[{"name": i, "id": i} for i in wellpoints_df.columns],
                         data=wellpoints_df.to_dict("records"),

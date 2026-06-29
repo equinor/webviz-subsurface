@@ -1,7 +1,8 @@
 from typing import Dict, List, Tuple
 
 import webviz_core_components as wcc
-from dash import Input, Output, State, callback, dash_table, dcc, html
+from dash.dash_table.DataTable import DataTable
+from dash import Input, Output, State, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -110,8 +111,8 @@ class EnsemblesSettings(SettingsGroupABC):
             ]
         )
 
-    def _delta_ensemble_table_layout(self) -> dash_table.DataTable:
-        return dash_table.DataTable(
+    def _delta_ensemble_table_layout(self) -> DataTable:
+        return DataTable(
             id=self.register_component_unique_id(
                 EnsemblesSettings.Ids.CREATED_DELTA_ENSEMBLE_NAMES_TABLE
             ),

@@ -1,4 +1,5 @@
-from dash import dash_table, html
+from dash.dash_table.DataTable import DataTable
+from dash import html
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
@@ -14,7 +15,7 @@ class TableViewElement(ViewElementABC):
         return html.Div(
             children=[
                 html.Div(
-                    children=dash_table.DataTable(
+                    children=DataTable(
                         id=self.register_component_unique_id(self.Ids.TABLE),
                         sort_action="native",
                         sort_mode="multi",

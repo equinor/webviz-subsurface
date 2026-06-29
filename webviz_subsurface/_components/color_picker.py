@@ -5,7 +5,8 @@ import dash_daq
 import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, State, dash_table, dcc, html
+from dash.dash_table.DataTable import DataTable
+from dash import Dash, Input, Output, State, dcc, html
 from dash.exceptions import PreventUpdate
 
 
@@ -99,7 +100,7 @@ class ColorPicker:
                     children=[
                         html.Div(
                             style={"flex": 2, "overflowY": "scroll", "height": "550px"},
-                            children=dash_table.DataTable(
+                            children=DataTable(
                                 id={"id": self._uuid, "element": "table"},
                                 fixed_rows={"headers": True},
                                 columns=self._columns,

@@ -6,7 +6,8 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, State, callback_context, dash_table, html
+from dash.dash_table.DataTable import DataTable
+from dash import Dash, Input, Output, State, callback_context, html
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -409,7 +410,7 @@ aggregated_data/parameters.csv)
                                     ),
                                     html.Div(
                                         style={"fontSize": "15px"},
-                                        children=dash_table.DataTable(
+                                        children=DataTable(
                                             id=self.uuid("table"),
                                             sort_action="native",
                                             filter_action="native",

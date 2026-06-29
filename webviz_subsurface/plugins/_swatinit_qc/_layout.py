@@ -4,7 +4,8 @@ from typing import Any, Callable, List, Optional
 import pandas as pd
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import dash_table, dcc, html
+from dash import dcc, html
+from dash.dash_table.DataTable import DataTable
 
 from ._business_logic import SwatinitQcDataModel
 from ._markdown import (
@@ -374,7 +375,7 @@ class TabMaxPcInfoLayout:
 
     def create_max_pc_table(
         self, dframe: pd.DataFrame, text_columns: list
-    ) -> dash_table:
+    ) -> DataTable:
         return DashTable(
             data=dframe.to_dict("records"),
             columns=[
@@ -556,7 +557,7 @@ def range_filters(uuid: str, datamodel: SwatinitQcDataModel) -> html.Div:
     return html.Div(filters)
 
 
-class DashTable(dash_table.DataTable):
+class DashTable(DataTable):
     def __init__(
         self, data: List[dict], columns: List[dict], height: str = "none", **kwargs: Any
     ) -> None:
