@@ -10,16 +10,7 @@ import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 import yaml
-from dash import (
-    ALL,
-    Dash,
-    Input,
-    Output,
-    State,
-    callback_context,
-    dcc,
-    html,
-)
+from dash import ALL, Dash, Input, Output, State, callback_context, dcc, html
 from dash.dash_table import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
