@@ -798,11 +798,13 @@ def generate_co2_time_containment_figure(
             pass
 
     options["name"] = options["name"].apply(
-        lambda label: ", ".join(
-            [_LABEL_TRANSLATIONS.get(part, part) for part in label.split(", ")]
+        lambda label: (
+            ", ".join(
+                [_LABEL_TRANSLATIONS.get(part, part) for part in label.split(", ")]
+            )
+            if ", " in label
+            else _LABEL_TRANSLATIONS.get(label, label)
         )
-        if ", " in label
-        else _LABEL_TRANSLATIONS.get(label, label)
     )
 
     fig = go.Figure()
@@ -1017,9 +1019,11 @@ def generate_co2_box_plot_figure(
                 y=values,
                 name=type_val,
                 marker_color=colors[count],
-                boxpoints="all"
-                if containment_info.box_show_points == "all_points"
-                else "outliers",
+                boxpoints=(
+                    "all"
+                    if containment_info.box_show_points == "all_points"
+                    else "outliers"
+                ),
                 customdata=real,
                 hovertemplate="<span style='font-family:Courier New;'>"
                 "Type       : %{data.name}<br>Amount     : %{y:.3f}<br>"

@@ -211,16 +211,18 @@ and the parameter columns.
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
-            (read_csv, [{"csv_file": self.csvfile}])
-            if self.csvfile
-            else (
-                load_parameters,
-                [
-                    {
-                        "ensemble_paths": self.ensembles,
-                        "ensemble_set_name": "EnsembleSet",
-                    }
-                ],
+            (
+                (read_csv, [{"csv_file": self.csvfile}])
+                if self.csvfile
+                else (
+                    load_parameters,
+                    [
+                        {
+                            "ensemble_paths": self.ensembles,
+                            "ensemble_set_name": "EnsembleSet",
+                        }
+                    ],
+                )
             )
         ]
 

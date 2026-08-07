@@ -706,9 +706,9 @@ def surfacedf_to_dict(df: pd.DataFrame) -> dict:
     return {
         attr: {
             "names": list(dframe["name"].unique()),
-            "dates": list(dframe["date"].unique())
-            if "date" in dframe.columns
-            else None,
+            "dates": (
+                list(dframe["date"].unique()) if "date" in dframe.columns else None
+            ),
         }
         for attr, dframe in df.groupby("attribute")
     }

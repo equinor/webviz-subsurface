@@ -92,9 +92,11 @@ class ProviderTimeSeriesDataModel:
 
         return self.filter_vectorlist_on_column_keys(
             column_key_list,
-            self.vectors
-            if ensemble is None
-            else self._provider_set[ensemble].vector_names(),
+            (
+                self.vectors
+                if ensemble is None
+                else self._provider_set[ensemble].vector_names()
+            ),
         )
 
     @staticmethod

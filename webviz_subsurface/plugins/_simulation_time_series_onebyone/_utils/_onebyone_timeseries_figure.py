@@ -223,9 +223,9 @@ class OneByOneTimeSeriesFigure:
             [
                 {
                     "line": {
-                        "dash": "dash"
-                        if real_df["SENSCASEID"].iloc[0] == 1
-                        else "solid",
+                        "dash": (
+                            "dash" if real_df["SENSCASEID"].iloc[0] == 1 else "solid"
+                        ),
                         "shape": self.line_shape,
                         "color": self.colormap.get(
                             real_df[self.color_col].iloc[0], "grey"
@@ -256,9 +256,9 @@ class OneByOneTimeSeriesFigure:
             [
                 {
                     "line": {
-                        "dash": "dash"
-                        if real_df["SENSCASEID"].iloc[0] == 1
-                        else "solid",
+                        "dash": (
+                            "dash" if real_df["SENSCASEID"].iloc[0] == 1 else "solid"
+                        ),
                         "shape": self.line_shape,
                         "color": rgb_to_str(
                             scale_rgb_lightness(

@@ -44,11 +44,11 @@ def surface_view(
         children=wsc.LeafletMap(
             id=f"{get_uuid('surface-view-delta')}{ensemble}",
             layers=layers,
-            syncedMaps=[
-                f"{get_uuid('surface-view-delta')}{s_id}" for s_id in synced_ids
-            ]
-            if synced_ids is not None
-            else [],
+            syncedMaps=(
+                [f"{get_uuid('surface-view-delta')}{s_id}" for s_id in synced_ids]
+                if synced_ids is not None
+                else []
+            ),
             unitScale={},
             autoScaleMap=True,
             minZoom=-19,

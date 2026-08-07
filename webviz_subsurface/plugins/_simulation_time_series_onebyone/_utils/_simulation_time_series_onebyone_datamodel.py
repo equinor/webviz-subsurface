@@ -176,9 +176,11 @@ class SimulationTimeSeriesOneByOneDataModel:
             )
             .figure.update_xaxes(side="bottom", title=None)
             .update_layout(
-                title_text=title
-                if title is not None
-                else f"Tornadoplot for {tornado_data.response_name} <br>",
+                title_text=(
+                    title
+                    if title is not None
+                    else f"Tornadoplot for {tornado_data.response_name} <br>"
+                ),
                 margin={"t": 70},
             )
         )
@@ -207,12 +209,14 @@ class SimulationTimeSeriesOneByOneDataModel:
             .update_layout(legend_title_text="", margin_b=0, margin_r=10)
             .for_each_trace(
                 lambda t: (
-                    t.update(marker_line_color="black")
-                    if t["customdata"][0][0] == "high"
-                    else t.update(marker_line_color="white", marker_line_width=2)
+                    (
+                        t.update(marker_line_color="black")
+                        if t["customdata"][0][0] == "high"
+                        else t.update(marker_line_color="white", marker_line_width=2)
+                    )
+                    if t["customdata"][0][0] != "mc"
+                    else None
                 )
-                if t["customdata"][0][0] != "mc"
-                else None
             )
         )
 

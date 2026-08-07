@@ -280,9 +280,11 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                                                     surface_names=self._surfacenames,
                                                     ensembles=self.ensembles,
                                                     use_wells=self._use_wells,
-                                                    well_names=self._well_set_model.well_names
-                                                    if self._well_set_model
-                                                    else [],
+                                                    well_names=(
+                                                        self._well_set_model.well_names
+                                                        if self._well_set_model
+                                                        else []
+                                                    ),
                                                     surface_geometry=self.first_surface_geometry,
                                                     initial_settings=self._initial_settings.get(
                                                         "intersection_data", {}

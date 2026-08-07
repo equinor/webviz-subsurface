@@ -94,11 +94,16 @@ def make_map_selectors(
             ),
             wcc.Checklist(
                 id={"id": uuid, "map_id": map_id, "element": "options"},
-                options=[
-                    {"label": "Calculate well intersections", "value": "intersect_well"}
-                ]
-                if use_wells
-                else [],
+                options=(
+                    [
+                        {
+                            "label": "Calculate well intersections",
+                            "value": "intersect_well",
+                        }
+                    ]
+                    if use_wells
+                    else []
+                ),
                 value=[],
             ),
         ]

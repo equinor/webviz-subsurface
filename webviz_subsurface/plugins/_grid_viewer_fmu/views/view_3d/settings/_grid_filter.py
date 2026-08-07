@@ -174,9 +174,11 @@ def crop_widget(
     selected_max_val: Optional[int] = None,
 ) -> html.Div:
     return html.Div(
-        style={"borderBottom": "1px outset", "marginBottom": "15px"}
-        if direction != GRIDDIRECTION.K
-        else {},
+        style=(
+            {"borderBottom": "1px outset", "marginBottom": "15px"}
+            if direction != GRIDDIRECTION.K
+            else {}
+        ),
         children=[
             html.Div(
                 style={

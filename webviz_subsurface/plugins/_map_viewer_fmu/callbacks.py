@@ -63,7 +63,9 @@ def plugin_callbacks(
     plugin_data_output: Output,
     plugin_data_requested: Input,
 ) -> None:
-    def selections(tab: Union[str, Wildcard], colorselector: bool = False) -> Dict[str, Union[str, Wildcard]]:
+    def selections(
+        tab: Union[str, Wildcard], colorselector: bool = False
+    ) -> Dict[str, Union[str, Wildcard]]:
         uuid = get_uuid(
             LayoutElements.SELECTIONS
             if not colorselector
@@ -71,13 +73,17 @@ def plugin_callbacks(
         )
         return {"view": ALL, "id": uuid, "tab": tab, "selector": ALL}
 
-    def selector_wrapper(tab: Union[str, Wildcard], colorselector: bool = False) -> Dict[str, Union[str, Wildcard]]:
+    def selector_wrapper(
+        tab: Union[str, Wildcard], colorselector: bool = False
+    ) -> Dict[str, Union[str, Wildcard]]:
         uuid = get_uuid(
             LayoutElements.WRAPPER if not colorselector else LayoutElements.COLORWRAPPER
         )
         return {"id": uuid, "tab": tab, "selector": ALL}
 
-    def links(tab: Union[str, Wildcard], colorselector: bool = False) -> Dict[str, Union[str, Wildcard]]:
+    def links(
+        tab: Union[str, Wildcard], colorselector: bool = False
+    ) -> Dict[str, Union[str, Wildcard]]:
         uuid = get_uuid(
             LayoutElements.LINK if not colorselector else LayoutElements.COLORLINK
         )

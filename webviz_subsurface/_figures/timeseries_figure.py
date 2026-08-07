@@ -131,11 +131,11 @@ class TimeSeriesFigure:
                 {
                     "line": {
                         "shape": self.line_shape,
-                        "color": self.set_real_color(
-                            real_df["VALUE_NORM"].iloc[0], mean
-                        )
-                        if self.visualization == "realizations"
-                        else "gainsboro",
+                        "color": (
+                            self.set_real_color(real_df["VALUE_NORM"].iloc[0], mean)
+                            if self.visualization == "realizations"
+                            else "gainsboro"
+                        ),
                     },
                     "mode": "lines",
                     "x": real_df["DATE"],

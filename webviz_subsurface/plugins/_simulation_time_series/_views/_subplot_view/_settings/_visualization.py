@@ -87,13 +87,15 @@ class VisualizationSettings(SettingsGroupABC):
                     id=self.register_component_unique_id(
                         VisualizationSettings.Ids.PLOT_STATISTICS_OPTIONS_CHECKLIST
                     ),
-                    style={"display": "block"}
-                    if selected_visualization
-                    in [
-                        VisualizationOptions.STATISTICS,
-                        VisualizationOptions.STATISTICS_AND_REALIZATIONS,
-                    ]
-                    else {"display": "none"},
+                    style=(
+                        {"display": "block"}
+                        if selected_visualization
+                        in [
+                            VisualizationOptions.STATISTICS,
+                            VisualizationOptions.STATISTICS_AND_REALIZATIONS,
+                        ]
+                        else {"display": "none"}
+                    ),
                     options=[
                         {"label": "Mean", "value": StatisticsOptions.MEAN},
                         {
@@ -121,9 +123,11 @@ class VisualizationSettings(SettingsGroupABC):
                     id=self.register_component_unique_id(
                         VisualizationSettings.Ids.PLOT_FANCHART_OPTIONS_CHECKLIST
                     ),
-                    style={"display": "block"}
-                    if VisualizationOptions.FANCHART == selected_visualization
-                    else {"display": "none"},
+                    style=(
+                        {"display": "block"}
+                        if VisualizationOptions.FANCHART == selected_visualization
+                        else {"display": "none"}
+                    ),
                     options=[
                         {
                             "label": FanchartOptions.MEAN,

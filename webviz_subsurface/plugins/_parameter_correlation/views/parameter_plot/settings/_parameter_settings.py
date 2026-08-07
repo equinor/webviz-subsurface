@@ -45,9 +45,11 @@ class ParameterSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(ParameterSettings.IDs.ENSEMBLE_H),
                 label="Ensemble (horizontal axis)",
                 options=[{"label": k, "value": v} for k, v in self.ensembles.items()],
-                value=list(self.ensembles.values())[0]
-                if len(self.ensembles.values()) > 0
-                else "",
+                value=(
+                    list(self.ensembles.values())[0]
+                    if len(self.ensembles.values()) > 0
+                    else ""
+                ),
                 multi=False,
                 clearable=False,
             ),
@@ -63,9 +65,11 @@ class ParameterSettings(SettingsGroupABC):
                 id=self.register_component_unique_id(ParameterSettings.IDs.ENSEMBLE_V),
                 label="Ensemble (vertical axis)",
                 options=[{"label": k, "value": v} for k, v in self.ensembles.items()],
-                value=list(self.ensembles.values())[0]
-                if len(self.ensembles.values()) > 0
-                else "",
+                value=(
+                    list(self.ensembles.values())[0]
+                    if len(self.ensembles.values()) > 0
+                    else ""
+                ),
                 multi=False,
                 clearable=False,
             ),

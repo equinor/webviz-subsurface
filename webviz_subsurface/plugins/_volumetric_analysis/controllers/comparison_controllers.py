@@ -63,9 +63,11 @@ def comparison_controllers(
             raise PreventUpdate
 
         return comparison_callback(
-            compare_on="SENSNAME_CASE"
-            if selections["compare_on"] == "Sensitivity"
-            else "ENSEMBLE",
+            compare_on=(
+                "SENSNAME_CASE"
+                if selections["compare_on"] == "Sensitivity"
+                else "ENSEMBLE"
+            ),
             volumemodel=volumemodel,
             selections=selections,
         )
@@ -228,9 +230,9 @@ def comparison_callback(
         )
         barfig_non_highlighted = create_barfig(
             df=df[df["highlighted"] == "yes"],
-            groupby=groupby
-            if group_on_fluid
-            else [x for x in groupby if x != "FLUID_ZONE"],
+            groupby=(
+                groupby if group_on_fluid else [x for x in groupby if x != "FLUID_ZONE"]
+            ),
             diff_mode=selections["Diff mode"],
             colorcol=resp1,
         )
@@ -360,9 +362,11 @@ def create_comaprison_table(
         columns = create_table_columns(
             columns=move_to_end_of_list("FLUID_ZONE", df.columns),
             text_columns=groupby,
-            use_si_format=volumemodel.volume_columns
-            if volumemodel is not None and not diff_mode_percent
-            else None,
+            use_si_format=(
+                volumemodel.volume_columns
+                if volumemodel is not None and not diff_mode_percent
+                else None
+            ),
             use_percentage=list(df.columns) if diff_mode_percent else None,
         )
     else:

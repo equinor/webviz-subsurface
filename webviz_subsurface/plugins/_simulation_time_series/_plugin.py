@@ -230,7 +230,8 @@ class SimulationTimeSeries(WebvizPluginABC):
                     ] = wsc.VectorDefinition(
                         type=_type,
                         description=simulation_vector_description(
-                            per_intvl_vec_base, self._user_defined_vector_definitions
+                            per_intvl_vec_base,
+                            self._user_defined_vector_definitions,
                         ),
                     )
 

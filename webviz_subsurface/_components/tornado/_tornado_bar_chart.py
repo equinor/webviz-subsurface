@@ -161,9 +161,11 @@ class TornadoBarChart:
                 "y": self._tornadotable["sensname"],
                 "x": self._tornadotable["low"],
                 "name": "low",
-                "base": self._tornadotable["low_base"]
-                if not self._use_true_base
-                else (self._reference_average + self._tornadotable["low_base"]),
+                "base": (
+                    self._tornadotable["low_base"]
+                    if not self._use_true_base
+                    else (self._reference_average + self._tornadotable["low_base"])
+                ),
                 "customdata": self._tornadotable["low_reals"],
                 "text": self.bar_labels("low"),
                 "textposition": "auto",
@@ -181,9 +183,11 @@ class TornadoBarChart:
                 "y": self._tornadotable["sensname"],
                 "x": self._tornadotable["high"],
                 "name": "high",
-                "base": self._tornadotable["high_base"]
-                if not self._use_true_base
-                else (self._reference_average + self._tornadotable["high_base"]),
+                "base": (
+                    self._tornadotable["high_base"]
+                    if not self._use_true_base
+                    else (self._reference_average + self._tornadotable["high_base"])
+                ),
                 "customdata": self._tornadotable["high_reals"],
                 "text": self.bar_labels("high"),
                 "textposition": "auto",
@@ -282,21 +286,27 @@ class TornadoBarChart:
                 "showlegend": False,
                 "hovermode": "closest",
                 "hoverlabel": {"bgcolor": "white", "font_size": 16},
-                "annotations": [
-                    {
-                        "x": 0 if not self._use_true_base else self._reference_average,
-                        "y": 1.05,
-                        "xref": "x",
-                        "yref": "paper",
-                        "text": f"<b>{self._set_si_prefix(self._reference_average)}</b>"
-                        " (Ref avg)",
-                        "showarrow": False,
-                        "align": "center",
-                        "standoff": 16,
-                    }
-                ]
-                if self._show_reference
-                else None,
+                "annotations": (
+                    [
+                        {
+                            "x": (
+                                0
+                                if not self._use_true_base
+                                else self._reference_average
+                            ),
+                            "y": 1.05,
+                            "xref": "x",
+                            "yref": "paper",
+                            "text": f"<b>{self._set_si_prefix(self._reference_average)}</b>"
+                            " (Ref avg)",
+                            "showarrow": False,
+                            "align": "center",
+                            "standoff": 16,
+                        }
+                    ]
+                    if self._show_reference
+                    else None
+                ),
                 "shapes": [
                     {
                         "type": "line",

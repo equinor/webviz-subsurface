@@ -190,12 +190,14 @@ class TornadoWidget:
                                             clearable=False,
                                         ),
                                         html.Button(
-                                            style={
-                                                "fontSize": "10px",
-                                                "marginTop": "10px",
-                                            }
-                                            if self.allow_click
-                                            else {"display": "none"},
+                                            style=(
+                                                {
+                                                    "fontSize": "10px",
+                                                    "marginTop": "10px",
+                                                }
+                                                if self.allow_click
+                                                else {"display": "none"}
+                                            ),
                                             id=self.ids("reset"),
                                             children="Clear selected",
                                         ),

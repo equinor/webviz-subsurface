@@ -238,9 +238,11 @@ class PropertiesVsDepthSubplots:
         if not self.discrete_color:
             return {
                 "coloraxis": "coloraxis",
-                "color": df[self.color_by]
-                if self.color_by != "PERMX"
-                else np.log10(df[self.color_by]),
+                "color": (
+                    df[self.color_by]
+                    if self.color_by != "PERMX"
+                    else np.log10(df[self.color_by])
+                ),
             }
         return {"color": self.colormap[color], "opacity": 0.5}
 
@@ -307,9 +309,11 @@ class MapFigure:
                 data_frame=self.dframe,
                 x="X",
                 y="Y",
-                color=self.color_by
-                if self.color_by != "PERMX"
-                else np.log10(self.dframe[self.color_by]),
+                color=(
+                    self.color_by
+                    if self.color_by != "PERMX"
+                    else np.log10(self.dframe[self.color_by])
+                ),
                 color_discrete_map=self.colormap,
                 xaxis={"constrain": "domain", **self.axis_layout},
                 yaxis={"scaleanchor": "x", **self.axis_layout},

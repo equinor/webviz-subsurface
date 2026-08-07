@@ -362,7 +362,7 @@ class XSectionFigure:
                 "dy": y_inc,
                 "zsmooth": "best",
                 "showscale": False,
-                "name": name
+                "name": name,
                 # "colorscale": colors,
             },
             self.main_trace_row,

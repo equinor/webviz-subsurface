@@ -405,9 +405,11 @@ def update_maps(
                     "update": "map1" in ctx["prop_id"],
                 },
                 "map2": {
-                    "color_range": [clip_min_map2, clip_max_map2]
-                    if not sync_range
-                    else [clip_min_map1, clip_max_map1],
+                    "color_range": (
+                        [clip_min_map2, clip_max_map2]
+                        if not sync_range
+                        else [clip_min_map1, clip_max_map1]
+                    ),
                     "update": "map2" in ctx["prop_id"]
                     or (sync_range and "map1" in ctx["prop_id"])
                     or (

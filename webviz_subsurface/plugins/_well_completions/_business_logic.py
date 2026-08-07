@@ -473,9 +473,11 @@ def extract_stratigraphy(
         return [
             {
                 "name": zone,
-                "color": zone_color_mapping[zone]
-                if zone_color_mapping is not None and zone in zone_color_mapping
-                else next(color_iterator),
+                "color": (
+                    zone_color_mapping[zone]
+                    if zone_color_mapping is not None and zone in zone_color_mapping
+                    else next(color_iterator)
+                ),
             }
             for zone in zone_names
         ]

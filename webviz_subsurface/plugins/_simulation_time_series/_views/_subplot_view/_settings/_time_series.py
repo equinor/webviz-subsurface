@@ -94,9 +94,9 @@ class TimeSeriesSettings(SettingsGroupABC):
                 data=self._vector_selector_data,
                 persistence=True,
                 persistence_type="session",
-                selectedTags=[]
-                if self._selected_vectors is None
-                else self._selected_vectors,
+                selectedTags=(
+                    [] if self._selected_vectors is None else self._selected_vectors
+                ),
                 numSecondsUntilSuggestionsAreShown=0.5,
                 lineBreakAfterTag=True,
                 customVectorDefinitions=self._custom_vector_definitions,
@@ -316,8 +316,8 @@ class TimeSeriesSettings(SettingsGroupABC):
             )
 
             # Get new custom vector definitions
-            new_custom_vector_definitions_dict = get_vector_definitions_from_expressions(
-                new_expressions
+            new_custom_vector_definitions_dict = (
+                get_vector_definitions_from_expressions(new_expressions)
             )
             for key, value in self._custom_vector_definitions_base.items():
                 if key not in new_custom_vector_definitions_dict:

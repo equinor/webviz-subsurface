@@ -237,9 +237,11 @@ class ParameterResponseView(ViewABC):
                     ensemble=ensemble,
                     realizations=realizations,
                     vectors=list(set(vectors_for_param_corr + [selected_vector])),
-                    resampling_frequency=resampling_frequency
-                    if not self._disable_resampling_dropdown
-                    else None,
+                    resampling_frequency=(
+                        resampling_frequency
+                        if not self._disable_resampling_dropdown
+                        else None
+                    ),
                 )
             except ValueError:
                 # It could be that the selected vector does not exist in the
@@ -357,9 +359,9 @@ class ParameterResponseView(ViewABC):
                 visualization=visualization,
                 vector=selected_vector,
                 ensemble=ensemble,
-                dateline=date
-                if options is not None and options["show_dateline"]
-                else None,
+                dateline=(
+                    date if options is not None and options["show_dateline"] else None
+                ),
                 historical_vector_df=self._vectormodel.get_historical_vector_df(
                     selected_vector, ensemble
                 ),
@@ -780,9 +782,11 @@ def color_corr_bars(
     if "data" in figure:
         figure["data"][0]["marker"] = {
             "color": [
-                hex_to_rgba_str(color, opacity)
-                if _bar != selected_bar
-                else hex_to_rgba_str(color_selected, 0.8)
+                (
+                    hex_to_rgba_str(color, opacity)
+                    if _bar != selected_bar
+                    else hex_to_rgba_str(color_selected, 0.8)
+                )
                 for _bar in figure["data"][0]["y"]
             ],
             "line": {

@@ -27,9 +27,11 @@ class EnsembleTableProviderSet:
         dfs = []
         for ens, provider in self.items():
             df = provider.get_column_data(
-                column_names=column_names
-                if column_names is not None
-                else provider.column_names()
+                column_names=(
+                    column_names
+                    if column_names is not None
+                    else provider.column_names()
+                )
             )
             df["ENSEMBLE"] = ens
             dfs.append(df)

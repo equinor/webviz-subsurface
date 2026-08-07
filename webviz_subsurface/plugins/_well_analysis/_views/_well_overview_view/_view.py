@@ -102,9 +102,11 @@ class WellOverviewView(ViewABC):
         ) -> list:
             """Display only the settings relevant for the currently selected chart type."""
             return [
-                {"display": "block"}
-                if settings_id["charttype"] == chart_selected
-                else {"display": "none"}
+                (
+                    {"display": "block"}
+                    if settings_id["charttype"] == chart_selected
+                    else {"display": "none"}
+                )
                 for settings_id in charttype_settings_ids
             ]
 
@@ -252,16 +254,16 @@ class WellOverviewView(ViewABC):
                     ensembles=ensembles,
                     data_models=self._data_models,
                     sumvec=sumvec,
-                    prod_from_date=datetime.datetime.strptime(
-                        prod_from_date, "%Y-%m-%d"
-                    )
-                    if prod_from_date is not None
-                    else None,
-                    prod_until_date=datetime.datetime.strptime(
-                        prod_until_date, "%Y-%m-%d"
-                    )
-                    if prod_until_date is not None
-                    else None,
+                    prod_from_date=(
+                        datetime.datetime.strptime(prod_from_date, "%Y-%m-%d")
+                        if prod_from_date is not None
+                        else None
+                    ),
+                    prod_until_date=(
+                        datetime.datetime.strptime(prod_until_date, "%Y-%m-%d")
+                        if prod_until_date is not None
+                        else None
+                    ),
                     charttype=charttype_selected,
                     stattype=stattype_selected,
                     wells=wells_selected,

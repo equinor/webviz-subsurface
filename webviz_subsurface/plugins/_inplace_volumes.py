@@ -298,9 +298,11 @@ but the following responses are given more descriptive names automatically:
                                     {"label": volume_description(i), "value": i}
                                     for i in self.responses
                                 ],
-                                value=self.initial_response
-                                if self.initial_response in self.responses
-                                else self.responses[0],
+                                value=(
+                                    self.initial_response
+                                    if self.initial_response in self.responses
+                                    else self.responses[0]
+                                ),
                                 clearable=False,
                                 persistence=True,
                                 persistence_type="session",
@@ -473,7 +475,7 @@ but the following responses are given more descriptive names automatically:
             [Input(self.ids("group"), "value")],
         )
         def _set_iteration_selector(
-            group_by: Union[str, None]
+            group_by: Union[str, None],
         ) -> Tuple[bool, Union[str, list], int]:
             """If iteration is selected as group by set the iteration
             selector to allow multiple selections, else use single selection
@@ -495,7 +497,7 @@ but the following responses are given more descriptive names automatically:
                 [Input(self.ids("group"), "value")],
             )
             def _set_source_selector(
-                group_by: Union[str, None]
+                group_by: Union[str, None],
             ) -> Tuple[bool, Union[str, list], int]:
                 """If iteration is selected as group by set the iteration
                 selector to allow multiple selections, else use single selection

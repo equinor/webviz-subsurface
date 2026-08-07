@@ -148,7 +148,7 @@ def fixture_provider(
 
 
 def test_add_nodetype(
-    testdata: Tuple[pd.DataFrame, EnsembleSummaryProvider, pd.DataFrame]
+    testdata: Tuple[pd.DataFrame, EnsembleSummaryProvider, pd.DataFrame],
 ) -> None:
     """Test functionality for the add_nodetype function"""
     gruptree_df = testdata[0]

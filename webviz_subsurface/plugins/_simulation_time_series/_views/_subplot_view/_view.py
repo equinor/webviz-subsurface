@@ -453,11 +453,13 @@ class SubplotView(ViewABC):
                         # Show selected realizations - only filter df if realizations filter
                         # query is not performed
                         figure_builder.add_realizations_traces(
-                            vectors_df
-                            if realizations_query
-                            else vectors_df[
-                                vectors_df["REAL"].isin(selected_realizations)
-                            ],
+                            (
+                                vectors_df
+                                if realizations_query
+                                else vectors_df[
+                                    vectors_df["REAL"].isin(selected_realizations)
+                                ]
+                            ),
                             ensemble,
                         )
                     if visualization == VisualizationOptions.STATISTICS:
@@ -483,11 +485,13 @@ class SubplotView(ViewABC):
                         # Show selected realizations - only filter df if realizations filter
                         # query is not performed
                         figure_builder.add_realizations_traces(
-                            vectors_df
-                            if realizations_query
-                            else vectors_df[
-                                vectors_df["REAL"].isin(selected_realizations)
-                            ],
+                            (
+                                vectors_df
+                                if realizations_query
+                                else vectors_df[
+                                    vectors_df["REAL"].isin(selected_realizations)
+                                ]
+                            ),
                             ensemble,
                             color_lightness_scale=150.0,
                         )
@@ -952,9 +956,9 @@ class SubplotView(ViewABC):
             )
 
             # Prevent updates if unchanged
-            options_output: Union[List[Dict[str, str]], NoUpdate] = (
-                new_relative_date_options
-            )
+            options_output: Union[
+                List[Dict[str, str]], NoUpdate
+            ] = new_relative_date_options
             value_output: Union[str, None, NoUpdate] = new_relative_date_value
             if new_relative_date_options == current_relative_date_options:
                 options_output = dash.no_update

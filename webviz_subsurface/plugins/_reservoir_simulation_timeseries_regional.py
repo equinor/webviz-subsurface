@@ -585,9 +585,11 @@ folder, to avoid risk of not extracting the right data.
             vector_value = (
                 current_vector
                 if current_vector in vectors
-                else self.initial_vector
-                if self.initial_vector in vectors
-                else sorted(list(vectors))[0]
+                else (
+                    self.initial_vector
+                    if self.initial_vector in vectors
+                    else sorted(list(vectors))[0]
+                )
             )
             # Update groupby
             groups = ["ENSEMBLE"] + (
@@ -693,7 +695,7 @@ folder, to avoid risk of not extracting the right data.
                 vector=ref_vector,
                 smry_meta=self.smry_meta,
             )
-            (timeseries_traces, df) = per_real_calculations(
+            timeseries_traces, df = per_real_calculations(
                 df=df,
                 ensembles=ensembles,
                 rec_ensembles=self.rec_ensembles,
@@ -933,14 +935,16 @@ def render_single_date_graph(
                 "barmode": "overlay",
                 "bargap": 0.01,
                 "bargroupgap": 0.2,
-                "xaxis": {
-                    "exponentformat": "none",
-                    "tickformat": ".1%",
-                    "hoverformat": ".2%",
-                    "title": title,
-                }
-                if mode == "rec"
-                else {"title": title},
+                "xaxis": (
+                    {
+                        "exponentformat": "none",
+                        "tickformat": ".1%",
+                        "hoverformat": ".2%",
+                        "title": title,
+                    }
+                    if mode == "rec"
+                    else {"title": title}
+                ),
                 "yaxis": {
                     "title": "Count",
                     "tickformat": "d",
@@ -951,14 +955,16 @@ def render_single_date_graph(
     else:
         layout.update(
             {
-                "yaxis": {
-                    "exponentformat": "none",
-                    "tickformat": ".1%",
-                    "hoverformat": ".2%",
-                    "title": title,
-                }
-                if mode == "rec"
-                else {"title": title},
+                "yaxis": (
+                    {
+                        "exponentformat": "none",
+                        "tickformat": ".1%",
+                        "hoverformat": ".2%",
+                        "title": title,
+                    }
+                    if mode == "rec"
+                    else {"title": title}
+                ),
             }
         )
         if date_viz == "per realization":
@@ -977,9 +983,7 @@ def render_single_date_graph(
     )
 
 
-def render_table(
-    stat_df: pd.DataFrame, mode: str, groupby: str, date: str
-) -> Any:
+def render_table(stat_df: pd.DataFrame, mode: str, groupby: str, date: str) -> Any:
     columns = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]

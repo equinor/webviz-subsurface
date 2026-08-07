@@ -36,9 +36,11 @@ class ResamplingFrequencySettings(SettingsGroupABC):
         return [
             wcc.Label(
                 "NB: Disabled for pre-sampled data",
-                style={"font-style": "italic", "font-weight": "bold"}
-                if self._disable_dropdowns
-                else {"display": "none"},
+                style=(
+                    {"font-style": "italic", "font-weight": "bold"}
+                    if self._disable_dropdowns
+                    else {"display": "none"}
+                ),
             ),
             wcc.Dropdown(
                 id=self.register_component_unique_id(

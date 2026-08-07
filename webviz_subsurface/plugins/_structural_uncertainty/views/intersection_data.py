@@ -108,11 +108,13 @@ def well_layout(
     uuid: str, well_names: List[str], value: Optional[str] = None
 ) -> html.Div:
     return html.Div(
-        style={
-            "display": "none",
-        }
-        if value is None
-        else {},
+        style=(
+            {
+                "display": "none",
+            }
+            if value is None
+            else {}
+        ),
         id={"id": uuid, "element": "well-wrapper"},
         children=wcc.Dropdown(
             label="Well",

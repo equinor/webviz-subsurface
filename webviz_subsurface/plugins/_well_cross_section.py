@@ -132,12 +132,14 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     html.Span("Seismic:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("cube"),
-                        options=[
-                            {"label": Path(segy).stem, "value": segy}
-                            for segy in self.segyfiles
-                        ]
-                        if self.segyfiles
-                        else None,
+                        options=(
+                            [
+                                {"label": Path(segy).stem, "value": segy}
+                                for segy in self.segyfiles
+                            ]
+                            if self.segyfiles
+                            else None
+                        ),
                         value=self.segyfiles[0] if self.segyfiles else None,
                         clearable=False,
                         persistence=True,

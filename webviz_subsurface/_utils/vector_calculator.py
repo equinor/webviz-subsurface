@@ -148,7 +148,7 @@ def validate_predefined_expression(
 
 
 def variable_vector_map_from_dict(
-    variable_vector_dict: Dict[str, str]
+    variable_vector_dict: Dict[str, str],
 ) -> List[VariableVectorMapInfo]:
     variable_vector_map: List[VariableVectorMapInfo] = []
     for variable in variable_vector_dict:

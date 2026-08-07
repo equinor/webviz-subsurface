@@ -380,9 +380,11 @@ class ParameterFilter:
                                 if range_from == "all"
                                 else min_max_range[col]
                             ),
-                            value=min_max_range[col]
-                            if reset or col not in values
-                            else values[col],
+                            value=(
+                                min_max_range[col]
+                                if reset or col not in values
+                                else values[col]
+                            ),
                             name=col,
                             uuid=self._uuid,
                             step=10 ** -self._column_precisions[col],

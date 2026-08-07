@@ -602,7 +602,7 @@ class CreateUnitConverter:
     # pylint: disable=invalid-name
     def create_converter_to_SI(
         uscale: float,
-    ) -> Callable[[float,], float]:
+    ) -> Callable[[float,], float,]:
         """Creates callable that converts a quantity from its measurement units to SI units.
 
         Example:
@@ -658,7 +658,7 @@ class CreateUnitConverter:
         @staticmethod
         def fvf(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 CreateUnitConverter.fvf_scale(unit_system)
             )
@@ -666,7 +666,7 @@ class CreateUnitConverter:
         @staticmethod
         def density(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 unit_system.density().value
             )
@@ -674,7 +674,7 @@ class CreateUnitConverter:
         @staticmethod
         def pressure(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 unit_system.pressure().value
             )
@@ -682,7 +682,7 @@ class CreateUnitConverter:
         @staticmethod
         def compressibility(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 1.0 / unit_system.pressure().value
             )
@@ -690,7 +690,7 @@ class CreateUnitConverter:
         @staticmethod
         def viscosity(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 unit_system.viscosity().value
             )
@@ -698,7 +698,7 @@ class CreateUnitConverter:
         @staticmethod
         def dissolved_gas_oil_ratio(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 CreateUnitConverter.rs_scale(unit_system)
             )
@@ -706,7 +706,7 @@ class CreateUnitConverter:
         @staticmethod
         def vaporised_oil_gas_ratio(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 CreateUnitConverter.rv_scale(unit_system)
             )
@@ -714,7 +714,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 1.0 / CreateUnitConverter.fvf_scale(unit_system)
             )
@@ -722,7 +722,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_deriv_press(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/B)/dp
             b_scale = CreateUnitConverter.fvf_scale(unit_system)
             p_scale = unit_system.pressure().value
@@ -732,7 +732,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_deriv_vap_oil(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/B)/dRv
             b_scale = CreateUnitConverter.fvf_scale(unit_system)
             rv_scale = CreateUnitConverter.rv_scale(unit_system)
@@ -744,7 +744,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_visc(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             b_scale = CreateUnitConverter.fvf_scale(unit_system)
             visc_scale = unit_system.viscosity().value
 
@@ -755,7 +755,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_visc_deriv_press(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/(B*mu))/dp
             b_scale = CreateUnitConverter.fvf_scale(unit_system)
             p_scale = unit_system.pressure().value
@@ -768,7 +768,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_visc_deriv_vap_oil(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/(B*mu))/dRv
             b_scale = CreateUnitConverter.fvf_scale(unit_system)
             visc_scale = unit_system.viscosity().value
@@ -781,7 +781,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_gas(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             return CreateUnitConverter.create_converter_to_SI(
                 1.0 / CreateUnitConverter.fvf_gas_scale(unit_system)
             )
@@ -789,7 +789,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_gas_deriv_press(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/B)/dp
             b_scale = CreateUnitConverter.fvf_gas_scale(unit_system)
             p_scale = unit_system.pressure().value
@@ -799,7 +799,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_gas_deriv_vap_oil(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/B)/dRv
             b_scale = CreateUnitConverter.fvf_gas_scale(unit_system)
             rv_scale = CreateUnitConverter.rv_scale(unit_system)
@@ -811,7 +811,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_gas_visc(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             b_scale = CreateUnitConverter.fvf_gas_scale(unit_system)
             visc_scale = unit_system.viscosity().value
 
@@ -822,7 +822,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_gas_visc_deriv_press(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/(B*mu))/dp
             b_scale = CreateUnitConverter.fvf_gas_scale(unit_system)
             p_scale = unit_system.pressure().value
@@ -835,7 +835,7 @@ class CreateUnitConverter:
         @staticmethod
         def recip_fvf_gas_visc_deriv_vap_oil(
             unit_system: EclUnits.UnitSystem,
-        ) -> Callable[[float,], float]:
+        ) -> Callable[[float,], float,]:
             # d(1/(B*mu))/dRv
             b_scale = CreateUnitConverter.fvf_gas_scale(unit_system)
             visc_scale = unit_system.viscosity().value

@@ -290,26 +290,28 @@ def create_graph(
                 html.Span(plot_title, style={"font-weight": "bold"}),
                 wcc.Graph(
                     style={"height": f"{graph_height}vh"},
-                    figure={
-                        "layout": plot_layout(
-                            color_by,
-                            theme,
-                            layout_attributes[plot]["x_axis_title"],
-                            layout_attributes[plot]["y_axis_title"],
-                        ),
-                        "data": create_traces(
-                            data_frame,
-                            color_by,
-                            colors,
-                            phase,
-                            layout_attributes[plot]["df_column"],
-                            layout_attributes[plot]["show_scatter_values"],
-                            layout_attributes[plot]["show_border_values"],
-                            layout_attributes[plot]["show_border_markers"],
-                        ),
-                    }
-                    if not data_frame.empty and plot in layout_attributes
-                    else {},
+                    figure=(
+                        {
+                            "layout": plot_layout(
+                                color_by,
+                                theme,
+                                layout_attributes[plot]["x_axis_title"],
+                                layout_attributes[plot]["y_axis_title"],
+                            ),
+                            "data": create_traces(
+                                data_frame,
+                                color_by,
+                                colors,
+                                phase,
+                                layout_attributes[plot]["df_column"],
+                                layout_attributes[plot]["show_scatter_values"],
+                                layout_attributes[plot]["show_border_values"],
+                                layout_attributes[plot]["show_border_markers"],
+                            ),
+                        }
+                        if not data_frame.empty and plot in layout_attributes
+                        else {}
+                    ),
                 ),
             ]
         ),

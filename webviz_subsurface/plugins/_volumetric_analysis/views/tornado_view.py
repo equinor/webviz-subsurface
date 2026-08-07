@@ -29,13 +29,15 @@ def tornado_plots_layout(figures: list, bottom_display: list) -> html.Div:
                         children=[
                             html.Div(
                                 style={"flex": 1},
-                                children=wcc.Graph(
-                                    config={"displayModeBar": False},
-                                    style={"height": f"{max_height/len(matrix)}vh"},
-                                    figure=fig,
-                                )
-                                if fig is not None
-                                else [],
+                                children=(
+                                    wcc.Graph(
+                                        config={"displayModeBar": False},
+                                        style={"height": f"{max_height/len(matrix)}vh"},
+                                        figure=fig,
+                                    )
+                                    if fig is not None
+                                    else []
+                                ),
                             )
                             for fig in row
                         ]
@@ -204,9 +206,11 @@ def reference_selector(
         label="Reference:",
         id={"id": uuid, "tab": tab, "selector": "Reference"},
         options=[{"label": elm, "value": elm} for elm in volumemodel.sensitivities],
-        value="rms_seed"
-        if "rms_seed" in volumemodel.sensitivities
-        else volumemodel.sensitivities[0],
+        value=(
+            "rms_seed"
+            if "rms_seed" in volumemodel.sensitivities
+            else volumemodel.sensitivities[0]
+        ),
         clearable=False,
     )
 

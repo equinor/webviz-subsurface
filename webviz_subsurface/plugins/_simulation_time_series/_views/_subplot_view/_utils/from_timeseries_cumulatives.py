@@ -97,9 +97,11 @@ def calculate_from_resampled_cumulative_vectors_df(
     vectors_df.set_index(["DATE"], inplace=True)
 
     cumulative_name_map = {
-        vector: create_per_day_vector_name(vector)
-        if as_per_day
-        else create_per_interval_vector_name(vector)
+        vector: (
+            create_per_day_vector_name(vector)
+            if as_per_day
+            else create_per_interval_vector_name(vector)
+        )
         for vector in column_keys
     }
     cumulative_vectors = list(cumulative_name_map.values())
@@ -155,7 +157,7 @@ def datetime_to_intervalstr(date: datetime.datetime, freq: Frequency) -> Optiona
         return f"{date.year}-{date.month:02d}-{date.day:02d}"
     if freq == Frequency.WEEKLY:
         # Note: weekyear may differ from actual year for week numbers 1,52,53.
-        (weekyear, week, _) = date.isocalendar()
+        weekyear, week, _ = date.isocalendar()
         return f"{weekyear}-W{week:02d}"
     if freq == Frequency.MONTHLY:
         return f"{date.year}-{date.month:02d}"

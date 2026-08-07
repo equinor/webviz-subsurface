@@ -675,10 +675,14 @@ folder, to avoid risk of not extracting the right data.
                                     ),
                                     html.Div(
                                         id=self.uuid("view_stat_options"),
-                                        style={"display": "block"}
-                                        if "statistics"
-                                        in self.plot_options.get("visualization", "")
-                                        else {"display": "none"},
+                                        style=(
+                                            {"display": "block"}
+                                            if "statistics"
+                                            in self.plot_options.get(
+                                                "visualization", ""
+                                            )
+                                            else {"display": "none"}
+                                        ),
                                         children=[
                                             wcc.Checklist(
                                                 id=self.uuid("stat_options"),

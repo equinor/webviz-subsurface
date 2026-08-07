@@ -73,9 +73,9 @@ def property_selector(
                 id={"id": get_uuid("property-selector"), "tab": tab},
                 options=[{"label": prop, "value": prop} for prop in properties],
                 multi=multi,
-                value=initial_property
-                if initial_property is not None
-                else properties[0],
+                value=(
+                    initial_property if initial_property is not None else properties[0]
+                ),
                 clearable=False,
             )
         ],

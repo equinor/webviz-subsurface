@@ -304,9 +304,11 @@ class SwatinitQcDataModel:
                     "Response": key,
                     "Water Volume Mrm3": f"{qc_vols[key]/1e6:>10.3f}",
                     "Water Volume Diff": f"{qc_vols[key]/qc_vols['SWATINIT_WVOL']*100:>3.2f} %",
-                    "HC Volume Diff": f"{-qc_vols[key]/qc_vols['SWATINIT_HCVOL']*100:>3.2f} %"
-                    if qc_vols["SWATINIT_HCVOL"] > 0
-                    else "0.00 %",
+                    "HC Volume Diff": (
+                        f"{-qc_vols[key]/qc_vols['SWATINIT_HCVOL']*100:>3.2f} %"
+                        if qc_vols["SWATINIT_HCVOL"] > 0
+                        else "0.00 %"
+                    ),
                 }
             )
         # Last report the SWAT volumes and change from SWATINIT

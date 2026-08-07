@@ -483,9 +483,11 @@ class PVTx(PVxx):
         return self.__compute_quantity(
             key,
             x,
-            lambda curve, point: self.__interpolants[0](point)
-            if self.__single_key
-            else self.__interpolants[0](curve, point),
+            lambda curve, point: (
+                self.__interpolants[0](point)
+                if self.__single_key
+                else self.__interpolants[0](curve, point)
+            ),
             lambda recip_fvf: 1.0 / recip_fvf,
         )
 
@@ -509,15 +511,17 @@ class PVTx(PVxx):
         return self.__compute_quantity(
             key,
             x,
-            lambda curve, point: [
-                self.__interpolants[0](point),
-                self.__interpolants[1](point),
-            ]
-            if self.__single_key
-            else [
-                self.__interpolants[0](curve, point),
-                self.__interpolants[1](curve, point),
-            ],
+            lambda curve, point: (
+                [
+                    self.__interpolants[0](point),
+                    self.__interpolants[1](point),
+                ]
+                if self.__single_key
+                else [
+                    self.__interpolants[0](curve, point),
+                    self.__interpolants[1](curve, point),
+                ]
+            ),
             lambda dense_vector: dense_vector[0] / dense_vector[1],
         )
 
@@ -710,7 +714,7 @@ class FluidImplementation(abc.ABC):
 
     def pvtx_unit_converter(
         self,
-    ) -> Optional[Tuple[Callable[[float,], float,], ConvertUnits]]:
+    ) -> Optional[Tuple[Callable[[float,], float,], ConvertUnits,]]:
         """Creates a tuple consisting of a callable and a pseudo ConvertUnits
         object for PVTx interpolants which both keep the old unit system.
 

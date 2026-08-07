@@ -581,7 +581,7 @@ class Oil(FluidImplementation):
 
     def live_oil_unit_converter(
         self, unit_system: Union[int, EclUnits.UnitSystem]
-    ) -> Tuple[Callable[[float,], float,], ConvertUnits]:
+    ) -> Tuple[Callable[[float,], float,], ConvertUnits,]:
         """Creates a tuple consisting of a callable and a ConvertUnits object
         for unit conversions for live oil.
 

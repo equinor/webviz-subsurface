@@ -159,11 +159,11 @@ class FormationFigure:
                     "y0": row[top_col],
                     "y1": row[base_col],
                     "line": {"color": "#646567", "width": 1.0},
-                    "fillcolor": formation_colors[
-                        list(df["ZONE"].unique()).index(row["ZONE"])
-                    ]
-                    if fill_color
-                    else None,
+                    "fillcolor": (
+                        formation_colors[list(df["ZONE"].unique()).index(row["ZONE"])]
+                        if fill_color
+                        else None
+                    ),
                     "type": "rect",
                     "layer": "below",
                 }

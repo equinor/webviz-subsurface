@@ -248,9 +248,9 @@ def load_pvt_dataframe(
         pressures: np.ndarray = np.zeros(21)
 
         if oil and not oil.is_dead_oil_const_compr():
-            (pressure_min, pressure_max) = oil.range_independent(0)
+            pressure_min, pressure_max = oil.range_independent(0)
         elif gas:
-            (pressure_min, pressure_max) = gas.range_independent(0)
+            pressure_min, pressure_max = gas.range_independent(0)
         else:
             raise NotImplementedError("Missing PVT data")
 
@@ -296,7 +296,7 @@ def load_pvt_dataframe(
                     column_ratio_unit.extend([oil.ratio_unit() for _ in pressures])
 
                 else:
-                    (ratio, pressure) = (
+                    ratio, pressure = (
                         region.get_keys(),
                         region.get_independents(),
                     )
@@ -331,12 +331,12 @@ def load_pvt_dataframe(
 
             for region_index, region in enumerate(gas.regions()):
                 if gas.is_wet_gas():
-                    (pressure, ratio) = (
+                    pressure, ratio = (
                         region.get_keys(),
                         region.get_independents(),
                     )
                 else:
-                    (ratio, pressure) = (
+                    ratio, pressure = (
                         region.get_keys(),
                         region.get_independents(),
                     )

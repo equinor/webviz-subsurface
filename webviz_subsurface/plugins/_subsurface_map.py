@@ -100,18 +100,20 @@ that you are reading the correct data.
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:
         return [
-            (get_path, [{"path": Path(self.jsonfile)}])
-            if self.jsonfile
-            else (
-                get_uncompressed_data,
-                [
-                    {
-                        "ensemble_path": self.ensemble_path,
-                        "map_value": self.map_value,
-                        "flow_value": self.flow_value,
-                        "time_step": self.time_step,
-                    }
-                ],
+            (
+                (get_path, [{"path": Path(self.jsonfile)}])
+                if self.jsonfile
+                else (
+                    get_uncompressed_data,
+                    [
+                        {
+                            "ensemble_path": self.ensemble_path,
+                            "map_value": self.map_value,
+                            "flow_value": self.flow_value,
+                            "time_step": self.time_step,
+                        }
+                    ],
+                )
             )
         ]
 

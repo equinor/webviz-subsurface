@@ -34,9 +34,9 @@ class ScatterPlot:
                 data_frame=df[["REAL", response, param]],
                 x=param,
                 y=response,
-                trendline="ols"
-                if plot_trendline and df[response].nunique() > 1
-                else None,
+                trendline=(
+                    "ols" if plot_trendline and df[response].nunique() > 1 else None
+                ),
                 trendline_color_override="#243746",
                 hover_data=["REAL", response, param],
                 framed=False,

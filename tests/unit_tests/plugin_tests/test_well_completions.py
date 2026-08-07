@@ -61,7 +61,7 @@ def test_extract_stratigraphy():
                     "name": "ZoneA.1",
                     "color": "#222222",  # color from zone_color_mapping
                 },
-                {"name": "ZoneA.2", "color": "#FFFFFF"}  # color from theme_colors
+                {"name": "ZoneA.2", "color": "#FFFFFF"},  # color from theme_colors
                 # ZoneA.3 is not here because it is not in the layer_zone_mapping
             ],
         },
@@ -71,7 +71,7 @@ def test_extract_stratigraphy():
             "subzones": [
                 {
                     "name": "ZoneB.1",
-                    "color": "#FFFFFF"  # color from theme_colors
+                    "color": "#FFFFFF",  # color from theme_colors
                     # No subzones here because ZoneB.1.1 is not in the layer_zone_mapping
                 }
             ],

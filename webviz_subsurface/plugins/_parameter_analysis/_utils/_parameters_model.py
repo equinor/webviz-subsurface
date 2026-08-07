@@ -186,9 +186,11 @@ class ParametersModel:
             .update_xaxes(matches=None)
             .for_each_trace(
                 lambda t: t.update(
-                    text=t["text"].replace("VALUE", "")
-                    if t["text"] is not None
-                    else None
+                    text=(
+                        t["text"].replace("VALUE", "")
+                        if t["text"] is not None
+                        else None
+                    )
                 )
             )
         )

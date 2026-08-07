@@ -146,9 +146,11 @@ def selector_view(
             ),
             wcc.Selectors(
                 label="Surface",
-                children=[surface_select_view(get_uuid=get_uuid, tab="response")]
-                if surface_folders is not None
-                else [html.Div()],
+                children=(
+                    [surface_select_view(get_uuid=get_uuid, tab="response")]
+                    if surface_folders is not None
+                    else [html.Div()]
+                ),
             ),
         ],
     )
@@ -187,9 +189,11 @@ def property_response_view(
                         ),
                         html.Div(
                             style={"height": "39vh"},
-                            children=surface_view(get_uuid=get_uuid, tab="response")
-                            if surface_folders is not None
-                            else None,
+                            children=(
+                                surface_view(get_uuid=get_uuid, tab="response")
+                                if surface_folders is not None
+                                else None
+                            ),
                         ),
                     ],
                 ),

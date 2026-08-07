@@ -461,7 +461,7 @@ class GridVizService:
             grid = _calc_cropped_grid(grid, cell_filter)
         et_crop_s = timer.lap_s()
 
-        cell_id, isect_pt = _raypick_in_grid(grid, ray)  # type:ignore
+        cell_id, isect_pt = _raypick_in_grid(grid, ray)  # type: ignore
         et_pick_s = timer.lap_s()
         if cell_id is None:
             return None

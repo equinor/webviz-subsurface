@@ -504,7 +504,9 @@ class CO2Migration(WebvizPluginABC):
             ensemble: str,
             current_views: List[Any],
             thresholds: List[float],
-        ) -> Tuple[List[Dict[Any, Any]], Optional[List[Any]], Union[Dict[Any, Any], NoUpdate]]:
+        ) -> Tuple[
+            List[Dict[Any, Any]], Optional[List[Any]], Union[Dict[Any, Any], NoUpdate]
+        ]:
             # Unable to clear cache (when needed) without the protected member
             # pylint: disable=protected-access
             current_thresholds = dict(zip(self._threshold_ids, thresholds))

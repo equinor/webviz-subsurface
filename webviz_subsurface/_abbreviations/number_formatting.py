@@ -12,25 +12,27 @@ SI_PREFIXES = json.loads((_DATA_PATH / "si_prefixes.json").read_text())
 def table_statistics_base() -> List[Tuple[str, dict]]:
     return [
         (
-            i,
-            {
-                "type": "numeric",
-                "format": {
-                    "locale": {"symbol": ["", ""]},
-                    "specifier": "$.4s",
+            (
+                i,
+                {
+                    "type": "numeric",
+                    "format": {
+                        "locale": {"symbol": ["", ""]},
+                        "specifier": "$.4s",
+                    },
                 },
-            },
-        )
-        if i != "Stddev"
-        else (
-            i,
-            {
-                "type": "numeric",
-                "format": {
-                    "locale": {"symbol": ["", ""]},
-                    "specifier": "$.3s",
+            )
+            if i != "Stddev"
+            else (
+                i,
+                {
+                    "type": "numeric",
+                    "format": {
+                        "locale": {"symbol": ["", ""]},
+                        "specifier": "$.3s",
+                    },
                 },
-            },
+            )
         )
         for i in ["Mean", "Stddev", "Minimum", "P90", "P10", "Maximum"]
     ]
@@ -88,7 +90,7 @@ def si_prefixed(
     if number == 0:
         return number_formatter(0, SI_PREFIXES["0"])
 
-    (exp_div_3, log10_rem) = divmod(math.log10(math.fabs(number)), 3)
+    exp_div_3, log10_rem = divmod(math.log10(math.fabs(number)), 3)
     # Take log 10 and then mod 3 as we have one prefix per 10^3, the divisor*3 is then the exponent
     return (
         number_formatter(-(10**log10_rem), SI_PREFIXES[str(int(exp_div_3 * 3))])

@@ -290,12 +290,14 @@ def _create_polygon_legend(
                     html.Div(
                         style={
                             **square,
-                            "backgroundColor": "transparent"
-                            if outline
-                            else "rgba(0, 172, 0, 0.47)",
-                            "border": "3px solid rgba(0, 172, 0, 0.70)"
-                            if outline
-                            else "transparent",
+                            "backgroundColor": (
+                                "transparent" if outline else "rgba(0, 172, 0, 0.47)"
+                            ),
+                            "border": (
+                                "3px solid rgba(0, 172, 0, 0.70)"
+                                if outline
+                                else "transparent"
+                            ),
                         }
                     ),
                     html.Div("Containment Polygon", style=text),
@@ -310,12 +312,14 @@ def _create_polygon_legend(
                     html.Div(
                         style={
                             **square,
-                            "backgroundColor": "transparent"
-                            if outline
-                            else "rgba(200, 0, 0, 0.47)",
-                            "border": "3px solid rgba(200, 0, 0, 0.70)"
-                            if outline
-                            else "transparent",
+                            "backgroundColor": (
+                                "transparent" if outline else "rgba(200, 0, 0, 0.47)"
+                            ),
+                            "border": (
+                                "3px solid rgba(200, 0, 0, 0.70)"
+                                if outline
+                                else "transparent"
+                            ),
                         }
                     ),
                     html.Div("No-go Polygon", style=text),

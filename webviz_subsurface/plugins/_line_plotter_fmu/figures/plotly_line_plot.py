@@ -46,21 +46,27 @@ class PlotlyLinePlot:
                         "x": real_df[x_column],
                         "y": real_df[y_column],
                         "hovertemplate": (
-                            f"Realization: {real}, Ensemble: {ensemble}"
-                            f"<br>{color_column}: {real_df[color_column].unique()[0]}"
-                        )
-                        if color_column is not None
-                        else f"Realization {real}, Ensemble: {ensemble}",
+                            (
+                                f"Realization: {real}, Ensemble: {ensemble}"
+                                f"<br>{color_column}: {real_df[color_column].unique()[0]}"
+                            )
+                            if color_column is not None
+                            else f"Realization {real}, Ensemble: {ensemble}"
+                        ),
                         "name": ensemble,
                         "text": real,
                         "legendgroup": ensemble,
                         "marker": {
-                            "color": "black"
-                            if real in highlight_reals
-                            else set_real_color(real_no=real, df_norm=dframe)
-                            if color_column is not None
-                            else self._ensemble_colors.get(
-                                ensemble, "rgba(128,128,128,0.2)"
+                            "color": (
+                                "black"
+                                if real in highlight_reals
+                                else (
+                                    set_real_color(real_no=real, df_norm=dframe)
+                                    if color_column is not None
+                                    else self._ensemble_colors.get(
+                                        ensemble, "rgba(128,128,128,0.2)"
+                                    )
+                                )
                             ),
                         },
                         "opacity": opacity,

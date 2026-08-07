@@ -227,9 +227,11 @@ def _vector_breakdown(vector: str) -> Tuple[str, Optional[str], Optional[str]]:
             fip = (
                 "NUM"
                 if SIMULATION_VECTOR_TERMINOLOGY[vector_name]["type"] == "region"
-                else "FIELD"
-                if SIMULATION_VECTOR_TERMINOLOGY[vector_name]["type"] == "field"
-                else None
+                else (
+                    "FIELD"
+                    if SIMULATION_VECTOR_TERMINOLOGY[vector_name]["type"] == "field"
+                    else None
+                )
             )
 
         except KeyError:

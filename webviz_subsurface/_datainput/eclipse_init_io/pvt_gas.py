@@ -412,7 +412,7 @@ class Gas(FluidImplementation):
 
     def wet_gas_unit_converter(
         self, unit_system: Union[int, EclUnits.UnitSystem]
-    ) -> Tuple[Callable[[float,], float,], ConvertUnits]:
+    ) -> Tuple[Callable[[float,], float,], ConvertUnits,]:
         """Creates a tuple consisting of a callable and a ConvertUnits object
         for unit conversions for wet gas.
 

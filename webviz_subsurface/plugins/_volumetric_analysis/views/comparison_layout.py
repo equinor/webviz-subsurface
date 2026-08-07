@@ -22,13 +22,15 @@ def comparison_qc_plots_layout(
     return html.Div(
         children=[
             html.Div(
-                children=wcc.Graph(
-                    config={"displayModeBar": False},
-                    style={"height": "21vh"},
-                    figure=fig_diff_vs_real,
-                )
-                if real_plot
-                else [],
+                children=(
+                    wcc.Graph(
+                        config={"displayModeBar": False},
+                        style={"height": "21vh"},
+                        figure=fig_diff_vs_real,
+                    )
+                    if real_plot
+                    else []
+                ),
             ),
             wcc.FlexBox(
                 style={"height": "31vh" if real_plot else "52vh"},
@@ -53,13 +55,15 @@ def comparison_qc_plots_layout(
                 style={"height": "29vh"},
                 children=[
                     wcc.Header("Highlighted data"),
-                    wcc.Graph(
-                        config={"displayModeBar": False},
-                        style={"height": "25vh"},
-                        figure=barfig,
-                    )
-                    if barfig is not None
-                    else html.Div("No data within highlight criteria"),
+                    (
+                        wcc.Graph(
+                            config={"displayModeBar": False},
+                            style={"height": "25vh"},
+                            figure=barfig,
+                        )
+                        if barfig is not None
+                        else html.Div("No data within highlight criteria")
+                    ),
                 ],
             ),
         ]

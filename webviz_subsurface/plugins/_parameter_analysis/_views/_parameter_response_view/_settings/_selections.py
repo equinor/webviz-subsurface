@@ -54,9 +54,11 @@ class ParamRespSelections(SettingsGroupABC):
                 data=self._vectormodel.vector_selector_data,
                 persistence=True,
                 persistence_type="session",
-                selectedTags=["FOPT"]
-                if "FOPT" in self._vectormodel.vectors
-                else self._vectormodel.vectors[:1],
+                selectedTags=(
+                    ["FOPT"]
+                    if "FOPT" in self._vectormodel.vectors
+                    else self._vectormodel.vectors[:1]
+                ),
                 numSecondsUntilSuggestionsAreShown=0.5,
                 lineBreakAfterTag=True,
             ),

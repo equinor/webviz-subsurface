@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""Batch conversion of UNSMRY files to Apache Arrow IPC file format
-"""
+"""Batch conversion of UNSMRY files to Apache Arrow IPC file format"""
 
 import argparse
 import glob

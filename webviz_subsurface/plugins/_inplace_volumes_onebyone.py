@@ -331,9 +331,11 @@ aggregated_data/parameters.csv)
                 {"label": volume_description(i), "value": i} for i in self.responses
             ],
             clearable=False,
-            value=self.initial_response
-            if self.initial_response in self.responses
-            else self.responses[0],
+            value=(
+                self.initial_response
+                if self.initial_response in self.responses
+                else self.responses[0]
+            ),
         )
 
     @property

@@ -132,7 +132,7 @@ class Prefix:
         def __truediv__(self, other):  # type: ignore[no-untyped-def]
             raise NotImplementedError("Prefixes can only be multiplied with a Unit.")
 
-    micro = Base(1.0e-6, "\u00B5")
+    micro = Base(1.0e-6, "\u00b5")
     milli = Base(1.0e-3, "m")
     centi = Base(1.0e-2, "c")
     deci = Base(1.0e-1, "d")

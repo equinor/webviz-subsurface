@@ -50,9 +50,11 @@ def clear_all_apply_dialog_buttons(
             ),
             dbc.Button(
                 "Apply",
-                style={"padding": "0 20px", "visibility": "hidden"}
-                if apply_disabled
-                else {"padding": "0 20px"},
+                style=(
+                    {"padding": "0 20px", "visibility": "hidden"}
+                    if apply_disabled
+                    else {"padding": "0 20px"}
+                ),
                 className="mr-1",
                 id={"id": uuid, "dialog_id": dialog_id, "element": "apply"},
             ),
