@@ -302,9 +302,7 @@ def update_maps(
                         create_leaflet_well_marker_layer(wells, surface2)
                     )
 
-        map1_layers = (
-            surface_layers if update_controls["map1"]["update"] else no_update
-        )
+        map1_layers = surface_layers if update_controls["map1"]["update"] else no_update
         map2_layers = (
             surface_layers2 if update_controls["map2"]["update"] else no_update
         )
