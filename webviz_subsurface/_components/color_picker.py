@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 from dash import Dash, Input, Output, State, dcc, html
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 
 
@@ -148,7 +148,7 @@ class ColorPicker:
         return style_data
 
     @property
-    def color_store_id(self) -> Input:
+    def color_store_id(self) -> dict:
         """Dom id for the current colors. Use the 'data' attribute in a callback
         to get the list of current colors"""
         return {"id": self._uuid, "element": "store"}

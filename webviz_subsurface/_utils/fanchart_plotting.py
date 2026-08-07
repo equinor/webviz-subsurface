@@ -186,7 +186,7 @@ def get_fanchart_traces(
             "legendgroup": legend_group,
             "showlegend": False,
         }
-        if legendrank:
+        if legendrank is not None:
             trace["legendrank"] = legendrank
         if not show_hoverinfo:
             trace["hoverinfo"] = "skip"

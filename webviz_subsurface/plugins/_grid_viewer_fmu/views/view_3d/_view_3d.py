@@ -1,10 +1,11 @@
 from dataclasses import asdict
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import jwt
 import numpy as np
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, html, no_update
+from dash._callback import NoUpdate
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
@@ -134,13 +135,14 @@ class View3D(ViewABC):
                 property_spec = PropertySpec(prop_name=prop[0], prop_date=date[0])
 
             realization = realizations[0]
+            bounds_out: Union[List[float], None, NoUpdate]
 
             if not bounds or not layers[0]["bounds"]:
                 geometrics = self.grid_provider.get_3dgrid(realization).get_geometrics(
                     allcells=True, return_dict=True
                 )
 
-                bounds = [
+                bounds_out = [
                     geometrics["xmin"],
                     geometrics["ymin"],
                     geometrics["xmax"],
@@ -155,7 +157,7 @@ class View3D(ViewABC):
                     -geometrics["zmin"],
                 ]
             else:
-                bounds = no_update
+                bounds_out = no_update
             provider_id = self.grid_provider.provider_id()
 
             cell_filter = CellFilter(
@@ -197,7 +199,7 @@ class View3D(ViewABC):
             layers[1]["propertiesData"] = f"/grid/scalar/{geometry_and_property_token}"
             layers[1]["colorMapRange"] = value_range
             layers[1]["colorMapName"] = colormap
-            return layers, bounds
+            return layers, bounds_out
 
         @callback(
             Output(

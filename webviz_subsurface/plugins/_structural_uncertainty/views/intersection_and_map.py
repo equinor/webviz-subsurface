@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import webviz_core_components as wcc
 from dash import html
@@ -78,7 +78,7 @@ def map_layout(
     draw_polyline: bool = False,
 ) -> html.Div:
     synced_uuids = synced_uuids if synced_uuids else []
-    props: Optional[Dict] = (
+    props: Dict[str, Any] = (
         {
             "drawTools": {
                 "drawMarker": False,

@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Any, Callable, Optional, Union
 
 import pandas as pd
 import webviz_core_components as wcc
@@ -172,7 +172,7 @@ def main_view(
     )
 
 
-def tab_view_layout(main_layout: list, sidebar_layout: list) -> wcc.FlexBox:
+def tab_view_layout(main_layout: Any, sidebar_layout: list) -> wcc.FlexBox:
     return wcc.FlexBox(
         children=[
             wcc.Frame(

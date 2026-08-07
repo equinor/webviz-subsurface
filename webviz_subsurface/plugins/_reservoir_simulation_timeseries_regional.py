@@ -11,7 +11,7 @@ import pandas as pd
 import webviz_core_components as wcc
 import yaml
 from dash import ALL, Dash, Input, Output, State, callback_context, dcc, html
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -621,7 +621,7 @@ folder, to avoid risk of not extracting the right data.
         )
         def _render_charts(  # pylint: disable=too-many-locals
             date: str, _: Any, fip_array: str
-        ):
+        ) -> Any:
             # TODO(Sigurd) Currently giving up on deciding on the return type for
             # _render_charts() above. Some of the mypy errors indicate that there
             # are some errors in the structure of the return values of this function
@@ -979,7 +979,7 @@ def render_single_date_graph(
 
 def render_table(
     stat_df: pd.DataFrame, mode: str, groupby: str, date: str
-) -> DataTable:
+) -> Any:
     columns = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]
@@ -1030,25 +1030,23 @@ def render_table(
                     "P90": df["p90"].iat[0],
                 }
             )
-    columns = [
+    table_columns: Any = [
         {**{"name": i[0], "id": i[0]}, **i[1]}
         for i in deepcopy(ReservoirSimulationTimeSeriesRegional.TABLE_STATISTICS)
     ]
     if mode == "rec":
-        for col in columns:
+        for col in table_columns:
             try:
                 col["format"]["specifier"] = ".2%"
             except KeyError:
                 pass
-    return (
-        DataTable(
-            sort_action="native",
-            filter_action="native",
-            page_action="native",
-            page_size=10,
-            data=table,
-            columns=columns,
-        ),
+    return DataTable(
+        sort_action="native",
+        filter_action="native",
+        page_action="native",
+        page_size=10,
+        data=table,
+        columns=table_columns,
     )
 
 

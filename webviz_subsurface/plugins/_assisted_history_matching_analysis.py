@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 import webviz_core_components as wcc
 from dash import Dash, Input, Output, dcc, html
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE

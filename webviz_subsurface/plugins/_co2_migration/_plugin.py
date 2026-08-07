@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, Patch, State, callback, ctx, html, no_update
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -503,7 +504,7 @@ class CO2Migration(WebvizPluginABC):
             ensemble: str,
             current_views: List[Any],
             thresholds: List[float],
-        ) -> Tuple[List[Dict[Any, Any]], Optional[List[Any]], Dict[Any, Any]]:
+        ) -> Tuple[List[Dict[Any, Any]], Optional[List[Any]], Union[Dict[Any, Any], NoUpdate]]:
             # Unable to clear cache (when needed) without the protected member
             # pylint: disable=protected-access
             current_thresholds = dict(zip(self._threshold_ids, thresholds))

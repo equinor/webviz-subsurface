@@ -1,10 +1,11 @@
 import copy
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import dash
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Input, Output, State, callback, dcc, html
+from dash._callback import NoUpdate
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -315,35 +316,39 @@ class TimeSeriesSettings(SettingsGroupABC):
             )
 
             # Get new custom vector definitions
-            new_custom_vector_definitions = get_vector_definitions_from_expressions(
+            new_custom_vector_definitions_dict = get_vector_definitions_from_expressions(
                 new_expressions
             )
             for key, value in self._custom_vector_definitions_base.items():
-                if key not in new_custom_vector_definitions:
-                    new_custom_vector_definitions[key] = value
+                if key not in new_custom_vector_definitions_dict:
+                    new_custom_vector_definitions_dict[key] = value
 
             # Prevent updates if unchanged
-            if new_custom_vector_definitions == current_custom_vector_definitions:
-                new_custom_vector_definitions = dash.no_update
+            new_custom_vector_definitions_out: Union[
+                Dict[str, VectorDefinition], NoUpdate
+            ] = new_custom_vector_definitions_dict
+            if new_custom_vector_definitions_dict == current_custom_vector_definitions:
+                new_custom_vector_definitions_out = dash.no_update
 
+            new_selected_vectors_out: Union[List[str], NoUpdate] = new_selected_vectors
             if new_selected_vectors == current_selected_vectors:
-                new_selected_vectors = dash.no_update
+                new_selected_vectors_out = dash.no_update
 
             # If selected expressions are edited
             # - Only trigger graph data update property when needed,
             # i.e. names are unchanged and selectedNodes for VectorSelector remains unchanged.
-            new_graph_data_has_changed_counter = dash.no_update
+            new_graph_data_has_changed_counter: Union[int, NoUpdate] = dash.no_update
             if (
                 new_selected_expressions != current_selected_expressions
-                and new_selected_vectors == dash.no_update
+                and new_selected_vectors_out == dash.no_update
             ):
                 new_graph_data_has_changed_counter = graph_data_has_changed_counter + 1
 
             return [
                 new_expressions,
                 new_vector_selector_data,
-                new_selected_vectors,
-                new_custom_vector_definitions,
+                new_selected_vectors_out,
+                new_custom_vector_definitions_out,
                 new_graph_data_has_changed_counter,
             ]
 

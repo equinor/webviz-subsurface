@@ -1,6 +1,6 @@
 import webviz_core_components as wcc
 from dash import html
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 
 
 def uncertainty_table_layout(

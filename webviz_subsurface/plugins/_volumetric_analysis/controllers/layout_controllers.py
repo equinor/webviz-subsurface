@@ -1,6 +1,7 @@
-from typing import Callable
+from typing import Any, Callable, Dict, Union
 
 from dash import ALL, Input, Output, State, callback, callback_context, no_update
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 
 from ..utils.utils import update_relevant_components
@@ -23,6 +24,7 @@ def layout_controllers(get_uuid: Callable) -> None:
     ) -> tuple:
         ctx = callback_context.triggered[0]
         initial_pages = {"voldist": "custom", "tornado": "torn_multi"}
+        page_output: Union[Dict[str, str], NoUpdate] = previous_page
 
         # handle initial callback
         if ctx["prop_id"] == ".":
@@ -31,7 +33,7 @@ def layout_controllers(get_uuid: Callable) -> None:
                 if not tab_selected in initial_pages
                 else initial_pages[tab_selected]
             )
-            previous_page = initial_pages
+            page_output = initial_pages
 
         elif "tabs" in ctx["prop_id"]:
             page_selected = (
@@ -39,14 +41,14 @@ def layout_controllers(get_uuid: Callable) -> None:
                 if not tab_selected in initial_pages
                 else previous_page[tab_selected]
             )
-            previous_page = no_update
+            page_output = no_update
 
         else:
             for button_id in button_ids:
                 if button_id["button"] in ctx["prop_id"]:
                     page_selected = previous_page[tab_selected] = button_id["button"]
 
-        return page_selected, previous_page
+        return page_selected, page_output
 
     @callback(
         Output({"id": get_uuid("selections"), "button": ALL}, "style"),

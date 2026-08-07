@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 from dash import Dash, Input, Output, State, callback_context, dcc, html
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE

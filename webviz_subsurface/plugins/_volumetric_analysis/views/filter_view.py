@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import webviz_core_components as wcc
 from dash import html
@@ -36,7 +36,7 @@ def filter_dropdowns(
     hide_selectors: Optional[list] = None,
 ) -> html.Div:
     """Makes dropdowns for each selector"""
-    dropdowns_layout: List[html.Div] = []
+    dropdowns_layout: List[Any] = []
     hide_selectors = ["SENSNAME", "SENSTYPE", "SENSCASE"] + (
         hide_selectors if hide_selectors is not None else []
     )

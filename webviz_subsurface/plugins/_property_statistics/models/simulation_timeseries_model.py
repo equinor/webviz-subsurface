@@ -70,7 +70,7 @@ class SimulationTimeSeriesModel:
     def get_vector_df(
         self,
         ensemble: str,
-        realizations: list,
+        realizations: Optional[list],
         vectors: Optional[list] = None,
     ) -> pd.DataFrame:
         vectors = vectors if vectors is not None else self._vector_names

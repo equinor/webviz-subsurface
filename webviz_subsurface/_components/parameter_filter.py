@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 from uuid import uuid4
 
 import numpy as np
@@ -347,7 +347,7 @@ class ParameterFilter:
             slider_id: List[dict],
             selects: list,
             select_id: List[dict],
-        ) -> Tuple[list, int]:
+        ) -> Tuple[Any, Any]:
             ctx = callback_context.triggered[0]["prop_id"]
             if not ensembles:
                 raise PreventUpdate

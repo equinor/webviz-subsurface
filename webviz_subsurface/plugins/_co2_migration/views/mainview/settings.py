@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback, dcc, html, no_update
+from dash._callback import NoUpdate
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
@@ -123,7 +124,7 @@ class ViewSettings(SettingsGroupABC):
         self._menu_options = menu_options
         self._content = content
 
-    def layout(self) -> List[Component]:
+    def layout(self) -> List[Any]:
         menu_layout = []
         if self._content["maps"]:
             menu_layout += [
@@ -248,7 +249,7 @@ class ViewSettings(SettingsGroupABC):
         )
         def set_formations(
             prop: str, ensemble: str, current_value: str
-        ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        ) -> Tuple[List[Dict[str, Any]], Union[str, None, NoUpdate]]:
             if ensemble is None:
                 return [], None
             surface_provider = self._ensemble_surface_providers[ensemble]
@@ -263,7 +264,7 @@ class ViewSettings(SettingsGroupABC):
                 warnings.warn(warning + ".gri")
             # Formation names
             formations = [{"label": v.title(), "value": v} for v in surfaces]
-            picked_formation = None
+            picked_formation: Union[str, None, NoUpdate] = None
             if len(formations) != 0:
                 if current_value is None and self._initial_surface in surfaces:
                     picked_formation = self._initial_surface

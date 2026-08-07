@@ -1,9 +1,10 @@
 import datetime
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dash
 import pandas as pd
 from dash import Input, Output, State, callback
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile, WebvizPluginABC
 from webviz_config._theme_class import WebvizConfigTheme
@@ -911,7 +912,11 @@ class SubplotView(ViewABC):
             relative_date_value: Optional[str],
             current_relative_date_options: List[Dict[str, str]],
             current_relative_date_value: Optional[str],
-        ) -> Tuple[List[Dict[str, str]], Optional[str], Dict[str, str]]:
+        ) -> Tuple[
+            Union[List[Dict[str, str]], NoUpdate],
+            Union[str, None, NoUpdate],
+            Dict[str, str],
+        ]:
             """This callback updates dropdown based on selected resampling frequency selection
             and hide trace options (History and Observation) when a relative date is selected.
 
@@ -947,10 +952,14 @@ class SubplotView(ViewABC):
             )
 
             # Prevent updates if unchanged
+            options_output: Union[List[Dict[str, str]], NoUpdate] = (
+                new_relative_date_options
+            )
+            value_output: Union[str, None, NoUpdate] = new_relative_date_value
             if new_relative_date_options == current_relative_date_options:
-                new_relative_date_options = dash.no_update
+                options_output = dash.no_update
             if new_relative_date_value == current_relative_date_value:
-                new_relative_date_value = dash.no_update
+                value_output = dash.no_update
 
             # Convert to Optional[datetime.datetime]
             relative_date: Optional[datetime.datetime] = (
@@ -963,7 +972,7 @@ class SubplotView(ViewABC):
             )
 
             return (
-                new_relative_date_options,
-                new_relative_date_value,
+                options_output,
+                value_output,
                 trace_options_style,
             )

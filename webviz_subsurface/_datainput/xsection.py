@@ -144,6 +144,8 @@ class XSectionFigure:
     ) -> None:
         """Input an XTGeo Well object and plot it."""
         well = self._well
+        if well is None:
+            raise ValueError("Well is None, cannot plot")
 
         # reduce the well data by Pandas operations
         dfr = well.dataframe
@@ -169,6 +171,7 @@ class XSectionFigure:
 
     def _plot_well_traj(self, zvals: np.ndarray, hvals: np.ndarray) -> None:
         """Plot the trajectory as a black line"""
+        assert self._well is not None
 
         zvals_copy = ma.masked_where(zvals < self._zmin, zvals)
         hvals_copy = ma.masked_where(zvals < self._zmin, hvals)
@@ -244,6 +247,7 @@ class XSectionFigure:
             hvals (ndarray): The numpy Length  array.
             facieslogname (str): name of the facies log.
         """
+        assert self._well is not None
 
         if facieslogname not in df.columns:
             return

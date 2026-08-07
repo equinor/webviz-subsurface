@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dcc, html
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 
 from ._business_logic import SwatinitQcDataModel
 from ._markdown import (
@@ -91,7 +91,7 @@ def plugin_main_layout(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> wc
 
 class TabLayout(wcc.Tab):
     def __init__(
-        self, tab_label: str, selections_layout: Optional[list], main_layout: list
+        self, tab_label: str, selections_layout: Any, main_layout: Any
     ) -> None:
         flex_children = []
         if selections_layout is not None:

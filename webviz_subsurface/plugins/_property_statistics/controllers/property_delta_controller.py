@@ -1,8 +1,9 @@
-from typing import Callable, Tuple
+from typing import Any, Callable, Tuple, Union
 
 import pandas as pd
 import plotly.graph_objects as go
 from dash import ALL, Dash, Input, Output, html
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import SurfaceLeafletModel
@@ -43,7 +44,7 @@ def property_delta_controller(
         prop: str,
         selectors: list,
         clickdata: dict,
-    ) -> Tuple[go.Figure, html.Div]:
+    ) -> Tuple[go.Figure, Union[html.Div, DataTable]]:
         # Prevent update if some filters are empty
         if not all(filt for filt in selectors):
             raise PreventUpdate
@@ -57,6 +58,7 @@ def property_delta_controller(
             aggregation=sortby,
         )
 
+        wrapper: Union[html.Div, DataTable]
         if plot_type == "surface":
             # Get selected bar or get highest delta bar if none is selected
             label = (

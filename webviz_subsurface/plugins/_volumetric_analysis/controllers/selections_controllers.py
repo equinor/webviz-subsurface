@@ -1,7 +1,8 @@
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import webviz_core_components as wcc
 from dash import ALL, Input, Output, State, callback, callback_context, no_update
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._models import InplaceVolumesModel
@@ -326,8 +327,9 @@ def selections_controllers(
             if selector not in page_filter_settings:
                 continue
             options = [x["value"] for x in page_filter_settings[selector]["options"]]
-            multi = selector in selected_data
+            multi: Union[bool, NoUpdate] = selector in selected_data
             selector_is_multi = page_filter_settings[selector]["multi"]
+            values: Union[List[str], NoUpdate]
             if not multi and selector_is_multi:
                 values = [
                     (
@@ -339,7 +341,8 @@ def selections_controllers(
             elif multi and not selector_is_multi:
                 values = options
             else:
-                multi = values = no_update
+                multi = no_update
+                values = no_update
             output[selector] = {"multi": multi, "values": values}
 
         # filter tornado on correct fluid based on volume response chosen

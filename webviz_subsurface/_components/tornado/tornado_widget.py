@@ -15,7 +15,7 @@ from dash import (
     dcc,
     html,
 )
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS

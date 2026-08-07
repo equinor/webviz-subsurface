@@ -1,6 +1,6 @@
-from typing import Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from dash import ALL, Input, Output, State, callback, callback_context
+from dash import ALL, Input, Output, State, callback, callback_context, html
 from dash.exceptions import PreventUpdate
 
 from ._business_logic import SwatinitQcDataModel
@@ -151,7 +151,7 @@ def plugin_callbacks(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> None
         groupby_eqlnum: list,
         continous_filters: List[List[str]],
         continous_filters_ids: List[Dict[str, str]],
-    ) -> str:
+    ) -> html.Div:
         if tab_selected != Tabs.MAX_PC_SCALING:
             raise PreventUpdate
 

@@ -11,6 +11,8 @@ import numpy as np
 import webviz_subsurface_components as wsc
 import xtgeo
 from dash import ALL, MATCH, Input, Output, State, callback, callback_context, no_update
+from dash._callback import NoUpdate
+from dash.dependencies import Wildcard
 from dash.exceptions import PreventUpdate
 from webviz_config import EncodedFile
 from webviz_config.utils._dash_component_utils import calculate_slider_step
@@ -61,7 +63,7 @@ def plugin_callbacks(
     plugin_data_output: Output,
     plugin_data_requested: Input,
 ) -> None:
-    def selections(tab: str, colorselector: bool = False) -> Dict[str, str]:
+    def selections(tab: Union[str, Wildcard], colorselector: bool = False) -> Dict[str, Union[str, Wildcard]]:
         uuid = get_uuid(
             LayoutElements.SELECTIONS
             if not colorselector
@@ -69,13 +71,13 @@ def plugin_callbacks(
         )
         return {"view": ALL, "id": uuid, "tab": tab, "selector": ALL}
 
-    def selector_wrapper(tab: str, colorselector: bool = False) -> Dict[str, str]:
+    def selector_wrapper(tab: Union[str, Wildcard], colorselector: bool = False) -> Dict[str, Union[str, Wildcard]]:
         uuid = get_uuid(
             LayoutElements.WRAPPER if not colorselector else LayoutElements.COLORWRAPPER
         )
         return {"id": uuid, "tab": tab, "selector": ALL}
 
-    def links(tab: str, colorselector: bool = False) -> Dict[str, str]:
+    def links(tab: Union[str, Wildcard], colorselector: bool = False) -> Dict[str, Union[str, Wildcard]]:
         uuid = get_uuid(
             LayoutElements.LINK if not colorselector else LayoutElements.COLORLINK
         )
@@ -230,7 +232,11 @@ def plugin_callbacks(
     )
     def color_inputs_to_color_range(
         min_value: float, max_value: float, color_range: List[float]
-    ) -> Tuple[float, float, List[float]]:
+    ) -> Union[
+        Tuple[float, float, List[float]],
+        Tuple[NoUpdate, NoUpdate, NoUpdate],
+        Tuple[NoUpdate, NoUpdate, List[float]],
+    ]:
         """Updates color_range with the values from the color inputs"""
 
         try:
@@ -584,6 +590,7 @@ def plugin_callbacks(
                 }
             )
         updated_view_layout = view_layout(len(surface_elements), view_columns)
+        updated_views: Union[Dict[str, Any], NoUpdate]
         if (
             current_views
             and updated_view_layout == current_views["layout"]
@@ -620,7 +627,7 @@ def plugin_callbacks(
         surface_elements_in_tabs: List[List[Dict]],
         tab_name: str,
         tab_ids: List[dict],
-    ) -> Optional[EncodedFile]:
+    ) -> Union[Optional[EncodedFile], NoUpdate]:
         """Callback for downloading surfaces from the plugin"""
         if not surface_elements_in_tabs or not data_requested:
             return no_update

@@ -105,12 +105,13 @@ class ProviderTimeSeriesDataModel:
     def get_vector_df(
         self,
         ensemble: str,
-        realizations: List[int],
+        realizations: Optional[List[int]],
         vectors: List[str],
     ) -> pd.DataFrame:
         provider = self._provider_set[ensemble]
         ens_vectors = [vec for vec in vectors if vec in provider.vector_names()]
-        return provider.get_vectors_df(ens_vectors, None, realizations)
+        reals = realizations if realizations is not None else provider.realizations()
+        return provider.get_vectors_df(ens_vectors, None, reals)
 
     def get_last_date(self, ensemble: str) -> str:
         return max(self._provider_set[ensemble].dates(None))

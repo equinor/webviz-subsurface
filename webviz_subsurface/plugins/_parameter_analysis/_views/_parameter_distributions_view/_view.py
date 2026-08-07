@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple, Union
 
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 

@@ -167,6 +167,8 @@ class VolumeValidatorAndCombinator:
 
     def create_set_dframe(self, volume_dfs: List[pd.DataFrame]) -> pd.DataFrame:
         """Sum Eclipse and RMS volumetrics over the common disjoints sets."""
+        if self.disjoint_set_df is None:
+            raise ValueError("disjoint_set_df is required for create_set_dframe")
         region_selectors = self.find_region_selectors()
         set_data_list = []
         for set_idx, df in self.disjoint_set_df.groupby("SET"):
@@ -203,6 +205,8 @@ class VolumeValidatorAndCombinator:
     def find_region_selectors(self) -> list:
         """Return region selectors that has a unique value
         per set. If none is found SET is used"""
+        if self.disjoint_set_df is None:
+            raise ValueError("disjoint_set_df is required for find_region_selectors")
         df = self.disjoint_set_df.groupby(["SET"]).nunique()
         regcols = ["FIPNUM", "REGION", "ZONE"]
         if any((df[x] == 1).all() for x in regcols):

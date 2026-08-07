@@ -142,11 +142,11 @@ def update_maps(
         if "compute_diff" in ctx["prop_id"]:
             if not compute_diff:
                 return (
-                    no_update,
-                    no_update,
-                    no_update,
-                    no_update,
-                    no_update,
+                    no_update,  # type: ignore[return-value]
+                    no_update,  # type: ignore[return-value]
+                    no_update,  # type: ignore[return-value]
+                    no_update,  # type: ignore[return-value]
+                    no_update,  # type: ignore[return-value]
                     [],
                 )
 
@@ -185,9 +185,9 @@ def update_maps(
                 f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
                 current_map,
                 f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
-                no_update,
+                no_update,  # type: ignore[return-value]
                 "Surface A-B",
-                no_update,
+                no_update,  # type: ignore[return-value]
             )
 
         if wellname is not None:
@@ -210,7 +210,7 @@ def update_maps(
                     f"{ensemble_map2} - {calc_map2}",
                     current_map2,
                     "Surface A-B",
-                    no_update,
+                    no_update,  # type: ignore[return-value]
                 )
 
         # Calculate maps
@@ -305,11 +305,11 @@ def update_maps(
 
         return (
             f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
-            surface_layers if update_controls["map1"]["update"] else no_update,
+            surface_layers if update_controls["map1"]["update"] else no_update,  # type: ignore[return-value]
             f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
-            surface_layers2 if update_controls["map2"]["update"] else no_update,
+            surface_layers2 if update_controls["map2"]["update"] else no_update,  # type: ignore[return-value]
             "Surface A-B",
-            diff_layers if update_controls["diff_map"]["update"] else no_update,
+            diff_layers if update_controls["diff_map"]["update"] else no_update,  # type: ignore[return-value]
         )
 
     @app.callback(
@@ -344,16 +344,16 @@ def update_maps(
     def _update_from_map_click(
         clicked_shape: Optional[Dict],
         _polyline: List[List[float]],
-    ) -> Tuple[str, Union[NoUpdate, str]]:
+    ) -> Tuple[str, Union[str, None]]:
         """Update intersection source and optionally selected well when
         user clicks a shape in map"""
         ctx = callback_context.triggered[0]
         if "polyline_points" in ctx["prop_id"]:
-            return "polyline", no_update
+            return "polyline", None
         if clicked_shape is None:
             raise PreventUpdate
         if clicked_shape.get("id") == "random_line":
-            return "polyline", no_update
+            return "polyline", None
         if clicked_shape.get("id") in well_set_model.well_names:
             return "well", clicked_shape.get("id")
         raise PreventUpdate

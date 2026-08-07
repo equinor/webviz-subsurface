@@ -5,7 +5,7 @@ import json
 import sys
 import warnings
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import dash
 import dash_bootstrap_components as dbc
@@ -14,6 +14,7 @@ import pandas as pd
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
 from dash import Dash, Input, Output, State, dcc, html
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 from webviz_config import EncodedFile, WebvizPluginABC, WebvizSettings
@@ -1221,17 +1222,19 @@ folder, to avoid risk of not extracting the right data.
             vector_data = copy.deepcopy(self.vector_data)
             self._add_expressions_to_vector_data(vector_data, new_expressions)
 
-            new_selected_vectors = self._get_valid_vector_selections(
+            new_selected_vectors_out: Union[
+                List[str], NoUpdate
+            ] = self._get_valid_vector_selections(
                 vector_data, selected_vectors, new_expressions, existing_expressions
             )
 
             # Prevent updates if selected vectors are unchanged
-            if new_selected_vectors == selected_vectors:
-                new_selected_vectors = dash.no_update
+            if new_selected_vectors_out == selected_vectors:
+                new_selected_vectors_out = dash.no_update
 
-            new_custom_vector_definitions = get_vector_definitions_from_expressions(
-                new_expressions
-            )
+            new_custom_vector_definitions: Union[
+                Dict[str, Any], NoUpdate
+            ] = get_vector_definitions_from_expressions(new_expressions)
 
             if new_custom_vector_definitions == custom_vector_definitions:
                 new_custom_vector_definitions = dash.no_update
@@ -1239,7 +1242,7 @@ folder, to avoid risk of not extracting the right data.
             return [
                 new_expressions,
                 vector_data,
-                new_selected_vectors,
+                new_selected_vectors_out,
                 new_custom_vector_definitions,
             ]
 

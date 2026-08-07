@@ -175,7 +175,7 @@ class DefaultSettings:
 
 
 class FullScreen(wcc.WebvizPluginPlaceholder):
-    def __init__(self, children: List[Any]) -> None:
+    def __init__(self, children: Any) -> None:
         super().__init__(buttons=["expand"], children=children)
 
 

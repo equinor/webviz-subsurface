@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
 from dash import (
@@ -12,6 +12,7 @@ from dash import (
     html,
     no_update,
 )
+from dash._callback import NoUpdate
 from dash.development.base_component import Component
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 
@@ -151,7 +152,7 @@ class GridFilter(SettingsGroupABC):
         )
         def _store_grid_range_from_crop_widget(
             input_vals: List[int], width_vals: List[int]
-        ) -> List[List[int]]:
+        ) -> Union[List[List[int]], NoUpdate]:
             """Converts the ijk indices from one-based to zero-based and stores
             the filter range in a dcc.Store."""
 

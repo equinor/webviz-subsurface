@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Any, Callable, List
 
 import webviz_core_components as wcc
 from dash import html
@@ -14,7 +14,7 @@ from .selector_view import (
 
 def selector_view(
     get_uuid: Callable, property_model: PropertyStatisticsModel
-) -> html.Div:
+) -> List[Any]:
     return [
         wcc.Selectors(
             label="Selectors",

@@ -1,5 +1,5 @@
 from dash import html
-from dash.dash_table import DataTable
+from dash.dash_table.DataTable import DataTable
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
