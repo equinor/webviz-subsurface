@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import jwt
 import numpy as np

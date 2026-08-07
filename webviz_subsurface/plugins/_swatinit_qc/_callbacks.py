@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from dash import ALL, Input, Output, State, callback, callback_context, html
 from dash.exceptions import PreventUpdate

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Tuple, Union
+from typing import Callable, Tuple, Union
 
 import pandas as pd
 import plotly.graph_objects as go
