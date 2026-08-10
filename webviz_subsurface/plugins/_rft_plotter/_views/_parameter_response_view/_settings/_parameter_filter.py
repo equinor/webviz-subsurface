@@ -1,8 +1,6 @@
 from typing import Any, List
 
 import pandas as pd
-from dash import html
-from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 

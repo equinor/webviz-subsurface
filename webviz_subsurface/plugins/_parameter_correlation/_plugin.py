@@ -1,7 +1,6 @@
-from typing import Callable, List, Tuple, Type
+from typing import Callable, List, Tuple
 
 from dash import html
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 
 from ._error import error

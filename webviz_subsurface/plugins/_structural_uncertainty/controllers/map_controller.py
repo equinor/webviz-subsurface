@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import xtgeo
 from dash import Dash, Input, Output, State, callback_context, no_update
-from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._datainput.well import (
@@ -305,11 +304,17 @@ def update_maps(
 
         return (
             f"Surface A: {surfattr_map} - {surfname_map} - {ensemble_map} - {calc_map}",
-            surface_layers if update_controls["map1"]["update"] else no_update,  # type: ignore[return-value]
+            (  # type: ignore[return-value]
+                surface_layers if update_controls["map1"]["update"] else no_update
+            ),
             f"Surface B: {surfattr_map2} - {surfname_map2} - {ensemble_map2} - {calc_map2}",
-            surface_layers2 if update_controls["map2"]["update"] else no_update,  # type: ignore[return-value]
+            (  # type: ignore[return-value]
+                surface_layers2 if update_controls["map2"]["update"] else no_update
+            ),
             "Surface A-B",
-            diff_layers if update_controls["diff_map"]["update"] else no_update,  # type: ignore[return-value]
+            (  # type: ignore[return-value]
+                diff_layers if update_controls["diff_map"]["update"] else no_update
+            ),
         )
 
     @app.callback(

@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import plotly.graph_objects as go
 from dash import Input, Output, State, callback, callback_context, no_update

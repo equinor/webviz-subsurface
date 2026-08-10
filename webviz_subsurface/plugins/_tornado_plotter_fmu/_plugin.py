@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
-from typing import List, Type
+from typing import List
 
 from dash import ALL, Input, Output, callback, callback_context, html
-from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum, callback_typecheck
 

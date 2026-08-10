@@ -1,5 +1,5 @@
 from enum import IntEnum, auto
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List
 
 import pandas as pd
 import plotly.graph_objects as go
