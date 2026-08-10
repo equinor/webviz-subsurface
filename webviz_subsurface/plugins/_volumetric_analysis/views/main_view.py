@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import pandas as pd
 import webviz_core_components as wcc

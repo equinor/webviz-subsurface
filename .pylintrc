@@ -1,5 +1,8 @@
 [MASTER]
 
+# Ignore auto-generated version file
+ignore = _version.py
+
 # As a temporary workaround for https://github.com/PyCQA/pylint/issues/4577
 init-hook = "import astroid; astroid.context.InferenceContext.max_inferred = 500"
 
