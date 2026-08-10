@@ -282,7 +282,7 @@ attribute_settings:
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             id=self.uuid("layout"),
             children=[

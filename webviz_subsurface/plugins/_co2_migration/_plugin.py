@@ -292,7 +292,7 @@ class CO2Migration(WebvizPluginABC):
         self.add_view(MainView(self._color_tables, self._content), self.Ids.MAIN_VIEW)
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return _error.error(self._error_message)
 
     def _view_component(self, component_id: str) -> str:
@@ -619,7 +619,9 @@ class CO2Migration(WebvizPluginABC):
                 haz_url=hazardous_polygon_url,
                 nogo_url=nogo_polygon_url,
             )
-            viewports = no_update if current_views else create_map_viewports()
+            viewports: Union[Dict[Any, Any], NoUpdate] = (
+                no_update if current_views else create_map_viewports()
+            )
             return layers, annotations, viewports
 
     def _add_set_well_options_callback(self) -> None:

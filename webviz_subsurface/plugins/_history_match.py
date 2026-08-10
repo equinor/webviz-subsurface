@@ -131,7 +131,7 @@ observations/observations.yml).
         return retval
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div([wsc.HistoryMatch(id=self.hm_id, data=self.hm_data)])
 
 

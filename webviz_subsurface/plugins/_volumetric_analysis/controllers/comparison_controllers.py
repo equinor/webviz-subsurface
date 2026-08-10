@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import Input, Output, State, callback, html
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._figures import create_figure

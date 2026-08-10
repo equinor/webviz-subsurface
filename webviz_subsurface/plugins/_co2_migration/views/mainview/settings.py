@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import webviz_core_components as wcc
 from dash import Input, Output, State, callback, dcc, html, no_update
 from dash._callback import NoUpdate
+from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 import pandas as pd
 from dash.development.base_component import Component
@@ -17,7 +17,7 @@ class ParamRespParameterFilter(SettingsGroupABC):
         self._parameter_df = parameter_df
         self._ensembles = ensembles
 
-    def layout(self) -> List[Component]:
+    def layout(self) -> Any:
         return ParameterFilter(
             uuid=self.register_component_unique_id(self.Ids.PARAM_FILTER),
             dframe=self._parameter_df[

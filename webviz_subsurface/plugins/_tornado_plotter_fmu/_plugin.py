@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import List, Type
 
-from dash import ALL, Input, Output, callback, callback_context
+from dash import ALL, Input, Output, callback, callback_context, html
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -370,5 +370,5 @@ class TornadoPlotterFMU(WebvizPluginABC):
         return tour
 
     @property
-    def layout(self) -> Type[Component]:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return error(self._error_message)

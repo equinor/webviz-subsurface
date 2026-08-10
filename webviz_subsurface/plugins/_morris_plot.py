@@ -37,7 +37,7 @@ aggregated_data/morris.csv).
         self.set_callbacks(app)
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             [
                 html.Label("Vector", style={"font-size": "2rem"}),

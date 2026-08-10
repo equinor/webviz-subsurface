@@ -1,5 +1,5 @@
 from enum import IntEnum, auto
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -563,10 +563,10 @@ class DashTable(DataTable):
     ) -> None:
         super().__init__(
             data=data,
-            columns=columns,
+            columns=columns,  # type: ignore[arg-type]
             style_table={"height": height, **LayoutStyle.TABLE_STYLE},
             style_as_list_view=True,
-            css=LayoutStyle.TABLE_CSS,
+            css=LayoutStyle.TABLE_CSS,  # type: ignore[arg-type]
             style_header=LayoutStyle.TABLE_HEADER,
             **kwargs,
         )

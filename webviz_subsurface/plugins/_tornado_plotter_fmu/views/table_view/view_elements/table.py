@@ -11,7 +11,7 @@ class TornadoTable(ViewElementABC):
         super().__init__()
         self.height = height
 
-    def inner_layout(self) -> DataTable:
+    def inner_layout(self) -> DataTable:  # type: ignore[override]
         return DataTable(
             id=self.register_component_unique_id(TornadoTable.IDs.TABLE),
             style_cell={"whiteSpace": "normal", "height": "auto"},

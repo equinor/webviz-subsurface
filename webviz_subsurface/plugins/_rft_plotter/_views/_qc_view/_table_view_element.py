@@ -11,7 +11,7 @@ class TableViewElement(ViewElementABC):
     def __init__(self) -> None:
         super().__init__()
 
-    def inner_layout(self) -> html.Div:
+    def inner_layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             children=[
                 html.Div(

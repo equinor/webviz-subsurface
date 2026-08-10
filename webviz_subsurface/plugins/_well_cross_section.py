@@ -208,7 +208,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             children=[
                 html.Div(

@@ -65,7 +65,7 @@ def surface_to_png_bytes(surface: xtgeo.RegularSurface) -> bytes:
 
     z_array = z_array.reshape((shape[0], shape[1], 4))
 
-    image = Image.fromarray(np.uint8(z_array), "RGBA")
+    image = Image.fromarray(np.uint8(z_array), "RGBA")  # type: ignore[arg-type]
     LOGGER.debug(f"create: {timer.lap_s():.2f}s")
 
     byte_io = io.BytesIO()

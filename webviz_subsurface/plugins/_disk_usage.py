@@ -47,7 +47,7 @@ class DiskUsage(WebvizPluginABC):
         self.theme = webviz_settings.theme
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         if self.disk_usage.empty:
             return html.Div(
                 [

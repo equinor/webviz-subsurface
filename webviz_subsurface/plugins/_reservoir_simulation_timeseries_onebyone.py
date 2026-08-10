@@ -294,7 +294,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return wcc.FlexBox(
             id=self.ids("layout"),
             children=[

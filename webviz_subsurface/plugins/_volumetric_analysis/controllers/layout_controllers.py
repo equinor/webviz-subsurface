@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Union
+from typing import Any, Callable, Dict, Union
 
 from dash import ALL, Input, Output, State, callback, callback_context, no_update
 from dash._callback import NoUpdate

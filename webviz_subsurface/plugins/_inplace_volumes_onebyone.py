@@ -357,7 +357,7 @@ aggregated_data/parameters.csv)
         ]
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         """Main layout"""
         return wcc.FlexBox(
             id=self.uuid("layout"),

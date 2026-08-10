@@ -100,7 +100,7 @@ class ViewFilters(SettingsGroupABC):
     def __init__(self) -> None:
         super().__init__("Filters")
 
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             id=self.register_component_unique_id(self.Ids.TOUR_STEP),
             children=[

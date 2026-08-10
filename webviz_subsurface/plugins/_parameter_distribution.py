@@ -139,7 +139,7 @@ and the parameter columns.
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             id=self.ids("layout"),
             children=[

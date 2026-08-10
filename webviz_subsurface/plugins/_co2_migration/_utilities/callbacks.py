@@ -239,19 +239,19 @@ def _create_summed_mass_annotation(
     summed_mass: Optional[float],
     unit: str,
 ) -> html.Div:
-    annotation = (
-        html.P(
+    children: Any
+    if MapType[attribute.name].value == "MASS" and summed_mass is not None:
+        children = html.P(
             [
                 f"Total {MapAttribute[attribute.name].value.lower()}:",
                 html.Br(),
                 f"{summed_mass:.2f} {unit}",
             ]
         )
-        if MapType[attribute.name].value == "MASS" and summed_mass is not None
-        else ""
-    )
+    else:
+        children = ""
     return html.Div(
-        annotation,
+        children,
         style={
             "position": "absolute",
             "top": "210px",

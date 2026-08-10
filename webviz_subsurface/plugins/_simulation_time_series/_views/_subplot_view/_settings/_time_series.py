@@ -1,5 +1,5 @@
 import copy
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import dash
 import webviz_core_components as wcc
@@ -276,7 +276,6 @@ class TimeSeriesSettings(SettingsGroupABC):
             ),
         )
         @callback_typecheck
-        # pylint: disable=too-many-locals
         def _update_vector_calculator_expressions_on_dialog_close(
             is_dialog_open: bool,
             new_expressions: List[ExpressionInfo],

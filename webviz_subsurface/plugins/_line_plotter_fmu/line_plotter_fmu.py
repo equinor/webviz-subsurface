@@ -142,7 +142,7 @@ class LinePlotterFMU(WebvizPluginABC):
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return wcc.FlexBox(
             children=[
                 html.Div(

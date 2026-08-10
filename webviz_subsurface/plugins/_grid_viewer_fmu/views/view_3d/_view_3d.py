@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import jwt
 import numpy as np
@@ -128,7 +128,7 @@ class View3D(ViewABC):
             proptype: str,
             layers: List[Dict],
             bounds: Optional[List[float]],
-        ) -> Tuple[List[Dict], Optional[List]]:
+        ) -> Tuple[List[Dict], Union[List[float], None, NoUpdate]]:
             if PROPERTYTYPE(proptype) == PROPERTYTYPE.STATIC:
                 property_spec = PropertySpec(prop_name=prop[0], prop_date=None)
             else:

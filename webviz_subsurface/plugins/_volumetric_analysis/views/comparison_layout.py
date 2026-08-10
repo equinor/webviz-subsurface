@@ -1,8 +1,9 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dcc, html
+from dash.dash_table.DataTable import DataTable
 
 from webviz_subsurface._models import InplaceVolumesModel
 

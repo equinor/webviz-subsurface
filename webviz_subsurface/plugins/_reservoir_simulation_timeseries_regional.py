@@ -1049,7 +1049,7 @@ def render_table(stat_df: pd.DataFrame, mode: str, groupby: str, date: str) -> A
         filter_action="native",
         page_action="native",
         page_size=10,
-        data=table,
+        data=table,  # type: ignore[arg-type]
         columns=table_columns,
     )
 
