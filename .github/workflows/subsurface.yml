@@ -82,7 +82,7 @@ jobs:
 
           bandit -r -c ./bandit.yml webviz_subsurface tests
           isort --check-only --skip webviz_subsurface/_version.py webviz_subsurface tests
-          # mypy --package webviz_subsurface
+          mypy --package webviz_subsurface
 
       - name: 🤖 Run tests
         if: github.event_name != 'release'
