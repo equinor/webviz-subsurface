@@ -179,6 +179,7 @@ class ParameterPlot(ViewABC):
                 .component_unique_id(Graph.IDs.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
         )
         def _update_parameter_selections(cell_data: dict) -> Tuple:
@@ -216,6 +217,7 @@ class ParameterPlot(ViewABC):
                 .component_unique_id(Graph.IDs.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
         )
         def _update_matrix(
@@ -317,6 +319,7 @@ class ParameterPlot(ViewABC):
                 .component_unique_id(Graph.IDs.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
         )
         def _update_scatter(

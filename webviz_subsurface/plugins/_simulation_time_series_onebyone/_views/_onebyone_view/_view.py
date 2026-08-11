@@ -141,6 +141,7 @@ class OneByOneView(ViewABC):
                 .component_unique_id(GeneralViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
             State(
                 {
@@ -323,6 +324,7 @@ class OneByOneView(ViewABC):
                 .component_unique_id(GeneralViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
             Input(
                 self.settings_group_unique_id(

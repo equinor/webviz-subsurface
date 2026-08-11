@@ -196,6 +196,7 @@ class WellOverviewView(ViewABC):
                 .component_unique_id(WellOverviewViewElement.Ids.GRAPH)
                 .to_string(),
                 "figure",
+                allow_optional=True,
             ),
             State(
                 {

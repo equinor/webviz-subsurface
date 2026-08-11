@@ -177,12 +177,14 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "figure",
+                allow_optional=True,
             ),
             State(
                 self.view_element(self.Ids.VECTOR_CORR_GRAPH)
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "figure",
+                allow_optional=True,
             ),
         )
         @callback_typecheck
@@ -402,6 +404,7 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
             Input(
                 self.settings_group_unique_id(
@@ -683,6 +686,7 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
         )
         @callback_typecheck
@@ -711,6 +715,7 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
             Input(
                 self.settings_group_unique_id(
