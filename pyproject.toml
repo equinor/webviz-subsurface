@@ -25,7 +25,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "dash>=2.0.0,<3",
+    "dash>=2,<4",
     "dash_bootstrap_components>=0.10.3",
     "dash-daq>=0.5.0",
     "defusedxml>=0.6.0",
