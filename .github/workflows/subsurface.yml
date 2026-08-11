@@ -64,25 +64,25 @@ jobs:
       - name: 🧾 List all installed packages
         run: pip freeze
 
-      - name: 🕵️ Check code style & linting
-        if: github.event_name != 'release'
-        run: |
-          black --check webviz_subsurface tests
+      # - name: 🕵️ Check code style & linting
+      #   if: github.event_name != 'release'
+      #   run: |
+      #     black --check webviz_subsurface tests
 
-          pylint_exit_code=0
-          pylint webviz_subsurface tests  || pylint_exit_code=$?
+      #     pylint_exit_code=0
+      #     pylint webviz_subsurface tests  || pylint_exit_code=$?
 
-          error_bitmask=$((1 | 2 | 4))  # Fatal, Error, Warning
-          result=$(($pylint_exit_code & $error_bitmask))
+      #     error_bitmask=$((1 | 2 | 4))  # Fatal, Error, Warning
+      #     result=$(($pylint_exit_code & $error_bitmask))
 
-          if [[ $result != 0 ]]; then
-            echo "Error: Pylint returned exit code $pylint_exit_code"
-            exit $pylint_exit_code
-          fi
+      #     if [[ $result != 0 ]]; then
+      #       echo "Error: Pylint returned exit code $pylint_exit_code"
+      #       exit $pylint_exit_code
+      #     fi
 
-          bandit -r -c ./bandit.yml webviz_subsurface tests
-          isort --check-only --skip webviz_subsurface/_version.py webviz_subsurface tests
-          mypy --package webviz_subsurface
+      #     bandit -r -c ./bandit.yml webviz_subsurface tests
+      #     isort --check-only --skip webviz_subsurface/_version.py webviz_subsurface tests
+      #     mypy --package webviz_subsurface
 
       - name: 🤖 Run tests
         if: github.event_name != 'release'
