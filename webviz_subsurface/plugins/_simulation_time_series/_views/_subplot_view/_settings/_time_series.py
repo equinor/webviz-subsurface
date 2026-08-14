@@ -1,10 +1,10 @@
 import copy
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import dash
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
-from dash import Input, Output, State, callback, dcc, html
+from dash import Input, NoUpdate, Output, State, callback, dcc, html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -324,15 +324,15 @@ class TimeSeriesSettings(SettingsGroupABC):
 
             # Prevent updates if unchanged
             if new_custom_vector_definitions == current_custom_vector_definitions:
-                new_custom_vector_definitions = dash.no_update
+                new_custom_vector_definitions = dash.no_update  # type: ignore[assignment]
 
             if new_selected_vectors == current_selected_vectors:
-                new_selected_vectors = dash.no_update
+                new_selected_vectors = dash.no_update  # type: ignore[assignment]
 
             # If selected expressions are edited
             # - Only trigger graph data update property when needed,
             # i.e. names are unchanged and selectedNodes for VectorSelector remains unchanged.
-            new_graph_data_has_changed_counter = dash.no_update
+            new_graph_data_has_changed_counter: Union[int, NoUpdate] = dash.no_update
             if (
                 new_selected_expressions != current_selected_expressions
                 and new_selected_vectors == dash.no_update

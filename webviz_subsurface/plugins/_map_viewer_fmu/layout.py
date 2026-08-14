@@ -270,14 +270,16 @@ class MapViewLayout(FullScreen):
         render_surfaces_as_images: bool,
     ) -> None:
         super().__init__(
-            children=html.Div(
-                SubsurfaceViewer(
-                    id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
-                    layers=update_map_layers(1, render_surfaces_as_images),
-                    colorTables=color_tables,
+            children=[
+                html.Div(
+                    SubsurfaceViewer(
+                        id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
+                        layers=update_map_layers(1, render_surfaces_as_images),
+                        colorTables=color_tables,
+                    ),
+                    style={"height": LayoutStyle.MAPHEIGHT},
                 ),
-                style={"height": LayoutStyle.MAPHEIGHT},
-            ),
+            ],
         )
 
 

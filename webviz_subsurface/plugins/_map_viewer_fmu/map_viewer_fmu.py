@@ -188,7 +188,7 @@ color-tables.json for color_tables format.
         self.set_callbacks()
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         reals = []
         for provider in self._ensemble_surface_providers.values():
             reals.extend([x for x in provider.realizations() if x not in reals])

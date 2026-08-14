@@ -218,7 +218,7 @@ differ between individual realizations of an ensemble.
         self.set_callbacks(app)
 
     @property
-    def layout(self) -> dcc.Tabs:
+    def layout(self) -> dcc.Tabs:  # type: ignore[override]
         return main_view(
             get_uuid=self.uuid,
             property_model=self._pmodel,

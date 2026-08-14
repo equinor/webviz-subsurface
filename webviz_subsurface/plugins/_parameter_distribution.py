@@ -139,7 +139,7 @@ and the parameter columns.
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             id=self.ids("layout"),
             children=[
@@ -149,7 +149,7 @@ and the parameter columns.
                     children=[
                         dcc.Dropdown(
                             id=self.ids("parameter"),
-                            options=[
+                            options=[  # type: ignore[arg-type]
                                 {"value": col, "label": col}
                                 for col in self.parameter_columns
                             ],

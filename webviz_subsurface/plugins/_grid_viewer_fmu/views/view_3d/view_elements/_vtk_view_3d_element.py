@@ -16,7 +16,7 @@ class VTKView3D(ViewElementABC):
     def __init__(self) -> None:
         super().__init__()
 
-    def inner_layout(self) -> Component:
+    def inner_layout(self) -> Component:  # type: ignore[override]
         return html.Div(
             style={"position": "relative", "height": "90vh"},
             children=[

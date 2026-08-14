@@ -1,4 +1,4 @@
-from dash import dash_table
+from dash.dash_table.DataTable import DataTable
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewElementABC
 
@@ -11,8 +11,8 @@ class TornadoTable(ViewElementABC):
         super().__init__()
         self.height = height
 
-    def inner_layout(self) -> dash_table.DataTable:
-        return dash_table.DataTable(
+    def inner_layout(self) -> DataTable:  # type: ignore[override]
+        return DataTable(
             id=self.register_component_unique_id(TornadoTable.IDs.TABLE),
             style_cell={"whiteSpace": "normal", "height": "auto"},
         )

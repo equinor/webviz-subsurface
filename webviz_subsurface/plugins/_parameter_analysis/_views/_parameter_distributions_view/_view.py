@@ -1,7 +1,8 @@
 from typing import Dict, List, Tuple, Union
 
 import webviz_core_components as wcc
-from dash import Input, Output, State, callback, dash_table
+from dash import Input, Output, State, callback
+from dash.dash_table.DataTable import DataTable
 from webviz_config.utils import StrEnum, callback_typecheck
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
@@ -83,7 +84,7 @@ class ParameterDistributionView(ViewABC):
             delta_ensemble: str,
             parameters: List[str],
             plot_type: VisualizationType,
-        ) -> Union[dash_table.DataTable, wcc.Graph]:
+        ) -> Union[DataTable, wcc.Graph]:
             """Callback to switch visualization between table and distribution plots"""
             ensembles = [ensemble, delta_ensemble]
             valid_params = self._parametermodel.pmodel.get_parameters_for_ensembles(
@@ -95,7 +96,7 @@ class ParameterDistributionView(ViewABC):
                 columns, dframe = self._parametermodel.make_statistics_table(
                     ensembles=ensembles, parameters=parameters
                 )
-                return dash_table.DataTable(
+                return DataTable(
                     style_table={
                         "height": "75vh",
                         "overflow": "auto",
@@ -103,7 +104,10 @@ class ParameterDistributionView(ViewABC):
                     },
                     style_cell={"textAlign": "center"},
                     style_cell_conditional=[
-                        {"if": {"column_id": "PARAMETER|"}, "textAlign": "left"}
+                        {
+                            "if": {"column_id": "PARAMETER|"},
+                            "textAlign": "left",  # type: ignore[typeddict-unknown-key]
+                        }
                     ],
                     columns=columns,
                     data=dframe,

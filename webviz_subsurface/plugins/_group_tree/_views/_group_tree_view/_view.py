@@ -100,28 +100,30 @@ class ViewFilters(SettingsGroupABC):
     def __init__(self) -> None:
         super().__init__("Filters")
 
-    def layout(self) -> html.Div:
-        return html.Div(
-            id=self.register_component_unique_id(self.Ids.TOUR_STEP),
-            children=[
-                wcc.SelectWithLabel(
-                    id=self.register_component_unique_id(self.Ids.PROD_INJ_OTHER),
-                    label="Prod/Inj/Other",
-                    options=[
-                        {"label": "Production", "value": NodeType.PROD},
-                        {"label": "Injection", "value": NodeType.INJ},
-                        {"label": "Other", "value": NodeType.OTHER},
-                    ],
-                    value=[
-                        NodeType.PROD,
-                        NodeType.INJ,
-                        NodeType.OTHER,
-                    ],
-                    multi=True,
-                    size=3,
-                )
-            ],
-        )
+    def layout(self) -> List[Component]:
+        return [
+            html.Div(
+                id=self.register_component_unique_id(self.Ids.TOUR_STEP),
+                children=[
+                    wcc.SelectWithLabel(
+                        id=self.register_component_unique_id(self.Ids.PROD_INJ_OTHER),
+                        label="Prod/Inj/Other",
+                        options=[
+                            {"label": "Production", "value": NodeType.PROD},
+                            {"label": "Injection", "value": NodeType.INJ},
+                            {"label": "Other", "value": NodeType.OTHER},
+                        ],
+                        value=[
+                            NodeType.PROD,
+                            NodeType.INJ,
+                            NodeType.OTHER,
+                        ],
+                        multi=True,
+                        size=3,
+                    )
+                ],
+            )
+        ]
 
 
 class GroupTreeView(ViewABC):

@@ -948,9 +948,9 @@ class SubplotView(ViewABC):
 
             # Prevent updates if unchanged
             if new_relative_date_options == current_relative_date_options:
-                new_relative_date_options = dash.no_update
+                new_relative_date_options = dash.no_update  # type: ignore[assignment]
             if new_relative_date_value == current_relative_date_value:
-                new_relative_date_value = dash.no_update
+                new_relative_date_value = dash.no_update  # type: ignore[assignment]
 
             # Convert to Optional[datetime.datetime]
             relative_date: Optional[datetime.datetime] = (

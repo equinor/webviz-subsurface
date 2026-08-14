@@ -128,7 +128,7 @@ Format of the `initial_settings` argument:
         self.set_callbacks(app)
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return wcc.FlexBox(
             [
                 wcc.Frame(

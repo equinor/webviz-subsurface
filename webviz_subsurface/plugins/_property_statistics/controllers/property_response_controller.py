@@ -37,7 +37,7 @@ def property_response_controller(
     )
     def _update_surface(
         clickdata: Union[None, dict], ensemble: str, stype: str
-    ) -> Tuple[list, str]:
+    ) -> Tuple[Union[list, NoUpdate], str]:
         if clickdata is not None:
             label = clickdata["points"][0]["y"]
             prop = label.split(" | ")[0]

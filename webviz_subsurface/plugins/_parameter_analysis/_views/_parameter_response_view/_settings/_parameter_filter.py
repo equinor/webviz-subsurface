@@ -18,12 +18,14 @@ class ParamRespParameterFilter(SettingsGroupABC):
         self._ensembles = ensembles
 
     def layout(self) -> List[Component]:
-        return ParameterFilter(
-            uuid=self.register_component_unique_id(self.Ids.PARAM_FILTER),
-            dframe=self._parameter_df[
-                self._parameter_df["ENSEMBLE"].isin(self._ensembles)
-            ].copy(),
-            reset_on_ensemble_update=True,
-            display_header=False,
-            include_sens_filter=True,
-        ).layout
+        return [
+            ParameterFilter(
+                uuid=self.register_component_unique_id(self.Ids.PARAM_FILTER),
+                dframe=self._parameter_df[
+                    self._parameter_df["ENSEMBLE"].isin(self._ensembles)
+                ].copy(),
+                reset_on_ensemble_update=True,
+                display_header=False,
+                include_sens_filter=True,
+            ).layout
+        ]

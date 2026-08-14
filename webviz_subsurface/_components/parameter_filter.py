@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 from uuid import uuid4
 
 import numpy as np
@@ -7,6 +7,7 @@ import webviz_core_components as wcc
 from dash import (
     ALL,
     Input,
+    NoUpdate,
     Output,
     State,
     callback,
@@ -347,7 +348,7 @@ class ParameterFilter:
             slider_id: List[dict],
             selects: list,
             select_id: List[dict],
-        ) -> Tuple[list, int]:
+        ) -> Tuple[Union[List[Any], NoUpdate], Union[int, NoUpdate]]:
             ctx = callback_context.triggered[0]["prop_id"]
             if not ensembles:
                 raise PreventUpdate

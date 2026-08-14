@@ -1,5 +1,6 @@
 import webviz_core_components as wcc
-from dash import dash_table, html
+from dash import html
+from dash.dash_table.DataTable import DataTable
 
 
 def uncertainty_table_layout(
@@ -22,7 +23,7 @@ def uncertainty_table_layout(
                     ),
                 ]
             ),
-            dash_table.DataTable(
+            DataTable(
                 id={"id": uuid, "element": "table"},
                 columns=[
                     {"id": "Surface name", "name": "Surface name", "selectable": False},
@@ -47,22 +48,22 @@ def uncertainty_table_layout(
                     "opacity": 0.5,
                 },
                 style_data_conditional=[
-                    {
+                    {  # type: ignore[typeddict-unknown-key]
                         "if": {"column_id": "Surface name"},
                         "textAlign": "left",
                         "width": "15%",
                     },
-                    {
+                    {  # type: ignore[typeddict-unknown-key]
                         "if": {"column_id": "Ensemble"},
                         "textAlign": "left",
                         "width": "15%",
                     },
-                    {
+                    {  # type: ignore[typeddict-unknown-key]
                         "if": {"column_id": "Calculation"},
                         "textAlign": "left",
                         "width": "10%",
                     },
-                    {
+                    {  # type: ignore[typeddict-unknown-key]
                         "if": {"filter_query": '{Calculation} = "Mean"'},
                         "backgroundColor": "rgba(0,177,106,0.3)",
                     },

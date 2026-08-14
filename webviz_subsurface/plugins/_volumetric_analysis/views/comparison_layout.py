@@ -2,7 +2,8 @@ from typing import List, Optional
 
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import dash_table, dcc, html
+from dash import dcc, html
+from dash.dash_table.DataTable import DataTable
 
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -66,7 +67,7 @@ def comparison_qc_plots_layout(
 
 
 def comparison_table_layout(
-    table: dash_table, table_type: str, selections: dict, filter_info: str
+    table: DataTable, table_type: str, selections: dict, filter_info: str
 ) -> html.Div:
     if table_type == "single-response table":
         header = f"Table showing differences for {selections['Response']}"

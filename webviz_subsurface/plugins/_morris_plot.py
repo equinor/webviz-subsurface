@@ -37,14 +37,17 @@ aggregated_data/morris.csv).
         self.set_callbacks(app)
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             [
                 html.Label("Vector", style={"font-size": "2rem"}),
                 dcc.Dropdown(
                     id=self.vector_id,
                     clearable=False,
-                    options=[{"label": i, "value": i} for i in list(self.vector_names)],
+                    options=[
+                        {"label": i, "value": i}
+                        for i in list(self.vector_names)  # type: ignore[arg-type]
+                    ],
                     value=self.vector_names[0],
                 ),
                 Morris(id=self.graph_id),

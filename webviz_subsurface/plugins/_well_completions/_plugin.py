@@ -204,7 +204,7 @@ class WellCompletions(WebvizPluginABC):
         return layout_tour_steps(self.uuid)
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return main_layout(
             get_uuid=self.uuid,
             ensembles=list(self._data_models.keys()),

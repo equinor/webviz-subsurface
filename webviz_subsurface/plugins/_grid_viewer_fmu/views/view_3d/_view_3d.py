@@ -1,10 +1,10 @@
 from dataclasses import asdict
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import jwt
 import numpy as np
 import webviz_subsurface_components as wsc
-from dash import Input, Output, State, callback, html, no_update
+from dash import Input, NoUpdate, Output, State, callback, html, no_update
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import ViewABC
 
@@ -126,8 +126,8 @@ class View3D(ViewABC):
             colormap: str,
             proptype: str,
             layers: List[Dict],
-            bounds: Optional[List[float]],
-        ) -> Tuple[List[Dict], Optional[List]]:
+            bounds: Union[Optional[List[float]], NoUpdate],
+        ) -> Tuple[List[Dict], Union[Optional[List], NoUpdate]]:
             if PROPERTYTYPE(proptype) == PROPERTYTYPE.STATIC:
                 property_spec = PropertySpec(prop_name=prop[0], prop_date=None)
             else:

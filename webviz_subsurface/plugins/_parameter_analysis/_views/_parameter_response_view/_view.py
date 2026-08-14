@@ -2,7 +2,7 @@ import datetime
 from typing import Any, Dict, List, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import Input, Output, State, callback, callback_context, no_update
+from dash import Input, NoUpdate, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -531,7 +531,7 @@ class ParameterResponseView(ViewABC):
             stored: Union[None, str],
             style_btn: Dict,
             style_textarea: Dict,
-        ) -> Tuple[str, Dict, Dict]:
+        ) -> Tuple[Union[str, None, NoUpdate], Dict, Dict]:
             """Update vector-filter-store if submit button is clicked and
             style of submit button"""
             vector_filter_used = (

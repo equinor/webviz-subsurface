@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import dash_table
+from dash.dash_table.DataTable import DataTable
 
 from webviz_subsurface._abbreviations.number_formatting import si_prefixed
 from webviz_subsurface._models import InplaceVolumesModel
@@ -76,7 +76,7 @@ def create_data_table(
     return wcc.WebvizPluginPlaceholder(
         id={"request": "table_data", "table_id": table_id["table_id"]},
         buttons=["expand", "download"],
-        children=dash_table.DataTable(
+        children=DataTable(
             id=table_id,
             sort_action="native",
             sort_mode="multi",
@@ -85,7 +85,7 @@ def create_data_table(
             data=data,
             style_as_list_view=True,
             style_cell=style_cell,
-            style_cell_conditional=conditional_cell_style,
+            style_cell_conditional=conditional_cell_style,  # type: ignore[arg-type]
             style_data_conditional=style_data_conditional,
             style_table={
                 "height": height,

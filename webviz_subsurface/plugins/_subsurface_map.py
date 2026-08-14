@@ -95,7 +95,7 @@ that you are reading the correct data.
         self.map_id = f"map-{uuid4()}"
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div([Map(id=self.map_id, data=self.map_data)])
 
     def add_webvizstore(self) -> List[Tuple[Callable, list]]:

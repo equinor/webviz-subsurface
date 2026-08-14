@@ -53,12 +53,12 @@ def array_to_png(tensor: np.ndarray, shift: bool = True, colormap: bool = False)
                 )
             tensor[0][0][3] = 0.0  # Make first color channel transparent
     if tensor.ndim == 2:
-        image = Image.fromarray(np.uint8(tensor), "L")
+        image = Image.fromarray(tensor.astype(np.uint8), "L")
     elif tensor.ndim == 3:
         if tensor.shape[2] == 3:
-            image = Image.fromarray(np.uint8(tensor), "RGB")
+            image = Image.fromarray(tensor.astype(np.uint8), "RGB")
         elif tensor.shape[2] == 4:
-            image = Image.fromarray(np.uint8(tensor), "RGBA")
+            image = Image.fromarray(tensor.astype(np.uint8), "RGBA")
         else:
             raise ValueError(
                 "Third dimension of tensor must have length 3 (RGB) or 4 (RGBA)"
@@ -102,7 +102,7 @@ def array2d_to_png(tensor: np.ndarray) -> str:
 
     # Back to 2d shape + 1 dimension for the rgba values.
     tensor = tensor.reshape((shape[0], shape[1], 4))
-    image = Image.fromarray(np.uint8(tensor), "RGBA")
+    image = Image.fromarray(tensor.astype(np.uint8), "RGBA")
 
     byte_io = io.BytesIO()
     image.save(byte_io, format="png")

@@ -110,7 +110,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     html.Span("Well:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("wells"),
-                        options=[
+                        options=[  # type: ignore[arg-type]
                             {"label": Path(well).stem, "value": well}
                             for well in self.wellfiles
                         ],
@@ -132,7 +132,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     html.Span("Seismic:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("cube"),
-                        options=[
+                        options=[  # type: ignore[arg-type]
                             {"label": Path(segy).stem, "value": segy}
                             for segy in self.segyfiles
                         ]
@@ -159,7 +159,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
 
         return dcc.Checklist(
             id=self.ids("options"),
-            options=options,
+            options=options,  # type: ignore[arg-type]
             value=value,
             persistence=True,
             persistence_type="session",
@@ -206,7 +206,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             children=[
                 html.Div(

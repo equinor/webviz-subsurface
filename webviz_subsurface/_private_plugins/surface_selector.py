@@ -102,7 +102,7 @@ class SurfaceSelector:
                     children=[
                         dcc.Dropdown(
                             id=self.attr_id,
-                            options=[
+                            options=[  # type: ignore[arg-type]
                                 {"label": attr, "value": attr} for attr in self.attrs
                             ],
                             value=self.attrs[0],

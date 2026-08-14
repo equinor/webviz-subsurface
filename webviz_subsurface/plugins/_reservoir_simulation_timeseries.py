@@ -1227,14 +1227,14 @@ folder, to avoid risk of not extracting the right data.
 
             # Prevent updates if selected vectors are unchanged
             if new_selected_vectors == selected_vectors:
-                new_selected_vectors = dash.no_update
+                new_selected_vectors = dash.no_update  # type: ignore[assignment]
 
             new_custom_vector_definitions = get_vector_definitions_from_expressions(
                 new_expressions
             )
 
             if new_custom_vector_definitions == custom_vector_definitions:
-                new_custom_vector_definitions = dash.no_update
+                new_custom_vector_definitions = dash.no_update  # type: ignore[assignment]
 
             return [
                 new_expressions,

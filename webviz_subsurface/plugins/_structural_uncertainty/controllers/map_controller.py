@@ -135,7 +135,14 @@ def update_maps(
         current_map: List,
         current_map2: List,
         current_map3: List,
-    ) -> Tuple[str, List, str, List, str, List]:
+    ) -> Tuple[
+        Union[str, NoUpdate],
+        Union[List, NoUpdate],
+        Union[str, NoUpdate],
+        Union[List, NoUpdate],
+        Union[str, NoUpdate],
+        Union[List, NoUpdate],
+    ]:
         """Generate Leaflet layers for the three map views"""
         realizations = [int(real) for real in real_list]
         ctx = callback_context.triggered[0]
@@ -344,7 +351,7 @@ def update_maps(
     def _update_from_map_click(
         clicked_shape: Optional[Dict],
         _polyline: List[List[float]],
-    ) -> Tuple[str, Union[NoUpdate, str]]:
+    ) -> Tuple[str, Union[NoUpdate, str, None]]:
         """Update intersection source and optionally selected well when
         user clicks a shape in map"""
         ctx = callback_context.triggered[0]
