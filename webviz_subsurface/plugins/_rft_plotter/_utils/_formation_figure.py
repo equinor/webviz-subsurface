@@ -75,16 +75,13 @@ class FormationFigure:
 
     @property
     def pressure_range(self) -> List[float]:
-        min_sim = (
-            self._ertdf["SIMULATED"].min()
-            if self.use_ertdf
-            else self._simdf["PRESSURE"].min()
-        )
-        max_sim = (
-            self._ertdf["SIMULATED"].max()
-            if self.use_ertdf
-            else self._simdf["PRESSURE"].max()
-        )
+        if self.use_ertdf:
+            min_sim = self._ertdf["SIMULATED"].min()
+            max_sim = self._ertdf["SIMULATED"].max()
+        else:
+            assert self._simdf is not None
+            min_sim = self._simdf["PRESSURE"].min()
+            max_sim = self._simdf["PRESSURE"].max()
         min_obs = (self._ertdf["OBSERVED"] - self._ertdf["OBSERVED_ERR"]).min()
         max_obs = (self._ertdf["OBSERVED"] + self._ertdf["OBSERVED_ERR"]).max()
 
@@ -126,6 +123,7 @@ class FormationFigure:
         if self._depthtype == DepthType.MD:
             self._ertdf["DEPTH"] = self._ertdf[DepthType.MD.value]
             if self.simdf_has_md:
+                assert self._simdf is not None
                 self._simdf["DEPTH"] = self._simdf["CONMD"]
             if self._obsdf is not None and DepthType.MD.value in self._obsdf:
                 self._obsdf["DEPTH"] = self._obsdf[DepthType.MD.value]
@@ -246,6 +244,7 @@ class FormationFigure:
                     }
                 )
         else:
+            assert self._simdf is not None
             if linetype == LineType.REALIZATION:
                 for ensemble, ensdf in self._simdf.groupby("ENSEMBLE"):
                     for i, (real, realdf) in enumerate(ensdf.groupby("REAL")):

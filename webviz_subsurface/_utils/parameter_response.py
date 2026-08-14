@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -9,7 +9,7 @@ def filter_and_sum_responses(
     dframe: pd.DataFrame,
     ensemble: str,
     response: str,
-    filteroptions: Optional[List[Dict[str, str]]] = None,
+    filteroptions: Optional[List[Dict[str, Any]]] = None,
     aggregation: str = "sum",
 ) -> pd.DataFrame:
     """Filter response dataframe for the given ensemble

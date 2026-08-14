@@ -293,7 +293,7 @@ def distribution_controllers(
         subplots = selections["Subplots"] if selections["Subplots"] is not None else []
         groups = ["REAL"]
         if subplots and subplots not in groups:
-            groups.append(subplots)
+            groups.append(subplots)  # type: ignore[arg-type]
 
         dframe = volumemodel.get_df(filters=selections["filters"], groups=groups)
         dframe = dframe.sort_values(by=["REAL"])

@@ -144,6 +144,7 @@ class XSectionFigure:
     ) -> None:
         """Input an XTGeo Well object and plot it."""
         well = self._well
+        assert well is not None
 
         # reduce the well data by Pandas operations
         dfr = well.dataframe
@@ -169,6 +170,7 @@ class XSectionFigure:
 
     def _plot_well_traj(self, zvals: np.ndarray, hvals: np.ndarray) -> None:
         """Plot the trajectory as a black line"""
+        assert self._well is not None
 
         zvals_copy = ma.masked_where(zvals < self._zmin, zvals)
         hvals_copy = ma.masked_where(zvals < self._zmin, hvals)
@@ -248,6 +250,7 @@ class XSectionFigure:
         if facieslogname not in df.columns:
             return
 
+        assert self._well is not None
         frecord = self._well.get_logrecord(facieslogname)
         frecord = {val: fname for val, fname in frecord.items() if val >= 0}
 

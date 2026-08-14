@@ -621,7 +621,7 @@ folder, to avoid risk of not extracting the right data.
         )
         def _render_charts(  # pylint: disable=too-many-locals
             date: str, _: Any, fip_array: str
-        ):
+        ) -> Any:
             # TODO(Sigurd) Currently giving up on deciding on the return type for
             # _render_charts() above. Some of the mypy errors indicate that there
             # are some errors in the structure of the return values of this function

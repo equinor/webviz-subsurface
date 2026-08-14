@@ -103,12 +103,12 @@ class ColorPicker:
                             children=DataTable(
                                 id={"id": self._uuid, "element": "table"},
                                 fixed_rows={"headers": True},
-                                columns=self._columns,
+                                columns=self._columns,  # type: ignore[arg-type]
                                 style_header={
                                     "opacity": 0.5,
                                 },
                                 data=self._dframe.to_dict("records"),
-                                style_data_conditional=self.data_style_in_table,
+                                style_data_conditional=self.data_style_in_table,  # type: ignore[arg-type]
                             ),
                         ),
                         html.Div(

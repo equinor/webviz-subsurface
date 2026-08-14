@@ -175,7 +175,7 @@ def get_fanchart_traces(
     line_color = hex_to_rgba_str(hex_color, 1)
 
     def get_default_trace(statistics_name: str, values: np.ndarray) -> Dict[str, Any]:
-        trace = {
+        trace: Dict[str, Any] = {
             "name": legend_name if legend_name else legend_group,
             "x": data.samples if direction == TraceDirection.HORIZONTAL else values,
             "y": values if direction == TraceDirection.HORIZONTAL else data.samples,

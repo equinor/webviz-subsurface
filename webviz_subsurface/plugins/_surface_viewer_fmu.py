@@ -329,7 +329,7 @@ attribute_settings:
                                         id=self.uuid("calculation"),
                                         value="Difference",
                                         clearable=False,
-                                        options=[
+                                        options=[  # type: ignore[arg-type]
                                             {"label": i, "value": i}
                                             for i in [
                                                 "Difference",
