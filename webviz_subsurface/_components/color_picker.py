@@ -108,7 +108,9 @@ class ColorPicker:
                                     "opacity": 0.5,
                                 },
                                 data=self._dframe.to_dict("records"),
-                                style_data_conditional=self.data_style_in_table,  # type: ignore[arg-type]
+                                style_data_conditional=(
+                                    self.data_style_in_table  # type: ignore[arg-type]
+                                ),
                             ),
                         ),
                         html.Div(
