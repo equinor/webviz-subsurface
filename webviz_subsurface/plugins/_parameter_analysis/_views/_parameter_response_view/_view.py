@@ -2,7 +2,7 @@ import datetime
 from typing import Any, Dict, List, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import Input, Output, State, callback, callback_context, no_update
+from dash import Input, NoUpdate, Output, State, callback, callback_context, no_update
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -176,12 +176,14 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "figure",
+                allow_optional=True,
             ),
             State(
                 self.view_element(self.Ids.VECTOR_CORR_GRAPH)
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "figure",
+                allow_optional=True,
             ),
         )
         @callback_typecheck
@@ -399,6 +401,7 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
             Input(
                 self.settings_group_unique_id(
@@ -528,7 +531,7 @@ class ParameterResponseView(ViewABC):
             stored: Union[None, str],
             style_btn: Dict,
             style_textarea: Dict,
-        ) -> Tuple[str, Dict, Dict]:
+        ) -> Tuple[Union[str, None, NoUpdate], Dict, Dict]:
             """Update vector-filter-store if submit button is clicked and
             style of submit button"""
             vector_filter_used = (
@@ -680,6 +683,7 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
         )
         @callback_typecheck
@@ -708,6 +712,7 @@ class ParameterResponseView(ViewABC):
                 .component_unique_id(ParamRespViewElement.Ids.GRAPH)
                 .to_string(),
                 "clickData",
+                allow_optional=True,
             ),
             Input(
                 self.settings_group_unique_id(
@@ -730,11 +735,13 @@ class ParameterResponseView(ViewABC):
         ) -> tuple:
             """Update the selected parameter from clickdata, or when ensemble is changed"""
             ctx = callback_context.triggered[0]["prop_id"]
-            if ctx == "." or corr_vector_clickdata is None:
+            if ctx == ".":
                 raise PreventUpdate
             parameters = self._parametermodel.pmodel.parameters_per_ensemble[ensemble]
             options = [{"label": i, "value": i} for i in parameters]
             if "vector-corr-graph" in ctx:
+                if corr_vector_clickdata is None:
+                    raise PreventUpdate
                 return options, corr_vector_clickdata.get("points", [{}])[0].get("y")
             return (
                 options,

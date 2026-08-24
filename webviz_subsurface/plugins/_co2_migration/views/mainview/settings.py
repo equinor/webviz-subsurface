@@ -3,7 +3,7 @@ import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
-from dash import Input, Output, State, callback, dcc, html, no_update
+from dash import Input, NoUpdate, Output, State, callback, dcc, html, no_update
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
@@ -124,7 +124,7 @@ class ViewSettings(SettingsGroupABC):
         self._content = content
 
     def layout(self) -> List[Component]:
-        menu_layout = []
+        menu_layout: List[Component] = []
         if self._content["maps"]:
             menu_layout += [
                 DialogLayout(self._well_names_dict, list(self._ensemble_paths.keys())),
@@ -248,7 +248,7 @@ class ViewSettings(SettingsGroupABC):
         )
         def set_formations(
             prop: str, ensemble: str, current_value: str
-        ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        ) -> Tuple[List[Dict[str, Any]], Optional[Union[str, NoUpdate]]]:
             if ensemble is None:
                 return [], None
             surface_provider = self._ensemble_surface_providers[ensemble]
@@ -263,7 +263,7 @@ class ViewSettings(SettingsGroupABC):
                 warnings.warn(warning + ".gri")
             # Formation names
             formations = [{"label": v.title(), "value": v} for v in surfaces]
-            picked_formation = None
+            picked_formation: Optional[Union[str, NoUpdate]] = None
             if len(formations) != 0:
                 if current_value is None and self._initial_surface in surfaces:
                     picked_formation = self._initial_surface
@@ -1141,7 +1141,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                 html.Div(
                     [
                         dcc.RadioItems(
-                            options=[
+                            options=[  # type: ignore[arg-type]
                                 {"label": "Realizations", "value": "real"},
                                 {"label": "Mean/P10/P90", "value": "stat"},
                             ],
@@ -1212,7 +1212,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                 html.Div(
                     [
                         dcc.RadioItems(
-                            options=[
+                            options=[  # type: ignore[arg-type]
                                 {
                                     "label": "Probability plot",
                                     "value": StatisticsTabOption.PROBABILITY_PLOT,
@@ -1234,7 +1234,7 @@ class GraphSelectorsLayout(wcc.Selectors):
                 html.Div(
                     [
                         dcc.RadioItems(
-                            options=[
+                            options=[  # type: ignore[arg-type]
                                 {"label": "All", "value": "all_points"},
                                 {"label": "Outliers", "value": "only_outliers"},
                             ],

@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Any, Callable, Tuple
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -43,7 +43,7 @@ def property_delta_controller(
         prop: str,
         selectors: list,
         clickdata: dict,
-    ) -> Tuple[go.Figure, html.Div]:
+    ) -> Tuple[go.Figure, Any]:
         # Prevent update if some filters are empty
         if not all(filt for filt in selectors):
             raise PreventUpdate
@@ -65,7 +65,7 @@ def property_delta_controller(
                 else bars["data"][0]["y"][-1]
             )
             # Make surface div
-            wrapper = make_surfaces(
+            wrapper: Any = make_surfaces(
                 get_uuid=get_uuid,
                 surface_table=surface_table,
                 prop=prop,

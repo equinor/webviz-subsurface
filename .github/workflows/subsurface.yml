@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12"]
 
     steps:
       - name: 🧹 Remove unused pre-installed software
@@ -116,13 +116,13 @@ jobs:
           popd
 
       - name: 🐳 Update Docker Hub example image
-        if: github.event_name != 'release' && github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.11'
+        if: github.event_name != 'release' && github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.12'
         run: |
           echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
           docker push webviz/example_subsurface_image:equinor-theme
 
       - name: 🐳 Update review/test Docker example image
-        if: github.event_name != 'release' && github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.11'
+        if: github.event_name != 'release' && github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.12'
         run: |
           docker tag webviz/example_subsurface_image:equinor-theme ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
 
@@ -130,7 +130,7 @@ jobs:
           docker push ${{ secrets.review_docker_registry_url }}/${{ secrets.review_container_name }}
 
       - name: 📚 Update GitHub pages
-        if: github.event_name == 'release' && matrix.python-version == '3.11'
+        if: github.event_name == 'release' && matrix.python-version == '3.12'
         run: |
           webviz docs --portable ./docs_build --skip-open
 
@@ -163,7 +163,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
 
     steps:
       - name: 📖 Checkout commit locally

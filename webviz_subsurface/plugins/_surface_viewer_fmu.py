@@ -207,7 +207,7 @@ attribute_settings:
                             style=self.set_grid_layout("12fr 1fr 1fr"),
                             children=[
                                 dcc.Dropdown(
-                                    options=[
+                                    options=[  # type: ignore[arg-type]
                                         {"label": ens, "value": ens}
                                         for ens in self.ensembles
                                     ],
@@ -246,7 +246,7 @@ attribute_settings:
                             style=self.set_grid_layout("12fr 1fr 1fr"),
                             children=[
                                 dcc.Dropdown(
-                                    options=[
+                                    options=[  # type: ignore[arg-type]
                                         {"label": real, "value": real}
                                         for real in self.realizations(self.ensembles[0])
                                     ],
@@ -282,7 +282,7 @@ attribute_settings:
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             id=self.uuid("layout"),
             children=[
@@ -329,7 +329,7 @@ attribute_settings:
                                         id=self.uuid("calculation"),
                                         value="Difference",
                                         clearable=False,
-                                        options=[
+                                        options=[  # type: ignore[arg-type]
                                             {"label": i, "value": i}
                                             for i in [
                                                 "Difference",

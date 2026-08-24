@@ -10,17 +10,8 @@ import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
 import yaml
-from dash import (
-    ALL,
-    Dash,
-    Input,
-    Output,
-    State,
-    callback_context,
-    dash_table,
-    dcc,
-    html,
-)
+from dash import ALL, Dash, Input, Output, State, callback_context, dcc, html
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizConfigTheme, WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -630,7 +621,7 @@ folder, to avoid risk of not extracting the right data.
         )
         def _render_charts(  # pylint: disable=too-many-locals
             date: str, _: Any, fip_array: str
-        ):
+        ) -> Any:
             # TODO(Sigurd) Currently giving up on deciding on the return type for
             # _render_charts() above. Some of the mypy errors indicate that there
             # are some errors in the structure of the return values of this function
@@ -725,6 +716,7 @@ folder, to avoid risk of not extracting the right data.
                     groupby_color=self.groupby_colors,
                     line_shape=line_shape,
                 )
+            date_view: Any
             if date_viz == "table":
                 date_view = render_table(
                     stat_df=stat_df, mode=mode, groupby=groupby, date=date
@@ -988,7 +980,7 @@ def render_single_date_graph(
 
 def render_table(
     stat_df: pd.DataFrame, mode: str, groupby: str, date: str
-) -> dash_table.DataTable:
+) -> Union[DataTable, List[Any]]:
     columns = []
     if mode == "agg":
         columns = [col[0] for col in stat_df.columns if col[0].startswith("AGG_")]
@@ -1049,15 +1041,13 @@ def render_table(
                 col["format"]["specifier"] = ".2%"
             except KeyError:
                 pass
-    return (
-        dash_table.DataTable(
-            sort_action="native",
-            filter_action="native",
-            page_action="native",
-            page_size=10,
-            data=table,
-            columns=columns,
-        ),
+    return DataTable(
+        sort_action="native",
+        filter_action="native",
+        page_action="native",
+        page_size=10,
+        data=table,  # type: ignore[arg-type]
+        columns=columns,
     )
 
 

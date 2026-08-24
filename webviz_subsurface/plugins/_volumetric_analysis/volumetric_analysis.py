@@ -254,7 +254,7 @@ reek_test_data/aggregated_data/parameters.csv)
         self.set_callbacks()
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             children=[
                 clientside_stores(get_uuid=self.uuid),

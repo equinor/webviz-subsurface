@@ -4,7 +4,8 @@ from typing import Any, Callable, List, Optional
 import pandas as pd
 import plotly.graph_objects as go
 import webviz_core_components as wcc
-from dash import dash_table, dcc, html
+from dash import dcc, html
+from dash.dash_table.DataTable import DataTable
 
 from ._business_logic import SwatinitQcDataModel
 from ._markdown import (
@@ -68,21 +69,21 @@ def plugin_main_layout(get_uuid: Callable, datamodel: SwatinitQcDataModel) -> wc
             TabLayout(
                 tab_label=Tabs.OVERVIEW,
                 selections_layout=None,
-                main_layout=OverviewTabLayout(get_uuid, datamodel).main_layout,
+                main_layout=[OverviewTabLayout(get_uuid, datamodel).main_layout],
             ),
             TabLayout(
                 tab_label=Tabs.QC_PLOTS,
-                selections_layout=TabQqPlotLayout(
-                    get_uuid, datamodel
-                ).selections_layout,
-                main_layout=html.Div(id=get_uuid(LayoutElements.PLOT_WRAPPER)),
+                selections_layout=[
+                    TabQqPlotLayout(get_uuid, datamodel).selections_layout
+                ],
+                main_layout=[html.Div(id=get_uuid(LayoutElements.PLOT_WRAPPER))],
             ),
             TabLayout(
                 tab_label=Tabs.MAX_PC_SCALING,
-                selections_layout=TabMaxPcInfoLayout(
-                    get_uuid, datamodel
-                ).selections_layout,
-                main_layout=html.Div(id=get_uuid(LayoutElements.TABLE_WRAPPER)),
+                selections_layout=[
+                    TabMaxPcInfoLayout(get_uuid, datamodel).selections_layout
+                ],
+                main_layout=[html.Div(id=get_uuid(LayoutElements.TABLE_WRAPPER))],
             ),
         ],
     )
@@ -374,7 +375,7 @@ class TabMaxPcInfoLayout:
 
     def create_max_pc_table(
         self, dframe: pd.DataFrame, text_columns: list
-    ) -> dash_table:
+    ) -> DataTable:
         return DashTable(
             data=dframe.to_dict("records"),
             columns=[
@@ -556,16 +557,16 @@ def range_filters(uuid: str, datamodel: SwatinitQcDataModel) -> html.Div:
     return html.Div(filters)
 
 
-class DashTable(dash_table.DataTable):
+class DashTable(DataTable):
     def __init__(
         self, data: List[dict], columns: List[dict], height: str = "none", **kwargs: Any
     ) -> None:
         super().__init__(
             data=data,
-            columns=columns,
+            columns=columns,  # type: ignore[arg-type]
             style_table={"height": height, **LayoutStyle.TABLE_STYLE},
             style_as_list_view=True,
-            css=LayoutStyle.TABLE_CSS,
+            css=LayoutStyle.TABLE_CSS,  # type: ignore[arg-type]
             style_header=LayoutStyle.TABLE_HEADER,
             **kwargs,
         )

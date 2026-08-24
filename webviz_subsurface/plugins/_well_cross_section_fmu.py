@@ -181,7 +181,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     html.Span("Well:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("wells"),
-                        options=[
+                        options=[  # type: ignore[arg-type]
                             {"label": Path(well).stem, "value": well}
                             for well in self.wellfiles
                         ],
@@ -203,7 +203,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     html.Span("Surface:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("surfacenames"),
-                        options=[
+                        options=[  # type: ignore[arg-type]
                             {"label": name, "value": name} for name in self.surfacenames
                         ],
                         value=self.surfacenames,
@@ -225,7 +225,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                     html.Span("Ensemble:", style={"font-weight": "bold"}),
                     dcc.Dropdown(
                         id=self.ids("ensembles"),
-                        options=[
+                        options=[  # type: ignore[arg-type]
                             {"label": ens, "value": ens}
                             for ens in self.ensembles.keys()
                         ],
@@ -253,7 +253,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         html.Span("Seismic:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
                             id=self.ids("cube"),
-                            options=[
+                            options=[  # type: ignore[arg-type]
                                 {"label": Path(segy).stem, "value": segy}
                                 for segy in self.segyfiles
                             ],
@@ -278,7 +278,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                         html.Span("Marginal log:", style={"font-weight": "bold"}),
                         dcc.Dropdown(
                             id=self.ids("marginal-log"),
-                            options=[
+                            options=[  # type: ignore[arg-type]
                                 {"label": log, "value": log}
                                 for log in self.marginal_logs
                             ],
@@ -334,7 +334,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 ),
                 dcc.Checklist(
                     id=self.ids("options"),
-                    options=options,
+                    options=options,  # type: ignore[arg-type]
                     value=value,
                     persistence=True,
                     persistence_type="session",
@@ -348,7 +348,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
             children=[
                 dcc.Dropdown(
                     id=self.ids("surface-name"),
-                    options=[
+                    options=[  # type: ignore[arg-type]
                         {"label": name, "value": name} for name in self.surfacenames
                     ],
                     value=self.surfacenames[0],
@@ -359,7 +359,7 @@ e.g. [xtgeo](https://xtgeo.readthedocs.io/en/latest/).
                 ),
                 dcc.Dropdown(
                     id=self.ids("surface-type"),
-                    options=[
+                    options=[  # type: ignore[arg-type]
                         {"label": name, "value": name}
                         for name in [
                             "stddev",

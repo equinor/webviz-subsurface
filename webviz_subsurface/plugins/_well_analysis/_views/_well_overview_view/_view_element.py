@@ -11,7 +11,7 @@ class WellOverviewViewElement(ViewElementABC):
     def __init__(self) -> None:
         super().__init__()
 
-    def inner_layout(self) -> html.Div:
+    def inner_layout(self) -> html.Div:  # type: ignore[override]
         return html.Div(
             children=wcc.Graph(
                 id=self.register_component_unique_id(WellOverviewViewElement.Ids.GRAPH),

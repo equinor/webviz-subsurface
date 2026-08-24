@@ -25,7 +25,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "dash>=2.0.0,<3",
+    "dash>=2,<4",
     "dash_bootstrap_components>=0.10.3",
     "dash-daq>=0.5.0",
     "defusedxml>=0.6.0",
@@ -46,6 +46,7 @@ dependencies = [
     "xtgeo>=2.20.0",
     "vtk>=9.2.2",
     "webviz-config>=0.6.5",
+    "webviz-core-components>=0.9.0",
     "webviz-subsurface-components>=1.0.6",
 ]
 
@@ -112,7 +113,7 @@ tests = [
     "black>=22.1,<24",
     "dash[testing]",
     "isort",
-    "mypy<1.12",
+    "mypy",
     "pylint<3.2.0",
     "pytest-mock",
     "pytest-xdist",

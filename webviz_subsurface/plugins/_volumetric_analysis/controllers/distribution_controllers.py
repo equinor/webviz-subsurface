@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ def distribution_controllers(
         Input(get_uuid("selections"), "data"),
         State(get_uuid("page-selected"), "data"),
     )
-    def _update_page_custom(selections: dict, page_selected: str) -> tuple:
+    def _update_page_custom(selections: dict, page_selected: str) -> html.Div:
         if page_selected != "custom":
             raise PreventUpdate
 
@@ -212,7 +212,7 @@ def distribution_controllers(
         Input(get_uuid("selections"), "data"),
         State(get_uuid("page-selected"), "data"),
     )
-    def _update_page_per_zr(selections: dict, page_selected: str) -> list:
+    def _update_page_per_zr(selections: dict, page_selected: str) -> html.Div:
         if page_selected != "per_zr":
             raise PreventUpdate
 
@@ -293,7 +293,7 @@ def distribution_controllers(
         subplots = selections["Subplots"] if selections["Subplots"] is not None else []
         groups = ["REAL"]
         if subplots and subplots not in groups:
-            groups.append(subplots)
+            groups.append(subplots)  # type: ignore[arg-type]
 
         dframe = volumemodel.get_df(filters=selections["filters"], groups=groups)
         dframe = dframe.sort_values(by=["REAL"])
@@ -388,7 +388,7 @@ def make_tables(
     view_height: float,
     page_selected: str,
     groups: Optional[list] = None,
-) -> html.Div:
+) -> List[Any]:
     groups = groups if groups is not None else []
 
     if table_type == "Statistics table":

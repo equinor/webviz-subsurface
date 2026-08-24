@@ -50,7 +50,7 @@ def custom_plotting_layout(figure: go.Figure, tables: Optional[list]) -> html.Di
     )
 
 
-def plots_per_zone_region_layout(figures: list) -> list:
+def plots_per_zone_region_layout(figures: list) -> html.Div:
     height = "42vh" if len(figures) < 3 else "28vh"
     return html.Div(
         children=[

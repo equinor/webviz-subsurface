@@ -2,7 +2,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 import webviz_core_components as wcc
 import webviz_subsurface_components as wsc
-from dash import dash_table, html
+from dash import html
+from dash.dash_table.DataTable import DataTable
 
 from ..models import PropertyStatisticsModel
 from .selector_view import (
@@ -215,8 +216,8 @@ def property_delta_view(
     )
 
 
-def table_view(data: List[Any], columns: List[Any]) -> html.Div:
-    return dash_table.DataTable(
+def table_view(data: List[Any], columns: List[Any]) -> DataTable:
+    return DataTable(
         sort_action="native",
         page_action="native",
         filter_action="native",
@@ -224,6 +225,11 @@ def table_view(data: List[Any], columns: List[Any]) -> html.Div:
         data=data,
         columns=columns,
         style_cell={"textAlign": "center"},
-        style_cell_conditional=[{"if": {"column_id": "label|"}, "textAlign": "left"}],
+        style_cell_conditional=[
+            {
+                "if": {"column_id": "label|"},
+                "textAlign": "left",  # type: ignore[typeddict-unknown-key]
+            }
+        ],
         merge_duplicate_headers=True,
     )

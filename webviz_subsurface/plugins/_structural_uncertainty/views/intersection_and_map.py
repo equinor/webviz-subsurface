@@ -78,7 +78,7 @@ def map_layout(
     draw_polyline: bool = False,
 ) -> html.Div:
     synced_uuids = synced_uuids if synced_uuids else []
-    props: Optional[Dict] = (
+    props: Dict = (
         {
             "drawTools": {
                 "drawMarker": False,

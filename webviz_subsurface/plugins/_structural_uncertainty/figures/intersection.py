@@ -103,7 +103,7 @@ def get_plotly_traces_uncertainty_envelope(
         values_for_fanchart[FanChartStatistics.MINIMUM]
     ):
         fan_chart_data = FanchartData(
-            samples=values_for_fanchart["x"][unmasked_slice],
+            samples=values_for_fanchart["x"][unmasked_slice],  # type: ignore[arg-type]
             low_high=LowHighData(
                 low_data=values_for_fanchart[FanChartStatistics.P10][unmasked_slice],
                 low_name=FanChartStatistics.P10,

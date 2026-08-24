@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List, Type
+from typing import List
 
 from dash import ALL, Input, Output, callback, callback_context
 from dash.development.base_component import Component
@@ -370,5 +370,5 @@ class TornadoPlotterFMU(WebvizPluginABC):
         return tour
 
     @property
-    def layout(self) -> Type[Component]:
+    def layout(self) -> Component:  # type: ignore[override]
         return error(self._error_message)

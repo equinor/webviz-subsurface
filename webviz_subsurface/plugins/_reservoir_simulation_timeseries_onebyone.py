@@ -7,7 +7,8 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import webviz_core_components as wcc
-from dash import Dash, Input, Output, State, callback_context, dash_table, dcc, html
+from dash import Dash, Input, Output, State, callback_context, dcc, html
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.common_cache import CACHE
@@ -293,7 +294,7 @@ folder, to avoid risk of not extracting the right data.
         )
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return wcc.FlexBox(
             id=self.ids("layout"),
             children=[
@@ -337,7 +338,7 @@ folder, to avoid risk of not extracting the right data.
                                     ),
                                     html.Div(
                                         style={"fontSize": "15px"},
-                                        children=dash_table.DataTable(
+                                        children=DataTable(
                                             id=self.ids("table"),
                                             sort_action="native",
                                             filter_action="native",

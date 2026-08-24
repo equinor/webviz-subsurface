@@ -2,6 +2,7 @@ from typing import List, Optional
 
 import webviz_core_components as wcc
 from dash import html
+from dash.development.base_component import Component
 
 from webviz_subsurface._models import InplaceVolumesModel
 
@@ -36,7 +37,7 @@ def filter_dropdowns(
     hide_selectors: Optional[list] = None,
 ) -> html.Div:
     """Makes dropdowns for each selector"""
-    dropdowns_layout: List[html.Div] = []
+    dropdowns_layout: List[Component] = []
     hide_selectors = ["SENSNAME", "SENSTYPE", "SENSCASE"] + (
         hide_selectors if hide_selectors is not None else []
     )

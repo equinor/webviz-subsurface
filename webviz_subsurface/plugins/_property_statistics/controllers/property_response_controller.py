@@ -37,7 +37,7 @@ def property_response_controller(
     )
     def _update_surface(
         clickdata: Union[None, dict], ensemble: str, stype: str
-    ) -> Tuple[list, str]:
+    ) -> Tuple[Union[list, NoUpdate], str]:
         if clickdata is not None:
             label = clickdata["points"][0]["y"]
             prop = label.split(" | ")[0]
@@ -168,7 +168,7 @@ def property_response_controller(
 
         # Get dataframe with vector and REAL
         vector_df = timeseries_model.get_vector_df(
-            ensemble=ensemble, vectors=[vector], realizations=real_filter
+            ensemble=ensemble, vectors=[vector], realizations=real_filter  # type: ignore[arg-type]
         )
         if date not in vector_df["DATE"].values or vector not in vector_df:
             return {}, {}, {}

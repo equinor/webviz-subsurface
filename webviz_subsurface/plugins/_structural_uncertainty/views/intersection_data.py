@@ -274,7 +274,7 @@ def statistical_layout(uuid: str, value: List[str]) -> html.Div:
     )
 
 
-def blue_apply_button(uuid: str, title: str) -> html.Div:
+def blue_apply_button(uuid: str, title: str) -> html.Button:
     return html.Button(
         title,
         className="webviz-structunc-blue-apply-btn",

@@ -29,7 +29,7 @@ def main_view(
             label="Inplace distributions",
             value="voldist",
             children=tab_view_layout(
-                main_layout=distributions_main_layout(uuid=get_uuid("main-voldist")),
+                main_layout=[distributions_main_layout(uuid=get_uuid("main-voldist"))],
                 sidebar_layout=[
                     selections_layout(
                         uuid=get_uuid("selections"),
@@ -48,9 +48,11 @@ def main_view(
             label="Tables",
             value="table",
             children=tab_view_layout(
-                main_layout=table_main_layout(
-                    uuid=get_uuid("main-table"),
-                ),
+                main_layout=[
+                    table_main_layout(
+                        uuid=get_uuid("main-table"),
+                    )
+                ],
                 sidebar_layout=[
                     table_selections_layout(
                         uuid=get_uuid("selections"),
@@ -70,9 +72,11 @@ def main_view(
                 label="Tornadoplots",
                 value="tornado",
                 children=tab_view_layout(
-                    main_layout=tornado_main_layout(
-                        uuid=get_uuid("main-tornado"),
-                    ),
+                    main_layout=[
+                        tornado_main_layout(
+                            uuid=get_uuid("main-tornado"),
+                        )
+                    ],
                     sidebar_layout=[
                         tornado_selections_layout(
                             uuid=get_uuid("selections"),
@@ -95,7 +99,7 @@ def main_view(
                 label="Source comparison",
                 value="src-comp",
                 children=tab_view_layout(
-                    main_layout=comparison_main_layout(get_uuid("main-src-comp")),
+                    main_layout=[comparison_main_layout(get_uuid("main-src-comp"))],
                     sidebar_layout=[
                         comparison_selections(
                             uuid=get_uuid("selections"),
@@ -120,7 +124,7 @@ def main_view(
                 label=f"{compare_on} comparison",
                 value="ens-comp",
                 children=tab_view_layout(
-                    main_layout=comparison_main_layout(get_uuid("main-ens-comp")),
+                    main_layout=[comparison_main_layout(get_uuid("main-ens-comp"))],
                     sidebar_layout=[
                         comparison_selections(
                             uuid=get_uuid("selections"),

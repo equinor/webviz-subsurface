@@ -1,7 +1,7 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import webviz_core_components as wcc
-from dash import Input, Output, State, callback, no_update
+from dash import Input, NoUpdate, Output, State, callback, no_update
 from dash.development.base_component import Component
 from webviz_config.utils import StrEnum
 from webviz_config.webviz_plugin_subclasses import SettingsGroupABC
@@ -124,7 +124,9 @@ class DataSettings(SettingsGroupABC):
             property_names: List[str],
             static_dynamic: str,
             current_date_options: List,
-        ) -> Tuple[List[Dict[str, str]], Optional[List[str]]]:
+        ) -> Tuple[
+            Union[List[Dict[str, str]], NoUpdate], Union[Optional[List[str]], NoUpdate]
+        ]:
             if PROPERTYTYPE(static_dynamic) == PROPERTYTYPE.STATIC:
                 return [], None
 

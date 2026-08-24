@@ -3,7 +3,18 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import Dash, Input, Output, Patch, State, callback, ctx, html, no_update
+from dash import (
+    Dash,
+    Input,
+    NoUpdate,
+    Output,
+    Patch,
+    State,
+    callback,
+    ctx,
+    html,
+    no_update,
+)
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum, callback_typecheck
@@ -291,7 +302,7 @@ class CO2Migration(WebvizPluginABC):
         self.add_view(MainView(self._color_tables, self._content), self.Ids.MAIN_VIEW)
 
     @property
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div:  # type: ignore[override]
         return _error.error(self._error_message)
 
     def _view_component(self, component_id: str) -> str:
@@ -503,7 +514,9 @@ class CO2Migration(WebvizPluginABC):
             ensemble: str,
             current_views: List[Any],
             thresholds: List[float],
-        ) -> Tuple[List[Dict[Any, Any]], Optional[List[Any]], Dict[Any, Any]]:
+        ) -> Tuple[
+            List[Dict[Any, Any]], Optional[List[Any]], Union[Dict[Any, Any], NoUpdate]
+        ]:
             # Unable to clear cache (when needed) without the protected member
             # pylint: disable=protected-access
             current_thresholds = dict(zip(self._threshold_ids, thresholds))
@@ -616,7 +629,9 @@ class CO2Migration(WebvizPluginABC):
                 haz_url=hazardous_polygon_url,
                 nogo_url=nogo_polygon_url,
             )
-            viewports = no_update if current_views else create_map_viewports()
+            viewports: Union[Dict[Any, Any], NoUpdate] = (
+                no_update if current_views else create_map_viewports()
+            )
             return layers, annotations, viewports
 
     def _add_set_well_options_callback(self) -> None:

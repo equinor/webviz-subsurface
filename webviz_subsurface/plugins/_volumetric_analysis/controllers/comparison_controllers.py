@@ -1,10 +1,10 @@
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import Input, Output, State, callback, dash_table, html
+from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 
 from webviz_subsurface._figures import create_figure
@@ -335,7 +335,7 @@ def create_comaprison_table(
     compare_on: str,
     use_si_format: Optional[bool] = None,
     volumemodel: Optional[InplaceVolumesModel] = None,
-) -> dash_table.DataTable:
+) -> Any:
     diff_mode_percent = selections["Diff mode"] == "diff (%)"
 
     if selections["Remove non-highlighted"]:

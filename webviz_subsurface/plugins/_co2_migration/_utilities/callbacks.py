@@ -238,8 +238,8 @@ def _create_summed_mass_annotation(
     attribute: MapAttribute,
     summed_mass: Optional[float],
     unit: str,
-) -> Union[str, tuple]:
-    annotation = (
+) -> html.Div:
+    annotation: Union[html.P, str] = (
         html.P(
             [
                 f"Total {MapAttribute[attribute.name].value.lower()}:",

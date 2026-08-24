@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple, Type
+from typing import Callable, List, Tuple
 
 from dash.development.base_component import Component
 from webviz_config import WebvizPluginABC, WebvizSettings
@@ -53,7 +53,7 @@ class ParameterCorrelation(WebvizPluginABC):
         )
 
     @property
-    def layout(self) -> Type[Component]:
+    def layout(self) -> Component:  # type: ignore[override]
         return error(self.error_message)
 
     @property

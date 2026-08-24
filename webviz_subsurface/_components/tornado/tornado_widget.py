@@ -12,10 +12,10 @@ from dash import (
     Output,
     State,
     callback_context,
-    dash_table,
     dcc,
     html,
 )
+from dash.dash_table.DataTable import DataTable
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizSettings
 from webviz_config.webviz_assets import WEBVIZ_ASSETS
@@ -325,7 +325,7 @@ class TornadoWidget:
                         html.Div(
                             id=self.ids("table-wrapper"),
                             style={"display": "none"},
-                            children=dash_table.DataTable(
+                            children=DataTable(
                                 id=self.ids("tornado-table"),
                                 style_cell={
                                     "whiteSpace": "normal",

@@ -49,7 +49,7 @@ class MapViewElement(ViewElementABC):
         self._color_scales = color_scales
         self._content = content
 
-    def inner_layout(self) -> Component:
+    def inner_layout(self) -> Component:  # type: ignore[override]
         layout_elements = []
         if self._content["maps"]:
             layout_elements.append(
@@ -128,7 +128,7 @@ class MapViewElement(ViewElementABC):
             layout_elements.append(
                 dcc.Store(
                     id=self.register_component_unique_id(self.Ids.LEGEND_DATA_STORE),
-                    data=LegendData(
+                    data=LegendData(  # type: ignore[arg-type]
                         bar_legendonly=None,
                         time_legendonly=None,
                         stats_legendonly=None,

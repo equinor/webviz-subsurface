@@ -1,6 +1,15 @@
-from typing import Callable
+from typing import Callable, Union
 
-from dash import ALL, Input, Output, State, callback, callback_context, no_update
+from dash import (
+    ALL,
+    Input,
+    NoUpdate,
+    Output,
+    State,
+    callback,
+    callback_context,
+    no_update,
+)
 from dash.exceptions import PreventUpdate
 
 from ..utils.utils import update_relevant_components
@@ -19,7 +28,7 @@ def layout_controllers(get_uuid: Callable) -> None:
         _apply_click: int,
         tab_selected: str,
         button_ids: list,
-        previous_page: dict,
+        previous_page: Union[dict, NoUpdate],
     ) -> tuple:
         ctx = callback_context.triggered[0]
         initial_pages = {"voldist": "custom", "tornado": "torn_multi"}
@@ -37,14 +46,16 @@ def layout_controllers(get_uuid: Callable) -> None:
             page_selected = (
                 tab_selected
                 if not tab_selected in initial_pages
-                else previous_page[tab_selected]
+                else previous_page[tab_selected]  # type: ignore[index]
             )
             previous_page = no_update
 
         else:
             for button_id in button_ids:
                 if button_id["button"] in ctx["prop_id"]:
-                    page_selected = previous_page[tab_selected] = button_id["button"]
+                    page_selected = previous_page[tab_selected] = button_id[  # type: ignore[index]
+                        "button"
+                    ]
 
         return page_selected, previous_page
 
