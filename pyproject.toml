@@ -30,7 +30,7 @@ dependencies = [
     "dash-daq>=0.5.0",
     "defusedxml>=0.6.0",
     "res2df>=1.0; sys_platform=='linux'",
-    "flask-caching",
+    "flask-caching<2.5",
     "fmu-ensemble>=1.2.3",
     "fmu-tools>=1.8",
     "geojson>=2.5.0",
