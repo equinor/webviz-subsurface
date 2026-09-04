@@ -19,6 +19,7 @@ def build_figure(
     observationmodel: Optional[ObservationModel],
     parameterproviders: Dict[str, EnsembleTableProvider],
     colors: Dict,
+    line_style: Optional[Dict] = None,
 ) -> None:
     @app.callback(
         Output(
@@ -103,7 +104,10 @@ def build_figure(
         if df.empty:
             return [], {"title": "No data found with current filter"}
         figure = PlotlyLinePlot(
-            xaxis_title=x_column_name, yaxis_title=y_column_name, ensemble_colors=colors
+            xaxis_title=x_column_name,
+            yaxis_title=y_column_name,
+            ensemble_colors=colors,
+            line_style=line_style,
         )
         if "Realizations" in traces:
             figure.add_realization_traces(

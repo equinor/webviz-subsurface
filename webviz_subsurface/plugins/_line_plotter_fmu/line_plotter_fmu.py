@@ -30,6 +30,14 @@ class LinePlotterFMU(WebvizPluginABC):
     * **`remap_observation_keys`:** Remap observation keys to columns in csv file
     * **`remap_observation_values`:** Remap observation values to columns in csv file
     * **`colors`:** Set colors for each ensemble
+    * **`line_style`:** Control color, opacity and line/marker width per trace group. \
+    Each group is optional and unset options fall back to their defaults. Available \
+    groups and options:
+        * `observations`: `color` (default `black`), `opacity` (default `1`), \
+        `marker_size` (default `8`), `line_width` (error bar thickness, default `2`)
+        * `realizations`: `opacity` (default: dimmed automatically if statistics or \
+        observations are also shown, otherwise fully opaque), `line_width` (default `0.5`)
+        * `statistics`: `opacity` (default `1`), `line_width` (default `3`)
     * **`initial_data`:** Initialize data selectors (x,y,ensemble, parameter)
     * **`initial_layout`:** Initialize plot layout (x and y axis direction and type)"""
 
@@ -49,6 +57,7 @@ class LinePlotterFMU(WebvizPluginABC):
         colors: Dict = None,
         initial_data: Dict = None,
         initial_layout: Dict = None,
+        line_style: Dict = None,
     ):
         super().__init__()
 
@@ -131,6 +140,7 @@ class LinePlotterFMU(WebvizPluginABC):
         self._colors: Dict = unique_colors(self._ensemble_names, webviz_settings.theme)
         if colors is not None:
             self._colors.update(colors)
+        self._line_style = line_style
 
         self.set_callbacks(app)
 
@@ -172,6 +182,7 @@ class LinePlotterFMU(WebvizPluginABC):
             observationmodel=self._observationmodel,
             parameterproviders=self._parameterproviderset,
             colors=self._colors,
+            line_style=self._line_style,
         )
         update_figure_clientside(app, get_uuid=self.uuid)
 

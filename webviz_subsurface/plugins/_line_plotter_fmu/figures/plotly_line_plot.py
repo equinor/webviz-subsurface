@@ -3,6 +3,33 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import plotly.graph_objects as go
 
+# Defaults are kept as None where a dynamic/previous behaviour should be preserved
+# unless the user explicitly overrides the value through the `line_style` config.
+DEFAULT_LINE_STYLE: Dict[str, Dict] = {
+    "observations": {
+        "color": "black",
+        "opacity": 1,
+        "marker_size": 8,
+        "line_width": 2,
+    },
+    "realizations": {
+        "opacity": None,
+        "line_width": 0.5,
+    },
+    "statistics": {
+        "opacity": 1,
+        "line_width": 3,
+    },
+}
+
+
+def _merge_line_style(line_style: Optional[Dict]) -> Dict:
+    """Merge user provided line_style config with the defaults, per trace group"""
+    merged = {group: dict(values) for group, values in DEFAULT_LINE_STYLE.items()}
+    for group, values in (line_style or {}).items():
+        merged.setdefault(group, {}).update(values)
+    return merged
+
 
 class PlotlyLinePlot:
     def __init__(
@@ -10,8 +37,10 @@ class PlotlyLinePlot:
         xaxis_title: str = None,
         yaxis_title: str = None,
         ensemble_colors: Dict = None,
+        line_style: Dict = None,
     ) -> None:
         self._ensemble_colors = ensemble_colors if ensemble_colors else {}
+        self._line_style = _merge_line_style(line_style)
         self._realization_traces: List = []
         self._statistical_traces: List = []
         self._observation_traces: List = []
@@ -34,6 +63,13 @@ class PlotlyLinePlot:
     ) -> None:
         """Renders line trace for each realization"""
         # If color parameter is given, normalize values for coloring
+        style = self._line_style["realizations"]
+        # Explicit config value takes precedence, otherwise fall back to the
+        # dynamically computed opacity passed in from the caller.
+        trace_opacity = style.get("opacity")
+        if trace_opacity is None:
+            trace_opacity = opacity
+        line_width = style.get("line_width", 0.5)
         if color_column is not None:
             dframe["VALUE_NORM"] = (
                 dframe[color_column] - dframe[color_column].min()
@@ -63,8 +99,8 @@ class PlotlyLinePlot:
                                 ensemble, "rgba(128,128,128,0.2)"
                             ),
                         },
-                        "opacity": opacity,
-                        "line": {"width": 3 if real in highlight_reals else 0.5},
+                        "opacity": trace_opacity,
+                        "line": {"width": 3 if real in highlight_reals else line_width},
                         "mode": mode,
                         "showlegend": real_no == 0 and color_column is None,
                     }
@@ -107,12 +143,15 @@ class PlotlyLinePlot:
         traces: List,
         mode: str = "lines",
     ) -> None:
+        style = self._line_style["statistics"]
+        line_width = style.get("line_width", 3)
+        opacity = style.get("opacity", 1)
         for ensemble, ens_df in dframe.groupby("ENSEMBLE"):
             color = self._ensemble_colors.get(ensemble, "rgba(128,128,128,1)")
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dot", "width": 3},
+                        "line": {"dash": "dot", "width": line_width},
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "max")],
                         "hovertemplate": f"Calculation: {'mac'}, Ensemble: {ensemble}",
@@ -120,13 +159,14 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
+                        "opacity": opacity,
                         "mode": mode,
                     }
                 )
             if "P10/P90" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dash"},
+                        "line": {"dash": "dash", "width": line_width},
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "high_p10")],
                         "hovertemplate": f"Calculation: {'high_p10'}, Ensemble: {ensemble}",
@@ -134,6 +174,7 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
+                        "opacity": opacity,
                         "mode": mode,
                     }
                 )
@@ -147,14 +188,15 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         # "fill": "tonexty",
                         "marker": {"color": color},
+                        "opacity": opacity,
                         "mode": mode,
-                        "line": {"width": 3},
+                        "line": {"width": line_width},
                     }
                 )
             if "P10/P90" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dash"},
+                        "line": {"dash": "dash", "width": line_width},
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "low_p90")],
                         "hovertemplate": f"Calculation: {'low_p90'}, Ensemble: {ensemble}",
@@ -163,13 +205,14 @@ class PlotlyLinePlot:
                         "showlegend": False,
                         # "fill": "tonexty",
                         "marker": {"color": color},
+                        "opacity": opacity,
                         "mode": mode,
                     }
                 )
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dot", "width": 1},
+                        "line": {"dash": "dot", "width": line_width},
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "min")],
                         "hovertemplate": f"Calculation: {'min'}, Ensemble: {ensemble}",
@@ -177,17 +220,21 @@ class PlotlyLinePlot:
                         "legendgroup": ensemble,
                         "showlegend": False,
                         "marker": {"color": color},
+                        "opacity": opacity,
                         "mode": mode,
                     }
                 )
 
     def add_observations(self, observations: list, x_value: str) -> None:
+        style = self._line_style["observations"]
+        color = style.get("color", "black")
         for obs in observations:
             self._observation_traces.append(
                 {
                     "x": [obs.get(x_value, [])],
                     "y": [obs.get("value", [])],
-                    "marker": {"color": "black"},
+                    "marker": {"color": color, "size": style.get("marker_size", 8)},
+                    "opacity": style.get("opacity", 1),
                     "text": obs.get("comment", None),
                     "hoverinfo": "y+x+text",
                     "showlegend": False,
@@ -195,6 +242,8 @@ class PlotlyLinePlot:
                         "type": "data",
                         "array": [obs.get("error"), []],
                         "visible": True,
+                        "color": color,
+                        "thickness": style.get("line_width", 2),
                     },
                 }
             )
