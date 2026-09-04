@@ -9,7 +9,7 @@ DEFAULT_LINE_STYLE: Dict[str, Dict] = {
     "observations": {
         "color": "black",
         "opacity": 1,
-        "marker_size": 8,
+        "marker_size": None,
         "line_width": 2,
     },
     "realizations": {
@@ -17,8 +17,8 @@ DEFAULT_LINE_STYLE: Dict[str, Dict] = {
         "line_width": 0.5,
     },
     "statistics": {
-        "opacity": 1,
-        "line_width": 3,
+        "opacity": None,
+        "line_width": None,
     },
 }
 
@@ -144,14 +144,25 @@ class PlotlyLinePlot:
         mode: str = "lines",
     ) -> None:
         style = self._line_style["statistics"]
-        line_width = style.get("line_width", 3)
+        # A configured width/opacity applies to all statistical traces, otherwise
+        # the original per-trace default (dash type/width) from before this option
+        # was added is kept as-is.
+        configured_width = style.get("line_width")
         opacity = style.get("opacity", 1)
+
+        def line(dash: str, default_width: Optional[float] = None) -> Dict:
+            width = configured_width if configured_width is not None else default_width
+            line_dict: Dict = {"dash": dash}
+            if width is not None:
+                line_dict["width"] = width
+            return line_dict
+
         for ensemble, ens_df in dframe.groupby("ENSEMBLE"):
             color = self._ensemble_colors.get(ensemble, "rgba(128,128,128,1)")
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dot", "width": line_width},
+                        "line": line("dot", 3),
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "max")],
                         "hovertemplate": f"Calculation: {'mac'}, Ensemble: {ensemble}",
@@ -166,7 +177,7 @@ class PlotlyLinePlot:
             if "P10/P90" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dash", "width": line_width},
+                        "line": line("dash"),
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "high_p10")],
                         "hovertemplate": f"Calculation: {'high_p10'}, Ensemble: {ensemble}",
@@ -190,13 +201,17 @@ class PlotlyLinePlot:
                         "marker": {"color": color},
                         "opacity": opacity,
                         "mode": mode,
-                        "line": {"width": line_width},
+                        "line": {
+                            "width": configured_width
+                            if configured_width is not None
+                            else 3
+                        },
                     }
                 )
             if "P10/P90" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dash", "width": line_width},
+                        "line": line("dash"),
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "low_p90")],
                         "hovertemplate": f"Calculation: {'low_p90'}, Ensemble: {ensemble}",
@@ -212,7 +227,7 @@ class PlotlyLinePlot:
             if "Low/High" in traces:
                 self._statistical_traces.append(
                     {
-                        "line": {"dash": "dot", "width": line_width},
+                        "line": line("dot", 1),
                         "x": ens_df[x_column],
                         "y": ens_df[(y_column, "min")],
                         "hovertemplate": f"Calculation: {'min'}, Ensemble: {ensemble}",
@@ -228,12 +243,15 @@ class PlotlyLinePlot:
     def add_observations(self, observations: list, x_value: str) -> None:
         style = self._line_style["observations"]
         color = style.get("color", "black")
+        marker: Dict = {"color": color}
+        if style.get("marker_size") is not None:
+            marker["size"] = style["marker_size"]
         for obs in observations:
             self._observation_traces.append(
                 {
                     "x": [obs.get(x_value, [])],
                     "y": [obs.get("value", [])],
-                    "marker": {"color": color, "size": style.get("marker_size", 8)},
+                    "marker": marker,
                     "opacity": style.get("opacity", 1),
                     "text": obs.get("comment", None),
                     "hoverinfo": "y+x+text",

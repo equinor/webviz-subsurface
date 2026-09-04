@@ -34,10 +34,13 @@ class LinePlotterFMU(WebvizPluginABC):
     Each group is optional and unset options fall back to their defaults. Available \
     groups and options:
         * `observations`: `color` (default `black`), `opacity` (default `1`), \
-        `marker_size` (default `8`), `line_width` (error bar thickness, default `2`)
-        * `realizations`: `opacity` (default: dimmed automatically if statistics or \
-        observations are also shown, otherwise fully opaque), `line_width` (default `0.5`)
-        * `statistics`: `opacity` (default `1`), `line_width` (default `3`)
+        `marker_size` (default: unset, i.e. Plotly's default marker size), \
+        `line_width` (error bar thickness, default `2`)
+        * `realizations`: `opacity` (default: dimmed automatically when one or more \
+        statistical traces are shown together with realizations, otherwise fully \
+        opaque), `line_width` (default `0.5`)
+        * `statistics`: `opacity` (default `1`), `line_width` (default: unset, i.e. \
+        each statistical trace keeps its own distinct default width)
     * **`initial_data`:** Initialize data selectors (x,y,ensemble, parameter)
     * **`initial_layout`:** Initialize plot layout (x and y axis direction and type)"""
 
