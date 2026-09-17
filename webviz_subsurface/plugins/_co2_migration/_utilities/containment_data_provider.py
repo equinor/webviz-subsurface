@@ -9,7 +9,6 @@ from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     MenuOptions,
 )
 
-
 _PHASE_ORDER = (
     "total",
     "gas",

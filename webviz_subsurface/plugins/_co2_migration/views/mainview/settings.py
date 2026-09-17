@@ -33,8 +33,6 @@ from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     map_group_labels,
 )
 
-
-
 ROW = {"display": "flex", "flex-direction": "row"}
 COL = {"display": "flex", "flex-direction": "column"}
 
@@ -737,9 +735,7 @@ class VisualizationThresholdsLayout(wcc.Dialog):
             id=ViewSettings.Ids.VISUALIZATION_THRESHOLD_DIALOG,
             draggable=True,
             open=False,
-            children=html.Div(
-                fields, style={**COL, "width": "500px"}
-            ),
+            children=html.Div(fields, style={**COL, "width": "500px"}),
         )
 
 
