@@ -10,6 +10,20 @@ from webviz_subsurface.plugins._co2_migration._utilities.generic import (
 )
 
 
+_PHASE_ORDER = (
+    "total",
+    "gas",
+    "moving_gas",
+    "stationary_gas",
+    "free_gas",
+    "moving_free_gas",
+    "stationary_free_gas",
+    "trapped_gas",
+    "dissolved_water",
+    "dissolved_oil",
+)
+
+
 class ContainmentDataValidationError(Exception):
     pass
 
@@ -28,19 +42,12 @@ class ContainmentDataProvider:
     def realizations(self) -> List[int]:
         return self._provider.realizations()
 
-    def extract_dataframe(
-        self, realization: int, scale: Union[Co2MassScale, Co2VolumeScale]
-    ) -> pd.DataFrame:
+    def extract_dataframe(self, realization: int) -> pd.DataFrame:
         df = self._provider.get_column_data(
             self._provider.column_names(), [realization]
         )
         # Backward compatibility:
         df["containment"] = df["containment"].replace({"hazardous": "nogo"})
-
-        scale_factor = self._find_scale_factor(scale)
-        if scale_factor == 1.0:
-            return df
-        df["amount"] /= scale_factor
         return df
 
     def extract_condensed_dataframe(
@@ -59,25 +66,11 @@ class ContainmentDataProvider:
         if co2_scale == Co2MassScale.MTONS:
             df.loc[:, "amount"] /= 1e9
         elif co2_scale == Co2MassScale.NORMALIZE:
-            df.loc[:, "amount"] /= df["amount"].max()
+            for r in self.realizations:
+                mask = df["realization"] == r
+                r_max = df.loc[mask, "amount"].max()
+                df.loc[mask, "amount"] /= r_max
         return df
-
-    def _find_scale_factor(
-        self,
-        scale: Union[Co2MassScale, Co2VolumeScale],
-    ) -> float:
-        if scale == Co2MassScale.KG:
-            return 0.001
-        if scale in (Co2MassScale.TONS, Co2VolumeScale.CUBIC_METERS):
-            return 1.0
-        if scale == Co2MassScale.MTONS:
-            return 1e6
-        if scale == Co2VolumeScale.BILLION_CUBIC_METERS:
-            return 1e9
-        if scale in (Co2MassScale.NORMALIZE, Co2VolumeScale.NORMALIZE):
-            df = self._provider.get_column_data(["amount"])
-            return df["amount"].max()
-        return 1.0
 
     @staticmethod
     def _get_menu_options(provider: EnsembleTableProvider) -> MenuOptions:
@@ -111,12 +104,8 @@ class ContainmentDataProvider:
 
         plume_groups = sorted(plume_groups, key=plume_sort_key)
 
-        phases = ["total", "gas", "dissolved_water"]
-        if "free_gas" in list(df["phase"]):
-            idx = phases.index("gas")
-            phases = phases[:idx] + ["free_gas", "trapped_gas"] + phases[idx + 1 :]
-        if "dissolved_oil" in list(df["phase"]):
-            phases.append("dissolved_oil")
+        observed_phases = set(df["phase"].dropna().unique())
+        phases = [phase for phase in _PHASE_ORDER if phase in observed_phases]
 
         dates = df["date"].unique()
         dates.sort()
