@@ -724,10 +724,7 @@ class CO2Migration(WebvizPluginABC):
         )
         def make_unit_list(
             attribute: str,
-        ) -> Union[
-            Tuple[List[Any], Co2MassScale],
-            Tuple[List[Any], Co2VolumeScale],
-        ]:
+        ) -> Union[Tuple[List[Any], Co2MassScale], Tuple[List[Any], Co2VolumeScale],]:
             if attribute == GraphSource.CONTAINMENT_ACTUAL_VOLUME:
                 return list(Co2VolumeScale), Co2VolumeScale.BILLION_CUBIC_METERS
             return list(Co2MassScale), Co2MassScale.MTONS
@@ -867,8 +864,10 @@ class CO2Migration(WebvizPluginABC):
                         )
                         figs[2] = go.Figure()
                 else:
-                    LOGGER.warning("""UNSMRY file has not been specified as input.
-                         Please use unsmry_relpath in the configuration.""")
+                    LOGGER.warning(
+                        """UNSMRY file has not been specified as input.
+                         Please use unsmry_relpath in the configuration."""
+                    )
             return figs  # type: ignore
 
     def _add_legend_change_callback(self) -> None:
