@@ -162,7 +162,7 @@ class MapViewElement(ViewElementABC):
             layout_elements,
             style={
                 "display": "flex",
-                "flexDirection": "column",
+                "flex-direction": "column",
                 "height": "90vh",
             },
         )
