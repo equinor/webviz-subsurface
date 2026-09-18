@@ -37,6 +37,10 @@ class Marks(StrEnum):
     gas = ""
     free_gas = ""
     trapped_gas = "."
+    moving_gas = ""
+    stationary_gas = "+"
+    moving_free_gas = ""
+    stationary_free_gas = "+"
 
 
 class Lines(StrEnum):
@@ -44,7 +48,11 @@ class Lines(StrEnum):
     dissolved_oil = "longdash"
     gas = "dot"
     free_gas = "dot"
-    trapped_gas = "dashdot"
+    trapped_gas = "longdashdot"
+    moving_gas = "dot"
+    stationary_gas = "dashdot"
+    moving_free_gas = "dot"
+    stationary_free_gas = "dashdot"
 
 
 _CONTAINMENT_COLORS = {
@@ -60,8 +68,12 @@ _PHASE_COLORS = {
     "dissolved_water": ("#208eb7", "#81cde9"),
     "dissolved_oil": ("#A0522D", "#C28163"),
     "gas": ("#C41E3A", "#E42E5A"),
-    "free_gas": ("#FF2400", "#FF7430"),
-    "trapped_gas": ("#880808", "#C84848"),
+    "free_gas": ("#C41E3A", "#E42E5A"),
+    "trapped_gas": ("#2E8B57", "#66CDAA"),
+    "moving_gas": ("#C41E3A", "#E42E5A"),
+    "stationary_gas": ("#FF6B00", "#FF9F40"),
+    "moving_free_gas": ("#C41E3A", "#E42E5A"),
+    "stationary_free_gas": ("#FF6B00", "#FF9F40"),
 }
 
 
@@ -94,6 +106,10 @@ _LABEL_TRANSLATIONS = {
     "dissolved_oil": "dissolved oil",
     "free_gas": "free gas",
     "trapped_gas": "trapped gas",
+    "moving_gas": "moving gas",
+    "stationary_gas": "stationary gas",
+    "moving_free_gas": "moving free gas",
+    "stationary_free_gas": "stationary free gas",
 }
 
 
@@ -364,11 +380,12 @@ def _read_terminal_co2_volumes(
         records[mark_choice] = []
     data_frame = None
     for real in realizations:
-        df = table_provider.extract_dataframe(real, scale)
+        df = table_provider.extract_dataframe(real)
         df = df[df["date"] == containment_info.date_option]
         _add_sort_key_and_real(df, str(real), containment_info)
         _filter_columns(df, color_choice, mark_choice, containment_info)
         _filter_rows(df, color_choice, mark_choice)
+        _scale_df(df, scale, color_choice, mark_choice)
         if data_frame is None:
             data_frame = df
         else:
@@ -409,6 +426,65 @@ def _filter_rows(
         df.query(f'{mark_choice} not in ["total", "all"]', inplace=True)
 
 
+def _scale_df(
+    df: pd.DataFrame,
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    color_choice: str,
+    mark_choice: str,
+    inplace: bool = True,
+) -> Optional[pd.DataFrame]:
+    scale_factor = 1.0
+    if scale == Co2MassScale.KG:
+        scale_factor = 0.001
+    elif scale == Co2MassScale.MTONS:
+        scale_factor = 1e6
+    elif scale == Co2VolumeScale.BILLION_CUBIC_METERS:
+        scale_factor = 1e9
+    elif scale in (Co2MassScale.NORMALIZE, Co2VolumeScale.NORMALIZE):
+        targets = {"total", "all"}
+        if "date" in df.columns:
+            grouped = df.groupby("date")
+            if df[color_choice].isin(targets).any() or (
+                mark_choice in df.columns and df[mark_choice].isin(targets).any()
+            ):
+                max_amount = grouped["amount"].max().max()
+            else:
+                max_amount = grouped["amount"].sum().max()
+        else:
+            if df[color_choice].isin(targets).any() or (
+                mark_choice in df.columns and df[mark_choice].isin(targets).any()
+            ):
+                max_amount = df["amount"].max()
+            else:
+                max_amount = df["amount"].sum()
+        if max_amount != 0:
+            scale_factor = max_amount
+    if scale_factor != 1.0:
+        df["amount"] /= scale_factor
+    if inplace:
+        return None
+    return df
+
+
+def _scale_df_by_realization(
+    df: pd.DataFrame,
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    color_choice: str,
+    mark_choice: str,
+    realizations: List[int],
+) -> pd.DataFrame:
+    for r in realizations:
+        mask = df["realization"] == r
+        scaled = _scale_df(
+            df.loc[mask].copy(),
+            scale,
+            color_choice,
+            mark_choice,
+            inplace=False,
+        )
+        df.loc[mask, :] = scaled
+
+
 def _add_sort_key_and_real(
     df: pd.DataFrame,
     label: str,
@@ -440,11 +516,10 @@ def _add_sort_key_and_real(
 def _read_co2_volumes(
     table_provider: ContainmentDataProvider,
     realizations: List[int],
-    scale: Union[Co2MassScale, Co2VolumeScale],
 ) -> pd.DataFrame:
     return pd.concat(
         [
-            table_provider.extract_dataframe(r, scale).assign(realization=r)
+            table_provider.extract_dataframe(r).assign(realization=r)
             for r in realizations
         ]
     )
@@ -524,6 +599,7 @@ def generate_co2_volume_figure(
     )
     color_choice = containment_info.color_choice
     mark_choice = containment_info.mark_choice
+
     _add_prop_to_df(df, [str(r) for r in realizations], "real")
     cat_ord, colors, marks = _prepare_pattern_and_color_options(
         df,
@@ -572,11 +648,13 @@ def generate_co2_time_containment_one_realization_figure(
     y_limits: List[Optional[float]],
     containment_info: ContainmentInfo,
 ) -> go.Figure:
-    df = _read_co2_volumes(table_provider, [time_series_realization], scale)
+    df = _read_co2_volumes(table_provider, [time_series_realization])
     color_choice = containment_info.color_choice
     mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
     _filter_rows(df, color_choice, mark_choice)
+
+    _scale_df(df, scale, color_choice, mark_choice)
     if containment_info.sorting == "marking" and mark_choice != "none":
         sort_order = ["date", mark_choice]
     else:
@@ -666,8 +744,12 @@ def _add_hover_info_in_field(
     for name, color in zip(cat_ord["type"], colors):
         sub_df = df[df["type"] == name]
         for date in dates:
-            amount = sub_df[sub_df["date"] == date]["amount"].item()
-            prop = sub_df[sub_df["date"] == date]["prop"].item()
+            date_df = sub_df[sub_df["date"] == date]
+            # Skip if no data or duplicate data for this type/date combination
+            if len(date_df) != 1:
+                continue
+            amount = date_df["amount"].item()
+            prop = date_df["prop"].item()
             prev_val = prev_vals[date]
             p15 = prev_val + 0.15 * amount
             p85 = prev_val + 0.85 * amount
@@ -776,10 +858,12 @@ def generate_co2_time_containment_figure(
     containment_info: ContainmentInfo,
     legendonly_traces: Optional[List[str]],
 ) -> go.Figure:
-    df = _read_co2_volumes(table_provider, realizations, scale)
+    df = _read_co2_volumes(table_provider, realizations)
+
     color_choice = containment_info.color_choice
     mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
+    _scale_df_by_realization(df, scale, color_choice, mark_choice, realizations)
     options = _prepare_line_type_and_color_options(
         df, containment_info, color_choice, mark_choice
     )
@@ -798,11 +882,13 @@ def generate_co2_time_containment_figure(
             pass
 
     options["name"] = options["name"].apply(
-        lambda label: ", ".join(
-            [_LABEL_TRANSLATIONS.get(part, part) for part in label.split(", ")]
+        lambda label: (
+            ", ".join(
+                [_LABEL_TRANSLATIONS.get(part, part) for part in label.split(", ")]
+            )
+            if ", " in label
+            else _LABEL_TRANSLATIONS.get(label, label)
         )
-        if ", " in label
-        else _LABEL_TRANSLATIONS.get(label, label)
     )
 
     fig = go.Figure()
@@ -912,12 +998,14 @@ def generate_co2_statistics_figure(
     legend_only_traces: Optional[List[str]],
 ) -> go.Figure:
     date_option = containment_info.date_option
-    df = _read_co2_volumes(table_provider, realizations, scale)
+    df = _read_co2_volumes(table_provider, realizations)
     df = df[df["date"] == date_option]
     df = df.drop(columns=["date"]).reset_index(drop=True)
+
     color_choice = containment_info.color_choice
     mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
+    _scale_df_by_realization(df, scale, color_choice, mark_choice, realizations)
     cat_ord, colors, line_types = _prepare_pattern_and_color_options_statistics_plot(
         df,
         containment_info,
@@ -979,13 +1067,14 @@ def generate_co2_box_plot_figure(
 ) -> go.Figure:
     eps = 0.00001
     date_option = containment_info.date_option
-    df = _read_co2_volumes(table_provider, realizations, scale)
+    df = _read_co2_volumes(table_provider, realizations)
     df = df[df["date"] == date_option]
     df = df.drop(columns=["date"]).reset_index(drop=True)
 
     color_choice = containment_info.color_choice
     mark_choice = containment_info.mark_choice
     _filter_columns(df, color_choice, mark_choice, containment_info)
+    _scale_df_by_realization(df, scale, color_choice, mark_choice, realizations)
     cat_ord, colors, _ = _prepare_pattern_and_color_options_statistics_plot(
         df,
         containment_info,
@@ -1017,9 +1106,11 @@ def generate_co2_box_plot_figure(
                 y=values,
                 name=type_val,
                 marker_color=colors[count],
-                boxpoints="all"
-                if containment_info.box_show_points == "all_points"
-                else "outliers",
+                boxpoints=(
+                    "all"
+                    if containment_info.box_show_points == "all_points"
+                    else "outliers"
+                ),
                 customdata=real,
                 hovertemplate="<span style='font-family:Courier New;'>"
                 "Type       : %{data.name}<br>Amount     : %{y:.3f}<br>"

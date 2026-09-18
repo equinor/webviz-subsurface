@@ -9,7 +9,7 @@ from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     MenuOptions,
 )
 
-_PFLOTRAN_COLNAMES = ("DATE", "FGMDS", "FGMTR", "FGMMO")
+_CIRRUS_COLNAMES = ("DATE", "FGMDS", "FGMTR", "FGMMO")
 _ECLIPSE_COLNAMES = ("DATE", "FWCD", "FGCDI", "FGCDM")
 
 
@@ -75,14 +75,16 @@ class UnsmryDataProvider:
         full[self._colname_total] = (
             full[self._colname_dissolved_water]
             + full[self._colname_trapped]
-            + full[self.colname_mobile]
+            + full[self._colname_mobile]
         )
-        total_max = full[self._colname_total].max()
         for col in columns[1:] + [self._colname_total]:
             if scale == Co2MassScale.MTONS:
                 full[col] = full[col] / 1e9
             elif scale == Co2MassScale.NORMALIZE:
-                full[col] = full[col] / total_max
+                for r in self._provider.realizations():
+                    mask = full["realization"] == r
+                    r_max = full.loc[mask, self._colname_total].max()
+                    full.loc[mask, col] = full.loc[mask, col] / r_max
         return full
 
     @staticmethod
@@ -90,9 +92,9 @@ class UnsmryDataProvider:
         provider: EnsembleTableProvider,
     ) -> Tuple[str, str, str, str]:
         existing = set(provider.column_names())
-        # Try PFLOTRAN names
-        if set(_PFLOTRAN_COLNAMES).issubset(existing):
-            return _PFLOTRAN_COLNAMES
+        # Try CIRRUS names
+        if set(_CIRRUS_COLNAMES).issubset(existing):
+            return _CIRRUS_COLNAMES
         # Try Eclipse names
         if set(_ECLIPSE_COLNAMES).issubset(existing):
             return _ECLIPSE_COLNAMES
