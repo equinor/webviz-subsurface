@@ -327,21 +327,18 @@ def _create_polygon_legend(
             )
         )
     legend.append(
-        wsc.ViewAnnotation(
-            id="polygon_legends",
-            children=html.Div(
-                children=legend_items,
-                style={
-                    "position": "absolute",
-                    "top": "50px",
-                    "left": "4px",
-                    "backgroundColor": "rgba(255,255,255,0.9)",
-                    "padding": "6px 8px",
-                    "borderRadius": "4px",
-                    "boxShadow": "0 0 4px rgba(0,0,0,0.2)",
-                    "zIndex": 10,
-                },
-            ),
+        html.Div(
+            children=legend_items,
+            style={
+                "position": "absolute",
+                "top": "50px",
+                "left": "4px",
+                "backgroundColor": "rgba(255,255,255,0.9)",
+                "padding": "6px 8px",
+                "borderRadius": "4px",
+                "boxShadow": "0 0 4px rgba(0,0,0,0.2)",
+                "zIndex": 10,
+            },
         )
     )
     return legend
@@ -359,7 +356,7 @@ def create_map_annotations(
     con_url: Optional[str],
     haz_url: Optional[str],
     nogo_url: Optional[str],
-) -> List[wsc.ViewAnnotation]:
+) -> List[Any]:
     annotations = []
     if (
         surface_data is not None
@@ -369,29 +366,23 @@ def create_map_annotations(
         max_value = surface_data.color_map_range[1]
         num_digits = 4 if max_value < 1 else np.ceil(np.log(max_value) / np.log(10))
         numbersize = max((6, min((17 - num_digits, 11))))
-        annotations.append(
-            wsc.ViewAnnotation(
-                id="1_view",
-                children=[
-                    wsc.WebVizColorLegend(
-                        title=_find_legend_title(attribute, unit),
-                        min=surface_data.color_map_range[0],
-                        max=surface_data.color_map_range[1],
-                        colorName=surface_data.color_map_name,
-                        cssLegendStyles={"top": "0", "right": "0"},
-                        openColorSelector=False,
-                        legendScaleSize=0.1,
-                        legendFontSize=20,
-                        tickFontSize=numbersize,
-                        numberOfTicks=2,
-                        colorTables=colortables,
-                    ),
-                    wsc.ViewFooter(children=formation),
-                    _create_summed_mass_annotation(attribute, current_total, unit),
-                ]
-                + _create_polygon_legend(options, con_url, haz_url, nogo_url),
-            )
-        )
+        annotations = [
+            wsc.WebVizColorLegend(
+                title=_find_legend_title(attribute, unit),
+                min=surface_data.color_map_range[0],
+                max=surface_data.color_map_range[1],
+                colorName=surface_data.color_map_name,
+                cssLegendStyles={"top": "0", "right": "0"},
+                openColorSelector=False,
+                legendScaleSize=0.1,
+                legendFontSize=20,
+                tickFontSize=numbersize,
+                numberOfTicks=2,
+                colorTables=colortables,
+            ),
+            wsc.ViewFooter(children=formation),
+            _create_summed_mass_annotation(attribute, current_total, unit),
+        ] + _create_polygon_legend(options, con_url, haz_url, nogo_url)
     return annotations
 
 
