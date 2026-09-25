@@ -418,7 +418,9 @@ class CO2Migration(WebvizPluginABC):
         # pylint: disable=too-many-arguments,too-many-locals
         @callback(
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "layers"),
-            Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "children"),
+            Output(
+                self._view_component(MapViewElement.Ids.MAP_ANNOTATIONS), "children"
+            ),
             Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "views"),
             inputs={
                 "attribute": Input(

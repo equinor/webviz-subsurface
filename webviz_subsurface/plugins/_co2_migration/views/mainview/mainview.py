@@ -27,6 +27,7 @@ class MainView(ViewABC):
 class MapViewElement(ViewElementABC):
     class Ids(StrEnum):
         DECKGL_MAP = "deck-gl-map"
+        MAP_ANNOTATIONS = "map-annotations"
         DATE_SLIDER = "date-slider"
         DATE_WRAPPER = "date-wrapper"
         BAR_PLOT = "bar-plot"
@@ -66,10 +67,22 @@ class MapViewElement(ViewElementABC):
                                         self.Ids.DECKGL_MAP
                                     ),
                                     layers=[],
-                                    coords={"visible": True},
+                                    showReadout=True,
+                                    pickingDepth=1,
                                     scale={"visible": True},
                                     coordinateUnit="m",
                                     colorTables=self._color_scales,
+                                ),
+                                html.Div(
+                                    id=self.register_component_unique_id(
+                                        self.Ids.MAP_ANNOTATIONS
+                                    ),
+                                    style={
+                                        "position": "absolute",
+                                        "inset": "1%",
+                                        "pointerEvents": "none",
+                                        "zIndex": 10,
+                                    },
                                 ),
                             ],
                             style={
