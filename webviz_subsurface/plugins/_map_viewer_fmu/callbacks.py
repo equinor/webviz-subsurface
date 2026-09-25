@@ -19,6 +19,7 @@ from dash import (
     State,
     callback,
     callback_context,
+    html,
     no_update,
 )
 from dash.dependencies import Wildcard
@@ -402,7 +403,9 @@ def plugin_callbacks(
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "layers"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "bounds"),
         Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "views"),
-        Output({"id": get_uuid(LayoutElements.DECKGLMAP), "tab": MATCH}, "children"),
+        Output(
+            {"id": get_uuid(LayoutElements.MAP_ANNOTATIONS), "tab": MATCH}, "children"
+        ),
         Input(
             {"id": get_uuid(LayoutElements.VERIFIED_VIEW_DATA), "tab": MATCH}, "data"
         ),
@@ -561,8 +564,8 @@ def plugin_callbacks(
         view_annotations = []
         for idx, data in enumerate(surface_elements):
             view_annotations.append(
-                wsc.ViewAnnotation(
-                    id=f"{idx}_view",
+                html.Div(
+                    style={"position": "relative", "overflow": "hidden"},
                     children=[
                         wsc.WebVizColorLegend(
                             min=data["color_range"][0],
@@ -613,11 +616,22 @@ def plugin_callbacks(
                 "showLabel": True,
                 "viewports": viewports,
             }
+        # Mirror the viewer's row-major viewport grid so each legend lands in its view
+        rows, columns = updated_view_layout
+        annotation_grid = html.Div(
+            style={
+                "display": "grid",
+                "gridTemplateRows": f"repeat({rows}, 1fr)",
+                "gridTemplateColumns": f"repeat({columns}, 1fr)",
+                "height": "100%",
+            },
+            children=view_annotations,
+        )
         return (
             layer_model.layers,
             viewport_bounds if not current_bounds else no_update,
             updated_views,
-            view_annotations,
+            annotation_grid,
         )
 
     @callback(

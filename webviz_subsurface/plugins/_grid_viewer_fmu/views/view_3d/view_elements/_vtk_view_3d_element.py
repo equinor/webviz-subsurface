@@ -9,6 +9,7 @@ class VTKView3D(ViewElementABC):
     class Ids(StrEnum):
         ID = "vtk"
         VIEW = "vtk-view"
+        MAP_ANNOTATIONS = "map-annotations"
 
         INFOBOX = "info-box"
         ACTUALVALUERANGE = "actual-value-range"
@@ -70,6 +71,17 @@ class VTKView3D(ViewElementABC):
                             views={
                                 "layout": [1, 1],
                                 "viewports": [{"id": "view_1", "show3D": True}],
+                            },
+                        ),
+                        html.Div(
+                            id=self.register_component_unique_id(
+                                VTKView3D.Ids.MAP_ANNOTATIONS
+                            ),
+                            style={
+                                "position": "absolute",
+                                "inset": 0,
+                                "pointerEvents": "none",
+                                "zIndex": 10,
                             },
                         ),
                     ],
