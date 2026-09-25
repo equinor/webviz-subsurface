@@ -221,7 +221,7 @@ class View3D(ViewABC):
         @callback(
             Output(self._view_id(VTKView3D.Ids.INFOBOX), "children"),
             Output(
-                self._view_id(VTKView3D.Ids.VIEW),
+                self._view_id(VTKView3D.Ids.MAP_ANNOTATIONS),
                 "children",
             ),
             Input(
@@ -295,20 +295,15 @@ class View3D(ViewABC):
             if color_range is None:
                 color_range = actual_value_range
             children = [
-                wsc.ViewAnnotation(
-                    id="view_1",
-                    children=[
-                        wsc.WebVizColorLegend(
-                            min=color_range[0],
-                            max=color_range[1],
-                            colorName=colormap,
-                            cssLegendStyles={"top": "0", "right": "0"},
-                            openColorSelector=False,
-                            legendScaleSize=0.1,
-                            legendFontSize=30,
-                        ),
-                    ],
-                )
+                wsc.WebVizColorLegend(
+                    min=color_range[0],
+                    max=color_range[1],
+                    colorName=colormap,
+                    cssLegendStyles={"top": "0", "right": "0"},
+                    openColorSelector=False,
+                    legendScaleSize=0.1,
+                    legendFontSize=30,
+                ),
             ]
             return [
                 html.Div([html.B("Property: "), html.Label(properties[0])]),

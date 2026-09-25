@@ -34,6 +34,7 @@ class LayoutElements(StrEnum):
     VIEWS = "number-of-views-input"
     VIEW_COLUMNS = "number-of-views-in-column-input"
     DECKGLMAP = "deckgl-component"
+    MAP_ANNOTATIONS = "map-annotations"
     RANGE_RESET = "color-range-reset-button"
     RESET_BUTTOM_CLICK = "color-range-reset-stored-state"
     FAULTPOLYGONS = "fault-polygon-toggle"
@@ -272,12 +273,26 @@ class MapViewLayout(FullScreen):
         super().__init__(
             children=[
                 html.Div(
-                    SubsurfaceViewer(
-                        id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
-                        layers=update_map_layers(1, render_surfaces_as_images),
-                        colorTables=color_tables,
-                    ),
-                    style={"height": LayoutStyle.MAPHEIGHT},
+                    [
+                        SubsurfaceViewer(
+                            id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
+                            layers=update_map_layers(1, render_surfaces_as_images),
+                            colorTables=color_tables,
+                        ),
+                        html.Div(
+                            id={
+                                "id": get_uuid(LayoutElements.MAP_ANNOTATIONS),
+                                "tab": tab,
+                            },
+                            style={
+                                "position": "absolute",
+                                "inset": 0,
+                                "pointerEvents": "none",
+                                "zIndex": 10,
+                            },
+                        ),
+                    ],
+                    style={"height": LayoutStyle.MAPHEIGHT, "position": "relative"},
                 ),
             ],
         )
