@@ -72,6 +72,7 @@ class VTKView3D(ViewElementABC):
                                 "layout": [1, 1],
                                 "viewports": [{"id": "view_1", "show3D": True}],
                             },
+                            showReadout=True,
                         ),
                         html.Div(
                             id=self.register_component_unique_id(
