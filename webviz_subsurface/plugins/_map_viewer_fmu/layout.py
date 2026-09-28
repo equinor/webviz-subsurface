@@ -278,6 +278,7 @@ class MapViewLayout(FullScreen):
                             id={"id": get_uuid(LayoutElements.DECKGLMAP), "tab": tab},
                             layers=update_map_layers(1, render_surfaces_as_images),
                             colorTables=color_tables,
+                            showReadout=True,
                         ),
                         html.Div(
                             id={
