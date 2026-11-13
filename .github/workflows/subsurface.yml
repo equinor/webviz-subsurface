@@ -115,11 +115,11 @@ jobs:
           docker build -t webviz/example_subsurface_image:equinor-theme .
           popd
 
-      - name: 🐳 Update Docker Hub example image
-        if: github.event_name != 'release' && github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.12'
-        run: |
-          echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
-          docker push webviz/example_subsurface_image:equinor-theme
+      #- name: 🐳 Update Docker Hub example image
+      #  if: github.event_name != 'release' && github.event_name != 'schedule' && github.ref == 'refs/heads/master' && matrix.python-version == '3.12'
+      #  run: |
+      #    echo ${{ secrets.dockerhub_webviz_token }} | docker login --username webviz --password-stdin
+      #    docker push webviz/example_subsurface_image:equinor-theme
 
       - name: 🐳 Update review/test Docker example image
         if: github.event_name != 'release' && github.ref != 'refs/heads/master' && contains(github.event.head_commit.message, '[deploy test]') && matrix.python-version == '3.12'

@@ -579,6 +579,13 @@ class SubplotView(ViewABC):
 
         @callback(
             self.view_data_output(),
+            Output(
+                self.view_element_unique_id(
+                    SubplotView.Ids.SUBPLOT,
+                    SubplotGraph.Ids.DOWNLOAD_SIGNATURE_STORE,
+                ),
+                "data",
+            ),
             self.view_data_requested(),
             State(
                 self.settings_group_unique_id(
@@ -643,6 +650,14 @@ class SubplotView(ViewABC):
                 ),
                 "value",
             ),
+            State(
+                self.view_element_unique_id(
+                    SubplotView.Ids.SUBPLOT,
+                    SubplotGraph.Ids.DOWNLOAD_SIGNATURE_STORE,
+                ),
+                "data",
+            ),
+            prevent_initial_call=True,
         )
         @callback_typecheck
         # pylint: disable=too-many-branches,
@@ -657,7 +672,8 @@ class SubplotView(ViewABC):
             delta_ensembles: List[DeltaEnsemble],
             vector_calculator_expressions: List[ExpressionInfo],
             relative_date_value: Optional[str],
-        ) -> Union[EncodedFile, str]:
+            last_download_signature: Optional[list],
+        ) -> Tuple[Union[EncodedFile, str], list]:
             """Callback to download data based on selections
 
             Retrieve vector data based on selected visualizations and filtered realizations
@@ -667,8 +683,29 @@ class SubplotView(ViewABC):
             * All statistics included - no filtering on statistics selections
             * No history vector
             * No observation data
+
+            A signature of the current selections is stored alongside the download, so
+            the callback can tell a genuine new download request apart from the
+            component resetting ``data_requested`` to ``None`` after a download. Without
+            this, a second download would keep the data from the first request (see
+            issue #1383).
             """
-            if data_requested is None:
+            download_signature = [
+                vectors,
+                selected_ensembles,
+                str(visualization),
+                resampling_frequency_value,
+                selected_realizations,
+                str(statistics_from),
+                delta_ensembles,
+                vector_calculator_expressions,
+                relative_date_value,
+            ]
+
+            # data_requested is reset to None by the view component after each download.
+            # Only skip the update when this reset does not coincide with a new request,
+            # i.e. when the selections have not changed since the last download.
+            if data_requested is None and download_signature == last_download_signature:
                 raise PreventUpdate
 
             if not isinstance(selected_ensembles, list):
@@ -844,14 +881,17 @@ class SubplotView(ViewABC):
 
             # : is replaced with _ in filenames to stay within POSIX portable pathnames
             # (e.g. : is not valid in a Windows path)
-            return WebvizPluginABC.plugin_data_compress(
-                [
-                    {
-                        "filename": f"{vector.replace(':', '_')}.csv",
-                        "content": df.to_csv(index=False),
-                    }
-                    for vector, df in vector_dataframe_dict.items()
-                ]
+            return (
+                WebvizPluginABC.plugin_data_compress(
+                    [
+                        {
+                            "filename": f"{vector.replace(':', '_')}.csv",
+                            "content": df.to_csv(index=False),
+                        }
+                        for vector, df in vector_dataframe_dict.items()
+                    ]
+                ),
+                download_signature,
             )
 
         @callback(
