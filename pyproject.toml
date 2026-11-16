@@ -115,6 +115,7 @@ tests = [
     "isort",
     "mypy",
     "pylint<3.2.0",
+    "pytest<9.2",
     "pytest-mock",
     "pytest-xdist",
     "pytest-forked",

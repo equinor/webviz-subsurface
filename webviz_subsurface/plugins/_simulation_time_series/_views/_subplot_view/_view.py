@@ -657,7 +657,7 @@ class SubplotView(ViewABC):
             delta_ensembles: List[DeltaEnsemble],
             vector_calculator_expressions: List[ExpressionInfo],
             relative_date_value: Optional[str],
-        ) -> Union[EncodedFile, str]:
+        ) -> Optional[Union[EncodedFile, str]]:
             """Callback to download data based on selections
 
             Retrieve vector data based on selected visualizations and filtered realizations
@@ -669,7 +669,8 @@ class SubplotView(ViewABC):
             * No observation data
             """
             if data_requested is None:
-                raise PreventUpdate
+                # Reset WebvizView download prop so stale data is not re-downloaded
+                return None
 
             if not isinstance(selected_ensembles, list):
                 raise TypeError("ensembles should always be of type list")
