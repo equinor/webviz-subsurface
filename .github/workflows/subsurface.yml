@@ -25,15 +25,6 @@ jobs:
         python-version: ["3.12"]
 
     steps:
-      - name: 🧹 Remove unused pre-installed software
-        run: |
-          # https://github.com/actions/virtual-environments/issues/751
-          # https://github.com/actions/virtual-environments/issues/709
-          sudo apt-get purge p7zip* yarn ruby-full ghc* php7*
-          sudo apt-get autoremove
-          sudo apt-get clean
-          df -h
-
       - name: 📖 Checkout commit locally
         uses: actions/checkout@v4
 
