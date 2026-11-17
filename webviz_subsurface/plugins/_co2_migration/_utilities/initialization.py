@@ -203,11 +203,12 @@ def _validate_matching_dates(
     for origin, origin_dates in other_dates.items():
         observed = {d.replace("-", "") for d in origin_dates}
         if observed != expected:
-            raise ValueError(
+            warnings.warn(
                 f"Ensemble '{ens}': dates in {origin} differ from dates in"
                 f" {dates_origin}. This likely indicates an error in the maps/tables. "
                 f"Missing: {sorted(expected - observed)}; "
-                f"extra: {sorted(observed - expected)}."
+                f"extra: {sorted(observed - expected)}.",
+                stacklevel=2,
             )
 
 

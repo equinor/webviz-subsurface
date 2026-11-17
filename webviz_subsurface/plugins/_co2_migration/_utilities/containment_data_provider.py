@@ -1,3 +1,4 @@
+import warnings
 from typing import List, Optional, Sequence, Union
 
 import pandas as pd
@@ -122,13 +123,17 @@ class ContainmentDataProvider:
             expected = values_per_realization.loc[reference_realization]
             for realization, observed in values_per_realization.items():
                 if observed != expected:
-                    raise ContainmentDataValidationError(
+                    message = (
                         f"Inconsistent {column} sets for provider {provider}: "
                         f"realization {realization} differs from reference "
                         f"realization {reference_realization}. "
                         f"Missing: {sorted(expected - observed)}; "
                         f"extra: {sorted(observed - expected)}."
                     )
+                    if column == "date":
+                        warnings.warn(message, stacklevel=2)
+                    else:
+                        raise ContainmentDataValidationError(message)
 
     @staticmethod
     def _validate(provider: EnsembleTableProvider) -> None:
