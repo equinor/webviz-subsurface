@@ -4,6 +4,7 @@
 import re
 import warnings
 from datetime import datetime as dt
+from itertools import product
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -14,6 +15,7 @@ import plotly.graph_objects as go
 from webviz_subsurface._utils.enum_shim import StrEnum
 from webviz_subsurface.plugins._co2_migration._utilities.containment_info import (
     ContainmentInfo,
+    MainTabOption,
 )
 from webviz_subsurface.plugins._co2_migration._utilities.generic import (
     Co2MassScale,
@@ -275,6 +277,8 @@ def _prepare_pattern_and_color_options_statistics_plot(
 
 
 def _find_default_legendonly(df: pd.DataFrame, categories: List[str]) -> List[str]:
+    if not categories:
+        return []
     if "no-go" in categories:
         default_option = "no-go"
     else:
@@ -347,6 +351,60 @@ def _prepare_line_type_and_color_options(
         )
     _change_names(options, color_options, mark_options)
     return options
+
+
+def complete_missing_spatial_data(
+    df: pd.DataFrame,
+    containment_info: ContainmentInfo,
+    active_tab: MainTabOption,
+) -> pd.DataFrame:
+    if df.empty:
+        return df
+    spatial_columns = ["zone", "region", "plume_group"]
+    grouped_columns = [containment_info.color_choice, containment_info.mark_choice]
+    needs_completion = any(
+        column in grouped_columns
+        or getattr(containment_info, column) not in (None, "all")
+        for column in spatial_columns
+    )
+    if not needs_completion:
+        return df
+    if active_tab != MainTabOption.CONTAINMENT_OVER_TIME:
+        df = df.loc[df["date"] == containment_info.date_option]
+    if df.empty:
+        return df.copy()
+
+    base_columns = ["REAL", "date", "phase", "containment"]
+    supported = df[base_columns].drop_duplicates()
+    spatial_options = []
+    for column in spatial_columns:
+        if column in grouped_columns:
+            spatial_options.append(
+                [
+                    value
+                    for value in (getattr(containment_info, f"{column}s") or [])
+                    if value != "all"
+                ]
+            )
+        else:
+            value = getattr(containment_info, column)
+            spatial_options.append([value])
+            df = df.loc[df[column] == value]
+
+    spatial_grid = pd.DataFrame(product(*spatial_options), columns=spatial_columns)
+    expected = (
+        supported.assign(_cross_key=0)
+        .merge(spatial_grid.assign(_cross_key=0), on="_cross_key")
+        .drop(columns="_cross_key")
+    )
+    keys = base_columns + spatial_columns
+    missing = expected.merge(
+        df[keys].drop_duplicates(), on=keys, how="left", indicator=True
+    )
+    missing = missing.loc[missing["_merge"] == "left_only", keys]
+    if not missing.empty:
+        df = pd.concat([df, missing.assign(amount=0.0)], ignore_index=True)
+    return df.sort_values(["REAL", "date"], kind="stable").reset_index(drop=True)
 
 
 def _prepare_co2_at_date(
@@ -551,6 +609,18 @@ def _add_prop_to_df(
     df["prop"] = proportion
 
 
+def _empty_containment_figure(
+    scale: Union[Co2MassScale, Co2VolumeScale],
+    containment_info: ContainmentInfo,
+    over_time: bool = False,
+) -> go.Figure:
+    fig = go.Figure()
+    fig.layout.xaxis.title = "Time" if over_time else scale.value
+    fig.layout.yaxis.title = scale.value if over_time else "Realization"
+    _adjust_figure(fig, _make_title(containment_info, include_date=not over_time))
+    return fig
+
+
 def generate_co2_volume_figure(
     df: pd.DataFrame,
     scale: Union[Co2MassScale, Co2VolumeScale],
@@ -558,6 +628,8 @@ def generate_co2_volume_figure(
     legendonly_traces: Optional[List[str]],
 ) -> go.Figure:
     df = _prepare_co2_at_date(df, scale, containment_info)
+    if df.empty:
+        return _empty_containment_figure(scale, containment_info)
     color_choice = containment_info.color_choice
     mark_choice = containment_info.mark_choice
 
@@ -614,6 +686,11 @@ def generate_co2_time_containment_one_realization_figure(
     _filter_columns(df, color_choice, mark_choice, containment_info)
     _filter_rows(df, color_choice, mark_choice)
 
+    y_limits = list(y_limits)
+    if df.empty:
+        fig = _empty_containment_figure(scale, containment_info, over_time=True)
+        fig.layout.yaxis.range = y_limits
+        return fig
     _scale_df(df, scale, color_choice, mark_choice)
     if containment_info.sorting == "marking" and mark_choice != "none":
         sort_order = ["date", mark_choice]
@@ -623,7 +700,12 @@ def generate_co2_time_containment_one_realization_figure(
     if y_limits[0] is None and y_limits[1] is not None:
         y_limits[0] = 0.0
     elif y_limits[1] is None and y_limits[0] is not None:
-        y_limits[1] = max(df.groupby("date")["amount"].sum()) * 1.05
+        maximum = df.groupby("date")["amount"].sum().max()
+        y_limits[1] = maximum * 1.05
+        if y_limits[1] <= y_limits[0]:
+            y_limits[1] = y_limits[0] + 1.0
+    elif (df["amount"] == 0.0).all() and y_limits == [None, None]:
+        y_limits = [0.0, 1.0]
 
     _add_prop_to_df(df, "date")
     cat_ord, colors, marks = _prepare_pattern_and_color_options(
@@ -666,6 +748,8 @@ def generate_co2_time_containment_one_realization_figure(
 
 
 def spaced_dates(dates: List[str], num_between: int) -> Dict[str, List[str]]:
+    if len(dates) == 0:
+        return {}
     dates_list = [dt.strptime(date, "%Y-%m-%d") for date in dates]
     date_dict: Dict[str, List[str]] = {date: [] for date in dates}
     for i in range(len(dates_list) - 1):
@@ -692,6 +776,8 @@ def _add_hover_info_in_field(
     solely to display hover information inside the fields
     (which is not possible directly with plotly.express.area)
     """
+    if df.empty:
+        return
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
     months += ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     dates = np.unique(df["date"])
@@ -810,6 +896,7 @@ def _connect_plume_groups(
                 date = str(transition_row_end["date"])
                 df.loc[
                     (df["plume_group"] == plume_name)
+                    & df[col_list].eq(transition_row_end[col_list]).all(axis=1)
                     & (df["amount"] == 0.0)
                     & (df["date"] > date),
                     "amount",
@@ -818,11 +905,12 @@ def _connect_plume_groups(
                 start_points.append(transition_row_start)
     for end_point in end_points:
         plume1 = end_point["plume_group"]
-        row1 = end_point.drop(["amount", "plume_group", "name"])
+        match_columns = ["date", *col_list]
+        row1 = end_point[match_columns]
         for start_point in start_points:
             plume2 = start_point["plume_group"]
             if plume1 in plume2 and len(plume1) < len(plume2):
-                row2 = start_point.drop(["amount", "plume_group", "name"])
+                row2 = start_point[match_columns]
                 if row1.equals(row2):
                     row_to_change = df.eq(end_point).all(axis=1)
                     if sum(row_to_change) == 1:
@@ -941,6 +1029,8 @@ def generate_co2_time_containment_figure(
     options = _prepare_line_type_and_color_options(
         df, containment_info, color_choice, mark_choice
     )
+    if df.empty:
+        return _empty_containment_figure(scale, containment_info, over_time=True)
     _translate_labels(df, "name")
     _translate_labels(options, "name")
     if legendonly_traces is None:
@@ -949,12 +1039,6 @@ def generate_co2_time_containment_figure(
         )
     else:
         inactive_cols_at_startup = legendonly_traces
-    if "plume_group" in df:
-        try:
-            _connect_plume_groups(df, color_choice, mark_choice)
-        except ValueError:
-            pass
-
     fig = go.Figure()
     # Generate dummy scatters for legend entries
     date_min, date_max = df["date"].agg(["min", "max"])
@@ -1028,13 +1112,18 @@ def generate_co2_time_containment_figure(
             "Realization: %{customdata[0]:.0f}<br>" "Proportion : %{customdata[1]:.1f}%"
         )
         _add_prop_to_df(df, ["REAL", "date"], [color_choice, mark_choice])
+        display_df = df
+        if "plume_group" in df:
+            display_df = df.copy()
+            display_df.sort_values(["REAL", "date"], kind="stable", inplace=True)
+            _connect_plume_groups(display_df, color_choice, mark_choice)
 
         for name, color, line_type in zip(
             options["name"], options["color"], options["line_type"]
         ):
             _add_merged_realization_trace(
                 fig=fig,
-                category_df=df.loc[df["name"] == name],
+                category_df=display_df.loc[display_df["name"] == name],
                 name=name,
                 color=color,
                 line_type=line_type,
@@ -1073,6 +1162,11 @@ def generate_co2_probability_figure(
         color_choice,
         mark_choice,
     )
+    if df.empty:
+        fig = _empty_containment_figure(scale, containment_info)
+        fig.layout.yaxis.title = "Probability"
+        fig.layout.yaxis.range = [-0.02, 1.02]
+        return fig
     _translate_labels(df, "type")
     _translate_labels(cat_ord, "type")
 
@@ -1140,6 +1234,11 @@ def generate_co2_box_plot_figure(
         color_choice,
         mark_choice,
     )
+    if df.empty:
+        fig = _empty_containment_figure(scale, containment_info)
+        fig.layout.xaxis.title = ""
+        fig.layout.yaxis.title = scale.value
+        return fig
     _translate_labels(df, "type")
     _translate_labels(cat_ord, "type")
 

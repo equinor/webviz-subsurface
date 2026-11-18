@@ -22,6 +22,7 @@ from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_pro
 )
 from webviz_subsurface.plugins._co2_migration._types import LegendData
 from webviz_subsurface.plugins._co2_migration._utilities.co2volume import (
+    complete_missing_spatial_data,
     extract_df_from_fig,
     generate_co2_box_plot_figure,
     generate_co2_probability_figure,
@@ -496,6 +497,9 @@ def generate_containment_figure(
 ) -> go.Figure:
     try:
         containment_df = table_provider.extract_dataframes(realizations)
+        containment_df = complete_missing_spatial_data(
+            containment_df, containment_info, active_tab
+        )
         if active_tab == MainTabOption.CONTAINMENT_STATE:
             return generate_co2_volume_figure(
                 containment_df,

@@ -187,11 +187,11 @@ def init_dates_per_ensemble(
                 other_dates[f"maps for '{other_name}'"] = (
                     surface_provider.surface_dates_for_attribute(other_name) or []
                 )
-        _warn_on_date_mismatch(ens, ensemble_dates[ens], dates_origin, other_dates)
+        _validate_matching_dates(ens, ensemble_dates[ens], dates_origin, other_dates)
     return ensemble_dates
 
 
-def _warn_on_date_mismatch(
+def _validate_matching_dates(
     ens: str,
     dates: List[str],
     dates_origin: str,
@@ -201,11 +201,14 @@ def _warn_on_date_mismatch(
     # Map dates are formatted YYYYMMDD, table dates YYYY-MM-DD
     expected = {d.replace("-", "") for d in dates}
     for origin, origin_dates in other_dates.items():
-        if {d.replace("-", "") for d in origin_dates} != expected:
-            LOGGER.warning(
+        observed = {d.replace("-", "") for d in origin_dates}
+        if observed != expected:
+            warnings.warn(
                 f"Ensemble '{ens}': dates in {origin} differ from dates in"
-                f" {dates_origin}. These should originate from the same simulation"
-                " output, so this likely indicates an error in the input."
+                f" {dates_origin}. This likely indicates an error in the maps/tables. "
+                f"Missing: {sorted(expected - observed)}; "
+                f"extra: {sorted(observed - expected)}.",
+                stacklevel=2,
             )
 
 
