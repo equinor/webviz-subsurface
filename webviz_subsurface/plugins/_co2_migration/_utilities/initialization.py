@@ -145,6 +145,7 @@ def init_surface_providers(
 
 
 def init_dates_per_ensemble(
+    # pylint: disable=too-many-locals
     ensembles: List[str],
     attribute_names: FilteredMapAttribute,
     surface_providers: Dict[str, EnsembleSurfaceProvider],
