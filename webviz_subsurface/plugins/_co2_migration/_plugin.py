@@ -26,7 +26,6 @@ from webviz_subsurface.plugins._co2_migration._utilities.callbacks import (
     make_plot_id,
     process_containment_info,
     process_summed_mass,
-    property_origin,
     readable_name,
 )
 from webviz_subsurface.plugins._co2_migration._utilities.fault_polygons_handler import (

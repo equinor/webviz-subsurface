@@ -248,8 +248,8 @@ class ViewSettings(SettingsGroupABC):
             ensemble: str,
             select_all: int,
         ) -> Tuple[List[Dict[str, Any]], List[int]]:
-            realizations = self._realizations_per_ensemble[ensemble]
-            return [{"value": r, "label": str(r)} for r in realizations], realizations  # type: ignore
+            reals = self._realizations_per_ensemble[ensemble]
+            return [{"value": r, "label": str(r)} for r in reals], reals  # type: ignore
 
         @callback(
             Output(self.component_unique_id(self.Ids.FORMATION).to_string(), "options"),
@@ -723,7 +723,7 @@ class VisualizationThresholdsLayout(wcc.Dialog):
 
 
 class MapSelectorLayout(html.Div):
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
         color_scale_names: List[str],

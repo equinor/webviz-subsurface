@@ -415,7 +415,7 @@ def _prepare_co2_at_date(
     color_choice = containment_info.color_choice
     mark_choice = containment_info.mark_choice
 
-    date_option = containment_info.date_option
+    date_option = containment_info.date_option  # pylint: disable=unused-variable
     df.query("date == @date_option", inplace=True)
 
     _add_sort_keys(df, containment_info)
@@ -924,6 +924,7 @@ def _connect_plume_groups(
 
 
 def _add_time_containment_trace(
+    # pylint: disable=too-many-arguments
     fig: go.Figure,
     category_df: pd.DataFrame,
     name: str,
@@ -1109,7 +1110,7 @@ def generate_co2_time_containment_figure(
                 )
     else:
         hover_middle = (
-            "Realization: %{customdata[0]:.0f}<br>" "Proportion : %{customdata[1]:.1f}%"
+            "Realization: %{customdata[0]:.0f}<br>Proportion : %{customdata[1]:.1f}%"
         )
         _add_prop_to_df(df, ["REAL", "date"], [color_choice, mark_choice])
         display_df = df
@@ -1147,7 +1148,7 @@ def generate_co2_probability_figure(
     containment_info: ContainmentInfo,
     legend_only_traces: Optional[List[str]],
 ) -> go.Figure:
-    date_option = containment_info.date_option
+    date_option = containment_info.date_option  # pylint: disable=unused-variable
     df.query("date == @date_option", inplace=True)
     df.drop(columns=["date"], inplace=True)
     df.reset_index(drop=True, inplace=True)
@@ -1219,7 +1220,7 @@ def generate_co2_box_plot_figure(
     legendonly_traces: Optional[List[str]],
 ) -> go.Figure:
     eps = 0.00001
-    date_option = containment_info.date_option
+    date_option = containment_info.date_option  # pylint: disable=unused-variable
     df.query("date == @date_option", inplace=True)
     df.drop(columns=["date"], inplace=True)
     df.reset_index(drop=True, inplace=True)

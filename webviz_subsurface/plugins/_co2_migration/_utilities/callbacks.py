@@ -3,7 +3,6 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import geojson
 import numpy as np
 import plotly.graph_objects as go
 import webviz_subsurface_components as wsc
@@ -538,7 +537,7 @@ def generate_containment_figure(
         raise ValueError(f"Unsupported containment tab: {active_tab}")
     except Exception as exc:
         warnings.warn(f"Could not generate CO2 figure: {exc}")
-        raise Exception(f"{exc}")
+        raise Exception(f"{exc}") from exc  # pylint: disable=broad-exception-raised
 
 
 def generate_unsmry_figures(

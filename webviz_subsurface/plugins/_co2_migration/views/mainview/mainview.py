@@ -194,7 +194,7 @@ class MapViewElement(ViewElementABC):
                             vertical=False,
                             marks={
                                 # 1: "Top",
-                                37: "Drag to scale the relative size between the map and the graphs",
+                                37: "Drag to scale the relative size between the map and graphs",
                                 # 79: "Bottom",
                             },
                         ),
@@ -240,6 +240,7 @@ def _plot_toggle(toggle_id: str, left_label: str, right_label: str) -> html.Div:
 
 
 def _summary_graph_layout(
+    # pylint: disable=too-many-arguments
     bar_plot_id: str,
     time_plot_id: str,
     time_plot_lines_id: str,
