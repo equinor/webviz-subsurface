@@ -224,10 +224,9 @@ class LayoutLabels(StrEnum):
     SHOW_POLYGONS_AS_OUTLINES = "Show polygons as outlines"
     SHOW_WELLS = "Show wells"
     WELL_FILTER = "Well filter"
-    COMMON_SELECTIONS = "Options and global filters"
+    OVERLAY_FILTER = "Manage map overlays"
     FEEDBACK = "User feedback"
-    VISUALIZATION_UPDATE = "Update threshold"
-    VISUALIZATION_THRESHOLDS = "Manage visualization filter"
+    VISUALIZATION_THRESHOLDS = "Manage display thresholds"
     ALL_REAL = "Select all"
 
 
@@ -235,8 +234,8 @@ class LayoutLabels(StrEnum):
 class LayoutStyle:
     """CSS styling"""
 
-    OPTIONS_BUTTON = {
-        "marginBottom": "10px",
+    OVERLAY_BUTTON = {
+        "marginTop": "5px",
         "width": "100%",
         "height": "30px",
         "line-height": "30px",
@@ -244,29 +243,23 @@ class LayoutStyle:
     }
 
     ALL_REAL_BUTTON = {
-        "marginLeft": "10px",
+        "width": "135px",
+        "padding": "0",
         "height": "25px",
         "line-height": "25px",
         "background-color": "lightgrey",
     }
 
     FEEDBACK_BUTTON = {
-        "marginBottom": "10px",
+        "marginTop": "25px",
         "width": "100%",
         "height": "30px",
         "line-height": "30px",
         "background-color": "lightgrey",
     }
 
-    VISUALIZATION_BUTTON = {
-        "marginLeft": "10px",
-        "height": "30px",
-        "line-height": "30px",
-        "background-color": "lightgrey",
-    }
-
     THRESHOLDS_BUTTON = {
-        "marginTop": "10px",
+        "marginTop": "5px",
         "width": "100%",
         "height": "30px",
         "line-height": "30px",

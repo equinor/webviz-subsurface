@@ -7,26 +7,25 @@ import geojson
 import numpy as np
 import plotly.graph_objects as go
 import webviz_subsurface_components as wsc
-from dash import dcc, html, no_update
-from flask_caching import Cache
+from dash import dcc, html
 
 from webviz_subsurface._providers import (
     EnsembleSurfaceProvider,
     SimulatedSurfaceAddress,
     StatisticalSurfaceAddress,
     SurfaceAddress,
-    SurfaceArrayMeta,
-    SurfaceArrayServer,
+    SurfaceImageMeta,
+    SurfaceImageServer,
 )
 from webviz_subsurface._providers.ensemble_surface_provider.ensemble_surface_provider import (
     SurfaceStatistic,
 )
 from webviz_subsurface.plugins._co2_migration._types import LegendData
-from webviz_subsurface.plugins._co2_migration._utilities import plume_extent
 from webviz_subsurface.plugins._co2_migration._utilities.co2volume import (
+    complete_missing_spatial_data,
     extract_df_from_fig,
     generate_co2_box_plot_figure,
-    generate_co2_statistics_figure,
+    generate_co2_probability_figure,
     generate_co2_time_containment_figure,
     generate_co2_time_containment_one_realization_figure,
     generate_co2_volume_figure,
@@ -36,7 +35,7 @@ from webviz_subsurface.plugins._co2_migration._utilities.containment_data_provid
 )
 from webviz_subsurface.plugins._co2_migration._utilities.containment_info import (
     ContainmentInfo,
-    StatisticsTabOption,
+    MainTabOption,
 )
 from webviz_subsurface.plugins._co2_migration._utilities.ensemble_well_picks import (
     EnsembleWellPicks,
@@ -56,6 +55,7 @@ from webviz_subsurface.plugins._co2_migration._utilities.summary_graphs import (
     generate_summary_figure,
 )
 from webviz_subsurface.plugins._co2_migration._utilities.surface_publishing import (
+    SurfaceTransform,
     TruncatedSurfaceAddress,
     publish_and_get_surface_metadata,
 )
@@ -85,26 +85,24 @@ class SurfaceData:
     color_map_range: Tuple[Optional[float], Optional[float]]
     color_map_name: str
     value_range: Tuple[float, float]
-    meta_data: SurfaceArrayMeta
+    meta_data: SurfaceImageMeta
     img_url: str
 
     @staticmethod
     def from_server(
-        server: SurfaceArrayServer,
+        server: SurfaceImageServer,
         provider: EnsembleSurfaceProvider,
         address: Union[SurfaceAddress, TruncatedSurfaceAddress],
         color_map_range: Tuple[Optional[float], Optional[float]],
         color_map_name: str,
         readable_name_: str,
-        visualization_info: Dict[str, Any],
-        map_attribute_names: FilteredMapAttribute,
+        transform: SurfaceTransform,
     ) -> Tuple[Any, Optional[Any]]:
         surf_meta, img_url, summed_mass = publish_and_get_surface_metadata(
             server,
             provider,
             address,
-            visualization_info,
-            map_attribute_names,
+            transform,
         )
         if surf_meta is None:  # Surface file does not exist
             return None, None
@@ -148,7 +146,7 @@ def derive_surface_address(
     realization: List[int],
     map_attribute_names: FilteredMapAttribute,
     statistic: str,
-    contour_data: Optional[Dict[str, Any]],
+    plume_data: Optional[Dict[str, Any]],
 ) -> Union[SurfaceAddress, TruncatedSurfaceAddress]:
     if MapType[MapAttribute(attribute).name].value == "PLUME":
         max_attr_name = f"MAX_{MapGroup[MapAttribute(attribute).name]}"
@@ -159,8 +157,8 @@ def derive_surface_address(
             datestr=date,
             realizations=realization,
             basis_attribute=map_attribute_names[basis],
-            threshold=contour_data["threshold"] if contour_data else 0.0,
-            smoothing=contour_data["smoothing"] if contour_data else 0.0,
+            threshold=plume_data["threshold"] if plume_data else 0.0,
+            smoothing=plume_data["smoothing"] if plume_data else 0.0,
         )
     if len(realization) == 1:
         return SimulatedSurfaceAddress(
@@ -185,45 +183,6 @@ def readable_name(attribute: MapAttribute) -> str:
     elif MapType[MapAttribute(attribute).name].value == "PLUME":
         unit = " [# real.]"
     return f"{attribute.value}{unit}"
-
-
-def get_plume_polygon(
-    surface_provider: EnsembleSurfaceProvider,
-    realizations: List[int],
-    surface_name: str,
-    datestr: Optional[str],
-    contour_data: Dict[str, Any],
-) -> Optional[geojson.FeatureCollection]:
-    surface_attribute = contour_data["property"]
-    threshold = contour_data["threshold"]
-    smoothing = contour_data["smoothing"]
-    if (
-        surface_attribute is None
-        or len(realizations) == 0
-        or threshold is None
-        or threshold <= 0
-    ):
-        return None
-    surfaces = [
-        surface_provider.get_surface(
-            SimulatedSurfaceAddress(
-                attribute=surface_attribute,
-                name=surface_name,
-                datestr=datestr,
-                realization=r,
-            )
-        )
-        for r in realizations
-    ]
-    surfaces = [s for s in surfaces if s is not None]
-    if len(surfaces) == 0:
-        return None
-    return plume_extent.plume_polygons(
-        surfaces,
-        threshold,
-        smoothing=smoothing,
-        simplify_factor=0.12 * smoothing,  # Experimental
-    )
 
 
 def _find_legend_title(attribute: MapAttribute, unit: str) -> str:
@@ -386,28 +345,6 @@ def create_map_annotations(
     return annotations
 
 
-def create_map_viewports() -> Dict:
-    return {
-        "layout": [1, 1],
-        "viewports": [
-            {
-                "id": "1_view",
-                "show3D": False,
-                "isSync": True,
-                "layerIds": [
-                    "colormap-layer",
-                    "fault-polygons-layer",
-                    "license-boundary-layer",
-                    "nogo-boundary-layer",
-                    "hazardous-boundary-layer",  # Keep for backward compatibility
-                    "well-picks-layer",
-                    "plume-polygon-layer",
-                ],
-            }
-        ],
-    }
-
-
 # pylint: disable=too-many-arguments
 def create_map_layers(
     realizations: List[int],
@@ -418,20 +355,19 @@ def create_map_layers(
     nogo_bounds_url: Optional[str],
     hazardous_bounds_url: Optional[str],  # Keep for backward compatibility
     well_pick_provider: Optional[EnsembleWellPicks],
-    plume_extent_data: Optional[geojson.FeatureCollection],
-    options_dialog_options: List[str],
+    overlay_dialog_options: List[str],
     selected_wells: List[str],
     show_contours: bool,
     num_contours: Optional[float],
 ) -> List[Dict]:
     layers = []
-    outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in options_dialog_options
+    outline = LayoutLabels.SHOW_POLYGONS_AS_OUTLINES in overlay_dialog_options
     if surface_data is not None:
         # Update ColormapLayer
         meta = surface_data.meta_data
 
         # Generate contour lines
-        contours = []
+        contours: Dict[str, Any] = {"contours": False}
         if (
             show_contours
             and surface_data.color_map_range[0] is not None
@@ -442,30 +378,30 @@ def create_map_layers(
             assert min_val is not None and max_val is not None
             buffer = 0.01 * (max_val - min_val)  # Strange effects at min_val/max_val
             step = (max_val - min_val + 2 * buffer) / (np.round(num_contours) + 1)
-            contours = [min_val + step - buffer, step]
+            contours = {
+                "contours": True,
+                "contourReferencePoint": min_val + step - buffer,
+                "contourInterval": step,
+            }
 
         layers.append(
             {
-                "@@type": "MapLayer",
+                "@@type": "ColormapLayer",
                 "id": "colormap-layer",
                 "name": surface_data.readable_name,
-                "meshUrl": surface_data.img_url,
-                "frame": {
-                    "origin": [meta.x_ori, meta.y_ori],
-                    "count": [meta.x_count, meta.y_count],
-                    "increment": [meta.x_inc, meta.y_inc],
-                    "rotDeg": meta.rot_deg,
-                },
+                "image": surface_data.img_url,
+                "bounds": meta.deckgl_bounds,
+                "rotDeg": meta.deckgl_rot_deg,
+                "valueRange": surface_data.value_range,
                 "colorMapName": surface_data.color_map_name,
                 "colorMapRange": surface_data.color_map_range,
-                "material": False,
-                "contours": contours,
+                **contours,
             }
         )
 
     if (
         fault_polygon_url is not None
-        and LayoutLabels.SHOW_FAULTPOLYGONS in options_dialog_options
+        and LayoutLabels.SHOW_FAULTPOLYGONS in overlay_dialog_options
     ):
         layers.append(
             {
@@ -478,7 +414,7 @@ def create_map_layers(
 
     if (
         containment_bounds_url is not None
-        and LayoutLabels.SHOW_CONTAINMENT_POLYGON in options_dialog_options
+        and LayoutLabels.SHOW_CONTAINMENT_POLYGON in overlay_dialog_options
     ):
         layers.append(
             {
@@ -498,7 +434,7 @@ def create_map_layers(
 
     if (
         nogo_bounds_url is not None
-        and LayoutLabels.SHOW_NOGO_POLYGON in options_dialog_options
+        and LayoutLabels.SHOW_NOGO_POLYGON in overlay_dialog_options
     ):
         layers.append(
             {
@@ -518,7 +454,7 @@ def create_map_layers(
 
     if (
         hazardous_bounds_url is not None
-        and LayoutLabels.SHOW_NOGO_POLYGON in options_dialog_options
+        and LayoutLabels.SHOW_NOGO_POLYGON in overlay_dialog_options
     ):
         layers.append(
             {
@@ -540,85 +476,69 @@ def create_map_layers(
         well_pick_provider is not None
         and formation is not None
         and len(realizations) > 0
-        and LayoutLabels.SHOW_WELLS in options_dialog_options
+        and LayoutLabels.SHOW_WELLS in overlay_dialog_options
     ):
         layer = well_pick_provider.geojson_layer(
             realizations[0], selected_wells, formation
         )
         if layer is not None:
             layers.append(layer)
-
-    if plume_extent_data is not None:
-        layers.append(
-            {
-                "@@type": "GeoJsonLayer",
-                "name": "Plume Contours",
-                "id": "plume-polygon-layer",
-                "data": dict(plume_extent_data),
-                "lineWidthMinPixels": 2,
-                "getLineColor": [150, 150, 150, 255],
-            }
-        )
     return layers
 
 
-def generate_containment_figures(
+def generate_containment_figure(
     table_provider: ContainmentDataProvider,
+    active_tab: MainTabOption,
     co2_scale: Union[Co2MassScale, Co2VolumeScale],
     realizations: List[int],
     y_limits: List[Optional[float]],
     containment_info: ContainmentInfo,
     legenddata: LegendData,
-) -> Tuple[go.Figure, go.Figure, go.Figure]:
+) -> go.Figure:
     try:
-        fig0 = generate_co2_volume_figure(
-            table_provider,
-            realizations,
-            co2_scale,
-            containment_info,
-            legenddata["bar_legendonly"],
+        containment_df = table_provider.extract_dataframes(realizations)
+        containment_df = complete_missing_spatial_data(
+            containment_df, containment_info, active_tab
         )
-        fig1 = (
-            generate_co2_time_containment_figure(
-                table_provider,
-                realizations,
+        if active_tab == MainTabOption.CONTAINMENT_STATE:
+            return generate_co2_volume_figure(
+                containment_df,
                 co2_scale,
                 containment_info,
-                legenddata["time_legendonly"],
+                legenddata["bar_legendonly"],
             )
-            if len(realizations) > 1
-            else generate_co2_time_containment_one_realization_figure(
-                table_provider,
+        if active_tab == MainTabOption.CONTAINMENT_OVER_TIME:
+            if len(realizations) > 1:
+                return generate_co2_time_containment_figure(
+                    containment_df,
+                    co2_scale,
+                    containment_info,
+                    legenddata["time_legendonly"],
+                )
+            return generate_co2_time_containment_one_realization_figure(
+                containment_df,
                 co2_scale,
-                realizations[0],
                 y_limits,
                 containment_info,
             )
-        )
-        if (
-            containment_info.statistics_tab_option
-            == StatisticsTabOption.PROBABILITY_PLOT
-        ):
-            fig2 = generate_co2_statistics_figure(
-                table_provider,
-                realizations,
+        if active_tab == MainTabOption.PROBABILITY:
+            return generate_co2_probability_figure(
+                containment_df,
                 co2_scale,
                 containment_info,
-                legenddata["stats_legendonly"],
+                legenddata["probability_legendonly"],
             )
-        else:  # "box_plot"
-            # Deliberately uses same legend as statistics
-            fig2 = generate_co2_box_plot_figure(
-                table_provider,
-                realizations,
+        if active_tab == MainTabOption.BOX_PLOT:
+            return generate_co2_box_plot_figure(
+                containment_df,
                 co2_scale,
                 containment_info,
-                legenddata["stats_legendonly"],
+                legenddata["box_legendonly"],
             )
-    except KeyError as exc:
-        warnings.warn(f"Could not generate CO2 figures: {exc}")
-        raise exc
-    return fig0, fig1, fig2
+        raise ValueError(f"Unsupported containment tab: {active_tab}")
+    except Exception as exc:
+        warnings.warn(f"Could not generate CO2 figure: {exc}")
+        raise Exception(f"{exc}")
 
 
 def generate_unsmry_figures(
@@ -633,32 +553,14 @@ def generate_unsmry_figures(
     )
 
 
-def process_visualization_info(
-    attribute: str,
-    thresholds: dict,
-    unit: str,
-    stored_info: Dict[str, Any],
-    cache: Cache,
-) -> Dict[str, Any]:
-    """
-    Clear surface cache if the threshold for visualization or mass unit is changed
-    """
-    stored_info["attribute"] = attribute
-    stored_info["change"] = False
-    if (
-        MapType[MapAttribute(attribute).name].value not in ["PLUME", "MIGRATION_TIME"]
-        and unit != stored_info["unit"]
-    ):
-        stored_info["unit"] = unit
-        stored_info["change"] = True
-    if thresholds is not None:
-        for att in stored_info["thresholds"].keys():
-            if stored_info["thresholds"][att] != thresholds[att]:
-                stored_info["change"] = True
-                stored_info["thresholds"][att] = thresholds[att]
-    if stored_info["change"]:
-        cache.clear()
-    return stored_info
+def find_table_date(
+    slider_dates: List[str], date_index: Optional[int], table_dates: List[str]
+) -> Optional[str]:
+    if date_index is None:
+        return None
+    # Map dates are formatted YYYYMMDD, table dates YYYY-MM-DD
+    date = slider_dates[date_index].replace("-", "")
+    return next((d for d in table_dates if d.replace("-", "") == date), None)
 
 
 # pylint: disable=too-many-locals
@@ -671,10 +573,9 @@ def process_containment_info(
     color_choice: str,
     mark_choice: Optional[str],
     sorting: str,
-    lines_to_show: str,
+    show_realizations: bool,
     date_option: str,
-    statistics_tab_option: StatisticsTabOption,
-    box_show_points: str,
+    show_all_points: bool,
     menu_options: MenuOptions,
 ) -> ContainmentInfo:
     if mark_choice is None:
@@ -714,30 +615,93 @@ def process_containment_info(
         phases=[phase for phase in menu_options["phases"] if phase != "total"],
         containments=["nogo", "outside", "contained"],
         plume_groups=plume_groups,
-        use_stats=lines_to_show == "stat",
+        show_realizations=show_realizations,
         date_option=date_option,
-        statistics_tab_option=statistics_tab_option,
-        box_show_points=box_show_points,
+        points_to_show="all" if show_all_points else "outliers",
     )
 
 
-def make_plot_ids(
+def make_plot_generation_key(
+    active_tab: MainTabOption,
+    ensemble: str,
+    source: GraphSource,
+    co2_scale: Union[Co2MassScale, Co2VolumeScale],
+    realizations: List[int],
+    y_limits: List[Optional[float]],
+    containment_info: Optional[ContainmentInfo],
+) -> Dict[str, Any]:
+    key: Dict[str, Any] = {}
+
+    if not realizations:
+        key["empty"] = "no-realizations"
+        return key
+
+    if source == GraphSource.UNSMRY:
+        key["source"] = source.value
+        if active_tab == MainTabOption.CONTAINMENT_OVER_TIME:
+            key.update(ensemble=ensemble, scale=co2_scale.value)
+        return key
+
+    if containment_info is None:
+        raise ValueError("Containment information is required for containment plots")
+
+    split_dimensions = {
+        containment_info.color_choice,
+        containment_info.mark_choice,
+    }
+    key.update(
+        ensemble=ensemble,
+        source=source.value,
+        scale=co2_scale.value,
+        realizations=list(realizations),
+        color_choice=containment_info.color_choice,
+        mark_choice=containment_info.mark_choice,
+        sorting=(
+            containment_info.sorting if containment_info.mark_choice != "none" else None
+        ),
+        filters={
+            dimension: getattr(containment_info, dimension)
+            for dimension in (
+                "zone",
+                "region",
+                "phase",
+                "containment",
+                "plume_group",
+            )
+            if dimension not in split_dimensions
+        },
+    )
+
+    if active_tab == MainTabOption.CONTAINMENT_STATE:
+        key["date_option"] = containment_info.date_option
+    elif active_tab == MainTabOption.CONTAINMENT_OVER_TIME:
+        if len(realizations) == 1:
+            key.update(time_mode="single", y_limits=list(y_limits))
+        else:
+            key["time_mode"] = (
+                "realizations" if containment_info.show_realizations else "statistics"
+            )
+    elif active_tab == MainTabOption.PROBABILITY:
+        key["date_option"] = containment_info.date_option
+    elif active_tab == MainTabOption.BOX_PLOT:
+        key.update(
+            date_option=containment_info.date_option,
+            points_to_show=containment_info.points_to_show,
+        )
+
+    return key
+
+
+def make_plot_id(
     ensemble: str,
     source: GraphSource,
     scale: Union[Co2MassScale, Co2VolumeScale],
     containment_info: ContainmentInfo,
     realizations: List[int],
-    # lines_to_show: str,
-    num_figs: int,
-) -> List[str]:
+    active_tab: MainTabOption,
+) -> str:
     """
-    Removed some keywords from plot id that we don't want to trigger updates for
-    with respect to visible legends and potentially zoom level.
-
-    Note: Currently the legends are reset if you swap to a plot with different plot id
-    and back, so it works temporarily, in a sense. This might be good enough for now.
-    If we want to store it more extensively, we need to do something like what's been
-    outlined in _plugin.py.
+    Make plot id for maintaining visible legends and zoom level.
     """
     zone_str = containment_info.zone if containment_info.zone is not None else "None"
     region_str = (
@@ -756,8 +720,8 @@ def make_plot_ids(
     plot_id = "-".join(
         (
             ensemble,
-            source,
-            scale,
+            source.value,
+            scale.value,
             zone_str,
             region_str,
             plume_group_str,
@@ -769,21 +733,9 @@ def make_plot_ids(
             containment_info.date_option,
         )
     )
-    ids = [plot_id] * num_figs
-    # ids += [plot_id + f"-{realizations}"] * (num_figs - 1)
-    # ids[1] += f"-{lines_to_show}"
-    ids[1] += "-single" if len(realizations) == 1 else "-multiple"
-    ids[2] += f"-{containment_info.statistics_tab_option}"
-    return ids
-
-
-def set_plot_ids(
-    figs: List[go.Figure],
-    plot_ids: List[str],
-) -> None:
-    for fig, plot_id in zip(figs, plot_ids):
-        if fig != no_update:
-            fig["layout"]["uirevision"] = plot_id
+    if active_tab == MainTabOption.CONTAINMENT_OVER_TIME:
+        plot_id += "-single" if len(realizations) == 1 else "-multiple"
+    return plot_id
 
 
 def process_summed_mass(

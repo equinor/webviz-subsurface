@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 
+import dash_daq as daq
 import plotly.graph_objects as go
 import webviz_core_components as wcc
 from dash import dcc, html
@@ -12,6 +13,10 @@ from webviz_subsurface.plugins._co2_migration._types import LegendData
 from webviz_subsurface.plugins._co2_migration._utilities.containment_info import (
     MainTabOption,
 )
+
+TAB_STYLE = {"flex": "1 1 auto", "width": "auto"}
+DATE_SLIDER_HEIGHT = 70  # px
+DATE_SLIDER_STYLE = {"height": f"{DATE_SLIDER_HEIGHT}px", "flexShrink": 0}
 
 
 class MainView(ViewABC):
@@ -32,13 +37,18 @@ class MapViewElement(ViewElementABC):
         DATE_WRAPPER = "date-wrapper"
         BAR_PLOT = "bar-plot"
         TIME_PLOT = "time-plot"
-        STATISTICS_PLOT = "statistics-plot"
+        TIME_PLOT_LINES = "time-plot-lines"
+        TIME_PLOT_LINES_WRAPPER = "time-plot-lines-wrapper"
+        PROBABILITY_PLOT = "probability-plot"
+        BOX_PLOT = "box-plot"
+        OUTLIER_TOGGLE = "outlier-toggle"
         BAR_PLOT_ORDER = "bar-plot-order"
         CONTAINMENT_COLORS = "containment-order"
         SIZE_SLIDER = "size-slider"
         TOP_ELEMENT = "top-element"
         BOTTOM_ELEMENT = "bottom-element"
         LEGEND_DATA_STORE = "legend-data-store"
+        PLOT_GENERATION_STORE = "plot-generation-store"
         SUMMARY_TABS = "summary-tabs"
         CSV_EXPORT_BUTTON = "csv-export-button"
         DOWNLOAD_CSV = "download-csv"
@@ -87,20 +97,10 @@ class MapViewElement(ViewElementABC):
                             ],
                             style={
                                 "padding": "1%",
-                                "height": "80%",
+                                "height": "100%",
+                                "boxSizing": "border-box",
                                 "position": "relative",
                             },
-                        ),
-                        html.Div(
-                            wcc.Slider(
-                                id=self.register_component_unique_id(
-                                    self.Ids.DATE_SLIDER
-                                ),
-                                step=None,
-                                marks={0: ""},
-                                value=0,
-                            ),
-                            id=self.register_component_unique_id(self.Ids.DATE_WRAPPER),
                         ),
                     ],
                     style={
@@ -108,6 +108,18 @@ class MapViewElement(ViewElementABC):
                     },
                 )
             )
+        layout_elements.append(
+            html.Div(
+                wcc.Slider(
+                    id=self.register_component_unique_id(self.Ids.DATE_SLIDER),
+                    step=None,
+                    marks={0: ""},
+                    value=0,
+                ),
+                id=self.register_component_unique_id(self.Ids.DATE_WRAPPER),
+                style=DATE_SLIDER_STYLE,
+            )
+        )
         if self._content["any_table"]:
             layout_elements.append(
                 wcc.Frame(
@@ -122,7 +134,19 @@ class MapViewElement(ViewElementABC):
                                 self.register_component_unique_id(self.Ids.BAR_PLOT),
                                 self.register_component_unique_id(self.Ids.TIME_PLOT),
                                 self.register_component_unique_id(
-                                    self.Ids.STATISTICS_PLOT
+                                    self.Ids.TIME_PLOT_LINES
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.TIME_PLOT_LINES_WRAPPER
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.PROBABILITY_PLOT
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.BOX_PLOT,
+                                ),
+                                self.register_component_unique_id(
+                                    self.Ids.OUTLIER_TOGGLE
                                 ),
                                 self.register_component_unique_id(
                                     self.Ids.CSV_EXPORT_BUTTON
@@ -144,8 +168,17 @@ class MapViewElement(ViewElementABC):
                     data=LegendData(  # type: ignore[arg-type]
                         bar_legendonly=None,
                         time_legendonly=None,
-                        stats_legendonly=None,
+                        probability_legendonly=None,
+                        box_legendonly=None,
                     ),
+                )
+            )
+            layout_elements.append(
+                dcc.Store(
+                    id=self.register_component_unique_id(
+                        self.Ids.PLOT_GENERATION_STORE
+                    ),
+                    data={},
                 )
             )
         if self._content["maps"] and self._content["any_table"]:
@@ -161,7 +194,7 @@ class MapViewElement(ViewElementABC):
                             vertical=False,
                             marks={
                                 # 1: "Top",
-                                37: "Drag to scale the size of the containment plots",
+                                37: "Drag to scale the relative size between the map and the graphs",
                                 # 79: "Bottom",
                             },
                         ),
@@ -181,10 +214,39 @@ class MapViewElement(ViewElementABC):
         )
 
 
+def _plot_toggle(toggle_id: str, left_label: str, right_label: str) -> html.Div:
+    return html.Div(
+        [
+            html.Span(left_label),
+            daq.ToggleSwitch(
+                id=toggle_id,
+                value=False,  # True = right_label
+                size=30,
+                style={"position": "relative", "top": "-5px"},
+            ),
+            html.Span(right_label),
+        ],
+        style={
+            "position": "absolute",
+            "top": "5px",
+            "right": "10px",
+            "zIndex": 1000,
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "6px",
+            "fontSize": "15px",
+        },
+    )
+
+
 def _summary_graph_layout(
     bar_plot_id: str,
     time_plot_id: str,
-    statistics_plot_id: str,
+    time_plot_lines_id: str,
+    time_plot_lines_wrapper_id: str,
+    probability_plot_id: str,
+    box_plot_id: str,
+    outlier_toggle_id: str,
     csv_export_button_id: str,
     download_csv_id: str,
     summary_tabs_id: str,
@@ -225,6 +287,8 @@ def _summary_graph_layout(
                         wcc.Tab(
                             label="Containment state",
                             value=MainTabOption.CONTAINMENT_STATE,
+                            style=TAB_STYLE,
+                            selected_style=TAB_STYLE,
                             children=[
                                 html.Div(
                                     wcc.Graph(
@@ -238,12 +302,42 @@ def _summary_graph_layout(
                             ],
                         ),
                         wcc.Tab(
-                            label="Containment over time",
+                            label="Time plot",
                             value=MainTabOption.CONTAINMENT_OVER_TIME,
+                            style=TAB_STYLE,
+                            selected_style=TAB_STYLE,
+                            children=[
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            _plot_toggle(
+                                                time_plot_lines_id,
+                                                "Mean/P10/P90",
+                                                "Realizations",
+                                            ),
+                                            id=time_plot_lines_wrapper_id,
+                                        ),
+                                        wcc.Graph(
+                                            id=time_plot_id,
+                                            figure=go.Figure(),
+                                            config={
+                                                "displayModeBar": False,
+                                            },
+                                        ),
+                                    ],
+                                    style={"position": "relative"},
+                                ),
+                            ],
+                        ),
+                        wcc.Tab(
+                            label="Probability plot",
+                            value=MainTabOption.PROBABILITY,
+                            style=TAB_STYLE,
+                            selected_style=TAB_STYLE,
                             children=[
                                 html.Div(
                                     wcc.Graph(
-                                        id=time_plot_id,
+                                        id=probability_plot_id,
                                         figure=go.Figure(),
                                         config={
                                             "displayModeBar": False,
@@ -253,17 +347,27 @@ def _summary_graph_layout(
                             ],
                         ),
                         wcc.Tab(
-                            label="Statistics",
-                            value=MainTabOption.STATISTICS,
+                            label="Box plot",
+                            value=MainTabOption.BOX_PLOT,
+                            style=TAB_STYLE,
+                            selected_style=TAB_STYLE,
                             children=[
                                 html.Div(
-                                    wcc.Graph(
-                                        id=statistics_plot_id,
-                                        figure=go.Figure(),
-                                        config={
-                                            "displayModeBar": False,
-                                        },
-                                    ),
+                                    [
+                                        _plot_toggle(
+                                            outlier_toggle_id,
+                                            "Show outliers",
+                                            "Show all points",
+                                        ),
+                                        wcc.Graph(
+                                            id=box_plot_id,
+                                            figure=go.Figure(),
+                                            config={
+                                                "displayModeBar": False,
+                                            },
+                                        ),
+                                    ],
+                                    style={"position": "relative"},
                                 ),
                             ],
                         ),

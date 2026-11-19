@@ -148,17 +148,29 @@ def init_dates_per_ensemble(
     ensembles: List[str],
     attribute_names: FilteredMapAttribute,
     surface_providers: Dict[str, EnsembleSurfaceProvider],
+    menu_options: Dict[str, Dict[GraphSource, MenuOptions]],
 ) -> Dict[str, List[str]]:
     ensemble_dates: Dict[str, List[str]] = {}
     for ens in ensembles:
         surface_provider = surface_providers[ens]
+        # Plume maps are derived from the max maps, so they have no files of their own
         dated_attributes = [
             k
             for k in attribute_names.filtered_values
-            if MapType[k.name].value != "MIGRATION_TIME"
+            if MapType[k.name].value not in ("MIGRATION_TIME", "PLUME")
         ]
+        table_dates: Dict[GraphSource, List[str]] = {
+            source: list(options["dates"])
+            for source, options in menu_options[ens].items()
+            if source != GraphSource.UNSMRY
+        }
+        other_dates = {f"'{source}'": d for source, d in table_dates.items()}
         if len(dated_attributes) == 0:
-            ensemble_dates[ens] = []
+            # No dated maps: as for other menu options, use the first available table
+            # (mass before volume), whose options are read from its first realization
+            first_source = next(iter(table_dates), None)
+            ensemble_dates[ens] = table_dates[first_source] if first_source else []
+            dates_origin = f"'{first_source}'"
         else:
             date_map_attribute = dated_attributes[0]
             att_name = attribute_names[date_map_attribute]
@@ -169,7 +181,35 @@ def init_dates_per_ensemble(
                     f"for attribute '{att_name}'"
                 )
             ensemble_dates[ens] = dates
+            dates_origin = f"maps for '{att_name}'"
+            for other in dated_attributes[1:]:
+                other_name = attribute_names[other]
+                other_dates[f"maps for '{other_name}'"] = (
+                    surface_provider.surface_dates_for_attribute(other_name) or []
+                )
+        _validate_matching_dates(ens, ensemble_dates[ens], dates_origin, other_dates)
     return ensemble_dates
+
+
+def _validate_matching_dates(
+    ens: str,
+    dates: List[str],
+    dates_origin: str,
+    other_dates: Dict[str, List[str]],
+) -> None:
+    # Assumes all realizations share dates, so ensemble-level dates suffice
+    # Map dates are formatted YYYYMMDD, table dates YYYY-MM-DD
+    expected = {d.replace("-", "") for d in dates}
+    for origin, origin_dates in other_dates.items():
+        observed = {d.replace("-", "") for d in origin_dates}
+        if observed != expected:
+            warnings.warn(
+                f"Ensemble '{ens}': dates in {origin} differ from dates in"
+                f" {dates_origin}. This likely indicates an error in the maps/tables. "
+                f"Missing: {sorted(expected - observed)}; "
+                f"extra: {sorted(observed - expected)}.",
+                stacklevel=2,
+            )
 
 
 def init_well_pick_provider(

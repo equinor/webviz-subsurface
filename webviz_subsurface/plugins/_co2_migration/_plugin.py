@@ -1,44 +1,33 @@
+# pylint: disable=too-many-lines
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import plotly.graph_objects as go
-from dash import (
-    Dash,
-    Input,
-    NoUpdate,
-    Output,
-    Patch,
-    State,
-    callback,
-    ctx,
-    html,
-    no_update,
-)
+from dash import Dash, Input, Output, Patch, State, callback, ctx, html, no_update
+from dash._callback import NoUpdate
 from dash.exceptions import PreventUpdate
 from webviz_config import WebvizPluginABC, WebvizSettings
 from webviz_config.utils import StrEnum, callback_typecheck
 
-from webviz_subsurface._providers import FaultPolygonsServer, SurfaceArrayServer
+from webviz_subsurface._providers import FaultPolygonsServer, SurfaceImageServer
 from webviz_subsurface._providers.ensemble_polygon_provider import PolygonServer
 from webviz_subsurface.plugins._co2_migration._utilities.callbacks import (
     SurfaceData,
     create_map_annotations,
     create_map_layers,
-    create_map_viewports,
     derive_surface_address,
     export_figure_data_to_csv,
     extract_legendonly,
-    generate_containment_figures,
+    find_table_date,
+    generate_containment_figure,
     generate_unsmry_figures,
-    get_plume_polygon,
-    make_plot_ids,
+    make_plot_generation_key,
+    make_plot_id,
     process_containment_info,
     process_summed_mass,
-    process_visualization_info,
     property_origin,
     readable_name,
-    set_plot_ids,
 )
 from webviz_subsurface.plugins._co2_migration._utilities.fault_polygons_handler import (
     FaultPolygonsHandler,
@@ -67,17 +56,23 @@ from webviz_subsurface.plugins._co2_migration._utilities.initialization import (
     init_well_pick_provider,
 )
 from webviz_subsurface.plugins._co2_migration.views.mainview.mainview import (
+    DATE_SLIDER_HEIGHT,
+    DATE_SLIDER_STYLE,
     MainView,
     MapViewElement,
 )
 from webviz_subsurface.plugins._co2_migration.views.mainview.settings import (
+    HIDDEN,
+    ROWS,
+    SECTION,
     ViewSettings,
 )
 
 from . import _error
 from ._types import LegendData
 from ._utilities.color_tables import co2migration_color_tables
-from ._utilities.containment_info import MainTabOption, StatisticsTabOption
+from ._utilities.containment_info import MainTabOption
+from ._utilities.surface_publishing import SurfaceTransform
 
 LOGGER = logging.getLogger(__name__)
 TABLES_PATH = "share/results/tables"
@@ -91,7 +86,9 @@ class CO2Migration(WebvizPluginABC):
     ---
 
     * **`ensembles`:** Which ensembles in `shared_settings` to visualize.
-    * **`well_pick_file`:** Path to a file containing well picks
+    * **`well_pick_file`:** Path to a file containing well picks. A relative path is
+        read from each realization; an absolute path is one file used for all
+        realizations. If the file is missing or cannot be read, no well picks are shown.
     * **`plume_mass_relpath`:** Path to a table of co2 _containment data_ for co2 mass
     * **`plume_actual_volume_relpath`:** Path to a table of co2 _containment data_ for co2
         volume of type "actual"
@@ -205,7 +202,7 @@ class CO2Migration(WebvizPluginABC):
                 for ensemble_name in ensembles
             }
             self._realizations_per_ensemble = init_realizations(ensemble_paths)
-            self._surface_server = SurfaceArrayServer.instance(app)
+            self._surface_server = SurfaceImageServer.instance(app)
             self._polygons_server = FaultPolygonsServer.instance(app)
             self._map_attribute_names = init_map_attribute_names(
                 webviz_settings, ensembles, map_attribute_names
@@ -215,10 +212,6 @@ class CO2Migration(WebvizPluginABC):
             # Surfaces
             self._ensemble_surface_providers = init_surface_providers(
                 webviz_settings, ensembles
-            )
-            # Dates
-            self._ensemble_dates = init_dates_per_ensemble(
-                ensembles, self._map_attribute_names, self._ensemble_surface_providers
             )
             # Polygons
             self._fault_polygon_handlers = {
@@ -261,6 +254,13 @@ class CO2Migration(WebvizPluginABC):
                 self._co2_actual_volume_table_providers,
                 self._unsmry_providers,
             )
+            # Dates, shared by maps and graphs through the date slider
+            self._ensemble_dates = init_dates_per_ensemble(
+                ensembles,
+                self._map_attribute_names,
+                self._ensemble_surface_providers,
+                self._menu_options,
+            )
             self._content = init_dictionary_of_content(
                 self._menu_options,
                 len(self._map_attribute_names.mapping) > 0,
@@ -270,12 +270,6 @@ class CO2Migration(WebvizPluginABC):
             raise
 
         self._summed_co2: Dict[str, Any] = {}
-        self._visualization_info = {
-            "thresholds": self._map_thresholds.standard_thresholds,
-            "n_clicks": 0,
-            "change": False,
-            "unit": "tons",
-        }
         self._color_tables = co2migration_color_tables()
         self._well_pick_names: Dict[str, List[str]] = {
             ens: (
@@ -329,58 +323,85 @@ class CO2Migration(WebvizPluginABC):
             self._add_set_unit_list_callback()
             self._add_time_plot_visibility_callback()
             self._add_csv_export_callback()
-
-        if self._content["maps"]:
-            self._add_set_dates_callback()
-            self._add_date_slider_visibility_callback()
-            self._add_set_well_options_callback()
-            self._add_create_map_callback()
-            self._add_options_dialog_callback()
-            self._add_thresholds_dialog_callback()
-
-        self._add_feedback_dialog_callback()
-
-        if self._content["maps"] and self._content["any_table"]:
             self._add_resize_plot_callback()
 
+        if self._content["maps"]:
+            self._add_set_well_options_callback()
+            self._add_create_map_callback()
+            self._add_overlay_dialog_callback()
+            self._add_thresholds_dialog_callback()
+
+        self._add_set_dates_callback()
+        self._add_date_slider_visibility_callback()
+        self._add_feedback_dialog_callback()
+
     def _add_resize_plot_callback(self) -> None:
-        @callback(
-            Output(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
-            Output(self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"),
-            Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "style"),
-            Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "style"),
-            Output(self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "style"),
-            Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
-            Input(self._view_component(MapViewElement.Ids.SIZE_SLIDER), "value"),
-            State(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
-            State(self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"),
-            Input(self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"),
-        )
+        has_maps = self._content["maps"]
+        outputs = [
+            Output(self._view_component(plot_id), "style")
+            for plot_id in (
+                MapViewElement.Ids.BAR_PLOT,
+                MapViewElement.Ids.TIME_PLOT,
+                MapViewElement.Ids.PROBABILITY_PLOT,
+                MapViewElement.Ids.BOX_PLOT,
+            )
+        ]
+        inputs = {
+            "ensemble": Input(
+                self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"
+            ),
+            "source": Input(
+                self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"
+            ),
+            "date_slider_style": Input(
+                self._view_component(MapViewElement.Ids.DATE_WRAPPER), "style"
+            ),
+        }
+        if has_maps:
+            outputs += [
+                Output(self._view_component(MapViewElement.Ids.TOP_ELEMENT), "style"),
+                Output(
+                    self._view_component(MapViewElement.Ids.BOTTOM_ELEMENT), "style"
+                ),
+            ]
+            inputs["slider_value"] = Input(
+                self._view_component(MapViewElement.Ids.SIZE_SLIDER), "value"
+            )
+
+        @callback(output=outputs, inputs=inputs)
         def resize_plots(
             ensemble: str,
-            slider_value: float,
-            top_style: Dict,
-            bottom_style: Dict,
             source: GraphSource,
+            date_slider_style: Dict[str, Any],
+            slider_value: float = 0,
         ) -> List[Dict]:
-            bottom_style["height"] = f"{slider_value}vh"
-            top_style["height"] = f"{80 - slider_value}vh"
-
-            styles = [{"height": f"{slider_value * 0.9 - 4}vh", "width": "90%"}] * 3
+            date_px = 0 if date_slider_style == HIDDEN else DATE_SLIDER_HEIGHT
+            graph_height = (
+                f"{slider_value * 0.9 - 4}vh"
+                if has_maps
+                else f"calc(90vh - {150 + date_px}px)"
+            )
+            styles = [{"height": graph_height, "width": "100%"}] * 4
             if source == GraphSource.UNSMRY and self._unsmry_providers is None:
-                styles = [{"display": "none"}] * 3
+                styles = [HIDDEN] * 4
             elif (
                 source == GraphSource.CONTAINMENT_MASS
                 and ensemble not in self._co2_table_providers
             ):
-                styles = [{"display": "none"}] * 3
+                styles = [HIDDEN] * 4
             elif (
                 source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
                 and ensemble not in self._co2_actual_volume_table_providers
             ):
-                styles = [{"display": "none"}] * 3
+                styles = [HIDDEN] * 4
 
-            return [top_style, bottom_style] + styles
+            if has_maps:
+                # The date slider takes its height from the map frame
+                styles += [
+                    {"height": f"calc({80 - slider_value}vh - {date_px}px)"},
+                    {"height": f"{slider_value}vh"},
+                ]
+            return styles
 
     def _add_feedback_dialog_callback(self) -> None:
         @callback(
@@ -402,12 +423,12 @@ class CO2Migration(WebvizPluginABC):
                 return _n_clicks > 0
             raise PreventUpdate
 
-    def _add_options_dialog_callback(self) -> None:
+    def _add_overlay_dialog_callback(self) -> None:
         @callback(
-            Output(ViewSettings.Ids.OPTIONS_DIALOG, "open"),
-            Input(ViewSettings.Ids.OPTIONS_DIALOG_BUTTON, "n_clicks"),
+            Output(ViewSettings.Ids.OVERLAY_DIALOG, "open"),
+            Input(ViewSettings.Ids.OVERLAY_DIALOG_BUTTON, "n_clicks"),
         )
-        def open_close_options_dialog(_n_clicks: Optional[int]) -> bool:
+        def open_close_overlay_dialog(_n_clicks: Optional[int]) -> bool:
             if _n_clicks is not None:
                 return _n_clicks > 0
             raise PreventUpdate
@@ -421,7 +442,7 @@ class CO2Migration(WebvizPluginABC):
             Output(
                 self._view_component(MapViewElement.Ids.MAP_ANNOTATIONS), "children"
             ),
-            Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "views"),
+            Output(self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"),
             inputs={
                 "attribute": Input(
                     self._settings_component(ViewSettings.Ids.PROPERTY), "value"
@@ -468,30 +489,22 @@ class CO2Migration(WebvizPluginABC):
                     self._settings_component(ViewSettings.Ids.PLUME_SMOOTHING),
                     "value",
                 ),
-                "visualization_update": Input(
-                    self._settings_component(ViewSettings.Ids.VISUALIZATION_UPDATE),
-                    "n_clicks",
-                ),
                 "mass_unit": Input(
                     self._settings_component(ViewSettings.Ids.MASS_UNIT), "value"
                 ),
-                "mass_unit_update": Input(
-                    self._settings_component(ViewSettings.Ids.MASS_UNIT_UPDATE),
-                    "n_clicks",
-                ),
-                "options_dialog_options": Input(
-                    ViewSettings.Ids.OPTIONS_DIALOG_OPTIONS, "value"
+                "overlay_dialog_options": Input(
+                    ViewSettings.Ids.OVERLAY_DIALOG_OPTIONS, "value"
                 ),
                 "selected_wells": Input(
-                    ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"
+                    ViewSettings.Ids.OVERLAY_DIALOG_WELL_FILTER, "value"
                 ),
                 "ensemble": Input(
                     self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"
                 ),
-                "current_views": State(
-                    self._view_component(MapViewElement.Ids.DECKGL_MAP), "views"
-                ),
                 "thresholds": [Input(id, "value") for id in self._threshold_ids],
+                "current_bounds": State(
+                    self._view_component(MapViewElement.Ids.DECKGL_MAP), "bounds"
+                ),
             },
         )
         def update_map_attribute(
@@ -509,71 +522,69 @@ class CO2Migration(WebvizPluginABC):
             contour_quantity: Optional[float],
             plume_threshold: Optional[float],
             plume_smoothing: Optional[float],
-            visualization_update: int,
             mass_unit: str,
-            mass_unit_update: int,
-            options_dialog_options: List[str],
+            overlay_dialog_options: List[str],
             selected_wells: List[str],
             ensemble: str,
-            current_views: List[Any],
-            thresholds: List[float],
+            thresholds: List[Optional[float]],
+            current_bounds: Optional[List[float]],
         ) -> Tuple[
-            List[Dict[Any, Any]], Optional[List[Any]], Union[Dict[Any, Any], NoUpdate]
+            List[Dict[Any, Any]], Optional[List[Any]], Union[List[float], NoUpdate]
         ]:
-            # Unable to clear cache (when needed) without the protected member
-            # pylint: disable=protected-access
             current_thresholds = dict(zip(self._threshold_ids, thresholds))
-            assert visualization_update >= 0  # Need the input to trigger callback
-            assert mass_unit_update >= 0  # These are just to silence pylint
-            self._visualization_info = process_visualization_info(
-                attribute,
-                current_thresholds,
-                mass_unit,
-                self._visualization_info,
-                self._surface_server._array_cache,
-            )
-            if self._visualization_info["change"]:
-                return [], None, no_update
             attribute = MapAttribute(attribute)
+            map_type = MapType[attribute.name].value
+            visualization_threshold = (
+                current_thresholds.get(attribute.value)
+                if map_type not in ("PLUME", "MIGRATION_TIME")
+                else None
+            )
+            if (
+                map_type not in ("PLUME", "MIGRATION_TIME")
+                and visualization_threshold is None
+            ):
+                raise PreventUpdate
             if len(realization) == 0 or ensemble is None:
                 raise PreventUpdate
-            if MapType[MapAttribute(attribute).name].value == "MIGRATION_TIME":
+            if map_type == "MIGRATION_TIME":
                 datestr = None
             else:
                 datestr = self._ensemble_dates[ensemble][date]
-            # Contour data
-            contour_data = None
-            if MapType[MapAttribute(attribute).name].value == "PLUME":
-                contour_data = {
-                    "property": property_origin(attribute, self._map_attribute_names),
+            # Plume data
+            plume_data = None
+            if map_type == "PLUME":
+                plume_data = {
                     "threshold": plume_threshold,
                     "smoothing": plume_smoothing,
                 }
             # Surface
             surf_data, summed_mass = None, None
             if formation is not None and len(realization) > 0:
+                surface_address = derive_surface_address(
+                    formation,
+                    attribute,
+                    datestr,
+                    realization,
+                    self._map_attribute_names,
+                    statistic,
+                    plume_data,
+                )
                 surf_data, summed_mass = SurfaceData.from_server(
                     server=self._surface_server,
                     provider=self._ensemble_surface_providers[ensemble],
-                    address=derive_surface_address(
-                        formation,
-                        attribute,
-                        datestr,
-                        realization,
-                        self._map_attribute_names,
-                        statistic,
-                        contour_data,
-                    ),
+                    address=surface_address,
                     color_map_range=(
                         cm_min_val if len(cm_min_auto) == 0 else None,
                         cm_max_val if len(cm_max_auto) == 0 else None,
                     ),
                     color_map_name=color_map_name,
                     readable_name_=readable_name(attribute),
-                    visualization_info=self._visualization_info,
-                    map_attribute_names=self._map_attribute_names,
+                    transform=SurfaceTransform(
+                        map_attribute=attribute,
+                        mass_unit=mass_unit,
+                        visualization_threshold=visualization_threshold,
+                    ),
                 )
-            assert isinstance(self._visualization_info["unit"], str)
             current_summed_mass, self._summed_co2 = process_summed_mass(
                 formation,
                 realization,
@@ -581,17 +592,8 @@ class CO2Migration(WebvizPluginABC):
                 attribute,
                 summed_mass,
                 self._summed_co2,
-                self._visualization_info["unit"],
+                mass_unit,
             )
-            plume_polygon = None
-            if contour_data is not None:
-                plume_polygon = get_plume_polygon(
-                    self._ensemble_surface_providers[ensemble],
-                    realization,
-                    formation,
-                    datestr,
-                    contour_data,
-                )
             # Create layers and view bounds
             fault_polygon_url = self._fault_polygon_handlers[
                 ensemble
@@ -614,8 +616,7 @@ class CO2Migration(WebvizPluginABC):
                 nogo_bounds_url=nogo_polygon_url,
                 hazardous_bounds_url=hazardous_polygon_url,
                 well_pick_provider=self._well_pick_provider.get(ensemble, None),
-                plume_extent_data=plume_polygon,
-                options_dialog_options=options_dialog_options,
+                overlay_dialog_options=overlay_dialog_options,
                 selected_wells=selected_wells,
                 show_contours=len(contour_switch) > 0,
                 num_contours=contour_quantity,
@@ -625,23 +626,25 @@ class CO2Migration(WebvizPluginABC):
                 surface_data=surf_data,
                 colortables=self._color_tables,
                 attribute=attribute,
-                unit=self._visualization_info["unit"],
+                unit=mass_unit,
                 current_total=current_summed_mass,
-                options=options_dialog_options,
+                options=overlay_dialog_options,
                 con_url=containment_polygon_url,
                 haz_url=hazardous_polygon_url,
                 nogo_url=nogo_polygon_url,
             )
-            viewports: Union[Dict[Any, Any], NoUpdate] = (
-                no_update if current_views else create_map_viewports()
-            )
-            return layers, annotations, viewports
+            # The image layer reports pre-rotation bounds, so frame the true extent
+            bounds: Union[List[float], NoUpdate] = no_update
+            if surf_data is not None and not current_bounds:
+                meta = surf_data.meta_data
+                bounds = [meta.x_min, meta.y_min, meta.x_max, meta.y_max]
+            return layers, annotations, bounds
 
     def _add_set_well_options_callback(self) -> None:
         @callback(
-            Output(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "options"),
-            Output(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "value"),
-            Output(ViewSettings.Ids.OPTIONS_DIALOG_WELL_FILTER, "style"),
+            Output(ViewSettings.Ids.OVERLAY_DIALOG_WELL_FILTER, "options"),
+            Output(ViewSettings.Ids.OVERLAY_DIALOG_WELL_FILTER, "value"),
+            Output(ViewSettings.Ids.OVERLAY_DIALOG_WELL_FILTER, "style"),
             Output(ViewSettings.Ids.WELL_FILTER_HEADER, "style"),
             Input(self._settings_component(ViewSettings.Ids.ENSEMBLE), "value"),
         )
@@ -663,14 +666,38 @@ class CO2Migration(WebvizPluginABC):
             )
 
     def _add_date_slider_visibility_callback(self) -> None:
+        inputs = {}
+        if self._content["maps"]:
+            inputs["attribute"] = Input(
+                self._settings_component(ViewSettings.Ids.PROPERTY), "value"
+            )
+        if self._content["any_table"]:
+            inputs["active_tab"] = Input(
+                self._view_component(MapViewElement.Ids.SUMMARY_TABS), "value"
+            )
+            inputs["source"] = Input(
+                self._settings_component(ViewSettings.Ids.GRAPH_SOURCE), "value"
+            )
+
         @callback(
             Output(self._view_component(MapViewElement.Ids.DATE_WRAPPER), "style"),
-            Input(self._settings_component(ViewSettings.Ids.PROPERTY), "value"),
+            inputs=inputs,
         )
-        def toggle_date_slider(attribute: str) -> Dict[str, str]:
-            if MapType[MapAttribute(attribute).name].value == "MIGRATION_TIME":
-                return {"display": "none"}
-            return {}
+        def toggle_date_slider(
+            attribute: Optional[str] = None,
+            active_tab: Optional[str] = None,
+            source: Optional[str] = None,
+        ) -> Dict[str, Any]:
+            map_uses_date = (
+                attribute is not None
+                and MapType[MapAttribute(attribute).name].value != "MIGRATION_TIME"
+            )
+            graph_uses_date = (
+                active_tab is not None
+                and active_tab != MainTabOption.CONTAINMENT_OVER_TIME
+                and source != GraphSource.UNSMRY
+            )
+            return DATE_SLIDER_STYLE if map_uses_date or graph_uses_date else HIDDEN
 
     def _add_set_dates_callback(self) -> None:
         @callback(
@@ -698,24 +725,29 @@ class CO2Migration(WebvizPluginABC):
     def _add_time_plot_visibility_callback(self) -> None:
         @callback(
             Output(
-                self._settings_component(ViewSettings.Ids.REAL_OR_STAT_DIV), "style"
+                self._view_component(MapViewElement.Ids.TIME_PLOT_LINES_WRAPPER),
+                "style",
             ),
             Output(self._settings_component(ViewSettings.Ids.Y_LIM_OPTIONS), "style"),
+            Output(
+                self._settings_component(ViewSettings.Ids.GRAPH_DISPLAY_HEADER),
+                "style",
+            ),
             Input(self._settings_component(ViewSettings.Ids.REALIZATION), "value"),
-            State(self._settings_component(ViewSettings.Ids.REAL_OR_STAT_DIV), "style"),
+            Input(self._view_component(MapViewElement.Ids.SUMMARY_TABS), "value"),
         )
         def toggle_time_plot_options_visibility(
             realizations: List[int],
-            current_style: Dict[str, str],
-        ) -> Tuple[Dict[str, str], Dict[str, str]]:
-            if len(realizations) == 1:
-                return (
-                    {**current_style, "display": "none"},
-                    {"display": "flex", "flex-direction": "column"},
-                )
+            active_tab: MainTabOption,
+        ) -> Tuple[Dict[str, str], Dict[str, str], Dict[str, str]]:
+            single_real = len(realizations) == 1
+            show_y_lim = (
+                single_real and active_tab == MainTabOption.CONTAINMENT_OVER_TIME
+            )
             return (
-                {**current_style, "display": "flex"},
-                {"display": "none"},
+                HIDDEN if single_real else {},
+                ROWS if show_y_lim else HIDDEN,
+                SECTION if show_y_lim else HIDDEN,
             )
 
     def _add_set_unit_list_callback(self) -> None:
@@ -739,8 +771,13 @@ class CO2Migration(WebvizPluginABC):
             Output(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             Output(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Output(
-                self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
+                self._view_component(MapViewElement.Ids.PROBABILITY_PLOT),
                 "figure",
+            ),
+            Output(self._view_component(MapViewElement.Ids.BOX_PLOT), "figure"),
+            Output(
+                self._view_component(MapViewElement.Ids.PLOT_GENERATION_STORE),
+                "data",
             ),
             # LEGEND_DATA_STORE is updated whenever the legend is clicked. However,
             # there is not need to update the plots based on this change, since that
@@ -762,13 +799,14 @@ class CO2Migration(WebvizPluginABC):
             Input(self._settings_component(ViewSettings.Ids.COLOR_BY), "value"),
             Input(self._settings_component(ViewSettings.Ids.MARK_BY), "value"),
             Input(self._settings_component(ViewSettings.Ids.SORT_PLOT), "value"),
-            Input(self._settings_component(ViewSettings.Ids.REAL_OR_STAT), "value"),
-            Input(self._settings_component(ViewSettings.Ids.DATE_OPTION), "value"),
-            Input(
-                self._settings_component(ViewSettings.Ids.STATISTICS_TAB_OPTION),
-                "value",
+            Input(self._view_component(MapViewElement.Ids.TIME_PLOT_LINES), "value"),
+            Input(self._view_component(MapViewElement.Ids.DATE_SLIDER), "value"),
+            Input(self._view_component(MapViewElement.Ids.OUTLIER_TOGGLE), "value"),
+            Input(self._view_component(MapViewElement.Ids.SUMMARY_TABS), "value"),
+            State(
+                self._view_component(MapViewElement.Ids.PLOT_GENERATION_STORE),
+                "data",
             ),
-            Input(self._settings_component(ViewSettings.Ids.BOX_SHOW_POINTS), "value"),
         )
         @callback_typecheck
         # pylint: disable=too-many-locals
@@ -790,87 +828,121 @@ class CO2Migration(WebvizPluginABC):
             color_choice: str,
             mark_choice: Optional[str],
             sorting: str,
-            lines_to_show: str,
-            date_option: str,
-            statistics_tab_option: StatisticsTabOption,
-            box_show_points: str,
-        ) -> Tuple[go.Figure, go.Figure, go.Figure]:
-            if len(realizations) == 0:
-                return go.Figure(), go.Figure(), go.Figure()
-
-            figs = [no_update] * 3
-            cont_info = process_containment_info(
-                zone,
-                region,
-                phase,
-                containment,
-                plume_group,
-                color_choice,
-                mark_choice,
-                sorting,
-                lines_to_show,
-                date_option,
-                statistics_tab_option,
-                box_show_points,
-                self._menu_options[ensemble][source],
-            )
-            if source in [
+            show_realizations: bool,
+            date_index: Optional[int],
+            show_all_points: bool,
+            active_tab: MainTabOption,
+            generation_keys: Optional[Dict[str, Any]],
+        ) -> Tuple[Any, Any, Any, Any, Dict[str, Any]]:
+            active_tab = MainTabOption(active_tab)
+            active_index = {
+                MainTabOption.CONTAINMENT_STATE: 0,
+                MainTabOption.CONTAINMENT_OVER_TIME: 1,
+                MainTabOption.PROBABILITY: 2,
+                MainTabOption.BOX_PLOT: 3,
+            }[active_tab]
+            y_limits = [
+                y_min_val if len(y_min_auto) == 0 else None,
+                y_max_val if len(y_max_auto) == 0 else None,
+            ]
+            is_containment_source = source in (
                 GraphSource.CONTAINMENT_MASS,
                 GraphSource.CONTAINMENT_ACTUAL_VOLUME,
-            ]:
-                plot_ids = make_plot_ids(
+            )
+            cont_info = None
+            date_option = None
+            if realizations and is_containment_source:
+                menu_options = self._menu_options[ensemble][source]
+                date_option = find_table_date(
+                    self._ensemble_dates[ensemble], date_index, menu_options["dates"]
+                )
+                cont_info = process_containment_info(
+                    zone,
+                    region,
+                    phase,
+                    containment,
+                    plume_group,
+                    color_choice,
+                    mark_choice,
+                    sorting,
+                    show_realizations,
+                    date_option or "",
+                    show_all_points,
+                    menu_options,
+                )
+
+            generation_key = make_plot_generation_key(
+                active_tab,
+                ensemble,
+                source,
+                co2_scale,
+                realizations,
+                y_limits,
+                cont_info,
+            )
+            updated_generation_keys = dict(generation_keys or {})
+            if updated_generation_keys.get(active_tab.value) == generation_key:
+                raise PreventUpdate
+
+            figure = go.Figure()
+            if realizations and is_containment_source:
+                assert cont_info is not None
+                table_provider = (
+                    self._co2_table_providers.get(ensemble)
+                    if source == GraphSource.CONTAINMENT_MASS
+                    else self._co2_actual_volume_table_providers.get(ensemble)
+                )
+                # Dated plots are left empty if the slider date is missing in the table
+                if table_provider is not None and (
+                    date_option is not None
+                    or active_tab == MainTabOption.CONTAINMENT_OVER_TIME
+                ):
+                    figure = generate_containment_figure(
+                        table_provider,
+                        active_tab,
+                        co2_scale,
+                        realizations,
+                        y_limits,
+                        cont_info,
+                        legend_data,
+                    )
+                figure.layout.uirevision = make_plot_id(
                     ensemble,
                     source,
                     co2_scale,
                     cont_info,
                     realizations,
-                    len(figs),
+                    active_tab,
                 )
-                y_limits = [
-                    y_min_val if len(y_min_auto) == 0 else None,
-                    y_max_val if len(y_max_auto) == 0 else None,
-                ]
+            elif (
+                realizations
+                and source == GraphSource.UNSMRY
+                and active_tab == MainTabOption.CONTAINMENT_OVER_TIME
+            ):
                 if (
-                    source == GraphSource.CONTAINMENT_MASS
+                    self._unsmry_providers is not None
+                    and ensemble in self._unsmry_providers
                     and ensemble in self._co2_table_providers
                 ):
-                    figs[: len(figs)] = generate_containment_figures(
+                    figure = generate_unsmry_figures(
+                        self._unsmry_providers[ensemble],
+                        co2_scale,
                         self._co2_table_providers[ensemble],
-                        co2_scale,
-                        realizations,
-                        y_limits,
-                        cont_info,
-                        legend_data,
                     )
-                elif (
-                    source == GraphSource.CONTAINMENT_ACTUAL_VOLUME
-                    and ensemble in self._co2_actual_volume_table_providers
-                ):
-                    figs[: len(figs)] = generate_containment_figures(
-                        self._co2_actual_volume_table_providers[ensemble],
-                        co2_scale,
-                        realizations,
-                        y_limits,
-                        cont_info,
-                        legend_data,
-                    )
-                set_plot_ids(figs, plot_ids)
-            elif source == GraphSource.UNSMRY:
-                if self._unsmry_providers is not None:
-                    if ensemble in self._unsmry_providers:
-                        figs[0] = go.Figure()
-                        figs[1] = generate_unsmry_figures(
-                            self._unsmry_providers[ensemble],
-                            co2_scale,
-                            self._co2_table_providers[ensemble],
-                        )
-                        figs[2] = go.Figure()
                 else:
                     LOGGER.warning(
-                        """UNSMRY file has not been specified as input.
-                         Please use unsmry_relpath in the configuration."""
+                        "UNSMRY data has not been specified for ensemble %s", ensemble
                     )
-            return figs  # type: ignore
+            figures = [no_update, no_update, no_update, no_update]
+            figures[active_index] = figure
+            updated_generation_keys[active_tab.value] = generation_key
+            return (
+                figures[0],
+                figures[1],
+                figures[2],
+                figures[3],
+                updated_generation_keys,
+            )
 
     def _add_legend_change_callback(self) -> None:
         @callback(
@@ -880,22 +952,21 @@ class CO2Migration(WebvizPluginABC):
             Input(self._view_component(MapViewElement.Ids.TIME_PLOT), "restyleData"),
             State(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
             Input(
-                self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "restyleData"
+                self._view_component(MapViewElement.Ids.PROBABILITY_PLOT), "restyleData"
             ),
-            State(self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "figure"),
-            Input(
-                self._settings_component(ViewSettings.Ids.STATISTICS_TAB_OPTION),
-                "value",
-            ),
+            State(self._view_component(MapViewElement.Ids.PROBABILITY_PLOT), "figure"),
+            Input(self._view_component(MapViewElement.Ids.BOX_PLOT), "restyleData"),
+            State(self._view_component(MapViewElement.Ids.BOX_PLOT), "figure"),
         )
         def on_bar_legend_update(
             bar_event: List[Any],
             bar_figure: go.Figure,
             time_event: List[Any],
             time_figure: go.Figure,
-            stats_event: List[Any],
-            stats_figure: go.Figure,
-            _: StatisticsTabOption,
+            probability_event: List[Any],
+            probability_figure: go.Figure,
+            box_event: List[Any],
+            box_figure: go.Figure,
         ) -> Patch:
             # We cannot subscribe to a legend click event directly, but we can subscribe
             # to the more general "restyleData" event, and then try to identify if this
@@ -911,12 +982,12 @@ class CO2Migration(WebvizPluginABC):
             elif _id == self._view_component(MapViewElement.Ids.TIME_PLOT):
                 if self._is_legend_click_event(time_event):
                     p["time_legendonly"] = extract_legendonly(time_figure)
-            elif _id in (
-                self._view_component(MapViewElement.Ids.STATISTICS_PLOT),
-                self._settings_component(ViewSettings.Ids.STATISTICS_TAB_OPTION),
-            ):
-                if self._is_legend_click_event(stats_event):
-                    p["stats_legendonly"] = extract_legendonly(stats_figure)
+            elif _id == self._view_component(MapViewElement.Ids.PROBABILITY_PLOT):
+                if self._is_legend_click_event(probability_event):
+                    p["probability_legendonly"] = extract_legendonly(probability_figure)
+            elif _id == self._view_component(MapViewElement.Ids.BOX_PLOT):
+                if self._is_legend_click_event(box_event):
+                    p["box_legendonly"] = extract_legendonly(box_figure)
             return p
 
     @staticmethod
@@ -935,11 +1006,8 @@ class CO2Migration(WebvizPluginABC):
             State(self._view_component(MapViewElement.Ids.SUMMARY_TABS), "value"),
             State(self._view_component(MapViewElement.Ids.BAR_PLOT), "figure"),
             State(self._view_component(MapViewElement.Ids.TIME_PLOT), "figure"),
-            State(self._view_component(MapViewElement.Ids.STATISTICS_PLOT), "figure"),
-            State(
-                self._settings_component(ViewSettings.Ids.STATISTICS_TAB_OPTION),
-                "value",
-            ),
+            State(self._view_component(MapViewElement.Ids.PROBABILITY_PLOT), "figure"),
+            State(self._view_component(MapViewElement.Ids.BOX_PLOT), "figure"),
             prevent_initial_call=True,
         )
         def export_data(
@@ -947,8 +1015,8 @@ class CO2Migration(WebvizPluginABC):
             active_tab: str,
             bar_figure: go.Figure,
             time_figure: go.Figure,
-            stats_figure: go.Figure,
-            statistics_tab_option: StatisticsTabOption,
+            probability_figure: go.Figure,
+            box_figure: go.Figure,
         ) -> Dict[str, Any]:
             file_name = "co2_migration"
             if active_tab == MainTabOption.CONTAINMENT_STATE:
@@ -959,14 +1027,14 @@ class CO2Migration(WebvizPluginABC):
                 current_figure = time_figure
                 file_name += "_time_plot"
                 plot_choice = "containment_time"
-            elif active_tab == MainTabOption.STATISTICS:
-                current_figure = stats_figure
-                if statistics_tab_option == StatisticsTabOption.PROBABILITY_PLOT:
-                    file_name += "_prob_plot"
-                    plot_choice = "probability"
-                else:  # => StatisticsTabOption.BOX_PLOT:
-                    file_name += "_box_plot"
-                    plot_choice = "box"
+            elif active_tab == MainTabOption.PROBABILITY:
+                current_figure = probability_figure
+                file_name += "_probability_plot"
+                plot_choice = "probability"
+            elif active_tab == MainTabOption.BOX_PLOT:
+                current_figure = box_figure
+                file_name += "_box_plot"
+                plot_choice = "box"
             else:
                 raise PreventUpdate  # Should not happen
 

@@ -4,15 +4,11 @@ from typing import List, Optional
 from webviz_subsurface._utils.enum_shim import StrEnum
 
 
-class StatisticsTabOption(StrEnum):
-    PROBABILITY_PLOT = "probability-plot"
-    BOX_PLOT = "box-plot"
-
-
 class MainTabOption(StrEnum):
     CONTAINMENT_STATE = "containment-state"
     CONTAINMENT_OVER_TIME = "containment-over-time"
-    STATISTICS = "statistics"
+    PROBABILITY = "probability"
+    BOX_PLOT = "box-plot"
 
 
 # pylint: disable=too-many-instance-attributes
@@ -31,7 +27,6 @@ class ContainmentInfo:
     phases: List[str]
     containments: List[str]
     plume_groups: List[str]
-    use_stats: bool
+    show_realizations: bool
     date_option: str
-    statistics_tab_option: StatisticsTabOption
-    box_show_points: str
+    points_to_show: str

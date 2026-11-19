@@ -22,23 +22,22 @@ class EnsembleWellPicks:
         self._absolute_well_pick_provider: Optional[WellPickProvider] = None
         self._per_real_well_pick_providers: Dict[int, WellPickProvider] = {}
 
-        if Path(well_picks_path).is_absolute():
+        # An absolute path is one file shared by all realizations, a relative path
+        # is relative to each realization. A missing or unreadable file means no
+        # well picks (with a warning), never a failing plugin.
+        path = Path(well_picks_path).expanduser()
+        if path.is_absolute():
             self._absolute_well_pick_provider = _try_get_well_pick_provider(
-                read_csv(well_picks_path),
-                map_surface_names_to_well_pick_names,
+                path, map_surface_names_to_well_pick_names
             )
         else:
             realizations = realization_paths(ens_path)
             for r, r_path in realizations.items():
-                try:
-                    self._per_real_well_pick_providers[r] = WellPickProvider(
-                        read_csv(r_path / well_picks_path),
-                        map_surface_names_to_well_pick_names,
-                    )
-                except (FileNotFoundError, OSError) as e:
-                    LOGGER.warning(
-                        f"Failed to find well picks for realization {r} at {r_path}: {e}"
-                    )
+                provider = _try_get_well_pick_provider(
+                    r_path / path, map_surface_names_to_well_pick_names
+                )
+                if provider is not None:
+                    self._per_real_well_pick_providers[r] = provider
 
     @cached_property
     def well_names(self) -> List[str]:
@@ -98,8 +97,10 @@ class EnsembleWellPicks:
 def _try_get_well_pick_provider(
     p: Path, name_mapping: Optional[Dict[str, str]]
 ) -> Optional[WellPickProvider]:
+    # OSError: missing or unreadable file. ValueError: not a valid CSV file
+    # (pandas' EmptyDataError and ParserError). KeyError: required columns missing.
     try:
         return WellPickProvider(read_csv(p), name_mapping)
-    except OSError as e:
+    except (OSError, ValueError, KeyError) as e:
         LOGGER.warning(f"Failed to read well picks file '{p}': {e}")
         return None

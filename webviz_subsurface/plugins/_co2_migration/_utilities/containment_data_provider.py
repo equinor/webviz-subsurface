@@ -1,4 +1,5 @@
-from typing import List, Optional, Union
+import warnings
+from typing import List, Optional, Sequence, Union
 
 import pandas as pd
 
@@ -41,10 +42,8 @@ class ContainmentDataProvider:
     def realizations(self) -> List[int]:
         return self._provider.realizations()
 
-    def extract_dataframe(self, realization: int) -> pd.DataFrame:
-        df = self._provider.get_column_data(
-            self._provider.column_names(), [realization]
-        )
+    def extract_dataframes(self, realizations: Sequence[int]) -> pd.DataFrame:
+        df = self._provider.get_column_data(self._provider.column_names(), realizations)
         # Backward compatibility:
         df["containment"] = df["containment"].replace({"hazardous": "nogo"})
         return df
@@ -73,26 +72,20 @@ class ContainmentDataProvider:
 
     @staticmethod
     def _get_menu_options(provider: EnsembleTableProvider) -> MenuOptions:
-        col_names = provider.column_names()
         realization = provider.realizations()[0]
-        # NBNB: Check that these are the same for all realizations????
-        # NBNB: WARNING and empty for zones / regions, and Error if phases are different?
-        df = provider.get_column_data(col_names, [realization])
-        zones = ["all"]
-        if "zone" in df:
-            for zone in list(df["zone"]):
-                if zone not in zones:
-                    zones.append(zone)
-        regions = ["all"]
-        if "region" in df:
-            for region in list(df["region"]):
-                if region not in regions:
-                    regions.append(region)
-        plume_groups = ["all"]
-        if "plume_group" in df:
-            for plume_group in list(df["plume_group"]):
-                if plume_group not in plume_groups and plume_group is not None:
-                    plume_groups.append(plume_group)
+        df = provider.get_column_data(
+            ["phase", "date", "zone", "region", "plume_group"]
+        )
+        ContainmentDataProvider._validate_dates_and_phases(provider, df, realization)
+        reference_df = df.loc[df["REAL"] == realization, ["phase", "date"]]
+        spatial_options = {
+            column: ["all"]
+            + [value for value in df[column].dropna().unique() if value != "all"]
+            for column in ["zone", "region", "plume_group"]
+        }
+        zones = spatial_options["zone"]
+        regions = spatial_options["region"]
+        plume_groups = spatial_options["plume_group"]
 
         def plume_sort_key(name: Optional[str]) -> int:
             if name is None:
@@ -103,10 +96,10 @@ class ContainmentDataProvider:
 
         plume_groups = sorted(plume_groups, key=plume_sort_key)
 
-        observed_phases = set(df["phase"].dropna().unique())
+        observed_phases = set(reference_df["phase"].dropna().unique())
         phases = [phase for phase in _PHASE_ORDER if phase in observed_phases]
 
-        dates = df["date"].unique()
+        dates = reference_df["date"].unique()
         dates.sort()
 
         return {
@@ -116,6 +109,31 @@ class ContainmentDataProvider:
             "plume_groups": plume_groups if len(plume_groups) > 1 else [],
             "dates": dates,
         }
+
+    @staticmethod
+    def _validate_dates_and_phases(
+        provider: EnsembleTableProvider,
+        df: pd.DataFrame,
+        reference_realization: int,
+    ) -> None:
+        for column in ["date", "phase"]:
+            values_per_realization = df.groupby("REAL")[column].agg(
+                lambda values: set(values.dropna())
+            )
+            expected = values_per_realization.loc[reference_realization]
+            for realization, observed in values_per_realization.items():
+                if observed != expected:
+                    message = (
+                        f"Inconsistent {column} sets for provider {provider}: "
+                        f"realization {realization} differs from reference "
+                        f"realization {reference_realization}. "
+                        f"Missing: {sorted(expected - observed)}; "
+                        f"extra: {sorted(observed - expected)}."
+                    )
+                    if column == "date":
+                        warnings.warn(message, stacklevel=2)
+                    else:
+                        raise ContainmentDataValidationError(message)
 
     @staticmethod
     def _validate(provider: EnsembleTableProvider) -> None:
